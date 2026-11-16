@@ -10853,6 +10853,13 @@ tr_trans_pairs_coerce_i(st_data_t key, st_data_t value, st_data_t _args)
 }
 
 #define TR_TRANS_PAIRS_SIMD_MAX_NEEDLES 16
+/* Below this many needles, the plain data-driven loop (and the compiler's own
+ * specialization of it, e.g. a branchless single-compare body for exactly one
+ * needle) beats padding up to TR_TRANS_PAIRS_SIMD_MAX_NEEDLES and unrolling. */
+#define TR_TRANS_PAIRS_SIMD_UNROLL_THRESHOLD 4
+/* A string shorter than one vector never reaches the SIMD loop, so it isn't
+ * worth paying for the needle padding and needle vector setup. */
+#define TR_TRANS_PAIRS_SIMD_MIN_LEN 16
 
 struct tr_trans_pairs_search {
     const unsigned char *s;
@@ -10903,6 +10910,36 @@ tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
     return search->trans_table[*search->s];
 }
 
+ALWAYS_INLINE(static VALUE tr_trans_pairs_scan_sse2(struct tr_trans_pairs_search *search, const unsigned int needles_count));
+static VALUE
+tr_trans_pairs_scan_sse2(struct tr_trans_pairs_search *search, const unsigned int needles_count)
+{
+    unsigned int i;
+
+    do {
+        const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
+
+        __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+        for (i = 0; i < needles_count; i++) {
+            matches[i] = _mm_cmpeq_epi8(bytes, search->needle_masks[i]);
+        }
+
+        for (i = 1; i < needles_count; i++) {
+            matches[0] = _mm_or_si128(matches[0], matches[i]);
+        }
+
+        const int bitmap = _mm_movemask_epi8(matches[0]);
+
+        if (bitmap) {
+            search->matches_bitmap = bitmap;
+            return tr_trans_pairs_next_match_sse2(search);
+        }
+        search->s += sizeof(__m128i);
+    } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+
+    return 0;
+}
+
 static inline VALUE
 tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 {
@@ -10915,28 +10952,18 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
         }
 
         if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
-            unsigned int i;
+            VALUE repl;
+            if (needles_count >= TR_TRANS_PAIRS_SIMD_UNROLL_THRESHOLD) {
+                RBIMPL_ASSERT_OR_ASSUME(needles_count == TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+                repl = tr_trans_pairs_scan_sse2(search, TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+            }
+            else {
+                repl = tr_trans_pairs_scan_sse2(search, needles_count);
+            }
 
-            do {
-                const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
-
-                __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-                for (i = 0; i < needles_count; i++) {
-                    matches[i] = _mm_cmpeq_epi8(bytes, search->needle_masks[i]);
-                }
-
-                for (i = 1; i < needles_count; i++) {
-                    matches[0] = _mm_or_si128(matches[0], matches[i]);
-                }
-
-                const int bitmap = _mm_movemask_epi8(matches[0]);
-
-                if (bitmap) {
-                    search->matches_bitmap = bitmap;
-                    return tr_trans_pairs_next_match_sse2(search);
-                }
-                search->s += sizeof(__m128i);
-            } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+            if (repl) {
+                return repl;
+            }
         }
     }
     return tr_trans_pairs_search_basic(search);
@@ -10961,6 +10988,37 @@ tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
     return search->trans_table[*search->s];
 }
 
+ALWAYS_INLINE(static VALUE tr_trans_pairs_scan_neon(struct tr_trans_pairs_search *search, const unsigned int needles_count));
+static VALUE
+tr_trans_pairs_scan_neon(struct tr_trans_pairs_search *search, const unsigned int needles_count)
+{
+    unsigned int i;
+
+    do {
+        const uint8x16_t bytes = vld1q_u8(search->s);
+
+        uint8x16_t matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+        for (i = 0; i < needles_count; i++) {
+            matches[i] = vceqq_u8(bytes, search->needle_masks[i]);
+        }
+
+        for (i = 1; i < needles_count; i++) {
+            matches[0] = vorrq_u8(matches[0], matches[i]);
+        }
+
+        const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches[0]), 4);
+        const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0);
+
+        if (bitmap) {
+            search->matches_bitmap = bitmap & 0x8888888888888888ull;
+            return tr_trans_pairs_next_match_neon(search);
+        }
+        search->s += sizeof(uint8x16_t);
+    } while ((size_t)(search->send - search->s) >= sizeof(uint8x16_t));
+
+    return 0;
+}
+
 static inline VALUE
 tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
 {
@@ -10973,29 +11031,18 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
         }
 
         if ((size_t)(search->send - search->s) >= sizeof(uint8x16_t)) {
-            unsigned int i;
+            VALUE repl;
+            if (needles_count >= TR_TRANS_PAIRS_SIMD_UNROLL_THRESHOLD) {
+                RBIMPL_ASSERT_OR_ASSUME(needles_count == TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+                repl = tr_trans_pairs_scan_neon(search, TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+            }
+            else {
+                repl = tr_trans_pairs_scan_neon(search, needles_count);
+            }
 
-            do {
-                const uint8x16_t bytes = vld1q_u8(search->s);
-
-                uint8x16_t matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-                for (i = 0; i < needles_count; i++) {
-                    matches[i] = vceqq_u8(bytes, search->needle_masks[i]);
-                }
-
-                for (i = 1; i < needles_count; i++) {
-                    matches[0] = vorrq_u8(matches[0], matches[i]);
-                }
-
-                const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches[0]), 4);
-                const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0);
-
-                if (bitmap) {
-                    search->matches_bitmap = bitmap & 0x8888888888888888ull;
-                    return tr_trans_pairs_next_match_neon(search);
-                }
-                search->s += sizeof(uint8x16_t);
-            } while ((size_t)(search->send - search->s) >= sizeof(uint8x16_t));
+            if (repl) {
+                return repl;
+            }
         }
     }
     return tr_trans_pairs_search_basic(search);
@@ -11021,6 +11068,11 @@ static VALUE
 tr_trans_pairs_search_prepare(struct tr_trans_pairs_search *search, size_t pairs_count, struct tr_pair *pairs, rb_encoding *enc)
 {
     VALUE hash = 0;
+#ifdef HAVE_SIMD
+    const bool use_simd = pairs_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES &&
+        (size_t)(search->send - search->s) >= TR_TRANS_PAIRS_SIMD_MIN_LEN;
+#endif
+
     for (size_t index = 0; index < pairs_count; index++) {
         struct tr_pair *pair = &pairs[index];
 
@@ -11030,7 +11082,7 @@ tr_trans_pairs_search_prepare(struct tr_trans_pairs_search *search, size_t pairs
         const unsigned char first_byte = (unsigned char)*ptr;
 
 #ifdef HAVE_SIMD
-        if (pairs_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES) {
+        if (use_simd) {
 #ifdef HAVE_SIMD_NEON
             search->needle_masks[index] = vdupq_n_u8(first_byte);
 #endif
@@ -11052,6 +11104,19 @@ tr_trans_pairs_search_prepare(struct tr_trans_pairs_search *search, size_t pairs
             rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
         }
     }
+
+#ifdef HAVE_SIMD
+    if (search->needles_count >= TR_TRANS_PAIRS_SIMD_UNROLL_THRESHOLD) {
+        /* Pad the needles with the last one so the SIMD search loops always
+         * run a compile-time-constant TR_TRANS_PAIRS_SIMD_MAX_NEEDLES
+         * iterations and can be fully unrolled by the compiler. */
+        const unsigned int last = search->needles_count - 1;
+        for (unsigned int index = search->needles_count; index < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES; index++) {
+            search->needle_masks[index] = search->needle_masks[last];
+        }
+        search->needles_count = TR_TRANS_PAIRS_SIMD_MAX_NEEDLES;
+    }
+#endif
     return hash;
 }
 
