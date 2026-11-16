@@ -518,6 +518,142 @@ describe "Module#refine" do
     end
   end
 
+  context "for #initialize" do
+    ruby_bug "#22501", "4.0"..."4.1" do
+      it "is not honored by Class#new" do
+        klass = Class.new do
+          attr_reader :args
+          def initialize(*args)
+            @args = args
+          end
+        end
+
+        refinement = Module.new do
+          refine klass do
+            def initialize(*args)
+              @args = [:refined]
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new(1, 2)
+        end
+
+        result.args.should == [1, 2]
+      end
+
+      it "is not honored by Class#new when the refined class does not define #initialize" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def initialize
+              raise "refined #initialize should not be called"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new
+        end
+
+        result.should.instance_of?(klass)
+      end
+
+      it "is not honored by Hash.new" do
+        refinement = Module.new do
+          refine Hash do
+            def initialize(*)
+              raise "refined #initialize should not be called"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = Hash.new(42)
+        end
+
+        result.default.should == 42
+      end
+    end
+
+    it "is not honored by Class#new called indirectly" do
+      klass = Class.new do
+        attr_reader :args
+        def initialize(*args)
+          @args = args
+        end
+      end
+
+      refinement = Module.new do
+        refine klass do
+          def initialize(*args)
+            @args = [:refined]
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = klass.send(:new, 1, 2)
+      end
+
+      result.args.should == [1, 2]
+    end
+
+    it "is not honored by String.new" do
+      refinement = Module.new do
+        refine String do
+          def initialize(*)
+            raise "refined #initialize should not be called"
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = String.new("foo", capacity: 10)
+      end
+
+      result.should == "foo"
+    end
+
+    it "is honored when #initialize is called directly" do
+      klass = Class.new do
+        attr_reader :args
+        def initialize(*args)
+          @args = args
+        end
+      end
+
+      refinement = Module.new do
+        refine klass do
+          def initialize(*args)
+            @args = [:refined]
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        obj = klass.allocate
+        obj.send(:initialize, 1, 2)
+        result = obj
+      end
+
+      result.args.should == [:refined]
+    end
+  end
+
   context "when super is called in a refinement" do
     it "looks in the refined class" do
       refined_class = ModuleSpecs.build_refined_class
