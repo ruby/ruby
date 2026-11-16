@@ -63,6 +63,8 @@
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
 
+#include "node.h"
+
 #define singlebit_only_p(x) !((x) & ((x)-1))
 STATIC_ASSERT(Qnil_1bit_from_Qfalse, singlebit_only_p(Qnil^Qfalse));
 STATIC_ASSERT(Qundef_1bit_from_Qnil, singlebit_only_p(Qundef^Qnil));
@@ -2672,8 +2674,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (dump & DUMP_BIT(parsetree)) {
         VALUE tree;
         if (result.ast) {
-            int comment = opt->dump & DUMP_BIT(opt_comment);
-            tree = rb_parser_dump_tree(result.ast->body.root, comment);
+            tree = rb_parser_dump_tree(result.ast->body.root, 0);
         }
         else {
             tree = prism_dump_tree(&result.prism);

@@ -2,6 +2,9 @@
 # mkdepend: scan prism/*.c => prism/templates/ext/prism/*.c.erb
 # mkdepend: scan prism/*.h => prism/templates/include/prism/*.h.erb
 # mkdepend: scan prism/**/*.h => prism/templates/include/prism/**/*.h.erb
+# mkdepend: scan node.inc => template/node.inc.erb
+# mkdepend: scan parser_ast.h => template/parser_ast.h.erb
+# mkdepend: scan parser_prettyprint.c => template/parser_prettyprint.c.erb
 # mkdepend: scan enc/trans/*.c => enc/trans/*.trans
 # mkdepend: scan THREAD_IMPL_H => thread_$(THREAD_MODEL).h
 # mkdepend: scan THREAD_IMPL_SRC => thread_$(THREAD_MODEL).c
@@ -25,11 +28,14 @@
 # mkdepend: depends lex.c => {$(VPATH)}lex.c
 # mkdepend: depends miniprelude.c => {$(VPATH)}miniprelude.c
 # mkdepend: depends newline.c => {$(VPATH)}newline.c
+# mkdepend: depends node.inc => {$(VPATH)}node.inc
 # mkdepend: depends node_name.inc => {$(VPATH)}node_name.inc
 # mkdepend: depends optinsn.inc => {$(VPATH)}optinsn.inc
 # mkdepend: depends optunifs.inc => {$(VPATH)}optunifs.inc
 # mkdepend: depends parse.c => {$(VPATH)}parse.c
 # mkdepend: depends parse.h => {$(VPATH)}parse.h
+# mkdepend: depends parser_ast.h => {$(VPATH)}parser_ast.h
+# mkdepend: depends parser_prettyprint.c => {$(VPATH)}parser_prettyprint.c
 # mkdepend: depends probes.dmyh => {$(VPATH)}probes.dmyh
 # mkdepend: depends revision.h => {$(VPATH)}revision.h
 # mkdepend: depends vm.inc => {$(VPATH)}vm.inc
@@ -105,6 +111,8 @@ numeric.$(OBJEXT): {$(VPATH)}numeric.c
 object.$(OBJEXT): {$(VPATH)}object.c
 pack.$(OBJEXT): {$(VPATH)}pack.c
 parse.$(OBJEXT): {$(VPATH)}parse.y
+parser_node_list.$(OBJEXT): {$(VPATH)}parser_node_list.c
+parser_prettyprint.$(OBJEXT): {$(VPATH)}parser_prettyprint.c
 parser_st.$(OBJEXT): {$(VPATH)}parser_st.c
 pathname.$(OBJEXT): {$(VPATH)}pathname.c
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/api_node.c

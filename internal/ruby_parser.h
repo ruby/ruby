@@ -27,19 +27,31 @@ VALUE rb_str_new_parser_string(rb_parser_string_t *str);
 VALUE rb_str_new_mutable_parser_string(rb_parser_string_t *str);
 rb_parser_string_t *rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str);
 
+int node_regx_options(rb_node_flags_t flags);
+
 VALUE rb_node_str_string_val(const NODE *);
+VALUE rb_node_str_string_val2(const rb_node_t *);
 VALUE rb_node_sym_string_val(const NODE *);
+VALUE rb_node_sym_string_val2(const rb_node_t *);
 VALUE rb_node_dstr_string_val(const NODE *);
 VALUE rb_node_regx_string_val(const NODE *);
+VALUE rb_node_regx_string_val2(const rb_node_t *);
 VALUE rb_node_dregx_string_val(const NODE *);
 VALUE rb_node_line_lineno_val(const NODE *);
+VALUE rb_node_line_lineno_val2(const rb_node_t *);
 VALUE rb_node_file_path_val(const NODE *);
+VALUE rb_node_file_path_val2(const rb_node_t *);
 VALUE rb_node_encoding_val(const NODE *);
+VALUE rb_node_encoding_val2(const rb_node_t *);
 
 VALUE rb_node_integer_literal_val(const NODE *);
+VALUE rb_node_integer_literal_val2(const rb_node_t *);
 VALUE rb_node_float_literal_val(const NODE *);
+VALUE rb_node_float_literal_val2(const rb_node_t *);
 VALUE rb_node_rational_literal_val(const NODE *);
+VALUE rb_node_rational_literal_val2(const rb_node_t *);
 VALUE rb_node_imaginary_literal_val(const NODE *);
+VALUE rb_node_imaginary_literal_val2(const rb_node_t *);
 
 void rb_source_hash_init(rb_source_hash_state_t *state);
 void rb_source_hash_update(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len);
@@ -103,7 +115,7 @@ enum lex_state_e {
     EXPR_NONE = 0
 };
 
-VALUE rb_ruby_ast_new(const NODE *const root);
+VALUE rb_ruby_ast_new(const rb_node_t *root);
 rb_ast_t *rb_ruby_ast_data_get(VALUE ast_value);
 
 #endif /* INTERNAL_RUBY_PARSE_H */
