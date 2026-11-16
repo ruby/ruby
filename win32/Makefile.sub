@@ -360,7 +360,7 @@ YJIT_LIBS = target/release/yjit.lib
 RUST_LIB = $(YJIT_LIBS)
 # Not archived into $(LIBRUBY_A), whose every symbol mkexports.rb exports.
 # After $(LIBS), so C code imports imagehlp.dll, which loads dbghelp lazily.
-JIT_LIBS = $(RUST_LIB) ntdll.lib userenv.lib dbghelp.lib
+JIT_LIBS = $(RUST_LIB) ntdll.lib userenv.lib dbghelp.lib synchronization.lib
 !if !defined(INSTALL_STATIC_LIBRARY)
 INSTALL_STATIC_LIBRARY = no
 !elseif "$(INSTALL_STATIC_LIBRARY)" != "no"
