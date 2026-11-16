@@ -890,13 +890,7 @@ rb_class_new_with_inline_field(VALUE super)
     return class_new(super, true);
 }
 
-VALUE
-rb_class_s_alloc(VALUE klass)
-{
-    return rb_class_boot(0);
-}
-
-// What Class.allocate returns, with the inline field of +from+ if it has one:
+// A class that is not set up yet, with the inline field of +from+ if it has one:
 // the class to copy, or the superclass to be.
 VALUE
 rb_class_alloc_with_inline_field_of(VALUE from)
