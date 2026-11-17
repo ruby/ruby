@@ -23525,13 +23525,12 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
     const uint8_t *newline = next_newline(parser->current.end, parser->end - parser->current.end);
     size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->current.end);
 
-    if (length > 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
+    if (length >= 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
+        parser->encoding_comment_start = newline != NULL ? newline + 1 : parser->end;
         const char *engine;
 
         if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
             if (newline != NULL) {
-                parser->encoding_comment_start = newline + 1;
-
                 if (options == NULL || options->main_script) {
                     pm_parser_warn_shebang_carriage_return(parser, parser->start, length + 1);
                 }

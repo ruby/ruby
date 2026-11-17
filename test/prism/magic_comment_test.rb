@@ -141,6 +141,39 @@ module Ruby::Prism
       end
     end
 
+    def test_encoding_after_non_ruby_shebang
+      ["#!/bin/sh", "#!", "#!coding:;"].each do |shebang|
+        ["\n", "\r\n"].each do |newline|
+          source = "#{shebang}#{newline}  # encoding: US-ASCII#{newline}__ENCODING__"
+          result = Ruby::Prism.parse(source)
+
+          assert_predicate result, :success?
+          assert_equal Encoding::US_ASCII, result.encoding
+        end
+      end
+    end
+
+    def test_shebang_is_not_an_encoding_comment
+      ["#!coding:bogus", "#!ruby coding:bogus"].each do |shebang|
+        ["", "\n"].each do |newline|
+          result = Ruby::Prism.parse("#{shebang}#{newline}")
+
+          assert_predicate result, :success?
+          assert_equal Encoding::UTF_8, result.encoding
+        end
+      end
+    end
+
+    def test_encoding_after_searched_shebang
+      source = "#!/bin/sh\n# encoding: US-ASCII\n#!ruby\n# encoding: binary\n__ENCODING__"
+      [{ main_script: true }, { command_line: "x" }].each do |options|
+        result = Ruby::Prism.parse(source, **options)
+
+        assert_predicate result, :success?
+        assert_equal Encoding::ASCII_8BIT, result.encoding
+      end
+    end
+
     private
 
     def assert_magic_encoding(expected, line)
