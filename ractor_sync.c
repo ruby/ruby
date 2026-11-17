@@ -1826,7 +1826,6 @@ ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj,
 
 struct ractor_selector {
     struct st_table *ports; // rpv -> rp
-
 };
 
 static int
@@ -1899,10 +1898,10 @@ ractor_selector_create(VALUE klass)
 
 /*
  * call-seq:
- *   add(ractor) -> ractor
+ *   add(port) -> ractor
  *
- * Adds _ractor_ to +self+.  Raises an exception if _ractor_ is already added.
- * Returns _ractor_.
+ * Adds _port_ to +self+.  Raises an exception if _port_ is already added.
+ * Returns +self+.
  */
 static VALUE
 ractor_selector_add(VALUE selv, VALUE rpv)
@@ -1927,10 +1926,10 @@ ractor_selector_add(VALUE selv, VALUE rpv)
 // Ractor::Selector#remove(r)
 
 /* call-seq:
- *   remove(ractor) -> ractor
+ *   remove(port) -> ractor
  *
- * Removes _ractor_ from +self+.  Raises an exception if _ractor_ is not added.
- * Returns the removed _ractor_.
+ * Removes _port_ from +self+.  Raises an exception if _port_ is not added.
+ * Returns +self+.
  */
 static VALUE
 ractor_selector_remove(VALUE selv, VALUE rpv)
@@ -1956,7 +1955,7 @@ ractor_selector_remove(VALUE selv, VALUE rpv)
  * call-seq:
  *   clear -> self
  *
- * Removes all ractors from +self+.  Raises +self+.
+ * Removes all ractors from +self+.  Returns +self+.
  */
 static VALUE
 ractor_selector_clear(VALUE selv)
@@ -2038,9 +2037,10 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector, const rb_hrtim
 
 /*
  * call-seq:
- *  wait(receive: false, yield_value: undef, move: false) -> [ractor, value]
+ *  wait -> [ractor, value]
  *
- * Waits until any ractor in _selector_ can be active.
+ * Blocks until one of the added ports receives a message.  Returns the
+ * port and the received object.
  */
 static VALUE
 ractor_selector_wait(VALUE selector)
