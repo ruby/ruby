@@ -1,0 +1,9 @@
+/|*/
+  ^ target of repeat operator is not specified
+/(|*)/
+   ^ target of repeat operator is not specified
+/a||+/
+    ^ target of repeat operator is not specified
+/|{3}/
+  ^~~ target of repeat operator is not specified
+

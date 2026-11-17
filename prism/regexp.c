@@ -1592,7 +1592,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
 }
 
 /**
- * expression : item+
+ * expression : item*
  *            ;
  */
 static bool
@@ -1602,7 +1602,8 @@ pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth) {
         return false;
     }
 
-    if (!pm_regexp_parse_item(parser, depth)) {
+    /* An alternative can be empty, as in /a||b/, so a | here ends it. */
+    if (*parser->cursor != '|' && !pm_regexp_parse_item(parser, depth)) {
         return false;
     }
 
