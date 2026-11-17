@@ -1,0 +1,18 @@
+/( *)/x
+   ^ target of repeat operator is not specified
+/ */x
+  ^ target of repeat operator is not specified
+/(a| *)/x
+     ^ target of repeat operator is not specified
+/( ?:a)/x
+   ^ target of repeat operator is not specified
+/( {3})/x
+   ^~~ target of repeat operator is not specified
+/(?x: *)/
+      ^ target of repeat operator is not specified
+/(?x)( *)/
+       ^ target of repeat operator is not specified
+/( # comment
+*)/x
+^ target of repeat operator is not specified
+

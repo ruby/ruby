@@ -263,6 +263,31 @@ pm_regexp_char_expect(pm_regexp_parser_t *parser, uint8_t value) {
 }
 
 /**
+ * Skip the whitespace that extended mode ignores outside of a character class:
+ * a space, tab, newline, carriage return, or form feed. Each place that reads
+ * the next part of the pattern skips it first, so in /( *)/x the * has nothing
+ * to repeat.
+ */
+static PRISM_INLINE void
+pm_regexp_skip_extended_whitespace(pm_regexp_parser_t *parser) {
+    if (!parser->extended_mode) return;
+
+    while (parser->cursor < parser->end) {
+        switch (*parser->cursor) {
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\r':
+            case '\f':
+                parser->cursor++;
+                break;
+            default:
+                return;
+        }
+    }
+}
+
+/**
  * This advances the current token to the next instance of the given character.
  */
 static bool
@@ -438,7 +463,10 @@ pm_regexp_parse_interval(pm_regexp_parser_t *parser) {
  */
 static bool
 pm_regexp_parse_quantifier(pm_regexp_parser_t *parser) {
-    while (!pm_regexp_char_is_eof(parser)) {
+    while (true) {
+        pm_regexp_skip_extended_whitespace(parser);
+        if (pm_regexp_char_is_eof(parser)) return true;
+
         switch (*parser->cursor) {
             case '*':
             case '+':
@@ -462,8 +490,6 @@ pm_regexp_parse_quantifier(pm_regexp_parser_t *parser) {
                 return true;
         }
     }
-
-    return true;
 }
 
 /**
@@ -1490,7 +1516,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
     }
 
     // Now, parse the expressions within this group.
-    while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ')') {
+    while (true) {
+        pm_regexp_skip_extended_whitespace(parser);
+        if (pm_regexp_char_is_eof(parser) || *parser->cursor == ')') break;
+
         if (!pm_regexp_parse_expression(parser, (uint16_t) (depth + 1))) {
             parser->extended_mode = extended_mode;
             return false;
@@ -1607,13 +1636,11 @@ pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth) {
         return false;
     }
 
-    while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ')' && *parser->cursor != '|') {
-        if (!pm_regexp_parse_item(parser, depth)) {
-            return false;
-        }
+    while (true) {
+        pm_regexp_skip_extended_whitespace(parser);
+        if (pm_regexp_char_is_eof(parser) || *parser->cursor == ')' || *parser->cursor == '|') return true;
+        if (!pm_regexp_parse_item(parser, depth)) return false;
     }
-
-    return true;
 }
 
 /**
@@ -1625,6 +1652,7 @@ pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth) {
 static bool
 pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
     do {
+        pm_regexp_skip_extended_whitespace(parser);
         if (pm_regexp_char_is_eof(parser)) return true;
         if (!pm_regexp_parse_expression(parser, 0)) return false;
     } while (pm_regexp_char_accept(parser, '|'));
