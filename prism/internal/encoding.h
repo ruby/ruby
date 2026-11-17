@@ -15,7 +15,7 @@
  * other characters take the forms listed for it in encoding.c.
  */
 typedef enum {
-    /* Every byte is a character, with the properties in its table. */
+    /* Every byte is a character. */
     PM_ENCODING_KIND_SINGLE_BYTE,
 
     /* Every byte below 0x80 is a character, and every other byte is invalid. */
@@ -67,8 +67,11 @@ typedef struct {
      */
     const char *name;
 
-    /* The PRISM_ENCODING_*_BIT properties of each byte as a character. */
-    const uint8_t *table;
+    /*
+     * In a single-byte encoding, the bytes from 0x80 up that begin a constant
+     * name, one bit per byte, or NULL if none do.
+     */
+    const uint8_t *uppercase;
 
     /*
      * How the encoding answers questions about its characters, as a

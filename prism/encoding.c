@@ -199,10 +199,9 @@ static const uint8_t pm_unicode_leaf[75][8] = {
 
 /**
  * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding US-ASCII character. It is also
- * the table of every single-byte encoding whose bytes above 0x7F have none of
- * these properties, and of every multibyte encoding, whose characters beyond
- * ASCII take their properties from their code points or forms instead.
+ * piece of information about the corresponding US-ASCII character. Every
+ * encoding that prism supports is ASCII-compatible, so this table answers for
+ * the bytes below 0x80 in all of them.
  */
 const uint8_t pm_encoding_ascii_table[256] = {
 /*  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
@@ -395,507 +394,149 @@ pm_cesu_8_codepoint(const uint8_t *b, size_t width) {
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
 
 /**
- * The properties of the bytes in ISO-8859-1. ISO-8859-9 has the same letters and digits
- * in the same cases, so it shares this table.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-1.
+ * ISO-8859-9 has the same bytes, so it shares this bitmap.
  */
-static const uint8_t pm_encoding_iso_8859_1_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+static const uint8_t pm_encoding_iso_8859_1_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x80 */
+    0xFF, 0xFF, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-2 character.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-2.
  */
-static const uint8_t pm_encoding_iso_8859_2_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 0, 7, 0, 7, 7, 0, 0, 7, 7, 7, 7, 0, 7, 7, // Ax
-    0, 3, 0, 3, 0, 3, 3, 0, 0, 3, 3, 3, 3, 0, 3, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_2_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x6A, 0xDE, 0x00, 0x00, /* 0x80 */
+    0xFF, 0xFF, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-3 character.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-3.
  */
-static const uint8_t pm_encoding_iso_8859_3_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 0, 0, 0, 0, 7, 0, 0, 7, 7, 7, 7, 0, 0, 7, // Ax
-    0, 3, 0, 0, 0, 3, 3, 0, 0, 3, 3, 3, 3, 0, 0, 3, // Bx
-    7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    0, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_3_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x42, 0x9E, 0x00, 0x00, /* 0x80 */
+    0xF7, 0xFF, 0x7E, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-4 character.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-4.
  */
-static const uint8_t pm_encoding_iso_8859_4_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 3, 7, 0, 7, 7, 0, 0, 7, 7, 7, 7, 0, 7, 0, // Ax
-    0, 3, 0, 3, 0, 3, 3, 0, 0, 3, 3, 3, 3, 7, 3, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_4_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x6A, 0x5E, 0x00, 0x20, /* 0x80 */
+    0xFF, 0xFF, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-5 character.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-5.
  */
-static const uint8_t pm_encoding_iso_8859_5_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 7, 7, // Ax
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 3, // Fx
+static const uint8_t pm_encoding_iso_8859_5_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0xFE, 0xDF, 0xFF, 0xFF, /* 0x80 */
+    0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * The properties of the bytes in ISO-8859-6. Windows-1256 has the same letters and digits
- * in the same cases, so it shares this table.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-7.
  */
-static const uint8_t pm_encoding_iso_8859_6_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Bx
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Cx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_7_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0xD7, /* 0x80 */
+    0xFE, 0xFF, 0xFB, 0x0F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-7 character.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-10.
  */
-static const uint8_t pm_encoding_iso_8859_7_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 0, 0, 7, 0, 7, 7, 7, 0, 7, 0, 7, 7, // Bx
-    3, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, 3, 3, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_10_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x7E, 0xDF, 0x00, 0x00, /* 0x80 */
+    0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * The properties of the bytes in ISO-8859-8. Windows-1255 has the same letters and digits
- * in the same cases, so it shares this table.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-13.
+ * Windows-1257 has the same bytes, so it shares this bitmap.
  */
-static const uint8_t pm_encoding_iso_8859_8_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Bx
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Cx
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_13_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x85, 0x00, 0x00, /* 0x80 */
+    0xFF, 0xFF, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-10 character.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-14.
  */
-static const uint8_t pm_encoding_iso_8859_10_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 0, 7, 7, // Ax
-    0, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 0, 3, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+static const uint8_t pm_encoding_iso_8859_14_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x52, 0x95, 0x95, 0x28, /* 0x80 */
+    0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * The properties of the bytes in ISO-8859-11. TIS-620 has the same letters and digits
- * in the same cases, so it shares this table.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-15.
  */
-static const uint8_t pm_encoding_iso_8859_11_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ax
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Bx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Cx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_15_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x10, 0x50, /* 0x80 */
+    0xFF, 0xFF, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * The properties of the bytes in ISO-8859-13. Windows-1257 has the same letters and digits
- * in the same cases, so it shares this table.
+ * The bytes from 0x80 up that begin a constant name in ISO-8859-16.
  */
-static const uint8_t pm_encoding_iso_8859_13_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 7, // Ax
-    0, 0, 0, 0, 0, 3, 0, 0, 3, 0, 3, 0, 0, 0, 0, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_iso_8859_16_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x5A, 0x94, 0x14, 0x50, /* 0x80 */
+    0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-14 character.
+ * The bytes from 0x80 up that begin a constant name in KOI8-R.
  */
-static const uint8_t pm_encoding_iso_8859_14_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 3, 0, 7, 3, 7, 0, 7, 0, 7, 3, 7, 0, 0, 7, // Ax
-    7, 3, 7, 3, 7, 3, 0, 7, 3, 3, 3, 7, 3, 7, 3, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+static const uint8_t pm_encoding_koi8_r_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, /* 0x80 */
+    0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-15 character.
+ * The bytes from 0x80 up that begin a constant name in KOI8-U.
  */
-static const uint8_t pm_encoding_iso_8859_15_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 0, 0, 0, 7, 0, 3, 0, 3, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 7, 3, 0, 0, 3, 0, 3, 0, 7, 3, 7, 0, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
-};
-
-/**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding ISO-8859-16 character.
- */
-static const uint8_t pm_encoding_iso_8859_16_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 3, 7, 4, 0, 7, 0, 3, 0, 7, 0, 7, 0, 3, 7, // Ax
-    0, 0, 7, 3, 7, 0, 0, 0, 3, 3, 3, 0, 7, 3, 7, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
-};
-
-/**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding KOI8-R character.
- */
-static const uint8_t pm_encoding_koi8_r_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Bx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Cx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Dx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Ex
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Fx
-};
-
-/**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding KOI8-U character.
- */
-static const uint8_t pm_encoding_koi8_u_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 0, 3, 3, 0, 3, 3, 0, 0, 0, 0, 0, 3, 0, 0, // Ax
-    0, 0, 0, 7, 7, 0, 7, 7, 0, 0, 0, 0, 0, 7, 0, 0, // Bx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Cx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Dx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Ex
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Fx
+static const uint8_t pm_encoding_koi8_u_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xD8, 0x20, /* 0x80 */
+    0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, /* 0xC0 */
 };
 
  /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding windows-1250 character.
+ * The bytes from 0x80 up that begin a constant name in Windows-1250.
  */
-static const uint8_t pm_encoding_windows_1250_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 7, 7, 7, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 3, 3, 3, // 9x
-    0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 7, 0, 0, 0, 0, 7, // Ax
-    0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 3, 0, 7, 0, 3, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_windows_1250_uppercase[16] = {
+    0x00, 0xF4, 0x00, 0x00, 0x28, 0x84, 0x00, 0x10, /* 0x80 */
+    0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding windows-1251 character.
+ * The bytes from 0x80 up that begin a constant name in Windows-1251.
  */
-static const uint8_t pm_encoding_windows_1251_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    7, 7, 0, 3, 0, 0, 0, 0, 0, 0, 7, 0, 7, 7, 7, 7, // 8x
-    3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 3, 3, 3, // 9x
-    0, 7, 3, 7, 0, 7, 0, 0, 7, 0, 7, 0, 0, 0, 0, 7, // Ax
-    0, 0, 7, 3, 3, 3, 0, 0, 3, 0, 3, 0, 3, 7, 3, 3, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+static const uint8_t pm_encoding_windows_1251_uppercase[16] = {
+    0x03, 0xF4, 0x00, 0x00, 0x2A, 0x85, 0x04, 0x20, /* 0x80 */
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding windows-1252 character.
+ * The bytes from 0x80 up that begin a constant name in Windows-1252.
  */
-static const uint8_t pm_encoding_windows_1252_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 7, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 0, 3, 7, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 4, // Ax
-    0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+static const uint8_t pm_encoding_windows_1252_uppercase[16] = {
+    0x00, 0x54, 0x00, 0x80, 0x00, 0x80, 0x00, 0x00, /* 0x80 */
+    0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding windows-1253 character.
+ * The bytes from 0x80 up that begin a constant name in Windows-1253.
  */
-static const uint8_t pm_encoding_windows_1253_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 0, 3, 7, 0, 7, 7, 7, 0, 7, 0, 7, 7, // Bx
-    3, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, 3, 3, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
+static const uint8_t pm_encoding_windows_1253_uppercase[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x40, 0xD7, /* 0x80 */
+    0xFE, 0xFF, 0xFB, 0x0F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 /**
- * Each element of the following table contains a bitfield that indicates a
- * piece of information about the corresponding windows-1254 character.
+ * The bytes from 0x80 up that begin a constant name in Windows-1254.
  */
-static const uint8_t pm_encoding_windows_1254_table[256] = {
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
-    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
-    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 0, 0, // 8x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 0, 0, 7, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Ax
-    0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Bx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
-    3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
+static const uint8_t pm_encoding_windows_1254_uppercase[16] = {
+    0x00, 0x14, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, /* 0x80 */
+    0xFF, 0xFF, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00, /* 0xC0 */
 };
 
 #endif
@@ -1294,14 +935,11 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
 /**
  * Return the number of bytes in the next character in the given encoding if it
  * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise. The encoding is
- * one whose characters are not Unicode code points, so not UTF-8 or CESU-8.
+ * multibyte, and its characters are not Unicode code points.
  */
 static size_t
 pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n) {
     switch (encoding->kind) {
-        case PM_ENCODING_KIND_ASCII:
-        case PM_ENCODING_KIND_SINGLE_BYTE:
-            return ((n > 0) && (encoding->table[*b] & property)) ? 1 : 0;
         case PM_ENCODING_KIND_EUC_JP:
             return pm_encoding_euc_jp_property_char(property, b, n);
         case PM_ENCODING_KIND_SHIFT_JIS:
@@ -1336,6 +974,14 @@ pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const
 bool
 pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n, pm_options_version_t version) {
     switch (encoding->kind) {
+        case PM_ENCODING_KIND_ASCII:
+        case PM_ENCODING_KIND_SINGLE_BYTE: {
+            if (n <= 0) return false;
+            if (*b < 0x80) return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) != 0;
+
+            const uint8_t *uppercase = encoding->uppercase;
+            return uppercase != NULL && ((uppercase[(*b - 0x80) >> 3] >> (*b & 7)) & 1);
+        }
         case PM_ENCODING_KIND_UTF_8:
             return pm_encoding_utf_8_isupper_char(b, n, version);
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
@@ -1369,455 +1015,385 @@ pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdif
 const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_UTF_8] = {
         .name = "UTF-8",
-        .kind = PM_ENCODING_KIND_UTF_8,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_US_ASCII] = {
         .name = "US-ASCII",
-        .kind = PM_ENCODING_KIND_ASCII,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_ASCII
     },
     [PM_ENCODING_ASCII_8BIT] = {
         .name = "ASCII-8BIT",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_EUC_JP] = {
         .name = "EUC-JP",
-        .kind = PM_ENCODING_KIND_EUC_JP,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_WINDOWS_31J] = {
         .name = "Windows-31J",
-        .kind = PM_ENCODING_KIND_SHIFT_JIS,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
 
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
     [PM_ENCODING_BIG5] = {
         .name = "Big5",
-        .kind = PM_ENCODING_KIND_BIG5,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_BIG5_HKSCS] = {
         .name = "Big5-HKSCS",
-        .kind = PM_ENCODING_KIND_BIG5,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_BIG5_UAO] = {
         .name = "Big5-UAO",
-        .kind = PM_ENCODING_KIND_BIG5,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_CESU_8] = {
         .name = "CESU-8",
-        .kind = PM_ENCODING_KIND_CESU_8,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_CESU_8
     },
     [PM_ENCODING_CP51932] = {
         .name = "CP51932",
-        .kind = PM_ENCODING_KIND_EUC_JP,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_CP850] = {
         .name = "CP850",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_CP852] = {
         .name = "CP852",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_CP855] = {
         .name = "CP855",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_CP949] = {
         .name = "CP949",
-        .kind = PM_ENCODING_KIND_CP949,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_CP949
     },
     [PM_ENCODING_CP950] = {
         .name = "CP950",
-        .kind = PM_ENCODING_KIND_BIG5,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_CP951] = {
         .name = "CP951",
-        .kind = PM_ENCODING_KIND_BIG5,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_EMACS_MULE] = {
         .name = "Emacs-Mule",
-        .kind = PM_ENCODING_KIND_EMACS_MULE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EMACS_MULE
     },
     [PM_ENCODING_EUC_JP_MS] = {
         .name = "eucJP-ms",
-        .kind = PM_ENCODING_KIND_EUC_JP,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_EUC_JIS_2004] = {
         .name = "EUC-JIS-2004",
-        .kind = PM_ENCODING_KIND_EUC_JP,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_EUC_KR] = {
         .name = "EUC-KR",
-        .kind = PM_ENCODING_KIND_EUC_KR,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_KR
     },
     [PM_ENCODING_EUC_TW] = {
         .name = "EUC-TW",
-        .kind = PM_ENCODING_KIND_EUC_TW,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_TW
     },
     [PM_ENCODING_GB12345] = {
         .name = "GB12345",
-        .kind = PM_ENCODING_KIND_EUC_KR,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_KR
     },
     [PM_ENCODING_GB18030] = {
         .name = "GB18030",
-        .kind = PM_ENCODING_KIND_GB18030,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_GB18030
     },
     [PM_ENCODING_GB1988] = {
         .name = "GB1988",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_GB2312] = {
         .name = "GB2312",
-        .kind = PM_ENCODING_KIND_EUC_KR,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EUC_KR
     },
     [PM_ENCODING_GBK] = {
         .name = "GBK",
-        .kind = PM_ENCODING_KIND_GBK,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_GBK
     },
     [PM_ENCODING_IBM437] = {
         .name = "IBM437",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM720] = {
         .name = "IBM720",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM737] = {
         .name = "IBM737",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM775] = {
         .name = "IBM775",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM852] = {
         .name = "IBM852",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM855] = {
         .name = "IBM855",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM857] = {
         .name = "IBM857",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM860] = {
         .name = "IBM860",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM861] = {
         .name = "IBM861",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM862] = {
         .name = "IBM862",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM863] = {
         .name = "IBM863",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM864] = {
         .name = "IBM864",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM865] = {
         .name = "IBM865",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM866] = {
         .name = "IBM866",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM869] = {
         .name = "IBM869",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_1] = {
         .name = "ISO-8859-1",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_1_table
+        .uppercase = pm_encoding_iso_8859_1_uppercase
     },
     [PM_ENCODING_ISO_8859_2] = {
         .name = "ISO-8859-2",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_2_table
+        .uppercase = pm_encoding_iso_8859_2_uppercase
     },
     [PM_ENCODING_ISO_8859_3] = {
         .name = "ISO-8859-3",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_3_table
+        .uppercase = pm_encoding_iso_8859_3_uppercase
     },
     [PM_ENCODING_ISO_8859_4] = {
         .name = "ISO-8859-4",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_4_table
+        .uppercase = pm_encoding_iso_8859_4_uppercase
     },
     [PM_ENCODING_ISO_8859_5] = {
         .name = "ISO-8859-5",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_5_table
+        .uppercase = pm_encoding_iso_8859_5_uppercase
     },
     [PM_ENCODING_ISO_8859_6] = {
         .name = "ISO-8859-6",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_6_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_7] = {
         .name = "ISO-8859-7",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_7_table
+        .uppercase = pm_encoding_iso_8859_7_uppercase
     },
     [PM_ENCODING_ISO_8859_8] = {
         .name = "ISO-8859-8",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_8_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_9] = {
         .name = "ISO-8859-9",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_1_table
+        .uppercase = pm_encoding_iso_8859_1_uppercase
     },
     [PM_ENCODING_ISO_8859_10] = {
         .name = "ISO-8859-10",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_10_table
+        .uppercase = pm_encoding_iso_8859_10_uppercase
     },
     [PM_ENCODING_ISO_8859_11] = {
         .name = "ISO-8859-11",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_11_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_13] = {
         .name = "ISO-8859-13",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_13_table
+        .uppercase = pm_encoding_iso_8859_13_uppercase
     },
     [PM_ENCODING_ISO_8859_14] = {
         .name = "ISO-8859-14",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_14_table
+        .uppercase = pm_encoding_iso_8859_14_uppercase
     },
     [PM_ENCODING_ISO_8859_15] = {
         .name = "ISO-8859-15",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_15_table
+        .uppercase = pm_encoding_iso_8859_15_uppercase
     },
     [PM_ENCODING_ISO_8859_16] = {
         .name = "ISO-8859-16",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_16_table
+        .uppercase = pm_encoding_iso_8859_16_uppercase
     },
     [PM_ENCODING_KOI8_R] = {
         .name = "KOI8-R",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_koi8_r_table
+        .uppercase = pm_encoding_koi8_r_uppercase
     },
     [PM_ENCODING_KOI8_U] = {
         .name = "KOI8-U",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_koi8_u_table
+        .uppercase = pm_encoding_koi8_u_uppercase
     },
     [PM_ENCODING_MAC_CENT_EURO] = {
         .name = "macCentEuro",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_CROATIAN] = {
         .name = "macCroatian",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_CYRILLIC] = {
         .name = "macCyrillic",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_GREEK] = {
         .name = "macGreek",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_ICELAND] = {
         .name = "macIceland",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_JAPANESE] = {
         .name = "MacJapanese",
-        .kind = PM_ENCODING_KIND_SHIFT_JIS,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_MAC_ROMAN] = {
         .name = "macRoman",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_ROMANIA] = {
         .name = "macRomania",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_THAI] = {
         .name = "macThai",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_TURKISH] = {
         .name = "macTurkish",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_UKRAINE] = {
         .name = "macUkraine",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_SHIFT_JIS] = {
         .name = "Shift_JIS",
-        .kind = PM_ENCODING_KIND_SHIFT_JIS,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_SJIS_DOCOMO] = {
         .name = "SJIS-DoCoMo",
-        .kind = PM_ENCODING_KIND_SHIFT_JIS,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_SJIS_KDDI] = {
         .name = "SJIS-KDDI",
-        .kind = PM_ENCODING_KIND_SHIFT_JIS,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_SJIS_SOFTBANK] = {
         .name = "SJIS-SoftBank",
-        .kind = PM_ENCODING_KIND_SHIFT_JIS,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP] = {
         .name = "stateless-ISO-2022-JP",
-        .kind = PM_ENCODING_KIND_EMACS_MULE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EMACS_MULE
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP_KDDI] = {
         .name = "stateless-ISO-2022-JP-KDDI",
-        .kind = PM_ENCODING_KIND_EMACS_MULE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_EMACS_MULE
     },
     [PM_ENCODING_TIS_620] = {
         .name = "TIS-620",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_11_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_UTF8_MAC] = {
         .name = "UTF8-MAC",
-        .kind = PM_ENCODING_KIND_UTF_8,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_UTF8_DOCOMO] = {
         .name = "UTF8-DoCoMo",
-        .kind = PM_ENCODING_KIND_UTF_8,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_UTF8_KDDI] = {
         .name = "UTF8-KDDI",
-        .kind = PM_ENCODING_KIND_UTF_8,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_UTF8_SOFTBANK] = {
         .name = "UTF8-SoftBank",
-        .kind = PM_ENCODING_KIND_UTF_8,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_WINDOWS_1250] = {
         .name = "Windows-1250",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_windows_1250_table
+        .uppercase = pm_encoding_windows_1250_uppercase
     },
     [PM_ENCODING_WINDOWS_1251] = {
         .name = "Windows-1251",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_windows_1251_table
+        .uppercase = pm_encoding_windows_1251_uppercase
     },
     [PM_ENCODING_WINDOWS_1252] = {
         .name = "Windows-1252",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_windows_1252_table
+        .uppercase = pm_encoding_windows_1252_uppercase
     },
     [PM_ENCODING_WINDOWS_1253] = {
         .name = "Windows-1253",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_windows_1253_table
+        .uppercase = pm_encoding_windows_1253_uppercase
     },
     [PM_ENCODING_WINDOWS_1254] = {
         .name = "Windows-1254",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_windows_1254_table
+        .uppercase = pm_encoding_windows_1254_uppercase
     },
     [PM_ENCODING_WINDOWS_1255] = {
         .name = "Windows-1255",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_8_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_1256] = {
         .name = "Windows-1256",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_6_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_1257] = {
         .name = "Windows-1257",
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_iso_8859_13_table
+        .uppercase = pm_encoding_iso_8859_13_uppercase
     },
     [PM_ENCODING_WINDOWS_1258] = {
         .name = "Windows-1258",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_874] = {
         .name = "Windows-874",
-        .kind = PM_ENCODING_KIND_SINGLE_BYTE,
-        .table = pm_encoding_ascii_table
+        .kind = PM_ENCODING_KIND_SINGLE_BYTE
     }
 #endif
 };
