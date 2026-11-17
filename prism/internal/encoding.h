@@ -111,14 +111,6 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
 size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
 
 /*
- * Return the number of bytes in the next character in the given encoding if it
- * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise. In an encoding
- * whose characters are Unicode code points, this answers for the version of
- * Unicode that the tables are.
- */
-size_t pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n);
-
-/*
  * Return true if the next character in the given encoding is uppercase, or
  * titlecase, in the given version of Ruby. Such a character begins a constant
  * name. The version only matters for an encoding whose characters are Unicode
@@ -128,18 +120,6 @@ bool pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, p
 
 /* Return the size of the next character in the UTF-8 encoding. */
 size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);
-
-/*
- * Return the size of the next character in the UTF-8 encoding if it is an
- * alphabetical character.
- */
-size_t pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
-
-/*
- * Return the size of the next character in the UTF-8 encoding if it is an
- * alphanumeric character.
- */
-size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
 
 /*
  * Return true if the next character in the UTF-8 encoding is uppercase, or

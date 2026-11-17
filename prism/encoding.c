@@ -620,46 +620,6 @@ pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Return the size of the next character in the UTF-8 encoding if it is an
- * alphabetical character.
- */
-size_t
-pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
-    if (n == 0) {
-        return 0;
-    }
-
-    if (*b < 0x80) {
-        return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
-    }
-
-    size_t width;
-    pm_unicode_codepoint_t codepoint = pm_utf_8_codepoint(b, n, &width);
-
-    return (pm_unicode_codepoint_properties(codepoint) & PRISM_ENCODING_ALPHABETIC_BIT) ? width : 0;
-}
-
-/**
- * Return the size of the next character in the UTF-8 encoding if it is an
- * alphanumeric character.
- */
-size_t
-pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
-    if (n == 0) {
-        return 0;
-    }
-
-    if (*b < 0x80) {
-        return (pm_encoding_ascii_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
-    }
-
-    size_t width;
-    pm_unicode_codepoint_t codepoint = pm_utf_8_codepoint(b, n, &width);
-
-    return (pm_unicode_codepoint_properties(codepoint) & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
-}
-
-/**
  * Return true if the next character in the UTF-8 encoding is uppercase, or
  * titlecase, in the given version of Ruby.
  */
@@ -700,15 +660,6 @@ pm_cesu_8_codepoint(const uint8_t *b, size_t width) {
             /* 11101101 1010xxxx 10xxxxxx 11101101 1011xxxx 10xxxxxx */
             return (pm_unicode_codepoint_t) (0x10000 + (((b[1] & 0xF) << 16) | ((b[2] & 0x3F) << 10) | ((b[4] & 0xF) << 6) | (b[5] & 0x3F)));
     }
-}
-
-/**
- * Return true if the character in the CESU-8 encoding that is the given number
- * of bytes long has the given property, which is that of its code point.
- */
-static bool
-pm_cesu_8_property_p(const uint8_t *b, size_t width, uint8_t property) {
-    return (pm_unicode_codepoint_properties(pm_cesu_8_codepoint(b, width)) & property) != 0;
 }
 
 #endif
@@ -1614,20 +1565,12 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
 
 /**
  * Return the number of bytes in the next character in the given encoding if it
- * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise.
+ * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise. The encoding is
+ * one whose characters are not Unicode code points, so not UTF-8 or CESU-8.
  */
-size_t
+static size_t
 pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n) {
     switch (encoding->kind) {
-        case PM_ENCODING_KIND_UTF_8:
-            switch (property) {
-                case PRISM_ENCODING_ALPHABETIC_BIT:
-                    return pm_encoding_utf_8_alpha_char(b, n);
-                case PRISM_ENCODING_ALPHANUMERIC_BIT:
-                    return pm_encoding_utf_8_alnum_char(b, n);
-                default:
-                    return pm_encoding_utf_8_isupper_char(b, n, PM_OPTIONS_VERSION_LATEST) ? pm_encoding_utf_8_char_width(b, n) : 0;
-            }
         case PM_ENCODING_KIND_ASCII:
         case PM_ENCODING_KIND_SINGLE_BYTE:
             return ((n > 0) && (encoding->table[*b] & property)) ? 1 : 0;
@@ -1638,10 +1581,6 @@ pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
         case PM_ENCODING_KIND_BIG5:
             return pm_encoding_big5_property_char(property, b, n);
-        case PM_ENCODING_KIND_CESU_8: {
-            size_t width = pm_encoding_cesu_8_char_width(b, n);
-            return (width != 0 && pm_cesu_8_property_p(b, width, property)) ? width : 0;
-        }
         case PM_ENCODING_KIND_CP949:
             return pm_encoding_cp949_property_char(property, b, n);
         case PM_ENCODING_KIND_EMACS_MULE:
