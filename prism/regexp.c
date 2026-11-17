@@ -157,10 +157,6 @@ typedef struct {
      * where it was lexed.
      */
     bool unlexed;
-
-    /* A sole interpolation folded to a string bypasses parse.y's fragment
-     * encoding pass. Its encoding options still reach the regexp compiler. */
-    bool skip_fragment_encoding;
 } pm_regexp_t;
 
 /**
@@ -2610,7 +2606,7 @@ static const pm_encoding_t *
 pm_regexp_read_encoding(const pm_regexp_t *regexp, const pm_encoding_t *option_encoding) {
     const pm_encoding_t *content = regexp->encoding;
 
-    if (option_encoding == NULL || (regexp->skip_fragment_encoding && option_encoding != PM_ENCODING_ASCII_8BIT_ENTRY)) {
+    if (option_encoding == NULL) {
         return (content == PM_ENCODING_US_ASCII_ENTRY) ? PM_ENCODING_ASCII_8BIT_ENTRY : content;
     }
 
@@ -2640,9 +2636,7 @@ pm_regexp_check_option(const pm_regexp_t *regexp) {
     const pm_encoding_t *read_encoding = pm_regexp_read_encoding(regexp, encoding);
     if (option == '\0' || read_encoding == encoding) return read_encoding;
 
-    if (!regexp->skip_fragment_encoding) {
-        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, regexp->encoding->name);
-    }
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, regexp->encoding->name);
     if (option != 'n') return read_encoding;
 
     pm_regexp_error_kind_with_content(regexp, PM_ERR_REGEXP_NON_ESCAPED_MBC);
@@ -3704,7 +3698,6 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
     pm_node_flags_t flags = PM_NODE_FLAGS(node);
     bool is_static = PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL);
     const pm_node_list_t *parts = &node->parts;
-    bool skip_fragment_encoding = is_static && parts->size == 1 && PM_NODE_TYPE_P(parts->nodes[0], PM_EMBEDDED_STATEMENTS_NODE);
     /* A heredoc can split a regexp into several literal tokens. Those can
      * still introduce locals, unlike a regexp with actual interpolation. */
     bool match_receiver = parser->current.type == PM_TOKEN_EQUAL_TILDE;
@@ -3729,7 +3722,7 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
             if (part.joined.incompatible != NULL) {
                 pm_regexp_error_incompatible(parser, part.regexp.location, part.joined.encoding, part.joined.incompatible);
                 valid = false;
-            } else if (!skip_fragment_encoding && !pm_regexp_part_escapes_valid_p(&part.regexp)) {
+            } else if (!pm_regexp_part_escapes_valid_p(&part.regexp)) {
                 valid = false;
             } else if (is_static) {
                 pm_regexp_join(&joined, part.regexp.source, part.regexp.size, part.regexp.encoding);
@@ -3743,9 +3736,10 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
         if (joined.incompatible != NULL) {
             pm_regexp_error_incompatible(parser, node->base.location, joined.encoding, joined.incompatible);
         } else {
-            /* Unless a sole interpolation bypassed the fragment pass, every
-             * part has already been checked. The joined content does not line
-             * up with the source, so errors cover the whole regular expression. */
+            /* Every part has been checked on its own. Any invalid character
+             * left is in the regular expression's own text, and the lexer
+             * reported it. The joined content does not line up with the
+             * source, so errors are reported at the whole regular expression. */
             const pm_regexp_t regexp = {
                 .parser = parser,
                 .source = (const uint8_t *) pm_buffer_value(&joined.buffer),
@@ -3753,8 +3747,7 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
                 .encoding = (joined.encoding == NULL) ? parser->encoding : joined.encoding,
                 .flags = flags,
                 .location = node->base.location,
-                .unlexed = skip_fragment_encoding,
-                .skip_fragment_encoding = skip_fragment_encoding
+                .unlexed = false
             };
 
             pm_regexp_validate(&regexp, NULL, 0, match_receiver ? (const pm_node_t *) node : NULL);
