@@ -66,6 +66,7 @@ module Ruby::Prism
       # Regular expressions whose interpolations are all strings, which are
       # validated as the content that they join to.
       "/\#{\"\\\\xFF\"}/", "/a\#{\"\\xE3\"}b/", "/\\xC3\#{\"\\\\xA9\"}/", "/\\M-a\#{\"b\"}/",
+      "/\#{\"\\u3042\"}/e", "/\#{\"\\\\xA4\\\\xA2\"}/e", "/\#{\"\\u3042\"}/n",
 
       # Strings in UTF-8 joined into a regular expression, which is binary in a
       # US-ASCII source.
