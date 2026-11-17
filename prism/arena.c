@@ -56,6 +56,10 @@ pm_arena_next_block_size(const pm_arena_t *arena) {
 static pm_arena_block_t *
 pm_arena_block_alloc(pm_arena_block_t *prev, size_t data_size, size_t initial_used) {
     PRISM_ASSERT(initial_used <= data_size);
+    if (PRISM_UNLIKELY(data_size > SIZE_MAX - PM_ARENA_BLOCK_SIZE(0))) {
+        pm_arena_alloc_overflow();
+    }
+
     pm_arena_block_t *block = (pm_arena_block_t *) xmalloc(PM_ARENA_BLOCK_SIZE(data_size));
     if (block == NULL) PRISM_OOM();
 
@@ -142,8 +146,10 @@ pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment) {
         }
     }
 
-    uintptr_t start = (uintptr_t) pm_arena_alloc_slow(arena, size + alignment - 1);
-    uintptr_t aligned = (start + alignment - 1) & ~((uintptr_t) alignment - 1);
+    size_t mask = alignment - 1;
+    if (PRISM_UNLIKELY(size > SIZE_MAX - mask)) pm_arena_alloc_overflow();
+    uintptr_t start = (uintptr_t) pm_arena_alloc_slow(arena, size + mask);
+    uintptr_t aligned = (start + mask) & ~(uintptr_t) mask;
 
     block = arena->current;
     if (block != NULL && (uintptr_t) block->data == start) {
@@ -154,7 +160,7 @@ pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment) {
 }
 
 /**
- * Report an array allocation whose total size does not fit in a size_t. A
+ * Report an allocation whose total size does not fit in a size_t. A
  * consumer's PRISM_OOM is not required to stop execution, so this aborts after
  * it to keep the promise that it never returns.
  */

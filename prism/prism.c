@@ -7211,7 +7211,7 @@ pm_state_stack_spill(pm_arena_t *arena, pm_state_stack_t *stack) {
 
     if (size == stack->capacity) {
         uint32_t capacity = stack->capacity == 0 ? 2 : stack->capacity * 2;
-        stack->spill = (uint64_t *) pm_arena_realloc(arena, stack->spill, capacity * sizeof(uint64_t), stack->capacity * sizeof(uint64_t), PRISM_ALIGNOF(uint64_t));
+        stack->spill = PM_ARENA_REALLOC(arena, stack->spill, capacity * sizeof(uint64_t), stack->capacity * sizeof(uint64_t), uint64_t);
         stack->capacity = capacity;
     }
 

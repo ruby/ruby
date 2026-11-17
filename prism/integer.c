@@ -99,10 +99,10 @@ static void
 pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, uint32_t capacity) {
     if (bignum->length <= 2) {
         uint64_t value = pm_bignum_uint64(bignum);
-        pm_arena_realloc(arena, bignum->words, 0, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t));
+        PM_ARENA_REALLOC(arena, bignum->words, 0, sizeof(uint32_t) * capacity, uint32_t);
         *integer = pm_integer_uint64(value);
     } else {
-        uint32_t *words = (uint32_t *) pm_arena_realloc(arena, bignum->words, sizeof(uint32_t) * bignum->length, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t));
+        uint32_t *words = PM_ARENA_REALLOC(arena, bignum->words, sizeof(uint32_t) * bignum->length, sizeof(uint32_t) * capacity, uint32_t);
         *integer = (pm_integer_t) { .length = bignum->length, .words = { .values = words } };
     }
 }

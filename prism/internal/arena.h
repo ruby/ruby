@@ -74,7 +74,7 @@ void pm_arena_reserve(pm_arena_t *arena, size_t capacity);
 void * pm_arena_alloc_slow(pm_arena_t *arena, size_t size);
 
 /*
- * Report an array allocation whose total size does not fit in a size_t. This
+ * Report an allocation whose total size does not fit in a size_t. This
  * goes through PRISM_OOM like any other allocation failure, and lives out of
  * line so this header does not need the headers PRISM_OOM depends on.
  */

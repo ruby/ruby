@@ -75,7 +75,7 @@ pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
         return;
     }
 
-    list->nodes = (pm_node_t **) pm_arena_realloc(arena, list->nodes, sizeof(pm_node_t *) * (list->size + 1), sizeof(pm_node_t *) * list->size, PRISM_ALIGNOF(pm_node_t *));
+    list->nodes = PM_ARENA_REALLOC(arena, list->nodes, sizeof(pm_node_t *) * (list->size + 1), sizeof(pm_node_t *) * list->size, pm_node_t *);
     list->nodes[list->size++] = node;
 }
 
