@@ -122,6 +122,25 @@ module Ruby::Prism
       end
     end
 
+    def test_encoding_fallback_is_not_used_for_unrecognized_keys
+      ['#"ncoding:binary', "#'ncoding:binary", "#;ncoding:binary", "# coding=binary", "# coding=e", "# -*- coding=binary -*-"].each do |comment|
+        result = Ruby::Prism.parse("#{comment}\n__ENCODING__")
+
+        assert_predicate result, :success?, comment
+        assert_equal Encoding::UTF_8, result.encoding, comment
+      end
+    end
+
+    def test_encoding_after_leading_delimiters
+      ['"', "'", ";", ":"].each do |delimiter|
+        ["coding", "encoding"].each do |key|
+          result = Ruby::Prism.parse("##{delimiter}#{key}:binary\n__ENCODING__")
+          assert_predicate result, :success?
+          assert_equal Encoding::ASCII_8BIT, result.encoding
+        end
+      end
+    end
+
     private
 
     def assert_magic_encoding(expected, line)

@@ -7643,24 +7643,23 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             // have a magic comment.
             return false;
         }
-    } else {
-        // Non-emacs magic comments must contain a colon for `key: value`.
-        // Reject early if there is no colon to avoid scanning the entire
-        // comment character-by-character.
-        if (pm_memchr(start, ':', (size_t) (end - start), parser->encoding_changed, parser->encoding) == NULL) {
+    }
+
+    if (!indicator) {
+        /* The encoding-comment line needs the full scan because its result
+         * controls the fallback encoding scan. Other comments without a colon
+         * cannot contain a magic directive, so reject them early. */
+        if ((parser->current.start != parser->encoding_comment_start || parser->encoding_locked) &&
+            pm_memchr(start, ':', (size_t) (end - start), parser->encoding_changed, parser->encoding) == NULL) {
             return false;
         }
 
-        // Advance start past leading whitespace so the main loop begins
-        // directly at the key, avoiding a redundant whitespace scan.
         start += pm_strspn_whitespace(start, end - start);
     }
 
     cursor = start;
     while (cursor < end) {
-        if (indicator) {
-            while (cursor < end && (pm_char_is_magic_comment_key_delimiter(*cursor) || pm_char_is_whitespace(*cursor))) cursor++;
-        }
+        while (cursor < end && (pm_char_is_magic_comment_key_delimiter(*cursor) || pm_char_is_whitespace(*cursor))) cursor++;
 
         const uint8_t *key_start = cursor;
         while (cursor < end && (!pm_char_is_magic_comment_key_delimiter(*cursor) && !pm_char_is_whitespace(*cursor))) cursor++;
