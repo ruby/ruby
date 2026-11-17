@@ -1,0 +1,15 @@
+/(?(?i))/
+    ^ invalid conditional pattern
+/(?(a)b)/
+    ^ invalid conditional pattern
+/(?(/
+  ^~ undefined group option
+/(a)(?(1x)b)/
+       ^~ invalid group name <1x>
+/(a)(?(0)b)/
+       ^ invalid group name <0>
+/(a)(?(1-)b)/
+       ^~ invalid char in group name <1->
+/(a)(?(99999999999)b)/
+       ^~~~~~~~~~~ too big number
+

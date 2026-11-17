@@ -349,44 +349,64 @@ pm_regexp_scan_digits(const uint8_t *cursor, const uint8_t *end, uint32_t maximu
     return value;
 }
 
+/**
+ * Read the decimal digit at the cursor the way the regular expression engine
+ * reads one, setting its width and value. Returns false if there is no digit.
+ *
+ * The engine reads each digit's value as its code point minus that of 0. That
+ * is right for 0 through 9. In an encoding whose characters are Unicode code
+ * points, other digits count too, with much bigger values, so even two
+ * fullwidth digits make a number that is too big for an interval.
+ */
+static bool
+pm_regexp_digit(const pm_regexp_parser_t *parser, const uint8_t *cursor, size_t *width, uint32_t *value) {
+    if (pm_char_is_decimal_digit(*cursor)) {
+        *width = 1;
+        *value = (uint32_t) (*cursor - '0');
+        return true;
+    }
+
+    if (*cursor < 0x80) return false;
+
+    *width = pm_encoding_char_width(parser->encoding, cursor, (ptrdiff_t) (parser->end - cursor));
+    if (*width == 0) return false;
+
+    int32_t codepoint = pm_encoding_unicode_codepoint(parser->encoding, cursor, *width);
+    if (codepoint < 0 || !pm_encoding_unicode_digit_p((uint32_t) codepoint, parser->parser->version)) return false;
+
+    *value = (uint32_t) codepoint - '0';
+    return true;
+}
+
+/**
+ * Add a digit to a number the way the regular expression engine does, which
+ * gives up as soon as the number would overflow an int. Returns false then.
+ */
+static PRISM_INLINE bool
+pm_regexp_number_append(uint32_t *number, uint32_t digit) {
+    if ((INT32_MAX - digit) / 10 < *number) return false;
+    *number = *number * 10 + digit;
+    return true;
+}
+
 /** The largest bound of an interval, like the 3 in a{3}. */
 #define PM_REGEXP_INTERVAL_MAXIMUM 100000
 
 /**
  * Read the bound of an interval at the cursor, like the 3 in a{3}, and advance
  * the cursor past its digits. Returns false if the bound is too big.
- *
- * The regular expression engine reads each digit's value as its code point
- * minus that of 0. That is right for 0 through 9. In an encoding whose
- * characters are Unicode code points, other digits count too, with much
- * bigger values, so even two fullwidth digits make a bound that is too big.
  */
 static bool
 pm_regexp_parse_interval_bound(const pm_regexp_parser_t *parser, const uint8_t **cursor, uint32_t *bound) {
-    const uint8_t *end = parser->end;
     uint32_t value = 0;
 
-    while (*cursor < end) {
+    while (*cursor < parser->end) {
+        size_t width;
         uint32_t digit;
-        size_t width = 1;
 
-        if (pm_char_is_decimal_digit(**cursor)) {
-            digit = (uint32_t) (**cursor - '0');
-        } else if (**cursor >= 0x80) {
-            width = pm_encoding_char_width(parser->encoding, *cursor, (ptrdiff_t) (end - *cursor));
-            if (width == 0) break;
+        if (!pm_regexp_digit(parser, *cursor, &width, &digit)) break;
+        if (!pm_regexp_number_append(&value, digit)) return false;
 
-            int32_t codepoint = pm_encoding_unicode_codepoint(parser->encoding, *cursor, width);
-            if (codepoint < 0 || !pm_encoding_unicode_digit_p((uint32_t) codepoint, parser->parser->version)) break;
-            digit = (uint32_t) codepoint - '0';
-        } else {
-            break;
-        }
-
-        /* The engine gives up as soon as the value would overflow an int. */
-        if ((INT32_MAX - digit) / 10 < value) return false;
-
-        value = value * 10 + digit;
         *cursor += width;
     }
 
@@ -1189,6 +1209,101 @@ static bool
 pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth);
 
 /**
+ * Report an error about the name of a group, like "invalid group name <1x>",
+ * that quotes the name, which runs from start to end.
+ */
+static void
+pm_regexp_parse_name_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, message, strlen(message));
+    pm_buffer_append_string(&buffer, " <", 2);
+    pm_buffer_append_string(&buffer, (const char *) start, (size_t) (end - start));
+    pm_buffer_append_byte(&buffer, '>');
+    pm_buffer_append_byte(&buffer, '\0');
+
+    pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
+}
+
+/**
+ * Parse the number of a group that is the condition of a conditional group, as
+ * in the 1 of (?(1)a|b), with the cursor on its first digit, the way Onigmo's
+ * fetch_name reads it. The number must be digits up to a ), and must not be 0.
+ * Returns false after an error, which stops the walk, as it stops the engine.
+ */
+static bool
+pm_regexp_parse_condition_number(pm_regexp_parser_t *parser) {
+    const uint8_t *start = parser->cursor;
+    const char *message = NULL;
+    uint32_t number = 0;
+    bool too_big = false;
+
+    while (parser->cursor < parser->end && *parser->cursor != ')') {
+        size_t width;
+        uint32_t digit;
+
+        if (message == NULL && pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+            if (!pm_regexp_number_append(&number, digit)) too_big = true;
+            parser->cursor += width;
+            continue;
+        }
+
+        /* After a character that is not a digit, the engine still looks for
+         * the ) to quote the whole name. A letter or other word character
+         * makes the name invalid, and anything else is invalid in a name. */
+        if (message == NULL) {
+            bool word = *parser->cursor >= 0x80 || pm_encoding_ascii_alnum_p(*parser->cursor) || *parser->cursor == '_';
+            message = word ? "invalid group name" : "invalid char in group name";
+        }
+
+        pm_regexp_skip_char(parser);
+    }
+
+    if (message == NULL && parser->cursor >= parser->end) message = "invalid group name";
+    if (message == NULL && too_big) {
+        pm_regexp_parse_error(parser, start, parser->cursor, "too big number");
+        return false;
+    }
+    if (message == NULL && number == 0) message = "invalid group name";
+
+    if (message != NULL) {
+        pm_regexp_parse_name_error(parser, start, parser->cursor, message);
+        return false;
+    }
+
+    parser->cursor++;
+    return true;
+}
+
+/**
+ * Parse the condition of a conditional group, as in the 1 of (?(1)a|b), with
+ * the cursor after its (. The condition is the number of a group, or the name
+ * of one between < and > or between quotes. Returns false after an error.
+ */
+static bool
+pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start) {
+    if (pm_regexp_char_is_eof(parser)) {
+        pm_regexp_parse_error(parser, group_start, parser->cursor, "undefined group option");
+        return false;
+    }
+
+    size_t width;
+    uint32_t digit;
+    if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+        return pm_regexp_parse_condition_number(parser);
+    }
+
+    switch (*parser->cursor) {
+        case '<':
+        case '\'':
+            return pm_regexp_char_find(parser, ')');
+        default:
+            pm_regexp_parse_error(parser, parser->cursor, parser->cursor + 1, "invalid conditional pattern");
+            return false;
+    }
+}
+
+/**
  * Groups can have quite a few different patterns for syntax. They basically
  * just wrap a set of expressions, but they can potentially have options after a
  * question mark. If there _isn't_ a question mark, then it's just a set of
@@ -1306,9 +1421,8 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
                 break;
             }
             case '(': // conditional expression
-                if (!pm_regexp_char_find(parser, ')')) {
-                    return false;
-                }
+                parser->cursor++;
+                if (!pm_regexp_parse_condition(parser, group_start)) return false;
                 break;
             case 'i': case 'm': case 'x': case 'a': case 'd': case 'u': case '-': {
                 /* Read the options the way Onigmo does. Each of i, m, and x is

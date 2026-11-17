@@ -143,15 +143,15 @@ module Ruby::Prism
     end
 
     def test_conditional_expression_with_index
-      assert_valid_regexp("(?(1)foo)")
+      assert_valid_regexp("(a)(?(1)foo)")
     end
 
     def test_conditional_expression_with_name
-      assert_valid_regexp("(?(foo)bar)")
+      assert_valid_regexp("(?<foo>a)(?('foo')bar)")
     end
 
     def test_conditional_expression_with_group
-      assert_valid_regexp("(?(<foo>)bar)")
+      assert_valid_regexp("(?<foo>a)(?(<foo>)bar)")
     end
 
     def test_options_on_groups
