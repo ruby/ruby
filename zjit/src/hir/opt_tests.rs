@@ -15629,6 +15629,43 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_hash_fetch_subclass() {
+        eval("
+            class C < Hash; end
+            def test(hash, key, default)
+              hash.fetch(key, default)
+            end
+            test(C.new, 1, 2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :hash@0x1000
+          v4:BasicObject = LoadField v2, :key@0x1001
+          v5:BasicObject = LoadField v2, :default@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :hash@1
+          v10:BasicObject = LoadArg :key@2
+          v11:BasicObject = LoadArg :default@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, fetch@0x1010, cme:0x1018)
+          v34:HashSubclass[class_exact:C] = GuardType v14, HashSubclass[class_exact:C] recompile
+          v35:BasicObject = HashFetch v34, v15, v16
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
     fn test_no_optimize_hash_fetch_without_default() {
         eval("
             def test(hash, key)

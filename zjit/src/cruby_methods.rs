@@ -554,9 +554,10 @@ fn inline_hash_fetch(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     // Only the two-argument form. `fetch(key)` can raise KeyError, so leave it to the general path.
     let &[key, default] = args else { return None; };
 
-    // Only optimize exact Hash, not subclasses
-    if fun.likely_a(recv, types::HashExact, state) {
-        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+    // Subclasses are fine here: we only get here if `fetch` resolved to the builtin Hash#fetch,
+    // so a subclass that overrides `fetch` is never inlined.
+    if fun.likely_a(recv, types::Hash, state) {
+        let recv = fun.coerce_to(block, recv, types::Hash, state);
         let result = fun.push_insn(block, hir::Insn::HashFetch { hash: recv, key, default, state });
         Some(result)
     } else {

@@ -8544,8 +8544,8 @@ impl Function {
                 self.assert_subtype(insn_id, length, types::CInt64)
             }
             // Instructions with Hash operands
+            Insn::HashFetch { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
             Insn::HashAref { hash, .. }
-            | Insn::HashFetch { hash, .. }
             | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
             // Other

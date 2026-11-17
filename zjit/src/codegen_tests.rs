@@ -440,6 +440,17 @@ fn test_hash_fetch_subclass_override() {
 }
 
 #[test]
+fn test_hash_fetch_subclass() {
+    eval("
+        class MyHash < Hash; end
+        def test(h, k, d) = h.fetch(k, d)
+        test(MyHash.new, :a, 2)
+    ");
+    // A Hash subclass that does not override `fetch` also takes the fast path
+    assert_snapshot!(assert_compiles("[test(MyHash[a: 1], :a, 2), test(MyHash[a: nil], :a, 2), test(MyHash.new, :a, 2), test(MyHash.new(7), :a, 2)]"), @"[1, nil, 2, 2]");
+}
+
+#[test]
 fn test_duphash() {
     eval("
         def test
