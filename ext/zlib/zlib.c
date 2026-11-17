@@ -4085,6 +4085,7 @@ rb_gzreader_s_zcat(int argc, VALUE *argv, VALUE klass)
             }
             tmpbuf = gzfile_read_all(get_gzfile(obj), Qnil);
             rb_str_cat(buf, RSTRING_PTR(tmpbuf), RSTRING_LEN(tmpbuf));
+            RB_GC_GUARD(tmpbuf);
         }
 
         rb_gzreader_read(0, 0, obj);
