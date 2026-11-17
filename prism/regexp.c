@@ -203,8 +203,11 @@ typedef struct {
  * parsed, as the regular expression engine checks them when it compiles it.
  */
 typedef enum {
-    /** A backreference or condition by number, as in \1, \k<1>, or (?(1)a). */
+    /** A backreference by number, as in \1 or \k<1>. */
     PM_REGEXP_DEFERRED_NUMBER,
+
+    /** A condition by number, as in (?(1)a). */
+    PM_REGEXP_DEFERRED_CONDITION_NUMBER,
 
     /**
      * A condition with a number in the form of a name, as in (?(<1>)a), which
@@ -1396,9 +1399,9 @@ pm_regexp_name_count(const pm_regexp_parser_t *parser, const uint8_t *start, con
 
 /**
  * Check the references to groups that wait for the end of the pattern, the way
- * the engine checks them when it compiles the pattern. With named groups in
- * the pattern, no reference or call may be by number. Otherwise a number must
- * be that of a group. A call by name must name exactly one group.
+ * the engine checks them when it compiles the pattern. Numbered references
+ * and calls are restricted when named groups are present, and numbers must
+ * refer to existing groups. A call by name must name exactly one group.
  */
 static void
 pm_regexp_check_deferreds(pm_regexp_parser_t *parser) {
@@ -1409,12 +1412,20 @@ pm_regexp_check_deferreds(pm_regexp_parser_t *parser) {
 
         switch (deferred->type) {
             case PM_REGEXP_DEFERRED_NUMBER:
-                if (named) {
+            case PM_REGEXP_DEFERRED_CONDITION_NUMBER: {
+                bool out_of_range = deferred->number > (int64_t) parser->groups;
+                /* With both named and unnamed captures, Onigmo checks
+                 * condition bounds while renumbering the groups, before
+                 * rejecting numbered conditions. */
+                bool remap_error = deferred->type == PM_REGEXP_DEFERRED_CONDITION_NUMBER &&
+                    parser->groups > parser->names.size && out_of_range;
+                if (named && !remap_error) {
                     pm_regexp_parse_error(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
-                } else if (deferred->number > (int64_t) parser->groups) {
+                } else if (out_of_range) {
                     pm_regexp_parse_error(parser, deferred->start, deferred->end, "invalid backref number/name");
                 }
                 break;
+            }
             case PM_REGEXP_DEFERRED_NAMED_NUMBER:
                 if (deferred->number > (int64_t) parser->groups) {
                     pm_regexp_parse_error(parser, deferred->start, deferred->end, "invalid backref number/name");
@@ -2129,7 +2140,7 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
     uint32_t digit;
     if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
         if (!pm_regexp_parse_reference(parser, ')', &reference)) return false;
-        pm_regexp_defer_reference(parser, &reference, PM_REGEXP_DEFERRED_NUMBER);
+        pm_regexp_defer_reference(parser, &reference, PM_REGEXP_DEFERRED_CONDITION_NUMBER);
         return true;
     }
 
