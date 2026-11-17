@@ -23555,7 +23555,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
             }
 
             search_shebang = false;
-        } else if (options != NULL && options->main_script && !parser->parsing_eval) {
+        } else if (length > 2 && options != NULL && options->main_script && !parser->parsing_eval) {
             search_shebang = true;
         }
     }
