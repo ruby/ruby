@@ -116,7 +116,12 @@ module Ruby::Prism
 
       # Errors in the content of a regular expression that is matched with =~,
       # which is validated where its named captures are found.
-      "/(\\xZ/ =~ \"\"", "/(\xFFa/ =~ \"\""
+      "/(\\xZ/ =~ \"\"", "/(\xFFa/ =~ \"\"",
+
+      # Regular expressions that are not terminated, which are validated as the
+      # content up to the end of the file.
+      "/(", "/a(", "/[a", "/\\xFF", "/\\u", "/\\u{", "/\\u{41", "/\\u{zz", "/a\\u{41 ", "/a\\u12",
+      "/\\u{110000", "/\\u{41}(", "/\\na(", "%r{a\\}(", "/a\#{\"b\"}(", "/a(\\", "/[a\\"
     ].freeze
 
     # Regular expressions where prism does not match CRuby. After the lexer
@@ -177,10 +182,11 @@ module Ruby::Prism
       end
     end
 
-    # Messages of errors in escapes that are shared with strings, which prism
-    # words differently from CRuby in every kind of literal.
+    # Messages of errors from the lexer that are shared with strings, which
+    # prism words differently from CRuby in every kind of literal.
     LEXER_MESSAGES = {
-      "invalid hex escape sequence" => "invalid hex escape"
+      "invalid hex escape sequence" => "invalid hex escape",
+      "unterminated regexp meets end of file; expected a closing delimiter" => "unterminated regexp meets end of file"
     }.freeze
 
     def assert_parity(cases, encodings)

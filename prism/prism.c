@@ -9212,8 +9212,14 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             parser->current.end++;
 
             if (parser->current.end == parser->end) {
-                const uint8_t *start = parser->current.end - 2;
-                PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(parser->current.end - start), PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
+                if (flags & PM_ESCAPE_FLAG_REGEXP) {
+                    /* The regular expression is validated even though it is
+                     * not terminated, which reports this escape. */
+                    pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
+                } else {
+                    const uint8_t *start = parser->current.end - 2;
+                    PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(parser->current.end - start), PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
+                }
             } else if (peek(parser) == '{') {
                 const uint8_t *unicode_codepoints_start = parser->current.end - 2;
                 parser->current.end++;
@@ -9284,7 +9290,11 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 }
 
                 if (parser->current.end == parser->end) {
-                    PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(parser->current.end - start), PM_ERR_ESCAPE_INVALID_UNICODE_LIST, (int) (parser->current.end - start), start);
+                    /* The regular expression is validated even though it is
+                     * not terminated, which reports this escape. */
+                    if (!(flags & PM_ESCAPE_FLAG_REGEXP)) {
+                        PM_PARSER_ERR_FORMAT(parser, U32(start - parser->start), U32(parser->current.end - start), PM_ERR_ESCAPE_INVALID_UNICODE_LIST, (int) (parser->current.end - start), start);
+                    }
                 } else if (peek(parser) == '}') {
                     parser->current.end++;
                 } else {
@@ -11894,9 +11904,12 @@ parser_lex(pm_parser_t *parser) {
                         // next character and find the next breakpoint.
                         parser->current.end = breakpoint + 1;
 
-                        // If we've hit the end of the file, then break out of
-                        // the loop by setting the breakpoint to NULL.
+                        /* A backslash at the end of the file escapes nothing,
+                         * so it is left out of the content, and the regular
+                         * expression is validated without it. */
                         if (parser->current.end == parser->end) {
+                            pm_token_buffer_escape(parser, &token_buffer.base);
+                            pm_regexp_token_buffer_resume(parser, &token_buffer, parser->end);
                             breakpoint = NULL;
                             break;
                         }
@@ -11997,13 +12010,9 @@ parser_lex(pm_parser_t *parser) {
                 }
             }
 
-            if (parser->current.end > parser->current.start) {
-                pm_regexp_token_buffer_flush(parser, &token_buffer);
-                LEX(PM_TOKEN_STRING_CONTENT);
-            }
-
-            // If we were unable to find a breakpoint, then this token hits the
-            // end of the file.
+            /* With no breakpoint left, the rest of the file is content, so this
+             * token runs to the end of the file. That keeps the content of a
+             * regular expression that is not terminated in one piece. */
             parser->current.end = parser->end;
             pm_regexp_token_buffer_flush(parser, &token_buffer);
             LEX(PM_TOKEN_STRING_CONTENT);
@@ -19947,8 +19956,10 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
         closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
     }
 
+    /* A regular expression that is not terminated is still validated, as the
+     * content up to the end of the file, so its errors are reported too. */
     pm_interpolated_regular_expression_node_t *interpolated = pm_interpolated_regular_expression_node_create(parser, &opening, &parts, &closing);
-    if (terminated) pm_regexp_parse_interpolated(parser, interpolated);
+    pm_regexp_parse_interpolated(parser, interpolated);
 
     return UP(interpolated);
 }
