@@ -1869,7 +1869,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
         pm_index_lookup_table_init_heap(&parent_scope->index_lookup_table, (int) pm_parser_constants_size(result.parser));
         parent_scope->local_table_for_iseq_size = locals_count;
-        pm_constant_id_list_init(&parent_scope->locals);
+        pm_constant_id_list_init(result.arena, &parent_scope->locals, locals_count);
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             const pm_string_t *scope_local = pm_options_scope_local(options_scope, local_index);
@@ -1905,7 +1905,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 pm_index_lookup_table_insert(&parent_scope->index_lookup_table, constant_id, local_index);
             }
 
-            pm_constant_id_list_append(result.arena, &parent_scope->locals, constant_id);
+            parent_scope->locals.ids[local_index] = constant_id;
         }
 
         node->previous = parent_scope;
