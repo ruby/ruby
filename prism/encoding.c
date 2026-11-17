@@ -355,7 +355,7 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n, pm_options_version
     }
 
     if (*b < 0x80) {
-        return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
+        return pm_encoding_ascii_upper_p(*b);
     }
 
     size_t width;
@@ -577,18 +577,18 @@ static const uint8_t pm_encoding_windows_1254_uppercase[16] = {
     if (n >= 6 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_) && PM_ENCODING_BYTE_IN(b[4], s4_, e4_) && PM_ENCODING_BYTE_IN(b[5], s5_, e5_)) return 6;
 
 /*
- * Return the width of the character at b if it takes the given form and the
- * form has the property being asked about. Forms without properties never
- * answer, so their checks fold away.
+ * Return true if the character at b takes the given form and the form is
+ * uppercase. Forms that are not uppercase never answer, so their checks fold
+ * away.
  */
-#define PM_ENCODING_PROPERTY_1(properties_, s0_, e0_) \
-    if (((properties_) & property) && n >= 1 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_)) return 1;
-#define PM_ENCODING_PROPERTY_2(properties_, s0_, e0_, s1_, e1_) \
-    if (((properties_) & property) && n >= 2 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_)) return 2;
-#define PM_ENCODING_PROPERTY_3(properties_, s0_, e0_, s1_, e1_, s2_, e2_) \
-    if (((properties_) & property) && n >= 3 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_)) return 3;
-#define PM_ENCODING_PROPERTY_4(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_) \
-    if (((properties_) & property) && n >= 4 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_)) return 4;
+#define PM_ENCODING_UPPERCASE_1(properties_, s0_, e0_) \
+    if (((properties_) & PRISM_ENCODING_UPPERCASE_BIT) && n >= 1 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_)) return true;
+#define PM_ENCODING_UPPERCASE_2(properties_, s0_, e0_, s1_, e1_) \
+    if (((properties_) & PRISM_ENCODING_UPPERCASE_BIT) && n >= 2 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_)) return true;
+#define PM_ENCODING_UPPERCASE_3(properties_, s0_, e0_, s1_, e1_, s2_, e2_) \
+    if (((properties_) & PRISM_ENCODING_UPPERCASE_BIT) && n >= 3 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_)) return true;
+#define PM_ENCODING_UPPERCASE_4(properties_, s0_, e0_, s1_, e1_, s2_, e2_, s3_, e3_) \
+    if (((properties_) & PRISM_ENCODING_UPPERCASE_BIT) && n >= 4 && PM_ENCODING_BYTE_IN(b[0], s0_, e0_) && PM_ENCODING_BYTE_IN(b[1], s1_, e1_) && PM_ENCODING_BYTE_IN(b[2], s2_, e2_) && PM_ENCODING_BYTE_IN(b[3], s3_, e3_)) return true;
 
 /*
  * The body of the function that returns the width of the character at b in an
@@ -602,18 +602,15 @@ static const uint8_t pm_encoding_windows_1254_uppercase[16] = {
     return 0;
 
 /*
- * The body of the function that returns the width of the character at b in an
- * encoding whose characters beyond ASCII take the given forms, if it has the
- * given property, or 0 otherwise.
+ * The body of the function that returns true if the character at b begins a
+ * constant name in an encoding whose characters beyond ASCII take the given
+ * forms.
  */
-#define PM_ENCODING_FORMS_PROPERTY_CHAR(forms_) \
-    if (n <= 0) return 0; \
-    if (b[0] < 0x80) return (pm_encoding_ascii_table[b[0]] & property) ? 1 : 0; \
-    forms_(PM_ENCODING_PROPERTY) \
-    return 0;
-
-/* The properties of a form whose characters are all alphabetical. */
-#define PM_ENCODING_ALNUM (PRISM_ENCODING_ALPHABETIC_BIT | PRISM_ENCODING_ALPHANUMERIC_BIT)
+#define PM_ENCODING_FORMS_ISUPPER_CHAR(forms_) \
+    if (n <= 0) return false; \
+    if (b[0] < 0x80) return pm_encoding_ascii_upper_p(b[0]); \
+    forms_(PM_ENCODING_UPPERCASE) \
+    return false;
 
 /**
  * The forms of the characters in the EUC-JP encoding. The full-width Latin,
@@ -636,26 +633,24 @@ pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Return the width of the character at b in EUC-JP if it has the given
- * property, or 0 otherwise.
+ * Return true if the character at b begins a constant name in EUC-JP.
  */
-static size_t
-pm_encoding_euc_jp_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EUC_JP_FORMS)
+static bool
+pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_ISUPPER_CHAR(PM_ENCODING_EUC_JP_FORMS)
 }
 
 /**
  * The forms of the characters in the Shift_JIS encoding, where the single
- * bytes from 0xA1 to 0xDF are half-width katakana. Every character beyond ASCII
- * is alphanumeric, and the full-width Latin, Greek, and Cyrillic capital
- * letters are uppercase.
+ * bytes from 0xA1 to 0xDF are half-width katakana. The full-width Latin, Greek,
+ * and Cyrillic capital letters are uppercase.
  */
 #define PM_ENCODING_SHIFT_JIS_FORMS(X) \
-    X##_1(PM_ENCODING_ALNUM, 0xA1, 0xDF) \
-    X##_2(PM_ENCODING_ALNUM, 0x81, 0x9F, 0x40, 0x7E) \
-    X##_2(PM_ENCODING_ALNUM, 0x81, 0x9F, 0x80, 0xFC) \
-    X##_2(PM_ENCODING_ALNUM, 0xE0, 0xFC, 0x40, 0x7E) \
-    X##_2(PM_ENCODING_ALNUM, 0xE0, 0xFC, 0x80, 0xFC) \
+    X##_1(0, 0xA1, 0xDF) \
+    X##_2(0, 0x81, 0x9F, 0x40, 0x7E) \
+    X##_2(0, 0x81, 0x9F, 0x80, 0xFC) \
+    X##_2(0, 0xE0, 0xFC, 0x40, 0x7E) \
+    X##_2(0, 0xE0, 0xFC, 0x80, 0xFC) \
     X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x82, 0x82, 0x60, 0x79) \
     X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x83, 0x83, 0x9F, 0xB6) \
     X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x84, 0x84, 0x40, 0x60)
@@ -669,12 +664,11 @@ pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Return the width of the character at b in Shift_JIS if it has the given
- * property, or 0 otherwise.
+ * Return true if the character at b begins a constant name in Shift_JIS.
  */
-static size_t
-pm_encoding_shift_jis_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_SHIFT_JIS_FORMS)
+static bool
+pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_ISUPPER_CHAR(PM_ENCODING_SHIFT_JIS_FORMS)
 }
 
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
@@ -693,15 +687,6 @@ pm_encoding_shift_jis_property_char(uint8_t property, const uint8_t *b, ptrdiff_
 static size_t
 pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
     PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_BIG5_FORMS)
-}
-
-/**
- * Return the width of the character at b in Big5 if it has the given
- * property, or 0 otherwise.
- */
-static size_t
-pm_encoding_big5_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_BIG5_FORMS)
 }
 
 /**
@@ -744,15 +729,6 @@ pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Return the width of the character at b in CP949 if it has the given
- * property, or 0 otherwise.
- */
-static size_t
-pm_encoding_cp949_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_CP949_FORMS)
-}
-
-/**
  * The forms of the characters in the Emacs-Mule encoding. Ruby reads a name
  * that starts with any character that is not ASCII as a constant name in this
  * encoding, so every form is uppercase.
@@ -773,12 +749,11 @@ pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Return the width of the character at b in Emacs-Mule if it has the given
- * property, or 0 otherwise.
+ * Return true if the character at b begins a constant name in Emacs-Mule.
  */
-static size_t
-pm_encoding_emacs_mule_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EMACS_MULE_FORMS)
+static bool
+pm_encoding_emacs_mule_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    PM_ENCODING_FORMS_ISUPPER_CHAR(PM_ENCODING_EMACS_MULE_FORMS)
 }
 
 /**
@@ -793,15 +768,6 @@ pm_encoding_emacs_mule_property_char(uint8_t property, const uint8_t *b, ptrdiff
 static size_t
 pm_encoding_euc_kr_char_width(const uint8_t *b, ptrdiff_t n) {
     PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_EUC_KR_FORMS)
-}
-
-/**
- * Return the width of the character at b in EUC-KR if it has the given
- * property, or 0 otherwise.
- */
-static size_t
-pm_encoding_euc_kr_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EUC_KR_FORMS)
 }
 
 /**
@@ -820,15 +786,6 @@ pm_encoding_euc_tw_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Return the width of the character at b in EUC-TW if it has the given
- * property, or 0 otherwise.
- */
-static size_t
-pm_encoding_euc_tw_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_EUC_TW_FORMS)
-}
-
-/**
  * The forms of the characters in the GB18030 encoding.
  */
 #define PM_ENCODING_GB18030_FORMS(X) \
@@ -842,15 +799,6 @@ pm_encoding_euc_tw_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n
 static size_t
 pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
     PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_GB18030_FORMS)
-}
-
-/**
- * Return the width of the character at b in GB18030 if it has the given
- * property, or 0 otherwise.
- */
-static size_t
-pm_encoding_gb18030_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_GB18030_FORMS)
 }
 
 /**
@@ -878,15 +826,6 @@ pm_encoding_gb18030_property_char(uint8_t property, const uint8_t *b, ptrdiff_t 
 static size_t
 pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
     PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_GBK_FORMS)
-}
-
-/**
- * Return the width of the character at b in GBK if it has the given property,
- * or 0 otherwise.
- */
-static size_t
-pm_encoding_gbk_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_PROPERTY_CHAR(PM_ENCODING_GBK_FORMS)
 }
 
 #endif
@@ -933,40 +872,6 @@ pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_
 }
 
 /**
- * Return the number of bytes in the next character in the given encoding if it
- * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise. The encoding is
- * multibyte, and its characters are not Unicode code points.
- */
-static size_t
-pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n) {
-    switch (encoding->kind) {
-        case PM_ENCODING_KIND_EUC_JP:
-            return pm_encoding_euc_jp_property_char(property, b, n);
-        case PM_ENCODING_KIND_SHIFT_JIS:
-            return pm_encoding_shift_jis_property_char(property, b, n);
-#ifndef PRISM_ENCODING_EXCLUDE_FULL
-        case PM_ENCODING_KIND_BIG5:
-            return pm_encoding_big5_property_char(property, b, n);
-        case PM_ENCODING_KIND_CP949:
-            return pm_encoding_cp949_property_char(property, b, n);
-        case PM_ENCODING_KIND_EMACS_MULE:
-            return pm_encoding_emacs_mule_property_char(property, b, n);
-        case PM_ENCODING_KIND_EUC_KR:
-            return pm_encoding_euc_kr_property_char(property, b, n);
-        case PM_ENCODING_KIND_EUC_TW:
-            return pm_encoding_euc_tw_property_char(property, b, n);
-        case PM_ENCODING_KIND_GB18030:
-            return pm_encoding_gb18030_property_char(property, b, n);
-        case PM_ENCODING_KIND_GBK:
-            return pm_encoding_gbk_property_char(property, b, n);
-#endif
-        default:
-            PRISM_ASSERT(false && "unreachable");
-            return 0;
-    }
-}
-
-/**
  * Return true if the next character in the given encoding is uppercase, or
  * titlecase, in the given version of Ruby. The answer depends on the version
  * only in an encoding whose characters are Unicode code points.
@@ -977,31 +882,45 @@ pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdif
         case PM_ENCODING_KIND_ASCII:
         case PM_ENCODING_KIND_SINGLE_BYTE: {
             if (n <= 0) return false;
-            if (*b < 0x80) return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) != 0;
+            if (*b < 0x80) return pm_encoding_ascii_upper_p(*b);
 
             const uint8_t *uppercase = encoding->uppercase;
             return uppercase != NULL && ((uppercase[(*b - 0x80) >> 3] >> (*b & 7)) & 1);
         }
         case PM_ENCODING_KIND_UTF_8:
             return pm_encoding_utf_8_isupper_char(b, n, version);
+        case PM_ENCODING_KIND_EUC_JP:
+            return pm_encoding_euc_jp_isupper_char(b, n);
+        case PM_ENCODING_KIND_SHIFT_JIS:
+            return pm_encoding_shift_jis_isupper_char(b, n);
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
         case PM_ENCODING_KIND_CESU_8: {
             size_t width = pm_encoding_cesu_8_char_width(b, n);
             return width != 0 && pm_unicode_uppercase_p(pm_cesu_8_codepoint(b, width), version);
         }
+        case PM_ENCODING_KIND_EMACS_MULE:
+            return pm_encoding_emacs_mule_isupper_char(b, n);
+        /* These encodings have no uppercase letters beyond ASCII. */
+        case PM_ENCODING_KIND_BIG5:
+        case PM_ENCODING_KIND_CP949:
+        case PM_ENCODING_KIND_EUC_KR:
+        case PM_ENCODING_KIND_EUC_TW:
+        case PM_ENCODING_KIND_GB18030:
+        case PM_ENCODING_KIND_GBK:
+            return n > 0 && pm_encoding_ascii_upper_p(*b);
 #endif
         default:
-            return pm_encoding_property_char(encoding, PRISM_ENCODING_UPPERCASE_BIT, b, n) != 0;
+            PRISM_ASSERT(false && "unreachable");
+            return false;
     }
 }
 
-#undef PM_ENCODING_ALNUM
-#undef PM_ENCODING_FORMS_PROPERTY_CHAR
+#undef PM_ENCODING_FORMS_ISUPPER_CHAR
 #undef PM_ENCODING_FORMS_CHAR_WIDTH
-#undef PM_ENCODING_PROPERTY_4
-#undef PM_ENCODING_PROPERTY_3
-#undef PM_ENCODING_PROPERTY_2
-#undef PM_ENCODING_PROPERTY_1
+#undef PM_ENCODING_UPPERCASE_4
+#undef PM_ENCODING_UPPERCASE_3
+#undef PM_ENCODING_UPPERCASE_2
+#undef PM_ENCODING_UPPERCASE_1
 #undef PM_ENCODING_WIDTH_6
 #undef PM_ENCODING_WIDTH_4
 #undef PM_ENCODING_WIDTH_3

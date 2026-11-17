@@ -149,6 +149,15 @@ pm_encoding_ascii_alpha_p(uint8_t byte) {
 }
 
 /*
+ * Return true if the byte is an ASCII uppercase letter. A byte that is not
+ * ASCII is not one, in every encoding.
+ */
+static PRISM_INLINE bool
+pm_encoding_ascii_upper_p(uint8_t byte) {
+    return pm_encoding_ascii_table[byte] & PRISM_ENCODING_UPPERCASE_BIT;
+}
+
+/*
  * Return true if the byte is an ASCII letter or digit. A byte that is not ASCII
  * is neither, in every encoding.
  */
