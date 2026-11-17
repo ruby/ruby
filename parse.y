@@ -10606,10 +10606,10 @@ parser_yylex(struct parser_params *p)
                 if (peek_word_at(p, "r", 1, 0)) goto leading_logical;
                 goto bol;
               case '|':
-                if (peek(p, '|')) goto leading_logical;
+                if (peek(p, '|') && !peek_n(p, '=', 1)) goto leading_logical;
                 goto bol;
               case '&':
-                if (peek(p, '&')) {
+                if (peek(p, '&') && !peek_n(p, '=', 1)) {
                   leading_logical:
                     pushback(p, c);
                     dispatch_delayed_token(p, tIGNORED_NL);

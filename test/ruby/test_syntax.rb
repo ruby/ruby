@@ -1333,6 +1333,8 @@ eom
         a
       end
     end;
+
+    assert_syntax_error("a\n&&=\n1", /operator/)
   end
 
   def test_fluent_or
@@ -1356,6 +1358,8 @@ eom
         a
       end
     end;
+
+    assert_syntax_error("a\n||=\n1", /operator/)
   end
 
   def test_safe_call_in_massign_lhs
