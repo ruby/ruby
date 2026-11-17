@@ -12362,11 +12362,13 @@ parser_lex(pm_parser_t *parser) {
             uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE] = "\r\n\\#";
 
             pm_heredoc_quote_t quote = heredoc_lex_mode->quote;
+            /* Single-quoted heredocs preserve bytes without validating them. */
+            bool validate = quote != PM_HEREDOC_QUOTE_SINGLE;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
                 breakpoints[3] = '\0';
             }
 
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
             pm_token_buffer_t token_buffer = { 0 };
             bool was_line_continuation = false;
 
@@ -12375,13 +12377,13 @@ parser_lex(pm_parser_t *parser) {
                     case '\0':
                         // Skip directly past the null character.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
                         break;
                     case '\r':
                         parser->current.end = breakpoint + 1;
 
                         if (peek_at(parser, breakpoint + 1) != '\n') {
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
                             break;
                         }
 
@@ -12472,7 +12474,7 @@ parser_lex(pm_parser_t *parser) {
                         // Otherwise we hit a newline and it wasn't followed by
                         // a terminator, so we can continue parsing.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
                         break;
                     }
                     case '\\': {
@@ -12579,7 +12581,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         token_buffer.cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
                         break;
                     }
                     case '#': {
@@ -12591,7 +12593,7 @@ parser_lex(pm_parser_t *parser) {
                             // or instance variable like "#@" but wasn't
                             // actually. In this case we'll just skip to the
                             // next breakpoint.
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, validate);
                             break;
                         }
 
