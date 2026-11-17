@@ -288,6 +288,18 @@ pm_regexp_skip_extended_whitespace(pm_regexp_parser_t *parser) {
 }
 
 /**
+ * Advance past the character at the cursor, reading it whole in the encoding of
+ * the regular expression. An invalid character, which the lexer has already
+ * reported, is skipped a byte at a time.
+ */
+static void
+pm_regexp_skip_char(pm_regexp_parser_t *parser) {
+    ptrdiff_t remaining = parser->end - parser->cursor;
+    size_t width = parser->encoding_changed ? pm_encoding_char_width(parser->encoding, parser->cursor, remaining) : pm_encoding_utf_8_char_width(parser->cursor, remaining);
+    parser->cursor += (width == 0) ? 1 : width;
+}
+
+/**
  * This advances the current token to the next instance of the given character.
  */
 static bool
@@ -1228,53 +1240,21 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
 
         switch (*parser->cursor) {
             case '#': { // inline comments
+                /* Find the ) that ends the comment the way Onigmo does. A
+                 * backslash escapes the character after it, so (?#a\)) ends
+                 * at its second ). */
                 parser->cursor++;
-                if (pm_regexp_char_is_eof(parser)) {
-                    pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
-                    return false;
+
+                while (parser->cursor < parser->end) {
+                    uint8_t byte = *parser->cursor;
+                    pm_regexp_skip_char(parser);
+
+                    if (byte == ')') return true;
+                    if (byte == '\\' && parser->cursor < parser->end) pm_regexp_skip_char(parser);
                 }
 
-                if (parser->encoding_changed && pm_encoding_multibyte_p(parser->encoding)) {
-                    bool escaped = false;
-
-                    // Here we're going to take a slow path and iterate through
-                    // each multibyte character to find the close paren. We do
-                    // this because \ can be a trailing byte in some encodings.
-                    while (parser->cursor < parser->end) {
-                        if (!escaped && *parser->cursor == ')') {
-                            parser->cursor++;
-                            return true;
-                        }
-
-                        size_t width = pm_encoding_char_width(parser->encoding, parser->cursor, (ptrdiff_t) (parser->end - parser->cursor));
-                        if (width == 0) {
-                            /* An invalid character, which the lexer has
-                             * already reported, is skipped a byte at a
-                             * time. */
-                            if (*parser->cursor >= 0x80) {
-                                parser->cursor++;
-                                continue;
-                            }
-                            return false;
-                        }
-
-                        escaped = (width == 1) && (*parser->cursor == '\\');
-                        parser->cursor += width;
-                    }
-
-                    return false;
-                } else {
-                    // Here we can take the fast path and use memchr to find the
-                    // next ) because we are safe checking backward for \ since
-                    // it cannot be a trailing character.
-                    bool found = pm_regexp_char_find(parser, ')');
-
-                    while (found && (parser->start <= parser->cursor - 2) && (*(parser->cursor - 2) == '\\')) {
-                        found = pm_regexp_char_find(parser, ')');
-                    }
-
-                    return found;
-                }
+                pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
+                return false;
             }
             case ':': // non-capturing group
             case '=': // positive lookahead
