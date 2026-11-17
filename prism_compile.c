@@ -487,7 +487,7 @@ pm_static_literal_concat(rb_iseq_t *iseq, const pm_node_list_t *nodes, pm_scope_
 {
     VALUE current = Qnil;
 
-    for (size_t index = 0; index < nodes->size; index++) {
+    for (uint32_t index = 0; index < nodes->size; index++) {
         const pm_node_t *part = nodes->nodes[index];
         VALUE string;
 
@@ -658,14 +658,14 @@ static int
 pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding, bool mutable_result, bool frozen_result)
 {
     int stack_size = 0;
-    size_t parts_size = parts->size;
+    uint32_t parts_size = parts->size;
     bool interpolated = false;
 
     if (parts_size > 0) {
         VALUE current_string = Qnil;
         pm_node_location_t current_location = *node_location;
 
-        for (size_t index = 0; index < parts_size; index++) {
+        for (uint32_t index = 0; index < parts_size; index++) {
             const pm_node_t *part = parts->nodes[index];
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
@@ -844,7 +844,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
         const pm_node_list_t *elements = &cast->elements;
 
         VALUE value = rb_ary_hidden_new(elements->size);
-        for (size_t index = 0; index < elements->size; index++) {
+        for (uint32_t index = 0; index < elements->size; index++) {
             rb_ary_push(value, pm_static_literal_value(iseq, elements->nodes[index], scope_node));
         }
 
@@ -860,7 +860,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
         const pm_node_list_t *elements = &cast->elements;
 
         VALUE array = rb_ary_hidden_new(elements->size * 2);
-        for (size_t index = 0; index < elements->size; index++) {
+        for (uint32_t index = 0; index < elements->size; index++) {
             RUBY_ASSERT(PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_NODE));
             const pm_assoc_node_t *cast = (const pm_assoc_node_t *) elements->nodes[index];
             VALUE pair[2] = { pm_static_literal_value(iseq, cast->key, scope_node), pm_static_literal_value(iseq, cast->value, scope_node) };
@@ -1518,7 +1518,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         stack_length = 0;                                                                         \
     }
 
-    for (size_t index = 0; index < elements->size; index++) {
+    for (uint32_t index = 0; index < elements->size; index++) {
         const pm_node_t *element = elements->nodes[index];
 
         switch (PM_NODE_TYPE(element)) {
@@ -1532,7 +1532,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                 )
             ) {
                 // Count the elements that are statically-known.
-                size_t count = 1;
+                uint32_t count = 1;
                 while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
 
                 bool first_element = first_chunk && stack_length == 0;
@@ -1543,7 +1543,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     VALUE ary = rb_ary_hidden_new(count);
 
                     // Create a hidden hash.
-                    for (size_t tmp_end = index + count; index < tmp_end; index++) {
+                    for (uint32_t tmp_end = index + count; index < tmp_end; index++) {
                         const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[index];
 
                         VALUE elem[2] = {
@@ -1761,8 +1761,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                         VALUE stored_indices = rb_hash_new();
                         VALUE keyword_indices = rb_ary_new_capa(elements->size);
 
-                        size_t size = 0;
-                        for (size_t element_index = 0; element_index < elements->size; element_index++) {
+                        uint32_t size = 0;
+                        for (uint32_t element_index = 0; element_index < elements->size; element_index++) {
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
 
                             // Retrieve the stored index from the hash for this
@@ -1798,8 +1798,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                         (*kw_arg)->references = 0;
                         (*kw_arg)->keyword_len = (int) size;
 
-                        size_t keyword_index = 0;
-                        for (size_t element_index = 0; element_index < elements->size; element_index++) {
+                        uint32_t keyword_index = 0;
+                        for (uint32_t element_index = 0; element_index < elements->size; element_index++) {
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
                             bool popped = true;
 
@@ -1819,7 +1819,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                         orig_argc++;
                         *flags |= VM_CALL_KW_SPLAT;
 
-                        size_t size = elements->size;
+                        uint32_t size = elements->size;
                         if (size > 1) {
                             // A new hash will be created for the keyword
                             // arguments in this case, so mark the method as
@@ -1827,7 +1827,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             *flags |= VM_CALL_KW_SPLAT_MUT;
                         }
 
-                        for (size_t element_index = 0; element_index < size; element_index++) {
+                        for (uint32_t element_index = 0; element_index < size; element_index++) {
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
                             PM_COMPILE_NOT_POPPED(assoc->key);
                             PM_COMPILE_NOT_POPPED(assoc->value);
@@ -2038,7 +2038,7 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
         return pm_setup_args_dup_rest_p(((const pm_implicit_node_t *) node)->value);
       case PM_ARRAY_NODE: {
         const pm_array_node_t *cast = (const pm_array_node_t *) node;
-        for (size_t index = 0; index < cast->elements.size; index++) {
+        for (uint32_t index = 0; index < cast->elements.size; index++) {
             if (pm_setup_args_dup_rest_p(cast->elements.nodes[index])) {
                 return true;
             }
@@ -2059,7 +2059,7 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
     int dup_rest = SPLATARRAY_TRUE;
 
     const pm_node_list_t *arguments;
-    size_t arguments_size;
+    uint32_t arguments_size;
 
     // Calls like foo(1, *f, **hash) that use splat and kwsplat could be
     // eligible for eliding duping the rest array (dup_reset=false).
@@ -2078,7 +2078,7 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         const pm_keyword_hash_node_t *keyword_hash = (const pm_keyword_hash_node_t *) arguments->nodes[arguments_size - 1];
         const pm_node_list_t *elements = &keyword_hash->elements;
 
-        for (size_t index = 0; dup_rest == SPLATARRAY_FALSE && index < elements->size; index++) {
+        for (uint32_t index = 0; dup_rest == SPLATARRAY_FALSE && index < elements->size; index++) {
             const pm_node_t *element = elements->nodes[index];
 
             switch (PM_NODE_TYPE(element)) {
@@ -2686,9 +2686,9 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         // optionally have a name attached.
         const pm_array_pattern_node_t *cast = (const pm_array_pattern_node_t *) node;
 
-        const size_t requireds_size = cast->requireds.size;
-        const size_t posts_size = cast->posts.size;
-        const size_t minimum_size = requireds_size + posts_size;
+        const uint32_t requireds_size = cast->requireds.size;
+        const uint32_t posts_size = cast->posts.size;
+        const uint32_t minimum_size = requireds_size + posts_size;
 
         bool rest_named = false;
         bool use_rest_size = false;
@@ -2725,7 +2725,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         }
         PUSH_INSNL(ret, location, branchunless, match_failed_label);
 
-        for (size_t index = 0; index < requireds_size; index++) {
+        for (uint32_t index = 0; index < requireds_size; index++) {
             const pm_node_t *required = cast->requireds.nodes[index];
             PUSH_INSN(ret, location, dup);
             PUSH_INSN1(ret, location, putobject, INT2FIX(index));
@@ -2755,7 +2755,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             }
         }
 
-        for (size_t index = 0; index < posts_size; index++) {
+        for (uint32_t index = 0; index < posts_size; index++) {
             const pm_node_t *post = cast->posts.nodes[index];
             PUSH_INSN(ret, location, dup);
 
@@ -2808,7 +2808,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         // There can be any number of requireds in the middle. The splats on
         // both sides can optionally have names attached.
         const pm_find_pattern_node_t *cast = (const pm_find_pattern_node_t *) node;
-        const size_t size = cast->requireds.size;
+        const uint32_t size = cast->requireds.size;
 
         LABEL *match_failed_label = NEW_LABEL(location.line);
         LABEL *type_error_label = NEW_LABEL(location.line);
@@ -2850,7 +2850,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             PUSH_SEND(ret, location, idLE, INT2FIX(1));
             PUSH_INSNL(ret, location, branchunless, find_failed_label);
 
-            for (size_t index = 0; index < size; index++) {
+            for (uint32_t index = 0; index < size; index++) {
                 PUSH_INSN1(ret, location, topn, INT2FIX(3));
                 PUSH_INSN1(ret, location, topn, INT2FIX(1));
 
@@ -2963,7 +2963,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         if (has_keys && !has_rest) {
             keys = rb_ary_new_capa(cast->elements.size);
 
-            for (size_t index = 0; index < cast->elements.size; index++) {
+            for (uint32_t index = 0; index < cast->elements.size; index++) {
                 const pm_node_t *element = cast->elements.nodes[index];
                 RUBY_ASSERT(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
 
@@ -3014,7 +3014,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         if (has_keys) {
             DECL_ANCHOR(match_values);
 
-            for (size_t index = 0; index < cast->elements.size; index++) {
+            for (uint32_t index = 0; index < cast->elements.size; index++) {
                 const pm_node_t *element = cast->elements.nodes[index];
                 RUBY_ASSERT(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
 
@@ -4448,7 +4448,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             lfinish[1] = NEW_LABEL(location.line);
         }
 
-        for (size_t index = 0; index < cast->elements.size; index++) {
+        for (uint32_t index = 0; index < cast->elements.size; index++) {
             pm_compile_defined_expr0(iseq, cast->elements.nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
             PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         }
@@ -4475,7 +4475,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             lfinish[1] = NEW_LABEL(location.line);
         }
 
-        for (size_t index = 0; index < elements->size; index++) {
+        for (uint32_t index = 0; index < elements->size; index++) {
             pm_compile_defined_expr0(iseq, elements->nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
             PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         }
@@ -4582,7 +4582,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         //            ^^^^^^^
         const pm_arguments_node_t *cast = (const pm_arguments_node_t *) node;
 
-        for (size_t index = 0; index < cast->arguments.size; index++) {
+        for (uint32_t index = 0; index < cast->arguments.size; index++) {
             pm_compile_defined_expr0(iseq, cast->arguments.nodes[index], node_location, ret, popped, scope_node, in_condition, lfinish, false);
             PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         }
@@ -4815,7 +4815,7 @@ pm_insert_local_special(pm_constant_id_t special_id, ID local_name, int local_in
 static int
 pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, pm_index_lookup_table_t *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node, int local_index)
 {
-    for (size_t index = 0; index < node->lefts.size; index++) {
+    for (uint32_t index = 0; index < node->lefts.size; index++) {
         const pm_node_t *left = node->lefts.nodes[index];
 
         if (PM_NODE_TYPE_P(left, PM_REQUIRED_PARAMETER_NODE)) {
@@ -4843,7 +4843,7 @@ pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, pm_inde
         }
     }
 
-    for (size_t index = 0; index < node->rights.size; index++) {
+    for (uint32_t index = 0; index < node->rights.size; index++) {
         const pm_node_t *right = node->rights.nodes[index];
 
         if (PM_NODE_TYPE_P(right, PM_REQUIRED_PARAMETER_NODE)) {
@@ -4891,7 +4891,7 @@ pm_compile_destructured_param_writes(rb_iseq_t *iseq, const pm_multi_target_node
     int flag = (has_rest || has_rights) ? 1 : 0;
     PUSH_INSN2(ret, location, expandarray, INT2FIX(node->lefts.size), INT2FIX(flag));
 
-    for (size_t index = 0; index < node->lefts.size; index++) {
+    for (uint32_t index = 0; index < node->lefts.size; index++) {
         const pm_node_t *left = node->lefts.nodes[index];
 
         if (PM_NODE_TYPE_P(left, PM_REQUIRED_PARAMETER_NODE)) {
@@ -4919,7 +4919,7 @@ pm_compile_destructured_param_writes(rb_iseq_t *iseq, const pm_multi_target_node
             PUSH_INSN2(ret, location, expandarray, INT2FIX(node->rights.size), INT2FIX(2));
         }
 
-        for (size_t index = 0; index < node->rights.size; index++) {
+        for (uint32_t index = 0; index < node->rights.size; index++) {
             const pm_node_t *right = node->rights.nodes[index];
 
             if (PM_NODE_TYPE_P(right, PM_REQUIRED_PARAMETER_NODE)) {
@@ -5374,7 +5374,7 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
     size_t splat_position = (has_rest || has_posts) ? 1 : 0;
 
     // Next, we'll iterate through all of the leading targets.
-    for (size_t index = 0; index < lefts->size; index++) {
+    for (uint32_t index = 0; index < lefts->size; index++) {
         const pm_node_t *target = lefts->nodes[index];
         state->position = lefts->size - index + splat_position + base_position;
         pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
@@ -5398,7 +5398,7 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
             PUSH_INSN2(writes, location, expandarray, INT2FIX(rights->size), INT2FIX(2));
         }
 
-        for (size_t index = 0; index < rights->size; index++) {
+        for (uint32_t index = 0; index < rights->size; index++) {
             const pm_node_t *target = rights->nodes[index];
             state->position = rights->size - index + base_position;
             pm_compile_target_node(iseq, target, parents, writes, cleanup, scope_node, state);
@@ -5768,7 +5768,7 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
         const pm_array_node_t *cast = (const pm_array_node_t *) node;
         VALUE result = rb_ary_new_capa(cast->elements.size);
 
-        for (size_t index = 0; index < cast->elements.size; index++) {
+        for (uint32_t index = 0; index < cast->elements.size; index++) {
             VALUE element = pm_compile_shareable_constant_literal(iseq, cast->elements.nodes[index], scope_node);
             if (element == Qundef) return Qundef;
 
@@ -5781,7 +5781,7 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
         const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
         VALUE result = rb_hash_alloc_fixed_size(rb_cHash, cast->elements.size);
 
-        for (size_t index = 0; index < cast->elements.size; index++) {
+        for (uint32_t index = 0; index < cast->elements.size; index++) {
             const pm_node_t *element = cast->elements.nodes[index];
             if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) return Qundef;
 
@@ -5826,7 +5826,7 @@ pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, cons
             PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         }
 
-        for (size_t index = 0; index < cast->elements.size; index++) {
+        for (uint32_t index = 0; index < cast->elements.size; index++) {
             pm_compile_shareable_constant_value(iseq, cast->elements.nodes[index], shareability, path, ret, scope_node, false);
         }
 
@@ -6322,7 +6322,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (requireds_list) {
-        for (size_t i = 0; i < requireds_list->size; i++) {
+        for (uint32_t i = 0; i < requireds_list->size; i++) {
             // For each MultiTargetNode, we're going to have one
             // additional anonymous local not represented in the locals table
             // We want to account for this in our table size
@@ -6349,7 +6349,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // ex: def underscore_parameters(_, _ = 1, _ = 2); _; end
     //                                  ^^^^^^^^^^^^
     if (optionals_list && optionals_list->size) {
-        for (size_t i = 0; i < optionals_list->size; i++) {
+        for (uint32_t i = 0; i < optionals_list->size; i++) {
             pm_node_t * node = optionals_list->nodes[i];
             if (PM_NODE_FLAG_P(node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
                 table_size++;
@@ -6400,7 +6400,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (posts_list) {
-        for (size_t i = 0; i < posts_list->size; i++) {
+        for (uint32_t i = 0; i < posts_list->size; i++) {
             // For each MultiTargetNode, we're going to have one
             // additional anonymous local not represented in the locals table
             // We want to account for this in our table size
@@ -6412,7 +6412,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (keywords_list && keywords_list->size) {
-        for (size_t i = 0; i < keywords_list->size; i++) {
+        for (uint32_t i = 0; i < keywords_list->size; i++) {
             pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
             if (PM_NODE_FLAG_P(keyword_parameter_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
                 table_size++;
@@ -6463,7 +6463,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
     //         ^^^^^^^^^^^^^
     if (requireds_list && requireds_list->size) {
-        for (size_t i = 0; i < requireds_list->size; i++, local_index++) {
+        for (uint32_t i = 0; i < requireds_list->size; i++, local_index++) {
             ID local;
 
             // For each MultiTargetNode, we're going to have one additional
@@ -6513,7 +6513,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.opt_num = (int) optionals_list->size;
         body->param.flags.has_opt = true;
 
-        for (size_t i = 0; i < optionals_list->size; i++, local_index++) {
+        for (uint32_t i = 0; i < optionals_list->size; i++, local_index++) {
             pm_node_t * node = optionals_list->nodes[i];
             pm_constant_id_t name = ((const pm_optional_parameter_node_t *) node)->name;
 
@@ -6569,7 +6569,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.post_start = local_index;
         body->param.flags.has_post = true;
 
-        for (size_t i = 0; i < posts_list->size; i++, local_index++) {
+        for (uint32_t i = 0; i < posts_list->size; i++, local_index++) {
             ID local;
 
             // For each MultiTargetNode, we're going to have one additional
@@ -6620,7 +6620,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         const VALUE default_values = rb_ary_hidden_new(1);
         const VALUE complex_mark = rb_str_tmp_new(0);
 
-        for (size_t i = 0; i < keywords_list->size; i++) {
+        for (uint32_t i = 0; i < keywords_list->size; i++) {
             pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
             pm_constant_id_t name;
 
@@ -6641,7 +6641,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             }
         }
 
-        for (size_t i = 0; i < keywords_list->size; i++) {
+        for (uint32_t i = 0; i < keywords_list->size; i++) {
             pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
             pm_constant_id_t name;
 
@@ -6823,7 +6823,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // Go through requireds again to set the multis
 
     if (requireds_list && requireds_list->size) {
-        for (size_t i = 0; i < requireds_list->size; i++) {
+        for (uint32_t i = 0; i < requireds_list->size; i++) {
             // For each MultiTargetNode, we're going to have one
             // additional anonymous local not represented in the locals table
             // We want to account for this in our table size
@@ -6837,7 +6837,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     // Go through posts again to set the multis
     if (posts_list && posts_list->size) {
-        for (size_t i = 0; i < posts_list->size; i++) {
+        for (uint32_t i = 0; i < posts_list->size; i++) {
             // For each MultiTargetNode, we're going to have one
             // additional anonymous local not represented in the locals table
             // We want to account for this in our table size
@@ -6893,7 +6893,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // lambda { |x; y| y }
     //              ^
     if (block_locals && block_locals->size) {
-        for (size_t i = 0; i < block_locals->size; i++, local_index++) {
+        for (uint32_t i = 0; i < block_locals->size; i++, local_index++) {
             pm_constant_id_t constant_id = ((const pm_block_local_variable_node_t *) block_locals->nodes[i])->name;
             pm_insert_local_index(constant_id, local_index, &index_lookup_table, local_table_for_iseq, scope_node);
         }
@@ -6952,7 +6952,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         // a pointer to the label it should fill out?  We already
         // have a list of labels allocated above so it seems wasteful
         // to do the copies.
-        for (size_t i = 0; i < optionals_list->size; i++) {
+        for (uint32_t i = 0; i < optionals_list->size; i++) {
             label = NEW_LABEL(location.line);
             opt_table[i] = label;
             PUSH_LABEL(ret, label);
@@ -6969,8 +6969,8 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (keywords_list && keywords_list->size) {
-        size_t optional_index = 0;
-        for (size_t i = 0; i < keywords_list->size; i++) {
+        uint32_t optional_index = 0;
+        for (uint32_t i = 0; i < keywords_list->size; i++) {
             pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
             pm_constant_id_t name;
 
@@ -7008,7 +7008,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (requireds_list && requireds_list->size) {
-        for (size_t i = 0; i < requireds_list->size; i++) {
+        for (uint32_t i = 0; i < requireds_list->size; i++) {
             // For each MultiTargetNode, we're going to have one additional
             // anonymous local not represented in the locals table. We want
             // to account for this in our table size.
@@ -7022,7 +7022,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (posts_list && posts_list->size) {
-        for (size_t i = 0; i < posts_list->size; i++) {
+        for (uint32_t i = 0; i < posts_list->size; i++) {
             // For each MultiTargetNode, we're going to have one additional
             // anonymous local not represented in the locals table. We want
             // to account for this in our table size.
@@ -7347,7 +7347,7 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
         new_array_size = 0;                                                             \
     }
 
-    for (size_t index = 0; index < elements->size; index++) {
+    for (uint32_t index = 0; index < elements->size; index++) {
         const pm_node_t *element = elements->nodes[index];
 
         if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
@@ -7400,7 +7400,7 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
             // hash onto the array. If it's all keyword splats, then we
             // can use the very specialized pushtoarraykwsplat
             // instruction to check if it's empty before we push it.
-            size_t splats = 0;
+            uint32_t splats = 0;
             while (splats < keyword_hash->elements.size && PM_NODE_TYPE_P(keyword_hash->elements.nodes[splats], PM_ASSOC_SPLAT_NODE)) splats++;
 
             if (keyword_hash->elements.size == splats) {
@@ -7419,14 +7419,14 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
             // If we have a static literal, then there's the potential
             // to group a bunch of them together with a literal array
             // and then concat them together.
-            size_t right_index = index + 1;
+            uint32_t right_index = index + 1;
             while (
                 right_index < elements->size &&
                 PM_NODE_FLAG_P(elements->nodes[right_index], PM_NODE_FLAG_STATIC_LITERAL) &&
                 !PM_CONTAINER_P(elements->nodes[right_index])
             ) right_index++;
 
-            size_t tmp_array_size = right_index - index;
+            uint32_t tmp_array_size = right_index - index;
             if (tmp_array_size >= min_tmp_array_size) {
                 VALUE tmp_array = rb_ary_hidden_new(tmp_array_size);
 
@@ -7734,7 +7734,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
         // Loop through each clauses in the case node and compile each of
         // the conditions within them into cond_seq. If they match, they
         // should jump into their respective bodies in body_seq.
-        for (size_t clause_index = 0; clause_index < conditions->size; clause_index++) {
+        for (uint32_t clause_index = 0; clause_index < conditions->size; clause_index++) {
             const pm_when_node_t *clause = (const pm_when_node_t *) conditions->nodes[clause_index];
             const pm_node_list_t *conditions = &clause->conditions;
 
@@ -7760,7 +7760,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
             // Compile each of the conditions for the when clause into the
             // cond_seq. Each one should have a unique condition and should
             // jump to the subsequent one if it doesn't match.
-            for (size_t condition_index = 0; condition_index < conditions->size; condition_index++) {
+            for (uint32_t condition_index = 0; condition_index < conditions->size; condition_index++) {
                 const pm_node_t *condition = conditions->nodes[condition_index];
 
                 if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
@@ -7840,7 +7840,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
         // Note that none of the code in the loop below should be adding
         // anything to ret, as we're going to be laying out the entire case
         // node instructions later.
-        for (size_t clause_index = 0; clause_index < conditions->size; clause_index++) {
+        for (uint32_t clause_index = 0; clause_index < conditions->size; clause_index++) {
             const pm_when_node_t *clause = (const pm_when_node_t *) conditions->nodes[clause_index];
             pm_node_location_t clause_location = PM_NODE_START_LOCATION((const pm_node_t *) clause);
 
@@ -7850,7 +7850,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
             // Compile each of the conditions for the when clause into the
             // cond_seq. Each one should have a unique comparison that then
             // jumps into the body if it matches.
-            for (size_t condition_index = 0; condition_index < conditions->size; condition_index++) {
+            for (uint32_t condition_index = 0; condition_index < conditions->size; condition_index++) {
                 const pm_node_t *condition = conditions->nodes[condition_index];
                 const pm_node_location_t condition_location = PM_NODE_START_LOCATION(condition);
 
@@ -8012,7 +8012,7 @@ pm_compile_case_match_node(rb_iseq_t *iseq, const pm_case_match_node_t *node, co
     // the body_seq anchor and its pattern into the cond_seq anchor. We'll
     // make sure the pattern knows how to jump correctly into the body if it
     // finds a match.
-    for (size_t index = 0; index < node->conditions.size; index++) {
+    for (uint32_t index = 0; index < node->conditions.size; index++) {
         const pm_node_t *condition = node->conditions.nodes[index];
         RUBY_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
@@ -8335,7 +8335,7 @@ pm_compile_match_write_node(rb_iseq_t *iseq, const pm_match_write_node_t *node, 
 
     // If there's only a single local variable target, we can skip some of
     // the bookkeeping, so we'll put a special branch here.
-    size_t targets_count = node->targets.size;
+    uint32_t targets_count = node->targets.size;
 
     if (targets_count == 1) {
         const pm_node_t *target = node->targets.nodes[0];
@@ -8360,14 +8360,14 @@ pm_compile_match_write_node(rb_iseq_t *iseq, const pm_match_write_node_t *node, 
 
     // Otherwise there is more than one local variable target, so we'll need
     // to do some bookkeeping.
-    for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
+    for (uint32_t targets_index = 0; targets_index < targets_count; targets_index++) {
         const pm_node_t *target = node->targets.nodes[targets_index];
         RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
         const pm_local_variable_target_node_t *local_target = (const pm_local_variable_target_node_t *) target;
         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
 
-        if (((size_t) targets_index) < (targets_count - 1)) {
+        if (targets_index < targets_count - 1) {
             PUSH_INSN(ret, *location, dup);
         }
 
@@ -8588,7 +8588,7 @@ pm_compile_rescue_node(rb_iseq_t *iseq, const pm_rescue_node_t *node, const pm_n
     const pm_node_list_t *exceptions = &node->exceptions;
 
     if (exceptions->size > 0) {
-        for (size_t index = 0; index < exceptions->size; index++) {
+        for (uint32_t index = 0; index < exceptions->size; index++) {
             PUSH_GETLOCAL(ret, *location, LVAR_ERRINFO, 0);
             PM_COMPILE(exceptions->nodes[index]);
             int checkmatch_flags = VM_CHECKMATCH_TYPE_RESCUE;
@@ -9571,7 +9571,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // If this hash is popped, then we can iterate through each
                 // element and compile it. The result of each compilation will
                 // only include the side effects of the element itself.
-                for (size_t index = 0; index < elements->size; index++) {
+                for (uint32_t index = 0; index < elements->size; index++) {
                     PM_COMPILE_POPPED(elements->nodes[index]);
                 }
             }
@@ -9872,7 +9872,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_node_list_t *elements = &cast->elements;
 
         bool has_splat = false;
-        for (size_t index = 0; index < elements->size; index++) {
+        for (uint32_t index = 0; index < elements->size; index++) {
             if (PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_SPLAT_NODE)) {
                 has_splat = true;
                 break;
@@ -10245,7 +10245,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (cast->statements != NULL) {
             const pm_node_list_t *body = &cast->statements->body;
 
-            for (size_t index = 0; index < body->size; index++) {
+            for (uint32_t index = 0; index < body->size; index++) {
                 pm_compile_node(iseq, body->nodes[index], inner_body, true, scope_node);
             }
         }
@@ -10553,7 +10553,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_node_list_t *body = &cast->body;
 
         if (body->size > 0) {
-            for (size_t index = 0; index < body->size - 1; index++) {
+            for (uint32_t index = 0; index < body->size - 1; index++) {
                 PM_COMPILE_POPPED(body->nodes[index]);
             }
             PM_COMPILE(body->nodes[body->size - 1]);
@@ -10611,7 +10611,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_undef_node_t *cast = (const pm_undef_node_t *) node;
         const pm_node_list_t *names = &cast->names;
 
-        for (size_t index = 0; index < names->size; index++) {
+        for (uint32_t index = 0; index < names->size; index++) {
             PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
             PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
@@ -10877,8 +10877,8 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
         *script_lines = rb_ary_new_capa(line_offsets->size);
 
         for (size_t index = 0; index < line_offsets->size; index++) {
-            size_t offset = line_offsets->offsets[index];
-            size_t length = index == line_offsets->size - 1 ? ((size_t) (pm_parser_end(parser) - (pm_parser_start(parser) + offset))) : (line_offsets->offsets[index + 1] - offset);
+            uint32_t offset = line_offsets->offsets[index];
+            uint32_t length = index == line_offsets->size - 1 ? ((uint32_t) (pm_parser_end(parser) - (pm_parser_start(parser) + offset))) : (line_offsets->offsets[index + 1] - offset);
             rb_ary_push(*script_lines, rb_enc_str_new((const char *) pm_parser_start(parser) + offset, length, encoding));
         }
 
@@ -10973,15 +10973,15 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
     // If we end exactly on a newline, then there's no need to push on a final
     // segment. If we don't, then we need to push on the last offset up to the
     // end of the string.
-    size_t last_offset = line_offsets->offsets[line_offsets->size - 1];
+    uint32_t last_offset = line_offsets->offsets[line_offsets->size - 1];
     bool last_push = start + last_offset != end;
 
     // Create the ruby strings that represent the lines of the source.
     VALUE lines = rb_ary_new_capa(line_offsets->size - (last_push ? 0 : 1));
 
     for (size_t index = 0; index < line_offsets->size - 1; index++) {
-        size_t offset = line_offsets->offsets[index];
-        size_t length = line_offsets->offsets[index + 1] - offset;
+        uint32_t offset = line_offsets->offsets[index];
+        uint32_t length = line_offsets->offsets[index + 1] - offset;
 
         rb_ary_push(lines, rb_enc_str_new(start + offset, length, scope_node->encoding));
     }
