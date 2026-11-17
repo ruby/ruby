@@ -1346,6 +1346,11 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
      * or leave it as it is (0). */
     int extended = 0;
 
+    /* Whether the group is conditional, as in (?(1)a|b), which can have at
+     * most two alternatives: one for when its condition holds and one for when
+     * it does not. */
+    bool conditional = false;
+
     // First, parse any options for the group.
     if (pm_regexp_char_accept(parser, '?')) {
         if (pm_regexp_char_is_eof(parser)) {
@@ -1423,6 +1428,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
             case '(': // conditional expression
                 parser->cursor++;
                 if (!pm_regexp_parse_condition(parser, group_start)) return false;
+                conditional = true;
                 break;
             case 'i': case 'm': case 'x': case 'a': case 'd': case 'u': case '-': {
                 /* Read the options the way Onigmo does. Each of i, m, and x is
@@ -1486,6 +1492,8 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
     if (extended != 0) parser->extended_mode = (extended > 0);
 
     // Now, parse the expressions within this group.
+    size_t alternatives = 1;
+
     while (true) {
         pm_regexp_skip_extended_whitespace(parser);
         if (pm_regexp_char_is_eof(parser) || *parser->cursor == ')') break;
@@ -1494,7 +1502,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
             parser->extended_mode = extended_mode;
             return false;
         }
-        pm_regexp_char_accept(parser, '|');
+
+        if (pm_regexp_char_accept(parser, '|') && conditional && ++alternatives == 3) {
+            pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "invalid conditional pattern");
+        }
     }
 
     // Finally, make sure we have a closing parenthesis.
