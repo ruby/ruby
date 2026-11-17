@@ -71,6 +71,28 @@ module Ruby::Prism
       assert_equal 5, err.location.start_line
     end
 
+    def test_embdoc_beginning_control_characters
+      ["\0", "\C-d", "\C-z"].each do |character|
+        ["\n", "\r\n"].each do |newline|
+          comment = "=begin#{character}#{newline}ignored#{newline}=end#{newline}"
+          result = Ruby::Prism.parse("#{comment}1#{newline}")
+
+          assert_predicate result, :success?
+          assert_equal 1, result.statement.value
+          assert_equal 1, result.comments.length
+          assert_kind_of EmbDocComment, result.comments.first
+          assert_equal comment, result.comments.first.location.slice
+        end
+      end
+    end
+
+    def test_unterminated_embdoc_after_control_character
+      ["\C-d", "\C-z"].each do |character|
+        result = Ruby::Prism.parse("=begin#{character}")
+        assert_equal [:embdoc_term], result.errors.map(&:type)
+      end
+    end
+
     def test_embdoc_ending
       source = <<~RUBY
         =begin\n=end

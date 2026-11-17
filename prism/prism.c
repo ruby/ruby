@@ -10651,7 +10651,12 @@ parser_lex(pm_parser_t *parser) {
                         current_token_starts_line(parser) &&
                         (parser->current.end + 5 <= parser->end) &&
                         memcmp(parser->current.end, "begin", 5) == 0 &&
-                        (pm_char_is_whitespace(peek_offset(parser, 5)) || (peek_offset(parser, 5) == '\0'))
+                        (
+                            pm_char_is_whitespace(peek_offset(parser, 5)) ||
+                            (peek_offset(parser, 5) == '\0') ||
+                            (peek_offset(parser, 5) == '\004') || /* Ctrl-D */
+                            (peek_offset(parser, 5) == '\032') /* Ctrl-Z */
+                        )
                     ) {
                         pm_token_type_t type = lex_embdoc(parser);
                         if (type == PM_TOKEN_EOF) {
