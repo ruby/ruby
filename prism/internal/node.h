@@ -73,11 +73,13 @@ void pm_scratch_node_list_concat(pm_arena_t *arena, pm_scratch_node_list_t *list
 
 /*
  * A fixed-size piece of a node list that is still being built. It is exactly
- * eight pointers wide, so its size is a power of two, and every chunk is
- * aligned to that size. The link comes first, so a cursor just past the last
- * slot has zero low bits, the same as NULL. One mask test then tells an append
- * that the list needs a new chunk, whether the list is empty or its last chunk
- * is full.
+ * eight pointers wide, so its size is a power of two. The type itself only
+ * requires pointer alignment; pm_node_chunks_carve explicitly allocates each
+ * batch aligned to the chunk size. Each chunk in the batch has that alignment
+ * because the stride is also the chunk size. The link comes first, so a cursor
+ * just past the last slot has zero low bits, the same as NULL. One mask test
+ * then tells an append that the list needs a new chunk, whether the list is
+ * empty or its last chunk is full.
  */
 typedef struct pm_node_chunk {
     /* The previous chunk of the same list, or the next chunk on the freelist. */
@@ -87,7 +89,7 @@ typedef struct pm_node_chunk {
     pm_node_t *slots[7];
 } pm_node_chunk_t;
 
-/* The size of a chunk, which is also its alignment. */
+/* The size of a chunk and the alignment requested when allocating its batch. */
 #define PM_NODE_CHUNK_SIZE sizeof(pm_node_chunk_t)
 
 /* The low bits of an address that give its offset within a chunk. */
