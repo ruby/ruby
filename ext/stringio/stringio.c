@@ -2337,7 +2337,11 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    }
 	    if (eos_p(ptr)) {
 		if (!NIL_P(str)) rb_str_resize(str, 0);
-		return len > 0 ? Qnil : rb_str_new(0, 0);
+		if (len == 0) {
+		    if (NIL_P(str)) str = rb_str_new(0, 0);
+		    return str;
+		}
+		return Qnil;
 	    }
 	    binary = 1;
 	    break;
@@ -2475,6 +2479,7 @@ strio_pread(int argc, VALUE *argv, VALUE self)
 	if (NIL_P(rb_buf)) {
 	    return rb_str_new("", 0);
 	}
+	rb_str_resize(rb_buf, 0);
 	return rb_buf;
     }
 
