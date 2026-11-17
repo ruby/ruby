@@ -65,7 +65,11 @@ module Ruby::Prism
 
       # Regular expressions whose interpolations are all strings, which are
       # validated as the content that they join to.
-      "/\#{\"\\\\xFF\"}/", "/a\#{\"\\xE3\"}b/", "/\\xC3\#{\"\\\\xA9\"}/", "/\\M-a\#{\"b\"}/"
+      "/\#{\"\\\\xFF\"}/", "/a\#{\"\\xE3\"}b/", "/\\xC3\#{\"\\\\xA9\"}/", "/\\M-a\#{\"b\"}/",
+
+      # Strings in UTF-8 joined into a regular expression, which is binary in a
+      # US-ASCII source.
+      "/a\#{\"\\u3042\"}(/", "/\#{\"\\u3042\"}\\u3042/", "/\#{\"\\u3042\"}\\p{Hiragana}/", "/\#{\"\\u3042\"}\\xE3\\x81\\x82/"
     ].freeze
 
     # Regular expressions whose errors are in their pattern, which are compared
@@ -156,9 +160,16 @@ module Ruby::Prism
       # Ruby::Prism keeps validating after an error, so it may report extra errors as
       # long as it reports each one that parse.y does. Where parse.y reports
       # none, prism must report none and give the same encoding.
+      #
+      # Messages are compared as bytes. A message can quote content in another
+      # encoding than its own, like a UTF-8 string joined into a regular
+      # expression in an EUC-JP file, and the two parsers give their messages
+      # different encodings.
       def matches?(expected)
         return self == expected if expected.errors.empty?
-        expected.errors.tally.all? { |message, count| errors.count(message) >= count }
+
+        actual = errors.map(&:b)
+        expected.errors.tally.all? { |message, count| actual.count(message.b) >= count }
       end
 
       def to_s

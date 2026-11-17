@@ -322,6 +322,12 @@ module Ruby::Prism
       assert_equal ["end pattern with unmatched parenthesis: /aあ(/".b], errors.map { |error| error.message.b }
     end
 
+    # In a US-ASCII source, every part of a regular expression without an
+    # encoding option is binary, so a UTF-8 string joins a binary one.
+    def test_static_interpolation_in_us_ascii
+      assert_empty Ruby::Prism.parse("# encoding: US-ASCII\n" + '/#{"\\u3042"}#{"\\xFF"}/').errors
+    end
+
     def test_static_interpolation_of_incompatible_encodings
       source = "# encoding: EUC-JP\n/\xA4\xA2".b + '#{"\\u3042"}/'
       errors = Ruby::Prism.parse(source).errors

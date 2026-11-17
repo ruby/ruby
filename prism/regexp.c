@@ -3642,6 +3642,14 @@ pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t
             return false;
     }
 
+    /* In a US-ASCII source, a part of a regular expression without an
+     * encoding option is binary, even the value of a UTF-8 string like
+     * "あ". So the parts never conflict, and they join as binary. */
+    const pm_encoding_t *option_encoding;
+    if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY && pm_regexp_encoding_option(flags, &option_encoding) == '\0') {
+        encoding = PM_ENCODING_ASCII_8BIT_ENTRY;
+    }
+
     /* Ruby reads each part without the options m, i, and x, so a part's
      * errors do not show them. */
     part->regexp = (pm_regexp_t) {
