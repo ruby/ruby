@@ -9474,7 +9474,7 @@ Init_File(void)
      * - File::FNM_SHORTNAME:
      *   Allows patterns to match short names if they exist.
      *
-     * Windows only.
+     *   Windows only.
      *
      * - File::FNM_SYSCASE:
      *   Specifies that case sensitivity
