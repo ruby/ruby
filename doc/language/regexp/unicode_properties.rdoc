@@ -1,9 +1,9 @@
-== \Regexps Based on Unicode Properties
+= \Regexps Based on Unicode Properties
 
 The properties shown here are those currently supported in Ruby.
 Older versions may not support all of these.
 
-=== POSIX brackets
+== POSIX brackets
 
 - <tt>\p{ASCII}</tt>
 - <tt>\p{Alnum}</tt>
@@ -21,12 +21,12 @@ Older versions may not support all of these.
 - <tt>\p{XDigit}</tt>
 - <tt>\p{XPosixPunct}</tt>
 
-=== Special
+== Special
 
 - <tt>\p{Any}</tt>
 - <tt>\p{Assigned}</tt>
 
-=== Major and General Categories
+== Major and General Categories
 
 - <tt>\p{Cased_Letter}</tt>, <tt>\p{LC}</tt>
 - <tt>\p{Close_Punctuation}</tt>, <tt>\p{Pe}</tt>
@@ -67,7 +67,7 @@ Older versions may not support all of these.
 - <tt>\p{Unassigned}</tt>, <tt>\p{Cn}</tt>
 - <tt>\p{Uppercase_Letter}</tt>, <tt>\p{Lu}</tt>
 
-=== Prop List
+== Prop List
 
 - <tt>\p{ASCII_Hex_Digit}</tt>, <tt>\p{AHex}</tt>
 - <tt>\p{Bidi_Control}</tt>, <tt>\p{Bidi_C}</tt>
@@ -108,7 +108,7 @@ Older versions may not support all of these.
 - <tt>\p{Variation_Selector}</tt>, <tt>\p{VS}</tt>
 - <tt>\p{White_Space}</tt>, <tt>\p{WSpace}</tt>
 
-=== Derived Core Properties
+== Derived Core Properties
 
 - <tt>\p{Alphabetic}</tt>, <tt>\p{Alpha}</tt>
 - <tt>\p{Case_Ignorable}</tt>, <tt>\p{CI}</tt>
@@ -133,7 +133,7 @@ Older versions may not support all of these.
 - <tt>\p{XID_Continue}</tt>, <tt>\p{XIDC}</tt>
 - <tt>\p{XID_Start}</tt>, <tt>\p{XIDS}</tt>
 
-=== Scripts
+== Scripts
 
 - <tt>\p{Adlam}</tt>, <tt>\p{Adlm}</tt>
 - <tt>\p{Ahom}</tt>
@@ -311,7 +311,7 @@ Older versions may not support all of these.
 - <tt>\p{Yi}</tt>, <tt>\p{Yiii}</tt>
 - <tt>\p{Zanabazar_Square}</tt>, <tt>\p{Zanb}</tt>
 
-=== Blocks
+== Blocks
 
 - <tt>\p{In_Adlam}</tt>
 - <tt>\p{In_Aegean_Numbers}</tt>
@@ -661,7 +661,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Zanabazar_Square}</tt>
 - <tt>\p{In_Znamenny_Musical_Notation}</tt>
 
-=== Emoji
+== Emoji
 
 - <tt>\p{Emoji}</tt>
 - <tt>\p{Emoji_Component}</tt>, <tt>\p{EComp}</tt>
@@ -670,7 +670,7 @@ Older versions may not support all of these.
 - <tt>\p{Emoji_Presentation}</tt>, <tt>\p{EPres}</tt>
 - <tt>\p{Extended_Pictographic}</tt>, <tt>\p{ExtPict}</tt>
 
-=== Graphemes
+== Graphemes
 
 - <tt>\p{Grapheme_Cluster_Break_CR}</tt>
 - <tt>\p{Grapheme_Cluster_Break_Control}</tt>
@@ -686,7 +686,7 @@ Older versions may not support all of these.
 - <tt>\p{Grapheme_Cluster_Break_V}</tt>
 - <tt>\p{Grapheme_Cluster_Break_ZWJ}</tt>
 
-=== Derived Ages
+== Derived Ages
 
 - <tt>\p{Age_10_0}</tt>
 - <tt>\p{Age_11_0}</tt>
