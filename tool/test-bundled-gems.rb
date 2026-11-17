@@ -145,6 +145,12 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "prism"
     # see BundledGem.build, which cannot use this task without rake-compiler
     test_command.insert(-2, "templates")
+    # The 2.1.0 release lacks the guard for differing node IDs between the
+    # bundled parser and the parser built into Ruby.
+    _, version, _, revision = line.split("#", 2).first.split
+    if version == "2.1.0" && !revision
+      test_command << 'TESTOPTS=--ignore-testcase=Prism::FindTest'
+    end
 
   when "debug"
     # needs pty
