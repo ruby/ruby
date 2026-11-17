@@ -1424,6 +1424,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_pop_frozen_in_to_int
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.pop(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.shift(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+  end
+
   def test_prepend
     a = @cls[]
     assert_equal(@cls['cat'], a.prepend('cat'))
