@@ -1408,6 +1408,13 @@ extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_jit_vm_lock(
+        recursive_lock_level: *mut ::std::os::raw::c_uint,
+        file: *const ::std::os::raw::c_char,
+        line: ::std::os::raw::c_int,
+    );
+    pub fn rb_jit_vm_barrier();
+    pub fn rb_jit_class_set_singleton_class_tracked(klass: VALUE, tracked: bool);
     pub fn rb_iseq_get_jit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_jit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);

@@ -2,7 +2,7 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p, trace_invalidation}, virtualmem::CodePtr};
+use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, rb_jit_class_set_singleton_class_tracked, ruby_basic_operators, src_loc, with_vm_lock, with_vm_lock_lazy_barrier}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p, trace_invalidation}, virtualmem::CodePtr};
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
 use crate::cruby::{rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
@@ -340,6 +340,8 @@ pub fn track_no_singleton_class_assumption(
     version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
+    // Compilation holds the VM barrier, which this flag requires
+    unsafe { rb_jit_class_set_singleton_class_tracked(klass, true) };
     invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint::new(
         patch_point_ptr,
         side_exit_ptr,
@@ -355,7 +357,13 @@ pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t)
         return;
     }
 
-    with_vm_lock(src_loc!(), || {
+    // Most invalidated CMEs have no ZJIT code depending on them, so only stop every Ractor
+    // when there are patch points to invalidate.
+    with_vm_lock_lazy_barrier(src_loc!(), |lock| {
+        if !ZJITState::get_invariants().cme_patch_points.contains_key(&cme) {
+            return;
+        }
+        lock.take_barrier();
         let invariants = ZJITState::get_invariants();
         // Get the CMD's jumps and remove the entry from the map as it has been invalidated
         if let Some(patch_points) = invariants.cme_patch_points.remove(&cme) {
@@ -549,7 +557,8 @@ pub extern "C" fn rb_zjit_invalidate_root_box() {
     });
 }
 
-/// Returns true if we've seen a singleton class of a given class since boot.
+/// Returns true if a singleton class of `klass` has invalidated code assuming it has none.
+/// Singleton classes made before any such assumption aren't recorded.
 /// This is used to avoid an invalidation loop where we repeatedly compile code
 /// that assumes no singleton class, only to have it invalidated.
 pub fn has_singleton_class_of(klass: VALUE) -> bool {
@@ -565,13 +574,22 @@ pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
         return;
     }
 
-    with_vm_lock(src_loc!(), || {
+    // Once a class's patch points are invalidated, its entry stays behind empty for
+    // has_singleton_class_of(), so later singleton classes of it need no barrier.
+    with_vm_lock_lazy_barrier(src_loc!(), |lock| {
+        let needs_barrier = ZJITState::get_invariants().no_singleton_class_patch_points.get(&klass)
+            .map_or(true, |patch_points| !patch_points.is_empty());
+        if !needs_barrier {
+            return;
+        }
+        lock.take_barrier();
         let invariants = ZJITState::get_invariants();
         match invariants.no_singleton_class_patch_points.get_mut(&klass) {
             Some(patch_points) => {
                 // Invalidate existing patch points and let has_singleton_class_of()
                 // return true when they are compiled again
                 let patch_points = mem::take(patch_points);
+                unsafe { rb_jit_class_set_singleton_class_tracked(klass, false) };
                 if !patch_points.is_empty() {
                     let cb = ZJITState::get_code_block();
                     debug!("Singleton class created for {:?}", klass);
@@ -582,6 +600,7 @@ pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
             None => {
                 // Let has_singleton_class_of() return true for this class
                 invariants.no_singleton_class_patch_points.insert(klass, HashSet::new());
+                unsafe { rb_jit_class_set_singleton_class_tracked(klass, false) };
             }
         }
     });

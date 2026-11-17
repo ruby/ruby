@@ -53,8 +53,8 @@ pub struct Invariants {
 
     /// A map from a class to a set of blocks that assume objects of the class
     /// will have no singleton class. When the set is empty, it means that
-    /// there has been a singleton class for the class after boot, so you cannot
-    /// assume no singleton class going forward.
+    /// a singleton class of the class invalidated blocks making the assumption,
+    /// so you cannot assume no singleton class going forward.
     /// For now, the key can be only Array, Hash, or String. Consider making
     /// an inverted HashMap if we start using this for user-defined classes
     /// to maintain the performance of block_assumptions_free().
@@ -144,6 +144,8 @@ pub fn track_method_lookup_stability_assumption(
 
 /// Track that a block will assume that `klass` objects will have no singleton class.
 pub fn track_no_singleton_class_assumption(uninit_block: BlockRef, klass: VALUE) {
+    // Compilation holds the VM barrier, which this flag requires
+    set_jit_singleton_class_tracked(klass, true);
     Invariants::get_instance()
         .no_singleton_classes
         .entry(klass)
@@ -151,7 +153,8 @@ pub fn track_no_singleton_class_assumption(uninit_block: BlockRef, klass: VALUE)
         .insert(uninit_block);
 }
 
-/// Returns true if we've seen a singleton class of a given class since boot.
+/// Returns true if a singleton class of `klass` has invalidated code assuming it has none.
+/// Singleton classes made before any such assumption aren't recorded.
 pub fn has_singleton_class_of(klass: VALUE) -> bool {
     Invariants::get_instance()
         .no_singleton_classes
@@ -290,7 +293,13 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
         return;
     }
 
-    with_vm_lock(src_loc!(), || {
+    // Most invalidated CMEs have no YJIT code depending on them, so only stop every Ractor
+    // when there is code to invalidate.
+    with_vm_lock_lazy_barrier(src_loc!(), |lock| {
+        if !Invariants::get_instance().cme_validity.contains_key(&callee_cme) {
+            return;
+        }
+        lock.take_barrier();
         if let Some(blocks) = Invariants::get_instance().cme_validity.remove(&callee_cme) {
             for block in blocks.iter() {
                 invalidate_block_version(block);
@@ -463,9 +472,17 @@ pub fn block_assumptions_free(blockref: BlockRef) {
     // Remove tracking for blocks assuming no singleton class
     // NOTE: no_singleton_class has up to 3 keys (Array, Hash, or String) for now.
     // This is effectively an O(1) access unless we start using it for more classes.
-    for (_, blocks) in invariants.no_singleton_classes.iter_mut() {
-        blocks.remove(&blockref);
-    }
+    // Once the last block is gone, nothing assumes the class has no singleton class, so stop
+    // tracking it instead of leaving an empty set that has_singleton_class_of() would report.
+    invariants.no_singleton_classes.retain(|&klass, blocks| {
+        if blocks.remove(&blockref) && blocks.is_empty() {
+            // Callers hold the VM barrier or run in GC, which the flag requires
+            set_jit_singleton_class_tracked(klass, false);
+            false
+        } else {
+            true
+        }
+    });
 
     // Remove tracking for blocks assuming EP doesn't escape
     let iseq = unsafe { blockref.as_ref() }.get_blockid().iseq;
@@ -555,6 +572,7 @@ pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
                 Some(blocks) => {
                     // Invalidate existing blocks and let has_singleton_class_of()
                     // return true when they are compiled again
+                    set_jit_singleton_class_tracked(klass, false);
                     for block in mem::take(blocks) {
                         invalidate_block_version(&block);
                         incr_counter!(invalidate_no_singleton_class);

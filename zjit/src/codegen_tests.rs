@@ -8446,6 +8446,70 @@ fn test_singleton_class_invalidation_optimized_variadic_ccall() {
     "), @"[1, 1000]");
 }
 
+// make_singleton_class() only calls into ZJIT for classes ZJIT has assumed have no singleton
+// classes (jit_singleton_class_tracked). The call takes a VM barrier, so making
+// singleton classes of any other class must not reach it.
+#[test]
+fn test_singleton_class_of_untracked_class_skips_zjit() {
+    let klass = eval("
+        class NoSingletonUntracked; end
+        NoSingletonUntracked.new.singleton_class
+        NoSingletonUntracked
+    ");
+    assert!(!crate::invariants::has_singleton_class_of(klass));
+}
+
+// After the first singleton class invalidates a class's patch points, later singleton classes
+// of that class skip the barrier (the entry left behind is empty) for the same iseq. They must still
+// see correct dispatch, and recompiled code for the same iseq must not assume no singleton classes again.
+#[test]
+fn test_singleton_class_invalidation_then_second_singleton() {
+    assert_snapshot!(inspect("
+        class NoSingletonTwice
+          def foo = 1
+        end
+        def call_foo(obj) = obj.foo
+        a = NoSingletonTwice.new
+        b = NoSingletonTwice.new
+        c = NoSingletonTwice.new
+        result = []
+        3.times { result << call_foo(a) }
+        def a.foo = 2
+        result << call_foo(a)
+        def b.foo = 3
+        result << call_foo(b)
+        # c is made outside the block: NoSingletonTwice.new inside it would send #initialize, and
+        # that never-invalidated block iseq would track NoSingletonTwice again.
+        3.times { result << call_foo(c) }
+        result
+    "), @"[1, 1, 1, 2, 3, 1, 1, 1]");
+    assert!(crate::invariants::has_singleton_class_of(eval("NoSingletonTwice")));
+}
+
+// Only iseqs that were themselves invalidated stop assuming no singleton classes. second()
+// still makes the assumption after first() was invalidated, so tracking must turn
+// jit_singleton_class_tracked back on or def b.foo never invalidates second().
+#[test]
+fn test_singleton_class_invalidation_retracks_for_other_iseq() {
+    assert_snapshot!(inspect("
+        class NoSingletonRetrack
+          def foo = 1
+        end
+        def first(obj) = obj.foo
+        def second(obj) = obj.foo
+        result = []
+        3.times { result << first(NoSingletonRetrack.new) }
+        a = NoSingletonRetrack.new
+        def a.foo = 2
+        result << first(a)
+        3.times { result << second(NoSingletonRetrack.new) }
+        b = NoSingletonRetrack.new
+        def b.foo = 3
+        result << second(b)
+        result
+    "), @"[1, 1, 1, 2, 1, 1, 1, 3]");
+}
+
 #[test]
 fn test_is_a_string_special_case() {
     assert_snapshot!(inspect(r#"

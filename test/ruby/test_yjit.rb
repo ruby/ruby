@@ -2102,6 +2102,39 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  # Redefining dep frees the only block assuming Strings have no singleton class. That must not
+  # leave behind the empty set that means a singleton class was seen, or the recompiled block
+  # stops assuming and the later singleton class invalidates nothing.
+  def test_freeing_last_no_singleton_class_block_allows_reassuming
+    stats = assert_compiles(<<~'RUBY', result: ["bar", "bar", "foo"], exits: :any)
+      def define_singleton(str, define)
+        if define
+          # Wrap a C method frame to avoid exiting JIT code on defineclass
+          [nil].reverse_each do
+            class << str
+              def +(_) = "foo"
+            end
+          end
+        end
+        "bar"
+      end
+
+      def dep = nil
+
+      def entry(define)
+        str = ""
+        ret = str + define_singleton(str, define)
+        dep
+        ret
+      end
+
+      result = [entry(false)]
+      def dep = nil
+      result << entry(false) << entry(true)
+    RUBY
+    assert_equal 1, stats[:invalidate_no_singleton_class]
+  end
+
   def test_stack_temps_beyond_temp_regs
     assert_separately(%w[--yjit-call-threshold=1 --yjit-temp-regs=3], <<~RUBY)
       def foo(a) = [a, a, a, a]
@@ -2132,7 +2165,55 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  # make_singleton_class() only calls into YJIT once YJIT has assumed String instances have
+  # no singleton class, so a singleton class made before that must not disable the assumption.
+  def test_singleton_class_before_assumption_does_not_disable_it
+    stats = assert_compiles(<<~RUBY, result: ["bar", "foo"], exits: :any)
+      String.new("pre").singleton_class
+      #{singleton_plus_helpers}
+      [entry(false), entry(true)]
+    RUBY
+    assert_equal 1, stats[:invalidate_no_singleton_class]
+  end
+
+  # One singleton class clears jit_singleton_class_tracked, so it must invalidate every block
+  # assuming no singleton class, or a later singleton class never invalidates entry2().
+  def test_singleton_class_invalidation_covers_every_assuming_iseq
+    stats = assert_compiles(<<~RUBY, result: ["bar", "bar", "foo", "foo"], exits: :any)
+      #{singleton_plus_helpers}
+      def entry2(define)
+        str = ""
+        str + define_singleton(str, define)
+      end
+      [entry(false), entry2(false), entry(true), entry2(true)]
+    RUBY
+    assert_equal 2, stats[:invalidate_no_singleton_class]
+  end
+
   private
+
+  # entry(false) compiles `str + ...` to rb_str_plus() without a class guard by assuming
+  # Strings have no singleton class; entry(true) gives `str` a singleton class with its own #+.
+  def singleton_plus_helpers
+    <<~'RUBY'
+      def define_singleton(str, define)
+        if define
+          # Wrap a C method frame to avoid exiting JIT code on defineclass
+          [nil].reverse_each do
+            class << str
+              def +(_) = "foo"
+            end
+          end
+        end
+        "bar"
+      end
+
+      def entry(define)
+        str = ""
+        str + define_singleton(str, define)
+      end
+    RUBY
+  end
 
   def code_gc_helpers
     <<~'RUBY'

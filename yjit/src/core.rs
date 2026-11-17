@@ -1897,7 +1897,8 @@ pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback:
     }
 }
 
-/// Free the per-iseq payload
+/// Free the per-iseq payload. ISEQs are shareable, so sweeping one only happens during
+/// global GC or when there's 1 Ractor so it doesn't have to be protected by a lock.
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_free(iseq: IseqPtr) {
     // Free invariants for the ISEQ

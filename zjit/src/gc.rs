@@ -44,7 +44,8 @@ pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
     with_time_stat(gc_time_ns, || iseq_update_references(payload));
 }
 
-/// GC callback for finalizing an ISEQ
+/// GC callback for finalizing an ISEQ. ISEQs are shareable, so sweeping one only happens during
+/// global GC or when there's 1 Ractor running so it doesn't have to be protected by a lock.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
     if !ZJITState::has_instance() {
@@ -73,7 +74,8 @@ pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
     drop(payload);
 }
 
-/// GC callback for finalizing a CME
+/// GC callback for finalizing a CME. CMEs are shareable, so sweeping one only happens during
+/// global GC or when there's 1 Ractor running so it doesn't have to be protected by a lock.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_cme_free(cme: *const rb_callable_method_entry_struct) {
     if !ZJITState::has_instance() {
@@ -83,7 +85,8 @@ pub extern "C" fn rb_zjit_cme_free(cme: *const rb_callable_method_entry_struct) 
     invariants.forget_cme(cme);
 }
 
-/// GC callback for finalizing a class
+/// GC callback for finalizing a class. Classes are shareable, so sweeping one only happens during
+/// global GC or when there's 1 Ractor running so it doesn't have to be protected by a lock.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_klass_free(klass: VALUE) {
     if !ZJITState::has_instance() {
