@@ -686,14 +686,31 @@ static bool
 pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
     PRISM_ASSERT(*parser->cursor == 'p' || *parser->cursor == 'P');
 
-    if (parser->cursor + 1 < parser->end && parser->cursor[1] == '{') {
-        const uint8_t *name_start = parser->cursor + 2;
-        const uint8_t *search = name_start;
+    if (parser->cursor + 1 >= parser->end || parser->cursor[1] != '{') {
+        // Not a property escape, just skip the single character after '\'.
+        parser->cursor++;
+        return false;
+    }
 
-        while (search < parser->end && *search != '}') search++;
+    /* Read the name the way Onigmo's fetch_char_property_to_ctype does: up to
+     * a }, after the ^ that negates the property. A (, ), {, or | stops the
+     * name, and so does the end of the pattern, after which the name is
+     * quoted without the last character read. An empty name is no property. */
+    parser->cursor += 2;
+    if (parser->cursor < parser->end && *parser->cursor == '^') parser->cursor++;
 
-        if (search < parser->end) {
-            size_t name_length = (size_t) (search - name_start);
+    const uint8_t *name_start = parser->cursor;
+    const uint8_t *previous = parser->cursor;
+
+    while (parser->cursor < parser->end) {
+        previous = parser->cursor;
+        uint8_t byte = *parser->cursor;
+        pm_regexp_skip_char(parser);
+
+        if (byte == '}') {
+            size_t name_length = (size_t) (previous - name_start);
+            if (name_length == 0) break;
+
             pm_regexp_property_type_t type = pm_regexp_classify_property(name_start, name_length);
 
             // Track the first non-POSIX property name (for /n error messages).
@@ -708,14 +725,25 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
                 parser->unicode_property_name_length = name_length;
             }
 
-            parser->cursor = search + 1; // skip past '}'
             return true;
         }
+
+        if (byte == '(' || byte == ')' || byte == '{' || byte == '|') break;
     }
 
-    // Not a property escape, just skip the single character after '\'.
-    parser->cursor++;
-    return false;
+    if (parser->report_errors) {
+        pm_buffer_t buffer = { 0 };
+        const char *message = "invalid character property name {";
+        pm_buffer_append_string(&buffer, message, strlen(message));
+        pm_buffer_append_string(&buffer, (const char *) name_start, (size_t) (previous - name_start));
+        pm_buffer_append_byte(&buffer, '}');
+        pm_buffer_append_byte(&buffer, '\0');
+
+        pm_regexp_parse_error(parser, name_start, previous, pm_buffer_value(&buffer));
+        pm_buffer_cleanup(&buffer);
+    }
+
+    return true;
 }
 
 /**
