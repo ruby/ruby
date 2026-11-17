@@ -722,7 +722,7 @@ static const uint8_t pm_encoding_iso_8859_16_table[256] = {
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
-    0, 7, 3, 7, 0, 0, 7, 0, 3, 0, 7, 0, 7, 0, 3, 7, // Ax
+    0, 7, 3, 7, 4, 0, 7, 0, 3, 0, 7, 0, 7, 0, 3, 7, // Ax
     0, 0, 7, 3, 7, 0, 0, 0, 3, 3, 3, 0, 7, 3, 7, 3, // Bx
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
@@ -797,7 +797,7 @@ static const uint8_t pm_encoding_windows_1250_table[256] = {
     0, 0, 0, 7, 0, 7, 0, 0, 0, 0, 7, 0, 0, 0, 0, 7, // Ax
     0, 0, 0, 3, 0, 3, 0, 0, 0, 3, 3, 0, 7, 0, 3, 3, // Bx
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
+    7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
     3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 0, // Fx
 };
@@ -842,10 +842,10 @@ static const uint8_t pm_encoding_windows_1252_table[256] = {
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 7, 0, 7, 0, // 8x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 0, 3, 7, // 9x
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Ax
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 4, // Ax
     0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, // Bx
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Cx
-    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
+    7, 7, 7, 7, 7, 7, 7, 4, 7, 7, 7, 7, 7, 7, 7, 3, // Dx
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Ex
     3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 3, 3, 3, // Fx
 };
@@ -1112,14 +1112,16 @@ pm_encoding_cp949_property_char(uint8_t property, const uint8_t *b, ptrdiff_t n)
 }
 
 /**
- * The forms of the characters in the Emacs-Mule encoding.
+ * The forms of the characters in the Emacs-Mule encoding. Ruby reads a name
+ * that starts with any character that is not ASCII as a constant name in this
+ * encoding, so every form is uppercase.
  */
 #define PM_ENCODING_EMACS_MULE_FORMS(X) \
-    X##_2(0, 0x81, 0x8F, 0xA0, 0xFF) \
-    X##_3(0, 0x90, 0x99, 0xA0, 0xFF, 0xA0, 0xFF) \
-    X##_3(0, 0x9A, 0x9B, 0xE0, 0xEF, 0xA0, 0xFF) \
-    X##_4(0, 0x9C, 0x9C, 0xF0, 0xF4, 0xA0, 0xFF, 0xA0, 0xFF) \
-    X##_4(0, 0x9D, 0x9D, 0xF5, 0xFE, 0xA0, 0xFF, 0xA0, 0xFF)
+    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x81, 0x8F, 0xA0, 0xFF) \
+    X##_3(PRISM_ENCODING_UPPERCASE_BIT, 0x90, 0x99, 0xA0, 0xFF, 0xA0, 0xFF) \
+    X##_3(PRISM_ENCODING_UPPERCASE_BIT, 0x9A, 0x9B, 0xE0, 0xEF, 0xA0, 0xFF) \
+    X##_4(PRISM_ENCODING_UPPERCASE_BIT, 0x9C, 0x9C, 0xF0, 0xF4, 0xA0, 0xFF, 0xA0, 0xFF) \
+    X##_4(PRISM_ENCODING_UPPERCASE_BIT, 0x9D, 0x9D, 0xF5, 0xFE, 0xA0, 0xFF, 0xA0, 0xFF)
 
 /**
  * Return the width of the character at b in Emacs-Mule, or 0 if there is none.

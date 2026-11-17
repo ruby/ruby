@@ -6,12 +6,6 @@ require_relative "../test_helper"
 
 module Ruby::Prism
   class EncodingsTest < TestCase
-    class ConstantContext < BasicObject
-      def self.const_missing(const)
-        const
-      end
-    end
-
     class IdentifierContext < BasicObject
       def method_missing(name, *)
         name
@@ -36,7 +30,43 @@ module Ruby::Prism
       end
     end
 
+    # In an encoding that is not Unicode, a character that is neither uppercase
+    # nor lowercase begins a constant if case folding changes it. Windows-1252
+    # folds the multiplication sign to the division sign, for example.
+    if !ENV["PRISM_BUILD_MINIMAL"]
+      def test_case_folded_constants
+        { "ISO-8859-16" => [0xA4], "Windows-1250" => [0xD7], "Windows-1252" => [0xAF, 0xD7] }.each do |name, bytes|
+          bytes.each do |byte|
+            character = byte.chr(Encoding.find(name))
+            assert constant_start?(character), "Expected Ruby to read #{character.inspect} in #{name} as a constant."
+            assert_encoding_constant(name, character)
+          end
+        end
+      end
+
+      # In Emacs-Mule, and the encodings that share its characters, a name that
+      # starts with any character that is not ASCII is a constant name.
+      def test_emacs_mule_constants
+        ["Emacs-Mule", "stateless-ISO-2022-JP", "stateless-ISO-2022-JP-KDDI"].each do |name|
+          [0x81A0, 0x90A0A0, 0x9AE0A0, 0x9CF0A0A0, 0x9DF5A0A0].each do |codepoint|
+            character = codepoint.chr(Encoding.find(name))
+            assert constant_start?(character), "Expected Ruby to read #{character.inspect} in #{name} as a constant."
+            assert_encoding_constant(name, character)
+          end
+        end
+      end
+    end
+
     private
+
+    # Return true if a name that starts with the character is a constant name.
+    # Object.const_defined? raises a NameError for a name that is not one.
+    def constant_start?(character)
+      Object.const_defined?(character)
+      true
+    rescue NameError
+      false
+    end
 
     # These identifiers are longer than the bytes that the lexer scans at once
     # for ASCII identifier characters.
@@ -55,7 +85,11 @@ module Ruby::Prism
 
     def assert_encoding_constant(name, character)
       source = "# encoding: #{name}\n#{character}"
-      expected = ConstantContext.new.instance_eval(source)
+
+      # A name like UTF-8-MAC ends in an Emacs line ending, so Ruby reads the
+      # source as UTF-8 rather than UTF8-MAC.
+      encoding = eval("# encoding: #{name}\n__ENCODING__")
+      expected = character.b.force_encoding(encoding).to_sym
 
       result = Ruby::Prism.parse(source)
       assert result.success?
@@ -79,24 +113,15 @@ module Ruby::Prism
 
     # Check that we can properly parse every codepoint in the given encoding.
     def assert_encoding(encoding, name, range)
-      unicode = false
-
-      case encoding
-      when Encoding::UTF_8, Encoding::UTF_8_MAC, Encoding::UTF8_DoCoMo, Encoding::UTF8_KDDI, Encoding::UTF8_SoftBank, Encoding::CESU_8
-        unicode = true
-      when Encoding::Windows_1253
-        range = range.to_a - [0xb5]
-      end
+      range = range.to_a - [0xb5] if encoding == Encoding::Windows_1253
 
       range.each do |codepoint|
         character = codepoint.chr(encoding)
 
-        if character.match?(/[[:alpha:]]/)
-          if character.match?(/[[:upper:]]/) || (unicode && character.match?(Regexp.new("\\p{Lt}".encode(encoding))))
-            assert_encoding_constant(name, character)
-          else
-            assert_encoding_identifier(name, character)
-          end
+        if constant_start?(character)
+          assert_encoding_constant(name, character)
+        elsif character.match?(/[[:alpha:]]/)
+          assert_encoding_identifier(name, character)
         elsif character.match?(/[[:alnum:]]/)
           assert_encoding_identifier(name, "_#{character}")
         else
