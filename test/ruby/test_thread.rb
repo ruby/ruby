@@ -1715,6 +1715,24 @@ q.pop
     end;
   end
 
+  def test_mutexes_unlocked_at_thread_exit_dont_link_to_each_other
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      m1 = Thread::Mutex.new
+      m2 = Thread::Mutex.new
+      Thread.new { m1.lock; m2.lock }.join
+
+      q = Thread::Queue.new
+      Thread.new { m1.lock; q << :locked; sleep }
+      q.pop
+
+      # Exiting while holding only m2 must not also release m1
+      Thread.new { m2.lock }.join
+      assert_predicate m1, :locked?
+      assert_not_predicate m2, :locked?
+    end;
+  end
+
   def test_mutexes_locked_in_fiber_dont_have_aba_issue_with_new_fibers
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
