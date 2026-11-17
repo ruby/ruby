@@ -254,6 +254,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "==", inline_array_eq);
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "[]=", inline_hash_aset);
+    annotate!(rb_cHash, "fetch", inline_hash_fetch);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
@@ -543,6 +544,20 @@ fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     if fun.likely_a(recv, types::HashExact, state) {
         let recv = fun.coerce_to(block, recv, types::HashExact, state);
         let result = fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state });
+        Some(result)
+    } else {
+        None
+    }
+}
+
+fn inline_hash_fetch(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Only the two-argument form. `fetch(key)` can raise KeyError, so leave it to the general path.
+    let &[key, default] = args else { return None; };
+
+    // Only optimize exact Hash, not subclasses
+    if fun.likely_a(recv, types::HashExact, state) {
+        let recv = fun.coerce_to(block, recv, types::HashExact, state);
+        let result = fun.push_insn(block, hir::Insn::HashFetch { hash: recv, key, default, state });
         Some(result)
     } else {
         None

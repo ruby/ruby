@@ -2272,6 +2272,7 @@ unsafe extern "C" {
     pub fn rb_hash_new() -> VALUE;
     pub fn rb_hash_new_capa(capa: rb_len_t) -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
+    pub fn rb_hash_lookup2(hash: VALUE, key: VALUE, def: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: rb_len_t, argv: *const VALUE, hash: VALUE);
     pub fn rb_obj_is_proc(recv: VALUE) -> VALUE;

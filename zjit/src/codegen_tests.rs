@@ -415,6 +415,31 @@ fn test_string_subclass_to_sym_redefined() {
 }
 
 #[test]
+fn test_hash_fetch_with_default() {
+    eval("
+        def test(hash, key, default)
+          hash.fetch(key, default)
+        end
+        test({a: 1}, :a, 2)
+    ");
+    // Present key returns its value (even if falsy), missing key returns the default,
+    // and Hash#default / default_proc are ignored.
+    assert_snapshot!(assert_compiles("[test({a: 1}, :a, 2), test({a: nil}, :a, 2), test({}, :a, 2), test(Hash.new(7), :a, 2), test(Hash.new { 9 }, :a, 2)]"), @"[1, nil, 2, 2, 2]");
+}
+
+#[test]
+fn test_hash_fetch_subclass_override() {
+    eval("
+        class MyHash < Hash
+          def fetch(k, d) = :overridden
+        end
+        def test(h) = h.fetch(:a, 1)
+        test({})
+    ");
+    assert_snapshot!(inspect("test(MyHash.new)"), @":overridden");
+}
+
+#[test]
 fn test_duphash() {
     eval("
         def test
