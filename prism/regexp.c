@@ -1177,114 +1177,6 @@ static bool
 pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth);
 
 /**
- * These are the states of the options that are configurable on the regular
- * expression (or from within a group).
- */
-typedef enum {
-    PM_REGEXP_OPTION_STATE_INVALID,
-    PM_REGEXP_OPTION_STATE_TOGGLEABLE,
-    PM_REGEXP_OPTION_STATE_ADDABLE,
-    PM_REGEXP_OPTION_STATE_ADDED,
-    PM_REGEXP_OPTION_STATE_REMOVED
-} pm_regexp_option_state_t;
-
-// These are the options that are configurable on the regular expression (or
-// from within a group).
-
-/** The minimum character value for a regexp option slot. */
-#define PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM 'a'
-
-/** The maximum character value for a regexp option slot. */
-#define PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM 'x'
-
-/** The number of regexp option slots. */
-#define PRISM_REGEXP_OPTION_STATE_SLOTS (PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM + 1)
-
-/**
- * This is the set of options that are configurable on the regular expression.
- */
-typedef struct {
-    /** The current state of each option. */
-    uint8_t values[PRISM_REGEXP_OPTION_STATE_SLOTS];
-} pm_regexp_options_t;
-
-/**
- * Initialize a new set of options to their default values.
- */
-static void
-pm_regexp_options_init(pm_regexp_options_t *options) {
-    memset(options, PM_REGEXP_OPTION_STATE_INVALID, sizeof(uint8_t) * PRISM_REGEXP_OPTION_STATE_SLOTS);
-    options->values['i' - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM] = PM_REGEXP_OPTION_STATE_TOGGLEABLE;
-    options->values['m' - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM] = PM_REGEXP_OPTION_STATE_TOGGLEABLE;
-    options->values['x' - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM] = PM_REGEXP_OPTION_STATE_TOGGLEABLE;
-    options->values['d' - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM] = PM_REGEXP_OPTION_STATE_ADDABLE;
-    options->values['a' - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM] = PM_REGEXP_OPTION_STATE_ADDABLE;
-    options->values['u' - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM] = PM_REGEXP_OPTION_STATE_ADDABLE;
-}
-
-/**
- * Attempt to add the given option to the set of options. Returns true if it was
- * added, false if it was already present.
- */
-static bool
-pm_regexp_options_add(pm_regexp_options_t *options, uint8_t key) {
-    if (key >= PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key = (uint8_t) (key - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM);
-
-        switch (options->values[key]) {
-            case PM_REGEXP_OPTION_STATE_INVALID:
-            case PM_REGEXP_OPTION_STATE_REMOVED:
-                return false;
-            case PM_REGEXP_OPTION_STATE_TOGGLEABLE:
-            case PM_REGEXP_OPTION_STATE_ADDABLE:
-                options->values[key] = PM_REGEXP_OPTION_STATE_ADDED;
-                return true;
-            case PM_REGEXP_OPTION_STATE_ADDED:
-                return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Attempt to remove the given option from the set of options. Returns true if
- * it was removed, false if it was already absent.
- */
-static bool
-pm_regexp_options_remove(pm_regexp_options_t *options, uint8_t key) {
-    if (key >= PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key = (uint8_t) (key - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM);
-
-        switch (options->values[key]) {
-            case PM_REGEXP_OPTION_STATE_INVALID:
-            case PM_REGEXP_OPTION_STATE_ADDABLE:
-                return false;
-            case PM_REGEXP_OPTION_STATE_TOGGLEABLE:
-            case PM_REGEXP_OPTION_STATE_ADDED:
-            case PM_REGEXP_OPTION_STATE_REMOVED:
-                options->values[key] = PM_REGEXP_OPTION_STATE_REMOVED;
-                return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * True if the given key is set in the options.
- */
-static uint8_t
-pm_regexp_options_state(pm_regexp_options_t *options, uint8_t key) {
-    if (key >= PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
-        key = (uint8_t) (key - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM);
-        return options->values[key];
-    }
-
-    return false;
-}
-
-/**
  * Groups can have quite a few different patterns for syntax. They basically
  * just wrap a set of expressions, but they can potentially have options after a
  * question mark. If there _isn't_ a question mark, then it's just a set of
@@ -1323,8 +1215,9 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
 
     const uint8_t *group_start = parser->cursor;
 
-    pm_regexp_options_t options;
-    pm_regexp_options_init(&options);
+    /* Whether the options of the group turn extended mode on (1) or off (-1),
+     * or leave it as it is (0). */
+    int extended = 0;
 
     // First, parse any options for the group.
     if (pm_regexp_char_accept(parser, '?')) {
@@ -1437,65 +1330,48 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
                     return false;
                 }
                 break;
-            case 'i': case 'm': case 'x': case 'd': case 'a': case 'u': // options
-                while (!pm_regexp_char_is_eof(parser) && *parser->cursor != '-' && *parser->cursor != ':' && *parser->cursor != ')') {
-                    if (!pm_regexp_options_add(&options, *parser->cursor)) {
+            case 'i': case 'm': case 'x': case 'a': case 'd': case 'u': case '-': {
+                /* Read the options the way Onigmo does. Each of i, m, and x is
+                 * turned on, or off after a -, and a, d, and u can only be
+                 * turned on. The options end at a :, which starts the
+                 * subexpression that they apply to, or at a ), after which
+                 * they apply to the rest of the group around this one. */
+                bool negated = false;
+
+                while (true) {
+                    if (pm_regexp_char_is_eof(parser)) {
+                        pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
                         return false;
                     }
-                    parser->cursor++;
-                }
 
-                if (pm_regexp_char_is_eof(parser)) {
-                    return false;
-                }
+                    uint8_t option = *parser->cursor;
+                    if (option == ':' || option == ')') break;
 
-                // If we are at the end of the group of options and there is no
-                // subexpression, then we are going to be setting the options
-                // for the parent group. In this case we are safe to return now.
-                if (*parser->cursor == ')') {
-                    if (pm_regexp_options_state(&options, 'x') == PM_REGEXP_OPTION_STATE_ADDED) {
-                        parser->extended_mode = true;
-                    }
-
-                    parser->cursor++;
-                    *options_only = true;
-                    return true;
-                }
-
-                /* A : ends the options and starts the subexpression that they
-                 * apply to, as in (?i:a). */
-                if (*parser->cursor == ':') {
-                    parser->cursor++;
-                    break;
-                }
-
-                PRISM_FALLTHROUGH
-            case '-':
-                parser->cursor++;
-                while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ':' && *parser->cursor != ')') {
-                    if (!pm_regexp_options_remove(&options, *parser->cursor)) {
-                        return false;
-                    }
-                    parser->cursor++;
-                }
-
-                if (pm_regexp_char_is_eof(parser)) {
-                    return false;
-                }
-
-                // If we are at the end of the group of options and there is no
-                // subexpression, then we are going to be setting the options
-                // for the parent group. In this case we are safe to return now.
-                if (*parser->cursor == ')') {
-                    switch (pm_regexp_options_state(&options, 'x')) {
-                        case PM_REGEXP_OPTION_STATE_ADDED:
-                            parser->extended_mode = true;
+                    switch (option) {
+                        case '-':
+                            negated = true;
                             break;
-                        case PM_REGEXP_OPTION_STATE_REMOVED:
-                            parser->extended_mode = false;
+                        case 'x':
+                            extended = negated ? -1 : 1;
                             break;
+                        case 'i':
+                        case 'm':
+                            break;
+                        case 'a':
+                        case 'd':
+                        case 'u':
+                            if (!negated) break;
+                            PRISM_FALLTHROUGH
+                        default:
+                            pm_regexp_parse_error(parser, parser->cursor, parser->cursor + 1, "undefined group option");
+                            return false;
                     }
 
+                    parser->cursor++;
+                }
+
+                if (*parser->cursor == ')') {
+                    if (extended != 0) parser->extended_mode = (extended > 0);
                     parser->cursor++;
                     *options_only = true;
                     return true;
@@ -1504,6 +1380,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
                 /* The : that starts the subexpression. */
                 parser->cursor++;
                 break;
+            }
             default:
                 parser->cursor++;
                 pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "undefined group option");
@@ -1512,14 +1389,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
     }
 
     bool extended_mode = parser->extended_mode;
-    switch (pm_regexp_options_state(&options, 'x')) {
-        case PM_REGEXP_OPTION_STATE_ADDED:
-            parser->extended_mode = true;
-            break;
-        case PM_REGEXP_OPTION_STATE_REMOVED:
-            parser->extended_mode = false;
-            break;
-    }
+    if (extended != 0) parser->extended_mode = (extended > 0);
 
     // Now, parse the expressions within this group.
     while (true) {

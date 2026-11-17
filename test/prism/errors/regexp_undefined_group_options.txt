@@ -1,0 +1,15 @@
+/(?-a)/
+    ^ undefined group option
+/(?i-u)/
+     ^ undefined group option
+/(?a-a)/
+     ^ undefined group option
+/(?iz)/
+    ^ undefined group option
+/(?i-mz:a)/
+      ^ undefined group option
+/(?i/
+  ^~ end pattern in group
+/(?i-/
+  ^~~ end pattern in group
+
