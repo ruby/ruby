@@ -11197,6 +11197,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     ALLOCV_END(pairs_handle);
 
     if (!modify) {
+        tr_buffer_free(&buffer);
         return Qnil;
     }
 

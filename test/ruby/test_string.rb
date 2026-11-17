@@ -3123,6 +3123,15 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("xb"), S("ab").tr(replacements))
   end
 
+  def test_tr_hash_no_match_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
+    begin;
+      str = ("a" * 10_000).encode("UTF-16LE")
+      replacements = {"b".encode("UTF-16LE") => "c".encode("UTF-16LE")}
+      1_000.times { str.tr!(replacements) }
+    end;
+  end
+
   def test_tr!
     a = S("hello")
     b = a.dup
