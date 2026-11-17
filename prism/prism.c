@@ -14610,10 +14610,14 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
  *     end
  *
  *
- * It can recurse infinitely down, and splats are allowed to group arguments.
+ * Destructuring can be nested, and splats are allowed to group arguments.
  */
-static pm_multi_target_node_t *
-parse_required_destructured_parameter(pm_parser_t *parser) {
+static pm_node_t *
+parse_required_destructured_parameter(pm_parser_t *parser, uint16_t depth) {
+    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
+        return parse_resource_recovery(parser, depth);
+    }
+
     expect1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING, PM_ERR_EXPECT_LPAREN_REQ_PARAMETER);
 
     pm_multi_target_node_t *node = pm_multi_target_node_create(parser);
@@ -14634,7 +14638,7 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
         }
 
         if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
-            param = UP(parse_required_destructured_parameter(parser));
+            param = parse_required_destructured_parameter(parser, (uint16_t) (depth + 1));
         } else if (accept1(parser, PM_TOKEN_USTAR)) {
             pm_token_t star = parser->previous;
             pm_node_t *value = NULL;
@@ -14667,7 +14671,7 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN_REQ_PARAMETER);
     pm_multi_target_node_closing_set(parser, node, &parser->previous);
 
-    return node;
+    return UP(node);
 }
 
 /**
@@ -14804,7 +14808,7 @@ parse_parameters(
         switch (parser->current.type) {
             case PM_TOKEN_PARENTHESIS_LEFT_GROUPING: {
                 update_parameter_state(parser, &parser->current, &order);
-                pm_node_t *param = UP(parse_required_destructured_parameter(parser));
+                pm_node_t *param = parse_required_destructured_parameter(parser, (uint16_t) (depth + 1));
 
                 if (order > PM_PARAMETERS_ORDER_AFTER_OPTIONAL) {
                     pm_parameters_node_requireds_append(parser->arena, params, param);
