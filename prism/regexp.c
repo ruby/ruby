@@ -1638,7 +1638,12 @@ pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth) {
 
     while (true) {
         pm_regexp_skip_extended_whitespace(parser);
-        if (pm_regexp_char_is_eof(parser) || *parser->cursor == ')' || *parser->cursor == '|') return true;
+        if (pm_regexp_char_is_eof(parser) || *parser->cursor == '|') return true;
+
+        /* A ) ends the group that this expression is in. Outside of every
+         * group it is unmatched, as in /a)/, and the item reports it. */
+        if (*parser->cursor == ')' && depth > 0) return true;
+
         if (!pm_regexp_parse_item(parser, depth)) return false;
     }
 }
