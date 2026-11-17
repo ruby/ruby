@@ -247,6 +247,7 @@ void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 void rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
+void rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t visi);
 
 VALUE rb_unnamed_parameters(int arity);
 
