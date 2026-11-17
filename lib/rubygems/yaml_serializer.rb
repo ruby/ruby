@@ -42,6 +42,7 @@ module Gem
       BLANK_RE = /\A[\0\s]*\z/
       BLANK_OR_COMMENT_RE = /\A[\0\s]*(?:#|\z)/
       DOCUMENT_END_RE = /\A\.\.\.(?:[ \t]|\z)/
+      DOCUMENT_START_RE = /\A---(?:[ \t]|\z)/
 
       STRING_UNESCAPES = {
         "\\\\" => "\\",
@@ -75,6 +76,7 @@ module Gem
         @anchors = {}
         @depth = 0
         strip_document_end
+        strip_extra_documents
         strip_document_prefix
       end
 
@@ -108,6 +110,21 @@ module Gem
 
       def strip_document_end
         index = @lines.index {|line| DOCUMENT_END_RE.match?(line) }
+        @lines.slice!(index..) if index
+      end
+
+      def strip_extra_documents
+        first_content_index = @lines.index {|line| !BLANK_OR_COMMENT_RE.match?(line) }
+        return unless first_content_index
+
+        if DOCUMENT_START_RE.match?(@lines[first_content_index])
+          # Keep the opening marker; strip_document_prefix consumes it afterward.
+          @lines.shift(first_content_index)
+          search_start = 1
+        else
+          search_start = first_content_index
+        end
+        index = (search_start...@lines.size).find {|i| DOCUMENT_START_RE.match?(@lines[i]) }
         @lines.slice!(index..) if index
       end
 
