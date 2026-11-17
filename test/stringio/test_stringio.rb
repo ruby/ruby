@@ -936,6 +936,13 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(1, s.pos)
   end
 
+  def test_each_codepoint_broken_multibyte
+    # A string that shares a backing buffer with a longer one must not
+    # read the buffer past its own end.
+    s = StringIO.new("\u3042\u3044".byteslice(0, 2))
+    assert_raise(ArgumentError) {s.each_codepoint {}}
+  end
+
   def test_ungetc_padding
     s = StringIO.new()
     s.pos = 2
