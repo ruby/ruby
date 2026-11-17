@@ -2600,6 +2600,7 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     }
 
     validate_vtm(&vtm);
+    vtm_normalize_month_mday(&vtm);
 
     time_modify(time);
     GetNewTimeval(time, tobj);
@@ -2626,7 +2627,6 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     if (utc == UTC_ZONE) {
         time_set_timew(time, tobj, timegmw(&vtm));
         vtm.isdst = 0; /* No DST in UTC */
-        vtm_normalize_month_mday(&vtm);
         vtm_day_wraparound(&vtm);
         time_set_vtm(time, tobj, vtm);
         tobj->vtm.tm_got = 1;

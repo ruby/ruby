@@ -625,6 +625,13 @@ module TestTimeTZ::WithTZ
     assert_equal([0, 0, 0, 2, 1, 2000], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
   end
 
+  def subtest_month_mday_normalization(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 2, 31, 12, 0, 0, tzarg)
+    assert_equal([0, 0, 12, 3, 3, 2018], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
+    t = time_class.new(2018, 4, 31, 24, 0, 0, tzarg)
+    assert_equal([0, 0, 0, 2, 5, 2018], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
+  end
+
   def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
     t = time_class.now(in: tzarg)
     assert_equal(tz, t.zone)

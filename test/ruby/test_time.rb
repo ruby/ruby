@@ -1613,4 +1613,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.new(2025, 4, 31, 0, 0, 0, "+00:00").to_i,
                  Time.new(2025, 4, 31, 0, 0, 0, "UTC").to_i, bug21301)
   end
+
+  def test_month_mday_normalization_with_negative_utc_offset
+    assert_equal(Time.utc(2026, 3, 4, 4), Time.new(2026, 2, 31, 23, 0, 0, -18000))
+    assert_equal(Time.utc(2026, 3, 4, 4), Time.new(2026, 2, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2024, 3, 3, 4), Time.new(2024, 2, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2026, 5, 2, 4), Time.new(2026, 4, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2026, 5, 2, 5), Time.new(2026, 4, 31, 24, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2026, 3, 4, 4), Time.new("2026-02-31 23:00:00 -05:00"))
+  end
 end
