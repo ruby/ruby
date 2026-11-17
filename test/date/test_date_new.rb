@@ -213,6 +213,36 @@ class TestDateNew < Test::Unit::TestCase
     assert_equal(0, d.offset)
   end
 
+  def test_civil__fractional_zone_offset_deprecated
+    with_deprecation_warnings do
+      # An offset that is already ignored as invalid gets only that warning.
+      ['+00.123', '-00.123', '+01.123'].each do |z|
+        assert_warning(/\A(?!.*decimal hour).*invalid offset is ignored/m) do
+          assert_equal(0, DateTime.civil(2001,2,3, 0,0,0, z).offset)
+        end
+      end
+
+      # Here the fraction reaches the result.
+      assert_warning(/decimal hour/) do
+        assert_equal(Rational(1800, 86400), DateTime.civil(2001,2,3, 0,0,0, '+00.5').offset)
+      end
+
+      # A zero fraction and the colon forms change nothing.
+      assert_warning('') do
+        assert_equal(Rational(3600, 86400), DateTime.civil(2001,2,3, 0,0,0, '+01.0').offset)
+        assert_equal(Rational(1800, 86400), DateTime.civil(2001,2,3, 0,0,0, '+00:30').offset)
+      end
+    end
+  end
+
+  def with_deprecation_warnings
+    deprecated = Warning[:deprecated] if Warning.respond_to?(:[])
+    Warning[:deprecated] = true if Warning.respond_to?(:[]=)
+    yield
+  ensure
+    Warning[:deprecated] = deprecated if Warning.respond_to?(:[]=)
+  end
+
   def test_civil__reform
     d = Date.jd(Date::ENGLAND, Date::ENGLAND)
     dt = DateTime.jd(Date::ENGLAND, 0,0,0,0, Date::ENGLAND)
