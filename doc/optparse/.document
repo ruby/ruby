@@ -1,1 +1,6 @@
-*.rdoc
+argument_converters.rdoc
+option_params.rdoc
+tutorial.rdoc
+
+# But not creates_option.rdoc; it's an included file, not a real page.
+
