@@ -28,7 +28,7 @@ typedef unsigned long rb_ulen_t;
 #ifndef NUM2LEN
 # define NUM2LEN NUM2LONG
 #endif
-#ifndef NUM2LEN
+#ifndef NUM2ULEN
 # define NUM2ULEN NUM2ULONG
 #endif
 #ifndef PRIdLEN
