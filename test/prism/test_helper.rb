@@ -210,7 +210,7 @@ module Ruby::Prism
         *(0...0x80),
         *((0x81...0x90).flat_map { |byte1| (0x90...0x100).map { |byte2| byte1 << 8 | byte2 } }),
         *((0x90...0x9C).flat_map { |byte1| (0xA0...0x100).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| byte1 << 16 | byte2 << 8 | byte3 } } }),
-        *((0xF0...0xF5).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| (0xA0...0x100).flat_map { |byte4| 0x9C << 24 | byte3 << 16 | byte3 << 8 | byte4 } } }),
+        *((0xF0...0xF5).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| (0xA0...0x100).flat_map { |byte4| 0x9C << 24 | byte2 << 16 | byte3 << 8 | byte4 } } }),
       ]
 
       yield Encoding::EMACS_MULE, codepoints_emacs_mule
