@@ -22,6 +22,158 @@
 #define PM_REGEXP_PARSE_DEPTH_MAX 4096
 
 /**
+ * Whether an ASCII byte is written as it is when a regular expression is
+ * quoted. That is a printable character other than the slash.
+ */
+static PRISM_INLINE bool
+pm_regexp_format_verbatim_p(uint8_t byte) {
+    return byte >= 0x20 && byte < 0x7F && byte != '/';
+}
+
+/**
+ * Whether the content of a regular expression can be quoted as it is. That is
+ * when every ASCII character is written as it is and every other character is
+ * valid UTF-8, since messages are in UTF-8.
+ */
+static bool
+pm_regexp_format_verbatim_content_p(const pm_encoding_t *encoding, const uint8_t *cursor, const uint8_t *end) {
+    while (cursor < end) {
+        if (*cursor < 0x80) {
+            if (!pm_regexp_format_verbatim_p(*cursor)) return false;
+            cursor++;
+        } else {
+            if (encoding != PM_ENCODING_UTF_8_ENTRY) return false;
+
+            size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
+            if (width == 0) return false;
+            cursor += width;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Write the content of a regular expression the way Ruby quotes it in an
+ * error. Content that can be quoted as it is gets written unchanged. Otherwise
+ * each character is written like this:
+ *
+ * - a backslash and the character after it, unchanged, as in \n;
+ * - a slash as \/;
+ * - printable ASCII and whitespace, unchanged;
+ * - other ASCII as \xHH, as in \x01;
+ * - a byte that is not part of a valid character as \xHH;
+ * - a UTF-8 or CESU-8 character as \uHHHH, or \u{HHHHH} past U+FFFF;
+ * - any other character as \xHH, or as \x{HHHH} with all of its bytes.
+ */
+static void
+pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, const uint8_t *source, size_t length) {
+    const uint8_t *cursor = source;
+    const uint8_t *end = source + length;
+
+    if (pm_regexp_format_verbatim_content_p(encoding, cursor, end)) {
+        pm_buffer_append_string(buffer, (const char *) source, length);
+        return;
+    }
+
+    while (cursor < end) {
+        uint8_t byte = *cursor;
+
+        if (byte == '\\' && cursor + 1 < end) {
+            size_t width = pm_encoding_char_width(encoding, cursor + 1, end - cursor - 1);
+            if (width == 0) width = 1;
+
+            pm_buffer_append_string(buffer, (const char *) cursor, width + 1);
+            cursor += width + 1;
+        } else if (byte >= 0x80) {
+            size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
+
+            if (width == 0) {
+                pm_buffer_append_format(buffer, "\\x%02X", byte);
+                cursor++;
+                continue;
+            }
+
+            int32_t codepoint = pm_encoding_unicode_codepoint(encoding, cursor, width);
+            if (codepoint >= 0x10000) {
+                pm_buffer_append_format(buffer, "\\u{%X}", (unsigned int) codepoint);
+            } else if (codepoint >= 0) {
+                pm_buffer_append_format(buffer, "\\u%04X", (unsigned int) codepoint);
+            } else if (width == 1) {
+                pm_buffer_append_format(buffer, "\\x%02X", byte);
+            } else {
+                pm_buffer_append_string(buffer, "\\x{", 3);
+                for (size_t index = 0; index < width; index++) pm_buffer_append_format(buffer, "%02X", cursor[index]);
+                pm_buffer_append_byte(buffer, '}');
+            }
+
+            cursor += width;
+        } else if (byte == '/') {
+            pm_buffer_append_string(buffer, "\\/", 2);
+            cursor++;
+        } else if (pm_regexp_format_verbatim_p(byte) || pm_char_is_whitespace(byte)) {
+            pm_buffer_append_byte(buffer, byte);
+            cursor++;
+        } else {
+            pm_buffer_append_format(buffer, "\\x%02X", byte);
+            cursor++;
+        }
+    }
+}
+
+/**
+ * A regular expression as it is validated: its content, its options, and the
+ * place in the source of the errors that are about it as a whole.
+ */
+typedef struct {
+    /** The parser that the regular expression is in. */
+    pm_parser_t *parser;
+
+    /**
+     * The content, in which the lexer keeps the escapes that the regular
+     * expression engine reads as their text.
+     */
+    const uint8_t *source;
+
+    /** The length of the content. */
+    size_t size;
+
+    /**
+     * The encoding that the content is in. This is the source encoding,
+     * except for content joined from strings in another encoding.
+     */
+    const pm_encoding_t *encoding;
+
+    /** The flags of the regular expression, which hold its options. */
+    pm_node_flags_t flags;
+
+    /** Where errors about the regular expression as a whole are reported. */
+    pm_location_t location;
+
+    /**
+     * Whether the content holds characters that the lexer did not check, as
+     * the values of strings joined into it do, so that an invalid character is
+     * an error once its escapes are read rather than one that was reported
+     * where it was lexed.
+     */
+    bool unlexed;
+} pm_regexp_t;
+
+/**
+ * Write the letters of the options that an error shows after the quoted
+ * regular expression, the way Ruby writes them: m, i, and x, in that order. The
+ * encoding options are not shown.
+ */
+static void
+pm_regexp_option_letters(pm_node_flags_t flags, char letters[4]) {
+    size_t index = 0;
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) letters[index++] = 'm';
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) letters[index++] = 'i';
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) letters[index++] = 'x';
+    letters[index] = '\0';
+}
+
+/**
  * The name of a named group, in the pattern.
  */
 typedef struct {
@@ -106,6 +258,12 @@ typedef struct {
 typedef struct {
     /** The parser that is currently being used. */
     pm_parser_t *parser;
+
+    /**
+     * The regular expression that is being validated, which errors quote. It
+     * is only set when report_errors is set.
+     */
+    const pm_regexp_t *regexp;
 
     /** A pointer to the start of the pattern that we are parsing. */
     const uint8_t *start;
@@ -325,17 +483,32 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
 
 /**
  * Append a syntax error to the parser's error list, at the place in the source
- * of the given range of the content. Errors are only reported when
- * report_errors is set.
+ * of the given range of the content. The message is followed by the quoted
+ * regular expression and its options, as in "unmatched close parenthesis:
+ * /a)/i". Errors are only reported when report_errors is set.
  */
-static PRISM_INLINE void
+static void
 pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message) {
-    if (regexp_parser->report_errors) {
-        pm_parser_t *parser = regexp_parser->parser;
-        uint32_t source_start = pm_regexp_source_offset(regexp_parser, start, true);
-        uint32_t source_end = pm_regexp_source_offset(regexp_parser, end, false);
-        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, message);
-    }
+    if (!regexp_parser->report_errors) return;
+
+    pm_parser_t *parser = regexp_parser->parser;
+    const pm_regexp_t *regexp = regexp_parser->regexp;
+
+    char letters[4];
+    pm_regexp_option_letters(regexp->flags, letters);
+
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, message, strlen(message));
+    pm_buffer_append_string(&buffer, ": /", 3);
+    pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
+    pm_buffer_append_byte(&buffer, '/');
+    pm_buffer_append_string(&buffer, letters, strlen(letters));
+    pm_buffer_append_byte(&buffer, '\0');
+
+    uint32_t source_start = pm_regexp_source_offset(regexp_parser, start, true);
+    uint32_t source_end = pm_regexp_source_offset(regexp_parser, end, false);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
 }
 
 /**
@@ -2367,82 +2540,6 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
 // ---------------------------------------------------------------------------
 
 /**
- * Format regexp source content for use in error messages, hex-escaping
- * non-ASCII bytes.
- */
-static void
-pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, const uint8_t *source, size_t length) {
-    size_t index = 0;
-
-    if (encoding == PM_ENCODING_UTF_8_ENTRY) {
-        pm_buffer_append_string(buffer, (const char *) source, length);
-        return;
-    }
-
-    while (index < length) {
-        if (source[index] < 0x80) {
-            pm_buffer_append_byte(buffer, source[index]);
-            index++;
-        } else if (pm_encoding_multibyte_p(encoding)) {
-            size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (length - index));
-
-            if (width > 1) {
-                PM_BUFFER_APPEND_LITERAL(buffer, "\\x{");
-                for (size_t i = 0; i < width; i++) {
-                    pm_buffer_append_format(buffer, "%02X", source[index + i]);
-                }
-                pm_buffer_append_byte(buffer, '}');
-                index += width;
-            } else {
-                pm_buffer_append_format(buffer, "\\x%02X", source[index]);
-                index++;
-            }
-        } else {
-            pm_buffer_append_format(buffer, "\\x%02X", source[index]);
-            index++;
-        }
-    }
-}
-
-/**
- * A regular expression as it is validated: its content, its options, and the
- * place in the source of the errors that are about it as a whole.
- */
-typedef struct {
-    /** The parser that the regular expression is in. */
-    pm_parser_t *parser;
-
-    /**
-     * The content, in which the lexer keeps the escapes that the regular
-     * expression engine reads as their text.
-     */
-    const uint8_t *source;
-
-    /** The length of the content. */
-    size_t size;
-
-    /**
-     * The encoding that the content is in. This is the source encoding,
-     * except for content joined from strings in another encoding.
-     */
-    const pm_encoding_t *encoding;
-
-    /** The flags of the regular expression, which hold its options. */
-    pm_node_flags_t flags;
-
-    /** Where errors about the regular expression as a whole are reported. */
-    pm_location_t location;
-
-    /**
-     * Whether the content holds characters that the lexer did not check, as
-     * the values of strings joined into it do, so that an invalid character is
-     * an error once its escapes are read rather than one that was reported
-     * where it was lexed.
-     */
-    bool unlexed;
-} pm_regexp_t;
-
-/**
  * Append an error to the regular expression as a whole, followed by its
  * content, which is how errors are reported once its pattern has been read but
  * before it is parsed. The message is written out with the content, since the
@@ -2452,11 +2549,15 @@ static void
 pm_regexp_error_with_content(const pm_regexp_t *regexp, const char *message) {
     pm_parser_t *parser = regexp->parser;
 
+    char letters[4];
+    pm_regexp_option_letters(regexp->flags, letters);
+
     pm_buffer_t buffer = { 0 };
     pm_buffer_append_string(&buffer, message, strlen(message));
     pm_buffer_append_string(&buffer, ": /", 3);
     pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
     pm_buffer_append_byte(&buffer, '/');
+    pm_buffer_append_string(&buffer, letters, strlen(letters));
     pm_buffer_append_byte(&buffer, '\0');
 
     pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
@@ -2471,9 +2572,12 @@ static void
 pm_regexp_error_kind_with_content(const pm_regexp_t *regexp, pm_diagnostic_id_t diag_id) {
     pm_parser_t *parser = regexp->parser;
 
+    char letters[4];
+    pm_regexp_option_letters(regexp->flags, letters);
+
     pm_buffer_t buffer = { 0 };
     pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer));
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer), letters);
     pm_buffer_cleanup(&buffer);
 }
 
@@ -3234,9 +3338,12 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
 
     if (name == NULL) return;
 
+    char letters[4];
+    pm_regexp_option_letters(regexp->flags, letters);
+
     pm_buffer_t formatted = { 0 };
     pm_regexp_format_for_error(&formatted, regexp->encoding, regexp->source, regexp->size);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value, letters);
     pm_buffer_cleanup(&formatted);
 }
 
@@ -3319,6 +3426,7 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
 
     pm_regexp_parser_t regexp_parser = {
         .parser = parser,
+        .regexp = regexp,
         .start = pattern,
         .cursor = pattern,
         .end = pattern + pattern_size,
@@ -3534,12 +3642,14 @@ pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t
             return false;
     }
 
+    /* Ruby reads each part without the options m, i, and x, so a part's
+     * errors do not show them. */
     part->regexp = (pm_regexp_t) {
         .parser = parser,
         .source = source,
         .size = size,
         .encoding = encoding,
-        .flags = flags,
+        .flags = flags & (pm_node_flags_t) ~(PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE | PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE | PM_REGULAR_EXPRESSION_FLAGS_EXTENDED),
         .location = node->location,
         .unlexed = unlexed
     };
@@ -3667,6 +3777,7 @@ void
 pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_t size, bool extended_mode, pm_regexp_name_callback_t name_callback, void *name_data) {
     pm_regexp_parser_t regexp_parser = {
         .parser = parser,
+        .regexp = NULL,
         .start = source,
         .cursor = source,
         .end = source + size,

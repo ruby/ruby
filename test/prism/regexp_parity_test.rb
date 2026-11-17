@@ -115,49 +115,12 @@ module Ruby::Prism
       "/(\\xZ/ =~ \"\"", "/(\xFFa/ =~ \"\""
     ].freeze
 
-    # Regular expressions where prism does not yet match CRuby. Each one is
-    # removed when the stage that it belongs to matches.
+    # Regular expressions where prism does not match CRuby. After the lexer
+    # reports an invalid character, CRuby quotes the pattern in later errors as
+    # its lexer left it, which leaves out some of the bytes. Ruby::Prism quotes the
+    # pattern as it is written.
     KNOWN_FAILURES = [
-      # Errors in the pattern.
-      "/(?#\\xFF/", "/(?<1a>x)/", "/(?i-/", "/(?i/",
-      "/(?(1)a|b|c)/", "/\\k<b>/", "/\\k<a>(?<a>x)/", "/(?<a>x)\\k<b>/",
-      "/\\k<0>/",
-
-      # Property escapes are checked against the encoding of the pattern.
-      "/\\p{Hiragana}[a/", "/\\p{^Alpha/", "/\\p{Alpha/", "/\\p{}/",
-
-      # Names and numbers of groups are resolved once the pattern is parsed.
-      "/(?<b>x)\\k<1>/", "/\\g<b>/", "/(?<a>x)\\g<b>/", "/\\g<2>(a)/",
-      "/(?<a>x)(?<a>y)\\g<a>/", "/(a)(?<b>x)\\1/", "/(a)(?<b>x)\\g<1>/",
-
-      # Errors in the pattern are followed by the regular expression, as CRuby
-      # writes them.
-      "/\\ą(/", "/\xFF[a/", "/)\xFFa/", "/(\xFFa/",
-      "/(?#\xFF)[a/", "/[a\xFF\xFF/", "/[a\xFF/", "/)\xFF/",
-      "/(\\x/", "/(\xFF/", "/a\\\xFFb(/", "/\xE3\x81(/",
-      "/\\u{\xFF}(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x", "/garçon/n",
-      "/garçon\\xC3\\xA7/n", "/\\xC3\\xA7garçon/n", "/é(/n", "/é(/u",
-      "/é(/e", "/é(/s", "/é\\xFF(/n", "/é\\xFF(/u",
-      "/é\\xFF(/e", "/é\\xFF(/s", "/\\p{Hiragana}(?#é)/n", "/é[a/e",
-      "/é[a/n", "/\\xE9[a/", "/\\xC3\\d[a/", "/\\xE9(/",
-      "/\\xFF[a/n", "/)\\p{Hiragana}/", "/a\#{\"\\xE3\"}b/", "/(?x:a)b # (\n/",
-      "/(?-x:a # (\n)/x", "/(?x)(?-x)a # (\n/", "/(?\\!x)/", "/\\あ(/",
-      "/a\\/b(/", "/\\\nx(/", "/\\xE3\\x81\\x82(/", "/\\343\\201\\202(/",
-      "%r{(?\\}x)}", "/[]/", "/*/", "/+/",
-      "/?/", "/(?<>a)/", "/(/", "/(|/",
-      "/(?</", "/(?/", "/(?#/", "/(?P/",
-      "/)/", "/[a/", "/[[a]/", "/[a\\]/",
-      "/a(/x", "/(?x)a # \\xFF\n(/", "/a{3,2}/", "/x{100001}/",
-      "/x{1,100001}/", "/{3,2}/", "/{3}/", "/{,3}/",
-      "/a|{3}/", "/({3})/", "/a{100001/", "/a{1,100001/",
-      "/a{99999999999}/", "/a{１１}/", "/a{3}{2,1}/", "/a{3,2}?/",
-      "/[b-a]/", "/[a-\\d]/", "/[\\d-a]/", "/[^]/",
-      "/[]\\]/", "/[[:alpha:]/", "/[[:alpha:]-a]/", "/[a-[:alpha:]]/",
-      "/[\\w-\\d]/", "/[z-a&&b]/", "/[\\x7f-\\x01]/", "/[a--]/",
-      "/[[:a:]]/", "/[\\n-\\t]/", "/[\\101-\\100]/", "/[い-あ]/",
-      "/[a-あ]/", "/[あ-a]/", "/[\\xE3\\x81\\x84-\\xE3\\x81\\x82]/", "/(?z)/",
-      "/a\#{\"b\" \"c\"}(/", "/(\#{\"a\"}/", "/[[:foo:]]/", "/a\#{\"b\"}(/",
-      "/\\M-\\x(/", "/(\xFFa/ =~ \"\""
+      "/[a\xFF/", "/)\xFF/", "/(\xFF/", "/\\u{a\xFFb}(/"
     ].freeze
 
     # The encodings that ENCODING_CASES are compared in by default, which have

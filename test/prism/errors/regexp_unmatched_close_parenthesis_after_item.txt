@@ -1,9 +1,9 @@
 /a)/
-  ^ unmatched close parenthesis
+  ^ unmatched close parenthesis: /a)/
 /(a))/
-    ^ unmatched close parenthesis
+    ^ unmatched close parenthesis: /(a))/
 /a|b)/
-    ^ unmatched close parenthesis
+    ^ unmatched close parenthesis: /a|b)/
 /a)b/
-  ^ unmatched close parenthesis
+  ^ unmatched close parenthesis: /a)b/
 

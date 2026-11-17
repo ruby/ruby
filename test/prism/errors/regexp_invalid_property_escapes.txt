@@ -1,12 +1,12 @@
 /\p{}/
-    ^ invalid character property name {}
+    ^ invalid character property name {}: /\p{}/
 /\p{^}/
-     ^ invalid character property name {}
+     ^ invalid character property name {}: /\p{^}/
 /\p{Alpha/
-    ^~~~ invalid character property name {Alph}
+    ^~~~ invalid character property name {Alph}: /\p{Alpha/
 /[\p{Alpha]/
-     ^~~~~ invalid character property name {Alpha}
- ^~~~~~~~~~ premature end of char-class
+     ^~~~~ invalid character property name {Alpha}: /[\p{Alpha]/
+ ^~~~~~~~~~ premature end of char-class: /[\p{Alpha]/
 /\p{Al(pha}/
-    ^~ invalid character property name {Al}
+    ^~ invalid character property name {Al}: /\p{Al(pha}/
 

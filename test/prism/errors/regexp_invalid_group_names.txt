@@ -1,13 +1,13 @@
 /(?<1a>x)/
-    ^~ invalid group name <1a>
+    ^~ invalid group name <1a>: /(?<1a>x)/
 /(?<-a>x)/
-    ^~ invalid group name <-a>
+    ^~ invalid group name <-a>: /(?<-a>x)/
 /(?'1a'x)/
-    ^~ invalid group name <1a>
+    ^~ invalid group name <1a>: /(?'1a'x)/
 /(?''x)/
-    ^ group name is empty
+    ^ group name is empty: /(?''x)/
 /(?<a)b>x)/
-    ^~~~~~ invalid group name <a)b>x)>
+    ^~~~~~ invalid group name <a)b>x)>: /(?<a)b>x)/
 /(?<a/
-    ^ invalid group name <a>
+    ^ invalid group name <a>: /(?<a/
 

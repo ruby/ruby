@@ -307,7 +307,7 @@ module Ruby::Prism
     # evaluated instead, which raises then.
     def test_static_interpolation_of_interpolated_string
       errors = Ruby::Prism.parse('/a#{"b#{"c"}"}(/').errors
-      assert_equal ["end pattern with unmatched parenthesis"], errors.map(&:message)
+      assert_equal ["end pattern with unmatched parenthesis: /abc(/"], errors.map(&:message)
     end
 
     # The content that a regular expression's parts join to takes the encoding
@@ -316,14 +316,25 @@ module Ruby::Prism
     def test_static_interpolation_in_another_encoding
       assert_empty Ruby::Prism.parse("# encoding: EUC-JP\n" + '/a#{"\\u3042"}/').errors
 
+      # The message is in the encoding of the source, but it quotes the content
+      # in UTF-8, so its bytes are compared.
       errors = Ruby::Prism.parse("# encoding: EUC-JP\n" + '/a#{"\\u3042"}(/').errors
-      assert_equal ["end pattern with unmatched parenthesis"], errors.map(&:message)
+      assert_equal ["end pattern with unmatched parenthesis: /aあ(/".b], errors.map { |error| error.message.b }
     end
 
     def test_static_interpolation_of_incompatible_encodings
       source = "# encoding: EUC-JP\n/\xA4\xA2".b + '#{"\\u3042"}/'
       errors = Ruby::Prism.parse(source).errors
       assert_equal ["incompatible character encodings: EUC-JP and UTF-8"], errors.map(&:message)
+    end
+
+    # A comment in extended mode ends at the newline, so the * after it has
+    # nothing to repeat. The error quotes the pattern with its newline.
+    def test_repeat_after_extended_comment
+      errors = Ruby::Prism.parse("/( # comment\n*)/x").errors
+
+      assert_equal ["target of repeat operator is not specified: /( # comment\n*)/x"], errors.map(&:message)
+      assert_equal [2, 0], [errors.first.location.start_line, errors.first.location.start_column]
     end
 
     def test_depth_limit_nested_character_sets
@@ -341,7 +352,7 @@ module Ruby::Prism
 
     def assert_depth_limit(source)
       messages = Ruby::Prism.parse("/#{source}/ =~ \"\"").errors.map(&:message)
-      assert_equal 1, messages.count("parse depth limit over")
+      assert_equal 1, messages.count { |message| message.start_with?("parse depth limit over: /") }
     end
 
     def assert_options_after_heredoc(closing, options, source)

@@ -1,18 +1,15 @@
 /( *)/x
-   ^ target of repeat operator is not specified
+   ^ target of repeat operator is not specified: /( *)/x
 / */x
-  ^ target of repeat operator is not specified
+  ^ target of repeat operator is not specified: / */x
 /(a| *)/x
-     ^ target of repeat operator is not specified
+     ^ target of repeat operator is not specified: /(a| *)/x
 /( ?:a)/x
-   ^ target of repeat operator is not specified
+   ^ target of repeat operator is not specified: /( ?:a)/x
 /( {3})/x
-   ^~~ target of repeat operator is not specified
+   ^~~ target of repeat operator is not specified: /( {3})/x
 /(?x: *)/
-      ^ target of repeat operator is not specified
+      ^ target of repeat operator is not specified: /(?x: *)/
 /(?x)( *)/
-       ^ target of repeat operator is not specified
-/( # comment
-*)/x
-^ target of repeat operator is not specified
+       ^ target of repeat operator is not specified: /(?x)( *)/
 

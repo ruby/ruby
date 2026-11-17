@@ -1,5 +1,5 @@
 /(a)(?(1)b|c|d)/
-            ^ invalid conditional pattern
+            ^ invalid conditional pattern: /(a)(?(1)b|c|d)/
 /(a)(?(1)||)/
-          ^ invalid conditional pattern
+          ^ invalid conditional pattern: /(a)(?(1)||)/
 
