@@ -1226,6 +1226,63 @@ pm_regexp_parse_name_error(pm_regexp_parser_t *parser, const uint8_t *start, con
 }
 
 /**
+ * Parse the name of a named group, as in the n of (?<n>a) or (?'n'a), with the
+ * cursor on its first character, the way Onigmo's fetch_name reads it, and
+ * consume the > or ' that closes it. In Ruby any character can be part of a
+ * name, but a name must not be empty, must not start with a digit or a -, and
+ * must be closed before the next ). Returns false when the name is not closed,
+ * which stops the walk. After any other error the walk goes on past the name,
+ * to report the errors that follow it.
+ */
+static bool
+pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
+    const uint8_t *start = parser->cursor;
+
+    if (parser->cursor >= parser->end) {
+        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        return false;
+    }
+
+    if (*parser->cursor == close) {
+        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        parser->cursor++;
+        return true;
+    }
+
+    size_t width;
+    uint32_t digit;
+    bool invalid = *parser->cursor == '-' || pm_regexp_digit(parser, parser->cursor, &width, &digit);
+
+    /* The first character is never the end of the name, even when it is a ). */
+    pm_regexp_skip_char(parser);
+    while (parser->cursor < parser->end && *parser->cursor != close && *parser->cursor != ')') {
+        pm_regexp_skip_char(parser);
+    }
+
+    if (invalid) {
+        /* The engine quotes the name up to the character that would end it. */
+        pm_regexp_parse_name_error(parser, start, parser->cursor, "invalid group name");
+        if (parser->cursor >= parser->end || *parser->cursor != close) return false;
+
+        parser->cursor++;
+        return true;
+    }
+
+    if (parser->cursor >= parser->end || *parser->cursor != close) {
+        /* A name that is not closed is quoted to the end of the pattern. */
+        pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+        return false;
+    }
+
+    if (parser->name_callback != NULL) {
+        pm_regexp_parser_named_capture(parser, start, parser->cursor);
+    }
+
+    parser->cursor++;
+    return true;
+}
+
+/**
  * Parse the number of a group that is the condition of a conditional group, as
  * in the 1 of (?(1)a|b), with the cursor on its first digit, the way Onigmo's
  * fetch_name reads it. The number must be digits up to a ), and must not be 0.
@@ -1395,36 +1452,15 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
                     case '!': // negative lookbehind
                         parser->cursor++;
                         break;
-                    default: { // named capture group
-                        const uint8_t *start = parser->cursor;
-                        if (!pm_regexp_char_find(parser, '>')) {
-                            return false;
-                        }
-
-                        if (parser->cursor - start == 1) {
-                            pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
-                        }
-
-                        if (parser->name_callback != NULL) {
-                            pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
-                        }
-
+                    default: // named capture group
+                        if (!pm_regexp_parse_group_name(parser, '>')) return false;
                         break;
-                    }
                 }
                 break;
-            case '\'': { // named capture group
-                const uint8_t *start = ++parser->cursor;
-                if (!pm_regexp_char_find(parser, '\'')) {
-                    return false;
-                }
-
-                if (parser->name_callback != NULL) {
-                    pm_regexp_parser_named_capture(parser, start, parser->cursor - 1);
-                }
-
+            case '\'': // named capture group
+                parser->cursor++;
+                if (!pm_regexp_parse_group_name(parser, '\'')) return false;
                 break;
-            }
             case '(': // conditional expression
                 parser->cursor++;
                 if (!pm_regexp_parse_condition(parser, group_start)) return false;

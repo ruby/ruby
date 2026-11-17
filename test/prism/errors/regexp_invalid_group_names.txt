@@ -1,0 +1,13 @@
+/(?<1a>x)/
+    ^~ invalid group name <1a>
+/(?<-a>x)/
+    ^~ invalid group name <-a>
+/(?'1a'x)/
+    ^~ invalid group name <1a>
+/(?''x)/
+    ^ group name is empty
+/(?<a)b>x)/
+    ^~~~~~ invalid group name <a)b>x)>
+/(?<a/
+    ^ invalid group name <a>
+
