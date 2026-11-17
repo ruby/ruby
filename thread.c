@@ -467,8 +467,9 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
     while (th->keeping_mutexes) {
         rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
 
+        // rb_mutex_unlock_th unlinks the mutex from th->keeping_mutexes and
+        // clears its next_mutex so a later owner doesn't inherit our list.
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
         VM_ASSERT(mutex->ec_serial);
         const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
