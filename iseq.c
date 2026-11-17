@@ -695,7 +695,7 @@ rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
     bool no_realpath;
     VALUE pathobj = rb_iseq_pathobj_new(path, realpath, &no_realpath);
     RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->location.pathobj, pathobj);
-    ISEQ_BODY(iseq)->no_realpath = no_realpath;
+    ISEQ_BODY(iseq)->flags.no_realpath = no_realpath;
 }
 
 // Make a dummy iseq for a dummy frame that exposes a path for profilers to inspect
@@ -1215,7 +1215,7 @@ pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
               enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
-    ISEQ_BODY(iseq)->prism = true;
+    ISEQ_BODY(iseq)->flags.prism = true;
 
     ISEQ_BODY(iseq)->source_hash = node->source_hash;
     RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
@@ -1434,7 +1434,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     }
 
     if (SYM2ID(rb_hash_aref(misc, ID2SYM(rb_intern("parser")))) == rb_intern("prism")) {
-        ISEQ_BODY(iseq)->prism = true;
+        ISEQ_BODY(iseq)->flags.prism = true;
     }
 
     make_compile_option(&option, opt);
@@ -1603,7 +1603,7 @@ rb_iseq_path(const rb_iseq_t *iseq)
 VALUE
 rb_iseq_realpath(const rb_iseq_t *iseq)
 {
-    return pathobj_realpath(ISEQ_BODY(iseq)->location.pathobj, ISEQ_BODY(iseq)->no_realpath);
+    return pathobj_realpath(ISEQ_BODY(iseq)->location.pathobj, ISEQ_BODY(iseq)->flags.no_realpath);
 }
 
 VALUE
@@ -3869,7 +3869,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 #ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
-    rb_hash_aset(misc, ID2SYM(rb_intern("parser")), iseq_body->prism ? ID2SYM(rb_intern("prism")) : ID2SYM(rb_intern("parse.y")));
+    rb_hash_aset(misc, ID2SYM(rb_intern("parser")), iseq_body->flags.prism ? ID2SYM(rb_intern("prism")) : ID2SYM(rb_intern("parse.y")));
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,

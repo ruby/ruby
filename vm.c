@@ -1778,7 +1778,7 @@ rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *s
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
     RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, CFP_ISEQ(cfp));
     RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->location.pathobj);
-    bind->no_realpath = ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->no_realpath;
+    bind->no_realpath = ISEQ_BODY(CFP_ISEQ(ruby_level_cfp))->flags.no_realpath;
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;

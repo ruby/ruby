@@ -281,7 +281,7 @@ extern VALUE rb_e_script;
 static VALUE
 iseq_compiled_by_prism_p(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(ISEQ_BODY(rb_iseqw_to_iseq(self))->prism);
+    return RBOOL(ISEQ_BODY(rb_iseqw_to_iseq(self))->flags.prism);
 }
 
 static VALUE
@@ -344,7 +344,7 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
         return Qnil;
     }
 
-    if (ISEQ_BODY(iseq)->prism) {
+    if (ISEQ_BODY(iseq)->flags.prism) {
         rb_raise(rb_eRuntimeError, "cannot get AST for ISEQ compiled by prism");
     }
 

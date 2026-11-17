@@ -567,8 +567,10 @@ struct rb_iseq_constant_body {
 
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
-    bool prism; // ISEQ was generated from prism compiler
-    bool no_realpath; // location.pathobj names no real file (ex: during eval)
+    struct {
+        unsigned int prism: 1; // ISEQ was generated from prism compiler
+        unsigned int no_realpath: 1; // location.pathobj names no real file (ex: during eval)
+    } flags;
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.
     rb_atomic_t jit_ep_escape_recorded;

@@ -4600,7 +4600,7 @@ proc_binding(VALUE self)
     if (iseq) {
         rb_iseq_check(iseq);
         RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(iseq)->location.pathobj);
-        bind->no_realpath = ISEQ_BODY(iseq)->no_realpath;
+        bind->no_realpath = ISEQ_BODY(iseq)->flags.no_realpath;
         bind->first_lineno = ISEQ_BODY(iseq)->location.first_lineno;
     }
     else {
