@@ -8716,11 +8716,20 @@ lex_identifier(pm_parser_t *parser, bool previous_command_start) {
 
 /**
  * Returns true if the current token that the parser is considering is at the
- * beginning of a line or the beginning of the source.
+ * beginning of a line or the beginning of the source, after an optional BOM.
  */
 static bool
 current_token_starts_line(pm_parser_t *parser) {
-    return (parser->current.start == parser->start) || (parser->current.start[-1] == '\n');
+    if (parser->current.start == parser->start) return true;
+
+    switch (parser->current.start[-1]) {
+        case '\n':
+            return true;
+        case 0xbf:
+            return (parser->current.start - parser->start == 3 && parser->start[0] == 0xef && parser->start[1] == 0xbb);
+        default:
+            return false;
+    }
 }
 
 /**
