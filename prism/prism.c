@@ -7625,8 +7625,6 @@ parser_magic_comment_key_p(const uint8_t *key, size_t key_length, const char *na
  */
 static PRISM_INLINE bool
 parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
-    bool result = true;
-
     const uint8_t *start = parser->current.start + 1;
     const uint8_t *end = parser->current.end;
     if (end - start <= 7) return false;
@@ -7711,22 +7709,15 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 
         switch (key_length) {
             case 6:
-                /* We only want to attempt to compare against encoding comments
-                 * if it is the first line in the file (or the second in the
-                 * case of a shebang). */
-                if (parser->current.start == parser->encoding_comment_start && !parser->encoding_locked) {
-                    if (parser_magic_comment_key_p(key_start, key_length, "coding")) {
-                        result = parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
-                    }
-                }
-                break;
             case 8:
                 /* We only want to attempt to compare against encoding comments
                  * if it is the first line in the file (or the second in the
                  * case of a shebang). */
                 if (parser->current.start == parser->encoding_comment_start && !parser->encoding_locked) {
-                    if (parser_magic_comment_key_p(key_start, key_length, "encoding")) {
-                        result = parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
+                    if (parser_magic_comment_key_p(key_start, key_length, key_length == 6 ? "coding" : "encoding")) {
+                        if (!parser_lex_magic_comment_encoding_value(parser, value_start, value_end)) {
+                            pm_parser_err(parser, U32(value_start - parser->start), value_length, PM_ERR_INVALID_ENCODING_MAGIC_COMMENT);
+                        }
                     }
                 }
                 break;
@@ -7820,7 +7811,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
     }
 
-    return result;
+    return true;
 }
 
 /******************************************************************************/

@@ -108,6 +108,20 @@ module Ruby::Prism
       end
     end
 
+    def test_invalid_encoding_value_does_not_fall_back_to_prefix
+      ["coding", "encoding"].each do |key|
+        ["Windows-31J[", "ascii!", "binary?", "unknown"].each do |value|
+          ["# #{key}: #{value}", "# #{key}: \"#{value}\"", "# -*- #{key}: #{value} -*-"].each do |comment|
+            result = Ruby::Prism.parse("#{comment}\n__ENCODING__")
+
+            assert_equal [:invalid_encoding_magic_comment], result.errors.map(&:type)
+            assert_equal value, result.errors.first.location.slice
+            assert_equal Encoding::UTF_8, result.encoding
+          end
+        end
+      end
+    end
+
     private
 
     def assert_magic_encoding(expected, line)
