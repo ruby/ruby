@@ -393,6 +393,28 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_port_cannot_be_reinitialized
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      assert_raise(TypeError) { Ractor::Port.allocate }
+      assert_raise(TypeError) { port.dup }
+      assert_raise(TypeError) { port.clone }
+      assert_raise(FrozenError) { port.__send__(:initialize_copy, Ractor::Port.new) }
+
+      # another Ractor must not be able to take the port over
+      r = Ractor.new(port) do |pt|
+        pt.__send__(:initialize)
+        pt.receive(timeout: 0)
+      rescue Ractor::Error
+        :not_owner
+      end
+      assert_equal :not_owner, r.value
+
+      port << :ok
+      assert_equal :ok, port.receive
+    RUBY
+  end
+
   def test_read_frozen_class_fields_of_non_main
     assert_ractor(<<~'RUBY')
       port = Ractor::Port.new
