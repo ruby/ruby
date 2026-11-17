@@ -120,6 +120,12 @@ module Ruby::Prism # :nodoc:
     )
 
     load_exported_functions_from(
+      "prism/options.h",
+      "pm_options_version_supported_p",
+      []
+    )
+
+    load_exported_functions_from(
       "prism/string_query.h",
       "pm_string_query_local",
       "pm_string_query_constant",
@@ -709,47 +715,67 @@ module Ruby::Prism # :nodoc:
   # Here we are going to patch StringQuery to put in the class-level methods so
   # that it can maintain a consistent interface
   class StringQuery # :nodoc:
-    # The version strings that the string queries take, by the number that the
-    # version option of the parse methods dumps for each version. The latest
-    # version is nil.
-    VERSIONS = { 0 => nil, 1 => "3.3", 2 => "3.4", 3 => "4.0", 4 => "4.1" }.freeze
-    private_constant :VERSIONS
-
     class << self
       # Mirrors the C extension's StringQuery::local? method.
       def local?(string, version: nil)
-        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name, query_version(version)))
+        version = query_version(version)
+        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name, version), version)
       end
 
       # Mirrors the C extension's StringQuery::constant? method.
       def constant?(string, version: nil)
-        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name, query_version(version)))
+        version = query_version(version)
+        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name, version), version)
       end
 
       # Mirrors the C extension's StringQuery::method_name? method.
       def method_name?(string, version: nil)
-        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name, query_version(version)))
+        version = query_version(version)
+        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name, version), version)
       end
 
       # Mirrors the C extension's StringQuery::keyword? method.
       def keyword?(string, version: nil)
-        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name, query_version(version)))
+        version = query_version(version)
+        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name, version), version)
       end
 
       private
 
-      # Read the version option of a string query the same way that the version
-      # option of the parse methods is read, which raises for a version that is
-      # not valid, into the version string that the query takes.
+      # Read the version option of a string query the way the version option
+      # of the parse methods reads it. The nearest version is the running Ruby
+      # if prism supports it, 3.3 for an older Ruby, and otherwise the latest
+      # (nil). The current version is the running Ruby, which prism must
+      # support. Any other version is passed on as it is, and the query itself
+      # checks it.
       def query_version(version)
-        VERSIONS.fetch(Ruby::Prism.__send__(:dump_options_version, version))
+        case version
+        when nil, "nearest"
+          if running_version_supported?
+            RUBY_VERSION
+          elsif RUBY_VERSION < "3.3"
+            "3.3"
+          end
+        when "current"
+          raise CurrentVersionError, RUBY_VERSION unless running_version_supported?
+          RUBY_VERSION
+        else
+          version = String.try_convert(version) || raise(TypeError, "no implicit conversion of #{version.class} into String")
+          raise ArgumentError, "string contains null byte" if version.include?("\0")
+          version
+        end
+      end
+
+      # Return true if prism supports the version of the running Ruby.
+      def running_version_supported?
+        LibRubyParser.pm_options_version_supported_p(RUBY_VERSION, RUBY_VERSION.bytesize)
       end
 
       # Parse the enum result and return an appropriate boolean.
-      def query(result)
+      def query(result, version)
         case result
         when :PM_STRING_QUERY_ERROR_VERSION
-          raise ArgumentError, "invalid version"
+          raise ArgumentError, "invalid version: #{version}"
         when :PM_STRING_QUERY_ERROR
           raise ArgumentError, "Invalid or non ascii-compatible encoding"
         when :PM_STRING_QUERY_FALSE
