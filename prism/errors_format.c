@@ -37,7 +37,8 @@ lines_are_utf8(const pm_parser_t *parser, size_t start_index, size_t end_index) 
 
 typedef struct {
     pm_diagnostic_t *diagnostic;
-    int32_t line_start;
+    /* Zero-based line indices preserve source order across line-number wraparound. */
+    uint32_t line_index;
     uint32_t column_start;
     uint32_t column_end;
     size_t idx;
@@ -48,8 +49,8 @@ pm_rich_error_compare(const void *a, const void *b) {
     const pm_rich_error_t *left = (const pm_rich_error_t *) a;
     const pm_rich_error_t *right = (const pm_rich_error_t *) b;
 
-    if (left->line_start != right->line_start) {
-        return (left->line_start < right->line_start) ? -1 : 1;
+    if (left->line_index != right->line_index) {
+        return (left->line_index < right->line_index) ? -1 : 1;
     }
 
     if (left->column_start != right->column_start) {
@@ -64,15 +65,15 @@ pm_rich_error_compare(const void *a, const void *b) {
 }
 
 /**
- * Return the number of the last line of the source that can be displayed. When
+ * Return the zero-based index of the last line of the source that can be displayed. When
  * the source ends with a newline, the empty line after it is not displayed.
  */
-static int32_t
+static uint32_t
 pm_rich_errors_final_line(const pm_parser_t *parser) {
     const pm_line_offset_list_t *line_offsets = &parser->line_offsets;
-    int32_t final_line = parser->start_line + ((int32_t) line_offsets->size) - 1;
+    uint32_t final_line = (uint32_t) (line_offsets->size - 1);
 
-    if ((parser->start + line_offsets->offsets[line_offsets->size - 1]) == parser->end) {
+    if (final_line > 0 && (parser->start + line_offsets->offsets[final_line]) == parser->end) {
         final_line--;
     }
 
@@ -86,9 +87,9 @@ pm_rich_errors_final_line(const pm_parser_t *parser) {
  * empty line after a trailing newline.
  */
 static void
-pm_rich_error_context(int32_t line, int32_t start_line, int32_t final_line, int32_t *first, int32_t *last) {
-    *first = (line - start_line > 2) ? (line - 2) : start_line;
-    *last = (final_line - line > 2) ? (line + 2) : final_line;
+pm_rich_error_context(uint32_t line, uint32_t final_line, uint32_t *first, uint32_t *last) {
+    *first = (line > 2) ? (line - 2) : 0;
+    *last = (final_line > line && final_line - line > 2) ? (line + 2) : final_line;
     if (*last < line) *last = line;
 }
 
@@ -101,7 +102,7 @@ pm_rich_error_context(int32_t line, int32_t start_line, int32_t final_line, int3
  */
 static bool
 rich_errors_are_utf8(const pm_parser_t *parser, size_t nerrors, const pm_rich_error_t *rich_errors) {
-    int32_t final_line = pm_rich_errors_final_line(parser);
+    uint32_t final_line = pm_rich_errors_final_line(parser);
 
     /* Every line from the first line of context of the most recently visited
      * error up to (but not including) this index has already been checked.
@@ -111,12 +112,12 @@ rich_errors_are_utf8(const pm_parser_t *parser, size_t nerrors, const pm_rich_er
     size_t checked_index = 0;
 
     for (size_t idx = 0; idx < nerrors; idx++) {
-        int32_t first_line;
-        int32_t last_line;
-        pm_rich_error_context(rich_errors[idx].line_start, parser->start_line, final_line, &first_line, &last_line);
+        uint32_t first_line;
+        uint32_t last_line;
+        pm_rich_error_context(rich_errors[idx].line_index, final_line, &first_line, &last_line);
 
-        size_t start_index = (size_t) (first_line - parser->start_line);
-        size_t end_index = (size_t) (last_line - parser->start_line);
+        size_t start_index = (size_t) first_line;
+        size_t end_index = (size_t) last_line;
 
         if (start_index < checked_index) start_index = checked_index;
         if (start_index > end_index) continue;
@@ -189,14 +190,18 @@ pm_error_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width) {
 
 /**
  * Initialize the given line format struct based on whether or not to highlight
- * the line and the first and last line numbers that will be displayed. Every
- * line number in between is no wider than one of these two.
+ * the line and the first and last line indices that will be displayed. The
+ * widest number is at an endpoint or at the signed 32-bit wraparound.
  */
 static void
-pm_error_line_format_init(pm_error_line_format_t *format, pm_errors_format_type_t format_type, int32_t first_line, int32_t last_line) {
+pm_error_line_format_init(pm_error_line_format_t *format, pm_errors_format_type_t format_type, const pm_parser_t *parser, uint32_t first_line, uint32_t last_line) {
     char digits[11];
-    uint8_t first_width = pm_error_line_digits(first_line, digits);
-    uint8_t last_width = pm_error_line_digits(last_line, digits);
+    uint8_t first_width = pm_error_line_digits(pm_line_offset_list_line_number(first_line, parser->start_line), digits);
+    uint8_t last_width = pm_error_line_digits(pm_line_offset_list_line_number(last_line, parser->start_line), digits);
+
+    /* The range may cross the signed 32-bit display boundary. */
+    uint32_t wrap_index = (uint32_t) INT32_MAX - (uint32_t) parser->start_line;
+    if (first_line <= wrap_index && last_line > wrap_index) last_width = 11;
 
     *format = (pm_error_line_format_t) {
         .type = format_type,
@@ -271,11 +276,8 @@ pm_error_advance_columns(const pm_parser_t *parser, const uint8_t *start, size_t
 }
 
 static void
-pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, int32_t line, uint32_t column_start, uint32_t column_end) {
-    int32_t line_delta = line - parser->start_line;
-    PRISM_ASSERT(line_delta >= 0);
-
-    size_t index = (size_t) line_delta;
+pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, uint32_t line, uint32_t column_start, uint32_t column_end) {
+    size_t index = line;
     PRISM_ASSERT(index < parser->line_offsets.size);
 
     const uint8_t *start = parser->start + parser->line_offsets.offsets[index];
@@ -287,7 +289,7 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_er
         end = parser->start + parser->line_offsets.offsets[index + 1];
     }
 
-    pm_error_line_format_number(format, buffer, line);
+    pm_error_line_format_number(format, buffer, pm_line_offset_list_line_number(line, parser->start_line));
 
     /* Here we determine if we should truncate the start of the line. The
      * column is the start of a diagnostic, so it is on a character boundary. */
@@ -339,25 +341,25 @@ pm_error_format_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_er
  * as a window so that a long line does not dominate the output.
  */
 static void
-pm_error_format_context_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, int32_t line) {
+pm_error_format_context_line(const pm_parser_t *parser, pm_buffer_t *buffer, const pm_error_line_format_t *format, uint32_t line) {
     PM_BUFFER_APPEND_LITERAL(buffer, "  ");
     pm_error_format_line(parser, buffer, format, line, 0, WINDOW);
 }
 
 static void
 pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_format_type_t format_type, size_t nerrors, pm_rich_error_t *rich_errors, bool inline_messages) {
-    int32_t final_line = pm_rich_errors_final_line(parser);
+    uint32_t final_line = pm_rich_errors_final_line(parser);
 
     /* The line numbers that are displayed range from the first line of context
      * of the first error to the last line of context of the last error. */
-    int32_t first_displayed_line;
-    int32_t last_displayed_line;
-    int32_t unused_line;
-    pm_rich_error_context(rich_errors[0].line_start, parser->start_line, final_line, &first_displayed_line, &unused_line);
-    pm_rich_error_context(rich_errors[nerrors - 1].line_start, parser->start_line, final_line, &unused_line, &last_displayed_line);
+    uint32_t first_displayed_line;
+    uint32_t last_displayed_line;
+    uint32_t unused_line;
+    pm_rich_error_context(rich_errors[0].line_index, final_line, &first_displayed_line, &unused_line);
+    pm_rich_error_context(rich_errors[nerrors - 1].line_index, final_line, &unused_line, &last_displayed_line);
 
     pm_error_line_format_t format;
-    pm_error_line_format_init(&format, format_type, first_displayed_line, last_displayed_line);
+    pm_error_line_format_init(&format, format_type, parser, first_displayed_line, last_displayed_line);
 
     /* We are going to iterate through every error in our error list and display
      * it. While we are iterating, we will display some padding lines of the
@@ -370,7 +372,7 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
      * it are padded relative to the start of that slice and cut off at its
      * end. This bounds the length of every marker line, so the output grows
      * linearly with the number of errors no matter how long the line is. */
-    int32_t last_line = parser->start_line - 1;
+    uint32_t last_line = 0;
     uint32_t window_column_start = 0;
     uint32_t window_column_end = 0;
     size_t window_end_idx = 0;
@@ -380,16 +382,17 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
 
         /* Here we determine how many lines of padding of the source to display,
          * based on the difference from the last line that was displayed. */
-        if (rich_error->line_start - last_line > 1) {
-            if (rich_error->line_start - last_line > 2) {
-                if ((idx != 0) && (rich_error->line_start - last_line > 3)) {
-                    pm_error_line_format_divider(&format, buffer);
-                }
-
-                pm_error_format_context_line(parser, buffer, &format, rich_error->line_start - 2);
+        uint32_t first_context = (rich_error->line_index > 2) ? (rich_error->line_index - 2) : 0;
+        if (idx != 0) {
+            if (rich_error->line_index > last_line && rich_error->line_index - last_line > 3) {
+                pm_error_line_format_divider(&format, buffer);
             }
+            if (last_line >= rich_error->line_index) first_context = rich_error->line_index;
+            else if (first_context <= last_line) first_context = last_line + 1;
+        }
 
-            pm_error_format_context_line(parser, buffer, &format, rich_error->line_start - 1);
+        for (uint32_t line = first_context; line < rich_error->line_index; line++) {
+            pm_error_format_context_line(parser, buffer, &format, line);
         }
 
         /* If this error is not in the current window (because it is the first
@@ -418,15 +421,15 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
             window_column_end = rich_error->column_end;
             for (window_end_idx = idx + 1; window_end_idx < nerrors; window_end_idx++) {
                 const pm_rich_error_t *next_error = &rich_errors[window_end_idx];
-                if ((next_error->line_start != rich_error->line_start) || (next_error->column_start >= window_limit)) break;
+                if ((next_error->line_index != rich_error->line_index) || (next_error->column_start >= window_limit)) break;
                 if (next_error->column_end > window_column_end) window_column_end = next_error->column_end;
             }
 
             if (window_column_end > window_limit) window_column_end = window_limit;
-            pm_error_format_line(parser, buffer, &format, rich_error->line_start, rich_error->column_start, window_column_end);
+            pm_error_format_line(parser, buffer, &format, rich_error->line_index, rich_error->column_start, window_column_end);
         }
 
-        const uint8_t *start = parser->start + parser->line_offsets.offsets[rich_error->line_start - parser->start_line];
+        const uint8_t *start = parser->start + parser->line_offsets.offsets[rich_error->line_index];
         if (start == parser->end) pm_buffer_append_byte(buffer, '\n');
 
         /* Now we will display the actual error message. We will do this by
@@ -482,16 +485,15 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
 
         /* Here we determine how many lines of padding to display after the
          * diagnostic, depending on where the next diagnostic is in source. The
-         * line after the last error is one past the last line that can be
-         * displayed. */
-        last_line = rich_error->line_start;
-        int32_t next_line = (idx == nerrors - 1) ? (final_line + 1) : rich_errors[idx + 1].line_start;
-
-        if (next_line - last_line > 1) {
-            pm_error_format_context_line(parser, buffer, &format, ++last_line);
+         * context after the last error is limited to the source. */
+        last_line = rich_error->line_index;
+        uint32_t last_context = final_line;
+        if (idx + 1 < nerrors) {
+            uint32_t next_line = rich_errors[idx + 1].line_index;
+            last_context = (next_line > last_line) ? next_line - 1 : last_line;
         }
 
-        if (next_line - last_line > 1) {
+        for (uint32_t count = 0; count < 2 && last_line < last_context; count++) {
             pm_error_format_context_line(parser, buffer, &format, ++last_line);
         }
     }
@@ -500,14 +502,14 @@ pm_rich_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_
 static void
 pm_rich_error_init(const pm_parser_t *parser, pm_rich_error_t *rich_error, pm_diagnostic_t *diagnostic, pm_location_t *location) {
     const pm_line_offset_list_t *line_offsets = &parser->line_offsets;
-    pm_line_column_t start_line_column = pm_line_offset_list_line_column(line_offsets, location->start, parser->start_line);
-    pm_line_column_t end_line_column = pm_line_offset_list_line_column(line_offsets, location->start + location->length, parser->start_line);
+    pm_line_column_t start_line_column = pm_line_offset_list_line_column(line_offsets, location->start, 0);
+    pm_line_column_t end_line_column = pm_line_offset_list_line_column(line_offsets, location->start + location->length, 0);
 
     uint32_t column_end;
     if (start_line_column.line == end_line_column.line) {
         column_end = end_line_column.column;
     } else {
-        column_end = (uint32_t) (line_offsets->offsets[start_line_column.line - parser->start_line + 1] - line_offsets->offsets[start_line_column.line - parser->start_line] - 1);
+        column_end = (uint32_t) (line_offsets->offsets[(uint32_t) start_line_column.line + 1] - line_offsets->offsets[(uint32_t) start_line_column.line] - 1);
     }
 
     /* Ensure we have at least one column of error. */
@@ -515,7 +517,7 @@ pm_rich_error_init(const pm_parser_t *parser, pm_rich_error_t *rich_error, pm_di
 
     *rich_error = (pm_rich_error_t) {
         .diagnostic = diagnostic,
-        .line_start = start_line_column.line,
+        .line_index = (uint32_t) start_line_column.line,
         .column_start = start_line_column.column,
         .column_end = column_end
     };
@@ -526,10 +528,10 @@ pm_rich_error_init(const pm_parser_t *parser, pm_rich_error_t *rich_error, pm_di
  * message, which is how an error is displayed without a source snippet.
  */
 static void
-pm_error_append_summary(const pm_parser_t *parser, pm_buffer_t *buffer, int32_t line, const char *message) {
+pm_error_append_summary(const pm_parser_t *parser, pm_buffer_t *buffer, uint32_t line, const char *message) {
     pm_buffer_append_string(buffer, (const char *) pm_string_source(&parser->filepath), pm_string_length(&parser->filepath));
     pm_buffer_append_byte(buffer, ':');
-    pm_error_append_line_number(buffer, line, 0);
+    pm_error_append_line_number(buffer, pm_line_offset_list_line_number(line, parser->start_line), 0);
     PM_BUFFER_APPEND_LITERAL(buffer, ": ");
     pm_buffer_append_string(buffer, message, strlen(message));
 }
@@ -562,7 +564,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
              * immediately. They should include a snippet of the source if
              * possible. */
             pm_rich_error_init(parser, rich_errors, diagnostic, &location);
-            pm_error_append_summary(parser, buffer, rich_errors[0].line_start, pm_diagnostic_message(diagnostic));
+            pm_error_append_summary(parser, buffer, rich_errors[0].line_index, pm_diagnostic_message(diagnostic));
 
             if (rich_errors_are_utf8(parser, 1, rich_errors)) {
                 pm_buffer_append_byte(buffer, '\n');
@@ -588,7 +590,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
              * the source, so they are left out. It should include a snippet of
              * the source if possible. */
             pm_rich_error_init(parser, rich_errors, diagnostic, &location);
-            pm_error_append_summary(parser, buffer, rich_errors[0].line_start, pm_diagnostic_message(diagnostic));
+            pm_error_append_summary(parser, buffer, rich_errors[0].line_index, pm_diagnostic_message(diagnostic));
 
             if (rich_errors_are_utf8(parser, 1, rich_errors)) {
                 pm_buffer_append_byte(buffer, '\n');
@@ -605,7 +607,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
 
     /* The header displays the line of the first error in parse order, which
      * is the first entry in the array because it has not been sorted yet. */
-    pm_error_append_summary(parser, buffer, rich_errors[0].line_start, (nerrors > 1) ? "syntax errors found\n" : "syntax error found\n");
+    pm_error_append_summary(parser, buffer, rich_errors[0].line_index, (nerrors > 1) ? "syntax errors found\n" : "syntax error found\n");
 
     /* Sort the errors so that they are in the order that they appear in the
      * source. This is the order they are displayed in, and it also lets the
@@ -625,7 +627,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
          * source, as they are when the snippets are displayed. */
         for (size_t idx = 0; idx < nerrors; idx++) {
             if (idx > 0) pm_buffer_append_byte(buffer, '\n');
-            pm_error_append_summary(parser, buffer, rich_errors[idx].line_start, pm_diagnostic_message(rich_errors[idx].diagnostic));
+            pm_error_append_summary(parser, buffer, rich_errors[idx].line_index, pm_diagnostic_message(rich_errors[idx].diagnostic));
         }
     }
 
