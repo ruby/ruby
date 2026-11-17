@@ -690,6 +690,302 @@ pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
 }
 
 /**
+ * Report an error about the name of a group, like "invalid group name <1x>",
+ * that quotes the name, which runs from start to end.
+ */
+static void
+pm_regexp_parse_name_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, message, strlen(message));
+    pm_buffer_append_string(&buffer, " <", 2);
+    pm_buffer_append_string(&buffer, (const char *) start, (size_t) (end - start));
+    pm_buffer_append_byte(&buffer, '>');
+    pm_buffer_append_byte(&buffer, '\0');
+
+    pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
+}
+
+/**
+ * A reference to a group, by its number or its name, as in \k<1>, \k<n>, \g<n>,
+ * or the condition of (?(1)a|b).
+ */
+typedef struct {
+    /** The start of the number or name as it is written. */
+    const uint8_t *start;
+
+    /** The end of the number or name as it is written. */
+    const uint8_t *end;
+
+    /**
+     * The number of the group, which is negative when it counts back from the
+     * reference, as in \k<-1>, or 0 when the group is named.
+     */
+    int32_t number;
+} pm_regexp_reference_t;
+
+/**
+ * Whether the character at the cursor is a word character, for the messages
+ * about the characters of a group number. Any character that is not ASCII
+ * counts as one. That is exact for the encodings that are not Unicode, while in
+ * UTF-8 a symbol that is not a word character gets the message of one.
+ */
+static bool
+pm_regexp_word_char_p(const pm_regexp_parser_t *parser) {
+    uint8_t byte = *parser->cursor;
+    return byte >= 0x80 || pm_encoding_ascii_alnum_p(byte) || byte == '_';
+}
+
+/**
+ * Read the number that the digits from start to end spell, the way the engine
+ * reads them. Returns false if the number would overflow an int.
+ */
+static bool
+pm_regexp_reference_number(const pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, uint32_t *number) {
+    *number = 0;
+
+    while (start < end) {
+        size_t width;
+        uint32_t digit;
+        if (!pm_regexp_digit(parser, start, &width, &digit)) break;
+        if (!pm_regexp_number_append(number, digit)) return false;
+        start += width;
+    }
+
+    return true;
+}
+
+/**
+ * Parse a reference to a group by its number or its name, with the cursor after
+ * the character that opens it, the way Onigmo's fetch_name reads a reference,
+ * and consume the close character that ends it. This reads the group of a
+ * call, as in \g<n>, and the number of the condition of a conditional group,
+ * as in (?(1)a|b), whose close character is the ). A number must be all
+ * digits, after an optional -, and must not be 0. Returns false after an
+ * error.
+ */
+static bool
+pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_reference_t *reference) {
+    const uint8_t *start = parser->cursor;
+
+    if (parser->cursor >= parser->end || *parser->cursor == close) {
+        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        return false;
+    }
+
+    /* Whether the reference is a name, a number, or a - that no digit has
+     * followed yet. */
+    enum { NAME, NUMBER, SIGN } kind = NAME;
+    const uint8_t *digits = start;
+
+    size_t width;
+    uint32_t digit;
+    if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+        kind = NUMBER;
+    } else if (*parser->cursor == '-') {
+        kind = SIGN;
+        digits = parser->cursor + 1;
+    }
+
+    pm_regexp_skip_char(parser);
+
+    const uint8_t *name_end = parser->end;
+    const char *message = NULL;
+    bool closed = false;
+
+    while (parser->cursor < parser->end) {
+        name_end = parser->cursor;
+        uint8_t byte = *parser->cursor;
+
+        if (byte == close || byte == ')') {
+            pm_regexp_skip_char(parser);
+
+            if (kind == SIGN) {
+                message = "invalid group name";
+            } else {
+                closed = (byte == close);
+            }
+            break;
+        }
+
+        if (kind != NAME) {
+            if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+                kind = NUMBER;
+                parser->cursor += width;
+                continue;
+            }
+
+            message = pm_regexp_word_char_p(parser) ? "invalid group name" : "invalid char in group name";
+            pm_regexp_skip_char(parser);
+            break;
+        }
+
+        pm_regexp_skip_char(parser);
+    }
+
+    if (message != NULL) {
+        /* After an error, the engine still looks for the character that would
+         * end the name, to quote the name up to it, or to the end of the
+         * pattern when the name runs there. */
+        while (parser->cursor < parser->end) {
+            name_end = parser->cursor;
+            uint8_t byte = *parser->cursor;
+            pm_regexp_skip_char(parser);
+            if (byte == close || byte == ')') break;
+        }
+
+        if (parser->cursor >= parser->end) name_end = parser->end;
+        pm_regexp_parse_name_error(parser, start, name_end, message);
+        return false;
+    }
+
+    if (!closed) {
+        pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+        return false;
+    }
+
+    uint32_t number = 0;
+    if (kind != NAME) {
+        if (!pm_regexp_reference_number(parser, digits, name_end, &number)) {
+            pm_regexp_parse_error(parser, start, name_end, "too big number");
+            return false;
+        }
+
+        if (number == 0) {
+            pm_regexp_parse_name_error(parser, start, name_end, "invalid group name");
+            return false;
+        }
+    }
+
+    reference->start = start;
+    reference->end = name_end;
+    reference->number = (kind == SIGN || *start == '-') ? -((int32_t) number) : (int32_t) number;
+    return true;
+}
+
+/**
+ * Parse a reference to a group by its number or its name, with the cursor after
+ * the < or ' that opens it, the way Onigmo's fetch_name_with_level reads it,
+ * and consume the close character that ends it. This reads the group of a
+ * backreference, as in \k<n>, and the name of the condition of a conditional
+ * group, as in (?(<n>)a|b). A reference can end with a level of recursion, as
+ * in \k<n+1>. Returns false after an error.
+ */
+static bool
+pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_reference_t *reference) {
+    const uint8_t *start = parser->cursor;
+
+    if (parser->cursor >= parser->end || *parser->cursor == close) {
+        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        return false;
+    }
+
+    /* Whether the reference is a name, a number, or a - that no digit has
+     * followed yet. */
+    enum { NAME, NUMBER, SIGN } kind = NAME;
+    const uint8_t *digits = start;
+
+    size_t width;
+    uint32_t digit;
+    if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+        kind = NUMBER;
+    } else if (*parser->cursor == '-') {
+        kind = SIGN;
+        digits = parser->cursor + 1;
+    }
+
+    bool negative = (kind == SIGN);
+    pm_regexp_skip_char(parser);
+
+    const uint8_t *name_end = parser->end;
+    const char *message = NULL;
+    uint8_t terminator = 0;
+
+    while (parser->cursor < parser->end) {
+        name_end = parser->cursor;
+        uint8_t byte = *parser->cursor;
+
+        if (byte == close || byte == ')' || byte == '+' || byte == '-') {
+            pm_regexp_skip_char(parser);
+            terminator = byte;
+            if (kind == SIGN) message = "invalid group name";
+            break;
+        }
+
+        if (kind != NAME) {
+            if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+                kind = NUMBER;
+                parser->cursor += width;
+                continue;
+            }
+
+            /* The rest of the name is still read, as a name. */
+            message = "invalid group name";
+            kind = NAME;
+        }
+
+        pm_regexp_skip_char(parser);
+    }
+
+    if (message == NULL && terminator != close) {
+        bool valid = false;
+
+        if (terminator == '+' || terminator == '-') {
+            if (parser->cursor >= parser->end) {
+                pm_regexp_parse_name_error(parser, start, name_end, "invalid char in group name");
+                return false;
+            }
+
+            if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+                uint32_t level = 0;
+
+                while (parser->cursor < parser->end && pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
+                    if (!pm_regexp_number_append(&level, digit)) {
+                        pm_regexp_parse_error(parser, start, parser->cursor, "too big number");
+                        return false;
+                    }
+                    parser->cursor += width;
+                }
+
+                if (parser->cursor < parser->end) {
+                    uint8_t byte = *parser->cursor;
+                    pm_regexp_skip_char(parser);
+                    valid = (byte == close);
+                }
+            }
+        }
+
+        if (!valid) {
+            pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+            return false;
+        }
+    }
+
+    if (message != NULL) {
+        pm_regexp_parse_name_error(parser, start, name_end, message);
+        return false;
+    }
+
+    uint32_t number = 0;
+    if (kind == NUMBER) {
+        if (!pm_regexp_reference_number(parser, digits, name_end, &number)) {
+            pm_regexp_parse_error(parser, start, name_end, "too big number");
+            return false;
+        }
+
+        if (number == 0) {
+            pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+            return false;
+        }
+    }
+
+    reference->start = start;
+    reference->end = name_end;
+    reference->number = negative ? -((int32_t) number) : (int32_t) number;
+    return true;
+}
+
+/**
  * Parse a backslash escape sequence in a regexp, handling \u (unicode),
  * \p/\P (property), \x (hex), and other single-character escapes. The lexer
  * writes each \M-, \C-, and \c escape in the content as the \x escape of its
@@ -712,6 +1008,41 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
             parser->cursor++; // skip 'x'
             pm_regexp_parse_hex_escape(parser);
             break;
+        case 'k': {
+            /* A backreference by number or name, as in \k<n> or \k'n'. Without
+             * a < or ' after it, the k is a character. */
+            parser->cursor++;
+            if (parser->cursor >= parser->end || (*parser->cursor != '<' && *parser->cursor != '\'')) break;
+
+            uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
+            pm_regexp_reference_t reference;
+            pm_regexp_parse_reference_with_level(parser, close, &reference);
+            break;
+        }
+        case 'g': {
+            /* A call of a group by number or name, as in \g<n> or \g'n'.
+             * Without a < or ' after it, the g is a character. */
+            parser->cursor++;
+            if (parser->cursor >= parser->end || (*parser->cursor != '<' && *parser->cursor != '\'')) break;
+
+            uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
+
+            /* \g<0> calls the whole pattern. A 0 or + before anything else is
+             * dropped, so \g<01> calls group 1 and \g<+1> counts forward. */
+            if (parser->cursor < parser->end && *parser->cursor == '0') {
+                parser->cursor++;
+                if (parser->cursor < parser->end && *parser->cursor == close) {
+                    parser->cursor++;
+                    break;
+                }
+            } else if (parser->cursor < parser->end && *parser->cursor == '+') {
+                parser->cursor++;
+            }
+
+            pm_regexp_reference_t reference;
+            pm_regexp_parse_reference(parser, close, &reference);
+            break;
+        }
         default:
             parser->cursor++;
             break;
@@ -1209,23 +1540,6 @@ static bool
 pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth);
 
 /**
- * Report an error about the name of a group, like "invalid group name <1x>",
- * that quotes the name, which runs from start to end.
- */
-static void
-pm_regexp_parse_name_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, message, strlen(message));
-    pm_buffer_append_string(&buffer, " <", 2);
-    pm_buffer_append_string(&buffer, (const char *) start, (size_t) (end - start));
-    pm_buffer_append_byte(&buffer, '>');
-    pm_buffer_append_byte(&buffer, '\0');
-
-    pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
-    pm_buffer_cleanup(&buffer);
-}
-
-/**
  * Parse the name of a named group, as in the n of (?<n>a) or (?'n'a), with the
  * cursor on its first character, the way Onigmo's fetch_name reads it, and
  * consume the > or ' that closes it. In Ruby any character can be part of a
@@ -1283,56 +1597,6 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
 }
 
 /**
- * Parse the number of a group that is the condition of a conditional group, as
- * in the 1 of (?(1)a|b), with the cursor on its first digit, the way Onigmo's
- * fetch_name reads it. The number must be digits up to a ), and must not be 0.
- * Returns false after an error, which stops the walk, as it stops the engine.
- */
-static bool
-pm_regexp_parse_condition_number(pm_regexp_parser_t *parser) {
-    const uint8_t *start = parser->cursor;
-    const char *message = NULL;
-    uint32_t number = 0;
-    bool too_big = false;
-
-    while (parser->cursor < parser->end && *parser->cursor != ')') {
-        size_t width;
-        uint32_t digit;
-
-        if (message == NULL && pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
-            if (!pm_regexp_number_append(&number, digit)) too_big = true;
-            parser->cursor += width;
-            continue;
-        }
-
-        /* After a character that is not a digit, the engine still looks for
-         * the ) to quote the whole name. A letter or other word character
-         * makes the name invalid, and anything else is invalid in a name. */
-        if (message == NULL) {
-            bool word = *parser->cursor >= 0x80 || pm_encoding_ascii_alnum_p(*parser->cursor) || *parser->cursor == '_';
-            message = word ? "invalid group name" : "invalid char in group name";
-        }
-
-        pm_regexp_skip_char(parser);
-    }
-
-    if (message == NULL && parser->cursor >= parser->end) message = "invalid group name";
-    if (message == NULL && too_big) {
-        pm_regexp_parse_error(parser, start, parser->cursor, "too big number");
-        return false;
-    }
-    if (message == NULL && number == 0) message = "invalid group name";
-
-    if (message != NULL) {
-        pm_regexp_parse_name_error(parser, start, parser->cursor, message);
-        return false;
-    }
-
-    parser->cursor++;
-    return true;
-}
-
-/**
  * Parse the condition of a conditional group, as in the 1 of (?(1)a|b), with
  * the cursor after its (. The condition is the number of a group, or the name
  * of one between < and > or between quotes. Returns false after an error.
@@ -1344,16 +1608,28 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
         return false;
     }
 
+    pm_regexp_reference_t reference;
     size_t width;
     uint32_t digit;
     if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
-        return pm_regexp_parse_condition_number(parser);
+        return pm_regexp_parse_reference(parser, ')', &reference);
     }
 
     switch (*parser->cursor) {
         case '<':
-        case '\'':
-            return pm_regexp_char_find(parser, ')');
+        case '\'': {
+            uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
+            if (!pm_regexp_parse_reference_with_level(parser, close, &reference)) return false;
+
+            /* The name must be followed by the ) that ends the condition. */
+            if (parser->cursor >= parser->end || *parser->cursor != ')') {
+                pm_regexp_parse_error(parser, parser->cursor, parser->cursor, "undefined group option");
+                return false;
+            }
+
+            parser->cursor++;
+            return true;
+        }
         default:
             pm_regexp_parse_error(parser, parser->cursor, parser->cursor + 1, "invalid conditional pattern");
             return false;

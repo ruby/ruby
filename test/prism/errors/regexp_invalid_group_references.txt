@@ -1,0 +1,17 @@
+/(?<n>a)\k<>/
+           ^ group name is empty
+/(?<n>a)\k<n-x>/
+           ^~~~ invalid group name <n-x>>
+/(a)\k<1a>/
+       ^~ invalid group name <1a>
+/(a)\k<0>/
+       ^~ invalid group name <0>>
+/(a)\g<1-x>/
+       ^~~~ invalid char in group name <1-x>>
+/(a)\g<->/
+       ^~ invalid group name <->>
+/(?<n>a)\k<n+99999999999>/
+           ^~~~~~~~~~~ too big number
+/(?<n>a)(?(<n>b)/
+              ^ undefined group option
+
