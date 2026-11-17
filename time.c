@@ -2496,8 +2496,6 @@ find_timezone(VALUE time, VALUE zone)
     return rb_check_funcall_default(klass, id_find_timezone, 1, &zone, Qnil);
 }
 
-/* Normalize month-mday for months with fewer than 31 days.
- * e.g. April 31 -> May 1, Feb 29 (non-leap) -> Mar 1 */
 static void
 vtm_normalize_month_mday(struct vtm *vtm)
 {
@@ -2600,6 +2598,7 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     }
 
     validate_vtm(&vtm);
+    vtm_normalize_month_mday(&vtm);
 
     time_modify(time);
     GetNewTimeval(time, tobj);
@@ -2626,7 +2625,6 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     if (utc == UTC_ZONE) {
         time_set_timew(time, tobj, timegmw(&vtm));
         vtm.isdst = 0; /* No DST in UTC */
-        vtm_normalize_month_mday(&vtm);
         vtm_day_wraparound(&vtm);
         time_set_vtm(time, tobj, vtm);
         tobj->vtm.tm_got = 1;
