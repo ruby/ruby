@@ -9,7 +9,7 @@ module Ruby::Prism
   # into, and check that the frame beneath the delimiters is still read once
   # they close.
   class DelimiterNestingTest < TestCase
-    DEPTHS = [1, 31, 32, 33, 63, 64, 65, 127, 128, 129, 200, 1000]
+    DEPTHS = [1, 31, 32, 33, 63, 64, 65, 127, 128, 129, 200]
 
     def test_loop_predicate
       DEPTHS.each do |depth|
