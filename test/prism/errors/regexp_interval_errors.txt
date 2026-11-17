@@ -1,0 +1,12 @@
+/a{3,2}/
+  ^~~~~ upper is smaller than lower in repeat range
+/a{100001}/
+  ^~~~~~~ too big number for repeat range
+/a{1,100001/
+  ^~~~~~~~~ too big number for repeat range
+/{3}/
+ ^~~ target of repeat operator is not specified
+/(?<>a){3,2}/
+    ^ group name is empty
+       ^~~~~ upper is smaller than lower in repeat range
+

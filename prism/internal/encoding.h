@@ -117,6 +117,19 @@ size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, p
 bool pm_encoding_char_prefix_p(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
 
 /*
+ * Return the code point of the valid character of the given width at the
+ * start of b, if the characters of the encoding are Unicode code points, as in
+ * UTF-8 and CESU-8. Otherwise return -1.
+ */
+int32_t pm_encoding_unicode_codepoint(const pm_encoding_t *encoding, const uint8_t *b, size_t width);
+
+/*
+ * Return true if the code point is a decimal digit in the version of Unicode of
+ * the given version of Ruby.
+ */
+bool pm_encoding_unicode_digit_p(uint32_t codepoint, pm_options_version_t version);
+
+/*
  * Return true if the next character in the given encoding is uppercase, or
  * titlecase, in the given version of Ruby. Such a character begins a constant
  * name. The version only matters for an encoding whose characters are Unicode

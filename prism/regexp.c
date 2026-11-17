@@ -11,6 +11,7 @@
 #include "prism/internal/encoding.h"
 #include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
+#include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/strncasecmp.h"
@@ -311,123 +312,127 @@ pm_regexp_scan_digits(const uint8_t *cursor, const uint8_t *end, uint32_t maximu
     return value;
 }
 
+/** The largest bound of an interval, like the 3 in a{3}. */
+#define PM_REGEXP_INTERVAL_MAXIMUM 100000
+
 /**
- * Range quantifiers are a special class of quantifiers that look like
+ * Read the bound of an interval at the cursor, like the 3 in a{3}, and advance
+ * the cursor past its digits. Returns false if the bound is too big.
  *
- * * {digit}
- * * {digit,}
- * * {digit,digit}
- * * {,digit}
- *
- * If there are any spaces in between, then this just becomes a regular
- * character match expression and we have to backtrack. So when this function
- * first starts running, we'll create a "save" point and then attempt to parse
- * the quantifier. If it fails, we'll restore the save point and return.
- *
- * To properly track everything, we're going to build a little state machine.
- * It looks something like the following:
- *
- *                  +-------+                 +---------+ ------------+
- * ---- lbrace ---> | start | ---- digit ---> | minimum |             |
- *                  +-------+                 +---------+ <--- digit -+
- *                      |                       |    |
- *   +-------+          |                       |  rbrace
- *   | comma | <----- comma  +---- comma -------+    |
- *   +-------+               V                       V
- *      |             +---------+               +---------+
- *      +-- digit --> | maximum | -- rbrace --> || final ||
- *                    +---------+               +---------+
- *                    |         ^
- *                    +- digit -+
- *
- * Note that by the time we've hit this function, the lbrace has already been
- * consumed so we're in the start state.
+ * The regular expression engine reads each digit's value as its code point
+ * minus that of 0. That is right for 0 through 9. In an encoding whose
+ * characters are Unicode code points, other digits count too, with much
+ * bigger values, so even two fullwidth digits make a bound that is too big.
  */
 static bool
-pm_regexp_parse_range_quantifier(pm_regexp_parser_t *parser) {
-    const uint8_t *savepoint = parser->cursor;
+pm_regexp_parse_interval_bound(const pm_regexp_parser_t *parser, const uint8_t **cursor, uint32_t *bound) {
+    const uint8_t *end = parser->end;
+    uint32_t value = 0;
 
-    enum {
-        PM_REGEXP_RANGE_QUANTIFIER_STATE_START,
-        PM_REGEXP_RANGE_QUANTIFIER_STATE_MINIMUM,
-        PM_REGEXP_RANGE_QUANTIFIER_STATE_MAXIMUM,
-        PM_REGEXP_RANGE_QUANTIFIER_STATE_COMMA
-    } state = PM_REGEXP_RANGE_QUANTIFIER_STATE_START;
+    while (*cursor < end) {
+        uint32_t digit;
+        size_t width = 1;
 
-    while (1) {
-        if (parser->cursor >= parser->end) {
-            parser->cursor = savepoint;
-            return true;
+        if (pm_char_is_decimal_digit(**cursor)) {
+            digit = (uint32_t) (**cursor - '0');
+        } else if (**cursor >= 0x80) {
+            width = pm_encoding_char_width(parser->encoding, *cursor, (ptrdiff_t) (end - *cursor));
+            if (width == 0) break;
+
+            int32_t codepoint = pm_encoding_unicode_codepoint(parser->encoding, *cursor, width);
+            if (codepoint < 0 || !pm_encoding_unicode_digit_p((uint32_t) codepoint, parser->parser->version)) break;
+            digit = (uint32_t) codepoint - '0';
+        } else {
+            break;
         }
 
-        switch (state) {
-            case PM_REGEXP_RANGE_QUANTIFIER_STATE_START:
-                switch (*parser->cursor) {
-                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                        parser->cursor++;
-                        state = PM_REGEXP_RANGE_QUANTIFIER_STATE_MINIMUM;
-                        break;
-                    case ',':
-                        parser->cursor++;
-                        state = PM_REGEXP_RANGE_QUANTIFIER_STATE_COMMA;
-                        break;
-                    default:
-                        parser->cursor = savepoint;
-                        return true;
-                }
-                break;
-            case PM_REGEXP_RANGE_QUANTIFIER_STATE_MINIMUM:
-                switch (*parser->cursor) {
-                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                        parser->cursor++;
-                        break;
-                    case ',':
-                        parser->cursor++;
-                        state = PM_REGEXP_RANGE_QUANTIFIER_STATE_MAXIMUM;
-                        break;
-                    case '}':
-                        parser->cursor++;
-                        return true;
-                    default:
-                        parser->cursor = savepoint;
-                        return true;
-                }
-                break;
-            case PM_REGEXP_RANGE_QUANTIFIER_STATE_COMMA:
-                switch (*parser->cursor) {
-                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                        parser->cursor++;
-                        state = PM_REGEXP_RANGE_QUANTIFIER_STATE_MAXIMUM;
-                        break;
-                    default:
-                        parser->cursor = savepoint;
-                        return true;
-                }
-                break;
-            case PM_REGEXP_RANGE_QUANTIFIER_STATE_MAXIMUM:
-                switch (*parser->cursor) {
-                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                        parser->cursor++;
-                        break;
-                    case '}':
-                        parser->cursor++;
-                        return true;
-                    default:
-                        parser->cursor = savepoint;
-                        return true;
-                }
-                break;
-        }
+        /* The engine gives up as soon as the value would overflow an int. */
+        if ((INT32_MAX - digit) / 10 < value) return false;
+
+        value = value * 10 + digit;
+        *cursor += width;
     }
 
-    return true;
+    *bound = value;
+    return value <= PM_REGEXP_INTERVAL_MAXIMUM;
+}
+
+/**
+ * The results of reading an interval.
+ */
+typedef enum {
+    /** The interval is invalid, which has been reported. */
+    PM_REGEXP_INTERVAL_INVALID,
+
+    /** The { does not start an interval, so it is a character. */
+    PM_REGEXP_INTERVAL_NONE,
+
+    /** The interval is valid, and the cursor is past it. */
+    PM_REGEXP_INTERVAL_VALID
+} pm_regexp_interval_t;
+
+/**
+ * Read an interval, like {3}, {3,}, {,5}, or {3,5}. The cursor is just past its
+ * {. A bound that is too big is an error, even if the interval never closes. So
+ * is an upper bound below the lower one. Anything else that is not an interval,
+ * like {x} or {,}, is not an error: its { is just a character.
+ *
+ * The named capture pass reads the content in the source encoding, not the
+ * pattern in the encoding of the regular expression, so it can't read bounds
+ * the same way. An interval holds no group names, so that pass reads its { as
+ * a character instead.
+ */
+static pm_regexp_interval_t
+pm_regexp_parse_interval(pm_regexp_parser_t *parser) {
+    if (!parser->report_errors) return PM_REGEXP_INTERVAL_NONE;
+
+    const uint8_t *start = parser->cursor - 1;
+    const uint8_t *cursor = parser->cursor;
+    const uint8_t *end = parser->end;
+
+    uint32_t lower;
+    if (!pm_regexp_parse_interval_bound(parser, &cursor, &lower)) {
+        pm_regexp_parse_error(parser, start, cursor, "too big number for repeat range");
+        return PM_REGEXP_INTERVAL_INVALID;
+    }
+
+    bool has_lower = cursor != parser->cursor;
+    bool has_upper = true;
+    uint32_t upper = lower;
+
+    if (cursor < end && *cursor == ',') {
+        const uint8_t *digits = ++cursor;
+        if (!pm_regexp_parse_interval_bound(parser, &cursor, &upper)) {
+            pm_regexp_parse_error(parser, start, cursor, "too big number for repeat range");
+            return PM_REGEXP_INTERVAL_INVALID;
+        }
+
+        /* {,} has neither bound. */
+        if (cursor == digits) {
+            if (!has_lower) return PM_REGEXP_INTERVAL_NONE;
+            has_upper = false;
+        }
+    } else if (!has_lower) {
+        return PM_REGEXP_INTERVAL_NONE;
+    }
+
+    if (cursor == end || *cursor != '}') return PM_REGEXP_INTERVAL_NONE;
+    cursor++;
+
+    if (has_upper && lower > upper) {
+        pm_regexp_parse_error(parser, start, cursor, "upper is smaller than lower in repeat range");
+        return PM_REGEXP_INTERVAL_INVALID;
+    }
+
+    parser->cursor = cursor;
+    return PM_REGEXP_INTERVAL_VALID;
 }
 
 /**
  * quantifier : star-quantifier
  *            | plus-quantifier
  *            | optional-quantifier
- *            | range-quantifier
+ *            | interval
  *            | <empty>
  *            ;
  */
@@ -442,10 +447,18 @@ pm_regexp_parse_quantifier(pm_regexp_parser_t *parser) {
                 break;
             case '{':
                 parser->cursor++;
-                if (!pm_regexp_parse_range_quantifier(parser)) return false;
+                switch (pm_regexp_parse_interval(parser)) {
+                    case PM_REGEXP_INTERVAL_INVALID:
+                        return false;
+                    case PM_REGEXP_INTERVAL_NONE:
+                        /* The { is a character, which starts the next item. */
+                        parser->cursor--;
+                        return true;
+                    case PM_REGEXP_INTERVAL_VALID:
+                        break;
+                }
                 break;
             default:
-                // In this case there is no quantifier.
                 return true;
         }
     }
@@ -1522,6 +1535,22 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             parser->cursor++;
             pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "target of repeat operator is not specified");
             return true;
+        case '{': {
+            const uint8_t *start = parser->cursor++;
+        
+            switch (pm_regexp_parse_interval(parser)) {
+                case PM_REGEXP_INTERVAL_INVALID:
+                    return false;
+                case PM_REGEXP_INTERVAL_NONE:
+                    /* The { is a character. */
+                    return pm_regexp_parse_quantifier(parser);
+                case PM_REGEXP_INTERVAL_VALID:
+                    pm_regexp_parse_error(parser, start, parser->cursor, "target of repeat operator is not specified");
+                    return true;
+            }
+        
+            return true;
+        }
         case ')':
             parser->cursor++;
             pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "unmatched close parenthesis");
