@@ -2969,23 +2969,31 @@ pm_regexp_encoding_flags(const pm_parser_t *parser, pm_node_flags_t flags, const
 }
 
 /**
- * Check the property escapes that the pattern holds against the encoding
- * option of the regular expression. With /n only POSIX properties are valid,
- * and with /e or /s script properties are as well.
+ * Check the property escapes that the pattern holds against the encoding that
+ * the pattern is parsed in, which its encoding option or the source decides.
+ * In an encoding whose characters are Unicode code points, any property name
+ * is accepted. EUC-JP and Shift_JIS know the POSIX properties and the script
+ * properties, and every other encoding knows only the POSIX properties.
  */
 static void
 pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *regexp_parser) {
     pm_parser_t *parser = regexp->parser;
-    pm_node_flags_t flags = regexp->flags;
-    const uint8_t *name = NULL;
-    size_t length = 0;
+    const uint8_t *name;
+    size_t length;
 
-    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
-        name = regexp_parser->property_name;
-        length = regexp_parser->property_name_length;
-    } else if (flags & (PM_REGULAR_EXPRESSION_FLAGS_EUC_JP | PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J)) {
-        name = regexp_parser->unicode_property_name;
-        length = regexp_parser->unicode_property_name_length;
+    switch (regexp_parser->encoding->kind) {
+        case PM_ENCODING_KIND_UTF_8:
+        case PM_ENCODING_KIND_CESU_8:
+            return;
+        case PM_ENCODING_KIND_EUC_JP:
+        case PM_ENCODING_KIND_SHIFT_JIS:
+            name = regexp_parser->unicode_property_name;
+            length = regexp_parser->unicode_property_name_length;
+            break;
+        default:
+            name = regexp_parser->property_name;
+            length = regexp_parser->property_name_length;
+            break;
     }
 
     if (name == NULL) return;

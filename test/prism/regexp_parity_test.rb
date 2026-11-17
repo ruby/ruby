@@ -124,7 +124,6 @@ module Ruby::Prism
       "/\\k<0>/",
 
       # Property escapes are checked against the encoding of the pattern.
-      "/\\p{Hiragana}/", "/\\p{L}/", "/\\x80\\p{L}/", "/\\xE9\\p{Hiragana}/",
       "/\\p{Hiragana}[a/", "/\\p{^Alpha/", "/\\p{Alpha/", "/\\p{}/",
 
       # Names and numbers of groups are resolved once the pattern is parsed.
