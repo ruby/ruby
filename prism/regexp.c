@@ -1431,8 +1431,12 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                     return true;
                 }
 
-                // If we hit a -, then we're done parsing options.
-                if (*parser->cursor != '-') break;
+                /* A : ends the options and starts the subexpression that they
+                 * apply to, as in (?i:a). */
+                if (*parser->cursor == ':') {
+                    parser->cursor++;
+                    break;
+                }
 
                 PRISM_FALLTHROUGH
             case '-':
@@ -1465,6 +1469,8 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                     return true;
                 }
 
+                /* The : that starts the subexpression. */
+                parser->cursor++;
                 break;
             default:
                 parser->cursor++;

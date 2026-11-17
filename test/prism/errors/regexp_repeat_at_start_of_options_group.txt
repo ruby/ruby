@@ -1,0 +1,9 @@
+/(?i:*)/
+     ^ target of repeat operator is not specified
+/(?i-m:+)/
+       ^ target of repeat operator is not specified
+/(?-i:?)/
+      ^ target of repeat operator is not specified
+/(?i:{3})/
+     ^~~ target of repeat operator is not specified
+
