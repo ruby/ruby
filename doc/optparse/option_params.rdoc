@@ -1,4 +1,4 @@
-== Parameters for New Options
+= Parameters for New Options
 
 Option-creating methods in +OptionParser+
 accept arguments that determine the behavior of a new option:
@@ -44,16 +44,16 @@ Contents:
   - {Handler Procs}[#label-Handler+Procs]
   - {Handler Methods}[#label-Handler+Methods]
 
-=== Option Names
+== Option Names
 
 There are two kinds of option names:
 
 - Short option name, consisting of a single hyphen and a single character.
 - Long option name, consisting of two hyphens and one or more characters.
 
-==== Short Names
+=== Short Names
 
-===== Simple Short Names
+==== Simple Short Names
 
 File +short_simple.rb+ defines two options:
 
@@ -75,7 +75,7 @@ Executions:
   ["-x", true]
   ["-1 or -%", true]
 
-===== Short Names with Required Arguments
+==== Short Names with Required Arguments
 
 A short name followed (no whitespace) by a dummy word
 defines an option that requires an argument.
@@ -95,7 +95,7 @@ Executions:
   $ ruby short_required.rb -x FOO
   ["-x", "FOO"]
 
-===== Short Names with Optional Arguments
+==== Short Names with Optional Arguments
 
 A short name followed (with whitespace) by a dummy word in square brackets
 defines an option that allows an optional argument.
@@ -115,7 +115,7 @@ Executions:
   $ ruby short_optional.rb -x FOO
   ["-x", "FOO"]
 
-===== Short Names from Range
+==== Short Names from Range
 
 You can define an option with multiple short names
 taken from a range of characters.
@@ -140,9 +140,9 @@ Executions:
   $ ruby short_range.rb -z
   ["!-~", "z", nil]
 
-==== Long Names
+=== Long Names
 
-===== Simple Long Names
+==== Simple Long Names
 
 File +long_simple.rb+ defines two options:
 
@@ -165,7 +165,7 @@ Executions:
   ["--xxx", true]
   ["--y1% or --z2#", true]
 
-===== Long Names with Required Arguments
+==== Long Names with Required Arguments
 
 A long name followed (with whitespace) by a dummy word
 defines an option that requires an argument.
@@ -185,7 +185,7 @@ Executions:
   $ ruby long_required.rb --xxx FOO
   ["--xxx", "FOO"]
 
-===== Long Names with Optional Arguments
+==== Long Names with Optional Arguments
 
 A long name followed (with whitespace) by a dummy word in square brackets
 defines an option that allows an optional argument.
@@ -205,7 +205,7 @@ Executions:
   $ ruby long_optional.rb --xxx FOO
   ["--xxx", "FOO"]
 
-===== Long Names with Negation
+==== Long Names with Negation
 
 A long name may be defined with both positive and negative senses.
 
@@ -223,7 +223,7 @@ Executions:
   $ ruby long_with_negation.rb --no-binary
   [false, FalseClass]
 
-==== Mixed Names
+=== Mixed Names
 
 An option may have both short and long names.
 
@@ -259,7 +259,7 @@ Usage: mixed_names [options]
   $ ruby mixed_names.rb --zzz BAT
   ["--zzz", "BAT"]
 
-=== Argument Keywords
+== Argument Keywords
 
 As seen above, a given option name string may itself
 indicate whether the option has no argument, a required argument,
@@ -283,7 +283,7 @@ Executions:
   $ ruby argument_styles.rb --xxx FOO
   ["--xxx", "FOO"]
 
-=== Argument Strings
+== Argument Strings
 
 Still another way to specify a required argument
 is to define it in a string separate from the name string.
@@ -302,20 +302,20 @@ Executions:
   $ ruby argument_strings.rb --xxx FOO
   ["--xxx", "FOO"]
 
-=== Argument Values
+== Argument Values
 
 Permissible argument values may be restricted
 either by specifying explicit values
 or by providing a pattern that the given value must match.
 
-==== Explicit Argument Values
+=== Explicit Argument Values
 
 You can specify argument values in either of two ways:
 
 - Specify values an array of strings.
 - Specify values a hash.
 
-===== Explicit Values in Array
+==== Explicit Values in Array
 
 You can specify explicit argument values in an array of strings.
 The argument value must be one of those strings, or an unambiguous abbreviation.
@@ -344,7 +344,7 @@ Executions:
   explicit_array_values.rb:9:in '<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
 
 
-===== Explicit Values in Hash
+==== Explicit Values in Hash
 
 You can specify explicit argument values in a hash with string keys.
 The value passed must be one of those keys, or an unambiguous abbreviation;
@@ -381,7 +381,7 @@ Executions:
   $ ruby explicit_hash_values.rb -y bam
   ["-y", nil]
 
-==== Argument Value Patterns
+=== Argument Value Patterns
 
 You can restrict permissible argument values
 by specifying a +Regexp+ that the given argument must match,
@@ -413,7 +413,7 @@ Executions:
   $ ruby matched_values.rb --zzz 2
   matched_values.rb:12:in '<main>': invalid argument: --zzz 2 (OptionParser::InvalidArgument)
 
-=== Argument Converters
+== Argument Converters
 
 An option can specify that its argument is to be converted
 from the default +String+ to an instance of another class.
@@ -423,7 +423,7 @@ You can also define custom converters.
 
 See {Argument Converters}[./argument_converters.rdoc].
 
-=== Descriptions
+== Descriptions
 
 A description parameter is any string parameter
 that is not recognized as an
@@ -453,7 +453,7 @@ Executions:
   $ ruby descriptions.rb --xxx
   ["--xxx", true]
 
-=== Option Handlers
+== Option Handlers
 
 The handler for an option is an executable that will be called
 when the option is encountered.  The handler may be:
@@ -462,7 +462,7 @@ when the option is encountered.  The handler may be:
 - A proc.
 - A method.
 
-==== Handler Blocks
+=== Handler Blocks
 
 An option handler may be a block.
 
@@ -481,7 +481,7 @@ Executions:
   $ ruby block.rb --yyy FOO
   ["Handler block for -yyy called with value:", "FOO"]
 
-==== Handler Procs
+=== Handler Procs
 
 An option handler may be a Proc.
 
@@ -500,7 +500,7 @@ Executions:
   $ ruby proc.rb --yyy FOO
   ["Handler proc for -yyy called with value:", "FOO"]
 
-==== Handler Methods
+=== Handler Methods
 
 An option handler may be a Method.
 
