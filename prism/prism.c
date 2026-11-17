@@ -9944,6 +9944,38 @@ pm_regexp_escape_kept_p(const pm_lex_mode_t *lex_mode, uint8_t peeked) {
 }
 
 /**
+ * Copy a braced Unicode escape up to its closing brace, the regexp terminator,
+ * or a line ending. A closing brace belongs to the escape even when it is also
+ * the regexp terminator. The regexp preprocessor validates the escape after
+ * handling comments.
+ */
+static void
+pm_regexp_lex_braced_unicode(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t terminator) {
+    const uint8_t *start = parser->current.end - 1;
+    const uint8_t *cursor = parser->current.end + 2;
+    const uint8_t breakpoints[] = { '}', '\\', '\n', '\r', terminator, '\0' };
+
+    while (cursor < parser->end) {
+        cursor = pm_strpbrk(parser, cursor, breakpoints, parser->end - cursor, PM_STRPBRK_REGEXP);
+        if (cursor == NULL) {
+            cursor = parser->end;
+            break;
+        }
+
+        uint8_t byte = *cursor;
+        if (byte != '}' && (byte == terminator || byte == '\n' || (byte == '\r' && peek_at(parser, cursor + 1) == '\n'))) break;
+        cursor++;
+        if (byte == '}') break;
+
+        /* Leave multibyte characters and line endings for the next scan. */
+        if (byte == '\\' && cursor < parser->end && *cursor < 0x80 && *cursor != '\n' && *cursor != '\r') cursor++;
+    }
+
+    parser->current.end = cursor;
+    pm_buffer_append_bytes(buffer, start, (size_t) (cursor - start));
+}
+
+/**
  * Copy the content of a regular expression into the current string, as
  * pm_token_buffer_copy does, and give the parser its recorded places.
  */
@@ -11954,7 +11986,11 @@ parser_lex(pm_parser_t *parser) {
                             case 'M':
                             case 'u':
                             case 'x':
-                                escape_read(parser, &token_buffer.base.buffer, PM_ESCAPE_FLAG_REGEXP);
+                                if (peeked == 'u' && peek_offset(parser, 1) == '{') {
+                                    pm_regexp_lex_braced_unicode(parser, &token_buffer.base.buffer, lex_mode->as.regexp.terminator);
+                                } else {
+                                    escape_read(parser, &token_buffer.base.buffer, PM_ESCAPE_FLAG_REGEXP);
+                                }
 
                                 /* The escape consumed a newline with a heredoc body pending. */
                                 if (parser->next_start != NULL) {

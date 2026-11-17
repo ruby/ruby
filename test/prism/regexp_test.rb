@@ -321,6 +321,30 @@ module Ruby::Prism
       assert_equal "\\x00a(", Ruby::Prism.parse_statement("/\\C-\\C-a(/").unescaped
     end
 
+    def test_malformed_unicode_list_does_not_close_brace_delimited_regexp
+      ["\\u{s}", "\\u{41 z}", "\\u{z\\}z}"].each do |escape|
+        source = "if false; %r{ #{escape} } + 1; end"
+        result = Ruby::Prism.parse(source)
+
+        assert_equal ["invalid Unicode list: / #{escape} /"], result.errors.map(&:message)
+        addition = result.value.statements.body.first.statements.body.first
+        assert_equal :+, addition.name
+        assert_equal " #{escape} ", addition.receiver.unescaped
+        assert_equal source.rindex("}"), addition.receiver.closing_loc.start_offset
+      end
+    end
+
+    def test_malformed_unicode_lists_in_regexp_comments
+      ["\\C", "\\M", "\\x"].each do |inner|
+        escape = "\\u{" + inner
+        assert_empty Ruby::Prism.parse("/(?#" + escape + ")/").errors
+        assert_empty Ruby::Prism.parse("/#" + escape + "\n/x").errors
+        assert_empty Ruby::Prism.parse("%r!(?#" + escape + ")!").errors
+        assert_empty Ruby::Prism.parse("%r{(?#" + escape + "})}").errors
+        assert_equal ["invalid Unicode list: /#{escape}/"], Ruby::Prism.parse("%r!" + escape + "!").errors.map(&:message)
+      end
+    end
+
     def test_malformed_hex_escape
       node = Ruby::Prism.parse_statement("/a\\xZb/")
       assert_kind_of RegularExpressionNode, node
