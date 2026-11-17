@@ -6,11 +6,8 @@ require_relative "../test_helper"
 
 module Ruby::Prism
   class EncodingsTest < TestCase
-    class IdentifierContext < BasicObject
-      def method_missing(name, *)
-        name
-      end
-    end
+    # Emacs-Mule, and the encodings that share its characters.
+    EMACS_MULE_ENCODINGS = [Encoding::Emacs_Mule, Encoding::Stateless_ISO_2022_JP, Encoding::Stateless_ISO_2022_JP_KDDI]
 
     # These test that we're correctly parsing codepoints for each alias of each
     # encoding that prism supports.
@@ -44,14 +41,13 @@ module Ruby::Prism
         end
       end
 
-      # In Emacs-Mule, and the encodings that share its characters, a name that
-      # starts with any character that is not ASCII is a constant name.
-      def test_emacs_mule_constants
-        ["Emacs-Mule", "stateless-ISO-2022-JP", "stateless-ISO-2022-JP-KDDI"].each do |name|
+      # In Emacs-Mule, and the encodings that share its characters, no character
+      # that is not ASCII is uppercase, so a name that starts with one is a
+      # local name.
+      def test_emacs_mule_locals
+        EMACS_MULE_ENCODINGS.each do |encoding|
           [0x81A0, 0x90A0A0, 0x9AE0A0, 0x9CF0A0A0, 0x9DF5A0A0].each do |codepoint|
-            character = codepoint.chr(Encoding.find(name))
-            assert constant_start?(character), "Expected Ruby to read #{character.inspect} in #{name} as a constant."
-            assert_encoding_constant(name, character)
+            assert_encoding_identifier(encoding.name, codepoint.chr(encoding))
           end
         end
       end
@@ -61,11 +57,27 @@ module Ruby::Prism
 
     # Return true if a name that starts with the character is a constant name.
     # Object.const_defined? raises a NameError for a name that is not one.
+    #
+    # Ruby before 4.1 reads every character of Emacs-Mule that is not ASCII as
+    # uppercase, because of a bug in the character types of the encoding (Bug
+    # #22491). Ruby::Prism reads those characters as Ruby 4.1 does, as the start of a
+    # local name.
     def constant_start?(character)
+      return false if EMACS_MULE_ENCODINGS.include?(character.encoding) && !character.ascii_only?
+
       Object.const_defined?(character)
       true
     rescue NameError
       false
+    end
+
+    # Return the symbol that a name made of the given characters is in a source
+    # file with the given encoding magic comment. A name like UTF-8-MAC ends in
+    # an Emacs line ending, so Ruby reads the source as UTF-8 rather than
+    # UTF8-MAC.
+    def expected_name(name, characters)
+      encoding = eval("# encoding: #{name}\n__ENCODING__")
+      characters.b.force_encoding(encoding).to_sym
     end
 
     # These identifiers are longer than the bytes that the lexer scans at once
@@ -84,31 +96,21 @@ module Ruby::Prism
     end
 
     def assert_encoding_constant(name, character)
-      source = "# encoding: #{name}\n#{character}"
-
-      # A name like UTF-8-MAC ends in an Emacs line ending, so Ruby reads the
-      # source as UTF-8 rather than UTF8-MAC.
-      encoding = eval("# encoding: #{name}\n__ENCODING__")
-      expected = character.b.force_encoding(encoding).to_sym
-
-      result = Ruby::Prism.parse(source)
+      result = Ruby::Prism.parse("# encoding: #{name}\n#{character}")
       assert result.success?
 
       actual = result.value.statements.body.last
       assert_kind_of ConstantReadNode, actual
-      assert_equal expected, actual.name
+      assert_equal expected_name(name, character), actual.name
     end
 
     def assert_encoding_identifier(name, character)
-      source = "# encoding: #{name}\n#{character}"
-      expected = IdentifierContext.new.instance_eval(source)
-
-      result = Ruby::Prism.parse(source)
+      result = Ruby::Prism.parse("# encoding: #{name}\n#{character}")
       assert result.success?
 
       actual = result.value.statements.body.last
       assert_kind_of CallNode, actual
-      assert_equal expected, actual.name
+      assert_equal expected_name(name, character), actual.name
     end
 
     # Check that we can properly parse every codepoint in the given encoding.

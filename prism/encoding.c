@@ -729,16 +729,14 @@ pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * The forms of the characters in the Emacs-Mule encoding. Ruby reads a name
- * that starts with any character that is not ASCII as a constant name in this
- * encoding, so every form is uppercase.
+ * The forms of the characters in the Emacs-Mule encoding.
  */
 #define PM_ENCODING_EMACS_MULE_FORMS(X) \
-    X##_2(PRISM_ENCODING_UPPERCASE_BIT, 0x81, 0x8F, 0xA0, 0xFF) \
-    X##_3(PRISM_ENCODING_UPPERCASE_BIT, 0x90, 0x99, 0xA0, 0xFF, 0xA0, 0xFF) \
-    X##_3(PRISM_ENCODING_UPPERCASE_BIT, 0x9A, 0x9B, 0xE0, 0xEF, 0xA0, 0xFF) \
-    X##_4(PRISM_ENCODING_UPPERCASE_BIT, 0x9C, 0x9C, 0xF0, 0xF4, 0xA0, 0xFF, 0xA0, 0xFF) \
-    X##_4(PRISM_ENCODING_UPPERCASE_BIT, 0x9D, 0x9D, 0xF5, 0xFE, 0xA0, 0xFF, 0xA0, 0xFF)
+    X##_2(0, 0x81, 0x8F, 0xA0, 0xFF) \
+    X##_3(0, 0x90, 0x99, 0xA0, 0xFF, 0xA0, 0xFF) \
+    X##_3(0, 0x9A, 0x9B, 0xE0, 0xEF, 0xA0, 0xFF) \
+    X##_4(0, 0x9C, 0x9C, 0xF0, 0xF4, 0xA0, 0xFF, 0xA0, 0xFF) \
+    X##_4(0, 0x9D, 0x9D, 0xF5, 0xFE, 0xA0, 0xFF, 0xA0, 0xFF)
 
 /**
  * Return the width of the character at b in Emacs-Mule, or 0 if there is none.
@@ -746,14 +744,6 @@ pm_encoding_cp949_char_width(const uint8_t *b, ptrdiff_t n) {
 static size_t
 pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
     PM_ENCODING_FORMS_CHAR_WIDTH(PM_ENCODING_EMACS_MULE_FORMS)
-}
-
-/**
- * Return true if the character at b begins a constant name in Emacs-Mule.
- */
-static bool
-pm_encoding_emacs_mule_isupper_char(const uint8_t *b, ptrdiff_t n) {
-    PM_ENCODING_FORMS_ISUPPER_CHAR(PM_ENCODING_EMACS_MULE_FORMS)
 }
 
 /**
@@ -898,11 +888,10 @@ pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdif
             size_t width = pm_encoding_cesu_8_char_width(b, n);
             return width != 0 && pm_unicode_uppercase_p(pm_cesu_8_codepoint(b, width), version);
         }
-        case PM_ENCODING_KIND_EMACS_MULE:
-            return pm_encoding_emacs_mule_isupper_char(b, n);
         /* These encodings have no uppercase letters beyond ASCII. */
         case PM_ENCODING_KIND_BIG5:
         case PM_ENCODING_KIND_CP949:
+        case PM_ENCODING_KIND_EMACS_MULE:
         case PM_ENCODING_KIND_EUC_KR:
         case PM_ENCODING_KIND_EUC_TW:
         case PM_ENCODING_KIND_GB18030:
