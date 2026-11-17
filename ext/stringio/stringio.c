@@ -1567,7 +1567,10 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
     e = s + RSTRING_LEN(ptr->string);
     s += ptr->pos;
     if (limit > 0 && (size_t)limit < (size_t)(e - s)) {
+	const char *const end = e;
 	e = rb_enc_right_char_head(s, s + limit, e, get_enc(ptr));
+	/* a fixed-width encoding may step past a truncated last character */
+	if (e > end) e = end;
     }
     if (NIL_P(str)) {
 	if (arg->chomp) {

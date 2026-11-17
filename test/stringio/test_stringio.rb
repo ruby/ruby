@@ -151,6 +151,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil(stringio.gets)
   end
 
+  def test_gets_limit_in_truncated_fixed_width_char
+    # 6 bytes: one UTF-32 code unit and a truncated one.  The limit
+    # falls inside the truncated unit, and the line must stop at the
+    # end of the string, not beyond it.
+    stringio = StringIO.new("abcdef".b.freeze)
+    stringio.set_encoding(Encoding::UTF_32LE)
+    assert_equal("abcdef".b, stringio.gets(5).b)
+    assert_equal(6, stringio.pos)
+    assert_nil(stringio.gets(5))
+  end
+
   def test_gets_chomp
     assert_equal(nil, StringIO.new("").gets(chomp: true))
     assert_equal("", StringIO.new("\n").gets(chomp: true))
