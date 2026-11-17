@@ -22,6 +22,31 @@
 #define PM_REGEXP_PARSE_DEPTH_MAX 4096
 
 /**
+ * The name of a named group, in the pattern.
+ */
+typedef struct {
+    /** The start of the name. */
+    const uint8_t *start;
+
+    /** The length of the name. */
+    size_t length;
+} pm_regexp_name_t;
+
+/**
+ * A list of the names of named groups.
+ */
+typedef struct {
+    /** The names, which the list owns in the scratch arena. */
+    pm_regexp_name_t *values;
+
+    /** The number of names in the list. */
+    size_t size;
+
+    /** The number of names the list has room for. */
+    size_t capacity;
+} pm_regexp_names_t;
+
+/**
  * This is the parser that is going to handle parsing regular expressions.
  */
 typedef struct {
@@ -102,7 +127,40 @@ typedef struct {
      * reports nothing.
      */
     bool report_errors;
+
+    /**
+     * The number of capturing groups opened so far, plain and named. A group
+     * counts from its (, before its body, as in the regular expression engine.
+     */
+    uint32_t groups;
+
+    /**
+     * The names of the named groups opened so far, for the references that
+     * need a name to be defined already. They are only kept when errors are
+     * reported.
+     */
+    pm_regexp_names_t names;
 } pm_regexp_parser_t;
+
+/**
+ * Append a name to the names of the named groups opened so far, growing the
+ * list in the scratch arena.
+ */
+static void
+pm_regexp_names_append(pm_regexp_parser_t *parser, pm_regexp_name_t name) {
+    pm_regexp_names_t *names = &parser->names;
+
+    if (names->size == names->capacity) {
+        size_t capacity = names->capacity == 0 ? 4 : names->capacity * 2;
+        pm_regexp_name_t *values = (pm_regexp_name_t *) pm_arena_alloc(&parser->parser->scratch_arena, capacity * sizeof(pm_regexp_name_t), PRISM_ALIGNOF(pm_regexp_name_t));
+
+        if (names->size > 0) memcpy(values, names->values, names->size * sizeof(pm_regexp_name_t));
+        names->values = values;
+        names->capacity = capacity;
+    }
+
+    names->values[names->size++] = name;
+}
 
 /**
  * Append a place to a list of places, growing the list in the scratch arena.
@@ -986,6 +1044,70 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
 }
 
 /**
+ * Return true if a named group with the given name has been opened so far.
+ */
+static bool
+pm_regexp_name_defined_p(const pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    size_t length = (size_t) (end - start);
+
+    for (size_t index = 0; index < parser->names.size; index++) {
+        const pm_regexp_name_t *name = &parser->names.values[index];
+        if (name->length == length && memcmp(name->start, start, length) == 0) return true;
+    }
+
+    return false;
+}
+
+/**
+ * Check a reference that the engine resolves while it parses, against the
+ * groups opened so far. A name must already be defined, as in (?<n>a)\k<n>,
+ * and a number that counts back, as in (a)\k<-1>, must land on a group. A
+ * number that counts forward is checked once the pattern is parsed. Returns
+ * false after an error.
+ */
+static bool
+pm_regexp_check_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_t *reference) {
+    if (!parser->report_errors) return true;
+
+    if (reference->number == 0) {
+        if (pm_regexp_name_defined_p(parser, reference->start, reference->end)) return true;
+
+        pm_buffer_t buffer = { 0 };
+        pm_buffer_append_string(&buffer, "undefined name <", 16);
+        pm_buffer_append_string(&buffer, (const char *) reference->start, (size_t) (reference->end - reference->start));
+        pm_buffer_append_string(&buffer, "> reference", 11);
+        pm_buffer_append_byte(&buffer, '\0');
+
+        pm_regexp_parse_error(parser, reference->start, reference->end, pm_buffer_value(&buffer));
+        pm_buffer_cleanup(&buffer);
+        return false;
+    }
+
+    if (reference->number < 0 && (int64_t) parser->groups + 1 + reference->number <= 0) {
+        pm_regexp_parse_error(parser, reference->start, reference->end, "invalid backref number/name");
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Check a call of a group that counts, as in \g<-1> or \g<+1>, against the
+ * groups opened so far, the way the engine does while it parses. A call that
+ * counts back must land on a group. Returns false after an error.
+ */
+static bool
+pm_regexp_check_relative_call(pm_regexp_parser_t *parser, const pm_regexp_reference_t *reference, bool forward) {
+    if (!parser->report_errors || (reference->number >= 0 && !forward)) return true;
+
+    int64_t number = reference->number > 0 ? reference->number - 1 : reference->number;
+    if ((int64_t) parser->groups + 1 + number > 0) return true;
+
+    pm_regexp_parse_error(parser, reference->start, reference->end, "invalid backref number/name");
+    return false;
+}
+
+/**
  * Parse a backslash escape sequence in a regexp, handling \u (unicode),
  * \p/\P (property), \x (hex), and other single-character escapes. The lexer
  * writes each \M-, \C-, and \c escape in the content as the \x escape of its
@@ -1016,7 +1138,7 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
 
             uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
             pm_regexp_reference_t reference;
-            pm_regexp_parse_reference_with_level(parser, close, &reference);
+            if (pm_regexp_parse_reference_with_level(parser, close, &reference)) pm_regexp_check_reference(parser, &reference);
             break;
         }
         case 'g': {
@@ -1029,6 +1151,7 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
 
             /* \g<0> calls the whole pattern. A 0 or + before anything else is
              * dropped, so \g<01> calls group 1 and \g<+1> counts forward. */
+            bool forward = false;
             if (parser->cursor < parser->end && *parser->cursor == '0') {
                 parser->cursor++;
                 if (parser->cursor < parser->end && *parser->cursor == close) {
@@ -1037,10 +1160,11 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
                 }
             } else if (parser->cursor < parser->end && *parser->cursor == '+') {
                 parser->cursor++;
+                forward = true;
             }
 
             pm_regexp_reference_t reference;
-            pm_regexp_parse_reference(parser, close, &reference);
+            if (pm_regexp_parse_reference(parser, close, &reference)) pm_regexp_check_relative_call(parser, &reference, forward);
             break;
         }
         default:
@@ -1578,6 +1702,7 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
         pm_regexp_parse_name_error(parser, start, parser->cursor, "invalid group name");
         if (parser->cursor >= parser->end || *parser->cursor != close) return false;
 
+        parser->groups++;
         parser->cursor++;
         return true;
     }
@@ -1590,6 +1715,11 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
 
     if (parser->name_callback != NULL) {
         pm_regexp_parser_named_capture(parser, start, parser->cursor);
+    }
+
+    parser->groups++;
+    if (parser->report_errors) {
+        pm_regexp_names_append(parser, (pm_regexp_name_t) { .start = start, .length = (size_t) (parser->cursor - start) });
     }
 
     parser->cursor++;
@@ -1620,6 +1750,7 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
         case '\'': {
             uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
             if (!pm_regexp_parse_reference_with_level(parser, close, &reference)) return false;
+            if (!pm_regexp_check_reference(parser, &reference)) return false;
 
             /* The name must be followed by the ) that ends the condition. */
             if (parser->cursor >= parser->end || *parser->cursor != ')') {
@@ -1684,8 +1815,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
      * it does not. */
     bool conditional = false;
 
-    // First, parse any options for the group.
-    if (pm_regexp_char_accept(parser, '?')) {
+    // First, parse any options for the group. A group without them captures.
+    if (!pm_regexp_char_accept(parser, '?')) {
+        parser->groups++;
+    } else {
         if (pm_regexp_char_is_eof(parser)) {
             pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
             return false;

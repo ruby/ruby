@@ -1,0 +1,11 @@
+/\k<n>(?<n>a)/
+    ^ undefined name <n> reference
+/(?<n>a)\k<m>/
+           ^ undefined name <m> reference
+/(a)\k<-2>/
+       ^~ invalid backref number/name
+/(?(<n>)b)(?<n>a)/
+     ^ undefined name <n> reference
+/(a)\g<-2>/
+       ^~ invalid backref number/name
+
