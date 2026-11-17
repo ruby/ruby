@@ -3625,8 +3625,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         .body = (pm_node_t *) if_node->statements,
         .locals = {
             .ids = def_node->locals.ids,
-            .size = parameters_node->requireds.size,
-            .capacity = def_node->locals.capacity
+            .size = parameters_node->requireds.size
         }
     };
 
