@@ -20302,6 +20302,30 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
     return array;
 }
 
+/**
+ * Validate completed static symbols before adding them to a symbol array.
+ * Interpolated symbols are validated at runtime instead.
+ */
+static void
+parse_interpolated_symbol_array_element(pm_parser_t *parser, pm_array_node_t *array, pm_node_t *element) {
+    if (PM_NODE_TYPE_P(element, PM_SYMBOL_NODE) && !PM_NODE_FLAG_P(element, PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING)) {
+        const pm_symbol_node_t *symbol = (const pm_symbol_node_t *) element;
+        pm_token_t content = {
+            .type = PM_TOKEN_STRING_CONTENT,
+            .start = parser->start + symbol->content_loc.start,
+            .end = parser->start + PM_LOCATION_END(&symbol->content_loc)
+        };
+
+        if (PM_NODE_FLAG_P(element, PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING)) {
+            parse_symbol_encoding_validate_utf8(parser, &content, &symbol->unescaped);
+        } else {
+            parse_symbol_encoding_validate_other(parser, &content, &symbol->unescaped);
+        }
+    }
+
+    pm_array_node_elements_append(parser->arena, array, element);
+}
+
 static pm_array_node_t *
 parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
     parser_lex(parser);
@@ -20326,7 +20350,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
                     /* If we hit a separator after we've hit content, then we
                      * need to append that content to the list and reset the
                      * current node. */
-                    pm_array_node_elements_append(parser->arena, array, current);
+                    parse_interpolated_symbol_array_element(parser, array, current);
                     current = NULL;
                 }
 
@@ -20438,7 +20462,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
     /* If we have a current node, then we need to append it to the list. */
     if (current) {
-        pm_array_node_elements_append(parser->arena, array, current);
+        parse_interpolated_symbol_array_element(parser, array, current);
     }
 
     pm_token_t closing = parser->current;
