@@ -892,7 +892,7 @@ class Ractor
     #    port.inspect -> string
     def inspect
       "#<Ractor::Port to:\##{
-        __builtin_cexpr! "ULL2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
+        __builtin_cexpr! "ULL2NUM(rb_ractor_id(RACTOR_PORT_PTR(self)->r))"
       } id:#{
         __builtin_cexpr! "SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)))"
       }>"
