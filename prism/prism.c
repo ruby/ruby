@@ -7535,8 +7535,9 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
         cursor++;
     }
 
+    /* The name of an encoding is made of ASCII letters, digits, - and _. */
     const uint8_t *value_start = cursor;
-    while ((*cursor == '-' || *cursor == '_' || pm_encoding_alnum_char(parser->encoding, cursor, 1)) && ++cursor < end);
+    while ((*cursor == '-' || *cursor == '_' || pm_encoding_ascii_alnum_p(*cursor)) && ++cursor < end);
 
     if (!parser_lex_magic_comment_encoding_value(parser, value_start, cursor)) {
         // If we were unable to parse the encoding value, then we've got an

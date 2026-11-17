@@ -119,24 +119,6 @@ size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, p
 size_t pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n);
 
 /*
- * Return the number of bytes in the next character in the given encoding if it
- * is alphabetical, or 0 otherwise.
- */
-static PRISM_INLINE size_t
-pm_encoding_alpha_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return pm_encoding_property_char(encoding, PRISM_ENCODING_ALPHABETIC_BIT, b, n);
-}
-
-/*
- * Return the number of bytes in the next character in the given encoding if it
- * is alphanumeric, or 0 otherwise.
- */
-static PRISM_INLINE size_t
-pm_encoding_alnum_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return pm_encoding_property_char(encoding, PRISM_ENCODING_ALPHANUMERIC_BIT, b, n);
-}
-
-/*
  * Return true if the next character in the given encoding is uppercase, or
  * titlecase, in the given version of Ruby. Such a character begins a constant
  * name. The version only matters for an encoding whose characters are Unicode
