@@ -9351,7 +9351,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 // ?\u{nnnn} character literal should contain only one codepoint
                 // and cannot be like ?\u{nnnn mmmm}.
                 if (flags & PM_ESCAPE_FLAG_SINGLE && codepoints_count > 1) {
-                    pm_parser_err(parser, U32(extra_codepoints_start - parser->start), U32(parser->current.end - 1 - extra_codepoints_start), PM_ERR_ESCAPE_INVALID_UNICODE_LITERAL);
+                    pm_parser_err(parser, U32(extra_codepoints_start - parser->start), U32(parser->current.end - extra_codepoints_start), PM_ERR_ESCAPE_INVALID_UNICODE_LITERAL);
                 }
 
                 if (parser->current.end == parser->end) {

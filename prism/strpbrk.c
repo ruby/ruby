@@ -320,7 +320,7 @@ pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t 
             return source + index;
         }
 
-        if (validate && source[index] >= 0x80) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), 1);
+        if (validate && source[index] >= 0x80) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source + index - parser->start), 1);
         index++;
     }
 
@@ -343,7 +343,7 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
             index++;
         } else {
             size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (maximum - index));
-            if (validate) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), (uint32_t) width);
+            if (validate) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source + index - parser->start), (uint32_t) (width == 0 ? 1 : width));
 
             if (width > 0) {
                 index += width;
@@ -385,7 +385,7 @@ pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t
             index++;
         } else {
             size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (maximum - index));
-            pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), (uint32_t) width);
+            pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source + index - parser->start), (uint32_t) (width == 0 ? 1 : width));
 
             if (width > 0) {
                 index += width;

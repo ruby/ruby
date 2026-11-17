@@ -22,6 +22,44 @@ module Ruby::Prism
       end
     end
 
+    def test_mixed_encoding_locations
+      ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
+        next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
+
+        bytes = encoding == "EUC-JP" ? "\xA1\xA1" : "\xA1"
+        source = "\"\\u{df}abc#{bytes}\"".b
+        error = Ruby::Prism.parse(source, encoding: encoding).errors.find { |diagnostic| diagnostic.type == :mixed_encoding }
+
+        assert_not_nil error
+        assert_equal 10, error.location.start_offset
+        assert_equal bytes.bytesize, error.location.length
+        assert_equal bytes.b, error.location.slice.b
+      end
+    end
+
+    def test_mixed_encoding_location_for_invalid_multibyte_character
+      return if ENV["PRISM_BUILD_MINIMAL"]
+
+      source = "\"\\u{df\xD3&".b
+      error = Ruby::Prism.parse(source, encoding: "EUC-JP").errors.find { |diagnostic| diagnostic.type == :mixed_encoding }
+
+      assert_not_nil error
+      assert_equal 6, error.location.start_offset
+      assert_equal 1, error.location.length
+      assert_equal "\xD3".b, error.location.slice.b
+    end
+
+    def test_extra_unicode_codepoint_locations
+      ["a", "00", "a b", "a "].each do |extra|
+        result = Ruby::Prism.parse("?\\u{0 #{extra}}")
+        error = result.errors.find { |diagnostic| diagnostic.type == :escape_invalid_unicode_literal }
+
+        assert_not_nil error
+        assert_equal 6, error.location.start_offset
+        assert_equal extra, error.location.slice
+      end
+    end
+
     def test_newline_preceding_eof
       err = Ruby::Prism.parse("foo(").errors.first
       assert_equal 1, err.location.start_line
