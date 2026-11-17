@@ -260,6 +260,10 @@ typedef struct pm_lex_mode {
              */
             bool label_allowed;
 
+            /* Whether the final content token joined text after the last
+             * breakpoint, where this string used to split at EOF. */
+            bool joined_at_eof;
+
             /*
              * When lexing a string, it takes into account balancing the
              * terminator if the terminator is one of (), [], {}, or <>.

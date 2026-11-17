@@ -125,6 +125,17 @@ module Ruby::Prism
       assert_nil statement.closing
     end
 
+    def test_unterminated_string_with_an_invalid_unicode_escape
+      result = Ruby::Prism.parse('"\u{xxxx')
+      statement = result.value.statements.body.first
+      assert_kind_of StringNode, statement
+      assert_equal '\u{xxxx', statement.content
+      assert_nil statement.closing
+
+      assert_equal [:escape_invalid_unicode, :escape_invalid_unicode_term, :string_interpolated_term], result.errors.map(&:type)
+      assert_equal [4, 4, 0], result.errors.map { |error| error.location.start_offset }
+    end
+
     def test_regexp_encoding_option_mismatch_error
       # UTF-8 char with ASCII-8BIT modifier
       result = Ruby::Prism.parse('/Ȃ/n')

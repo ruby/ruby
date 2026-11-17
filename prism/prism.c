@@ -12299,6 +12299,7 @@ parser_lex(pm_parser_t *parser) {
             /* With no breakpoint left, the string is not terminated and the rest
              * of the file is content, so this token runs to the end of the file.
              * That keeps the content in one piece. */
+            lex_mode->as.string.joined_at_eof = parser->current.end > parser->current.start && parser->current.end < parser->end;
             parser->current.end = parser->end;
             pm_token_buffer_flush(parser, &token_buffer);
             LEX(PM_TOKEN_STRING_CONTENT);
@@ -17071,20 +17072,25 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             pm_token_t content = parser->current;
             pm_string_t unescaped = parser->current_string;
             const pm_encoding_t *explicit_encoding = parser->explicit_encoding;
+            bool joined_at_eof = lex_mode->as.string.joined_at_eof;
             parser_lex(parser);
 
             if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
                 node = UP(pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped));
                 pm_node_flag_set(node, parse_unescaped_encoding(parser, explicit_encoding));
 
-                // Kind of odd behavior, but basically if we have an
-                // unterminated string and it ends in a newline, we back up one
-                // character so that the error message is on the last line of
-                // content in the string.
                 if (!accept1(parser, PM_TOKEN_STRING_END)) {
-                    const uint8_t *location = parser->previous.end;
-                    if (location > parser->start && location[-1] == '\n') location--;
-                    pm_parser_err(parser, U32(location - parser->start), 0, PM_ERR_STRING_LITERAL_EOF);
+                    if (joined_at_eof) {
+                        /* Keep the diagnostic used when the lexer returned
+                         * this content in multiple parts. */
+                        pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
+                    } else {
+                        /* Point at the last line of content when the string
+                         * ends in a newline. */
+                        const uint8_t *location = parser->previous.end;
+                        if (location > parser->start && location[-1] == '\n') location--;
+                        pm_parser_err(parser, U32(location - parser->start), 0, PM_ERR_STRING_LITERAL_EOF);
+                    }
 
                     parser->previous.start = parser->previous.end;
                     parser->previous.type = 0;
