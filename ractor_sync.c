@@ -1863,7 +1863,7 @@ ractor_selector_create(VALUE klass)
 
 /*
  * call-seq:
- *   add(ractor) -> ractor
+ *   add(port) -> ractor
  *
  * Adds _ractor_ to +self+.  Raises an exception if _ractor_ is already added.
  * Returns _ractor_.
@@ -1877,6 +1877,10 @@ ractor_selector_add(VALUE selv, VALUE rpv)
 
     struct ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
     const struct ractor_port *rp = RACTOR_PORT_PTR(rpv);
+
+    if (rp->r != GET_RACTOR()) {
+        rb_raise(rb_eRactorError, "only allowed from the creating ractor");
+    }
 
     if (st_lookup(s->ports, (st_data_t)rpv, NULL)) {
         rb_raise(rb_eArgError, "already added");
