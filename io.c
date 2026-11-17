@@ -3984,6 +3984,7 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 static const char *
 search_delim(const char *p, long len, int delim, rb_encoding *enc)
 {
+    if (delim < 0) return NULL;
     if (rb_enc_mbminlen(enc) == 1) {
         p = memchr(p, delim, len);
         if (p) return p + 1;
