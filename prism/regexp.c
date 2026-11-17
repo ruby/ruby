@@ -344,6 +344,9 @@ typedef struct {
      */
     bool report_errors;
 
+    /** Number of syntax diagnostics that have quoted the complete pattern. */
+    uint8_t quoted_errors;
+
     /**
      * The number of capturing groups opened so far, plain and named. A group
      * counts from its (, before its body, as in the regular expression engine.
@@ -487,9 +490,9 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
 
 /**
  * Append a syntax error to the parser's error list, at the place in the source
- * of the given range of the content. The message is followed by the quoted
- * regular expression and its options, as in "unmatched close parenthesis:
- * /a)/i". Errors are only reported when report_errors is set.
+ * of the given range of the content. The first eight messages are followed by
+ * the quoted regular expression and its options, as in "unmatched close
+ * parenthesis: /a)/i". Errors are only reported when report_errors is set.
  */
 static void
 pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message) {
@@ -498,21 +501,30 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
     pm_parser_t *parser = regexp_parser->parser;
     const pm_regexp_t *regexp = regexp_parser->regexp;
 
-    char letters[4];
-    pm_regexp_option_letters(regexp->flags, letters);
-
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, message, strlen(message));
-    pm_buffer_append_string(&buffer, ": /", 3);
-    pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
-    pm_buffer_append_byte(&buffer, '/');
-    pm_buffer_append_string(&buffer, letters, strlen(letters));
-    pm_buffer_append_byte(&buffer, '\0');
-
     uint32_t source_start = pm_regexp_source_offset(regexp_parser, start, true);
     uint32_t source_end = pm_regexp_source_offset(regexp_parser, end, false);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
-    pm_buffer_cleanup(&buffer);
+
+    /* Recovery can report an error for every byte of the pattern. Limit how
+     * many diagnostics copy it so the total message size remains linear. */
+    if (regexp_parser->quoted_errors == 8) {
+        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, message);
+    } else {
+        regexp_parser->quoted_errors++;
+
+        char letters[4];
+        pm_regexp_option_letters(regexp->flags, letters);
+
+        pm_buffer_t buffer = { 0 };
+        pm_buffer_append_string(&buffer, message, strlen(message));
+        pm_buffer_append_string(&buffer, ": /", 3);
+        pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
+        pm_buffer_append_byte(&buffer, '/');
+        pm_buffer_append_string(&buffer, letters, strlen(letters));
+        pm_buffer_append_byte(&buffer, '\0');
+
+        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
+        pm_buffer_cleanup(&buffer);
+    }
 }
 
 /**

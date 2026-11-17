@@ -353,6 +353,16 @@ module Ruby::Prism
       assert_equal [2, 0], [errors.first.location.start_line, errors.first.location.start_column]
     end
 
+    def test_regexp_recovery_limits_repeated_pattern_quotes
+      pattern = ")" * 4000
+      errors = Ruby::Prism.parse("/#{pattern}/").errors
+
+      assert_equal pattern.length, errors.length
+      assert_equal "unmatched close parenthesis: /#{pattern}/", errors.first.message
+      assert_equal ")", errors.last.location.slice
+      assert_operator errors.sum { |error| error.message.bytesize }, :<, pattern.bytesize * 50
+    end
+
     def test_depth_limit_nested_character_sets
       assert_depth_limit("[" * 10_000)
     end
