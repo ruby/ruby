@@ -190,6 +190,11 @@ module Ruby::Prism
     }.freeze
 
     def assert_parity(cases, encodings)
+      # CRuby uses the default internal encoding when it quotes a regexp in
+      # an error. Use UTF-8 to make the comparison independent of the locale.
+      previous_encoding = Encoding.default_internal
+      ignore_warnings { Encoding.default_internal = Encoding::UTF_8 }
+
       unexpected_failures = []
       unexpected_passes = []
 
@@ -217,6 +222,8 @@ module Ruby::Prism
       if self.class.all_encodings? && !ENV["PRISM_BUILD_MINIMAL"]
         assert_empty unexpected_passes, "Regular expressions that now match CRuby, to remove from KNOWN_FAILURES:\n#{unexpected_passes.map(&:inspect).join("\n")}"
       end
+    ensure
+      ignore_warnings { Encoding.default_internal = previous_encoding }
     end
 
     def parsey_result(source)
