@@ -3624,6 +3624,13 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
         }
     }
 
+    if (sargp && (eargp->fd_dup2 != Qfalse || eargp->fd_dup2_child != Qfalse)) {
+        long n = 0;
+        if (eargp->fd_dup2 != Qfalse) n += RARRAY_LEN(eargp->fd_dup2);
+        if (eargp->fd_dup2_child != Qfalse) n += RARRAY_LEN(eargp->fd_dup2_child);
+        rb_execarg_allocate_dup2_tmpbuf(sargp, n);
+    }
+
     obj = eargp->fd_dup2;
     if (obj != Qfalse) {
         if (run_exec_dup2(obj, eargp->dup2_tmpbuf, sargp, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
@@ -3680,12 +3687,6 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     }
 #endif
 
-    if (sargp) {
-        VALUE ary = sargp->fd_dup2;
-        if (ary != Qfalse) {
-            rb_execarg_allocate_dup2_tmpbuf(sargp, RARRAY_LEN(ary));
-        }
-    }
     {
         int preserve = errno;
         stdfd_clear_nonblock();
@@ -3694,6 +3695,11 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     return 0;
 }
+#if !defined(HAVE_WORKING_FORK)
+# define execarg_restore(sargp) rb_execarg_run_options((sargp), NULL, errmsg, errmsg_buflen)
+#else
+# define execarg_restore(sargp) (void)0
+#endif
 
 /* This function should be async-signal-safe.  Hopefully it is. */
 int
@@ -3714,7 +3720,9 @@ exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errm
     int err;
 
     if (rb_execarg_run_options(eargp, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
-        return errno;
+        err = errno;
+        execarg_restore(sargp);
+        return err;
     }
 
     if (eargp->use_shell) {
@@ -3726,9 +3734,7 @@ exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errm
             abspath = RSTRING_PTR(eargp->invoke.cmd.command_abspath);
         err = proc_exec_cmd(abspath, eargp->invoke.cmd.argv_str, eargp->envp_str); /* async-signal-safe */
     }
-#if !defined(HAVE_WORKING_FORK)
-    rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen);
-#endif
+    execarg_restore(sargp);
 
     return err;
 }
@@ -4634,6 +4640,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
     if (rb_execarg_run_options(eargp, &sarg, errmsg, errmsg_buflen) < 0) {
+        execarg_restore(&sarg);
         return -1;
     }
 
@@ -4663,7 +4670,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
         eargp->waitpid_state->pid = pid;
     }
 
-    rb_execarg_run_options(&sarg, NULL, errmsg, errmsg_buflen);
+    execarg_restore(&sarg);
 #endif
 
     return pid;
