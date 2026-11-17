@@ -570,6 +570,9 @@ struct rb_iseq_constant_body {
     struct {
         unsigned int prism: 1; // ISEQ was generated from prism compiler
         unsigned int no_realpath: 1; // location.pathobj names no real file (ex: during eval)
+#ifdef USE_ZJIT
+        unsigned int may_write_block_code: 1;
+#endif
     } flags;
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.

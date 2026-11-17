@@ -797,6 +797,7 @@ impl VALUE {
 }
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
+pub type IseqBodyFlags = rb_iseq_constant_body__bindgen_ty_2;
 
 /// How a block iseq refers to a variable in an enclosing scope, as recorded in
 /// `ISEQ_BODY(blockiseq)->outer_variables`. `compile.c` aggregates accesses from
@@ -833,6 +834,7 @@ impl OuterVariables {
 /// Extension trait to enable method calls on [`IseqPtr`]
 pub trait IseqAccess {
     unsafe fn params<'a>(self) -> &'a IseqParameters;
+    unsafe fn body_flags<'a>(self) -> &'a IseqBodyFlags;
     unsafe fn outer_variables(self) -> OuterVariables;
 }
 
@@ -840,6 +842,11 @@ impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
+
+    /// Get the ISEQ body's boolean flags. Analogous to `ISEQ_BODY(iseq)->flags` in C.
+    unsafe fn body_flags<'a>(self) -> &'a IseqBodyFlags {
+        unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_FLAGS.to_usize()) as *const IseqBodyFlags) }
     }
 
     /// The iseq's `outer_variables` table. See [`OuterVariables`].

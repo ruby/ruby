@@ -38,6 +38,7 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
     ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
+    ISEQ_BODY_OFFSET_FLAGS = offsetof(struct rb_iseq_constant_body, flags),
     RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
 };
 

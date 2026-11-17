@@ -3474,26 +3474,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 /// These instructions call vm_caller_setup_arg_block which writes to cfp->block_code.
 #[allow(non_upper_case_globals)]
 pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
-    let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
-    let mut insn_idx: u32 = 0;
-
-    while insn_idx < encoded_size {
-        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-        let opcode = unsafe { rb_iseq_bare_opcode_at_pc(iseq, pc) } as u32;
-
-        match opcode {
-            YARVINSN_send | YARVINSN_sendforward |
-            YARVINSN_invokesuper | YARVINSN_invokesuperforward |
-            YARVINSN_invokeblock => {
-                return true;
-            }
-            _ => {}
-        }
-
-        insn_idx = insn_idx.saturating_add(unsafe { rb_insn_len(VALUE(opcode as usize)) }.try_into().unwrap());
-    }
-
-    false
+    unsafe { iseq.body_flags() }.may_write_block_code() == 1
 }
 
 /// True if the block ISEQ contains a `throw` opcode (break, non-local return). ZJIT can't

@@ -4738,6 +4738,23 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                     }
                 }
             }
+
+#if USE_ZJIT
+            {
+                INSN *item = (INSN *)list;
+                switch(INSN_OF(item)) {
+                  case BIN(send):
+                  case BIN(sendforward):
+                  case BIN(invokesuper):
+                  case BIN(invokesuperforward):
+                  case BIN(invokeblock):
+                    ISEQ_BODY(iseq)->flags.may_write_block_code = 1;
+                    break;
+                  default:
+                    break;
+                }
+            }
+#endif
         }
         if (IS_LABEL(list)) {
             switch (((LABEL *)list)->rescued) {
@@ -12825,7 +12842,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 12
+#define IBF_DEVEL_VERSION 13
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -14028,6 +14045,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, param_keyword_offset);
     ibf_dump_write_small_value(dump, location_pathobj_index);
     ibf_dump_write_small_value(dump, body->flags.no_realpath);
+    ibf_dump_write_small_value(dump, body->flags.may_write_block_code);
     ibf_dump_write_small_value(dump, location_label_index);
     ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
@@ -14144,6 +14162,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
     const bool no_realpath = (bool)ibf_load_small_value(load, &reading_pos);
+    const bool may_write_block_code = (bool)ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
@@ -14241,6 +14260,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.post_num = param_post_num;
     load_body->param.block_start = param_block_start;
     load_body->local_table_size = local_table_size;
+    load_body->flags.may_write_block_code = may_write_block_code;
     load_body->ci_size = ci_size;
     load_body->insns_info.size = insns_info_size;
 
@@ -15474,6 +15494,7 @@ rb_iseq_dup_with_independent_caches(const rb_iseq_t *src_root)
         if (!cb->local_iseq) RB_OBJ_WRITE(copy, &cb->local_iseq, sb->local_iseq);
         RB_OBJ_WRITE(copy, &cb->location.pathobj, sb->location.pathobj);
         cb->flags.no_realpath = sb->flags.no_realpath;
+        cb->flags.may_write_block_code = sb->flags.may_write_block_code;
         VALUE sl = ISEQ_SCRIPT_LINES(src_root);
         VALUE cov = ISEQ_COVERAGE(src_root);
         if (!NIL_P(sl) || !NIL_P(cov)) {
