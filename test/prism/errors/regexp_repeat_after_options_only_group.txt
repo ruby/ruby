@@ -1,0 +1,11 @@
+/(?x)+/
+     ^ target of repeat operator is not specified
+/a(?i)*/
+      ^ target of repeat operator is not specified
+/(?-x){3}/
+      ^~~ target of repeat operator is not specified
+/(?i-m)?/
+       ^ target of repeat operator is not specified
+/(?x) +/
+      ^ target of repeat operator is not specified
+

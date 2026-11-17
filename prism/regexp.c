@@ -1304,9 +1304,13 @@ pm_regexp_options_state(pm_regexp_options_t *options, uint8_t key) {
  * * (?(cond)yes-subexp|no-subexp) - conditional expression
  * * (?imxdau-imx)                 - turn on and off configuration
  * * (?imxdau-imx:subexp)          - turn on and off configuration for an expression
+ *
+ * A group like (?i) only sets options, for the rest of the group around it.
+ * There is nothing for a quantifier to repeat after it, as in (?i)*, so this
+ * sets options_only to tell the caller not to read one.
  */
 static bool
-pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
+pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_only) {
     /* Every level of nested groups passes through here, so this bounds the
      * group recursion by the stack budget. The check lives here rather than
      * beside the depth check in pm_regexp_parse_expression because there it
@@ -1454,6 +1458,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                     }
 
                     parser->cursor++;
+                    *options_only = true;
                     return true;
                 }
 
@@ -1492,6 +1497,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                     }
 
                     parser->cursor++;
+                    *options_only = true;
                     return true;
                 }
 
@@ -1558,9 +1564,16 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             parser->cursor++;
             pm_regexp_parse_backslash_escape(parser);
             return pm_regexp_parse_quantifier(parser);
-        case '(':
+        case '(': {
             parser->cursor++;
-            return pm_regexp_parse_group(parser, depth) && pm_regexp_parse_quantifier(parser);
+
+            bool options_only = false;
+            if (!pm_regexp_parse_group(parser, depth, &options_only)) return false;
+
+            /* A quantifier after a group like (?i) is the next item, which
+             * reports that it has nothing to repeat. */
+            return options_only || pm_regexp_parse_quantifier(parser);
+        }
         case '[':
             parser->cursor++;
             return pm_regexp_parse_character_class(parser, depth) && pm_regexp_parse_quantifier(parser);
