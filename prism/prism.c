@@ -6366,13 +6366,9 @@ typedef struct {
  */
 static void
 pm_statements_body_append(pm_parser_t *parser, pm_statements_t *body, pm_node_t *statement, bool newline) {
-    if (body->nodes.size == 0 || PM_NODE_START(statement) < body->location.start) {
-        body->location.start = PM_NODE_START(statement);
-    }
-
-    if (PM_NODE_END(statement) > PM_LOCATION_END(&body->location)) {
-        body->location.length = PM_NODE_END(statement) - body->location.start;
-    }
+    body->location = body->nodes.size == 0
+        ? statement->location
+        : pm_location_join(body->location, statement->location);
 
     if (body->nodes.size > 0) pm_statements_unreachable_check(parser, pm_node_list_open_last(&body->nodes), statement);
     pm_node_list_open_append(&parser->node_chunks, &body->nodes, statement);
