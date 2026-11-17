@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/proc.h"
@@ -174,6 +175,40 @@ wmap_allocate(VALUE klass)
     return obj;
 }
 
+static int
+wmap_foreach_snapshot_i(st_data_t k, st_data_t v, st_data_t data)
+{
+    VALUE ary = (VALUE)data;
+
+    rb_ary_push(ary, (VALUE)k);
+    rb_ary_push(ary, (VALUE)v);
+
+    return ST_CONTINUE;
+}
+
+/* Calls func with each entry of the map. The entries are first copied into a
+ * hidden array, because func may run arbitrary code (or allocate and trigger
+ * a compaction) and modify the table under a running st_foreach, which can
+ * then visit entries twice or stop early. Entries removed before they are
+ * reached are skipped. */
+static void
+wmap_foreach(struct weakmap *w, void (*func)(VALUE key, VALUE val, VALUE arg), VALUE arg)
+{
+    VALUE ary = rb_ary_hidden_new(w->table->num_entries * 2);
+    st_foreach(w->table, wmap_foreach_snapshot_i, (st_data_t)ary);
+
+    for (long i = 0; i < RARRAY_LEN(ary); i += 2) {
+        VALUE key = RARRAY_AREF(ary, i);
+        st_data_t val;
+
+        if (st_lookup(w->table, (st_data_t)key, &val)) {
+            func(key, (VALUE)val, arg);
+        }
+    }
+
+    RB_GC_GUARD(ary);
+}
+
 static VALUE
 wmap_inspect_append(VALUE str, VALUE obj)
 {
@@ -185,13 +220,9 @@ wmap_inspect_append(VALUE str, VALUE obj)
     }
 }
 
-static int
-wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
+static void
+wmap_inspect_i(VALUE key, VALUE val, VALUE str)
 {
-    VALUE key = (VALUE)k;
-    VALUE val = (VALUE)v;
-    VALUE str = (VALUE)data;
-
     if (RSTRING_PTR(str)[0] == '#') {
         rb_str_cat2(str, ", ");
     }
@@ -203,8 +234,6 @@ wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
     wmap_inspect_append(str, key);
     rb_str_cat2(str, " => ");
     wmap_inspect_append(str, val);
-
-    return ST_CONTINUE;
 }
 
 /* call-seq:
@@ -227,7 +256,7 @@ wmap_inspect(VALUE self)
 
     VALUE str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
 
-    st_foreach(w->table, wmap_inspect_i, (st_data_t)str);
+    wmap_foreach(w, wmap_inspect_i, str);
 
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");
@@ -235,12 +264,10 @@ wmap_inspect(VALUE self)
     return str;
 }
 
-static int
-wmap_each_i(st_data_t k, st_data_t v, st_data_t _)
+static void
+wmap_each_i(VALUE key, VALUE val, VALUE _)
 {
-    rb_yield_values(2, (VALUE)k, (VALUE)v);
-
-    return ST_CONTINUE;
+    rb_yield_values(2, key, val);
 }
 
 /*
@@ -257,17 +284,15 @@ wmap_each(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    st_foreach(w->table, wmap_each_i, (st_data_t)0);
+    wmap_foreach(w, wmap_each_i, Qnil);
 
     return self;
 }
 
-static int
-wmap_each_key_i(st_data_t k, st_data_t _v, st_data_t _data)
+static void
+wmap_each_key_i(VALUE key, VALUE _val, VALUE _)
 {
-    rb_yield((VALUE)k);
-
-    return ST_CONTINUE;
+    rb_yield(key);
 }
 
 /*
@@ -284,17 +309,15 @@ wmap_each_key(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    st_foreach(w->table, wmap_each_key_i, (st_data_t)0);
+    wmap_foreach(w, wmap_each_key_i, Qnil);
 
     return self;
 }
 
-static int
-wmap_each_value_i(st_data_t k, st_data_t v, st_data_t _data)
+static void
+wmap_each_value_i(VALUE _key, VALUE val, VALUE _)
 {
-    rb_yield((VALUE)v);
-
-    return ST_CONTINUE;
+    rb_yield(val);
 }
 
 /*
@@ -311,7 +334,7 @@ wmap_each_value(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    st_foreach(w->table, wmap_each_value_i, (st_data_t)0);
+    wmap_foreach(w, wmap_each_value_i, Qnil);
 
     return self;
 }
@@ -339,7 +362,7 @@ wmap_keys(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new_capa(w->table->num_entries);
     st_foreach(w->table, wmap_keys_i, (st_data_t)ary);
 
     return ary;
@@ -368,7 +391,7 @@ wmap_values(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new_capa(w->table->num_entries);
     st_foreach(w->table, wmap_values_i, (st_data_t)ary);
 
     return ary;
