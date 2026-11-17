@@ -1255,6 +1255,37 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate(StringIO.new("".dup, mode), :closed_write?)
   end
 
+  def test_reopen_freeze_during_argument_conversion
+    f = StringIO.new("hello")
+    c = Object.new
+    c.define_singleton_method(:to_str) {f.freeze; "new"}
+    assert_raise(FrozenError) {f.reopen(c, "r")}
+    assert_equal(["hello", false], [f.string, f.closed_write?])
+  end
+
+  def test_initialize_frozen
+    f = StringIO.new("hello")
+    f.freeze
+    assert_raise(FrozenError) {f.send(:initialize, "new")}
+    assert_equal("hello", f.string)
+  end
+
+  def test_reopen_freeze_during_to_strio
+    f = StringIO.new("hello")
+    g = StringIO.new("world")
+    c = Object.new
+    c.define_singleton_method(:to_strio) {f.freeze; g}
+    assert_raise(FrozenError) {f.reopen(c)}
+    assert_equal("hello", f.string)
+  end
+
+  def test_initialize_copy_frozen
+    f = StringIO.new("hello")
+    f.freeze
+    assert_raise(FrozenError) {f.send(:initialize_copy, StringIO.new("world"))}
+    assert_equal("hello", f.string)
+  end
+
   private
 
   def assert_string(content, encoding, str, mesg = nil)

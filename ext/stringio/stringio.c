@@ -401,16 +401,20 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, vmode, opt;
     int oflags;
+    rb_io_mode_t fmode;
     rb_io_enc_t convconfig;
 
     argc = rb_scan_args(argc, argv, "02:", &string, &vmode, &opt);
-    rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &ptr->flags, &convconfig);
+    rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
     if (!NIL_P(string)) {
 	StringValue(string);
     }
     else if (!argc) {
 	string = rb_enc_str_new("", 0, rb_default_external_encoding());
     }
+    /* The conversions above may freeze this stream. */
+    rb_check_frozen(self);
+    ptr->flags = fmode;
 
     if (!NIL_P(string) && readonly_string_p(string)) {
 	if (ptr->flags & FMODE_WRITABLE) {
@@ -793,6 +797,7 @@ strio_copy(VALUE copy, VALUE orig)
 
     orig = rb_convert_type(orig, T_DATA, "StringIO", "to_strio");
     if (copy == orig) return copy;
+    rb_check_frozen(copy);
     ptr = StringIOForRead(orig);
     old_ptr = check_strio(copy);
     if (old_ptr) {
