@@ -1,0 +1,15 @@
+/(a)\2/
+     ^ invalid backref number/name
+/(?<n>a)\1/
+         ^ numbered backref/call is not allowed. (use name)
+/(a)\k<2>/
+       ^ invalid backref number/name
+/(a)(?(2)b)/
+       ^ invalid backref number/name
+/(a)\g<2>/
+       ^ undefined group <2> reference
+/\g<n>/
+    ^ undefined name <n> reference
+/(?<n>a)(?<n>b)\g<n>/
+                  ^ multiplex definition name <n> call
+

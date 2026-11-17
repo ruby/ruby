@@ -47,6 +47,60 @@ typedef struct {
 } pm_regexp_names_t;
 
 /**
+ * The kinds of references to groups that are checked once the whole pattern is
+ * parsed, as the regular expression engine checks them when it compiles it.
+ */
+typedef enum {
+    /** A backreference or condition by number, as in \1, \k<1>, or (?(1)a). */
+    PM_REGEXP_DEFERRED_NUMBER,
+
+    /**
+     * A condition with a number in the form of a name, as in (?(<1>)a), which
+     * the engine treats as a reference by name, so it may be used alongside
+     * named groups.
+     */
+    PM_REGEXP_DEFERRED_NAMED_NUMBER,
+
+    /** A call by number, as in \g<1>. */
+    PM_REGEXP_DEFERRED_CALL_NUMBER,
+
+    /** A call by name, as in \g<n>. */
+    PM_REGEXP_DEFERRED_CALL_NAME
+} pm_regexp_deferred_type_t;
+
+/**
+ * A reference to a group that is checked once the whole pattern is parsed.
+ */
+typedef struct {
+    /** The kind of reference. */
+    pm_regexp_deferred_type_t type;
+
+    /** The start of the reference as it is written. */
+    const uint8_t *start;
+
+    /** The end of the reference as it is written. */
+    const uint8_t *end;
+
+    /** The number of the group, for a reference by number. */
+    int64_t number;
+} pm_regexp_deferred_t;
+
+/**
+ * A list of the references to groups that are checked once the whole pattern
+ * is parsed.
+ */
+typedef struct {
+    /** The references, which the list owns in the scratch arena. */
+    pm_regexp_deferred_t *values;
+
+    /** The number of references in the list. */
+    size_t size;
+
+    /** The number of references the list has room for. */
+    size_t capacity;
+} pm_regexp_deferreds_t;
+
+/**
  * This is the parser that is going to handle parsing regular expressions.
  */
 typedef struct {
@@ -140,6 +194,12 @@ typedef struct {
      * reported.
      */
     pm_regexp_names_t names;
+
+    /**
+     * The references to groups that are checked once the whole pattern is
+     * parsed. They are only kept when errors are reported.
+     */
+    pm_regexp_deferreds_t deferreds;
 } pm_regexp_parser_t;
 
 /**
@@ -160,6 +220,28 @@ pm_regexp_names_append(pm_regexp_parser_t *parser, pm_regexp_name_t name) {
     }
 
     names->values[names->size++] = name;
+}
+
+/**
+ * Keep a reference to a group to check once the whole pattern is parsed,
+ * growing the list in the scratch arena. Nothing is kept when errors are not
+ * reported.
+ */
+static void
+pm_regexp_defer(pm_regexp_parser_t *parser, pm_regexp_deferred_type_t type, const uint8_t *start, const uint8_t *end, int64_t number) {
+    if (!parser->report_errors) return;
+    pm_regexp_deferreds_t *deferreds = &parser->deferreds;
+
+    if (deferreds->size == deferreds->capacity) {
+        size_t capacity = deferreds->capacity == 0 ? 4 : deferreds->capacity * 2;
+        pm_regexp_deferred_t *values = (pm_regexp_deferred_t *) pm_arena_alloc(&parser->parser->scratch_arena, capacity * sizeof(pm_regexp_deferred_t), PRISM_ALIGNOF(pm_regexp_deferred_t));
+
+        if (deferreds->size > 0) memcpy(values, deferreds->values, deferreds->size * sizeof(pm_regexp_deferred_t));
+        deferreds->values = values;
+        deferreds->capacity = capacity;
+    }
+
+    deferreds->values[deferreds->size++] = (pm_regexp_deferred_t) { .type = type, .start = start, .end = end, .number = number };
 }
 
 /**
@@ -1136,6 +1218,139 @@ pm_regexp_check_relative_call(pm_regexp_parser_t *parser, const pm_regexp_refere
 }
 
 /**
+ * Keep a backreference or condition by number to check once the whole pattern
+ * is parsed. One that counts back, as in \k<-1>, is to the group that many
+ * before the groups opened so far. A reference by name was already checked.
+ */
+static void
+pm_regexp_defer_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_t *reference, pm_regexp_deferred_type_t type) {
+    if (reference->number == 0) return;
+
+    int64_t number = reference->number;
+    if (number < 0) number += (int64_t) parser->groups + 1;
+    pm_regexp_defer(parser, type, reference->start, reference->end, number);
+}
+
+/**
+ * Report an error that quotes a name, like "undefined group <2> reference",
+ * with the given text before and after the name.
+ */
+static void
+pm_regexp_parse_quoted_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *before, const char *after) {
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, before, strlen(before));
+    pm_buffer_append_string(&buffer, (const char *) start, (size_t) (end - start));
+    pm_buffer_append_string(&buffer, after, strlen(after));
+    pm_buffer_append_byte(&buffer, '\0');
+
+    pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
+}
+
+/**
+ * Return the number of named groups in the pattern with the given name.
+ */
+static size_t
+pm_regexp_name_count(const pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    size_t length = (size_t) (end - start);
+    size_t count = 0;
+
+    for (size_t index = 0; index < parser->names.size; index++) {
+        const pm_regexp_name_t *name = &parser->names.values[index];
+        if (name->length == length && memcmp(name->start, start, length) == 0) count++;
+    }
+
+    return count;
+}
+
+/**
+ * Check the references to groups that wait for the end of the pattern, the way
+ * the engine checks them when it compiles the pattern. With named groups in
+ * the pattern, no reference or call may be by number. Otherwise a number must
+ * be that of a group. A call by name must name exactly one group.
+ */
+static void
+pm_regexp_check_deferreds(pm_regexp_parser_t *parser) {
+    bool named = parser->names.size > 0;
+
+    for (size_t index = 0; index < parser->deferreds.size; index++) {
+        const pm_regexp_deferred_t *deferred = &parser->deferreds.values[index];
+
+        switch (deferred->type) {
+            case PM_REGEXP_DEFERRED_NUMBER:
+                if (named) {
+                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
+                } else if (deferred->number > (int64_t) parser->groups) {
+                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "invalid backref number/name");
+                }
+                break;
+            case PM_REGEXP_DEFERRED_NAMED_NUMBER:
+                if (deferred->number > (int64_t) parser->groups) {
+                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "invalid backref number/name");
+                }
+                break;
+            case PM_REGEXP_DEFERRED_CALL_NUMBER:
+                if (named) {
+                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
+                } else if (deferred->number > (int64_t) parser->groups) {
+                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, "undefined group <", "> reference");
+                }
+                break;
+            case PM_REGEXP_DEFERRED_CALL_NAME: {
+                size_t count = pm_regexp_name_count(parser, deferred->start, deferred->end);
+
+                if (count == 0) {
+                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, "undefined name <", "> reference");
+                } else if (count > 1) {
+                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, "multiplex definition name <", "> call");
+                }
+                break;
+            }
+        }
+    }
+}
+
+/** The largest number of a backreference written as a backslash and digits. */
+#define PM_REGEXP_BACKREF_MAXIMUM 1000
+
+/**
+ * Parse a backslash followed by a digit from 1 to 9, with the cursor on the
+ * digit, the way Onigmo's fetch_token reads it. The digits are a backreference
+ * when their number is at most 9 or at most the number of groups opened so
+ * far, as in (a)\1. Otherwise an 8 or 9 is that character, and other digits
+ * start an octal escape of up to three digits.
+ */
+static void
+pm_regexp_parse_numbered_backref(pm_regexp_parser_t *parser) {
+    const uint8_t *start = parser->cursor;
+    uint32_t number = 0;
+    bool too_big = false;
+
+    while (parser->cursor < parser->end) {
+        size_t width;
+        uint32_t digit;
+        if (!pm_regexp_digit(parser, parser->cursor, &width, &digit)) break;
+        if (!pm_regexp_number_append(&number, digit)) too_big = true;
+        parser->cursor += width;
+    }
+
+    if (!too_big && number <= PM_REGEXP_BACKREF_MAXIMUM && (number <= 9 || number <= parser->groups)) {
+        pm_regexp_defer(parser, PM_REGEXP_DEFERRED_NUMBER, start, parser->cursor, number);
+        return;
+    }
+
+    parser->cursor = start;
+    if (*parser->cursor == '8' || *parser->cursor == '9') {
+        parser->cursor++;
+        return;
+    }
+
+    for (int index = 0; index < 3 && parser->cursor < parser->end && *parser->cursor >= '0' && *parser->cursor <= '7'; index++) {
+        parser->cursor++;
+    }
+}
+
+/**
  * Parse a backslash escape sequence in a regexp, handling \u (unicode),
  * \p/\P (property), \x (hex), and other single-character escapes. The lexer
  * writes each \M-, \C-, and \c escape in the content as the \x escape of its
@@ -1158,6 +1373,9 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
             parser->cursor++; // skip 'x'
             pm_regexp_parse_hex_escape(parser);
             break;
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            pm_regexp_parse_numbered_backref(parser);
+            break;
         case 'k': {
             /* A backreference by number or name, as in \k<n> or \k'n'. Without
              * a < or ' after it, the k is a character. */
@@ -1166,7 +1384,9 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
 
             uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
             pm_regexp_reference_t reference;
-            if (pm_regexp_parse_reference_with_level(parser, close, &reference)) pm_regexp_check_reference(parser, &reference);
+            if (pm_regexp_parse_reference_with_level(parser, close, &reference) && pm_regexp_check_reference(parser, &reference)) {
+                pm_regexp_defer_reference(parser, &reference, PM_REGEXP_DEFERRED_NUMBER);
+            }
             break;
         }
         case 'g': {
@@ -1192,7 +1412,20 @@ pm_regexp_parse_backslash_escape(pm_regexp_parser_t *parser) {
             }
 
             pm_regexp_reference_t reference;
-            if (pm_regexp_parse_reference(parser, close, &reference)) pm_regexp_check_relative_call(parser, &reference, forward);
+            if (pm_regexp_parse_reference(parser, close, &reference) && pm_regexp_check_relative_call(parser, &reference, forward)) {
+                if (reference.number == 0 && !forward) {
+                    pm_regexp_defer(parser, PM_REGEXP_DEFERRED_CALL_NAME, reference.start, reference.end, 0);
+                } else {
+                    /* A call that counts is to the group that many after the
+                     * groups opened so far, or before them for a - . */
+                    int64_t number = reference.number;
+                    if (forward || number < 0) {
+                        if (number > 0) number--;
+                        number += (int64_t) parser->groups + 1;
+                    }
+                    pm_regexp_defer(parser, PM_REGEXP_DEFERRED_CALL_NUMBER, reference.start, reference.end, number);
+                }
+            }
             break;
         }
         default:
@@ -1770,7 +2003,9 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
     size_t width;
     uint32_t digit;
     if (pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
-        return pm_regexp_parse_reference(parser, ')', &reference);
+        if (!pm_regexp_parse_reference(parser, ')', &reference)) return false;
+        pm_regexp_defer_reference(parser, &reference, PM_REGEXP_DEFERRED_NUMBER);
+        return true;
     }
 
     switch (*parser->cursor) {
@@ -1779,6 +2014,7 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
             uint8_t close = (*parser->cursor++ == '<') ? '>' : '\'';
             if (!pm_regexp_parse_reference_with_level(parser, close, &reference)) return false;
             if (!pm_regexp_check_reference(parser, &reference)) return false;
+            pm_regexp_defer_reference(parser, &reference, PM_REGEXP_DEFERRED_NAMED_NUMBER);
 
             /* The name must be followed by the ) that ends the condition. */
             if (parser->cursor >= parser->end || *parser->cursor != ')') {
@@ -3103,6 +3339,7 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
     };
 
     pm_regexp_parse_pattern(&regexp_parser);
+    pm_regexp_check_deferreds(&regexp_parser);
     pm_regexp_check_properties(regexp, &regexp_parser);
     pm_buffer_cleanup(&preprocessor.pattern);
 
