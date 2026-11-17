@@ -158,7 +158,7 @@ module Ruby::Prism
       ["a\n\x81\n", "a\r\n\x81\n", "\0\x81\n", "\\a\x81\n", "\\\x81\n", "\#{x}\x81\n"].each do |body|
         result = Ruby::Prism.parse("# encoding: UTF-8\n<<'HERE'\n#{body}HERE\n")
         assert_predicate result, :success?, body.inspect
-        assert_equal body.gsub("\r\n", "\n"), result.statement.unescaped
+        assert_equal body.b.gsub("\r\n", "\n").force_encoding(body.encoding), result.statement.unescaped
       end
     end
 
