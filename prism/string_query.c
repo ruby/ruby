@@ -47,16 +47,14 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name, c
     // check that there is at least one character
     if (length == 0) return PM_SLICE_TYPE_NONE;
 
+    /* A name starts with an ASCII letter, an underscore, or any valid character
+     * that is not ASCII. */
     size_t width;
-    if ((width = pm_encoding_alpha_char(encoding, source, (ptrdiff_t) length)) != 0) {
-        // valid because alphabetical
-    } else if (*source == '_') {
-        // valid because underscore
+    if (*source >= 0x80) {
+        if ((width = pm_encoding_char_width(encoding, source, (ptrdiff_t) length)) == 0) return PM_SLICE_TYPE_NONE;
+    } else if (pm_encoding_ascii_alpha_p(*source) || (*source == '_')) {
         width = 1;
-    } else if ((*source >= 0x80) && ((width = pm_encoding_char_width(encoding, source, (ptrdiff_t) length)) > 0)) {
-        // valid because multibyte
     } else {
-        // invalid because no match
         return PM_SLICE_TYPE_NONE;
     }
 
@@ -64,22 +62,17 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name, c
     const uint8_t *end = source + length;
     pm_slice_type_t result = pm_encoding_isupper_char(encoding, source, end - source, target) ? PM_SLICE_TYPE_CONSTANT : PM_SLICE_TYPE_LOCAL;
 
-    // next, iterate through all of the bytes of the string to ensure that they
-    // are all valid identifier characters
+    /* The rest of a name is ASCII letters, digits, and underscores, and any
+     * valid characters that are not ASCII. */
     source += width;
 
     while (source < end) {
-        if ((width = pm_encoding_alnum_char(encoding, source, end - source)) != 0) {
-            // valid because alphanumeric
+        if (*source >= 0x80) {
+            if ((width = pm_encoding_char_width(encoding, source, end - source)) == 0) break;
             source += width;
-        } else if (*source == '_') {
-            // valid because underscore
+        } else if (pm_encoding_ascii_alnum_p(*source) || (*source == '_')) {
             source++;
-        } else if ((*source >= 0x80) && ((width = pm_encoding_char_width(encoding, source, end - source)) > 0)) {
-            // valid because multibyte
-            source += width;
         } else {
-            // invalid because no match
             break;
         }
     }

@@ -175,6 +175,15 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n, pm_options_ve
 extern const uint8_t pm_encoding_ascii_table[256];
 
 /*
+ * Return true if the byte is an ASCII letter. A byte that is not ASCII is not
+ * one, in every encoding.
+ */
+static PRISM_INLINE bool
+pm_encoding_ascii_alpha_p(uint8_t byte) {
+    return pm_encoding_ascii_table[byte] & PRISM_ENCODING_ALPHABETIC_BIT;
+}
+
+/*
  * Return true if the byte is an ASCII letter or digit. A byte that is not ASCII
  * is neither, in every encoding.
  */
