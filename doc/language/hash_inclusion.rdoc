@@ -1,4 +1,4 @@
-== \Hash Inclusion
+= \Hash Inclusion
 
 A hash is set-like in that it cannot have duplicate entries
 (or even duplicate keys).
