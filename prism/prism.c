@@ -11740,13 +11740,9 @@ parser_lex(pm_parser_t *parser) {
                 continue;
             }
 
-            if (parser->current.end > parser->current.start) {
-                pm_token_buffer_flush(parser, &token_buffer);
-                LEX(PM_TOKEN_STRING_CONTENT);
-            }
-
-            // If we were unable to find a breakpoint, then this token hits the
-            // end of the file.
+            /* With no breakpoint left, the rest of the file is content, so this
+             * token runs to the end of the file. That keeps the last element of
+             * a list that is not terminated in one piece. */
             parser->current.end = parser->end;
             pm_token_buffer_flush(parser, &token_buffer);
             LEX(PM_TOKEN_STRING_CONTENT);
@@ -12264,13 +12260,9 @@ parser_lex(pm_parser_t *parser) {
                 }
             }
 
-            if (parser->current.end > parser->current.start) {
-                pm_token_buffer_flush(parser, &token_buffer);
-                LEX(PM_TOKEN_STRING_CONTENT);
-            }
-
-            // If we've hit the end of the string, then this is an unterminated
-            // string. In that case we'll return a string content token.
+            /* With no breakpoint left, the string is not terminated and the rest
+             * of the file is content, so this token runs to the end of the file.
+             * That keeps the content in one piece. */
             parser->current.end = parser->end;
             pm_token_buffer_flush(parser, &token_buffer);
             LEX(PM_TOKEN_STRING_CONTENT);
