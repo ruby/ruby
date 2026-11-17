@@ -1150,6 +1150,48 @@ where
     ret
 }
 
+/// Disables GC once [VmLock::take_barrier] stops other Ractors, as [with_vm_lock] does.
+#[derive(Default)]
+pub struct ZjitVmLockOps {
+    gc_disabled_pre_barrier: bool,
+}
+
+impl crate::jit::VmLockOps for ZjitVmLockOps {
+    const JIT_NAME: &'static str = "ZJIT";
+
+    fn lock(recursive_lock_level: &mut c_uint, file: &CStr, line: c_int) {
+        unsafe { rb_jit_vm_lock(recursive_lock_level, file.as_ptr(), line) };
+    }
+
+    fn unlock(recursive_lock_level: &mut c_uint, file: &CStr, line: c_int) {
+        unsafe { rb_jit_vm_unlock(recursive_lock_level, file.as_ptr(), line) };
+    }
+
+    fn take_barrier(&mut self) {
+        unsafe { rb_jit_vm_barrier() };
+        self.gc_disabled_pre_barrier = unsafe { rb_gc_disable() }.test();
+    }
+
+    fn release_barrier(&mut self) {
+        if !self.gc_disabled_pre_barrier {
+            unsafe { rb_gc_enable() };
+        }
+    }
+}
+
+pub type VmLock = crate::jit::VmLock<ZjitVmLockOps>;
+
+/// Acquire the VM lock without stopping other Ractors and run `func`. Enough to read or
+/// update [crate::invariants::Invariants], whose writers all hold the VM lock; `func` must
+/// call [VmLock::take_barrier] before patching code. GC stays enabled until then, so `func`
+/// must not allocate Ruby objects before it.
+pub fn with_vm_lock_lazy_barrier<F, R>(loc: SourceLocation, func: F) -> R
+where
+    F: FnOnce(&mut VmLock) -> R,
+{
+    crate::jit::with_vm_lock_lazy_barrier(loc.file, loc.line, func)
+}
+
 /// At the moment, we abort in all cases we panic.
 /// To aid with getting diagnostics in the wild without requiring people to set
 /// RUST_BACKTRACE=1, register a panic hook that crash using rb_bug() for release builds.

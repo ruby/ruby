@@ -1357,8 +1357,10 @@ make_singleton_class(VALUE obj)
 
     RBASIC_SET_CLASS(obj, klass);
     rb_singleton_class_attached(klass, obj);
-    rb_yjit_invalidate_no_singleton_class(orig_class);
-    rb_zjit_invalidate_no_singleton_class(orig_class);
+    if (RCLASS_JIT_SINGLETON_CLASS_TRACKED_P(orig_class)) {
+        rb_yjit_invalidate_no_singleton_class(orig_class);
+        rb_zjit_invalidate_no_singleton_class(orig_class);
+    }
 
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
     return klass;

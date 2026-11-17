@@ -373,8 +373,8 @@ impl<'a> JITState<'a> {
     }
 
     /// Assume that objects of a given class will have no singleton class.
-    /// Return true if there has been no such singleton class since boot
-    /// and we can safely invalidate it.
+    /// Return false if a singleton class of `klass` already invalidated code assuming this,
+    /// to avoid an invalidation loop.
     pub fn assume_no_singleton_class(&mut self, asm: &mut Assembler, klass: VALUE) -> bool {
         if jit_ensure_block_entry_exit(self, asm).is_none() {
             return false; // out of space, give up

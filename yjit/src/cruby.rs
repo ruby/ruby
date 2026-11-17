@@ -282,6 +282,16 @@ pub fn vm_stack_canary() -> u64 {
     0
 }
 
+/// Must only be called under a VM barrier; see rb_jit_class_set_singleton_class_tracked().
+#[cfg(not(test))]
+pub fn set_jit_singleton_class_tracked(klass: VALUE, tracked: bool) {
+    unsafe { rb_jit_class_set_singleton_class_tracked(klass, tracked) }
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn set_jit_singleton_class_tracked(_klass: VALUE, _tracked: bool) {}
+
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
 pub struct rb_execution_context_struct {
@@ -711,6 +721,37 @@ where
     unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
+}
+
+#[derive(Default)]
+pub struct YjitVmLockOps;
+
+impl crate::shared_jit::VmLockOps for YjitVmLockOps {
+    const JIT_NAME: &'static str = "YJIT";
+
+    fn lock(recursive_lock_level: &mut c_uint, file: &CStr, line: c_int) {
+        unsafe { rb_jit_vm_lock(recursive_lock_level, file.as_ptr(), line) };
+    }
+
+    fn unlock(recursive_lock_level: &mut c_uint, file: &CStr, line: c_int) {
+        unsafe { rb_jit_vm_unlock(recursive_lock_level, file.as_ptr(), line) };
+    }
+
+    fn take_barrier(&mut self) {
+        unsafe { rb_jit_vm_barrier() };
+    }
+}
+
+pub type VmLock = crate::shared_jit::VmLock<YjitVmLockOps>;
+
+/// Acquire the VM lock without stopping other Ruby threads and run `func`. Enough to read or
+/// update YJIT bookkeeping guarded by the VM lock; `func` must call [VmLock::take_barrier]
+/// before patching code.
+pub fn with_vm_lock_lazy_barrier<F, R>(loc: SourceLocation, func: F) -> R
+where
+    F: FnOnce(&mut VmLock) -> R,
+{
+    crate::shared_jit::with_vm_lock_lazy_barrier(loc.file, loc.line, func)
 }
 
 // Non-idiomatic capitalization for consistency with CRuby code

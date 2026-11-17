@@ -76,6 +76,9 @@ struct rb_classext_struct {
     uint16_t superclass_depth;
     attr_index_t max_iv_count;
     uint8_t variation_count;
+    /* make_singleton_class() must call the JIT's no-singleton-class invalidation hook for
+     * this class. The enabled JIT has code assuming its instances have no singleton class. */
+    bool jit_singleton_class_tracked;
     bool permanent_classpath : 1;
     bool shared_const_tbl : 1;
     bool iclass_is_origin : 1;
@@ -137,6 +140,12 @@ RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, rb_serial_t ractor_id)
 {
     // not a VALUE: no write barrier, nothing for the GC to mark or move
     RCLASS_EXT_PRIME(klass)->owner_ractor_id = ractor_id;
+}
+
+static inline bool
+RCLASS_JIT_SINGLETON_CLASS_TRACKED_P(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->jit_singleton_class_tracked;
 }
 
 bool rb_class_owned_by_ractor_p(rb_serial_t owner_id); // rb_class_owned_p's slow half

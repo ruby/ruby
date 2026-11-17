@@ -621,6 +621,29 @@ rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
+// Acquire the VM lock without stopping other Ractors. Enough to read or update JIT
+// bookkeeping guarded by the VM lock; call rb_jit_vm_barrier() before patching code.
+// Release with rb_jit_vm_unlock().
+void
+rb_jit_vm_lock(unsigned int *recursive_lock_level, const char *file, int line)
+{
+    rb_vm_lock_enter(recursive_lock_level, file, line);
+}
+
+// Stop other Ractors while holding the VM lock from rb_jit_vm_lock().
+void
+rb_jit_vm_barrier(void)
+{
+    rb_vm_barrier();
+}
+
+// make_singleton_class() reads this without a lock, so it must only be written under a VM barrier.
+void
+rb_jit_class_set_singleton_class_tracked(VALUE klass, bool tracked)
+{
+    RCLASS_EXT_PRIME(klass)->jit_singleton_class_tracked = tracked;
+}
+
 void *
 rb_iseq_get_jit_payload(const rb_iseq_t *iseq)
 {
