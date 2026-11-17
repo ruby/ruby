@@ -828,9 +828,19 @@ ractor_monitor_port(rb_execution_context_t *ec, VALUE self, const struct ractor_
     return !terminated;
 }
 
+static void
+ractor_monitor_check_port(VALUE port)
+{
+    if (!ractor_port_p(port)) {
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Ractor::Port)",
+                 rb_obj_class(port));
+    }
+}
+
 static VALUE
 ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 {
+    ractor_monitor_check_port(port);
     const struct ractor_port *rp = ractor_port_ptr_check(port);
     const bool registered = ractor_monitor_port(ec, self, rp);
     /* rp points into port, which is embedded and may be referenced only from here */
@@ -857,6 +867,7 @@ ractor_alive_p(rb_execution_context_t *ec, VALUE self)
 static VALUE
 ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 {
+    ractor_monitor_check_port(port);
     rb_ractor_t *r = RACTOR_PTR(self);
     const struct ractor_port *rp = ractor_port_ptr_check(port);
 
