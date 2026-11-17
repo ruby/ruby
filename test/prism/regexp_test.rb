@@ -28,6 +28,32 @@ module Ruby::Prism
       assert_equal([:foo], named_captures("(?<foo>bar)(?<foo>baz)"))
     end
 
+    def test_named_capture_with_a_comment_in_its_name
+      result = Ruby::Prism.parse('/(?<a(?#comment)b>x)/ =~ ab; ab')
+      assert_empty result.errors
+      assert_equal [:ab], result.value.locals
+
+      match, read = result.value.statements.body
+      assert_equal [:ab], match.targets.map(&:name)
+      assert_equal "a(?#comment)b", match.targets.first.location.slice
+      assert_kind_of CallNode, match.call.arguments.arguments.first
+      assert_kind_of LocalVariableReadNode, read
+    end
+
+    def test_named_captures_from_unicode_escapes
+      result = Ruby::Prism.parse('/(?<\\u3042>x)(?<\\u0061>y)/ =~ ""')
+      assert_empty result.errors
+      assert_equal [:あ], result.value.locals
+      assert_equal "\\u3042", result.value.statements.body.first.targets.first.location.slice
+    end
+
+    def test_nested_matches_keep_their_own_captures
+      result = Ruby::Prism.parse('/(?<outer>x)/ =~ (/(?<inner>y)/ =~ "y"); [outer, inner]')
+      assert_empty result.errors
+      assert_equal [:inner, :outer], result.value.locals
+      assert_equal :outer, result.value.statements.body.first.targets.first.name
+    end
+
     def test_named_captures_after_range_of_escapes
       assert_equal([:foo], named_captures("[\\u{61}-\\u{7a}](?<foo>bar)"))
     end

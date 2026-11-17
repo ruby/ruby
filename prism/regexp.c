@@ -263,10 +263,7 @@ typedef struct {
     /** The parser that is currently being used. */
     pm_parser_t *parser;
 
-    /**
-     * The regular expression that is being validated, which errors quote. It
-     * is only set when report_errors is set.
-     */
+    /** The regular expression that is being validated, which errors quote. */
     const pm_regexp_t *regexp;
 
     /** A pointer to the start of the pattern that we are parsing. */
@@ -301,12 +298,6 @@ typedef struct {
     /** The encoding of the source. */
     const pm_encoding_t *encoding;
 
-    /** The callback to call when a named capture group is found. */
-    pm_regexp_name_callback_t name_callback;
-
-    /** The data to pass to the name callback. */
-    void *name_data;
-
     /**
      * Pointer to the first non-POSIX property name (for /n error messages).
      * POSIX properties (Alnum, Alpha, etc.) work in all encodings.
@@ -336,14 +327,6 @@ typedef struct {
     /** Whether the encoding has changed from the default. */
     bool encoding_changed;
 
-    /**
-     * Whether syntax errors are reported. The named capture pass walks content
-     * whose errors the validation pass has already reported, and that may be
-     * joined from several pieces with no offsets back to the source, so it
-     * reports nothing.
-     */
-    bool report_errors;
-
     /** Number of syntax diagnostics that have quoted the complete pattern. */
     uint8_t quoted_errors;
 
@@ -355,14 +338,13 @@ typedef struct {
 
     /**
      * The names of the named groups opened so far, for the references that
-     * need a name to be defined already. They are only kept when errors are
-     * reported.
+     * need a name to be defined already.
      */
     pm_regexp_names_t names;
 
     /**
      * The references to groups that are checked once the whole pattern is
-     * parsed. They are only kept when errors are reported.
+     * parsed.
      */
     pm_regexp_deferreds_t deferreds;
 } pm_regexp_parser_t;
@@ -389,12 +371,10 @@ pm_regexp_names_append(pm_regexp_parser_t *parser, pm_regexp_name_t name) {
 
 /**
  * Keep a reference to a group to check once the whole pattern is parsed,
- * growing the list in the scratch arena. Nothing is kept when errors are not
- * reported.
+ * growing the list in the scratch arena.
  */
 static void
 pm_regexp_defer(pm_regexp_parser_t *parser, pm_regexp_deferred_type_t type, const uint8_t *start, const uint8_t *end, int64_t number) {
-    if (!parser->report_errors) return;
     pm_regexp_deferreds_t *deferreds = &parser->deferreds;
 
     if (deferreds->size == deferreds->capacity) {
@@ -492,12 +472,10 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
  * Append a syntax error to the parser's error list, at the place in the source
  * of the given range of the content. The first eight messages are followed by
  * the quoted regular expression and its options, as in "unmatched close
- * parenthesis: /a)/i". Errors are only reported when report_errors is set.
+ * parenthesis: /a)/i".
  */
 static void
 pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message) {
-    if (!regexp_parser->report_errors) return;
-
     pm_parser_t *parser = regexp_parser->parser;
     const pm_regexp_t *regexp = regexp_parser->regexp;
 
@@ -529,34 +507,13 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
 
 /**
  * Report that the stack budget was used up while parsing the regular
- * expression. Unlike other errors, this is reported even when report_errors is
- * not set, because giving up early there would silently drop the named
- * captures that the rest of the regular expression defines. In that case there
- * are no offsets into the source, so the error is reported at the token that
- * the parser is on instead.
+ * expression.
  */
 static void
 pm_regexp_parse_stack_exhausted(pm_regexp_parser_t *regexp_parser) {
-    pm_parser_t *parser = regexp_parser->parser;
-
-    if (regexp_parser->report_errors) {
-        uint32_t source_start = pm_regexp_source_offset(regexp_parser, regexp_parser->start, true);
-        uint32_t source_end = pm_regexp_source_offset(regexp_parser, regexp_parser->end, false);
-        pm_parser_err_stack_exhausted(parser, source_start, source_end - source_start);
-    } else {
-        pm_parser_err_stack_exhausted(parser, (uint32_t) (parser->current.start - parser->start), (uint32_t) (parser->current.end - parser->current.start));
-    }
-}
-
-/**
- * This appends a new string to the list of named captures. This function
- * assumes the caller has already checked the validity of the name callback.
- */
-static void
-pm_regexp_parser_named_capture(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    pm_string_t string;
-    pm_string_shared_init(&string, start, end);
-    parser->name_callback(parser->parser, &string, parser->name_data);
+    uint32_t source_start = pm_regexp_source_offset(regexp_parser, regexp_parser->start, true);
+    uint32_t source_end = pm_regexp_source_offset(regexp_parser, regexp_parser->end, false);
+    pm_parser_err_stack_exhausted(regexp_parser->parser, source_start, source_end - source_start);
 }
 
 /**
@@ -762,16 +719,9 @@ typedef enum {
  * {. A bound that is too big is an error, even if the interval never closes. So
  * is an upper bound below the lower one. Anything else that is not an interval,
  * like {x} or {,}, is not an error: its { is just a character.
- *
- * The named capture pass reads the content in the source encoding, not the
- * pattern in the encoding of the regular expression, so it can't read bounds
- * the same way. An interval holds no group names, so that pass reads its { as
- * a character instead.
  */
 static pm_regexp_interval_t
 pm_regexp_parse_interval(pm_regexp_parser_t *parser) {
-    if (!parser->report_errors) return PM_REGEXP_INTERVAL_NONE;
-
     const uint8_t *start = parser->cursor - 1;
     const uint8_t *cursor = parser->cursor;
     const uint8_t *end = parser->end;
@@ -1002,17 +952,15 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
         if (byte == '(' || byte == ')' || byte == '{' || byte == '|') break;
     }
 
-    if (parser->report_errors) {
-        pm_buffer_t buffer = { 0 };
-        const char *message = "invalid character property name {";
-        pm_buffer_append_string(&buffer, message, strlen(message));
-        pm_buffer_append_string(&buffer, (const char *) name_start, (size_t) (previous - name_start));
-        pm_buffer_append_byte(&buffer, '}');
-        pm_buffer_append_byte(&buffer, '\0');
+    pm_buffer_t buffer = { 0 };
+    const char *message = "invalid character property name {";
+    pm_buffer_append_string(&buffer, message, strlen(message));
+    pm_buffer_append_string(&buffer, (const char *) name_start, (size_t) (previous - name_start));
+    pm_buffer_append_byte(&buffer, '}');
+    pm_buffer_append_byte(&buffer, '\0');
 
-        pm_regexp_parse_error(parser, name_start, previous, pm_buffer_value(&buffer));
-        pm_buffer_cleanup(&buffer);
-    }
+    pm_regexp_parse_error(parser, name_start, previous, pm_buffer_value(&buffer));
+    pm_buffer_cleanup(&buffer);
 
     return true;
 }
@@ -1366,8 +1314,6 @@ pm_regexp_name_defined_p(const pm_regexp_parser_t *parser, const uint8_t *start,
  */
 static bool
 pm_regexp_check_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_t *reference) {
-    if (!parser->report_errors) return true;
-
     if (reference->number == 0) {
         if (pm_regexp_name_defined_p(parser, reference->start, reference->end)) return true;
 
@@ -1397,7 +1343,7 @@ pm_regexp_check_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_
  */
 static bool
 pm_regexp_check_relative_call(pm_regexp_parser_t *parser, const pm_regexp_reference_t *reference, bool forward) {
-    if (!parser->report_errors || (reference->number >= 0 && !forward)) return true;
+    if (reference->number >= 0 && !forward) return true;
 
     int64_t number = reference->number > 0 ? reference->number - 1 : reference->number;
     if ((int64_t) parser->groups + 1 + number > 0) return true;
@@ -1947,7 +1893,7 @@ static bool
 pm_regexp_class_add_char(pm_regexp_parser_t *parser, pm_regexp_class_t *character_class, uint32_t value, const uint8_t *start) {
     switch (character_class->state) {
         case PM_REGEXP_CLASS_STATE_RANGE:
-            if (character_class->value > value && parser->report_errors) {
+            if (character_class->value > value) {
                 pm_regexp_parse_error(parser, character_class->start, parser->cursor, "empty range in char class");
                 return false;
             }
@@ -1973,7 +1919,7 @@ pm_regexp_class_add_char(pm_regexp_parser_t *parser, pm_regexp_class_t *characte
  */
 static bool
 pm_regexp_class_add_set(pm_regexp_parser_t *parser, pm_regexp_class_t *character_class, const uint8_t *start) {
-    if (character_class->state == PM_REGEXP_CLASS_STATE_RANGE && parser->report_errors) {
+    if (character_class->state == PM_REGEXP_CLASS_STATE_RANGE) {
         pm_regexp_parse_error(parser, character_class->start, parser->cursor, "char-class value at end of range");
         return false;
     }
@@ -2070,7 +2016,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
 
                         if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE || token.type == PM_REGEXP_CLASS_TOKEN_AND) {
                             if (!pm_regexp_class_add_char(parser, &character_class, '-', range)) return false;
-                        } else if (character_class.set && parser->report_errors) {
+                        } else if (character_class.set) {
                             pm_regexp_parse_error(parser, character_class.start, parser->cursor, "unmatched range specifier in char-class");
                             return false;
                         } else {
@@ -2163,14 +2109,8 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
         return false;
     }
 
-    if (parser->name_callback != NULL) {
-        pm_regexp_parser_named_capture(parser, start, parser->cursor);
-    }
-
     parser->groups++;
-    if (parser->report_errors) {
-        pm_regexp_names_append(parser, (pm_regexp_name_t) { .start = start, .length = (size_t) (parser->cursor - start) });
-    }
+    pm_regexp_names_append(parser, (pm_regexp_name_t) { .start = start, .length = (size_t) (parser->cursor - start) });
 
     parser->cursor++;
     return true;
@@ -3380,10 +3320,11 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
  * told from literal ones. The offsets map places in the content to places in
  * the source, starting at the given offset, for errors in the pattern. Without
  * them, those errors are reported at the whole regular expression. Returns the
- * flags of the encoding of the regular expression.
+ * flags of the encoding of the regular expression. If the next token is =~,
+ * save the capture names until the Ruby parser has read the right operand.
  */
 static pm_node_flags_t
-pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets, uint32_t source_start) {
+pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets, uint32_t source_start, const pm_node_t *match_receiver) {
     pm_parser_t *parser = regexp->parser;
     const uint8_t *source = regexp->source;
     size_t size = regexp->size;
@@ -3455,9 +3396,6 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
         .extended_mode = extended_mode,
         .encoding_changed = encoding != PM_ENCODING_UTF_8_ENTRY,
         .encoding = encoding,
-        .name_callback = NULL,
-        .name_data = NULL,
-        .report_errors = true,
         .property_name = NULL,
         .property_name_length = 0,
         .unicode_property_name = NULL,
@@ -3467,6 +3405,32 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
     pm_regexp_parse_pattern(&regexp_parser);
     pm_regexp_check_deferreds(&regexp_parser);
     pm_regexp_check_properties(regexp, &regexp_parser);
+
+    if (match_receiver != NULL && regexp_parser.names.size > 0) {
+        pm_regexp_match_t *match = PM_ARENA_ALLOC(&parser->scratch_arena, pm_regexp_match_t);
+        match->receiver = match_receiver;
+        match->size = regexp_parser.names.size;
+        match->captures = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, pm_regexp_capture_t, match->size);
+
+        for (size_t index = 0; index < match->size; index++) {
+            const pm_regexp_name_t *name = &regexp_parser.names.values[index];
+            uint32_t start = pm_regexp_source_offset(&regexp_parser, name->start, true);
+            uint32_t end = pm_regexp_source_offset(&regexp_parser, name->start + name->length, false);
+            const uint8_t *bytes = name->start;
+
+            /* The rewritten pattern and joined content use temporary buffers. */
+            if (preprocessor.rewritten || offsets == NULL) {
+                uint8_t *copy = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, uint8_t, name->length);
+                memcpy(copy, bytes, name->length);
+                bytes = copy;
+            }
+
+            match->captures[index] = (pm_regexp_capture_t) { .name = bytes, .length = name->length, .location = { .start = start, .length = end - start } };
+        }
+
+        parser->regexp_match = match;
+    }
+
     pm_buffer_cleanup(&preprocessor.pattern);
 
     return pm_regexp_encoding_flags(parser, flags, encoding);
@@ -3489,7 +3453,8 @@ pm_regexp_parse(pm_parser_t *parser, pm_regular_expression_node_t *node, const p
         .unlexed = false
     };
 
-    return pm_regexp_validate(&regexp, offsets, node->content_loc.start);
+    const pm_node_t *match_receiver = parser->current.type == PM_TOKEN_EQUAL_TILDE ? (const pm_node_t *) node : NULL;
+    return pm_regexp_validate(&regexp, offsets, node->content_loc.start, match_receiver);
 }
 
 /**
@@ -3740,6 +3705,9 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
     bool is_static = PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL);
     const pm_node_list_t *parts = &node->parts;
     bool skip_fragment_encoding = is_static && parts->size == 1 && PM_NODE_TYPE_P(parts->nodes[0], PM_EMBEDDED_STATEMENTS_NODE);
+    /* A heredoc can split a regexp into several literal tokens. Those can
+     * still introduce locals, unlike a regexp with actual interpolation. */
+    bool match_receiver = parser->current.type == PM_TOKEN_EQUAL_TILDE;
 
     /* Each part that does not match the option is its own error, so the
      * option is checked against every part, even after an error. */
@@ -3750,6 +3718,7 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
     bool valid = true;
 
     for (size_t index = 0; index < parts->size && (valid || check_option); index++) {
+        match_receiver = match_receiver && PM_NODE_TYPE_P(parts->nodes[index], PM_STRING_NODE);
         pm_regexp_part_t part;
         if (!pm_regexp_part_init(&part, parser, flags, parts->nodes[index])) continue;
 
@@ -3788,37 +3757,9 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
                 .skip_fragment_encoding = skip_fragment_encoding
             };
 
-            pm_regexp_validate(&regexp, NULL, 0);
+            pm_regexp_validate(&regexp, NULL, 0, match_receiver ? (const pm_node_t *) node : NULL);
         }
     }
 
     pm_buffer_cleanup(&joined.buffer);
-}
-
-/**
- * Parse the unescaped content of a regular expression for named capture groups
- * only, for the receiver of a =~ operator. No errors are reported, since the
- * regular expression is validated when it is parsed.
- */
-void
-pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_t size, bool extended_mode, pm_regexp_name_callback_t name_callback, void *name_data) {
-    pm_regexp_parser_t regexp_parser = {
-        .parser = parser,
-        .regexp = NULL,
-        .start = source,
-        .cursor = source,
-        .end = source + size,
-        .extended_mode = extended_mode,
-        .encoding_changed = parser->encoding_changed,
-        .encoding = parser->encoding,
-        .name_callback = name_callback,
-        .name_data = name_data,
-        .report_errors = false,
-        .property_name = NULL,
-        .property_name_length = 0,
-        .unicode_property_name = NULL,
-        .unicode_property_name_length = 0
-    };
-
-    pm_regexp_parse_pattern(&regexp_parser);
 }

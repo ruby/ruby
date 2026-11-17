@@ -931,6 +931,9 @@ struct pm_parser_t {
      */
     pm_regexp_offsets_t current_regexp_offsets;
 
+    /* Named captures from the regexp immediately before a pending =~. */
+    const struct pm_regexp_match *regexp_match;
+
     /*
      * The line number at the start of the parse. This will be used to offset
      * the line numbers of all of the locations.

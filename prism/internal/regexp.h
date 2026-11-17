@@ -5,12 +5,19 @@
 #include "prism/compiler/inline.h"
 #include "prism/internal/parser.h"
 
-/*
- * Callback invoked by pm_regexp_parse_named_captures() for each named capture
- * group found. The data pointer is whatever the caller passed in alongside the
- * callback; the regexp parser passes it through without inspecting it.
- */
-typedef void (*pm_regexp_name_callback_t)(pm_parser_t *parser, const pm_string_t *name, void *data);
+/* The name in the preprocessed pattern and its range in the original source. */
+typedef struct {
+    const uint8_t *name;
+    size_t length;
+    pm_location_t location;
+} pm_regexp_capture_t;
+
+/* Captures saved until the parser has read the right operand of =~. */
+typedef struct pm_regexp_match {
+    const pm_node_t *receiver;
+    pm_regexp_capture_t *captures;
+    size_t size;
+} pm_regexp_match_t;
 
 /*
  * Append a place to a list of places. When the list is full, it moves to a
@@ -59,11 +66,5 @@ PRISM_EXPORTED_FUNCTION pm_node_flags_t pm_regexp_parse(pm_parser_t *parser, pm_
  * errors reported at the node.
  */
 void pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_expression_node_t *node);
-
-/*
- * Parse the content of a regular expression for named capture groups only.
- * No errors are reported.
- */
-void pm_regexp_parse_named_captures(pm_parser_t *parser, const uint8_t *source, size_t size, bool extended_mode, pm_regexp_name_callback_t name_callback, void *name_data);
 
 #endif

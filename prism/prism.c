@@ -21565,265 +21565,46 @@ parse_call_operator_write(pm_parser_t *parser, pm_call_node_t *call_node, const 
     }
 }
 
-static PRISM_INLINE const uint8_t *
-pm_named_capture_escape_hex(pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
-    cursor++;
-
-    if (cursor < end && pm_char_is_hexadecimal_digit(*cursor)) {
-        uint8_t value = escape_hexadecimal_digit(*cursor);
-        cursor++;
-
-        if (cursor < end && pm_char_is_hexadecimal_digit(*cursor)) {
-            value = (uint8_t) ((value << 4) | escape_hexadecimal_digit(*cursor));
-            cursor++;
-        }
-
-        pm_buffer_append_byte(unescaped, value);
-    } else {
-        PM_BUFFER_APPEND_LITERAL(unescaped, "\\x");
-    }
-
-    return cursor;
-}
-
-static PRISM_INLINE const uint8_t *
-pm_named_capture_escape_octal(pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
-    uint8_t value = (uint8_t) (*cursor - '0');
-    cursor++;
-
-    if (cursor < end && pm_char_is_octal_digit(*cursor)) {
-        value = ((uint8_t) (value << 3)) | ((uint8_t) (*cursor - '0'));
-        cursor++;
-
-        if (cursor < end && pm_char_is_octal_digit(*cursor)) {
-            value = ((uint8_t) (value << 3)) | ((uint8_t) (*cursor - '0'));
-            cursor++;
-        }
-    }
-
-    pm_buffer_append_byte(unescaped, value);
-    return cursor;
-}
-
-static PRISM_INLINE const uint8_t *
-pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end, const pm_location_t *error_location) {
-    const uint8_t *start = cursor - 1;
-    cursor++;
-
-    if (cursor >= end) {
-        PM_BUFFER_APPEND_LITERAL(unescaped, "\\u");
-        return cursor;
-    }
-
-    if (*cursor != '{') {
-        size_t length = pm_strspn_hexadecimal_digit(cursor, MIN(end - cursor, 4));
-        uint32_t value = escape_unicode(parser, cursor, length, error_location, 0);
-
-        if (!pm_buffer_append_unicode_codepoint(unescaped, value)) {
-            pm_buffer_append_string(unescaped, (const char *) start, (size_t) ((cursor + length) - start));
-        }
-
-        return cursor + length;
-    }
-
-    cursor++;
-    for (;;) {
-        while (cursor < end && *cursor == ' ') cursor++;
-
-        if (cursor >= end) break;
-        if (*cursor == '}') {
-            cursor++;
-            break;
-        }
-
-        size_t length = pm_strspn_hexadecimal_digit(cursor, end - cursor);
-        if (length == 0) {
-            break;
-        }
-        uint32_t value = escape_unicode(parser, cursor, length, error_location, 0);
-
-        (void) pm_buffer_append_unicode_codepoint(unescaped, value);
-        cursor += length;
-    }
-
-    return cursor;
-}
-
-static void
-pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *source, const size_t length, const uint8_t *cursor, const pm_location_t *error_location) {
-    const uint8_t *end = source + length;
-    pm_buffer_append_string(unescaped, (const char *) source, (size_t) (cursor - source));
-
-    for (;;) {
-        if (++cursor >= end) {
-            pm_buffer_append_byte(unescaped, '\\');
-            return;
-        }
-
-        switch (*cursor) {
-            case 'x':
-                cursor = pm_named_capture_escape_hex(unescaped, cursor, end);
-                break;
-            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
-                cursor = pm_named_capture_escape_octal(unescaped, cursor, end);
-                break;
-            case 'u':
-                cursor = pm_named_capture_escape_unicode(parser, unescaped, cursor, end, error_location);
-                break;
-            default:
-                pm_buffer_append_byte(unescaped, '\\');
-                break;
-        }
-
-        const uint8_t *next_cursor = pm_memchr(cursor, '\\', (size_t) (end - cursor), parser->encoding_changed, parser->encoding);
-        if (next_cursor == NULL) break;
-
-        pm_buffer_append_string(unescaped, (const char *) cursor, (size_t) (next_cursor - cursor));
-        cursor = next_cursor;
-    }
-
-    pm_buffer_append_string(unescaped, (const char *) cursor, (size_t) (end - cursor));
-}
-
-/** State for processing named capture groups found during regexp parsing. */
-typedef struct {
-    /** The call node wrapping the regular expression node (for =~). */
-    pm_call_node_t *call;
-
-    /**
-     * The open list of targets for the match write node, one for each capture
-     * that becomes a local. The node is only created if this is not empty.
-     */
-    pm_node_list_t targets;
-
-    /** The set of capture names found so far. */
-    pm_constant_id_set_t names;
-
-    /**
-     * Whether the content being parsed points into the original source. If it
-     * does, capture names can be located in the source directly. Otherwise
-     * they live in a separate copy and are located at the call's receiver.
-     */
-    bool shared;
-} pm_regexp_name_data_t;
-
 /**
- * This callback is called when the regular expression parser encounters a named
- * capture group.
- */
-static void
-parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *capture, void *data) {
-    pm_regexp_name_data_t *name_data = (pm_regexp_name_data_t *) data;
-    pm_call_node_t *call = name_data->call;
-    pm_constant_id_set_t *names = &name_data->names;
-
-    const uint8_t *source = pm_string_source(capture);
-    size_t length = pm_string_length(capture);
-    pm_buffer_t unescaped = { 0 };
-
-    // First, we need to handle escapes within the name of the capture group.
-    // This is because regular expressions have three different representations
-    // in prism. The first is the plain source code. The second is the
-    // representation that will be sent to the regular expression engine, which
-    // is the value of the "unescaped" field. This is poorly named, because it
-    // actually still contains escapes, just a subset of them that the regular
-    // expression engine knows how to handle. The third representation is fully
-    // unescaped, which is what we need.
-    const uint8_t *cursor = pm_memchr(source, '\\', length, parser->encoding_changed, parser->encoding);
-    if (PRISM_UNLIKELY(cursor != NULL)) {
-        pm_named_capture_escape(parser, &unescaped, source, length, cursor, name_data->shared ? NULL : &call->receiver->location);
-
-        /*
-         * Escapes like \u{} write nothing, so the unescaped name can be empty.
-         * An empty name is never a valid local, and the buffer is unallocated
-         * (NULL) in that case, so there is no slice to check.
-         */
-        if (pm_buffer_length(&unescaped) == 0) return;
-
-        source = (const uint8_t *) pm_buffer_value(&unescaped);
-        length = pm_buffer_length(&unescaped);
-    }
-
-    const uint8_t *start;
-    const uint8_t *end;
-    pm_constant_id_t name;
-
-    // If the name of the capture group isn't a valid identifier, we do
-    // not add it to the local table.
-    if (!pm_slice_is_valid_local(parser, source, source + length)) {
-        pm_buffer_cleanup(&unescaped);
-        return;
-    }
-
-    if (name_data->shared) {
-        // If the unescaped string is a slice of the source, then we can
-        // copy the names directly. The pointers will line up.
-        start = source;
-        end = source + length;
-        name = pm_parser_constant_id_raw(parser, start, end);
-    } else {
-        // Otherwise, the name is a slice of the malloc-ed owned string,
-        // in which case we need to copy it out into a new string.
-        start = parser->start + PM_NODE_START(call->receiver);
-        end = parser->start + PM_NODE_END(call->receiver);
-
-        uint8_t *memory = PM_ARENA_ALLOC_ARRAY(parser->arena, uint8_t, length);
-        memcpy(memory, source, length);
-        name = pm_parser_constant_id_owned(parser, memory, length);
-    }
-
-    /*
-     * Add this name to the set of constants if it is valid, not duplicated,
-     * and not a keyword.
-     */
-    if (name != 0 && pm_constant_id_set_insert(&parser->scratch_arena, names, name)) {
-
-        int depth;
-        if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
-            // If the local is not already a local but it is a keyword, then we
-            // do not want to add a capture for this.
-            if (pm_local_is_keyword((const char *) source, length)) {
-                pm_buffer_cleanup(&unescaped);
-                return;
-            }
-
-            // If the identifier is not already a local, then we will add it to
-            // the local table.
-            pm_parser_local_add(parser, name, start, end, 0);
-        }
-
-        // Next, create the local variable target and add it to the list of
-        // targets for the match.
-        pm_token_t token = { .type = 0, .start = start, .end = end };
-        pm_location_t token_loc = TOK2LOC(parser, &token);
-        pm_node_t *target = UP(pm_local_variable_target_node_create(parser, &token_loc, name, depth == -1 ? 0 : (uint32_t) depth));
-        pm_node_list_open_append(&parser->node_chunks, &name_data->targets, target);
-    }
-
-    pm_buffer_cleanup(&unescaped);
-}
-
-/**
- * Potentially change a =~ with an interpolated regular expression with named
- * captures into a match write node. This is for the interpolated case where
- * we have concatenated content rather than a regular expression node.
+ * Introduce the named captures of a regexp receiver into the current scope.
  */
 static pm_node_t *
-parse_interpolated_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *content, pm_call_node_t *call, bool extended_mode) {
-    pm_regexp_name_data_t name_data = {
-        .call = call,
-        .targets = { 0 },
-        .names = { 0 },
-        .shared = false,
-    };
+parse_match_write(pm_parser_t *parser, pm_call_node_t *call, const pm_regexp_match_t *match) {
+    pm_node_list_t targets = { 0 };
+    pm_constant_id_set_t names = { 0 };
 
-    pm_regexp_parse_named_captures(parser, pm_string_source(content), pm_string_length(content), extended_mode, parse_regular_expression_named_capture, &name_data);
+    for (size_t index = 0; index < match->size; index++) {
+        const pm_regexp_capture_t *capture = &match->captures[index];
+        const uint8_t *name = capture->name;
+        size_t length = capture->length;
 
-    if (name_data.targets.size > 0) {
-        return UP(pm_match_write_node_create(parser, call, &name_data.targets));
-    } else {
-        return UP(call);
+        if (!pm_slice_is_valid_local(parser, name, name + length)) continue;
+
+        const uint8_t *start = parser->start + capture->location.start;
+        const uint8_t *end = start + capture->location.length;
+        pm_constant_id_t id;
+
+        if (length == capture->location.length && (name == start || memcmp(name, start, length) == 0)) {
+            id = pm_parser_constant_id_raw(parser, start, end);
+        } else {
+            uint8_t *copy = PM_ARENA_ALLOC_ARRAY(parser->arena, uint8_t, length);
+            memcpy(copy, name, length);
+            id = pm_parser_constant_id_owned(parser, copy, length);
+        }
+
+        if (id == 0 || !pm_constant_id_set_insert(&parser->scratch_arena, &names, id)) continue;
+
+        int depth = pm_parser_local_depth_constant_id(parser, id);
+        if (depth == -1) {
+            if (pm_local_is_keyword((const char *) name, length)) continue;
+            pm_parser_local_add(parser, id, start, end, 0);
+        }
+
+        pm_node_t *target = UP(pm_local_variable_target_node_create(parser, &capture->location, id, depth == -1 ? 0 : (uint32_t) depth));
+        pm_node_list_open_append(&parser->node_chunks, &targets, target);
     }
+
+    return targets.size == 0 ? UP(call) : UP(pm_match_write_node_create(parser, call, &targets));
 }
 
 static pm_if_node_t *
@@ -21934,71 +21715,17 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
      *
      * In this case, `foo` should be a method call and not a local yet.
      */
+    /* The right operand can contain another =~ with captures of its own. */
+    const pm_regexp_match_t *match = parser->regexp_match;
+    parser->regexp_match = NULL;
+
     pm_token_t operator = parser->current;
     parser_lex(parser);
 
     pm_node_t *argument = parse_expression(parser, binding_power, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
-
-    // By default, we're going to create a call node and then return it.
     pm_call_node_t *call = pm_call_node_binary_create(parser, node, &operator, argument, 0);
-    pm_node_t *result = UP(call);
 
-    /* If the receiver of this =~ is a regular expression node, then we need to
-     * introduce local variables for it based on its named capture groups. */
-    if (PM_NODE_TYPE_P(node, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE)) {
-        /* It's possible to have an interpolated regular expression node that
-         * only contains strings. This is because it can be split up by a
-         * heredoc. In this case we need to concat the unescaped strings
-         * together and then parse them as a regular expression. */
-        pm_node_list_t *parts = &((pm_interpolated_regular_expression_node_t *) node)->parts;
-
-        bool interpolated = false;
-        size_t total_length = 0;
-
-        pm_node_t *part;
-        PM_NODE_LIST_FOREACH(parts, index, part) {
-            if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-                total_length += pm_string_length(&((pm_string_node_t *) part)->unescaped);
-            } else {
-                interpolated = true;
-                break;
-            }
-        }
-
-        if (!interpolated && total_length > 0) {
-            uint8_t *memory = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, uint8_t, total_length);
-            uint8_t *cursor = memory;
-            PM_NODE_LIST_FOREACH(parts, index, part) {
-                pm_string_t *unescaped = &((pm_string_node_t *) part)->unescaped;
-                size_t length = pm_string_length(unescaped);
-
-                memcpy(cursor, pm_string_source(unescaped), length);
-                cursor += length;
-            }
-
-            pm_string_t content;
-            pm_string_init(&content, memory, total_length);
-            result = parse_interpolated_regular_expression_named_captures(parser, &content, call, PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED));
-        }
-    } else if (PM_NODE_TYPE_P(node, PM_REGULAR_EXPRESSION_NODE)) {
-        /* The regular expression was validated when it was parsed, so only its
-         * named captures are read here. */
-        pm_regular_expression_node_t *regexp = (pm_regular_expression_node_t *) node;
-        pm_regexp_name_data_t name_data = {
-            .call = call,
-            .targets = { 0 },
-            .names = { 0 },
-            .shared = pm_string_source(&regexp->unescaped) == parser->start + regexp->content_loc.start,
-        };
-
-        pm_regexp_parse_named_captures(parser, pm_string_source(&regexp->unescaped), pm_string_length(&regexp->unescaped), PM_NODE_FLAG_P(regexp, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED), parse_regular_expression_named_capture, &name_data);
-
-        if (name_data.targets.size > 0) {
-            result = UP(pm_match_write_node_create(parser, call, &name_data.targets));
-        }
-    }
-
-    return result;
+    return match != NULL && match->receiver == node ? parse_match_write(parser, call, match) : UP(call);
 }
 
 static pm_node_t *
