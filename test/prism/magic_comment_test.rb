@@ -81,6 +81,33 @@ module Ruby::Prism
       assert_magic_encoding(Encoding::Windows_31J, "# vim: filetype=ruby, fileencoding=windows-31j, tabsize=3, shiftwidth=3")
     end
 
+    def test_nul_in_magic_comment_values
+      {
+        "frozen_string_literal" => ["true", "false"],
+        "warn_indent" => ["true", "false"],
+        "shareable_constant_value" => ["none", "literal", "experimental_everything", "experimental_copy"]
+      }.each do |key, values|
+        values.each do |value|
+          value.length.times do |index|
+            invalid = value.dup
+            invalid[index] = "\0"
+            result = Ruby::Prism.parse("# #{key}: #{invalid}\n")
+
+            assert_predicate result, :success?
+            assert_equal [:invalid_magic_comment_value], result.warnings.map(&:type), "#{key}: #{invalid.inspect}"
+          end
+        end
+      end
+    end
+
+    def test_nul_value_preserves_frozen_string_literal_option
+      [false, true].each do |frozen|
+        result = Ruby::Prism.parse("# frozen_string_literal: \0abc\n\"a\"", frozen_string_literal: frozen)
+        assert_equal frozen, result.value.statements.body.first.frozen?
+        assert_include result.warnings.map(&:type), :invalid_magic_comment_value
+      end
+    end
+
     private
 
     def assert_magic_encoding(expected, line)
