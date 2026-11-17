@@ -89,21 +89,15 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
     return encoding->kind != PM_ENCODING_KIND_SINGLE_BYTE && encoding->kind != PM_ENCODING_KIND_ASCII;
 }
 
-/*
- * All of the lookup tables use the first bit of each embedded byte to indicate
- * whether the codepoint is alphabetical.
- */
+/* The bit of the ASCII table that marks a letter. */
 #define PRISM_ENCODING_ALPHABETIC_BIT (1 << 0)
 
-/*
- * All of the lookup tables use the second bit of each embedded byte to indicate
- * whether the codepoint is alphanumeric.
- */
+/* The bit of the ASCII table that marks a letter or a digit. */
 #define PRISM_ENCODING_ALPHANUMERIC_BIT (1 << 1)
 
 /*
- * All of the lookup tables use the third bit of each embedded byte to indicate
- * whether the codepoint is uppercase.
+ * The bit that marks a character that begins a constant name, in the ASCII
+ * table, the unicode tables, and the forms of the multibyte encodings.
  */
 #define PRISM_ENCODING_UPPERCASE_BIT (1 << 2)
 
@@ -132,10 +126,9 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n, pm_options_ve
 
 /*
  * This lookup table indicates whether a US-ASCII character is alphabetical,
- * alphanumeric, or uppercase. It is referenced in both the UTF-8 encoding
- * functions and the parser directly in order to speed up processing ASCII
- * bytes in the default encoding, since every ASCII character is encoded as
- * itself in UTF-8.
+ * alphanumeric, or uppercase. Every encoding that prism supports is
+ * ASCII-compatible, so this table answers for the bytes below 0x80 in all of
+ * them.
  */
 extern const uint8_t pm_encoding_ascii_table[256];
 

@@ -11,11 +11,11 @@ typedef uint32_t pm_unicode_codepoint_t;
  * table, as described in section 5.1 of the unicode core specification. The
  * high bits of a codepoint index the root table, which gives a middle block.
  * The next five bits index that middle block, which gives a leaf block. The low
- * three bits index that leaf block, which gives the same bitfield used by the
- * single-byte lookup tables. Codepoints with identical blocks share a single
- * copy, so the tables stay small, and every lookup is three loads with no
- * searching. Codepoints at or above UNICODE_CODEPOINTS_MAXIMUM have no
- * properties.
+ * three bits index that leaf block, which gives the properties of the
+ * codepoint, with the same uppercase bit as the ASCII table. Codepoints with
+ * identical blocks share a single copy, so the tables stay small, and every
+ * lookup is three loads with no searching. Codepoints at or above
+ * UNICODE_CODEPOINTS_MAXIMUM have no properties.
  *
  * The tables are Unicode 17.0.0. `bin/prism encoding UTF-8` generates them from
  * the Unicode Character Database at that version.
