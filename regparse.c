@@ -6313,10 +6313,13 @@ parse_exp(Node** np, OnigToken* tok, int term,
   int r, len, group = 0;
   Node* qn;
   Node** targetp;
+  unsigned int parse_depth;
 
   *np = NULL;
   if (tok->type == (enum TokenSyms )term)
     goto end_of_token;
+
+  parse_depth = env->parse_depth;
 
   switch (tok->type) {
   case TK_ALT:
@@ -6627,6 +6630,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
     if (r == TK_OP_REPEAT || r == TK_INTERVAL) {
       if (is_invalid_quantifier_target(*targetp))
         return ONIGERR_TARGET_OF_REPEAT_OPERATOR_INVALID;
+
+      parse_depth++;
+      if (parse_depth > ParseDepthLimit)
+	return ONIGERR_PARSE_DEPTH_LIMIT_OVER;
 
       qn = node_new_quantifier(tok->u.repeat.lower, tok->u.repeat.upper,
                                (r == TK_INTERVAL ? 1 : 0));
