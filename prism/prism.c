@@ -13496,11 +13496,9 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
         }
         PRISM_FALLTHROUGH
         default:
-            // In this case we have a node that we don't know how to convert
-            // into a target. We need to treat it as an error. For now, we'll
-            // mark it as an error and just skip right past it.
+            /* Keep an invalid expression out of fields that require a target. */
             pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_UNEXPECTED);
-            return target;
+            return UP(pm_error_recovery_node_create_unexpected(parser, target));
     }
 }
 
