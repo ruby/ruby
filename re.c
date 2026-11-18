@@ -567,6 +567,10 @@ rb_reg_to_s(VALUE re)
 }
 
 static VALUE
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
+
+static VALUE
 rb_reg_str_with_term(VALUE re, int term)
 {
     int options, opt;
@@ -620,14 +624,23 @@ rb_reg_str_with_term(VALUE re, int term)
         if (*ptr == ':' && ptr[len-1] == ')') {
             Regexp *rp;
             VALUE verbose = ruby_verbose;
-            ruby_verbose = Qfalse;
+            rb_encoding *fixed_enc = 0;
+            onig_errmsg_buffer errmsg = "";
+            VALUE unescaped;
 
             ++ptr;
             len -= 2;
-            err = onig_new(&rp, ptr, ptr + len, options,
-                           enc, OnigDefaultSyntax, NULL);
-            onig_free(rp);
-            ruby_verbose = verbose;
+            unescaped = rb_reg_preprocess((const char *)ptr, (const char *)ptr + len,
+                                          enc, &fixed_enc, errmsg, options);
+            if (!NIL_P(unescaped)) {
+                ruby_verbose = Qfalse;
+                err = onig_new(&rp, (UChar *)RSTRING_PTR(unescaped),
+                               (UChar *)RSTRING_END(unescaped), options,
+                               enc, OnigDefaultSyntax, NULL);
+                onig_free(rp);
+                ruby_verbose = verbose;
+                RB_GC_GUARD(unescaped);
+            }
         }
         if (err) {
             options = RREGEXP_PTR(re)->options;
@@ -1566,10 +1579,6 @@ rb_reg_fixed_encoding_p(VALUE re)
 {
     return RBOOL(FL_TEST(re, KCODE_FIXED));
 }
-
-static VALUE
-rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
 
 NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 

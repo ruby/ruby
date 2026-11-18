@@ -72,6 +72,11 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_comment_in_char_class
+    re = EnvUtil.suppress_warning { Regexp.new('(?:[](?#\x{7FFFFFFF})])') }
+    assert_equal('(?-mix:[](?#\x{7FFFFFFF})])', EnvUtil.suppress_warning { re.to_s })
+  end
+
   def test_to_s_under_gc_compact_stress
     omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
