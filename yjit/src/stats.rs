@@ -491,6 +491,7 @@ make_counters! {
     opt_aset_not_array,
     opt_aset_not_fixnum,
     opt_aset_not_hash,
+    opt_aset_frozen,
 
     opt_case_dispatch_megamorphic,
 
