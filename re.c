@@ -4109,6 +4109,17 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
        enc = rb_usascii_encoding();
     }
 
+    regex_t reg;
+    bool success = make_regexp(&reg, RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
+                          options & ARG_REG_OPTION_MASK, err,
+                          sourcefile, sourceline);
+    if (!success) return -1;
+    if (OBJ_FROZEN(obj) || FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
+        onig_free_body(&reg);
+        rb_reg_initialize_check(obj);
+    }
+    *RREGEXP_PTR(obj) = reg;
+
     rb_enc_associate((VALUE)re, enc);
     if ((options & ARG_ENCODING_FIXED) || fixed_enc) {
         re->basic.flags |= KCODE_FIXED;
@@ -4116,11 +4127,6 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
     if (options & ARG_ENCODING_NONE) {
         re->basic.flags |= REG_ENCODING_NONE;
     }
-
-    bool success = make_regexp(RREGEXP_PTR(obj), RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
-                          options & ARG_REG_OPTION_MASK, err,
-                          sourcefile, sourceline);
-    if (!success) return -1;
     FL_SET_RAW(obj, RREGEXP_INITIALIZED);
 
     if (RBASIC_CLASS(obj) == rb_cRegexp) {
