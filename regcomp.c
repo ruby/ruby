@@ -5712,7 +5712,6 @@ onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
   err_p:
     xfree(nreg->exact);
   err:
-    xfree(nreg);
     return ONIGERR_MEMORY;
   }
   return 0;
@@ -5725,7 +5724,12 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
     regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
     if (IS_NULL(reg)) return ONIGERR_MEMORY;
 
-    return onig_reg_copy_body(reg, oreg);
+    int r = onig_reg_copy_body(reg, oreg);
+    if (r != 0) {
+      xfree(reg);
+      *nreg = NULL;
+    }
+    return r;
   }
   return 0;
 }
