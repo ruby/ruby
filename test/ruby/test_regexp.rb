@@ -803,6 +803,44 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_initialize_in_warning_hook
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = true
+      inner = error = re = freeze = nil
+      Warning.singleton_class.class_eval do
+        define_method(:warn) do |*, **|
+          src, inner = inner, nil
+          begin
+            re.send(:initialize, src) if src
+          rescue RegexpError => error
+          end
+          re.freeze if freeze
+        end
+      end
+
+      re = Regexp.allocate
+      inner = "(?<n>a)(b)(c)[b-a]?x{2,3}" * 20
+      re.send(:initialize, "(?<m>x)[]a](y)")
+      assert_kind_of(RegexpError, error)
+      assert_equal("(?<m>x)[]a](y)", re.source)
+      assert_equal(["x"], re.match("xay").captures)
+      assert_equal(["m"], re.names)
+
+      re = Regexp.allocate
+      inner = "(?<n>a)(b)"
+      assert_raise(FrozenError) { re.send(:initialize, "(?<m>x)[]a](y)") }
+      assert_equal("(?<n>a)(b)", re.source)
+      assert_equal(["a"], re.match("ab").captures)
+      assert_equal(["n"], re.names)
+
+      re = Regexp.allocate
+      freeze = true
+      assert_raise(FrozenError) { re.send(:initialize, "(?<m>x)[]a](y)") }
+      assert_raise(TypeError) { re.source }
+    end;
+  end
+
   def test_initialize_bool_warning
     assert_warning(/expected true or false as ignorecase/) do
       Regexp.new("foo", :i)
