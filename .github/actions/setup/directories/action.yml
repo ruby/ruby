@@ -170,9 +170,10 @@ runs:
       env:
         HAVE_GIT: yes
         GIT: git
+        INPUT_MAKEUP: ${{ case(inputs.makeup == 'true', 'up', inputs.makeup) }}
       run: |
         ruby tool/missing-baseruby.bat --verbose
-        bash tool/gen-sources.bash ${{ case(inputs.makeup == 'true', 'up', inputs.makeup) }} HAVE_GIT=yes
+        bash tool/gen-sources.bash ${INPUT_MAKEUP} HAVE_GIT=yes
         echo RUBY_DUMP_AST=./dump_ast-required-unexpectedly >> "$GITHUB_ENV"
 
     - if: steps.which.outputs.sudo
