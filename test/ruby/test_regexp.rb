@@ -2690,6 +2690,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
   end
 
+  def test_search_bol_in_group_after_bounded_prefix
+    assert_equal(16, /\s{0,5}(^end)/ =~ "def foo; bar end\nend\n")
+    assert_equal(11, /(?:\r?\n){0,2}(^--)/ =~ "aaaaaaaa --\n--\n")
+    assert_equal(24, / {0,4}(^abc)/ =~ ("x" * 20) + "abc\nabc\n")
+    assert_equal(24, /\b.{0,3}(^abc)/ =~ ("x" * 20) + "abc\nabc\n")
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
