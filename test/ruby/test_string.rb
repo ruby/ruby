@@ -1049,6 +1049,29 @@ CODE
     assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
   end
 
+  def test_concat_chilled_string_warning
+    return unless @cls == String
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target << $target
+      assert_equal("\\xff\\xfe\\xfd\\xff\\xfe\\xfd".b, $target)
+    }
+    {#
+      module ReplaceReceiverWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("\xff\xfe\xfd".b)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ReplaceReceiverWarning)
+    };
+  end
+
   def test_codepoints
     # Single byte optimization
     assert_equal [65, 66, 67], S("ABC").codepoints
