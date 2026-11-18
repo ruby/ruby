@@ -192,6 +192,15 @@ module Ruby::Prism
       assert_equal :primary, receiver.arguments.arguments.first.unescaped.to_sym
     end
 
+    def test_singleton_method_definition_rejects_setter_name_as_receiver
+      [".", "::"].each do |operator|
+        result = Ruby::Prism.parse("def target=#{operator}greet; end")
+
+        assert_equal [:def_receiver_setter], result.errors.map(&:type)
+        assert_equal "target=", result.errors.first.location.slice
+      end
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

@@ -18778,6 +18778,9 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             parser_lex(parser);
 
             if (match2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON)) {
+                if (parser->previous.end[-1] == '=') {
+                    pm_parser_err_previous(parser, PM_ERR_DEF_RECEIVER_SETTER);
+                }
                 receiver = parse_variable_call(parser);
 
                 pm_parser_scope_push(parser, true);
