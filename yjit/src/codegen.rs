@@ -6356,52 +6356,15 @@ fn jit_rb_str_concat(
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
     jit_prepare_non_leaf_call(jit, asm);
 
-    // Explicitly spill temps before making any C calls. `ccall` will spill temps, but it does a
-    // check to only spill if it thinks it's necessary. That logic can't see through the runtime
-    // branching occurring in the code generated for this function. Consequently, the branch for
-    // the first `ccall` will spill registers but the second one will not. At run time, we may
-    // jump over that spill code when executing the second branch, leading situations that are
-    // quite hard to debug. If we spill up front we avoid diverging behavior.
-    asm.spill_regs();
-
-    let concat_arg = asm.stack_pop(1);
-    let recv = asm.stack_pop(1);
-
-    // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
-    // use rb_jit_str_simple_append, which calls rb_str_buf_append as well.
+    // With a string argument, rb_str_concat() is rb_str_buf_append()
     asm_comment!(asm, "<< on strings");
-
-    // Take receiver's object flags XOR arg's flags. If any
-    // string-encoding flags are different between the two,
-    // the encodings don't match.
-    let recv_reg = asm.load(recv);
-    let concat_arg_reg = asm.load(concat_arg);
-    let flags_xor = asm.xor(
-        Opnd::mem(64, recv_reg, RUBY_OFFSET_RBASIC_FLAGS),
-        Opnd::mem(64, concat_arg_reg, RUBY_OFFSET_RBASIC_FLAGS)
-    );
-    asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
-
-    let enc_mismatch = asm.new_label("enc_mismatch");
-    asm.jnz(enc_mismatch);
-
-    // If encodings match, call the simple append function and jump to return
-    let ret_opnd = asm.ccall(rb_jit_str_simple_append as *const u8, vec![recv, concat_arg]);
-    let ret_label = asm.new_label("func_return");
-    let stack_ret = asm.stack_push(Type::TString);
-    asm.mov(stack_ret, ret_opnd);
-    asm.stack_pop(1); // forget stack_ret to re-push after ccall
-    asm.jmp(ret_label);
-
-    // If encodings are different, use a slower encoding-aware concatenate
-    asm.write_label(enc_mismatch);
-    asm.spill_regs(); // Ignore the register for the other local branch
+    let concat_arg = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
     let ret_opnd = asm.ccall(rb_str_buf_append as *const u8, vec![recv, concat_arg]);
+    asm.stack_pop(2); // Keep them on stack during ccall for GC
+
     let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);
-    // Drop through to return
-
-    asm.write_label(ret_label);
 
     true
 }

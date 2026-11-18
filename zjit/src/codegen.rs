@@ -701,7 +701,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringByteslice { string, beg, len, state } => gen_string_byteslice(asm, opnd!(string), opnd!(beg), opnd!(len), &function.frame_state(*state)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
-        Insn::StringAppend { recv, other, recv_flags, other_flags, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), opnd!(recv_flags), opnd!(other_flags), &function.frame_state(*state)),
+        Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringEqual { left, right } => gen_string_equal(asm, opnd!(left), opnd!(right)),
         &Insn::LoadFixnum { ptr, num_bytes, byteswap } => gen_load_fixnum(asm, opnd!(ptr), num_bytes, byteswap),
@@ -4426,45 +4426,10 @@ fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, val
     asm_ccall!(asm, rb_str_setbyte, string, index, value)
 }
 
-fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, recv_flags: Opnd, other_flags: Opnd, state: &FrameState) -> Opnd {
+fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
-
-    // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
-    // use rb_jit_str_simple_append, which calls rb_str_buf_append as well.
-    asm_comment!(asm, "<< on strings");
-
-    // XOR the object flags. If any string-encoding flags differ between the two,
-    // the encodings do not match.
-    let flags_xor = asm.xor(recv_flags, other_flags);
-    asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
-
-    let hir_block_id = asm.current_block().hir_block_id;
-    let rpo_idx = asm.current_block().rpo_index;
-    let mismatch_block = asm.new_block(hir_block_id, false, rpo_idx);
-    let mismatch_edge = Target::Block(Box::new(lir::BranchEdge { target: mismatch_block, args: vec![] }));
-    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-    let result_edge = Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] }));
-
-    asm.jnz(jit, mismatch_edge);
-
-    // If encodings match, call the simple append function
-    asm_ccall!(asm, rb_jit_str_simple_append, string, val);
-    asm.jmp(result_edge.clone());
-
-    // If encodings are different, use a slower encoding-aware concatenate
-    asm.set_current_block(mismatch_block);
-    let label = jit.get_label(asm, mismatch_block, hir_block_id);
-    asm.write_label(label);
-    asm_ccall!(asm, rb_str_buf_append, string, val);
-    asm.jmp(result_edge);
-
-    // Join block
-    asm.set_current_block(result_block);
-    let label = jit.get_label(asm, result_block, hir_block_id);
-    asm.write_label(label);
-
-    // Either append function returns the receiver
-    string
+    // With a string argument, rb_str_concat() is rb_str_buf_append()
+    asm_ccall!(asm, rb_str_buf_append, string, val)
 }
 
 fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {

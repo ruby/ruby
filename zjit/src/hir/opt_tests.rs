@@ -17467,9 +17467,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v31:StringExact = GuardType v12, StringExact recompile
           v32:String = GuardType v13, String recompile
-          v33:CUInt64 = LoadField v31, :RBASIC_FLAGS@0x1040
-          v34:CUInt64 = LoadField v32, :RBASIC_FLAGS@0x1040
-          v35:StringExact = StringAppend v31, v32, recv_flags: v33, other_flags: v34
+          v33:StringExact = StringAppend v31, v32
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -17537,9 +17535,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v31:StringExact = GuardType v12, StringExact recompile
           v32:String = GuardType v13, String recompile
-          v33:CUInt64 = LoadField v31, :RBASIC_FLAGS@0x1040
-          v34:CUInt64 = LoadField v32, :RBASIC_FLAGS@0x1040
-          v35:StringExact = StringAppend v31, v32, recv_flags: v33, other_flags: v34
+          v33:StringExact = StringAppend v31, v32
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -20470,8 +20466,8 @@ mod hir_opt_tests {
           v6:BasicObject = LoadArg :self@0
           Jump bb3(v6)
         bb3(v10:BasicObject):
-          v59:NilClass = Const Value(nil)
-          v58:NilClass = Const Value(nil)
+          v57:NilClass = Const Value(nil)
+          v56:NilClass = Const Value(nil)
           v16:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v17:StringExact = StringCopy v16
           v21:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -20480,15 +20476,13 @@ mod hir_opt_tests {
           v28:StringExact = StringCopy v27
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
-          v50:CUInt64 = LoadField v17, :RBASIC_FLAGS@0x1040
-          v51:CUInt64 = LoadField v28, :RBASIC_FLAGS@0x1040
-          v52:StringExact = StringAppend v17, v28, recv_flags: v50, other_flags: v51
+          v50:StringExact = StringAppend v17, v28
           PatchPoint NoEPEscape(test)
           PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, ==@0x1041, cme:0x1048)
-          v57:BoolExact = StringEqual v17, v22
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
+          v55:BoolExact = StringEqual v17, v22
           CheckInterrupts
-          Return v57
+          Return v55
         ");
     }
 
