@@ -5962,7 +5962,7 @@ word_list	: /* none */
                     }
                 | word_list word ' '+
                     {
-                        $$ = list_append(p, $1, evstr2dstr(p, $2));
+                        $$ = $2 ? list_append(p, $1, evstr2dstr(p, $2)) : $2;
                     /*% ripper: words_add!($:1, $:2) %*/
                     }
                 ;
@@ -5986,7 +5986,7 @@ symbol_list	: /* none */
                     }
                 | symbol_list word ' '+
                     {
-                        $$ = symbol_append(p, $1, evstr2dstr(p, $2));
+                        $$ = $2 ? symbol_append(p, $1, evstr2dstr(p, $2)) : $2;
                     /*% ripper: symbols_add!($:1, $:2) %*/
                     }
                 ;

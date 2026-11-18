@@ -1887,6 +1887,12 @@ x = __ENCODING__
     assert_syntax_error('case; when 1; case; value; in 1; end; end', /expect.*\bwhen\b/)
   end
 
+  def test_encoding_mismatching_word_list
+    invalid = /invalid (?:byte sequence|multibyte char)/n
+    assert_syntax_error("#encoding: sjis\n%I \xE2\xE2\xE20\\u0400 ", invalid)
+    assert_syntax_error("#encoding: sjis\n%W \xE2\xE2\xE20\\u0400 ", invalid)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
