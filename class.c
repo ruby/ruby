@@ -576,7 +576,7 @@ class_switch_superclass(VALUE super, VALUE klass)
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool inline_field)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool struct_inline_field)
 {
     const rb_box_t *box = rb_current_box();
 
@@ -588,7 +588,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool inline_f
     if (boxable) {
         alloc_size = sizeof(struct RClass_boxable);
     }
-    if (inline_field) alloc_size += sizeof(VALUE);
+    if (struct_inline_field) alloc_size += sizeof(VALUE);
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
 
@@ -626,8 +626,8 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool inline_f
         ((struct RClass_boxable *)obj)->box_classext_tbl = NULL;
     }
 
-    RCLASS_EXT_PRIME(obj)->has_inline_field = inline_field;
-    if (inline_field) *RCLASS_INLINE_FIELD_PTR((VALUE)obj) = Qnil;
+    RCLASS_EXT_PRIME(obj)->has_struct_inline_field = struct_inline_field;
+    if (struct_inline_field) *RCLASS_STRUCT_INLINE_FIELD_PTR((VALUE)obj) = Qnil;
 
     RCLASS_PRIME_BOX((VALUE)obj) = box;
     // Classes/Modules defined in user boxes are
@@ -746,9 +746,9 @@ class_clear_method_table(VALUE c)
 }
 
 static VALUE
-class_boot_boxable(VALUE super, bool boxable, bool inline_field)
+class_boot_boxable(VALUE super, bool boxable, bool struct_inline_field)
 {
-    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable, inline_field);
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, boxable, struct_inline_field);
 
     // initialize method table prior to class_associate_super()
     // because class_associate_super() may cause GC and promote klass
@@ -855,22 +855,22 @@ rb_check_inheritable(VALUE super)
 }
 
 static void
-class_copy_inline_field(VALUE klass, VALUE from)
+class_copy_struct_inline_field(VALUE klass, VALUE from)
 {
-    if (RCLASS_HAS_INLINE_FIELD(from)) {
-        RCLASS_SET_INLINE_FIELD(klass, RCLASS_INLINE_FIELD(from));
+    if (RCLASS_HAS_STRUCT_INLINE_FIELD(from)) {
+        RCLASS_SET_STRUCT_INLINE_FIELD(klass, RCLASS_STRUCT_INLINE_FIELD(from));
     }
 }
 
-// The new class has an inline field if +inline_field+ asks for one or +super+
+// The new class has an inline field if +struct_inline_field+ asks for one or +super+
 // has one, whose value it starts with.
 static VALUE
-class_new(VALUE super, bool inline_field)
+class_new(VALUE super, bool struct_inline_field)
 {
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
-    VALUE klass = class_boot_boxable(super, false, inline_field || RCLASS_HAS_INLINE_FIELD(super));
-    class_copy_inline_field(klass, super);
+    VALUE klass = class_boot_boxable(super, false, struct_inline_field || RCLASS_HAS_STRUCT_INLINE_FIELD(super));
+    class_copy_struct_inline_field(klass, super);
 
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RUBY_ASSERT(getenv("RUBY_BOX") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
@@ -885,7 +885,7 @@ rb_class_new(VALUE super)
 }
 
 VALUE
-rb_class_new_with_inline_field(VALUE super)
+rb_class_new_with_struct_inline_field(VALUE super)
 {
     return class_new(super, true);
 }
@@ -893,10 +893,10 @@ rb_class_new_with_inline_field(VALUE super)
 // A class that is not set up yet, with the inline field of +from+ if it has one:
 // the class to copy, or the superclass to be.
 VALUE
-rb_class_alloc_with_inline_field_of(VALUE from)
+rb_class_alloc_with_struct_inline_field_of(VALUE from)
 {
-    VALUE klass = class_boot_boxable(0, false, RCLASS_HAS_INLINE_FIELD(from));
-    class_copy_inline_field(klass, from);
+    VALUE klass = class_boot_boxable(0, false, RCLASS_HAS_STRUCT_INLINE_FIELD(from));
+    class_copy_struct_inline_field(klass, from);
     return klass;
 }
 
@@ -1116,11 +1116,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (BUILTIN_TYPE(clone) == T_CLASS) {
         RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
-        if (RCLASS_HAS_INLINE_FIELD(orig) && !RCLASS_HAS_INLINE_FIELD(clone)) {
+        if (RCLASS_HAS_STRUCT_INLINE_FIELD(orig) && !RCLASS_HAS_STRUCT_INLINE_FIELD(clone)) {
             // Not allocated by Class#dup or Class#clone, and it cannot be grown now.
             rb_raise(rb_eTypeError, "can't copy %"PRIsVALUE" into an allocated class", orig);
         }
-        class_copy_inline_field(clone, orig);
+        class_copy_struct_inline_field(clone, orig);
     }
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {

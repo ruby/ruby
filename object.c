@@ -2215,7 +2215,7 @@ rb_class_s_new(int argc, VALUE *argv, VALUE self)
         rb_check_inheritable(super);
         RUBY_ASSERT(RCLASS_INITIALIZED_P(super));
     }
-    klass = rb_class_alloc_with_inline_field_of(super);
+    klass = rb_class_alloc_with_struct_inline_field_of(super);
     rb_class_set_super(klass, super);
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
@@ -2231,7 +2231,7 @@ rb_class_s_new(int argc, VALUE *argv, VALUE self)
 static VALUE
 rb_class_dup(VALUE self)
 {
-    VALUE dup = rb_class_alloc_with_inline_field_of(self);
+    VALUE dup = rb_class_alloc_with_struct_inline_field_of(self);
     return rb_obj_dup_setup(self, dup);
 }
 
@@ -2240,7 +2240,7 @@ static VALUE
 rb_class_clone(int argc, VALUE *argv, VALUE self)
 {
     VALUE kwfreeze = rb_get_freeze_opt(argc, argv);
-    VALUE clone = rb_class_alloc_with_inline_field_of(self);
+    VALUE clone = rb_class_alloc_with_struct_inline_field_of(self);
     return rb_obj_clone_setup(self, clone, kwfreeze);
 }
 
