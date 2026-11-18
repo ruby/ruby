@@ -465,38 +465,52 @@ typedef struct _BBuf {
   (buf)->p = tmp;\
 } while (0)
 
+/* A BBuf addresses its contents with unsigned int used/alloc fields, so it
+   cannot hold more than this.  Every size below is computed in size_t and
+   checked against it, so neither "pos + n" nor the alloc doubling can wrap
+   and send a write or an infinite grow loop past the buffer. */
+#define ONIG_MAX_BBUF_SIZE  ((size_t )INT_MAX_LIMIT)
+
 #define BBUF_EXPAND(buf,low) do{\
   UChar *tmp;\
-  do { (buf)->alloc *= 2; } while ((buf)->alloc < (unsigned int )low);\
-  tmp = (UChar* )xrealloc((buf)->p, (buf)->alloc);\
+  size_t new_alloc = ((buf)->alloc == 0) ? 1 : (size_t )(buf)->alloc;\
+  if ((size_t )(low) > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  do { new_alloc *= 2; } while (new_alloc < (size_t )(low));\
+  if (new_alloc > ONIG_MAX_BBUF_SIZE) new_alloc = ONIG_MAX_BBUF_SIZE;\
+  tmp = (UChar* )xrealloc((buf)->p, new_alloc);\
   if (IS_NULL(tmp)) return(ONIGERR_MEMORY);\
   (buf)->p = tmp;\
+  (buf)->alloc = (unsigned int )new_alloc;\
 } while (0)
 
 #define BBUF_ENSURE_SIZE(buf,size) do{\
-  unsigned int new_alloc = (buf)->alloc;\
-  while (new_alloc < (unsigned int )(size)) { new_alloc *= 2; }\
-  if ((buf)->alloc != new_alloc) {\
+  size_t new_alloc = ((buf)->alloc == 0) ? 1 : (size_t )(buf)->alloc;\
+  if ((size_t )(size) > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  while (new_alloc < (size_t )(size)) { new_alloc *= 2; }\
+  if (new_alloc > ONIG_MAX_BBUF_SIZE) new_alloc = ONIG_MAX_BBUF_SIZE;\
+  if ((buf)->alloc != (unsigned int )new_alloc) {\
     UChar *tmp;\
     tmp = (UChar* )xrealloc((buf)->p, new_alloc);\
     if (IS_NULL(tmp)) return(ONIGERR_MEMORY);\
     (buf)->p = tmp;\
-    (buf)->alloc = new_alloc;\
+    (buf)->alloc = (unsigned int )new_alloc;\
   }\
 } while (0)
 
 #define BBUF_WRITE(buf,pos,bytes,n) do{\
-  int used = (pos) + (int )(n);\
-  if ((buf)->alloc < (unsigned int )used) BBUF_EXPAND((buf),used);\
+  size_t used = (size_t )(pos) + (size_t )(n);\
+  if (used > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  if ((size_t )(buf)->alloc < used) BBUF_EXPAND((buf),used);\
   xmemcpy((buf)->p + (pos), (bytes), (n));\
-  if ((buf)->used < (unsigned int )used) (buf)->used = used;\
+  if ((size_t )(buf)->used < used) (buf)->used = (unsigned int )used;\
 } while (0)
 
 #define BBUF_WRITE1(buf,pos,byte) do{\
-  int used = (pos) + 1;\
-  if ((buf)->alloc < (unsigned int )used) BBUF_EXPAND((buf),used);\
+  size_t used = (size_t )(pos) + 1;\
+  if (used > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  if ((size_t )(buf)->alloc < used) BBUF_EXPAND((buf),used);\
   (buf)->p[(pos)] = (UChar )(byte);\
-  if ((buf)->used < (unsigned int )used) (buf)->used = used;\
+  if ((size_t )(buf)->used < used) (buf)->used = (unsigned int )used;\
 } while (0)
 
 #define BBUF_ADD(buf,bytes,n)       BBUF_WRITE((buf),(buf)->used,(bytes),(n))
@@ -506,9 +520,11 @@ typedef struct _BBuf {
 
 /* from < to */
 #define BBUF_MOVE_RIGHT(buf,from,to,n) do {\
-  if ((unsigned int )((to)+(n)) > (buf)->alloc) BBUF_EXPAND((buf),(to) + (n));\
+  size_t end = (size_t )(to) + (size_t )(n);\
+  if (end > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  if (end > (size_t )(buf)->alloc) BBUF_EXPAND((buf),end);\
   xmemmove((buf)->p + (to), (buf)->p + (from), (n));\
-  if ((unsigned int )((to)+(n)) > (buf)->used) (buf)->used = (to) + (n);\
+  if (end > (size_t )(buf)->used) (buf)->used = (unsigned int )end;\
 } while (0)
 
 /* from > to */
