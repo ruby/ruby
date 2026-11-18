@@ -2683,7 +2683,7 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
     int denorm;
     ULong x;
 #endif
-    Bigint *b, *b1, *delta, *mlo = 0, *mhi = 0, *S;
+    Bigint *b, *b1, *delta, *mlo = 0, *mhi = 0, *S = 0;
     double ds;
     double_u d, d2, eps;
     char *s, *s0;
