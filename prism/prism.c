@@ -10367,21 +10367,22 @@ parser_lex(pm_parser_t *parser) {
                                         peek_at(parser, following) == 'a' &&
                                         peek_at(parser, following + 1) == 'n' &&
                                         peek_at(parser, following + 2) == 'd' &&
-                                        peek_at(parser, next_content + 3) != '!' &&
-                                        peek_at(parser, next_content + 3) != '?' &&
+                                        peek_at(parser, following + 3) != '!' &&
+                                        peek_at(parser, following + 3) != '?' &&
                                         !char_is_identifier(parser, following + 3, parser->end - (following + 3))
                                     ) ||
                                     (
                                         peek_at(parser, following) == 'o' &&
                                         peek_at(parser, following + 1) == 'r' &&
-                                        peek_at(parser, next_content + 2) != '!' &&
-                                        peek_at(parser, next_content + 2) != '?' &&
+                                        peek_at(parser, following + 2) != '!' &&
+                                        peek_at(parser, following + 2) != '?' &&
                                         !char_is_identifier(parser, following + 2, parser->end - (following + 2))
                                     )
                                 )
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
                                 lexed_comment = false;
+                                previous_command_start = false;
                                 goto lex_next_token;
                             }
                         }
@@ -10446,8 +10447,8 @@ parser_lex(pm_parser_t *parser) {
                                 LEX(PM_TOKEN_PIPE_PIPE);
                             }
 
-                            // If we hit an 'and' then we are in a logical chain
-                            // and we need to return the logical operator.
+                            /* Let the identifier lexer distinguish a leading
+                             * logical keyword from a label such as `and:`. */
                             if (
                                 peek_at(parser, next_content) == 'a' &&
                                 peek_at(parser, next_content + 1) == 'n' &&
@@ -10457,16 +10458,11 @@ parser_lex(pm_parser_t *parser) {
                                 !char_is_identifier(parser, next_content + 3, parser->end - (next_content + 3))
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
-                                lex_state_set(parser, PM_LEX_STATE_BEG);
-                                parser->current.start = next_content;
-                                parser->current.end = next_content + 3;
-                                parser->next_start = NULL;
-                                parser->command_start = true;
-                                LEX(PM_TOKEN_KEYWORD_AND);
+                                lexed_comment = false;
+                                previous_command_start = false;
+                                goto lex_next_token;
                             }
 
-                            // If we hit a 'or' then we are in a logical chain
-                            // and we need to return the logical operator.
                             if (
                                 peek_at(parser, next_content) == 'o' &&
                                 peek_at(parser, next_content + 1) == 'r' &&
@@ -10475,12 +10471,9 @@ parser_lex(pm_parser_t *parser) {
                                 !char_is_identifier(parser, next_content + 2, parser->end - (next_content + 2))
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
-                                lex_state_set(parser, PM_LEX_STATE_BEG);
-                                parser->current.start = next_content;
-                                parser->current.end = next_content + 2;
-                                parser->next_start = NULL;
-                                parser->command_start = true;
-                                LEX(PM_TOKEN_KEYWORD_OR);
+                                lexed_comment = false;
+                                previous_command_start = false;
+                                goto lex_next_token;
                             }
                         }
                     }

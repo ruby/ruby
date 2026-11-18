@@ -129,6 +129,15 @@ module Ruby::Prism
       assert_equal [:unexpected_range_operator], Ruby::Prism.parse("p(...1..2)").errors.map(&:type)
     end
 
+    def test_leading_logical_label_does_not_turn_following_keyword_into_symbol
+      ["and", "or"].each do |keyword|
+        result = Ruby::Prism.parse("show\n#{keyword}:then", version: "4.0")
+
+        assert_predicate result, :failure?
+        assert_equal "then", result.errors.first.location.slice
+      end
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
