@@ -229,7 +229,7 @@ module Ruby::Prism
     end
 
     def parsey_result(source)
-      iseq = RubyVM::InstructionSequence.compile_parsey(source)
+      iseq = ignore_warnings { RubyVM::InstructionSequence.compile_parsey(source) }
       Result.new([], interpolated?(source) ? nil : iseq.eval.encoding)
     rescue SyntaxError => error
       # The message is split as bytes, since the line of source that follows an
