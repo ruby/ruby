@@ -312,4 +312,52 @@ class TestFiberIO < Test::Unit::TestCase
   def test_wait_readable_from_fiber_of_dead_thread
     assert_parked_waiter_released(PIPE, PIPE_WAIT_READABLE, PIPE_CLOSE, keep_fiber: true)
   end
+
+  # The owner of the operation close is waiting on can never run again only
+  # after close started, so close used to wait forever.
+  def assert_close_returns_after_owner_abandons(keep_fiber:)
+    assert_separately([], <<~RUBY, timeout: 30)
+      $parked = []
+      class ParkingScheduler
+        def initialize = @main = Fiber.current
+        def block(blocker, timeout = nil)
+          $parked << Fiber.current if #{keep_fiber}
+          @main.transfer
+        end
+        def unblock(blocker, fiber) = nil
+        def kernel_sleep(duration = nil) = block(:sleep, duration)
+        def io_wait(io, events, timeout) = block(:io_wait, timeout)
+        def fiber_interrupt(fiber, exception) = nil
+        def close = nil
+        def fiber(&) = Fiber.new(blocking: false, &).tap(&:transfer)
+      end
+
+      r, w = IO.pipe
+      release = Thread::Queue.new
+      owner = Thread.new do
+        Fiber.set_scheduler(ParkingScheduler.new)
+        Fiber.schedule { r.wait_readable }
+        release.pop
+      end
+      Thread.pass until owner.status == "sleep"
+
+      closer = Thread.new { r.close }
+      Thread.pass until closer.status == "sleep"
+
+      release.push(nil)
+      owner.join
+      GC.start
+      assert_not_nil(closer.join(10), "close did not return")
+      assert_predicate(r, :closed?)
+      w.close
+    RUBY
+  end
+
+  def test_close_returns_when_owner_thread_exits_during_close
+    assert_close_returns_after_owner_abandons(keep_fiber: true)
+  end
+
+  def test_close_returns_when_owner_fiber_collected_during_close
+    assert_close_returns_after_owner_abandons(keep_fiber: false)
+  end
 end
