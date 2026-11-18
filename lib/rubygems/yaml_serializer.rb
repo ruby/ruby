@@ -903,7 +903,7 @@ module Gem
           hash.each do |k, v|
             is_symbol = k.is_a?(Symbol) || (k.is_a?(String) && k.start_with?(":"))
             key_str = k.is_a?(Symbol) ? k.inspect : k.to_s
-            key_str = quote_string(key_str) if !is_symbol && needs_quoting?(key_str)
+            key_str = quote_string(key_str) if !is_symbol && needs_quoting?(key_str, key: true)
             parts << "#{pad(indent)}#{key_str}:#{emit_node(v, indent + 2, quote: is_symbol)}"
           end
           parts.join
@@ -968,12 +968,22 @@ module Gem
         header
       end
 
-      def needs_quoting?(str, quote = false)
+      def needs_quoting?(str, quote = false, key: false)
         quote || str.empty? || str != str.strip || str =~ /[[:cntrl:]]/ ||
           str =~ /^[!*&:@%$"'|`]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
           str == "true" || str == "false" || str == "nil" || str == "null" || str == "~" ||
-          str.include?(":") || str.include?("#") || str.include?("[") || str.include?("]") ||
+          (key ? colon_needs_quoting_in_key?(str) : str.include?(":")) ||
+          str.include?("#") || str.include?("[") || str.include?("]") ||
           str.include?("{") || str.include?("}") || str.include?(",")
+      end
+
+      # The serializer that RubyGems 4.0 and Bundler 4.0 ship keeps quotes as
+      # part of a key, so keys like Bundler's mirror settings for a URL stay
+      # plain where YAML allows it, as libyaml writes them. A ":" only ends a
+      # plain key when a space or the line end follows it, and a key that
+      # starts with a letter is not read as a number or a time.
+      def colon_needs_quoting_in_key?(str)
+        str.include?(":") && (!str.match?(/\A[[:alpha:]]/) || str.match?(/:(?!\S)/))
       end
 
       def quote_string(str)

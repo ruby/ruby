@@ -1091,6 +1091,35 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal expected, yaml_load(yaml)
   end
 
+  def test_dump_url_keys_unquoted
+    # The serializer that RubyGems 4.0 and Bundler 4.0 ship keeps quotes as
+    # part of a key
+    hash = {
+      "BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "https://mirror.example.com",
+      "BUNDLE_MIRROR__HTTP://LOCALHOST:9292/" => "http://localhost:9293",
+    }
+    yaml = yaml_dump(hash)
+
+    assert_include yaml, "\nBUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: "
+    assert_include yaml, "\nBUNDLE_MIRROR__HTTP://LOCALHOST:9292/: "
+    assert_equal hash, yaml_load(yaml)
+  end
+
+  def test_dump_quotes_keys_psych_would_read_differently
+    require "yaml"
+
+    hash = {
+      "have: colon-space" => "a",
+      "trailing:" => "b",
+      "1:20" => "c",
+      "2001-12-14 21:59:43" => "d",
+    }
+    yaml = Gem::YAMLSerializer.dump(hash)
+
+    assert_equal hash, Psych.safe_load(yaml)
+    assert_equal hash, Gem::YAMLSerializer.load(yaml)
+  end
+
   def test_psych_interop_roundtrip
     require "yaml"
 
