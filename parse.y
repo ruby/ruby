@@ -8812,7 +8812,7 @@ heredoc_identifier(struct parser_params *p)
 
     p->lex.strterm = new_heredoc(p);
     rb_strterm_heredoc_t *here = &p->lex.strterm->u.heredoc;
-    here->offset = offset;
+    here->offset = offset + (p->lex.pbeg - PARSER_STRING_PTR(p->lex.lastline));
     here->sourceline = p->ruby_sourceline;
     here->length = (unsigned)len;
     here->quote = quote;
