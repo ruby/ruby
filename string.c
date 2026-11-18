@@ -3101,7 +3101,14 @@ str_nth_len(const char *p, const char *e, rb_len_t *nthp, rb_encoding *enc)
         p += nth;
     }
     else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
-        p += nth * rb_enc_mbmaxlen(enc);
+        int char_sz = rb_enc_mbmaxlen(enc);
+
+        if (nth > (e - p) / char_sz) {
+            p = e;
+        }
+        else {
+            p += nth * char_sz;
+        }
     }
     else if (rb_enc_asciicompat(enc)) {
         const char *p2, *e2;
@@ -3357,11 +3364,11 @@ rb_str_subpos(VALUE str, rb_len_t beg, rb_len_t *lenp)
     else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
         int char_sz = rb_enc_mbmaxlen(enc);
 
-        p = s + beg * char_sz;
-        if (p > e) {
+        if (beg > (e - s) / char_sz) {
             return 0;
         }
-        else if (len * char_sz > e - p)
+        p = s + beg * char_sz;
+        if (len > (e - p) / char_sz)
             len = e - p;
         else
             len *= char_sz;
