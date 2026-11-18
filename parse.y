@@ -7739,7 +7739,17 @@ pushback(struct parser_params *p, int c)
     }
 }
 
-#define was_bol(p) ((p)->lex.pcur == (p)->lex.pbeg + 1)
+static inline bool
+was_bol(struct parser_params *p)
+{
+    switch (p->lex.pcur - p->lex.pbeg) {
+      case 1:
+        return true;
+      case 2:
+        return *(p->lex.pcur-1) == '\n';
+    }
+    return false;
+}
 
 #define tokfix(p) ((p)->tokenbuf[(p)->tokidx]='\0')
 #define tok(p) (p)->tokenbuf
