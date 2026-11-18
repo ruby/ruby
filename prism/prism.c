@@ -19083,7 +19083,9 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
         if (match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE)) {
             PRISM_ASSERT(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
+            context_push(parser, PM_CONTEXT_DEF);
             statements = UP(parse_rescues_implicit_begin(parser, opening_newline_index, &def_keyword, def_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_DEF, (uint16_t) (depth + 1)));
+            context_pop(parser);
         } else {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &def_keyword, false, false);
         }

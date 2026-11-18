@@ -48,6 +48,21 @@ module Ruby::Prism
       assert_equal array.elements.last.location.end_offset, array.location.end_offset
     end
 
+    def test_implicit_method_rescue_rejects_constant_target
+      ["", "StandardError "].each do |exceptions|
+        result = Ruby::Prism.parse("def f; raise; rescue #{exceptions}=> CaughtError; end")
+
+        assert_equal [:write_target_in_method], result.errors.map(&:type)
+        assert_equal "CaughtError", result.errors.first.location.slice
+      end
+    end
+
+    def test_implicit_method_rescue_allows_yield_in_exception_expression
+      result = Ruby::Prism.parse("def f; rescue yield; :rescued; end")
+
+      assert_predicate result, :success?
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
