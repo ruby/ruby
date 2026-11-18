@@ -496,10 +496,13 @@ end
 # Runs, in a separate process, a scheduler fiber that waits on a holder and is
 # left parked by a scheduler that never resumes it. The thread then exits, the
 # fiber is collected (or, with keep_fiber, outlives its thread), and wake runs.
-# With incremental, the wait happens while an incremental major GC is marking.
+# With incremental, the wait happens while an incremental major GC is marking,
+# after the holder was already marked, and wake runs as soon as that cycle ends.
+# With park_blocking, the fiber is parked inside Fiber.blocking, so it is
+# blocking when collected although it was non-blocking when it started waiting.
 # A crash here means the holder still referenced the fiber's on-stack waiter.
 module ParkedWaiterAssertions
-  def assert_parked_waiter_released(setup, wait, wake, old_holder: false, keep_fiber: false, incremental: false, iterations: 10)
+  def assert_parked_waiter_released(setup, wait, wake, old_holder: false, keep_fiber: false, incremental: false, park_blocking: false, iterations: 10)
     gc = old_holder ? "GC.start(full_mark: false)" : "GC.start"
     assert_separately([], <<~RUBY)
       $parked = []
@@ -507,7 +510,11 @@ module ParkedWaiterAssertions
         def initialize = @main = Fiber.current
         def block(blocker, timeout = nil)
           $parked << Fiber.current if #{keep_fiber}
-          @main.transfer
+          if #{park_blocking}
+            Fiber.blocking { @main.transfer }
+          else
+            @main.transfer
+          end
         end
         def unblock(blocker, fiber) = nil
         def kernel_sleep(duration = nil) = block(:sleep, duration)
@@ -517,17 +524,36 @@ module ParkedWaiterAssertions
         def fiber(&) = Fiber.new(blocking: false, &).tap(&:transfer)
       end
 
+      # Keeps incremental marking busy past thread startup.
+      $graph = Array.new(1_000_000) { Object.new } if #{incremental}
+      $linked_during_marking = 0
+
       #{iterations}.times do
         holder = (#{setup})
         4.times { GC.start } if #{old_holder}
-        GC.start(full_mark: true, immediate_mark: false) if #{incremental}
+        if #{incremental}
+          # Globals are marked when the cycle starts, before the wait flags the holder.
+          $holder0, $holder1 = Array(holder)
+          GC.start(full_mark: true, immediate_mark: false)
+        end
         Thread.new do
           Fiber.set_scheduler(ParkingScheduler.new)
-          Fiber.schedule { (#{wait}).(holder) }
+          Fiber.schedule do
+            $linked_during_marking += 1 if GC.latest_gc_info(:state) == :marking
+            (#{wait}).(holder)
+          end
         end.join
-        #{gc}
+        if #{incremental}
+          # Finish this cycle without starting another, whose weak pass would hide a miss.
+          Object.new until GC.latest_gc_info(:state) == :none
+          3.times { Fiber.new { [0] * 200 }.resume }
+        else
+          #{gc}
+        end
         (#{wake}).(holder)
       end
+
+      assert_operator($linked_during_marking, :>, 0) if #{incremental}
     RUBY
   end
 end

@@ -1226,6 +1226,8 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
 {
+    if (RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) return;
+
     RB_FL_SET(obj, RUBY_FL_WEAK_REFERENCE);
     mmtk_declare_weak_references((MMTk_ObjectReference)obj);
 }

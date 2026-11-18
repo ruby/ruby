@@ -1987,7 +1987,29 @@ rb_io_blocking_operations(struct rb_io *io)
 static void
 rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
 {
+    blocking_operation->owner = blocking_operation->ec;
+    blocking_operation->blocking = rb_fiberptr_blocking(blocking_operation->ec->fiber_ptr);
     ccan_list_add(rb_io_blocking_operations(io), &blocking_operation->list);
+
+    if (!blocking_operation->blocking) {
+        rb_gc_declare_weak_references(io->self);
+    }
+}
+
+void
+rb_io_blocking_operations_handle_weak_references(struct rb_io *io, void *objspace)
+{
+    struct rb_io_blocking_operation *blocking_operation, *next;
+
+    ccan_list_for_each_safe(rb_io_blocking_operations(io), blocking_operation, next, list) {
+        if (blocking_operation->blocking) continue;
+
+        VALUE fiber = rb_fiberptr_self(blocking_operation->owner->fiber_ptr);
+
+        if (!rb_gc_handle_weak_references_alive_p(objspace, fiber)) {
+            ccan_list_del_init(&blocking_operation->list);
+        }
+    }
 }
 
 static void
@@ -3144,8 +3166,11 @@ thread_io_close_notify_all(VALUE _io)
     VALUE error = vm->special_exceptions[ruby_error_stream_closed];
 
     struct rb_io_blocking_operation *blocking_operation;
+
+    // A GC below may unlink other operations, so keep this one linked by pinning its fiber:
     ccan_list_for_each(rb_io_blocking_operations(io), blocking_operation, list) {
         rb_execution_context_t *ec = blocking_operation->ec;
+        VALUE owner_fiber = rb_fiberptr_self(blocking_operation->owner->fiber_ptr);
 
         // If the operation is in progress, we need to interrupt it:
         if (ec) {
@@ -3155,8 +3180,7 @@ thread_io_close_notify_all(VALUE _io)
                 VALUE target = blocking_operation->scheduler_interrupt_target;
 
                 if (NIL_P(target)) {
-                    VALUE fiber = rb_fiberptr_self(ec->fiber_ptr);
-                    target = rb_fiber_scheduler_interrupt_target_new(fiber, error);
+                    target = rb_fiber_scheduler_interrupt_target_new(owner_fiber, error);
                     blocking_operation->scheduler_interrupt_target = target;
                 }
 
@@ -3171,6 +3195,7 @@ thread_io_close_notify_all(VALUE _io)
         }
 
         count += 1;
+        RB_GC_GUARD(owner_fiber);
     }
 
     return (VALUE)count;
@@ -3182,6 +3207,14 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     // We guard this operation based on `io->closing_ec` -> only one thread will ever enter this function.
     if (io->closing_ec) {
         return 0;
+    }
+
+    // A fiber that outlived its thread never resumes to unlink its operation:
+    struct rb_io_blocking_operation *blocking_operation, *next;
+    ccan_list_for_each_safe(rb_io_blocking_operations(io), blocking_operation, next, list) {
+        if (blocking_operation->owner->thread_ptr->status == THREAD_KILLED) {
+            ccan_list_del_init(&blocking_operation->list);
+        }
     }
 
     // If there are no blocking operations, we are done:
@@ -3199,6 +3232,12 @@ rb_thread_io_close_interrupt(struct rb_io *io)
 
     // We need to use a mutex here as entering the fiber scheduler may cause a context switch:
     VALUE result = rb_mutex_synchronize(io->wakeup_mutex, thread_io_close_notify_all, (VALUE)io);
+
+    // A GC dropped every abandoned operation, so there is nothing to wait for:
+    if (!result) {
+        io->wakeup_mutex = Qnil;
+        io->closing_ec = NULL;
+    }
 
     return (size_t)result;
 }

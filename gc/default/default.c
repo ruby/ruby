@@ -7750,7 +7750,17 @@ gc_marks_wb_unprotected_objects(rb_objspace_t *objspace, rb_heap_t *heap)
 void
 rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
 {
+    rb_objspace_t *objspace = objspace_ptr;
+
+    if (RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) return;
+
     FL_SET_RAW(obj, RUBY_FL_WEAK_REFERENCE);
+
+    /* Already greyed this cycle without the flag, so gc_grey did not queue it. */
+    if (is_incremental_marking(objspace) && !gc_foreign_object_p(objspace, obj) &&
+        RVALUE_MARKED(objspace, obj)) {
+        rb_darray_append_without_gc(&objspace->weak_references, obj);
+    }
 }
 
 bool

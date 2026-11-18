@@ -265,8 +265,8 @@ class TestFiberMutex < Test::Unit::TestCase
     assert_parked_waiter_released(MUTEX_LOCKED, MUTEX_LOCK, MUTEX_UNLOCK, keep_fiber: true)
   end
 
-  # The mutex is marked by an incremental GC before its first scheduler wait,
-  # so it must already be flagged as holding weak references.
+  # The mutex is marked by an incremental GC before its first scheduler wait
+  # flags it, so declaring the flag must queue it for that cycle's weak pass.
   def test_mutex_lock_from_collected_fiber_during_incremental_mark
     assert_parked_waiter_released(MUTEX_LOCKED, MUTEX_LOCK, MUTEX_UNLOCK, incremental: true)
   end

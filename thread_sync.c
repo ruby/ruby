@@ -43,7 +43,7 @@ struct queue_sleep_arg {
 static bool
 waiter_abandoned_p(void *objspace, rb_thread_t *th, rb_fiber_t *fiber)
 {
-    if (!fiber) return false;
+    if (!fiber) return false; // blocking fiber, so never goes through the scheduler
     if (!rb_gc_handle_weak_references_alive_p(objspace, rb_fiberptr_self(fiber))) return true;
     return th->status == THREAD_KILLED;
 }
@@ -54,6 +54,7 @@ sync_waiter_link(VALUE holder, struct ccan_list_head *head, struct sync_waiter *
     ccan_list_add_tail(head, &w->node);
 
     if (w->fiber) {
+        rb_gc_declare_weak_references(holder);
         RB_OBJ_WRITTEN(holder, Qundef, rb_fiberptr_self(w->fiber));
     }
 }
@@ -200,7 +201,6 @@ mutex_alloc(VALUE klass)
     rb_mutex_t *mutex;
 
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
-    rb_gc_declare_weak_references(obj);
 
     ccan_list_head_init(&mutex->waitq);
     return obj;
@@ -792,7 +792,6 @@ queue_alloc(VALUE klass)
     struct rb_queue *q;
 
     obj = TypedData_Make_Struct(klass, struct rb_queue, &queue_data_type, q);
-    rb_gc_declare_weak_references(obj);
     ccan_list_head_init(&q->waitq);
     return obj;
 }
@@ -912,7 +911,6 @@ szqueue_alloc(VALUE klass)
     struct rb_szqueue *sq;
     VALUE obj = TypedData_Make_Struct(klass, struct rb_szqueue,
                                         &szqueue_data_type, sq);
-    rb_gc_declare_weak_references(obj);
     ccan_list_head_init(szqueue_waitq(sq));
     ccan_list_head_init(szqueue_pushq(sq));
     return obj;
@@ -1283,7 +1281,6 @@ condvar_alloc(VALUE klass)
     VALUE obj;
 
     obj = TypedData_Make_Struct(klass, struct rb_condvar, &cv_data_type, cv);
-    rb_gc_declare_weak_references(obj);
     ccan_list_head_init(&cv->waitq);
 
     return obj;
