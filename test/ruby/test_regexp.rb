@@ -2238,4 +2238,11 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new(source) }
     assert_raise(SyntaxError) { eval("/#{source}/") }
   end
+
+  def test_too_big_compiled_program_length
+    k, rest = (2**32 - 217).divmod(100_001)
+    assert_raise_with_message(RegexpError, /too big compiled program/) do
+      Regexp.new("(?:#{'.{100000,}' * k}.{#{rest - 1},})?")
+    end
+  end
 end
