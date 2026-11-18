@@ -3,7 +3,7 @@
 
 #include "prism/parser.h"
 
-/* The maximum number of bytes in a strpbrk charset. */
+/* The size in bytes of a strpbrk charset, including its NUL padding. */
 #define PM_STRPBRK_CACHE_SIZE 16
 
 #include <stddef.h>
@@ -52,6 +52,9 @@ typedef enum {
  * characters that are trailing bytes of multi-byte characters. For example, in
  * Shift-JIS, the backslash character can be a trailing byte. In that case we
  * need to take a slower path and iterate one multi-byte character at a time.
+ *
+ * The charset must have PM_STRPBRK_CACHE_SIZE bytes, padded with NULs after
+ * its ASCII breakpoints, so the scanner can compare the full cache key.
  */
 const uint8_t * pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length, pm_strpbrk_mode_t mode);
 

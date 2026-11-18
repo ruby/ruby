@@ -9953,7 +9953,7 @@ static void
 pm_regexp_lex_braced_unicode(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t terminator) {
     const uint8_t *start = parser->current.end - 1;
     const uint8_t *cursor = parser->current.end + 2;
-    const uint8_t breakpoints[] = { '}', '\\', '\n', '\r', terminator, '\0' };
+    const uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE] = { '}', '\\', '\n', '\r', terminator, '\0' };
 
     while (cursor < parser->end) {
         cursor = pm_strpbrk(parser, cursor, breakpoints, parser->end - cursor, PM_STRPBRK_REGEXP);
