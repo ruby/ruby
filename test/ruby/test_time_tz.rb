@@ -788,6 +788,17 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
     assert_equal(t1, t2)
   end
 
+  def test_new_with_zone_name_to_str
+    time_class = Class.new(TIME_CLASS) {def self.find_timezone(name); super(name.to_str); end}
+    {"Africa/Ndjamena" => 3600, "Asia/Tokyo" => 9*3600}.each do |tzname, utc_offset|
+      name = Object.new
+      name.define_singleton_method(:to_str) {tzname}
+      t = time_class.new(2018, 1, 1, 12, 0, 0, name)
+      assert_equal(time_class.utc(2018, 1, 1, 12) - utc_offset, t, tzname)
+      assert_equal(utc_offset, t.utc_offset, tzname)
+    end
+  end
+
   def test_strftime_zone_abbreviation
     zone = TestTimeTZ::TZ.new("Encoding", "\u00e9AAA", 0)
     enc = Encoding::ISO_8859_1
