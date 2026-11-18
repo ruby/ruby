@@ -107,6 +107,27 @@ module Ruby::Prism
       assert_kind_of ParenthesesNode, node.receiver.left
     end
 
+    def test_numbered_parameter_name_used_as_command_call
+      result = Ruby::Prism.parse("wrap { _1 item }")
+
+      assert_predicate result, :success?
+      block = result.statement.block
+      assert_empty block.locals
+      assert_nil block.parameters
+      assert_equal :_1, block.body.body.first.name
+    end
+
+    def test_numbered_parameter_name_used_as_call_with_block
+      result = Ruby::Prism.parse("wrap do _1 { _9 } end")
+
+      assert_predicate result, :success?
+      outer = result.statement.block
+      assert_empty outer.locals
+      assert_nil outer.parameters
+      inner = outer.body.body.first.block
+      assert_equal 9, inner.parameters.maximum
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

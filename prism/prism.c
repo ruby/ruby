@@ -20194,7 +20194,20 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
     pm_token_t identifier = parser->current;
     parser_lex(parser);
 
-    pm_node_t *node = parse_variable_call(parser);
+    bool followed = (
+        ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type)) ||
+        (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
+        match1(parser, PM_TOKEN_BRACE_LEFT)
+    );
+
+    /* Resolve numbered parameter names used as calls before registering an
+     * implicit parameter or parsing the call's arguments and block. */
+    pm_node_t *node;
+    if (followed && pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, &identifier), PM_TOKEN_LENGTH(&identifier))) {
+        node = UP(pm_call_node_variable_call_create(parser, &identifier));
+    } else {
+        node = parse_variable_call(parser);
+    }
 
     if (PM_NODE_TYPE_P(node, PM_CALL_NODE)) {
         // If parse_variable_call returned with a call node, then we
@@ -20221,42 +20234,32 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                 PM_NODE_LENGTH_SET_LOCATION(call, end);
             }
         }
-    } else {
-        // Otherwise, we know the identifier is in the local table. This
-        // can still be a method call if it is followed by arguments or
-        // a block, so we need to check for that here.
-        if (
-            ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type)) ||
-            (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
-            match1(parser, PM_TOKEN_BRACE_LEFT)
-        ) {
-            pm_arguments_t arguments = { 0 };
-            parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-            pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
+    } else if (followed) {
+        // Otherwise, we know the identifier is in the local table. This can
+        // still be a method call if it is followed by arguments or a block, so
+        // we need to check for that here.
+        pm_arguments_t arguments = { 0 };
+        parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+        pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
 
-            if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
-                // If we're about to convert an 'it' implicit local
-                // variable read into a method call, we need to remove
-                // it from the list of implicit local variables.
-                pm_node_unreference(parser, node);
-            } else {
-                // Otherwise, we're about to convert a regular local
-                // variable read into a method call, in which case we
-                // need to indicate that this was not a read for the
-                // purposes of warnings.
-                PRISM_ASSERT(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
+        if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+            // If we're about to convert an 'it' implicit local
+            // variable read into a method call, we need to remove
+            // it from the list of implicit local variables.
+            pm_node_unreference(parser, node);
+        } else {
+            // Otherwise, we're about to convert a regular local
+            // variable read into a method call, in which case we
+            // need to indicate that this was not a read for the
+            // purposes of warnings.
+            PRISM_ASSERT(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
 
-                if (pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, &identifier), PM_TOKEN_LENGTH(&identifier))) {
-                    pm_node_unreference(parser, node);
-                } else {
-                    pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
-                    PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
-                    pm_locals_unread(parser, cast->name);
-                }
-            }
-
-            return UP(fcall);
+            pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
+            PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
+            pm_locals_unread(parser, cast->name);
         }
+
+        return UP(fcall);
     }
 
     return parse_multi_target(parser, node, binding_power, depth);
