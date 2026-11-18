@@ -14084,19 +14084,19 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_hash_elemen
                 if (token_begins_expression_p(parser->current.type)) {
                     value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_EXPRESSION_AFTER_LABEL, (uint16_t) (depth + 1));
                 } else {
-                    if (pm_encoding_isupper_char(parser->encoding, label.start, (label.end - 1) - label.start, parser->version)) {
-                        pm_token_t constant = { .type = PM_TOKEN_CONSTANT, .start = label.start, .end = label.end - 1 };
-                        value = UP(pm_constant_read_node_create(parser, &constant));
+                    pm_token_t identifier = { .type = PM_TOKEN_IDENTIFIER, .start = label.start, .end = label.end - 1 };
+                    bool constant = pm_encoding_isupper_char(parser->encoding, identifier.start, identifier.end - identifier.start, parser->version);
+                    bool invalid = identifier.end[-1] == '!' || identifier.end[-1] == '?';
+
+                    if (invalid) {
+                        PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, &identifier, constant ? PM_ERR_INVALID_CONSTANT_READ : PM_ERR_INVALID_LOCAL_VARIABLE_READ);
+                    }
+
+                    if (constant) {
+                        identifier.type = PM_TOKEN_CONSTANT;
+                        value = UP(pm_constant_read_node_create(parser, &identifier));
                     } else {
-                        int depth = -1;
-                        pm_token_t identifier = { .type = PM_TOKEN_IDENTIFIER, .start = label.start, .end = label.end - 1 };
-
-                        if (identifier.end[-1] == '!' || identifier.end[-1] == '?') {
-                            PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, &identifier, PM_ERR_INVALID_LOCAL_VARIABLE_READ);
-                        } else {
-                            depth = pm_parser_local_depth(parser, &identifier);
-                        }
-
+                        int depth = invalid ? -1 : pm_parser_local_depth(parser, &identifier);
                         if (depth == -1) {
                             value = UP(pm_call_node_variable_call_create(parser, &identifier));
                         } else {

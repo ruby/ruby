@@ -201,6 +201,22 @@ module Ruby::Prism
       end
     end
 
+    def test_uppercase_shorthand_hash_labels_reject_method_suffixes
+      ["Flag?", "Status!"].each do |name|
+        result = Ruby::Prism.parse("{ #{name}: }")
+
+        assert_equal [:invalid_constant_read], result.errors.map(&:type)
+        assert_equal name, result.errors.first.location.slice
+        assert_predicate Ruby::Prism.parse("{ #{name}: true }"), :success?
+      end
+
+      result = Ruby::Prism.parse("{ Flag: }")
+      assert_predicate result, :success?
+      assert_kind_of ConstantReadNode, result.statement.elements.first.value.value
+
+      assert_equal [:invalid_local_variable_read], Ruby::Prism.parse("{ flag?: }").errors.map(&:type)
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
