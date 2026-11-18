@@ -4725,8 +4725,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
             *low = onigenc_get_right_adjust_char_head_with_prev(reg->enc, s,
                                                                 *low, end, (const UChar** )low_prev);
             if (low_prev && IS_NULL(*low_prev))
-              *low_prev = onigenc_get_prev_char_head(reg->enc,
-                                                     (pprev ? pprev : s), *low, end);
+              *low_prev = onigenc_get_prev_char_head(reg->enc, s, *low, end);
           }
           else {
             if (low_prev)
