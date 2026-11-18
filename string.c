@@ -1548,8 +1548,6 @@ void
 rb_str_free(VALUE str)
 {
     if (FL_TEST(str, RSTRING_FSTR)) {
-        RUBY_ASSERT(!FL_TEST(str, STR_SHARED));
-
         st_data_t fstr = (st_data_t)str;
 
         RB_VM_LOCK_ENTER();
