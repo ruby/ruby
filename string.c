@@ -5856,6 +5856,7 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     long start, end, len;
     rb_encoding *enc;
     struct re_registers *regs;
+    int num_regs;
 
     if (rb_reg_search(re, str, 0, 0) < 0) {
         rb_raise(rb_eIndexError, "regexp not matched");
@@ -5863,7 +5864,8 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
     regs = RMATCH_REGS(match);
-    if ((nth >= regs->num_regs) || ((nth < 0) && (-nth >= regs->num_regs))) {
+    num_regs = regs->num_regs; /* 1 <= num_regs <= ONIG_MAX_CAPTURE_GROUP_NUM (= 32767) */
+    if (nth >= num_regs || nth + num_regs <= 0) {
         rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
