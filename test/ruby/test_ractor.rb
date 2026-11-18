@@ -319,6 +319,21 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
   end
 
+  def test_bignum_to_s
+    assert_ractor(<<~'RUBY')
+      8.times.map do
+        Ractor.new do
+          1_000.times do |i|
+            v = (2**96 - 1) + i
+            s = v.to_s
+            # round-trip through str2big (uses the same cache)
+            raise "bad to_s: #{s.inspect}" unless Integer(s) == v
+          end
+        end
+      end.each(&:join)
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
