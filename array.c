@@ -6557,6 +6557,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
     if (n > len) n = len;
+    if (n <= 0) return rb_ary_new_capa(0);
     if (n <= numberof(idx)) {
         for (i = 0; i < n; ++i) {
             rnds[i] = RAND_UPTO(len - i);
