@@ -1382,6 +1382,13 @@ x = __ENCODING__
     assert_syntax_error(code, /can't find string "A"/)
   end
 
+  def test_heredoc_empty_terminator
+    assert_valid_syntax("<<''\n\n")
+    assert_valid_syntax("<<''\r\n\n")
+    assert_valid_syntax("<<''\n\r\n")
+    assert_valid_syntax("<<''\r\n\r\n")
+  end
+
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)
   end
