@@ -19,8 +19,7 @@
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
 #    define GETADDRINFO_IMPL 0
-#  elif defined(__MINGW32__) || defined(__MINGW64__) || \
-        (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH)))
+#  elif !defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH))
 #    define GETADDRINFO_IMPL 1
 #  else
 #    define GETADDRINFO_IMPL 2
