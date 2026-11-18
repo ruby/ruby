@@ -1397,6 +1397,10 @@ x = __ENCODING__
     assert_valid_syntax("<<''\r\n\r\n")
   end
 
+  def test_heredoc_with_bom
+    assert_valid_syntax("\uFEFF(<<EOF)\nEOF\n", parser: :*)
+  end
+
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)
   end
