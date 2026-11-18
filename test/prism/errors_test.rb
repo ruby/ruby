@@ -128,6 +128,24 @@ module Ruby::Prism
       assert_equal 9, inner.parameters.maximum
     end
 
+    def test_begin_with_rescue_and_ensure_in_value_position
+      [
+        "def f; x = begin; return; rescue; ensure; end; end",
+        "def f; x = begin; return; rescue TypeError; return; rescue; 1; ensure; end; end",
+        "def f; x = begin; 1; rescue; return; ensure; end; end"
+      ].each do |source|
+        assert_predicate Ruby::Prism.parse(source), :success?, source
+      end
+
+      result = Ruby::Prism.parse("def f; x = begin; return :body; rescue; return :rescue; ensure; end; end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return :body", result.errors.first.location.slice
+
+      result = Ruby::Prism.parse("def f; x = begin; return :body; rescue; 1; ensure; return :ensure; end; end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return :ensure", result.errors.first.location.slice
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

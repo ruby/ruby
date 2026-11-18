@@ -1133,52 +1133,45 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
             case PM_BEGIN_NODE: {
                 pm_begin_node_t *cast = (pm_begin_node_t *) node;
 
-                if (cast->ensure_clause != NULL) {
-                    if (cast->rescue_clause != NULL) {
-                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->rescue_clause));
-                        if (vn != NULL) return vn;
-                    }
-
-                    if (cast->statements != NULL) {
-                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
-                        if (vn != NULL) return vn;
-                    }
-
+                if (cast->rescue_clause != NULL) {
+                    /* Check the begin/rescue/else value before the ensure body. */
                     node = UP(cast->ensure_clause);
-                } else if (cast->rescue_clause != NULL) {
-                    // https://bugs.ruby-lang.org/issues/21669
-                    if (cast->else_clause == NULL || parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
-                        if (cast->statements == NULL) return NULL;
+                    pm_node_t *rescue_void = NULL;
 
-                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
-                        if (vn == NULL) return NULL;
-                        if (void_node == NULL) void_node = vn;
+                    /* https://bugs.ruby-lang.org/issues/21669 */
+                    if (cast->else_clause == NULL || parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
+                        rescue_void = pm_check_value_expression(parser, UP(cast->statements));
+                        if (rescue_void == NULL) break;
                     }
 
+                    bool rescue_has_value = false;
                     for (pm_rescue_node_t *rescue_clause = cast->rescue_clause; rescue_clause != NULL; rescue_clause = rescue_clause->subsequent) {
                         pm_node_t *vn = pm_check_value_expression(parser, UP(rescue_clause->statements));
 
                         if (vn == NULL) {
-                            // https://bugs.ruby-lang.org/issues/21669
-                            if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) {
-                                return NULL;
-                            }
-                            void_node = NULL;
+                            rescue_has_value = true;
                             break;
                         }
                     }
 
-                    if (cast->else_clause != NULL) {
-                        node = UP(cast->else_clause);
+                    if (rescue_has_value && parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) break;
 
-                        // https://bugs.ruby-lang.org/issues/21669
-                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) {
-                            pm_node_t *vn = pm_check_value_expression(parser, node);
-                            if (vn != NULL) return vn;
+                    if (cast->else_clause != NULL) {
+                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->else_clause));
+                        if (vn != NULL) {
+                            if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1 && !rescue_has_value) {
+                                if (void_node != NULL) return void_node;
+                                if (rescue_void != NULL) return rescue_void;
+                            }
+                            return vn;
                         }
-                    } else {
-                        return void_node;
+                    } else if (!rescue_has_value && rescue_void != NULL) {
+                        return void_node != NULL ? void_node : rescue_void;
                     }
+                } else if (cast->ensure_clause != NULL) {
+                    pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
+                    if (vn != NULL) return vn;
+                    node = UP(cast->ensure_clause);
                 } else {
                     node = UP(cast->statements);
                 }
