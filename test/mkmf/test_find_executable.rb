@@ -47,10 +47,36 @@ class TestMkmfFindExecutable < TestMkmf
     end
   end
 
+  def test_find_executable_absolute_path
+    assert_find_executable_absolute_path(@tmpdir, "/")
+  end
+
+  def test_find_executable_unnormalized_absolute_path
+    assert_find_executable_absolute_path(File.join(@tmpdir, "..", File.basename(@tmpdir)), "/")
+  end
+
   if /mingw|mswin/ =~ RUBY_PLATFORM
     def test_quoted_path_on_windows
       ENV["PATH"] = %["#{@tmpdir}"]
       test_find_executable
+    end
+
+    def test_backslashed_absolute_path_on_windows
+      assert_find_executable_absolute_path(@tmpdir.tr("/", "\\"), "\\")
+    end
+  end
+
+  private
+
+  def assert_find_executable_absolute_path(dir, sep)
+    each_exts do |full, name|
+      begin
+        open(full, "w") {|ff| ff.chmod(0755)}
+        result = mkmf {find_executable("#{dir}#{sep}#{name}")}
+      ensure
+        File.unlink(full)
+      end
+      assert_equal("#{dir}#{sep}#{full}", result)
     end
   end
 end
