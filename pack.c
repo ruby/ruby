@@ -960,6 +960,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
     int signed_p, integer_size, bigendian_p;
     const char *sptr;
     long slen;
+    const char *fptr;
+    long flen;
 #define UNPACK_PUSH(item) do {\
         VALUE item_val = (item);\
         if ((mode) == UNPACK_BLOCK) {\
@@ -967,6 +969,10 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             /* The block may have modified str and invalidated s */ \
             if (RSTRING_PTR(str) != sptr || RSTRING_LEN(str) != slen) {\
                 rb_raise(rb_eRuntimeError, "string modified");\
+            }\
+            /* The block may have also modified fmt and invalidated p */ \
+            if (RSTRING_PTR(fmt) != fptr || RSTRING_LEN(fmt) != flen) {\
+                rb_raise(rb_eRuntimeError, "format string modified");\
             }\
         }\
         else if ((mode) == UNPACK_ARRAY) {\
@@ -993,6 +999,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
+    fptr = p;
+    flen = RSTRING_LEN(fmt);
 
 #define UNPACK_FETCH(var, type) (memcpy((var), s, sizeof(type)), s += sizeof(type))
 
