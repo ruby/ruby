@@ -15583,7 +15583,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
         return ST_CONTINUE;
 
     var = intern_cstr(s, len, enc);
-    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
+    if (len <= MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
         if (!lvar_defined(p, var)) return ST_CONTINUE;
     }
     node = node_assign(p, assignable(p, var, 0, loc), NEW_SYM(rb_id2str(var), loc), NO_LEX_CTXT, loc);
