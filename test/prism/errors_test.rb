@@ -63,6 +63,23 @@ module Ruby::Prism
       assert_predicate result, :success?
     end
 
+    def test_endless_method_rescue_rejects_unattached_do_block
+      result = Ruby::Prism.parse("relay def f = 1 rescue 2 do end")
+
+      assert_equal [:def_endless_do_block], result.errors.map(&:type)
+      assert_equal "do end", result.errors.first.location.slice
+    end
+
+    def test_endless_method_rescue_allows_block_on_rescue_call
+      result = Ruby::Prism.parse("relay def f = 1 rescue work do end")
+      call = result.value.statements.body.first
+      rescue_modifier = call.arguments.arguments.first.body.body.first
+
+      assert_predicate result, :success?
+      assert_nil call.block
+      assert_equal "do end", rescue_modifier.rescue_expression.block.location.slice
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

@@ -19024,16 +19024,6 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         pm_accepts_block_stack_push(parser, true);
         pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 
-        /* If an unconsumed PM_TOKEN_KEYWORD_DO follows the body, it is an error
-         * (e.g., `def f = 1 do end`). PM_TOKEN_KEYWORD_DO_BLOCK is
-         * intentionally not caught here — it should bubble up to the outer
-         * context (e.g., `private def f = puts "Hello" do end` where the block
-         * attaches to `private`). */
-        if (accept1(parser, PM_TOKEN_KEYWORD_DO)) {
-            pm_block_node_t *block = parse_block(parser, (uint16_t) (depth + 1));
-            pm_parser_err_node(parser, UP(block), PM_ERR_DEF_ENDLESS_DO_BLOCK);
-        }
-
         /* Any number of rescue modifiers chain onto the body within the method
          * definition itself, associating to the left: `def f = a rescue b
          * rescue c` defines a method whose body is `(a rescue b) rescue c`,
@@ -19049,6 +19039,13 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             context_pop(parser);
 
             statement = UP(pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value));
+        }
+
+        /* A plain `do` still belongs to the endless method context. A
+         * PM_TOKEN_KEYWORD_DO_BLOCK can attach to an enclosing command. */
+        if (accept1(parser, PM_TOKEN_KEYWORD_DO)) {
+            pm_block_node_t *block = parse_block(parser, (uint16_t) (depth + 1));
+            pm_parser_err_node(parser, UP(block), PM_ERR_DEF_ENDLESS_DO_BLOCK);
         }
 
         pm_accepts_block_stack_pop(parser);
