@@ -1934,8 +1934,10 @@ eom
     assert_valid_syntax('a.b (;),(),()', bug19281)
   end
 
-  def test_command_do_block_call_with_empty_args_brace_block
-    assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }')
+  def test_command_do_block_call_with_paren_args_brace_block
+    assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }', parser: :*)
+    assert_valid_syntax('build 10 do end.transform () {}', parser: :*)
+    assert_valid_syntax('build 10 do end.transform (1) {}', parser: :*)
   end
 
   def test_numbered_parameter
