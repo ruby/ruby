@@ -1530,7 +1530,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     }
 
     RSTRING(str)->len = RSTRING(orig)->len;
-    RSTRING(str)->as.heap.aux.capa = capa;
+    RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
 }
@@ -3047,7 +3047,7 @@ str_subseq(VALUE str, long beg, long len)
 
     const int termlen = TERM_LEN(str);
     if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
-        str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        str2 = rb_enc_str_new(RSTRING_PTR(str) + beg, len, STR_ENC_GET(str));
         RB_GC_GUARD(str);
         return str2;
     }
