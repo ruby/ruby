@@ -800,6 +800,13 @@ class TestObject < Test::Unit::TestCase
     assert_equal(:ok, x)
   end
 
+  def test_send_without_caller_frame
+    assert_equal("1", Thread.new(1, :to_s, &:send).value)
+    assert_equal("1", Thread.new(1, :to_s, &:__send__).value)
+    assert_equal("1", Thread.new(1, :to_s, &:public_send).value)
+    assert_equal("1", Fiber.new(&:send).resume(1, :to_s))
+  end
+
   def test_public_send
     c = Class.new do
       def pub

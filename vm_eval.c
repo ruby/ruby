@@ -1256,17 +1256,9 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
     ID id;
     VALUE vid;
-    VALUE self;
     VALUE ret, vargv = 0;
     rb_execution_context_t *ec = GET_EC();
     int public = scope == CALL_PUBLIC || scope == CALL_PUBLIC_KW;
-
-    if (public) {
-        self = Qundef;
-    }
-    else {
-        self = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp)->self;
-    }
 
     if (argc == 0) {
         rb_raise(rb_eArgError, "no method name given");
@@ -1305,7 +1297,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
         argv++; argc--;
     }
     PASS_PASSED_BLOCK_HANDLER_EC(ec);
-    ret = rb_call0(ec, recv, id, argc, argv, scope, self);
+    ret = rb_call0(ec, recv, id, argc, argv, scope, Qundef);
     ALLOCV_END(vargv);
     return ret;
 }
