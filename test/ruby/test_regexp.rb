@@ -2087,6 +2087,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_nil($1)
   end
 
+  def test_backref_ignorecase_at_end_of_string
+    assert_no_match(/(k\0)\1/i, "k\0\u212a")
+    assert_match(/(k)\1/i, "k\u212a")
+    assert_match(/(k\0)\1/i, "k\0\u212a\0")
+  end
+
   def test_backref_overrun
     assert_raise_with_message(SyntaxError, /invalid backref number/) do
       eval(%["".match(/(())(?<X>)((?(90000)))/)])
