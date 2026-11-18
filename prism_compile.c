@@ -10232,33 +10232,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         LINK_ANCHOR *outer_pre = scope_node->pre_execution_anchor;
         RUBY_ASSERT(outer_pre != NULL);
 
-        // BEGIN{} nodes can be nested, so here we're going to do the same thing
-        // that we did for the top-level compilation where we create two
-        // anchors and then join them in the correct order into the resulting
-        // anchor.
-        DECL_ANCHOR(inner_pre);
-        scope_node->pre_execution_anchor = inner_pre;
-
-        DECL_ANCHOR(inner_body);
-
         if (cast->statements != NULL) {
             const pm_node_list_t *body = &cast->statements->body;
+            LINK_ANCHOR *body_anchor = outer_pre;
+            DECL_ANCHOR(inner_body);
+
+            // Nested BEGIN blocks run before the rest of this BEGIN body.
+            if (PM_NODE_FLAG_P(cast->statements, PM_STATEMENTS_FLAGS_CONTAINS_PRE_EXECUTION)) {
+                body_anchor = inner_body;
+            }
 
             for (uint32_t index = 0; index < body->size; index++) {
-                pm_compile_node(iseq, body->nodes[index], inner_body, true, scope_node);
+                pm_compile_node(iseq, body->nodes[index], body_anchor, true, scope_node);
+            }
+
+            if (body_anchor == inner_body) {
+                PUSH_SEQ(outer_pre, inner_body);
             }
         }
 
         if (!popped) {
-            PUSH_INSN(inner_body, location, putnil);
+            PUSH_INSN(outer_pre, location, putnil);
         }
-
-        // Now that everything has been compiled, join both anchors together
-        // into the correct outer pre execution anchor, and reset the value so
-        // that subsequent BEGIN{} nodes can be compiled correctly.
-        PUSH_SEQ(outer_pre, inner_pre);
-        PUSH_SEQ(outer_pre, inner_body);
-        scope_node->pre_execution_anchor = outer_pre;
 
         return;
       }
