@@ -1401,6 +1401,11 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/\w/, "\uff10\uff19\uff41\uff5a\uff21\uff3a")
     assert_match(/\A\s+\z/, "\r\n\v\f\r\s")
     assert_no_match(/\s/, "\u0085")
+    check(/\A[a[^\x00-\u0100]]\z/, %W(a \u0101), %W(b \u0080 \u00e9 \u0100))
+    check(/\A[\x00-\u0200&&[^\x00-\u0100]]\z/, %W(\u0101 \u0200), %W(a \u0080 \u0100 \u0201))
+    %w[UTF-16BE UTF-16LE UTF-32BE UTF-32LE].each do |enc|
+      check("\\A[a[^\\x{0}]]\\z".encode(enc), "\1".encode(enc), "\0".encode(enc))
+    end
   end
 
   def test_posix_bracket

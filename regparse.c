@@ -1936,7 +1936,7 @@ not_code_range_buf(OnigEncoding enc, BBuf* bbuf, BBuf** pbuf, ScanEnv* env)
   for (i = 0; i < n; i++) {
     from = data[i*2];
     to   = data[i*2+1];
-    if (pre <= from - 1) {
+    if (pre < from) {
       r = add_code_range_to_buf(pbuf, env, pre, from - 1);
       if (r != 0) return r;
     }
