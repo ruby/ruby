@@ -364,6 +364,20 @@ class TestRegexp < Test::Unit::TestCase
       /(?<nil>.)/ =~ "c"
       assert_equal("c", binding.local_variable_get(:nil))
     end
+
+    /(?<__ENCODING__>.)/ =~ "a"
+    assert_not_include(local_variables, :__ENCODING__)
+
+    def (obj = Object.new).test(s, __ENCODING__: :ng)
+      /(?<__ENCODING__>.)/ =~ s
+      binding.local_variable_get(:__ENCODING__)
+    end
+    assert_equal("b", obj.test("b"))
+
+    tap do |__ENCODING__: :ng|
+      /(?<__ENCODING__>.)/ =~ "c"
+      assert_equal("c", binding.local_variable_get(:__ENCODING__))
+    end
   end
 
   def test_assign_named_capture_to_const
