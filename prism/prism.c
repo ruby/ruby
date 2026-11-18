@@ -3015,9 +3015,9 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
  * Allocate and initialize a new synthesized CallNode node from a call expression.
  */
 static pm_call_node_t *
-pm_call_node_call_synthesized_create(pm_parser_t *parser, pm_node_t *receiver, const char *message, pm_arguments_node_t *arguments) {
+pm_call_node_call_synthesized_create(pm_parser_t *parser, pm_node_t *receiver, const char *message, pm_arguments_node_t *arguments, pm_location_t location) {
     pm_call_node_t *node = pm_call_node_create(parser, 0);
-    node->base.location = (pm_location_t) { .start = 0, .length = U32(parser->end - parser->start) };
+    node->base.location = location;
 
     node->receiver = receiver;
     node->arguments = arguments;
@@ -22808,6 +22808,8 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
  */
 static pm_statements_node_t *
 wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
+    pm_location_t location = statements == NULL ? (pm_location_t) { 0 } : statements->base.location;
+
     if (PM_PARSER_COMMAND_LINE_OPTION_P(parser)) {
         if (statements == NULL) {
             statements = pm_statements_node_create(parser, &((pm_statements_t) { 0 }));
@@ -22837,7 +22839,7 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             );
 
             pm_global_variable_read_node_t *receiver = pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$_", 2));
-            pm_call_node_t *call = pm_call_node_call_synthesized_create(parser, UP(receiver), "split", arguments);
+            pm_call_node_t *call = pm_call_node_call_synthesized_create(parser, UP(receiver), "split", arguments, location);
 
             pm_global_variable_write_node_t *write = pm_global_variable_write_node_synthesized_create(
                 parser,
@@ -23546,7 +23548,9 @@ pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_source_t *source, co
     pm_parser_t *tmp = pm_parser_new(arena, pm_source_source(source), pm_source_length(source), options);
     pm_node_t *node = pm_parse(tmp);
 
-    while (!eof && tmp->error_list.size > 0) {
+    /* The stream reader stops at possible markers. Only the lexer knows if
+     * the marker is real, even when the preceding source has syntax errors. */
+    while (!eof && tmp->data_loc.length == 0) {
         eof = pm_source_stream_read(source);
 
         pm_parser_free(tmp);
