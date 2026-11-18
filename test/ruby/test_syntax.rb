@@ -1616,6 +1616,28 @@ eom
     end;
   end
 
+  def test_retry_after_class
+    all_assertions_foreach(nil, *"#{<<~"{#"}#{<<~'};'}".lines) do |code|
+      {#
+        class << self; end
+        class TmpC; end
+        module TmpM; end
+        def tmp_x; ensure; end
+      };
+      assert_valid_syntax("#{<<~"begin#"}\n#{<<~"end;"}")
+      begin#
+        n = 0
+        begin
+          n += 1
+          raise if n == 1
+        rescue
+          #{code}
+          retry
+        end
+      end;
+    end
+  end
+
   def test_syntax_error_at_newline
     expected = /(\n|\| )        \^/
     assert_syntax_error("%[abcdef", expected)
