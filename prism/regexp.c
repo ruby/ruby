@@ -3628,12 +3628,7 @@ pm_regexp_join_string_parts(pm_regexp_joined_t *joined, const pm_node_list_t *pa
  */
 static void
 pm_regexp_error_incompatible(pm_parser_t *parser, pm_location_t location, const pm_encoding_t *left, const pm_encoding_t *right) {
-    pm_buffer_t message = { 0 };
-    pm_buffer_append_format(&message, "incompatible character encodings: %s and %s", left->name, right->name);
-    pm_buffer_append_byte(&message, '\0');
-
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, location.start, location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&message));
-    pm_buffer_cleanup(&message);
+    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, location.start, location.length, PM_ERR_REGEXP_INTERPOLATION_ENCODING, left->name, right->name);
 }
 
 /**

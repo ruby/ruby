@@ -392,6 +392,18 @@ module Ruby::Prism
       assert_equal ["incompatible character encodings: EUC-JP and UTF-8"], errors.map(&:message)
     end
 
+    def test_static_interpolation_raises_encoding_compatibility_error
+      source = "# encoding: Windows-31J\n".b + '/#{"\u1234"}#{"' + "\x82\xA0".b + '"}/'
+      message = "incompatible character encodings: UTF-8 and Windows-31J"
+
+      errors = Ruby::Prism.parse(source).errors
+      assert_equal [[:regexp_interpolation_encoding, :encoding_compatibility, message]], errors.map { |error| [error.type, error.level, error.message] }
+
+      error = assert_raise(Encoding::CompatibilityError) { Ruby::Prism.parse(source, raise_error: :plain) }
+      assert_equal message, error.message
+      assert_raise(SyntaxError) { Ruby::Prism.parse(source + "\n)", raise_error: :plain) }
+    end
+
     # A comment in extended mode ends at the newline, so the * after it has
     # nothing to repeat. The error quotes the pattern with its newline.
     def test_repeat_after_extended_comment
