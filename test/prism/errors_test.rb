@@ -230,6 +230,21 @@ module Ruby::Prism
       assert_equal [:hash_rocket], result.errors.map(&:type)
     end
 
+    def test_nested_beginless_range_in_call_arguments
+      result = Ruby::Prism.parse("p(1, .....2)")
+
+      assert_predicate result, :success?
+      outer = result.statement.arguments.arguments.last
+      assert_nil outer.left
+      assert_equal "...", outer.operator_loc.slice
+      inner = outer.right
+      assert_nil inner.left
+      assert_equal "..", inner.operator_loc.slice
+      assert_equal 2, inner.right.value
+
+      assert_equal [:unexpected_range_operator], Ruby::Prism.parse("p(...1..2)").errors.map(&:type)
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

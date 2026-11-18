@@ -14471,12 +14471,13 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         pm_token_t operator = parser->previous;
                         pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_RANGE, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
 
-                        // If we parse a range, we need to validate that we
-                        // didn't accidentally violate the nonassoc rules of the
-                        // ... operator.
+                        /* A binary or endless range chains with the outer
+                         * operator. A beginless range is a valid operand. */
                         if (PM_NODE_TYPE_P(right, PM_RANGE_NODE)) {
                             pm_range_node_t *range = (pm_range_node_t *) right;
-                            pm_parser_err(parser, range->operator_loc.start, range->operator_loc.length, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+                            if (range->left != NULL) {
+                                pm_parser_err(parser, range->operator_loc.start, range->operator_loc.length, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+                            }
                         }
 
                         argument = UP(pm_range_node_create(parser, NULL, &operator, right));
