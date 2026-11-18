@@ -1040,6 +1040,17 @@ CODE
     assert_equal 0x3042, s.each_codepoint.next
   end
 
+  def test_setbyte_shrink_during_conversion
+    s = S('a' * 10_000_000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      s.concat("x" * 50)
+      0
+    end
+    assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
+  end
+
   def test_codepoints
     # Single byte optimization
     assert_equal [65, 66, 67], S("ABC").codepoints
