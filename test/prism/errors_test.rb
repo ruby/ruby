@@ -217,6 +217,19 @@ module Ruby::Prism
       assert_equal [:invalid_local_variable_read], Ruby::Prism.parse("{ flag?: }").errors.map(&:type)
     end
 
+    def test_colon_delimited_percent_symbol_is_not_a_label
+      result = Ruby::Prism.parse('case :""; in %s::; :ok; end')
+      assert_predicate result, :success?
+      assert_equal "", result.statement.conditions.first.pattern.unescaped
+
+      result = Ruby::Prism.parse("{ %s:name: => 1 }")
+      assert_predicate result, :success?
+      assert_equal "=>", result.statement.elements.first.operator_loc.slice
+
+      result = Ruby::Prism.parse("{ %s:: 1 }")
+      assert_equal [:hash_rocket], result.errors.map(&:type)
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

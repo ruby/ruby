@@ -6642,28 +6642,29 @@ pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
  */
 static bool
 pm_symbol_node_label_p(const pm_parser_t *parser, const pm_node_t *node) {
-    const pm_location_t *location = NULL;
+    const pm_location_t *closing;
+    uint32_t expected_length;
 
     switch (PM_NODE_TYPE(node)) {
         case PM_SYMBOL_NODE: {
             const pm_symbol_node_t *cast = (pm_symbol_node_t *) node;
-            if (cast->closing_loc.length > 0) {
-                location = &cast->closing_loc;
-            }
+            closing = &cast->closing_loc;
+            expected_length = cast->opening_loc.length == 0 ? 1 : 2;
             break;
         }
         case PM_INTERPOLATED_SYMBOL_NODE: {
             const pm_interpolated_symbol_node_t *cast = (pm_interpolated_symbol_node_t *) node;
-            if (cast->closing_loc.length > 0) {
-                location = &cast->closing_loc;
-            }
+            closing = &cast->closing_loc;
+            expected_length = 2;
             break;
         }
         default:
             return false;
     }
 
-    return (location != NULL) && (parser->start[PM_LOCATION_END(location) - 1] == ':');
+    /* An unquoted label ends with a colon alone. A quoted label ends with
+     * its closing quote followed by a colon. */
+    return closing->length == expected_length && parser->start[PM_LOCATION_END(closing) - 1] == ':';
 }
 
 /**
