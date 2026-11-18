@@ -186,6 +186,24 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise(RuntimeError) { Marshal.dump(a) }
   end
 
+  def test_modify_string_during_dump
+    str = "a" * 100
+    writer = Object.new
+    writer.define_singleton_method(:write) do |s|
+      str.replace("")
+      s.bytesize
+    end
+    # The padding tunes the dump buffer level so that the flush (which calls
+    # the write method above) happens while the length of str is being
+    # written, right before its payload is copied from its buffer.
+    assert_raise(RuntimeError) do
+      (0..10_000).each do |i|
+        str.replace("a" * 100)
+        Marshal.dump(["x" * i, str], writer)
+      end
+    end
+  end
+
   def test_change_class_name
     self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
     eval("class C3; def _dump(s); 'foo'; end; end")
