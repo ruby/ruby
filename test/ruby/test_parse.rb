@@ -1883,6 +1883,10 @@ x = __ENCODING__
     assert_syntax_error('"#$01234"', /not allowed/)
   end
 
+  def test_invalid_nested_case
+    assert_syntax_error('case; when 1; case; value; in 1; end; end', /expect.*\bwhen\b/)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
