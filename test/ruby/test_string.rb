@@ -1049,6 +1049,27 @@ CODE
     assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
   end
 
+  def test_modify_chilled_string_in_warning
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target[0, 2] = ""
+      assert_equal("B" * 998, $target)
+    }
+    {#
+      module ShrinkWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("B" * 1_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkWarning)
+    };
+  end
+
   def test_concat_chilled_string_warning
     return unless @cls == String
 
