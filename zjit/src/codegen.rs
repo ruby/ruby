@@ -17,7 +17,7 @@ use crate::invariants::{
     track_root_box_assumption, track_no_newobj_hook_assumption
 };
 use crate::gc::append_gc_offsets;
-use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
+use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_iseq_payload_ptr, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
 use crate::perf;
 use crate::state::{rb_zjit_compiling_p, ZJITState};
@@ -3472,8 +3472,18 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 /// Check if an ISEQ contains instructions that may write to block_code
 /// (send, sendforward, invokesuper, invokesuperforward, invokeblock).
 /// These instructions call vm_caller_setup_arg_block which writes to cfp->block_code.
-#[allow(non_upper_case_globals)]
 pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
+    let payload = get_iseq_payload_ptr(iseq);
+    if payload.is_null() {
+        return scan_may_write_block_code(iseq);
+    }
+    // Borrow only this field: gen_iseq() holds a &mut to the payload while it compiles.
+    let cached = unsafe { &mut *std::ptr::addr_of_mut!((*payload).may_write_block_code) };
+    *cached.get_or_insert_with(|| scan_may_write_block_code(iseq))
+}
+
+#[allow(non_upper_case_globals)]
+fn scan_may_write_block_code(iseq: IseqPtr) -> bool {
     let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
     let mut insn_idx: u32 = 0;
 
