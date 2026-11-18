@@ -3872,6 +3872,9 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(input))
         StringValue(input);
     rb_str_modify(output);
+    if (input == output) {
+        rb_raise(rb_eArgError, "cannot convert into the source string");
+    }
 
     if (NIL_P(output_bytesize_v)) {
         output_bytesize = rb_str_capacity(output);
