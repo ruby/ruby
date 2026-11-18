@@ -449,6 +449,9 @@ class TestString < Test::Unit::TestCase
     r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
     assert_equal(Encoding::UTF_8, r.encoding)
     assert_equal("a" * 1000, r.b)
+    [Encoding::UTF_16LE, Encoding::UTF_16BE, Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      assert_equal(S(" ab  ".encode(enc)), S("ab".encode(enc)).center(5), enc.name)
+    end
   end
 
   def test_chomp
@@ -2036,6 +2039,9 @@ class TestString < Test::Unit::TestCase
     r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
     assert_equal(Encoding::UTF_8, r.encoding)
     assert_equal("a" * 1000, r.b)
+    [Encoding::UTF_16LE, Encoding::UTF_16BE, Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      assert_equal(S("ab   ".encode(enc)), S("ab".encode(enc)).ljust(5), enc.name)
+    end
   end
 
   def test_next
@@ -2229,6 +2235,9 @@ class TestString < Test::Unit::TestCase
     r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
     assert_equal(Encoding::UTF_8, r.encoding)
     assert_equal("a" * 1000, r.b)
+    [Encoding::UTF_16LE, Encoding::UTF_16BE, Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      assert_equal(S("   ab".encode(enc)), S("ab".encode(enc)).rjust(5), enc.name)
+    end
   end
 
   def test_scan
