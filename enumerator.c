@@ -3677,66 +3677,60 @@ enum_product_enum_size(VALUE obj, VALUE args, VALUE eobj)
 }
 
 struct product_state {
-    VALUE  obj;
-    VALUE  block;
-    int    index;
-    int    argc;
-    VALUE *argv;
+    VALUE obj;
+    VALUE block;
+    VALUE enums;
+    VALUE args;
 };
 
-static VALUE product_each(VALUE, struct product_state *);
+static void product_each(VALUE, long);
 
 static VALUE
-product_each_i(RB_BLOCK_CALL_FUNC_ARGLIST(value, state))
+product_each_i(RB_BLOCK_CALL_FUNC_ARGLIST(value, data))
 {
-    struct product_state *pstate = (struct product_state *)state;
-    pstate->argv[pstate->index++] = value;
+    struct MEMO *memo = MEMO_CAST(data);
+    long index = memo->u3.cnt;
 
-    VALUE val = product_each(pstate->obj, pstate);
-    pstate->index--;
-    return val;
+    rb_ary_store(MEMO_FOR(struct product_state, memo->v1)->args, index, value);
+    product_each(memo->v1, index + 1);
+    return MEMO_FOR(struct product_state, memo->v1)->obj;
 }
 
-static VALUE
-product_each(VALUE obj, struct product_state *pstate)
+static void
+product_each(VALUE state, long index)
 {
-    struct enum_product *ptr = enum_product_ptr(obj);
-    VALUE enums = ptr->enums;
+    struct product_state *pstate = MEMO_FOR(struct product_state, state);
 
-    if (pstate->index < pstate->argc) {
-        VALUE eobj = RARRAY_AREF(enums, pstate->index);
+    if (index < RARRAY_LEN(pstate->enums)) {
+        VALUE eobj = RARRAY_AREF(pstate->enums, index);
+        VALUE data = (VALUE)rb_imemo_memo_new(state, Qnil, index);
 
-        rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
+        rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, data);
+        RB_GC_GUARD(data);
     }
     else {
-        rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));
+        rb_funcall(pstate->block, id_call, 1, rb_ary_dup(pstate->args));
     }
-
-    return obj;
 }
 
 static VALUE
 enum_product_run(VALUE obj, VALUE block)
 {
     struct enum_product *ptr = enum_product_ptr(obj);
-    int argc = RARRAY_LENINT(ptr->enums);
-    if (argc == 0) { /* no need to allocate state.argv */
-        rb_funcall(block, id_call, 1, rb_ary_new());
-        return obj;
-    }
+    VALUE enums = ptr->enums;
+    VALUE args = rb_ary_hidden_new_fill(RARRAY_LEN(enums));
+    VALUE state;
 
-    VALUE argsbuf = 0;
-    struct product_state state = {
+    *NEW_MEMO_FOR(struct product_state, state) = (struct product_state) {
         .obj = obj,
         .block = block,
-        .index = 0,
-        .argc = argc,
-        .argv = ALLOCV_N(VALUE, argsbuf, argc),
+        .enums = enums,
+        .args = args,
     };
 
-    VALUE ret = product_each(obj, &state);
-    ALLOCV_END(argsbuf);
-    return ret;
+    product_each(state, 0);
+    RB_GC_GUARD(state);
+    return obj;
 }
 
 /*
