@@ -2016,6 +2016,16 @@ rb_io_blocking_operations_handle_weak_references(struct rb_io *io, void *objspac
             ccan_list_del_init(&blocking_operation->list);
         }
     }
+
+    // An abandoned closer never finishes the close, so nothing must wake or wait for it:
+    if (io->closing_ec && !rb_fiberptr_blocking(io->closing_ec->fiber_ptr)) {
+        VALUE closer = rb_fiberptr_self(io->closing_ec->fiber_ptr);
+
+        if (!rb_gc_handle_weak_references_alive_p(objspace, closer)) {
+            io->closing_ec = NULL;
+            io->wakeup_mutex = Qnil;
+        }
+    }
 }
 
 static void
@@ -2038,8 +2048,14 @@ io_blocking_operation_exit(VALUE _arguments)
     rb_io_blocking_operation_pop(arguments->io, blocking_operation);
 
     rb_io_t *io = arguments->io;
+
+    // Waiting for the mutex may have let a GC drop an abandoned closer:
+    if (!io->closing_ec) return Qnil;
+
     rb_thread_t *thread = io->closing_ec->thread_ptr;
     rb_fiber_t *fiber = io->closing_ec->fiber_ptr;
+
+    if (thread_finished(thread)) return Qnil;
 
     if (thread->scheduler != Qnil) {
         // This can cause spurious wakeups...
@@ -3238,6 +3254,10 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     // Otherwise, we are now closing the IO:
     rb_execution_context_t *ec = GET_EC();
     io->closing_ec = ec;
+
+    if (!rb_fiberptr_blocking(ec->fiber_ptr)) {
+        rb_gc_declare_weak_references(io->self);
+    }
 
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();

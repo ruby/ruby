@@ -360,4 +360,60 @@ class TestFiberIO < Test::Unit::TestCase
   def test_close_returns_when_owner_fiber_collected_during_close
     assert_close_returns_after_owner_abandons(keep_fiber: false)
   end
+
+  # A scheduler fiber parks in close's wait and its thread exits. The owner's
+  # operation then exits and must not wake (or, once collected, read) the closer.
+  def assert_operation_exits_after_closer_abandons(keep_closer:)
+    assert_separately([{"MallocScribble" => "1"}], <<~RUBY, timeout: 30)
+      class ParkingScheduler
+        def initialize = @main = Fiber.current
+        def block(blocker, timeout = nil) = @main.transfer
+        def unblock(blocker, fiber) = nil
+        def kernel_sleep(duration = nil) = block(:sleep, duration)
+        def io_wait(io, events, timeout) = block(:io_wait, timeout)
+        def fiber_interrupt(fiber, exception) = nil
+        def close = nil
+        def fiber(&) = Fiber.new(blocking: false, &).tap(&:transfer)
+      end
+
+      r, w = IO.pipe
+      go = Thread::Queue.new
+      owner = Thread.new do
+        Fiber.set_scheduler(ParkingScheduler.new)
+        f = Fiber.schedule do
+          r.wait_readable
+        rescue IOError
+        end
+        go.pop
+        f.transfer
+      end
+      Thread.pass until owner.status == "sleep"
+
+      $closer = ObjectSpace::WeakMap.new
+      Thread.new do
+        Fiber.set_scheduler(ParkingScheduler.new)
+        Fiber.schedule do
+          $closer[:f] = Fiber.current
+          $keep = Fiber.current if #{keep_closer}
+          r.close
+        end
+      end.join
+
+      # Allocating a fiber here could reuse the freed closer and hide a use after free.
+      GC.start
+      omit "closer not collected" unless #{keep_closer} || !$closer.key?(:f)
+
+      go.push(nil)
+      assert_nothing_raised { owner.join }
+      w.close
+    RUBY
+  end
+
+  def test_operation_exits_after_closer_thread_exits
+    assert_operation_exits_after_closer_abandons(keep_closer: true)
+  end
+
+  def test_operation_exits_after_closer_fiber_collected
+    assert_operation_exits_after_closer_abandons(keep_closer: false)
+  end
 end
