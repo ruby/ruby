@@ -71,7 +71,7 @@ class TestMkmfFindExecutable < TestMkmf
   def assert_find_executable_absolute_path(dir, sep)
     each_exts do |full, name|
       begin
-        open(full, "w") {|ff| ff.chmod(0755)}
+        File.open(full, "w") {|ff| ff.chmod(0755)}
         result = mkmf {find_executable("#{dir}#{sep}#{name}")}
       ensure
         File.unlink(full)
