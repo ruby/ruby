@@ -1181,6 +1181,7 @@ set_merge_enum_into(VALUE set, VALUE arg)
         for (i=0; i<RARRAY_LEN(arg); i++) {
             set_table_insert_wb(into, set, RARRAY_AREF(arg, i), NULL);
         }
+        RB_GC_GUARD(arg);
     }
     else {
         rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, (VALUE)set);
