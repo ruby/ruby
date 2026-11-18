@@ -1356,6 +1356,7 @@ compile_enclose_node(EncloseNode* node, regex_t* reg)
       r = add_abs_addr(reg, (int )node->call_addr);
       if (r) return r;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return len;
       len += (SIZE_OP_MEMORY_START_PUSH + SIZE_OP_RETURN);
       if (BIT_STATUS_AT(reg->bt_mem_end, node->regnum))
         len += (IS_ENCLOSE_RECURSION(node)
@@ -1604,6 +1605,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     {
       int n;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return ONIGERR_PARSER_BUG;
       r = add_opcode_rel_addr(reg, OP_PUSH_LOOK_BEHIND_NOT,
                            len + SIZE_OP_FAIL_LOOK_BEHIND_NOT);
       if (r) return r;
@@ -1742,7 +1744,9 @@ compile_tree(Node* node, regex_t* reg)
       Node* x = node;
       len = 0;
       do {
-        len += compile_length_tree(NCAR(x), reg);
+        r = compile_length_tree(NCAR(x), reg);
+        if (r < 0) return r;
+        len += r;
         if (NCDR(x) != NULL) {
           len += SIZE_OP_PUSH + SIZE_OP_JUMP;
         }
@@ -1751,6 +1755,7 @@ compile_tree(Node* node, regex_t* reg)
 
       do {
         len = compile_length_tree(NCAR(node), reg);
+        if (len < 0) return ONIGERR_PARSER_BUG;
         if (IS_NOT_NULL(NCDR(node))) {
           r = add_opcode_rel_addr(reg, OP_PUSH, len + SIZE_OP_JUMP);
           if (r) break;
