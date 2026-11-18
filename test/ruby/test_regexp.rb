@@ -77,6 +77,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('(?-mix:[](?#\x{7FFFFFFF})])', EnvUtil.suppress_warning { re.to_s })
   end
 
+  def test_to_s_escape_in_extended_comment
+    src = "(?x)(?-x:\\p{Alpha}[])]#(\n)#\\u0081)".force_encoding(Encoding::Shift_JIS)
+    re = EnvUtil.suppress_warning { Regexp.new(src) }
+    assert_equal("(?-mix:".force_encoding(Encoding::Shift_JIS) + src + ")", EnvUtil.suppress_warning { re.to_s })
+  end
+
   def test_to_s_under_gc_compact_stress
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
