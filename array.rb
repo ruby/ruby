@@ -244,7 +244,7 @@ class Array
   #
   # Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
   def each_index
-    Primitive.attr! :inline_block, :without_interrupts
+    Primitive.attr! :inline_block, :always_inline, :without_interrupts
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end
@@ -261,7 +261,7 @@ class Array
       undef :each
 
       def each # :nodoc:
-        Primitive.attr! :inline_block, :c_trace, :without_interrupts
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -279,7 +279,7 @@ class Array
       undef :map
 
       def map # :nodoc:
-        Primitive.attr! :inline_block, :c_trace, :without_interrupts
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -305,7 +305,7 @@ class Array
       undef :select
 
       def select # :nodoc:
-        Primitive.attr! :inline_block, :c_trace, :without_interrupts
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -333,7 +333,7 @@ class Array
       undef :find
 
       def find(if_none_proc = (if_none_proc_omitted = true; nil)) # :nodoc:
-        Primitive.attr! :inline_block, :c_trace, :without_interrupts
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           if if_none_proc_omitted
