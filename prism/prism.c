@@ -13530,13 +13530,12 @@ static pm_node_t *
 parse_target_validate(pm_parser_t *parser, pm_node_t *target, bool multiple) {
     pm_node_t *result = parse_target(parser, target, multiple, false);
 
-    // Ensure that we have one of an =, an 'in' in for indexes, and a ')' in
-    // parens after the targets.
-    if (
-        !match1(parser, PM_TOKEN_EQUAL) &&
-        !(context_p(parser, PM_CONTEXT_FOR_INDEX) && match1(parser, PM_TOKEN_KEYWORD_IN)) &&
-        !(context_p(parser, PM_CONTEXT_PARENS) && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT))
-    ) {
+    bool parenthesized = context_p(parser, PM_CONTEXT_PARENS);
+    bool newline = parenthesized && accept1(parser, PM_TOKEN_NEWLINE);
+
+    /* Only the closing parenthesis may follow a newline. */
+    bool assignment = !newline && (match1(parser, PM_TOKEN_EQUAL) || (context_p(parser, PM_CONTEXT_FOR_INDEX) && match1(parser, PM_TOKEN_KEYWORD_IN)));
+    if (!assignment && !(parenthesized && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT))) {
         pm_parser_err_node(parser, result, PM_ERR_WRITE_TARGET_UNEXPECTED);
     }
 
@@ -13834,15 +13833,9 @@ static pm_node_t *
 parse_targets_validate(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t binding_power, uint16_t depth) {
     pm_node_t *result = parse_targets(parser, first_target, binding_power, depth);
 
-    // If we're inside parentheses, then we allow a newline before the
-    // closing parenthesis or equals sign. Outside of parentheses, a newline
-    // is not allowed (e.g., `a, b\n= 1, 2` is not valid).
-    if (context_p(parser, PM_CONTEXT_PARENS) || context_p(parser, PM_CONTEXT_MULTI_TARGET)) {
-        accept1(parser, PM_TOKEN_NEWLINE);
-    }
-
-    // Ensure that we have either an = or a ) after the targets.
-    if (!match2(parser, PM_TOKEN_EQUAL, PM_TOKEN_PARENTHESIS_RIGHT)) {
+    /* A newline inside a parenthesized target may precede its closing parenthesis. */
+    bool newline = (context_p(parser, PM_CONTEXT_PARENS) || context_p(parser, PM_CONTEXT_MULTI_TARGET)) && accept1(parser, PM_TOKEN_NEWLINE);
+    if (!match1(parser, PM_TOKEN_PARENTHESIS_RIGHT) && (newline || !match1(parser, PM_TOKEN_EQUAL))) {
         pm_parser_err_node(parser, result, PM_ERR_WRITE_TARGET_UNEXPECTED);
     }
 
@@ -19286,7 +19279,6 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
             pm_node_t *result;
             if (match1(parser, PM_TOKEN_COMMA) && (binding_power == PM_BINDING_POWER_STATEMENT)) {
                 result = parse_targets(parser, UP(multi_target), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-                accept1(parser, PM_TOKEN_NEWLINE);
             } else {
                 result = UP(multi_target);
             }
@@ -19308,6 +19300,8 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
                 /* Multi targets are not allowed when it's not a statement
                  * level. */
                 pm_parser_err_node(parser, result, PM_ERR_WRITE_TARGET_UNEXPECTED);
+            } else if (context_p(parser, PM_CONTEXT_PARENS) && accept1(parser, PM_TOKEN_NEWLINE)) {
+                if (!match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) pm_parser_err_node(parser, result, PM_ERR_WRITE_TARGET_UNEXPECTED);
             } else if (!match2(parser, PM_TOKEN_EQUAL, PM_TOKEN_PARENTHESIS_RIGHT)) {
                 /* Multi targets must be followed by an equal sign in order to
                  * be valid (or a right parenthesis if they are nested). */

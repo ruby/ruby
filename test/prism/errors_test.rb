@@ -146,6 +146,23 @@ module Ruby::Prism
       assert_equal "return :ensure", result.errors.first.location.slice
     end
 
+    def test_parenthesized_targets_allow_newline_before_closing_parenthesis
+      ["(((first, second))\n) = [1, 2]", "(*target\n) = 1", "((first, second), third\n) = [1, 2, 3]"].each do |source|
+        result = Ruby::Prism.parse(source)
+
+        assert_predicate result, :success?, source
+        assert_kind_of MultiWriteNode, result.statement
+      end
+    end
+
+    def test_parenthesized_targets_reject_newline_before_assignment
+      ["(first, second\n= [1, 2])", "((first, second), third\n= [1, 2, 3])"].each do |source|
+        result = Ruby::Prism.parse(source)
+
+        assert_equal [:write_target_unexpected], result.errors.map(&:type), source
+      end
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
