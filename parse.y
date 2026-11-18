@@ -4542,7 +4542,7 @@ primary		: inline_primary
               case_body
               k_end
                 {
-                    if (p->case_labels) st_free_table(p->case_labels);
+                    if (CASE_LABELS_ENABLED_P(p->case_labels)) st_free_table(p->case_labels);
                     p->case_labels = $3;
                     $$ = NEW_CASE2($4, &@$, &@1, &@5);
                 /*% ripper: case!(Qnil, $:4) %*/
