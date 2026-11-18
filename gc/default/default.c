@@ -4624,6 +4624,7 @@ gc_mark_set_parent_invalid(rb_objspace_t *objspace)
 static void
 mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
+    VALUE objspace_guard = (VALUE)objspace;
 #define MARK_CHECKPOINT(category) do { \
     if (categoryp) *categoryp = category; \
 } while (0)
@@ -4639,6 +4640,9 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     rb_gc_save_machine_context();
     rb_gc_mark_roots(objspace, categoryp);
+    /* Keep this frame, including its saved registers, until root marking has
+     * scanned the machine stack. */
+    RB_GC_GUARD(objspace_guard);
     gc_mark_set_parent_invalid(objspace);
 }
 
