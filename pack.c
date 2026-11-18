@@ -213,16 +213,16 @@ skip_to_eol(const char *p, const char *pend)
     (ISSPACE(type) || (type == '#' && (p = skip_to_eol(p, pend), 1)))
 
 #ifndef NATINT_PACK
-# define pack_modifiers(p, t, n, e) pack_modifiers(p, t, e)
+# define pack_modifiers(p, pe, t, n, e) pack_modifiers(p, pe, t, e)
 #endif
 static char *
-pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
+pack_modifiers(const char *p, const char *pend, char type, int *natint, int *explicit_endian)
 {
-     while (1) {
-         switch (*p) {
-           case '_':
-           case '!':
-             if (strchr(natstr, type)) {
+    while (p < pend) {
+        switch (*p) {
+          case '_':
+          case '!':
+            if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
                  *natint = 1;
 #endif
@@ -247,6 +247,7 @@ pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
              return (char *)p;
          }
     }
+    return (char *)p;
 }
 
 static VALUE
@@ -294,7 +295,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 #endif
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
             len = strchr("@Xxu", type) ? 0
@@ -1014,7 +1015,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
         int star = 0;
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (p >= pend)
             len = 1;
