@@ -3149,8 +3149,8 @@ pm_call_node_variable_call_create(pm_parser_t *parser, pm_token_t *message) {
 }
 
 /**
- * Returns whether or not this call can be used on the left-hand side of an
- * operator assignment.
+ * Returns whether a call can become a local or attribute assignment target.
+ * Index assignment targets are handled separately.
  */
 static PRISM_INLINE bool
 pm_call_node_writable_p(const pm_parser_t *parser, const pm_call_node_t *node) {
@@ -3158,6 +3158,7 @@ pm_call_node_writable_p(const pm_parser_t *parser, const pm_call_node_t *node) {
         (node->message_loc.length > 0) &&
         (parser->start[node->message_loc.start + node->message_loc.length - 1] != '!') &&
         (parser->start[node->message_loc.start + node->message_loc.length - 1] != '?') &&
+        (node->receiver == NULL || node->call_operator_loc.length > 0) &&
         char_is_identifier_start(parser, parser->start + node->message_loc.start, (ptrdiff_t) node->message_loc.length) &&
         (node->opening_loc.length == 0) &&
         (node->arguments == NULL) &&
@@ -13461,14 +13462,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             // If we have no arguments to the call node and we need this to be a
             // target then this is either a method call or a local variable
             // write.
-            if (
-                (call->message_loc.length > 0) &&
-                (parser->start[call->message_loc.start + call->message_loc.length - 1] != '!') &&
-                (parser->start[call->message_loc.start + call->message_loc.length - 1] != '?') &&
-                (call->opening_loc.length == 0) &&
-                (call->arguments == NULL) &&
-                (call->block == NULL)
-            ) {
+            if (pm_call_node_writable_p(parser, call)) {
                 if (call->receiver == NULL) {
                     // When we get here, we have a local variable write, because it
                     // was previously marked as a method call but now we have an =.
@@ -13485,18 +13479,12 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
                     return UP(pm_local_variable_target_node_create(parser, &message_loc, name, 0));
                 }
 
-                /* An attribute write, as in `foo.bar, baz = 1, 2`, writes to a
-                 * name rather than an operator. A name starts with an
-                 * identifier character, and any character that is not ASCII is
-                 * one. */
-                if (char_is_identifier_start(parser, parser->start + call->message_loc.start, (ptrdiff_t) call->message_loc.length)) {
-                    if (multiple && PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
-                        pm_parser_err_node(parser, (const pm_node_t *) call, PM_ERR_UNEXPECTED_SAFE_NAVIGATION);
-                    }
-
-                    parse_write_name(parser, &call->name);
-                    return UP(pm_call_target_node_create(parser, call));
+                if (multiple && PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+                    pm_parser_err_node(parser, (const pm_node_t *) call, PM_ERR_UNEXPECTED_SAFE_NAVIGATION);
                 }
+
+                parse_write_name(parser, &call->name);
+                return UP(pm_call_target_node_create(parser, call));
             }
 
             // If there is no call operator and the message is "[]" then this is
@@ -13641,14 +13629,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // If we have no arguments to the call node and we need this to be a
             // target then this is either a method call or a local variable
             // write.
-            if (
-                (call->message_loc.length > 0) &&
-                (parser->start[call->message_loc.start + call->message_loc.length - 1] != '!') &&
-                (parser->start[call->message_loc.start + call->message_loc.length - 1] != '?') &&
-                (call->opening_loc.length == 0) &&
-                (call->arguments == NULL) &&
-                (call->block == NULL)
-            ) {
+            if (pm_call_node_writable_p(parser, call)) {
                 if (call->receiver == NULL) {
                     // When we get here, we have a local variable write, because it
                     // was previously marked as a method call but now we have an =.
@@ -13670,27 +13651,16 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                     return target;
                 }
 
-                if (char_is_identifier_start(parser, parser->start + call->message_loc.start, (ptrdiff_t) call->message_loc.length)) {
-                    // When we get here, we have a method call, because it was
-                    // previously marked as a method call but now we have an =. This
-                    // looks like:
-                    //
-                    //     foo.bar = 1
-                    //
-                    // When it was parsed in the prefix position, foo.bar was seen as a
-                    // method call with no arguments. Now we have an =, so we know it's
-                    // a method call with an argument. In this case we will create the
-                    // arguments node, parse the argument, and add it to the list.
-                    pm_arguments_node_t *arguments = pm_arguments_node_single_create(parser, value);
-                    call->arguments = arguments;
-                    PM_NODE_LENGTH_SET_NODE(call, arguments);
-                    call->equal_loc = TOK2LOC(parser, operator);
+                /* Turn an attribute read such as `foo.bar` into `foo.bar = value`. */
+                pm_arguments_node_t *arguments = pm_arguments_node_single_create(parser, value);
+                call->arguments = arguments;
+                PM_NODE_LENGTH_SET_NODE(call, arguments);
+                call->equal_loc = TOK2LOC(parser, operator);
 
-                    parse_write_name(parser, &call->name);
-                    pm_node_flag_set(UP(call), PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE | pm_implicit_array_write_flags(value, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY));
+                parse_write_name(parser, &call->name);
+                pm_node_flag_set(UP(call), PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE | pm_implicit_array_write_flags(value, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY));
 
-                    return UP(call);
-                }
+                return UP(call);
             }
 
             // If there is no call operator and the message is "[]" then this is

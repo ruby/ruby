@@ -138,6 +138,22 @@ module Ruby::Prism
       end
     end
 
+    def test_keyword_not_is_not_a_write_target
+      [
+        "not() = :value",
+        "*not() = value",
+        "first, not() = 1, 2",
+        "begin; rescue => not(); end",
+        "for not() in []; end",
+        "not() |= 42",
+        "not() &&= 1",
+        "not() ||= 1",
+        "not flag.. ||= 1"
+      ].each do |source|
+        assert_equal [:write_target_unexpected], Ruby::Prism.parse(source).errors.map(&:type), source
+      end
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
