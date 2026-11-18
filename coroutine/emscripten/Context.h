@@ -60,11 +60,17 @@ static inline void coroutine_initialize(
 
 static inline struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target)
 {
+#ifndef COROUTINE_TARGET_MAY_BE_FREED
     struct coroutine_context * previous = target->from;
+#endif
 
     target->from = current;
     emscripten_fiber_swap(&current->state, &target->state);
+#ifndef COROUTINE_TARGET_MAY_BE_FREED
+    /* from is read only by coroutine_trampoline, when target starts, which has
+     * happened before we get here. */
     target->from = previous;
+#endif
 
     return target;
 }
