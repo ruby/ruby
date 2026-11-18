@@ -23576,17 +23576,9 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          PatchPoint MethodRedefined(Unknown@0x1000, foo@0x1008, cme:0x1010)
-          v18:CPtr = GetEP 0
-          v19:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_ME_CREF@0x1038
-          v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
-          v21:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
-          v22:FalseClass = GuardBitEquals v21, Value(false) recompile
-          PushInlineFrame :foo, v6 (0x1050), num_args=0
-          v30:BasicObject = InvokeSuper v6, 0x1070 # SendFallbackReason: super: polymorphic call site
-          PopInlineFrame
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: call from a refined method
           CheckInterrupts
-          Return v30
+          Return v11
         ");
     }
 

@@ -2744,6 +2744,33 @@ fn test_invokesuper_to_iseq() {
 }
 
 #[test]
+fn test_invokesuper_from_refined_method_skips_other_refinements() {
+    assert_snapshot!(inspect(r#"
+        class A
+          def foo = "A"
+        end
+
+        module R1
+          refine(A) { def foo = "R1 " + super }
+        end
+
+        module R2
+          refine(A) { def foo = "R2 " + super }
+        end
+
+        module Client
+          using R1
+          using R2
+          def self.test(a) = a.foo
+        end
+
+        a = A.new
+        Client.test(a) # profile invokesuper
+        Client.test(a) # compile + run compiled code
+    "#), @r#""R2 A""#);
+}
+
+#[test]
 fn test_invokesuper_with_args() {
     assert_snapshot!(inspect(r#"
         class A
