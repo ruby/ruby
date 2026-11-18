@@ -10824,6 +10824,9 @@ pm_parse_process_error(const pm_parse_result_t *result)
         case PM_ERROR_LEVEL_STACK:
             error = rb_exc_new_str(rb_eSysStackError, message);
             break;
+        case PM_ERROR_LEVEL_ENCODING_COMPATIBILITY:
+            error = rb_exc_new_str(rb_eEncCompatError, message);
+            break;
     }
 
     return error;
