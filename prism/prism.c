@@ -6327,6 +6327,9 @@ typedef struct {
      * earlier statement, so this takes the earliest start and the latest end.
      */
     pm_location_t location;
+
+    /** Flags accumulated as statements are appended. */
+    pm_node_flags_t flags;
 } pm_statements_t;
 
 /**
@@ -6341,6 +6344,7 @@ pm_statements_body_append(pm_parser_t *parser, pm_statements_t *body, pm_node_t 
 
     if (body->nodes.size > 0) pm_statements_unreachable_check(parser, pm_node_list_open_last(&body->nodes), statement);
     pm_node_list_open_append(&parser->node_chunks, &body->nodes, statement);
+    if (PM_NODE_TYPE_P(statement, PM_PRE_EXECUTION_NODE)) body->flags |= PM_STATEMENTS_FLAGS_CONTAINS_PRE_EXECUTION;
     if (newline) pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
 }
 
@@ -6354,7 +6358,7 @@ pm_statements_node_create(pm_parser_t *parser, pm_statements_t *body) {
     return pm_statements_node_new(
         parser->arena,
         ++parser->node_id,
-        0,
+        body->flags,
         body->location,
         body->nodes
     );
@@ -6370,7 +6374,7 @@ pm_statements_node_single_create(pm_parser_t *parser, pm_node_t *statement, bool
     return pm_statements_node_new(
         parser->arena,
         ++parser->node_id,
-        0,
+        PM_NODE_TYPE_P(statement, PM_PRE_EXECUTION_NODE) ? PM_STATEMENTS_FLAGS_CONTAINS_PRE_EXECUTION : 0,
         PM_LOCATION_INIT_NODE(statement),
         pm_node_list_single(parser->arena, statement)
     );
@@ -6393,6 +6397,7 @@ pm_statements_node_body_update(pm_statements_node_t *node, pm_node_t *statement)
     node->base.location = pm_statements_node_body_length(node) == 0
         ? statement->location
         : pm_location_join(node->base.location, statement->location);
+    if (PM_NODE_TYPE_P(statement, PM_PRE_EXECUTION_NODE)) pm_node_flag_set(UP(node), PM_STATEMENTS_FLAGS_CONTAINS_PRE_EXECUTION);
 }
 
 /**

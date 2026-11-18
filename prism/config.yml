@@ -787,6 +787,11 @@ flags:
       - name: EXPERIMENTAL_COPY
         comment: "constant writes that should be modified with shareable constant value experimental copy"
     comment: Flags for shareable constant nodes.
+  - name: StatementsFlags
+    values:
+      - name: CONTAINS_PRE_EXECUTION
+        comment: "the statement list directly contains a `BEGIN` block"
+    comment: Flags for statement lists.
   - name: StringFlags
     values:
       - name: FORCED_UTF8_ENCODING
@@ -4492,6 +4497,7 @@ nodes:
           [*a]
            ^^
   - name: StatementsNode
+    flags: StatementsFlags
     fields:
       - name: body
         type: node[]
