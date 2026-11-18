@@ -1676,23 +1676,24 @@ compile_length_tree(Node* node, regex_t* reg)
       r = compile_length_tree(NCAR(node), reg);
       if (r < 0) return r;
       len += r;
+      if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     } while (IS_NOT_NULL(node = NCDR(node)));
     r = len;
     break;
 
   case NT_ALT:
-    {
-      int n = 0;
-      len = 0;
-      do {
-        r = compile_length_tree(NCAR(node), reg);
-        if (r < 0) return r;
-        len += r;
-        n++;
-      } while (IS_NOT_NULL(node = NCDR(node)));
-      r = len;
-      r += (SIZE_OP_PUSH + SIZE_OP_JUMP) * (n - 1);
-    }
+    len = 0;
+    do {
+      r = compile_length_tree(NCAR(node), reg);
+      if (r < 0) return r;
+      len += r;
+      if (IS_NOT_NULL(NCDR(node)))
+        len += SIZE_OP_PUSH + SIZE_OP_JUMP;
+      if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+    } while (IS_NOT_NULL(node = NCDR(node)));
+    r = len;
     break;
 
   case NT_STR:
@@ -1755,6 +1756,8 @@ compile_length_tree(Node* node, regex_t* reg)
     break;
   }
 
+  if (r > (int )MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
   return r;
 }
 
@@ -1782,6 +1785,8 @@ compile_tree(Node* node, regex_t* reg)
         if (NCDR(x) != NULL) {
           len += SIZE_OP_PUSH + SIZE_OP_JUMP;
         }
+        if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+          return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       } while (IS_NOT_NULL(x = NCDR(x)));
       pos = reg->used + len;  /* goal position */
 
@@ -5799,7 +5804,11 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   UnsetAddrList  uslist;
 #endif
 
-  if (IS_NOT_NULL(einfo)) einfo->par = (UChar* )NULL;
+  if (IS_NOT_NULL(einfo)) {
+    einfo->enc     = reg->enc;
+    einfo->par     = (UChar* )NULL;
+    einfo->par_end = (UChar* )NULL;
+  }
 
 #ifdef RUBY
   scan_env.sourcefile = sourcefile;
