@@ -711,6 +711,9 @@ anc_inspect_passcred_credentials(int level, int type, VALUE data, VALUE ret)
 static int
 anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
 {
+    long len;
+    const char *ptr;
+
     if (level != SOL_SOCKET && type != SCM_CREDS)
         return 0;
 
@@ -725,48 +728,59 @@ anc_inspect_socket_creds(int level, int type, VALUE data, VALUE ret)
      * This heuristics works well except when sc_ngroups == CMGROUP_MAX.
      */
 
+    RSTRING_GETMEM(data, ptr, len);
 #if defined(HAVE_TYPE_STRUCT_CMSGCRED) /* FreeBSD */
-    if (RSTRING_LEN(data) == sizeof(struct cmsgcred)) {
+    if (len == sizeof(struct cmsgcred)) {
         struct cmsgcred cred;
-        memcpy(&cred, RSTRING_PTR(data), sizeof(struct cmsgcred));
+        int ngroups;
+        memcpy(&cred, ptr, sizeof(struct cmsgcred));
         rb_str_catf(ret, " pid=%u", cred.cmcred_pid);
         rb_str_catf(ret, " uid=%u", cred.cmcred_uid);
         rb_str_catf(ret, " euid=%u", cred.cmcred_euid);
         rb_str_catf(ret, " gid=%u", cred.cmcred_gid);
-        if (cred.cmcred_ngroups) {
+        rb_str_catf(ret, " groups[%d]=[", cred.cmcred_ngroups);
+        ngroups = cred.cmcred_ngroups;
+        if (ngroups > 0) {
             int i;
-            const char *sep = " groups=";
-            for (i = 0; i < cred.cmcred_ngroups; i++) {
-                rb_str_catf(ret, "%s%u", sep, cred.cmcred_groups[i]);
-                sep = ",";
+            rb_str_catf(ret, "%u", cred.cmcred_groups[0]);
+            if (ngroups > CMGROUP_MAX) ngroups = CMGROUP_MAX;
+            for (i = 1; i < ngroups; i++) {
+                rb_str_catf(ret, ",%u", cred.cmcred_groups[i]);
             }
         }
-        rb_str_cat2(ret, " (cmsgcred)");
+        rb_str_cat2(ret, "] (cmsgcred)");
         return 1;
     }
 #endif
 #if defined(HAVE_TYPE_STRUCT_SOCKCRED) /* FreeBSD, NetBSD */
-    if ((size_t)RSTRING_LEN(data) >= SOCKCREDSIZE(0)) {
-        struct sockcred cred0, *cred;
-        memcpy(&cred0, RSTRING_PTR(data), SOCKCREDSIZE(0));
-        if ((size_t)RSTRING_LEN(data) == SOCKCREDSIZE(cred0.sc_ngroups)) {
-            cred = (struct sockcred *)ALLOCA_N(char, SOCKCREDSIZE(cred0.sc_ngroups));
-            memcpy(cred, RSTRING_PTR(data), SOCKCREDSIZE(cred0.sc_ngroups));
-            rb_str_catf(ret, " uid=%u", cred->sc_uid);
-            rb_str_catf(ret, " euid=%u", cred->sc_euid);
-            rb_str_catf(ret, " gid=%u", cred->sc_gid);
-            rb_str_catf(ret, " egid=%u", cred->sc_egid);
-            if (cred0.sc_ngroups) {
-                int i;
-                const char *sep = " groups=";
-                for (i = 0; i < cred0.sc_ngroups; i++) {
-                    rb_str_catf(ret, "%s%u", sep, cred->sc_groups[i]);
-                    sep = ",";
-                }
-            }
-            rb_str_cat2(ret, " (sockcred)");
-            return 1;
+    if ((size_t)len >= SOCKCREDSIZE(0)) {
+        struct sockcred cred;
+        int ngroups;
+        memcpy(&cred, ptr, SOCKCREDSIZE(0));
+        rb_str_catf(ret, " uid=%u", cred.sc_uid);
+        rb_str_catf(ret, " euid=%u", cred.sc_euid);
+        rb_str_catf(ret, " gid=%u", cred.sc_gid);
+        rb_str_catf(ret, " egid=%u", cred.sc_egid);
+        rb_str_catf(ret, " groups[%d]=[", cred.sc_ngroups);
+        ngroups = cred.sc_ngroups;
+        if (ngroups <= 0) {
+            ngroups = 0;
         }
+        else {
+            size_t max = ((size_t)len - SOCKCREDSIZE(0)) / sizeof(gid_t);
+            if ((size_t)ngroups > max) ngroups = (int)max;
+        }
+        if (ngroups > 0) {
+            int i;
+            const void *gp = ptr + offsetof(struct sockcred, sc_groups);
+            const gid_t *groups = MEMCPY(ALLOCA_N(gid_t, ngroups), gp, gid_t, ngroups);
+            rb_str_catf(ret, "%u", groups[0]);
+            for (i = 1; i < ngroups; i++) {
+                rb_str_catf(ret, ",%u", groups[i]);
+            }
+        }
+        rb_str_cat2(ret, "] (sockcred)");
+        return 1;
     }
 #endif
     return 0;
@@ -1000,6 +1014,7 @@ ancillary_inspect(VALUE self)
             rb_str_catf(ret, " %"PRIsVALUE, rb_sym2str(vtype));
         else
             rb_str_catf(ret, " cmsg_type:%d", type);
+        RB_GC_GUARD(vtype);
     }
     else {
         rb_str_catf(ret, " cmsg_level:%d", level);
