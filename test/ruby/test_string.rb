@@ -1078,6 +1078,29 @@ CODE
     assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
   end
 
+  def test_concat_chilled_string_warning
+    return unless @cls == String
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target << $target
+      assert_equal("\\xff\\xfe\\xfd\\xff\\xfe\\xfd".b, $target)
+    }
+    {#
+      module ReplaceReceiverWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("\xff\xfe\xfd".b)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ReplaceReceiverWarning)
+    };
+  end
+
   def assert_bit_op_chilled_string_warning(op, *args)
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     $target = <<~STR            # chilled string

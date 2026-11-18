@@ -3793,6 +3793,8 @@ rb_str_buf_cat_ascii(VALUE str, const char *ptr)
 VALUE
 rb_str_buf_append(VALUE str, VALUE str2)
 {
+    str_modify_keep_cr(str);
+
     int str2_cr = rb_enc_str_coderange(str2);
 
     if (str_enc_fastpath(str)) {
@@ -4068,8 +4070,14 @@ VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
     unsigned int code;
-    rb_encoding *enc = STR_ENC_GET(str1);
+    rb_encoding *enc;
     int encidx;
+
+    /* For a chilled string this emits the deprecation warning, which may run
+     * Ruby code (Warning.warn) that modifies str1.  Do it before reading the
+     * encoding, length and coderange used by the codepoint path below. */
+    str_modify_keep_cr(str1);
+    enc = STR_ENC_GET(str1);
 
     if (RB_INTEGER_TYPE_P(str2)) {
         if (rb_num_to_uint(str2, &code) == 0) {
