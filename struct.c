@@ -64,8 +64,8 @@ static VALUE struct_alloc(VALUE);
 static inline const struct struct_info *
 struct_info_of(VALUE klass)
 {
-    if (LIKELY(RCLASS_HAS_INLINE_FIELD(klass))) {
-        VALUE info = RCLASS_INLINE_FIELD(klass);
+    if (LIKELY(RCLASS_HAS_STRUCT_INLINE_FIELD(klass))) {
+        VALUE info = RCLASS_STRUCT_INLINE_FIELD(klass);
         if (LIKELY(!NIL_P(info))) return RTYPEDDATA_GET_DATA(info);
     }
     return NULL;
@@ -164,7 +164,7 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
     RB_OBJ_WRITE(info_obj, &info->members, members);
     RB_OBJ_WRITE(info_obj, &info->back_members, back);
     info->keyword_init = Qnil;
-    RCLASS_SET_INLINE_FIELD(klass, info_obj);
+    RCLASS_SET_STRUCT_INLINE_FIELD(klass, info_obj);
 
     return members;
 }
@@ -273,7 +273,7 @@ rb_struct_modify(VALUE s)
 static VALUE
 anonymous_struct(VALUE klass)
 {
-    VALUE nstr = rb_class_new_with_inline_field(klass);
+    VALUE nstr = rb_class_new_with_struct_inline_field(klass);
     rb_make_metaclass(nstr, RBASIC(klass)->klass);
     return nstr;
 }
@@ -742,7 +742,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE super)
 
     VALUE klass = anonymous_struct(super);
     setup_struct(klass, rest);
-    VALUE info_obj = RCLASS_INLINE_FIELD(klass);
+    VALUE info_obj = RCLASS_STRUCT_INLINE_FIELD(klass);
     struct struct_info *info = RTYPEDDATA_GET_DATA(info_obj);
     RB_OBJ_WRITE(info_obj, &info->keyword_init, keyword_init);
 

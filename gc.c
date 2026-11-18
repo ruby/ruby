@@ -3914,8 +3914,8 @@ gc_mark_children_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj)
       case T_MODULE:
         foreach_args.ctx = ctx;
         foreach_args.obj = obj;
-        if (RCLASS_HAS_INLINE_FIELD(obj)) {
-            gc_mark_internal(ctx, RCLASS_INLINE_FIELD(obj));
+        if (RCLASS_HAS_STRUCT_INLINE_FIELD(obj)) {
+            gc_mark_internal(ctx, RCLASS_STRUCT_INLINE_FIELD(obj));
         }
         rb_class_classext_foreach(obj, gc_mark_classext_module, (void *)&foreach_args);
         if (BOX_USER_P(RCLASS_PRIME_BOX(obj))) {
@@ -5539,8 +5539,8 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
       case T_MODULE:
         args.klass = obj;
         args.objspace = objspace;
-        if (RCLASS_HAS_INLINE_FIELD(obj)) {
-            UPDATE_IF_MOVED(objspace, *RCLASS_INLINE_FIELD_PTR(obj));
+        if (RCLASS_HAS_STRUCT_INLINE_FIELD(obj)) {
+            UPDATE_IF_MOVED(objspace, *RCLASS_STRUCT_INLINE_FIELD_PTR(obj));
         }
         rb_class_classext_foreach(obj, update_classext, (void *)&args);
         break;
