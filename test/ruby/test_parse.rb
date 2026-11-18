@@ -879,6 +879,10 @@ x = __ENCODING__
     end
     assert_equal(Encoding.find("UTF-8"), x)
     assert_raise(NameError) { eval "\xef" }
+
+    assert_nothing_raised do
+      eval "\xef\xbb\xbf"
+    end
   end
 
   def test_dot_in_next_line

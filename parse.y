@@ -9687,7 +9687,7 @@ parser_prepare(struct parser_params *p)
         if (peek(p, '!')) p->has_shebang = 1;
         break;
       case 0xef:		/* UTF-8 BOM marker */
-        if (!lex_eol_n_p(p, 2) &&
+        if (!lex_eol_n_p(p, 1) &&
             (unsigned char)p->lex.pcur[0] == 0xbb &&
             (unsigned char)p->lex.pcur[1] == 0xbf) {
             p->enc = rb_utf8_encoding();
