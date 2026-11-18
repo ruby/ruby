@@ -1051,6 +1051,40 @@ CODE
     assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
   end
 
+  def test_setbyte_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:setbyte, 7000, 0)
+    assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
+  end
+
+  def assert_bit_op_chilled_string_warning(op, *args)
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = <<~STR            # chilled string
+    #{("A"*63+"\n")*128}        # 64*128 = 8192
+    STR
+    END {
+      assert_raise(IndexError) {$target.#{op}(#{args.map(&:inspect).join(", ")})}
+    }
+    {#
+      $reentered = false
+
+      module ReallocateWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated && !$reentered
+            $reentered = true
+            $target.clear
+            $target << ("B" * 1024)
+            return nil
+          end
+
+          super
+        end
+      end
+
+      Warning.extend(ReallocateWarning)
+    };
+  end
+
   def test_codepoints
     # Single byte optimization
     assert_equal [65, 66, 67], S("ABC").codepoints
