@@ -20159,7 +20159,7 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
                 pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
                 pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = parser->start + cast->content_loc.start, .end = parser->start + cast->content_loc.start + cast->content_loc.length };
                 pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
-                pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
+                pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
                 parser_lex(parser);
 
                 pm_node_list_open_append(&parser->node_chunks, &parts, first_string);
@@ -20274,7 +20274,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
                     };
 
                     pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
-                    pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
+                    pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
                     parser_lex(parser);
 
                     pm_node_list_open_append(&parser->node_chunks, &parts, first_string);
