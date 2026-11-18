@@ -65,4 +65,22 @@ class TestSocketAncData < Test::Unit::TestCase
       }
     end
   end
+
+  if /freebsd/ =~ RUBY_PLATFORM
+    def test_cmsgcred_inspect
+      cred = [0, 0, 0, 0, 9999, *Array.new(16, 0)].pack('L4I!L*')
+      s = Socket::AncillaryData.new(:UNIX, :SOCKET, :SCM_CREDS, cred).inspect
+      assert_include(s, 'groups[9999]')
+      assert_include(s, '(cmsgcred)')
+    end
+  end
+
+  if /netbsd|freebsd/ =~ RUBY_PLATFORM
+    def test_sockcred_inspect
+      cred = [0, 0, 0, 0, 9999, 0].pack('L4S!L')
+      s = Socket::AncillaryData.new(:UNIX, :SOCKET, :SCM_CREDS, cred).inspect
+      assert_include(s, 'groups[9999]')
+      assert_include(s, '(sockcred)')
+    end
+  end
 end if defined? Socket::AncillaryData
