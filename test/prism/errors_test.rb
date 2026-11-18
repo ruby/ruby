@@ -22,6 +22,21 @@ module Ruby::Prism
       end
     end
 
+    def test_unterminated_quoted_symbol_closing_location
+      {
+        ':"#s' => :symbol_term_interpolated,
+        ':"#{x}' => :symbol_term_interpolated,
+        ":'s" => :symbol_term_dynamic
+      }.each do |source, diagnostic|
+        result = Ruby::Prism.parse(source)
+        symbol = result.value.statements.body.first
+
+        assert_equal [diagnostic], result.errors.map(&:type)
+        assert_equal source, symbol.location.slice
+        assert_nil symbol.closing_loc
+      end
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

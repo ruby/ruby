@@ -4878,6 +4878,7 @@ pm_interpolated_location(const pm_parser_t *parser, const pm_token_t *opening, c
 
     if (opening != NULL) {
         start = PM_TOKEN_START(parser, opening);
+        if (closing == NULL) end = PM_TOKEN_END(parser, opening);
     } else if (parts->size > 0) {
         start = PM_NODE_START(parts->nodes[0]);
     }
@@ -16651,10 +16652,10 @@ parse_symbol(pm_parser_t *parser, pm_lex_state_t next_state, uint16_t depth) {
         if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
         if (match1(parser, PM_TOKEN_EOF)) {
             pm_parser_err_token(parser, &opening, PM_ERR_SYMBOL_TERM_INTERPOLATED);
-        } else {
-            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_INTERPOLATED);
+            return UP(pm_interpolated_symbol_node_create(parser, &opening, &parts, NULL));
         }
 
+        expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_INTERPOLATED);
         return UP(pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous));
     }
 
@@ -16701,13 +16702,15 @@ parse_symbol(pm_parser_t *parser, pm_lex_state_t next_state, uint16_t depth) {
         lex_state_set(parser, next_state);
     }
 
+    const pm_token_t *closing = NULL;
     if (match1(parser, PM_TOKEN_EOF)) {
         pm_parser_err_token(parser, &opening, PM_ERR_SYMBOL_TERM_DYNAMIC);
     } else {
         expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
+        closing = &parser->previous;
     }
 
-    return UP(pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, parser->explicit_encoding, &content, &unescaped, false)));
+    return UP(pm_symbol_node_create_unescaped(parser, &opening, &content, closing, &unescaped, parse_symbol_encoding(parser, parser->explicit_encoding, &content, &unescaped, false)));
 }
 
 /**
