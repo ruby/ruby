@@ -1775,6 +1775,22 @@ q.pop
     end;
   end
 
+  # A thread exiting with several mutexes locked must unlock all of them and
+  # leave no stale next_mutex link; otherwise the next thread to lock m2
+  # inherits m1 in its keeping list and unlocks it again on exit (rb_bug).
+  def test_thread_exit_unlocks_all_keeping_mutexes
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      m1 = Thread::Mutex.new
+      m2 = Thread::Mutex.new
+      Thread.new { m1.lock; m2.lock }.join
+      raise "m1 still locked" if m1.locked?
+      raise "m2 still locked" if m2.locked?
+      Thread.new { m2.synchronize { } }.join
+      m1.synchronize { }
+    end;
+  end
+
   # [Bug #21836]
   def test_mn_threads_sub_millisecond_sleep
     assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
