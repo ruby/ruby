@@ -503,7 +503,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
         if (GetSystemWindowsDirectoryW(path, len)) return 0;
     }
     p = translate_wchar(path, L'\\', L'/');
-    if (*(p - 1) != L'/') *p++ = L'/';
+    if (p == path || *(p - 1) != L'/') *p++ = L'/';
     if ((UINT)(p - path + numberof(temp)) >= len) return 0;
     memcpy(p, temp, sizeof(temp));
     return (UINT)(p - path + numberof(temp) - 1);
