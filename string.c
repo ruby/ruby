@@ -5779,12 +5779,13 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 VALUE
 rb_str_drop_bytes(VALUE str, long len)
 {
-    char *ptr = RSTRING_PTR(str);
-    long olen = RSTRING_LEN(str), nlen;
-
     str_modifiable(str);
+
+    char *ptr;
+    long olen;
+    RSTRING_GETMEM(str, ptr, olen);
     if (len > olen) len = olen;
-    nlen = olen - len;
+    long nlen = olen - len;
     if (str_embed_capa(str) >= nlen + TERM_LEN(str)) {
         char *oldptr = ptr;
         int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
