@@ -247,6 +247,18 @@ class TestPack < Test::Unit::TestCase
     end
   end
 
+  def test_format_string_modified_by_to_str
+    fmt = "a" + " " * 1_000_000
+    o = Object.new
+    o.define_singleton_method(:to_str) do
+      fmt.clear
+      "A"
+    end
+    assert_raise_with_message(RuntimeError, /format string modified/) do
+      [o].pack(fmt)
+    end
+  end
+
   def test_unpack_with_block_modifying_string
     # [Bug #22315]
     s = "C" * 4000
