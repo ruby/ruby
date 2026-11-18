@@ -340,6 +340,27 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_gets_ff
+    pipe(proc do |w|
+      w.print "ab""\xff""cd".b
+      w.close
+    end, proc do |r|
+      assert_equal "ab\xFFcd", r.gets(nil, 100).b
+      assert_nil r.gets
+      r.close
+    end)
+
+    pipe(proc do |w|
+      w.print "ab\u{1f41e}cd".b
+      w.close
+    end, proc do |r|
+      r.set_encoding(Encoding::UTF_8)
+      assert_equal "ab\u{1f41e}", r.gets(nil, 3)
+      assert_equal "cd", r.gets
+      r.close
+    end)
+  end
+
   # This test cause SEGV.
   def test_ungetc
     pipe(proc do |w|
