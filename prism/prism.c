@@ -18871,6 +18871,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
              * expression of this parenthesis should not be processed under this
              * context. Thus, the context is popped here. */
             context_pop(parser);
+            lex_state_set(parser, PM_LEX_STATE_BEG);
             parser_lex(parser);
 
             pm_token_t lparen = parser->previous;

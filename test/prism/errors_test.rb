@@ -183,6 +183,15 @@ module Ruby::Prism
       assert_equal "do end", loop_node.predicate.body.body.first.block.location.slice
     end
 
+    def test_parenthesized_singleton_receiver_starts_in_expression_state
+      result = Ruby::Prism.parse("def(target:primary).hello = :hi")
+
+      assert_predicate result, :success?
+      receiver = result.statement.receiver.body
+      assert_equal :target, receiver.name
+      assert_equal :primary, receiver.arguments.arguments.first.unescaped.to_sym
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
