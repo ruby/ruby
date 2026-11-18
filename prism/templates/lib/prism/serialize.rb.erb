@@ -414,6 +414,8 @@ module Ruby::Prism
           :load
         when 3
           :stack
+        when 4
+          :encoding_compatibility
         else
           raise "Unknown level: #{level}"
         end

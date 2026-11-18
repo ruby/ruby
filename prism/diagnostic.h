@@ -39,7 +39,10 @@ typedef enum {
      * parser ran out of the stack it was given, not that the source is
      * invalid, so the same source may parse with more stack.
      */
-    PM_ERROR_LEVEL_STACK = 3
+    PM_ERROR_LEVEL_STACK = 3,
+
+    /** For errors that should raise an encoding compatibility error. */
+    PM_ERROR_LEVEL_ENCODING_COMPATIBILITY = 4
 } pm_error_level_t;
 
 /**

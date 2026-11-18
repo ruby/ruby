@@ -545,6 +545,8 @@ module Ruby::Prism # :nodoc:
           raise error
         when 3 # stack
           raise SystemStackError, message.force_encoding(encoding_name)
+        when 4 # encoding compatibility
+          raise Encoding::CompatibilityError, message.force_encoding(encoding_name)
         else
           raise "Unknown error level: #{level}"
         end

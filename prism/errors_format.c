@@ -548,6 +548,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
     if (rich_errors == NULL) PRISM_OOM();
 
     size_t rich_errors_idx = 0;
+    const pm_diagnostic_t *encoding_error = NULL;
 
     for (pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) parser->error_list.head; diagnostic != NULL; diagnostic = (pm_diagnostic_t *) diagnostic->node.next) {
         pm_location_t location = pm_diagnostic_location(diagnostic);
@@ -600,10 +601,23 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
             xfree_sized(rich_errors, rich_errors_size);
             return PM_ERROR_LEVEL_STACK;
           }
+          case PM_ERROR_LEVEL_ENCODING_COMPATIBILITY:
+            if (encoding_error == NULL) encoding_error = diagnostic;
+            break;
         }
     }
 
-    PRISM_ASSERT(rich_errors_idx == nerrors);
+    /* The compiler would encounter a syntax error before joining any strings. */
+    if (rich_errors_idx == 0) {
+        PRISM_ASSERT(encoding_error != NULL);
+        const char *message = pm_diagnostic_message(encoding_error);
+        pm_buffer_append_string(buffer, message, strlen(message));
+
+        xfree_sized(rich_errors, rich_errors_size);
+        return PM_ERROR_LEVEL_ENCODING_COMPATIBILITY;
+    }
+
+    nerrors = rich_errors_idx;
 
     /* The header displays the line of the first error in parse order, which
      * is the first entry in the array because it has not been sorted yet. */

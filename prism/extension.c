@@ -506,6 +506,9 @@ check_raise_error_option(pm_parser_t *parser, const pm_options_t *options, rb_en
             error = rb_exc_new_str(rb_eSysStackError, message);
             break;
         }
+        case PM_ERROR_LEVEL_ENCODING_COMPATIBILITY:
+            error = rb_exc_new_str(rb_eEncCompatError, message);
+            break;
     }
 
     return result_err(error);
@@ -731,6 +734,9 @@ parser_error(const pm_diagnostic_t *diagnostic, rb_encoding *encoding, VALUE sou
             break;
         case PM_ERROR_LEVEL_STACK:
             level = ID2SYM(rb_intern("stack"));
+            break;
+        case PM_ERROR_LEVEL_ENCODING_COMPATIBILITY:
+            level = ID2SYM(rb_intern("encoding_compatibility"));
             break;
         default:
             rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error_level);
