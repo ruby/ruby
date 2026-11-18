@@ -91,6 +91,9 @@ struct rb_classext_struct {
     //
     // A boxable class, defined at boot when Ruby::Box is enabled, moves to a larger
     // slot because of it; others keep the slot size they would have anyway.
+    //
+    // Named after Struct, its only user, to make clear what it is for. The field
+    // itself is generic: rename it when something else needs one.
     bool has_struct_inline_field : 1;
 };
 typedef struct rb_classext_struct rb_classext_t;
