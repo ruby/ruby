@@ -16,7 +16,8 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # ruby/setup-ruby has no Ruby 3.3.4 build for ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
