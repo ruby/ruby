@@ -503,6 +503,11 @@ end
 # A crash here means the holder still referenced the fiber's on-stack waiter.
 module ParkedWaiterAssertions
   def assert_parked_waiter_released(setup, wait, wake, old_holder: false, keep_fiber: false, incremental: false, park_blocking: false, iterations: 10)
+    if incremental
+      omit 'default GC only' unless GC.config[:implementation] == 'default'
+      omit 'stress' if GC.stress
+    end
+
     gc = old_holder ? "GC.start(full_mark: false)" : "GC.start"
     assert_separately([], <<~RUBY)
       $parked = []
