@@ -19162,6 +19162,7 @@ parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     if (!PM_NODE_TYPE_P(constant_path, PM_CONSTANT_READ_NODE) && !PM_NODE_TYPE_P(constant_path, PM_CONSTANT_PATH_NODE) && !PM_NODE_TYPE_P(constant_path, PM_ERROR_RECOVERY_NODE)) {
+        if (name.type == PM_TOKEN_CONSTANT) pm_parser_err_node(parser, constant_path, PM_ERR_MODULE_NAME);
         constant_path = UP(pm_error_recovery_node_create_unexpected(parser, constant_path));
     }
 

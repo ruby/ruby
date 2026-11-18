@@ -80,6 +80,13 @@ module Ruby::Prism
       assert_equal "do end", rescue_modifier.rescue_expression.block.location.slice
     end
 
+    def test_module_name_rejects_symbol_ending_in_constant_token
+      result = Ruby::Prism.parse("module:A; end")
+
+      assert_equal [:module_name], result.errors.map(&:type)
+      assert_equal ":A", result.errors.first.location.slice
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
