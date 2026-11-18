@@ -6213,7 +6213,9 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LONG(len);
-
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
     shrinkable = io_setstrbuf(&str, ilen);
     if (ilen == 0) return str;
 
@@ -6315,13 +6317,18 @@ static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
 {
     VALUE len, offset, str;
+    long ilen;
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg;
     int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
-    arg.count = NUM2SIZET(len);
+    ilen = NUM2LONG(len);
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+    arg.count = (size_t)ilen;
     arg.offset = NUM2OFFT(offset);
 
     shrinkable = io_setstrbuf(&str, (long)arg.count);

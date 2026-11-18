@@ -2556,6 +2556,11 @@ class TestIO < Test::Unit::TestCase
     make_tempfile {|t|
       open(t.path) do |f|
         assert_raise(ArgumentError) { f.sysread(-1) }
+        assert_raise(ArgumentError) { f.sysread(-1, String.new) }
+        buf = +"abc"
+        assert_raise(ArgumentError) { f.pread(-1, 0) }
+        assert_raise(ArgumentError) { f.pread(-1, 0, buf) }
+        assert_equal("abc", buf)
       end
     }
   end
