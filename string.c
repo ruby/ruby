@@ -10893,7 +10893,6 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 
     rb_scan_args(argc, argv, "11", &w, &pad);
     enc = STR_ENC_GET(str);
-    termlen = rb_enc_mbminlen(enc);
     width = NUM2LONG(w);
     if (argc == 2) {
         StringValue(pad);
@@ -10906,6 +10905,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
             rb_raise(rb_eArgError, "zero width padding");
         }
     }
+    termlen = rb_enc_mbminlen(enc);
     len = str_strlen(str, enc); /* rb_enc_check */
     if (width < 0 || len >= width) return str_duplicate(rb_cString, str);
     n = width - len;
