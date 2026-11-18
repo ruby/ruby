@@ -2503,7 +2503,7 @@ rb_str_modify_expand(VALUE str, long expand)
     if (expand < 0) {
         rb_raise(rb_eArgError, "negative expanding string size");
     }
-    if (expand >= LONG_MAX - len) {
+    if (expand > LONG_MAX - termlen - len) {
         rb_raise(rb_eArgError, "string size too big");
     }
 
@@ -3150,6 +3150,9 @@ rb_str_resize(VALUE str, long len)
 
     int independent = str_independent(str);
     long slen = RSTRING_LEN(str);
+    if (len > LONG_MAX - TERM_LEN(str)) {
+        rb_raise(rb_eArgError, "string size too big");
+    }
 
     if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
         ENC_CODERANGE_CLEAR(str);
