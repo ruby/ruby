@@ -229,7 +229,11 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
     pthread_testcancel();
 #endif
 
+#ifndef COROUTINE_TARGET_MAY_BE_FREED
+    /* from is read only by coroutine_trampoline, when target starts, which has
+     * happened before we get here. */
     target->from = previous;
+#endif
 
     return target;
 }
