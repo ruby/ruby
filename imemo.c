@@ -56,7 +56,7 @@ rb_imemo_tmpbuf_new(void)
     NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
 
     obj->ptr = NULL;
-    obj->cnt = 0;
+    obj->size = 0;
 
     return (VALUE)obj;
 }
@@ -70,7 +70,7 @@ rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
     *store = (VALUE)tmpbuf;
     void *ptr = ruby_xmalloc(size);
     tmpbuf->ptr = ptr;
-    tmpbuf->cnt = cnt;
+    tmpbuf->size = size;
 
     return ptr;
 }
@@ -93,7 +93,7 @@ rb_free_tmp_buffer(volatile VALUE *store)
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
-        s->cnt = 0;
+        s->size = 0;
         ruby_xfree(ptr);
     }
 }
@@ -245,7 +245,7 @@ rb_imemo_memsize(VALUE obj)
       case imemo_throw_data:
         break;
       case imemo_tmpbuf:
-        size += ((rb_imemo_tmpbuf_t *)obj)->cnt * sizeof(VALUE);
+        size += ((rb_imemo_tmpbuf_t *)obj)->size;
 
         break;
       case imemo_cvar_entry:
@@ -493,7 +493,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
         if (!reference_updating) {
-            rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+            rb_gc_mark_locations(m->ptr, m->ptr + (m->size / sizeof(VALUE)));
         }
 
         break;
