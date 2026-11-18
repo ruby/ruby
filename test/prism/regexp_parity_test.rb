@@ -42,7 +42,7 @@ module Ruby::Prism
 
       # Bytes and escapes in the content that the lexer cannot read.
       "/(\\x/", "/(\xFF/", "/\\x(/", "/é\\xZa/e", "/é\xFFa/e", "/a\xFF\\xZ(/", "/a\\xZb\xFFc(/",
-      "/a\\\xFFb(/", "/\xE3\x81(/", "/\\u{\xFF}(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x",
+      "/a\\\xFFb(/", "/\xE3\x81(/", "/\\u{a\xFFb}(/", "/\\u{41 \xFF}/x",
 
       # Encoding modifiers.
       *[
