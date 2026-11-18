@@ -37,6 +37,17 @@ module Ruby::Prism
       end
     end
 
+    def test_unclosed_array_location_covers_last_element
+      source = '[r="#{ '
+      result = Ruby::Prism.parse(source)
+      array = result.value.statements.body.first
+
+      assert_includes result.errors.map(&:type), :array_term
+      assert_nil array.closing_loc
+      assert_equal source, array.location.slice
+      assert_equal array.elements.last.location.end_offset, array.location.end_offset
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

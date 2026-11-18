@@ -19542,7 +19542,9 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
     if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
         PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARRAY_TERM, pm_token_str(parser->current.type));
-        parser->previous.start = parser->previous.end;
+        const uint8_t *end = match1(parser, PM_TOKEN_EOF) ? parser->current.end : parser->previous.end;
+        parser->previous.start = end;
+        parser->previous.end = end;
         parser->previous.type = 0;
     }
 
