@@ -1201,6 +1201,14 @@ x = __ENCODING__
     end
   end
 
+  def test_named_capture_incompatible_encoding
+    assert_empty eval(<<~'RUBY')
+        # encoding: us-ascii
+        /(?<\u3042>x)/ =~ "x"
+        binding.local_variables
+    RUBY
+  end
+
   def test_rescue_in_command_assignment
     bug = '[ruby-core:75621] [Bug #12402]'
     all_assertions(bug) do |a|

@@ -36,7 +36,6 @@
 
 #ifdef RIPPER
 #define STATIC_ID2SYM p->config->static_id2sym
-#define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 #endif
 
 #else
@@ -15565,6 +15564,13 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     NODE *node, *succ;
 
     if (!len) return ST_CONTINUE;
+
+    if (UNLIKELY(p->enc != enc)) {
+        int cr = ENC_CODERANGE_7BIT;
+        rb_str_coderange_scan_restartable(s, s + len, rb_ascii8bit_encoding(), &cr);
+        if (UNLIKELY(cr != ENC_CODERANGE_7BIT)) return ST_CONTINUE;
+    }
+
     if (!VALID_SYMNAME_P(s, len, enc, ID_LOCAL))
         return ST_CONTINUE;
 

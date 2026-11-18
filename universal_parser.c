@@ -154,6 +154,7 @@
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
+#define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
