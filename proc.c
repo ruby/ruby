@@ -327,6 +327,12 @@ typedef struct {
     VALUE env[VM_ENV_DATA_SIZE + 1]; /* ..., envval */
 } cfunc_proc_t;
 
+static inline bool
+cfunc_proc_inline_env_p(const rb_proc_t *proc)
+{
+    return proc->block.as.captured.ep == ((const cfunc_proc_t *)proc)->env + VM_ENV_DATA_SIZE - 1;
+}
+
 static size_t
 proc_memsize(const void *ptr)
 {
@@ -1443,7 +1449,7 @@ rb_func_proc_dup(VALUE src_obj)
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
     const VALUE *src_ep = src_proc->block.as.captured.ep;
-    if (src_ep == ((const cfunc_proc_t *)src_proc)->env + VM_ENV_DATA_SIZE - 1) {
+    if (cfunc_proc_inline_env_p(src_proc)) {
         VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
         ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
         ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
@@ -2106,11 +2112,15 @@ rb_proc_eq(VALUE self, VALUE other)
             return Qfalse;
         }
 
-        if (memcmp(
-                ((cfunc_proc_t *)self_proc)->env,
-                ((cfunc_proc_t *)other_proc)->env,
-                sizeof(((cfunc_proc_t *)self_proc)->env))) {
-            return Qfalse;
+        if (self_block->as.captured.ep != other_block->as.captured.ep) {
+            if (!cfunc_proc_inline_env_p(self_proc) ||
+                    !cfunc_proc_inline_env_p(other_proc) ||
+                    memcmp(
+                        ((const cfunc_proc_t *)self_proc)->env,
+                        ((const cfunc_proc_t *)other_proc)->env,
+                        sizeof(((const cfunc_proc_t *)self_proc)->env))) {
+                return Qfalse;
+            }
         }
         break;
       case block_type_proc:
