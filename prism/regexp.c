@@ -15,6 +15,7 @@
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/strncasecmp.h"
+#include "prism/internal/xxh3.h"
 
 #include <string.h>
 
@@ -184,6 +185,13 @@ typedef struct {
     size_t length;
 } pm_regexp_name_t;
 
+/** A name's binding, with a one-based index into the capture list. */
+typedef struct {
+    uint64_t hash;
+    uint32_t capture;
+    uint32_t count;
+} pm_regexp_name_binding_t;
+
 /**
  * A list of the names of named groups.
  */
@@ -196,6 +204,15 @@ typedef struct {
 
     /** The number of names the list has room for. */
     size_t capacity;
+
+    /** Bindings built when a reference needs to search a larger list. */
+    pm_regexp_name_binding_t *bindings;
+
+    /** The number of distinct names in the bindings. */
+    size_t bindings_size;
+
+    /** The number of slots in the bindings, always a power of two when used. */
+    size_t bindings_capacity;
 } pm_regexp_names_t;
 
 /**
@@ -348,6 +365,54 @@ typedef struct {
     pm_regexp_deferreds_t deferreds;
 } pm_regexp_parser_t;
 
+/** Find the binding for a name, or its empty slot. */
+static pm_regexp_name_binding_t *
+pm_regexp_name_binding(const pm_regexp_names_t *names, pm_regexp_name_t name, uint64_t hash) {
+    size_t mask = names->bindings_capacity - 1;
+    size_t index = (size_t) hash & mask;
+
+    while (names->bindings[index].capture != 0) {
+        pm_regexp_name_binding_t *binding = &names->bindings[index];
+        const pm_regexp_name_t *capture = &names->values[binding->capture - 1];
+        if (binding->hash == hash && capture->length == name.length && memcmp(capture->start, name.start, name.length) == 0) return binding;
+        index = (index + 1) & mask;
+    }
+
+    return &names->bindings[index];
+}
+
+/** Update a name's binding when another capture with that name is opened. */
+static void
+pm_regexp_name_bind(pm_arena_t *arena, pm_regexp_names_t *names, size_t capture) {
+    if (names->bindings_size >= names->bindings_capacity / 4 * 3) {
+        size_t capacity = names->bindings_capacity == 0 ? 16 : names->bindings_capacity * 2;
+        size_t mask = capacity - 1;
+        pm_regexp_name_binding_t *bindings = PM_ARENA_ZALLOC_ARRAY(arena, pm_regexp_name_binding_t, capacity);
+
+        for (size_t index = 0; index < names->bindings_capacity; index++) {
+            pm_regexp_name_binding_t binding = names->bindings[index];
+            if (binding.capture == 0) continue;
+
+            size_t slot = (size_t) binding.hash & mask;
+            while (bindings[slot].capture != 0) slot = (slot + 1) & mask;
+            bindings[slot] = binding;
+        }
+
+        names->bindings = bindings;
+        names->bindings_capacity = capacity;
+    }
+
+    pm_regexp_name_t name = names->values[capture];
+    uint64_t hash = pm_xxh3(name.start, name.length);
+    pm_regexp_name_binding_t *binding = pm_regexp_name_binding(names, name, hash);
+    if (binding->capture == 0) {
+        binding->hash = hash;
+        binding->capture = (uint32_t) (capture + 1);
+        names->bindings_size++;
+    }
+    binding->count++;
+}
+
 /**
  * Append a name to the names of the named groups opened so far, growing the
  * list in the scratch arena.
@@ -366,6 +431,7 @@ pm_regexp_names_append(pm_regexp_parser_t *parser, pm_regexp_name_t name) {
     }
 
     names->values[names->size++] = name;
+    if (names->bindings != NULL) pm_regexp_name_bind(&parser->parser->scratch_arena, names, names->size - 1);
 }
 
 /**
@@ -1290,18 +1356,32 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
 }
 
 /**
- * Return true if a named group with the given name has been opened so far.
+ * Count the groups with this name that have been opened so far.
  */
-static bool
-pm_regexp_name_defined_p(const pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+static size_t
+pm_regexp_name_count(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    pm_regexp_names_t *names = &parser->names;
     size_t length = (size_t) (end - start);
 
-    for (size_t index = 0; index < parser->names.size; index++) {
-        const pm_regexp_name_t *name = &parser->names.values[index];
-        if (name->length == length && memcmp(name->start, start, length) == 0) return true;
+    /* Small capture lists are cheaper to scan than to index. */
+    if (names->size < 8) {
+        size_t count = 0;
+        for (size_t index = 0; index < names->size; index++) {
+            const pm_regexp_name_t *name = &names->values[index];
+            if (name->length == length && memcmp(name->start, start, length) == 0) count++;
+        }
+        return count;
     }
 
-    return false;
+    if (names->bindings == NULL) {
+        pm_arena_t *arena = &parser->parser->scratch_arena;
+        for (size_t index = 0; index < names->size; index++) {
+            pm_regexp_name_bind(arena, names, index);
+        }
+    }
+
+    pm_regexp_name_t name = { .start = start, .length = length };
+    return pm_regexp_name_binding(names, name, pm_xxh3(start, length))->count;
 }
 
 /**
@@ -1314,7 +1394,7 @@ pm_regexp_name_defined_p(const pm_regexp_parser_t *parser, const uint8_t *start,
 static bool
 pm_regexp_check_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_t *reference) {
     if (reference->number == 0) {
-        if (pm_regexp_name_defined_p(parser, reference->start, reference->end)) return true;
+        if (pm_regexp_name_count(parser, reference->start, reference->end) > 0) return true;
 
         pm_buffer_t buffer = { 0 };
         pm_buffer_append_string(&buffer, "undefined name <", 16);
@@ -1379,22 +1459,6 @@ pm_regexp_parse_quoted_error(pm_regexp_parser_t *parser, const uint8_t *start, c
 
     pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
     pm_buffer_cleanup(&buffer);
-}
-
-/**
- * Return the number of named groups in the pattern with the given name.
- */
-static size_t
-pm_regexp_name_count(const pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    size_t length = (size_t) (end - start);
-    size_t count = 0;
-
-    for (size_t index = 0; index < parser->names.size; index++) {
-        const pm_regexp_name_t *name = &parser->names.values[index];
-        if (name->length == length && memcmp(name->start, start, length) == 0) count++;
-    }
-
-    return count;
 }
 
 /**

@@ -28,6 +28,14 @@ module Ruby::Prism
       assert_equal([:foo], named_captures("(?<foo>bar)(?<foo>baz)"))
     end
 
+    def test_named_references_after_the_capture_index_grows
+      pattern = Array.new(64) { |index| "(?<n#{index}>a)\\k<n#{index}>" }.join
+      assert_empty Ruby::Prism.parse("/\\g<n63>#{pattern}/").errors
+
+      pattern += "(?<n0>b)\\g<n0>"
+      assert_equal ["multiplex definition name <n0> call: /#{pattern}/"], Ruby::Prism.parse("/#{pattern}/").errors.map(&:message)
+    end
+
     def test_named_capture_with_a_comment_in_its_name
       result = Ruby::Prism.parse('/(?<a(?#comment)b>x)/ =~ ab; ab')
       assert_empty result.errors
