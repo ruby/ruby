@@ -4284,6 +4284,7 @@ str_lower_case_match(OnigEncoding enc, int case_fold_flag,
 
   while (t < tend) {
     lowlen = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &p, end, lowbuf);
+    if (tend - t < lowlen) return 0;
     q = lowbuf;
     while (lowlen > 0) {
       if (*t++ != *q++)	return 0;
