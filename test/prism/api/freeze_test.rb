@@ -45,6 +45,8 @@ module Ruby::Prism
     # Sources and the locations within them refer to each other, so each object
     # is only checked the first time it is reached.
     def assert_frozen_each(value, seen = {}.compare_by_identity)
+      # JRuby's shared Encoding instances are unfrozen.
+      return if RUBY_ENGINE == "jruby" && value.is_a?(Encoding)
       return if seen.key?(value)
       seen[value] = true
 

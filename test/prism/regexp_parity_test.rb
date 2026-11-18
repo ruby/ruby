@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-return unless defined?(RubyVM::InstructionSequence.compile_parsey)
+# The expected diagnostics follow Ruby 4's regexp preprocessing and lexer
+# recovery. Older parse.y versions can report different errors for the same
+# malformed patterns.
+return unless RUBY_VERSION.to_i >= 4 && defined?(RubyVM::InstructionSequence.compile_parsey)
 
 require_relative "test_helper"
 
