@@ -90,6 +90,18 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /year must be 4 or more/) {
       Time.new("021-12-25 00:00:00.123456 +09:00")
     }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: 00") {
+      Time.new("00")
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: 00") {
+      Time.new("00 " + "x" * 1000)
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: 000") {
+      Time.new("000")
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: +00") {
+      Time.new("+00")
+    }
     assert_raise_with_message(ArgumentError, /fraction min is.*56\./) {
       Time.new("2020-12-25 00:56. +0900")
     }
