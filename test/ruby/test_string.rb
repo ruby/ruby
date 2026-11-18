@@ -187,6 +187,17 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("x"), s)
   end
 
+  def test_AREF_fixed_width_large_length
+    require "rbconfig/sizeof"
+    len = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    [Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      s = S("abcd".encode(enc))
+      assert_equal(S("bcd".encode(enc)), s[1, len], enc.name)
+      assert_equal(S("bcd".encode(enc)), s[1, len * 2], enc.name)
+      assert_equal(S("bcd".encode(enc)), s.dup.slice!(1, len), enc.name)
+    end
+  end
+
   def test_AREF_invalid_encoding
     assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
   end
@@ -3400,6 +3411,14 @@ class TestString < Test::Unit::TestCase
 
   def test_match_method
     assert_equal("bar", S("foobarbaz").match(/bar/).to_s)
+
+    require "rbconfig/sizeof"
+    pos = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    s = S("abcd".encode(Encoding::UTF_32LE))
+    re = Regexp.new("c".encode(Encoding::UTF_32LE))
+    assert_nil(s.match(re, pos))
+    assert_nil(s.match(re, pos * 2))
+    assert_equal(false, s.match?(re, pos))
 
     o = Class.new(Regexp) {
       def match(x, y, z) = x + y + z
