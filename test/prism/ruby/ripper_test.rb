@@ -83,6 +83,9 @@ module Ruby::Prism
       # Ripper's lex state on a newline delimited %r depends on what follows it.
       "heredoc_percent_newline_delimiter.txt",
 
+      # Ripper skips registering keyword parameters as locals in f_label.
+      "unparser/corpus/literal/def.txt",
+
       "heredoc_with_escaped_newline_at_start.txt",
       "heredocs_with_fake_newlines.txt",
       "indented_file_end.txt",

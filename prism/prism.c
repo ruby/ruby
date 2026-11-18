@@ -15002,9 +15002,8 @@ parse_parameters(
                 update_parameter_state(parser, &parser->current, &order);
 
                 context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
-                parser_lex(parser);
 
-                pm_token_t name = parser->previous;
+                pm_token_t name = parser->current;
                 pm_token_t local = name;
                 local.end -= 1;
 
@@ -15015,7 +15014,9 @@ parse_parameters(
                 }
 
                 bool repeated = pm_parser_parameter_name_check(parser, &local);
+                /* Make the parameter visible before lexing its default. */
                 pm_parser_local_add_token(parser, &local, 1);
+                parser_lex(parser);
 
                 switch (parser->current.type) {
                     case PM_TOKEN_COMMA:
