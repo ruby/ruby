@@ -954,4 +954,21 @@ class TestEncodingConverter < Test::Unit::TestCase
     EOS
     end
   end
+
+  def test_primitive_convert_same_buffer
+    ec = Encoding::Converter.new("UTF-8", "ISO-8859-1")
+    s = +"abc"
+    assert_raise(ArgumentError) { ec.primitive_convert(s, s) }
+    assert_raise(ArgumentError) { ec.primitive_convert(s, s, 0, 64) }
+
+    obj = Object.new
+    obj.define_singleton_method(:to_str) { s }
+    assert_raise(ArgumentError) { ec.primitive_convert(obj, s) }
+
+    src = +"abc" * 50
+    dst = src.dup
+    assert_equal(:finished, ec.primitive_convert(src, dst))
+    assert_equal("", src)
+    assert_equal("abc" * 100, dst)
+  end
 end
