@@ -140,7 +140,9 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self)
         rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
     }
 
-    return ractor_receive(ec, rp);
+    VALUE v = ractor_receive(ec, rp);
+    RB_GC_GUARD(self);
+    return v;
 }
 
 static VALUE
@@ -148,6 +150,7 @@ ractor_port_send(rb_execution_context_t *ec, VALUE self, VALUE obj, VALUE move)
 {
     const struct ractor_port *rp = RACTOR_PORT_PTR(self);
     ractor_send(ec, rp, obj, RTEST(move));
+    RB_GC_GUARD(self);
     return self;
 }
 
