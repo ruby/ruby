@@ -781,6 +781,7 @@ EOT
           # colorize and format them. We strip them out here to make them easier
           # to match against in tests.
           message = e.message
+          message = message.b unless message.valid_encoding?
           message.gsub!(/\e\[.*?m/, "")
 
           assert_match(error, message, mesg)
