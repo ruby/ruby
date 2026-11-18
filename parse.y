@@ -4619,6 +4619,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_class.in_class;
                     p->ctxt.cant_return = $k_class.cant_return;
                     p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_class.in_rescue;
                 }
             | k_class tLSHFT expr_value
                 {
@@ -4638,6 +4639,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_class.in_class;
                     p->ctxt.cant_return = $k_class.cant_return;
                     p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_class.in_rescue;
                 }
             | k_module cpath
                 {
@@ -4655,6 +4657,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_module.in_class;
                     p->ctxt.cant_return = $k_module.cant_return;
                     p->ctxt.shareable_constant_value = $k_module.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_module.in_rescue;
                 }
             | defn_head[head]
               f_arglist[args]
