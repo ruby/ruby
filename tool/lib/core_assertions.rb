@@ -148,15 +148,18 @@ module Test
       end
 
       if defined?(RubyVM::InstructionSequence)
-        def syntax_check(code, fname, line)
+        COMPILE_METHODS = RubyVM::InstructionSequence.methods(false).
+                            grep(/\Acompile_(?!option|file)(\w+)\z/) {$1}
+        def syntax_check(code, fname, line, compile: nil)
           code = code.dup.force_encoding(Encoding::UTF_8)
-          RubyVM::InstructionSequence.compile(code, fname, fname, line)
+          RubyVM::InstructionSequence.__send__(compile || :compile, code, fname, fname, line)
           :ok
         ensure
           raise if SyntaxError === $!
         end
       else
-        def syntax_check(code, fname, line)
+        COMPILE_METHODS = []
+        def syntax_check(code, fname, line, compile: nil)
           code = code.b
           code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
             "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
@@ -412,7 +415,7 @@ module Test
         end
       end
 
-      def prepare_syntax_check(code, fname = nil, mesg = nil, verbose: nil)
+      def prepare_syntax_check(code, fname = nil, mesg = nil, verbose: nil, parser: nil)
         fname ||= caller_locations(2, 1)[0]
         mesg ||= fname.to_s
         verbose, $VERBOSE = $VERBOSE, verbose
@@ -424,24 +427,58 @@ module Test
         else
           line = 1
         end
-        yield(code, fname, line, message(mesg) {
-                if code.end_with?("\n")
-                  "```\n#{code}```\n"
-                else
-                  "```\n#{code}\n```\n""no-newline"
-                end
-              })
+        mesg = message(mesg) {
+          if code.end_with?("\n")
+            "```\n#{code}```\n"
+          else
+            "```\n#{code}\n```\n""no-newline"
+          end
+        }
+        if parser == :*
+          all = AllFailures.new(*COMPILE_METHODS.map {|p| "compile_#{p}"})
+        elsif parser
+          all = AllFailures.new(*(Array(parser).map(&:to_s) & COMPILE_METHODS).map {|p| "compile_#{p}"})
+        else
+          all = AllFailures.new(:compile)
+        end
+        yield(code, fname, line, mesg, all)
       ensure
         $VERBOSE = verbose
+        assert(all.pass?, message(mesg) {all.message.chomp(".")})
       end
 
       def assert_valid_syntax(code, *args, **opt)
-        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
+        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg, all|
           yield if defined?(yield)
-          assert_nothing_raised(SyntaxError, mesg) do
-            assert_equal(:ok, syntax_check(src, fname, line), mesg)
+          all.run do |compile|
+            assert_nothing_raised(SyntaxError, mesg) do
+              assert_equal(:ok, syntax_check(src, fname, line, compile: compile), mesg)
+            end
           end
         end
+      end
+
+      def assert_syntax_error(code, error, *args, **opt)
+        exc = nil
+        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg, all|
+          yield if defined?(yield)
+          all.run do |compile|
+            e = assert_raise(SyntaxError, mesg) do
+              syntax_check(src, fname, line, compile: compile)
+            end
+
+            # Prism adds ANSI escape sequences to syntax error messages to
+            # colorize and format them. We strip them out here to make them easier
+            # to match against in tests.
+            message = e.message
+            message = message.b unless message.valid_encoding?
+            message.gsub!(/\e\[.*?m/, "")
+
+            assert_match(error, message, mesg)
+            exc = e if e
+          end
+        end
+        exc
       end
 
       def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
@@ -958,9 +995,10 @@ eom
       class AllFailures
         attr_reader :failures
 
-        def initialize
+        def initialize(*keys)
           @count = 0
           @failures = {}
+          @keys = keys
         end
 
         def for(key)
@@ -979,6 +1017,10 @@ eom
               @failures[key] = [@count, e]
             end
           end
+        end
+
+        def run(&b)
+          foreach(*@keys, &b)
         end
 
         def message

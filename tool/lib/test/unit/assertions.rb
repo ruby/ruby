@@ -770,25 +770,6 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
-      def assert_syntax_error(code, error, *args, **opt)
-        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
-          yield if defined?(yield)
-          e = assert_raise(SyntaxError, mesg) do
-            syntax_check(src, fname, line)
-          end
-
-          # Prism adds ANSI escape sequences to syntax error messages to
-          # colorize and format them. We strip them out here to make them easier
-          # to match against in tests.
-          message = e.message
-          message = message.b unless message.valid_encoding?
-          message.gsub!(/\e\[.*?m/, "")
-
-          assert_match(error, message, mesg)
-          e
-        end
-      end
-
       def assert_no_warning(pat, msg = nil)
         result = nil
         stderr = EnvUtil.verbose_warning {
