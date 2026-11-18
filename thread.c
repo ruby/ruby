@@ -463,6 +463,23 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 }
 
 void
+rb_threadptr_join_list_handle_weak_references(rb_thread_t *th, void *objspace)
+{
+    struct rb_waiting_list **p = &th->join_list;
+
+    while (*p) {
+        struct rb_waiting_list *waiter = *p;
+
+        if (waiter_abandoned_p(objspace, waiter->thread, waiter->fiber)) {
+            *p = waiter->next;
+        }
+        else {
+            p = &waiter->next;
+        }
+    }
+}
+
+void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
     while (th->keeping_mutexes) {

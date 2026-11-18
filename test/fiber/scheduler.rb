@@ -492,3 +492,42 @@ class SleepingBlockingScheduler < Scheduler
     return true
   end
 end
+
+# Runs, in a separate process, a scheduler fiber that waits on a holder and is
+# left parked by a scheduler that never resumes it. The thread then exits, the
+# fiber is collected (or, with keep_fiber, outlives its thread), and wake runs.
+# With incremental, the wait happens while an incremental major GC is marking.
+# A crash here means the holder still referenced the fiber's on-stack waiter.
+module ParkedWaiterAssertions
+  def assert_parked_waiter_released(setup, wait, wake, old_holder: false, keep_fiber: false, incremental: false, iterations: 10)
+    gc = old_holder ? "GC.start(full_mark: false)" : "GC.start"
+    assert_separately([], <<~RUBY)
+      $parked = []
+      class ParkingScheduler
+        def initialize = @main = Fiber.current
+        def block(blocker, timeout = nil)
+          $parked << Fiber.current if #{keep_fiber}
+          @main.transfer
+        end
+        def unblock(blocker, fiber) = nil
+        def kernel_sleep(duration = nil) = block(:sleep, duration)
+        def io_wait(io, events, timeout) = block(:io_wait, timeout)
+        def fiber_interrupt(fiber, exception) = nil
+        def close = nil
+        def fiber(&) = Fiber.new(blocking: false, &).tap(&:transfer)
+      end
+
+      #{iterations}.times do
+        holder = (#{setup})
+        4.times { GC.start } if #{old_holder}
+        GC.start(full_mark: true, immediate_mark: false) if #{incremental}
+        Thread.new do
+          Fiber.set_scheduler(ParkingScheduler.new)
+          Fiber.schedule { (#{wait}).(holder) }
+        end.join
+        #{gc}
+        (#{wake}).(holder)
+      end
+    RUBY
+  end
+end

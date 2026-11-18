@@ -38,12 +38,50 @@ struct queue_sleep_arg {
 
 #define MUTEX_ALLOW_TRAP FL_USER1
 
+/* A parked scheduler fiber can be collected, or outlive its thread, without
+ * running the ensure that unlinks its on-stack waiter. */
+static bool
+waiter_abandoned_p(void *objspace, rb_thread_t *th, rb_fiber_t *fiber)
+{
+    if (!fiber) return false;
+    if (!rb_gc_handle_weak_references_alive_p(objspace, rb_fiberptr_self(fiber))) return true;
+    return th->status == THREAD_KILLED;
+}
+
 static void
+sync_waiter_link(VALUE holder, struct ccan_list_head *head, struct sync_waiter *w)
+{
+    ccan_list_add_tail(head, &w->node);
+
+    if (w->fiber) {
+        RB_OBJ_WRITTEN(holder, Qundef, rb_fiberptr_self(w->fiber));
+    }
+}
+
+static int
+sync_waitq_handle_weak_references(struct ccan_list_head *head, void *objspace)
+{
+    struct sync_waiter *cur = 0, *next;
+    int dropped = 0;
+
+    ccan_list_for_each_safe(head, cur, next, node) {
+        if (waiter_abandoned_p(objspace, cur->th, cur->fiber)) {
+            ccan_list_del_init(&cur->node);
+            dropped++;
+        }
+    }
+
+    return dropped;
+}
+
+/* Returns the number of waiters of dead threads it dropped. */
+static int
 sync_wakeup(struct ccan_list_head *head, rb_len_t max)
 {
     RUBY_DEBUG_LOG("max:%"PRIdLEN, max);
 
     struct sync_waiter *cur = 0, *next;
+    int dropped = 0;
 
     ccan_list_for_each_safe(head, cur, next, node) {
         ccan_list_del_init(&cur->node);
@@ -58,21 +96,26 @@ sync_wakeup(struct ccan_list_head *head, rb_len_t max)
                 cur->th->status = THREAD_RUNNABLE;
             }
 
-            if (--max == 0) return;
+            if (--max == 0) break;
+        }
+        else {
+            dropped++;
         }
     }
+
+    return dropped;
 }
 
-static void
+static int
 wakeup_one(struct ccan_list_head *head)
 {
-    sync_wakeup(head, 1);
+    return sync_wakeup(head, 1);
 }
 
-static void
+static int
 wakeup_all(struct ccan_list_head *head)
 {
-    sync_wakeup(head, RB_LEN_MAX);
+    return sync_wakeup(head, RB_LEN_MAX);
 }
 
 #if defined(HAVE_WORKING_FORK)
@@ -121,9 +164,16 @@ mutex_memsize(const void *ptr)
     return sizeof(rb_mutex_t);
 }
 
+static void
+mutex_handle_weak_references(void *ptr, void *objspace)
+{
+    rb_mutex_t *mutex = ptr;
+    sync_waitq_handle_weak_references(&mutex->waitq, objspace);
+}
+
 static const rb_data_type_t mutex_data_type = {
     "mutex",
-    {NULL, mutex_free, mutex_memsize,},
+    {NULL, mutex_free, mutex_memsize, NULL, mutex_handle_weak_references,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -150,6 +200,7 @@ mutex_alloc(VALUE klass)
     rb_mutex_t *mutex;
 
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
+    rb_gc_declare_weak_references(obj);
 
     ccan_list_head_init(&mutex->waitq);
     return obj;
@@ -307,7 +358,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                     .fiber = nonblocking_fiber(fiber)
                 };
 
-                ccan_list_add_tail(&mutex->waitq, &sync_waiter.node);
+                sync_waiter_link(self, &mutex->waitq, &sync_waiter);
 
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
@@ -473,9 +524,10 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
                 rb_threadptr_interrupt(cur->th);
                 return NULL;
               case THREAD_STOPPED: /* probably impossible */
-              case THREAD_KILLED: /* not sure about this, possible in exit GC? */
-                /* MSVC 14.52 for ARM64 crashes with /Os on two separate rb_bug calls here */
-                rb_bug("unexpected %s", cur->th->status == THREAD_STOPPED ? "THREAD_STOPPED" : "THREAD_KILLED");
+                rb_bug("unexpected THREAD_STOPPED");
+              case THREAD_KILLED:
+                /* a scheduler fiber left parked by its dead thread */
+                continue;
             }
         }
     }
@@ -711,6 +763,16 @@ queue_memsize(const void *ptr)
     return sizeof(struct rb_queue) + (q->capa * sizeof(VALUE));
 }
 
+static bool queue_fork_check(struct rb_queue *q);
+
+static void
+queue_handle_weak_references(void *ptr, void *objspace)
+{
+    struct rb_queue *q = ptr;
+    if (queue_fork_check(q)) return;
+    q->num_waiting -= sync_waitq_handle_weak_references(&q->waitq, objspace);
+}
+
 static const rb_data_type_t queue_data_type = {
     .wrap_struct_name = "Thread::Queue",
     .function = {
@@ -718,6 +780,7 @@ static const rb_data_type_t queue_data_type = {
         .dfree = queue_free,
         .dsize = queue_memsize,
         .dcompact = queue_mark_and_move,
+        .handle_weak_references = queue_handle_weak_references,
     },
     .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
@@ -729,6 +792,7 @@ queue_alloc(VALUE klass)
     struct rb_queue *q;
 
     obj = TypedData_Make_Struct(klass, struct rb_queue, &queue_data_type, q);
+    rb_gc_declare_weak_references(obj);
     ccan_list_head_init(&q->waitq);
     return obj;
 }
@@ -816,6 +880,19 @@ szqueue_memsize(const void *ptr)
     return sizeof(struct rb_szqueue) + (sq->q.capa * sizeof(VALUE));
 }
 
+static void
+szqueue_handle_weak_references(void *ptr, void *objspace)
+{
+    struct rb_szqueue *sq = ptr;
+    if (queue_fork_check(&sq->q)) {
+        ccan_list_head_init(szqueue_pushq(sq));
+        sq->num_waiting_push = 0;
+        return;
+    }
+    sq->q.num_waiting -= sync_waitq_handle_weak_references(szqueue_waitq(sq), objspace);
+    sq->num_waiting_push -= sync_waitq_handle_weak_references(szqueue_pushq(sq), objspace);
+}
+
 static const rb_data_type_t szqueue_data_type = {
     .wrap_struct_name = "Thread::SizedQueue",
     .function = {
@@ -823,6 +900,7 @@ static const rb_data_type_t szqueue_data_type = {
         .dfree = szqueue_free,
         .dsize = szqueue_memsize,
         .dcompact = szqueue_mark_and_move,
+        .handle_weak_references = szqueue_handle_weak_references,
     },
     .parent = &queue_data_type,
     .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
@@ -834,6 +912,7 @@ szqueue_alloc(VALUE klass)
     struct rb_szqueue *sq;
     VALUE obj = TypedData_Make_Struct(klass, struct rb_szqueue,
                                         &szqueue_data_type, sq);
+    rb_gc_declare_weak_references(obj);
     ccan_list_head_init(szqueue_waitq(sq));
     ccan_list_head_init(szqueue_pushq(sq));
     return obj;
@@ -972,7 +1051,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
         raise_closed_queue_error(self);
     }
     ring_buffer_push(self, q, obj);
-    wakeup_one(&q->waitq);
+    q->num_waiting -= wakeup_one(&q->waitq);
     return self;
 }
 
@@ -1041,9 +1120,7 @@ queue_do_pop(rb_execution_context_t *ec, VALUE self, struct rb_queue *q, VALUE n
                 .as = {.q = q}
             };
 
-            struct ccan_list_head *waitq = &q->waitq;
-
-            ccan_list_add_tail(waitq, &queue_waiter.w.node);
+            sync_waiter_link(self, &q->waitq, &queue_waiter.w);
             queue_waiter.as.q->num_waiting++;
 
             struct queue_sleep_arg queue_sleep_arg = {
@@ -1117,9 +1194,7 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
                 .as = {.sq = sq}
             };
 
-            struct ccan_list_head *pushq = szqueue_pushq(sq);
-
-            ccan_list_add_tail(pushq, &queue_waiter.w.node);
+            sync_waiter_link(self, szqueue_pushq(sq), &queue_waiter.w);
             sq->num_waiting_push++;
 
             struct queue_sleep_arg queue_sleep_arg = {
@@ -1144,7 +1219,7 @@ rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE ti
     VALUE retval = queue_do_pop(ec, self, &sq->q, non_block, timeout);
 
     if (sq->q.len < sq->max) {
-        wakeup_one(szqueue_pushq(sq));
+        sq->num_waiting_push -= wakeup_one(szqueue_pushq(sq));
     }
 
     return retval;
@@ -1162,9 +1237,31 @@ condvar_memsize(const void *ptr)
     return sizeof(struct rb_condvar);
 }
 
+static bool
+condvar_fork_check(struct rb_condvar *cv)
+{
+    rb_serial_t fork_gen = GET_VM()->fork_gen;
+
+    /* forked children can't reach into parent thread stacks */
+    if (cv->fork_gen != fork_gen) {
+        cv->fork_gen = fork_gen;
+        ccan_list_head_init(&cv->waitq);
+        return true;
+    }
+    return false;
+}
+
+static void
+condvar_handle_weak_references(void *ptr, void *objspace)
+{
+    struct rb_condvar *cv = ptr;
+    if (condvar_fork_check(cv)) return;
+    sync_waitq_handle_weak_references(&cv->waitq, objspace);
+}
+
 static const rb_data_type_t cv_data_type = {
     "condvar",
-    {0, RUBY_TYPED_DEFAULT_FREE, condvar_memsize,},
+    {0, RUBY_TYPED_DEFAULT_FREE, condvar_memsize, NULL, condvar_handle_weak_references,},
     0, 0, RUBY_TYPED_THREAD_SAFE_FREE|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -1172,15 +1269,9 @@ static struct rb_condvar *
 condvar_ptr(VALUE self)
 {
     struct rb_condvar *cv;
-    rb_serial_t fork_gen = GET_VM()->fork_gen;
 
     TypedData_Get_Struct(self, struct rb_condvar, &cv_data_type, cv);
-
-    /* forked children can't reach into parent thread stacks */
-    if (cv->fork_gen != fork_gen) {
-        cv->fork_gen = fork_gen;
-        ccan_list_head_init(&cv->waitq);
-    }
+    condvar_fork_check(cv);
 
     return cv;
 }
@@ -1192,6 +1283,7 @@ condvar_alloc(VALUE klass)
     VALUE obj;
 
     obj = TypedData_Make_Struct(klass, struct rb_condvar, &cv_data_type, cv);
+    rb_gc_declare_weak_references(obj);
     ccan_list_head_init(&cv->waitq);
 
     return obj;
@@ -1233,7 +1325,7 @@ rb_condvar_wait(rb_execution_context_t *ec, VALUE self, VALUE mutex, VALUE timeo
         .fiber = nonblocking_fiber(ec->fiber_ptr)
     };
 
-    ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
+    sync_waiter_link(self, &cv->waitq, &sync_waiter);
     return rb_ec_ensure(ec, do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 

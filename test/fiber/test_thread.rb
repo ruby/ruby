@@ -172,4 +172,32 @@ class TestFiberThread < Test::Unit::TestCase
   ensure
     inner&.join
   end
+
+  # A fiber parked in Thread#join by a scheduler that never resumes it leaves its
+  # on-stack join waiter linked into the target's join list. Once the fiber was
+  # collected, the target's exit read the freed waiter.
+  def test_thread_join_from_collected_fiber
+    assert_separately([], <<~'RUBY')
+      class Scheduler
+        def initialize = @main = Fiber.current
+        def block(blocker, timeout = nil) = @main.transfer
+        def unblock(blocker, fiber) = nil
+        def kernel_sleep(duration = nil) = block(:sleep, duration)
+        def io_wait(io, events, timeout) = block(:io_wait, timeout)
+        def fiber_interrupt(fiber, exception) = nil
+        def close = nil
+        def fiber(&) = Fiber.new(blocking: false, &).tap(&:transfer)
+      end
+
+      100.times do |i|
+        target = nil
+        Thread.new do
+          Fiber.set_scheduler(Scheduler.new)
+          Fiber.schedule { (target = Thread.new { sleep 0.001 }).join }
+        end.join
+        GC.start(full_mark: i.even?)
+        target.join
+      end
+    RUBY
+  end
 end

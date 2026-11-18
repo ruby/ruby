@@ -102,6 +102,7 @@ void rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
                               rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags);
 
 void rb_threadptr_interrupt_exec_task_mark(struct rb_thread_struct *th);
+void rb_threadptr_join_list_handle_weak_references(struct rb_thread_struct *th, void *objspace);
 
 /* Mark the roots of the heap objects a thread owns, excluding ec and fiber.  Used by
  * thread_mark and by the Ractor's local-root marking (rb_ractor_mark_local_roots). */
