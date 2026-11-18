@@ -57,27 +57,11 @@ module Ruby::Prism
       end
     end
 
-    def test_implicit_method_rescue_allows_yield_in_exception_expression
-      result = Ruby::Prism.parse("def f; rescue yield; :rescued; end")
-
-      assert_predicate result, :success?
-    end
-
     def test_endless_method_rescue_rejects_unattached_do_block
       result = Ruby::Prism.parse("relay def f = 1 rescue 2 do end")
 
       assert_equal [:def_endless_do_block], result.errors.map(&:type)
       assert_equal "do end", result.errors.first.location.slice
-    end
-
-    def test_endless_method_rescue_allows_block_on_rescue_call
-      result = Ruby::Prism.parse("relay def f = 1 rescue work do end")
-      call = result.value.statements.body.first
-      rescue_modifier = call.arguments.arguments.first.body.body.first
-
-      assert_predicate result, :success?
-      assert_nil call.block
-      assert_equal "do end", rescue_modifier.rescue_expression.block.location.slice
     end
 
     def test_module_name_rejects_symbol_ending_in_constant_token
@@ -87,56 +71,7 @@ module Ruby::Prism
       assert_equal ":A", result.errors.first.location.slice
     end
 
-    def test_defined_after_newline_parses_grouped_operand
-      result = Ruby::Prism.parse("defined?\n(a; b) * ()")
-
-      assert_predicate result, :success?
-      node = result.statement
-      assert_nil node.lparen_loc
-      assert_equal :*, node.value.name
-      assert_equal [:a, :b], node.value.receiver.body.body.map(&:name)
-    end
-
-    def test_not_after_newline_parses_grouped_operand
-      result = Ruby::Prism.parse("not\n(;) || raise")
-
-      assert_predicate result, :success?
-      node = result.statement
-      assert_equal :!, node.name
-      assert_kind_of OrNode, node.receiver
-      assert_kind_of ParenthesesNode, node.receiver.left
-    end
-
-    def test_numbered_parameter_name_used_as_command_call
-      result = Ruby::Prism.parse("wrap { _1 item }")
-
-      assert_predicate result, :success?
-      block = result.statement.block
-      assert_empty block.locals
-      assert_nil block.parameters
-      assert_equal :_1, block.body.body.first.name
-    end
-
-    def test_numbered_parameter_name_used_as_call_with_block
-      result = Ruby::Prism.parse("wrap do _1 { _9 } end")
-
-      assert_predicate result, :success?
-      outer = result.statement.block
-      assert_empty outer.locals
-      assert_nil outer.parameters
-      inner = outer.body.body.first.block
-      assert_equal 9, inner.parameters.maximum
-    end
-
-    def test_begin_with_rescue_and_ensure_in_value_position
-      [
-        "def f; x = begin; return; rescue; ensure; end; end",
-        "def f; x = begin; return; rescue TypeError; return; rescue; 1; ensure; end; end",
-        "def f; x = begin; 1; rescue; return; ensure; end; end"
-      ].each do |source|
-        assert_predicate Ruby::Prism.parse(source), :success?, source
-      end
-
+    def test_begin_with_rescue_and_ensure_rejects_void_values
       result = Ruby::Prism.parse("def f; x = begin; return :body; rescue; return :rescue; ensure; end; end")
       assert_equal [:void_expression], result.errors.map(&:type)
       assert_equal "return :body", result.errors.first.location.slice
@@ -144,15 +79,6 @@ module Ruby::Prism
       result = Ruby::Prism.parse("def f; x = begin; return :body; rescue; 1; ensure; return :ensure; end; end")
       assert_equal [:void_expression], result.errors.map(&:type)
       assert_equal "return :ensure", result.errors.first.location.slice
-    end
-
-    def test_parenthesized_targets_allow_newline_before_closing_parenthesis
-      ["(((first, second))\n) = [1, 2]", "(*target\n) = 1", "((first, second), third\n) = [1, 2, 3]"].each do |source|
-        result = Ruby::Prism.parse(source)
-
-        assert_predicate result, :success?, source
-        assert_kind_of MultiWriteNode, result.statement
-      end
     end
 
     def test_parenthesized_targets_reject_newline_before_assignment
@@ -174,24 +100,6 @@ module Ruby::Prism
       assert_includes result.errors.map(&:type), :class_unexpected_end
     end
 
-    def test_singleton_class_body_allows_blocks_in_loop_condition
-      result = Ruby::Prism.parse("while class << target; work do end; false; end do break end")
-
-      assert_predicate result, :success?
-      loop_node = result.statement
-      assert_equal "do", loop_node.do_keyword_loc.slice
-      assert_equal "do end", loop_node.predicate.body.body.first.block.location.slice
-    end
-
-    def test_parenthesized_singleton_receiver_starts_in_expression_state
-      result = Ruby::Prism.parse("def(target:primary).hello = :hi")
-
-      assert_predicate result, :success?
-      receiver = result.statement.receiver.body
-      assert_equal :target, receiver.name
-      assert_equal :primary, receiver.arguments.arguments.first.unescaped.to_sym
-    end
-
     def test_singleton_method_definition_rejects_setter_name_as_receiver
       [".", "::"].each do |operator|
         result = Ruby::Prism.parse("def target=#{operator}greet; end")
@@ -207,41 +115,17 @@ module Ruby::Prism
 
         assert_equal [:invalid_constant_read], result.errors.map(&:type)
         assert_equal name, result.errors.first.location.slice
-        assert_predicate Ruby::Prism.parse("{ #{name}: true }"), :success?
       end
-
-      result = Ruby::Prism.parse("{ Flag: }")
-      assert_predicate result, :success?
-      assert_kind_of ConstantReadNode, result.statement.elements.first.value.value
 
       assert_equal [:invalid_local_variable_read], Ruby::Prism.parse("{ flag?: }").errors.map(&:type)
     end
 
-    def test_colon_delimited_percent_symbol_is_not_a_label
-      result = Ruby::Prism.parse('case :""; in %s::; :ok; end')
-      assert_predicate result, :success?
-      assert_equal "", result.statement.conditions.first.pattern.unescaped
-
-      result = Ruby::Prism.parse("{ %s:name: => 1 }")
-      assert_predicate result, :success?
-      assert_equal "=>", result.statement.elements.first.operator_loc.slice
-
+    def test_colon_delimited_percent_symbol_requires_hash_rocket
       result = Ruby::Prism.parse("{ %s:: 1 }")
       assert_equal [:hash_rocket], result.errors.map(&:type)
     end
 
-    def test_nested_beginless_range_in_call_arguments
-      result = Ruby::Prism.parse("p(1, .....2)")
-
-      assert_predicate result, :success?
-      outer = result.statement.arguments.arguments.last
-      assert_nil outer.left
-      assert_equal "...", outer.operator_loc.slice
-      inner = outer.right
-      assert_nil inner.left
-      assert_equal "..", inner.operator_loc.slice
-      assert_equal 2, inner.right.value
-
+    def test_beginless_range_rejects_unparenthesized_binary_range_operand
       assert_equal [:unexpected_range_operator], Ruby::Prism.parse("p(...1..2)").errors.map(&:type)
     end
 

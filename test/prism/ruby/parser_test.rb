@@ -75,6 +75,9 @@ module Ruby::Prism
 
       # ? followed by a character that is not ASCII and not alphanumeric
       "ternary_operator_non_ascii.txt",
+
+      # The receiver's symbol argument is lexed as a label.
+      "singleton_receiver_symbol_argument.txt",
     ]
 
     # These files contain code that is being parsed incorrectly by the parser

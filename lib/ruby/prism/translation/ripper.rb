@@ -23,7 +23,7 @@ module Ruby::Prism
     # - on_ignored_nl
     # - on_ignored_sp
     # - on_nl
-    # - on_operator_ambiguous
+    # - on_operator_ambiguous for `:`
     # - on_semicolon
     # - on_sp
     #
@@ -613,6 +613,22 @@ module Ruby::Prism
               on_arg_ambiguous("-")
             when :ambiguous_slash
               on_arg_ambiguous("/")
+            when :ambiguous_binary_operator
+              operator = warning.location.slice
+              message =
+                case operator
+                when "+", "-" then "unary operator"
+                when "*", "**", "&" then "argument prefix"
+                when "/" then "regexp literal"
+                when "%" then "string literal"
+                when "<<" then "here document"
+                end
+
+              if message
+                on_operator_ambiguous(operator.to_sym, message)
+              else
+                warn(warning.message)
+              end
             else
               warn(warning.message)
             end

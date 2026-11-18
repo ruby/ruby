@@ -1356,7 +1356,8 @@ module Ruby::Prism
         def visit_multi_write_node(node)
           elements = multi_target_elements(node)
 
-          if elements.length == 1 && elements.first.is_a?(MultiTargetNode) && !node.rest
+          # The parser gem flattens consecutive parentheses around the entire left-hand side.
+          while elements.length == 1 && elements.first.is_a?(MultiTargetNode) && !node.rest
             elements = multi_target_elements(elements.first)
           end
 

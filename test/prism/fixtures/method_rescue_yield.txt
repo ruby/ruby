@@ -1,0 +1,4 @@
+def f
+  rescue yield
+    :rescued
+end
