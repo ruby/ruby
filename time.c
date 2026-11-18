@@ -2578,17 +2578,21 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
 
     if (!NIL_P(zone)) {
         time_set_timew(time, tobj, timegmw(&vtm));
-        vtm_day_wraparound(&vtm);
-        time_set_vtm(time, tobj, vtm);
+        struct vtm tvtm = vtm;
+        vtm_day_wraparound(&tvtm);
+        time_set_vtm(time, tobj, tvtm);
         tobj->vtm.tm_got = 1;
         TZMODE_SET_LOCALTIME(tobj);
         if (zone_timelocal(zone, time)) {
             return time;
         }
-        else if (NIL_P(vtm.utc_offset = utc_offset_arg(zone))) {
+        else if (NIL_P(utc = utc_offset_arg(zone))) {
             if (NIL_P(zone = find_timezone(time, zone)) || !zone_timelocal(zone, time))
                 invalid_utc_offset(arg);
+            return time;
         }
+        vtm.utc_offset = utc == UTC_ZONE ? INT2FIX(0) : utc;
+        validate_utc_offset(vtm.utc_offset);
     }
 
     if (utc == UTC_ZONE) {
