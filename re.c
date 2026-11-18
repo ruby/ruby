@@ -623,7 +623,7 @@ rb_reg_str_with_term(VALUE re, int term)
     const UChar *ptr = (UChar *)RSTRING_PTR(src_str);
     rb_len_t len = RSTRING_LEN(src_str);
   again:
-    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
+    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?' && rb_enc_asciicompat(enc)) {
         int err = 1;
         ptr += 2;
         if ((len -= 2) > 0) {

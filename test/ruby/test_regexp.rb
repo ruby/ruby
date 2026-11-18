@@ -83,6 +83,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("(?-mix:".force_encoding(Encoding::Shift_JIS) + src + ")", EnvUtil.suppress_warning { re.to_s })
   end
 
+  def test_to_s_wide_char_looks_like_option_prefix
+    [Encoding::UTF_16LE, Encoding::UTF_16BE].each do |enc|
+      src = "(?mi:ab)".force_encoding(enc)
+      assert_equal("(?-mix:".encode(enc) + src + ")".encode(enc), Regexp.new(src).to_s)
+    end
+  end
+
   def test_to_s_under_gc_compact_stress
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
