@@ -1900,6 +1900,15 @@ x = __ENCODING__
     assert_syntax_error("#encoding: sjis\n%W \xE2\xE2\xE20\\u0400 ", invalid)
   end
 
+  def test_false_interpolation
+    code = '[/(?<captured>#@)/ =~ "#@", defined?(captured)]'
+    inst = RubyVM::InstructionSequence
+    results = inst.methods(false).grep(/\Acompile_(?!file|option)\w+\z/).group_by do |compile|
+      inst.__send__(compile, code).eval
+    end
+    assert_equal [[0, "local-variable"]], results.keys, results
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

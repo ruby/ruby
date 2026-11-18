@@ -1059,6 +1059,8 @@ static int parser_yyerror0(struct parser_params*, const char*);
 #define lex_eol_ptr_p(p,ptr) lex_eol_ptr_n_p(p,ptr,0)
 #define lex_eol_ptr_n_p(p,ptr,n) ((ptr)+(n) >= (p)->lex.pend)
 
+static enum yytokentype parser_variable_name_p(const struct parser_params *p);
+
 static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
@@ -8419,12 +8421,9 @@ tokadd_string(struct parser_params *p,
             }
             --*nest;
         }
-        else if ((func & STR_FUNC_EXPAND) && c == '#' && !lex_eol_p(p)) {
-            unsigned char c2 = *p->lex.pcur;
-            if (c2 == '$' || c2 == '@' || c2 == '{') {
-                pushback(p, c);
-                break;
-            }
+        else if ((func & STR_FUNC_EXPAND) && c == '#' && parser_variable_name_p(p)) {
+            pushback(p, c);
+            break;
         }
         else if (c == '\\') {
             c = nextc(p);
@@ -8584,6 +8583,18 @@ const uint_least32_t ruby_global_name_punct_bits[] = {
 static enum yytokentype
 parser_peek_variable_name(struct parser_params *p)
 {
+    enum yytokentype t = parser_variable_name_p(p);
+    if (t == tSTRING_DBEG) {
+        p->lex.pcur++;
+        p->command_start = TRUE;
+        yylval.state = p->lex.state;
+    }
+    return t;
+}
+
+static enum yytokentype
+parser_variable_name_p(const struct parser_params *p)
+{
     int c;
     const char *ptr = p->lex.pcur;
 
@@ -8606,9 +8617,6 @@ parser_peek_variable_name(struct parser_params *p)
         }
         break;
       case '{':
-        p->lex.pcur = ptr;
-        p->command_start = TRUE;
-        yylval.state = p->lex.state;
         return tSTRING_DBEG;
       default:
         return 0;
