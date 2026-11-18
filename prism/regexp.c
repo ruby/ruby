@@ -384,18 +384,21 @@ pm_regexp_name_binding(const pm_regexp_names_t *names, pm_regexp_name_t name, ui
 /** Update a name's binding when another capture with that name is opened. */
 static void
 pm_regexp_name_bind(pm_arena_t *arena, pm_regexp_names_t *names, size_t capture) {
-    if (names->bindings_size >= names->bindings_capacity / 4 * 3) {
-        size_t capacity = names->bindings_capacity == 0 ? 16 : names->bindings_capacity * 2;
+    const pm_regexp_name_binding_t *previous = names->bindings;
+    if (previous == NULL || names->bindings_size >= names->bindings_capacity / 4 * 3) {
+        size_t capacity = previous == NULL ? 16 : names->bindings_capacity * 2;
         size_t mask = capacity - 1;
         pm_regexp_name_binding_t *bindings = PM_ARENA_ZALLOC_ARRAY(arena, pm_regexp_name_binding_t, capacity);
 
-        for (size_t index = 0; index < names->bindings_capacity; index++) {
-            pm_regexp_name_binding_t binding = names->bindings[index];
-            if (binding.capture == 0) continue;
+        if (previous != NULL) {
+            for (size_t index = 0; index < names->bindings_capacity; index++) {
+                pm_regexp_name_binding_t binding = previous[index];
+                if (binding.capture == 0) continue;
 
-            size_t slot = (size_t) binding.hash & mask;
-            while (bindings[slot].capture != 0) slot = (slot + 1) & mask;
-            bindings[slot] = binding;
+                size_t slot = (size_t) binding.hash & mask;
+                while (bindings[slot].capture != 0) slot = (slot + 1) & mask;
+                bindings[slot] = binding;
+            }
         }
 
         names->bindings = bindings;
@@ -459,16 +462,18 @@ pm_regexp_defer(pm_regexp_parser_t *parser, pm_regexp_deferred_type_t type, cons
  */
 void
 pm_regexp_offsets_append(pm_parser_t *parser, pm_regexp_offsets_t *offsets, pm_regexp_offset_t offset) {
-    if (offsets->size == offsets->capacity) {
-        size_t capacity = offsets->capacity == 0 ? 4 : offsets->capacity * 2;
-        pm_regexp_offset_t *values = (pm_regexp_offset_t *) pm_arena_alloc(&parser->scratch_arena, capacity * sizeof(pm_regexp_offset_t), PRISM_ALIGNOF(pm_regexp_offset_t));
+    pm_regexp_offset_t *values = offsets->values;
+    if (values == NULL || offsets->size == offsets->capacity) {
+        size_t capacity = values == NULL ? 4 : offsets->capacity * 2;
+        pm_regexp_offset_t *grown = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, pm_regexp_offset_t, capacity);
 
-        if (offsets->size > 0) memcpy(values, offsets->values, offsets->size * sizeof(pm_regexp_offset_t));
-        offsets->values = values;
+        if (values != NULL) memcpy(grown, values, offsets->size * sizeof(pm_regexp_offset_t));
+        offsets->values = grown;
         offsets->capacity = capacity;
+        values = grown;
     }
 
-    offsets->values[offsets->size++] = offset;
+    values[offsets->size++] = offset;
 }
 
 /**
