@@ -400,19 +400,25 @@ static OnigPosition count_num_cache_opcodes_inner(
 	}
 	GET_MEMNUM_INC(repeat_mem, p);
 	p += SIZE_RELADDR;
-	if (reg->repeat_range[repeat_mem].lower == 0) {
-	  num_cache_opcodes++;
-	}
-	result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &num_cache_opcodes);
-	if (result < 0 || num_cache_opcodes < 0) {
-	  goto fail;
-	}
-        {
+	if (reg->repeat_range[repeat_mem].lower == 0 && reg->repeat_range[repeat_mem].upper == 0) {
+	  long dummy_num_cache_opcodes = 0;
+	  result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &dummy_num_cache_opcodes);
+	  if (result < 0 || dummy_num_cache_opcodes < 0) {
+	    goto fail;
+	  }
+	} else {
+	  if (reg->repeat_range[repeat_mem].lower == 0) {
+	    num_cache_opcodes++;
+	  }
+	  result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &num_cache_opcodes);
+	  if (result < 0 || num_cache_opcodes < 0) {
+	    goto fail;
+	  }
 	  OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
 	  if (repeat_range->lower < repeat_range->upper) {
 	    num_cache_opcodes++;
 	  }
-        }
+	}
 	break;
       case OP_REPEAT_INC:
       case OP_REPEAT_INC_NG:
@@ -565,7 +571,7 @@ init_cache_opcodes_inner(
   OnigCacheOpcode *cache_opcodes = *cache_opcodes_ptr;
   OnigPosition result;
 
-# define INC_CACHE_OPCODES do {\
+# define INC_CACHE_OPCODES if (cache_opcodes != NULL) {\
     cache_opcodes->addr = pbegin;\
     cache_opcodes->cache_point = cache_point;\
     cache_opcodes->outer_repeat_mem = current_repeat_mem;\
@@ -575,7 +581,7 @@ init_cache_opcodes_inner(
     cache_opcodes->match_addr = NULL;\
     cache_point += lookaround_nesting != 0 ? 2 : 1;\
     cache_opcodes++;\
-  } while (0)
+  }
 
   while (p < pend) {
     pbegin = p;
@@ -706,27 +712,36 @@ init_cache_opcodes_inner(
       case OP_REPEAT_NG:
 	GET_MEMNUM_INC(repeat_mem, p);
 	p += SIZE_RELADDR;
-	if (reg->repeat_range[repeat_mem].lower == 0) {
-	  INC_CACHE_OPCODES;
-	}
-	{
-	  long num_cache_points_in_repeat = 0;
-          long num_cache_points_at_repeat = cache_point;
-	  OnigCacheOpcode* cache_opcodes_in_repeat = cache_opcodes;
-	  result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &cache_opcodes, &p, &num_cache_points_in_repeat);
+	if (reg->repeat_range[repeat_mem].lower == 0 && reg->repeat_range[repeat_mem].upper == 0) {
+	  long dummy_num_cache_points = 0;
+	  OnigCacheOpcode* dummy_cache_opcodes = NULL;
+	  result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &dummy_cache_opcodes, &p, &dummy_num_cache_points);
 	  if (result != 0) {
 	    goto fail;
 	  }
-	  OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
-	  if (repeat_range->lower < repeat_range->upper) {
+	} else {
+	  if (reg->repeat_range[repeat_mem].lower == 0) {
 	    INC_CACHE_OPCODES;
-	    cache_point -= lookaround_nesting != 0 ? 2 : 1;
 	  }
-	  int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
-	  cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
-	  for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
-	    cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
-	    cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+	  {
+	    long num_cache_points_in_repeat = 0;
+	    long num_cache_points_at_repeat = cache_point;
+	    OnigCacheOpcode* cache_opcodes_in_repeat = cache_opcodes;
+	    result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &cache_opcodes, &p, &num_cache_points_in_repeat);
+	    if (result != 0) {
+	      goto fail;
+	    }
+	    OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
+	    if (repeat_range->lower < repeat_range->upper) {
+	      INC_CACHE_OPCODES;
+	      cache_point -= lookaround_nesting != 0 ? 2 : 1;
+	    }
+	    int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
+	    cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
+	    for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
+	      cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
+	      cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+	    }
 	  }
 	}
 	break;
