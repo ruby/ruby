@@ -22182,20 +22182,21 @@ parse_operator_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t pr
             return result;
         }
         case PM_CALL_NODE: {
-            parser_lex(parser);
             pm_call_node_t *cast = (pm_call_node_t *) node;
 
-            // If we have a vcall (a method with no arguments and no
-            // receiver that could have been a local variable) then we
-            // will transform it into a local variable write.
+            /* Register a new local before lexing the first RHS token. */
             if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
                 pm_refute_numbered_parameter(parser, cast->message_loc.start, cast->message_loc.length);
                 pm_constant_id_t constant_id = pm_parser_local_add_location(parser, &cast->message_loc, 1);
+                parser_lex(parser);
+
                 pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
                 pm_node_t *result = UP(pm_local_variable_operator_write_node_create(parser, UP(cast), &operator, value, constant_id, 0));
 
                 return result;
             }
+
+            parser_lex(parser);
 
             // If there is no call operator and the message is "[]" then
             // this is an aref expression, and we can transform it into
