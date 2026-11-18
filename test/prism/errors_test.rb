@@ -87,6 +87,26 @@ module Ruby::Prism
       assert_equal ":A", result.errors.first.location.slice
     end
 
+    def test_defined_after_newline_parses_grouped_operand
+      result = Ruby::Prism.parse("defined?\n(a; b) * ()")
+
+      assert_predicate result, :success?
+      node = result.statement
+      assert_nil node.lparen_loc
+      assert_equal :*, node.value.name
+      assert_equal [:a, :b], node.value.receiver.body.body.map(&:name)
+    end
+
+    def test_not_after_newline_parses_grouped_operand
+      result = Ruby::Prism.parse("not\n(;) || raise")
+
+      assert_predicate result, :success?
+      node = result.statement
+      assert_equal :!, node.name
+      assert_kind_of OrNode, node.receiver
+      assert_kind_of ParenthesesNode, node.receiver.left
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

@@ -19741,20 +19741,14 @@ parse_defined(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     context_push(parser, PM_CONTEXT_DEFINED);
     bool newline = accept1(parser, PM_TOKEN_NEWLINE);
 
-    if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
+    if (!newline && accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
         lparen = parser->previous;
+        expression = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
 
-        if (newline && accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-            expression = UP(pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0));
-            lparen = (pm_token_t) { 0 };
-        } else {
-            expression = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
-
-            if (!parser->recovering) {
-                accept1(parser, PM_TOKEN_NEWLINE);
-                expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
-                rparen = parser->previous;
-            }
+        if (!parser->recovering) {
+            accept1(parser, PM_TOKEN_NEWLINE);
+            expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
+            rparen = parser->previous;
         }
     } else {
         expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
@@ -20714,9 +20708,9 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
         return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
     }
 
-    accept1(parser, PM_TOKEN_NEWLINE);
+    bool newline = accept1(parser, PM_TOKEN_NEWLINE);
 
-    if (accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
+    if (!newline && accept2(parser, PM_TOKEN_PARENTHESIS_LEFT, PM_TOKEN_PARENTHESIS_LEFT_GROUPING)) {
         pm_token_t lparen = parser->previous;
 
         if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
