@@ -163,6 +163,26 @@ module Ruby::Prism
       end
     end
 
+    def test_class_headers_respect_enclosing_loop_condition
+      ["while", "until"].each do |keyword|
+        result = Ruby::Prism.parse("#{keyword} class << target do end; end; end")
+
+        assert_includes result.errors.map(&:type), :expect_singleton_class_delimiter
+      end
+
+      result = Ruby::Prism.parse("while class A < target do end; end; end")
+      assert_includes result.errors.map(&:type), :class_unexpected_end
+    end
+
+    def test_singleton_class_body_allows_blocks_in_loop_condition
+      result = Ruby::Prism.parse("while class << target; work do end; false; end do break end")
+
+      assert_predicate result, :success?
+      loop_node = result.statement
+      assert_equal "do", loop_node.do_keyword_loc.slice
+      assert_equal "do end", loop_node.predicate.body.body.first.block.location.slice
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"

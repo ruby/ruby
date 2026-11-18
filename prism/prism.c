@@ -18634,7 +18634,6 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     parser_lex(parser);
 
     pm_token_t class_keyword = parser->previous;
-    pm_do_loop_stack_push(parser, false);
 
     pm_scratch_node_list_t current_block_exits = { 0 };
     pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
@@ -18643,6 +18642,8 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         pm_token_t operator = parser->previous;
         pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS, (uint16_t) (depth + 1));
 
+        /* The header uses the enclosing loop context. The body starts a new one. */
+        pm_do_loop_stack_push(parser, false);
         pm_parser_scope_push(parser, true);
         if (!match2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
             PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_SINGLETON_CLASS_DELIMITER, pm_token_str(parser->current.type));
@@ -18662,13 +18663,13 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
         }
 
+        pm_do_loop_stack_pop(parser);
         expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM, &class_keyword);
 
         pm_constant_id_list_t locals;
         pm_locals_order(parser, &locals, false);
 
         pm_parser_scope_pop(parser);
-        pm_do_loop_stack_pop(parser);
 
         flush_block_exits(parser, previous_block_exits);
         return UP(pm_singleton_class_node_create(parser, &locals, &class_keyword, &operator, expression, statements, &parser->previous));
@@ -18695,6 +18696,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         superclass = NULL;
     }
 
+    pm_do_loop_stack_push(parser, false);
     pm_parser_scope_push(parser, true);
 
     if (inheritance_operator.start != NULL) {
@@ -18717,6 +18719,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
     }
 
+    pm_do_loop_stack_pop(parser);
     expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM, &class_keyword);
 
     if (context_def_p(parser)) {
@@ -18727,7 +18730,6 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_locals_order(parser, &locals, false);
 
     pm_parser_scope_pop(parser);
-    pm_do_loop_stack_pop(parser);
 
     if (!PM_NODE_TYPE_P(constant_path, PM_CONSTANT_PATH_NODE) && !(PM_NODE_TYPE_P(constant_path, PM_CONSTANT_READ_NODE))) {
         pm_parser_err_node(parser, constant_path, PM_ERR_CLASS_NAME);
