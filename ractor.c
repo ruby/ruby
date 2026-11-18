@@ -4260,7 +4260,7 @@ require_result_send_resuce(VALUE crr_obj, VALUE errinfo)
     // the copy of the result raised: send that exception instead
     struct cross_ractor_require *crr;
     TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
-    ractor_reply_send_value(GET_EC(), RACTOR_PTR(crr->reader), crr->port_id, errinfo);
+    ractor_reply_send_value(GET_EC(), RACTOR_PTR(crr->reader), crr->port_id, rb_ary_new_from_args(2, errinfo, Qtrue));
     return Qnil;
 }
 
@@ -4289,7 +4289,7 @@ ractor_require_protect(VALUE crr_obj, VALUE (*func)(VALUE))
     rb_rescue2(require_result_send_body,
                // [crr, [result, raised]]
                rb_ary_new_from_args(2, crr_obj, rb_ary_new_from_args(2, result, crr->raised ? Qtrue : Qfalse)),
-               require_result_send_resuce, rb_eException, crr_obj);
+               require_result_send_resuce, crr_obj, rb_eException, (VALUE)0);
 
     RB_GC_GUARD(crr_obj);
     return Qnil;

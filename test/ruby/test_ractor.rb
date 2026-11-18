@@ -781,6 +781,22 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # The main Ractor can't copy the exception back, so it must send that error instead
+  def test_require_raises_uncopyable_exception
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tempfile"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("e = RuntimeError.new('uh oh'); e.instance_variable_set(:@m, Mutex.new); raise e")
+      f.flush
+      err = Ractor.new(f.path) do |path|
+        require path
+      rescue Exception => e
+        e.class
+      end.value
+      assert_equal Ractor::Error, err
+    RUBY
+  end
+
   def test_require_already_loaded_with_extension
     assert_ractor(<<~'RUBY')
       require "tmpdir"
