@@ -2469,7 +2469,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             return true;
         case '{': {
             const uint8_t *start = parser->cursor++;
-        
+
             switch (pm_regexp_parse_interval(parser)) {
                 case PM_REGEXP_INTERVAL_INVALID:
                     return false;
@@ -2480,7 +2480,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
                     pm_regexp_parse_error(parser, start, parser->cursor, "target of repeat operator is not specified");
                     return true;
             }
-        
+
             return true;
         }
         case ')':
