@@ -39,6 +39,7 @@ size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
 enum {
     RB_IO_BUFFER_HEXDUMP_DEFAULT_WIDTH = 16,
+    RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH = 1024,
 
     RB_IO_BUFFER_INSPECT_HEXDUMP_MAXIMUM_SIZE = 256,
     RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH = 16,
@@ -384,7 +385,7 @@ io_buffer_extract_size(VALUE argument)
 }
 
 // Extract a width argument, which must be a non-negative integer, and must be
-// at least the given minimum.
+// at least the given minimum and at most RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH.
 static inline size_t
 io_buffer_extract_width(VALUE argument, size_t minimum)
 {
@@ -396,6 +397,10 @@ io_buffer_extract_width(VALUE argument, size_t minimum)
 
     if (width < minimum) {
         rb_raise(rb_eArgError, "Width must be at least %" PRIuSIZE "!", minimum);
+    }
+
+    if (width > RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH) {
+        rb_raise(rb_eArgError, "Width must be at most %" PRIuSIZE "!", (size_t)RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH);
     }
 
     return width;
