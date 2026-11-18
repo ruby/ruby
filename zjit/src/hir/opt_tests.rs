@@ -23541,6 +23541,56 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_invokesuper_from_refined_method_remains_invokesuper() {
+        eval("
+            class A
+              def foo = 'A'
+            end
+
+            module R1
+              refine(A) { def foo = super }
+            end
+
+            module R2
+              refine(A) { def foo = super }
+            end
+
+            module Client
+              using R1
+              using R2
+              def self.test(a) = a.foo
+            end
+
+            a = A.new
+            Client.test(a); Client.test(a)
+        ");
+
+        assert_snapshot!(hir_string_proc("R2.refinements[0].instance_method(:foo)"), @"
+        fn foo@<compiled>:11:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Unknown@0x1000, foo@0x1008, cme:0x1010)
+          v18:CPtr = GetEP 0
+          v19:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_ME_CREF@0x1038
+          v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
+          v21:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
+          v22:FalseClass = GuardBitEquals v21, Value(false) recompile
+          PushInlineFrame :foo, v6 (0x1050), num_args=0
+          v30:BasicObject = InvokeSuper v6, 0x1070 # SendFallbackReason: super: polymorphic call site
+          PopInlineFrame
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
     fn test_invokesuper_from_a_block() {
         _ = eval("
             define_method(:itself) { super() }
