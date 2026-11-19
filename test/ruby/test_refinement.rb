@@ -2283,6 +2283,37 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_super_in_instance_exec_in_bound_refined_class_method
+    assert_separately([], <<-"end;")
+      class Sub < Array
+        def first = :sub_first
+      end
+
+      module R
+        refine Array do
+          def first = $block_self.instance_exec { super() }
+        end
+      end
+
+      # Binding a method of the refinement itself makes `super`
+      # start from the class of the bound object, not from Array.
+      refined_first = R.refinements[0].instance_method(:first)
+
+      # Array is the refined class, but it is not type-safe to
+      # run a Sub method on an Array instance.
+      $block_self = []
+      assert_raise_with_message(TypeError, /Array \\(expected Sub\\)/) do
+        refined_first.bind_call(Sub.new)
+      end
+
+      $block_self = Sub.new
+      assert_equal(:sub_first, refined_first.bind_call(Sub.new))
+
+      $block_self = Sub.new.push(:elem)
+      assert_equal(:elem, refined_first.bind_call([]))
+    end;
+  end
+
   def test_super_in_refined_module_method_combined_cases
     assert_separately([], <<-"end;")
       module M

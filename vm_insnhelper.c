@@ -5277,6 +5277,30 @@ empty_cc_for_super(void)
     return &rb_vm_empty_cc_for_super;
 }
 
+// Find the first class that contributes methods for `super` when the search
+// starts from `klass`. Methods found before reaching it are from modules, and
+// what is at and after it are for instances of the returned class. Returns 0
+// when there is no such class.
+static VALUE
+vm_super_nearest_class(VALUE klass)
+{
+    while (klass) {
+        if (RB_TYPE_P(klass, T_CLASS)) {
+            return klass;
+        }
+        else {
+            VM_ASSERT_TYPE(klass, T_ICLASS);
+            VALUE iclass_of = RBASIC_CLASS(klass);
+            if (RICLASS_IS_ORIGIN_P(klass) && RB_TYPE_P(iclass_of, T_CLASS)) {
+                return iclass_of;
+            }
+        }
+
+        klass = RCLASS_SUPER(klass);
+    }
+    return 0;
+}
+
 static const struct rb_callcache *
 vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
@@ -5288,19 +5312,60 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         vm_super_outside();
     }
 
+    // Could be 0.
+    const VALUE search_start = vm_search_normal_superclass(me->defined_class);
+
     current_defined_class = vm_defined_class_for_protected_call(me);
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-        iseq != method_entry_iseqptr(me) &&
-        !rb_obj_is_kind_of(recv, current_defined_class)) {
-        VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
-            RCLASS_INCLUDER(current_defined_class) : current_defined_class;
+        iseq != method_entry_iseqptr(me)) {
+        // `super` outside of the method body (in a block or eval string).
+        // `self` might not be the receiver of the method.
+        VALUE expected = 0; // set when rejecting `self`
 
-        if (m) { /* not bound UnboundMethod */
+        // `super` from within a module is complicated...
+        if (RB_TYPE_P(current_defined_class, T_ICLASS)) {
+            if (RCLASS_INCLUDER(current_defined_class) &&
+                !rb_obj_is_kind_of(recv, current_defined_class)) {
+                // Method from a module and `self` doesn't have the module
+                expected = RCLASS_INCLUDER(current_defined_class);
+            }
+            else {
+                // Require `self` to descend from the first class after the
+                // module in the ancestry. Having the module is not enough
+                // since the search continues onto that class and its
+                // ancestors. Iclasses without an includer also come here:
+                // ones UnboundMethod#bind and bind_call use to run the method
+                // on any object.
+                //
+                // This is conservative. It rejects without looking at where
+                // `super` lands, so it also rejects when the landing is fine
+                // for `self`: a method from a class further up that `self`
+                // does descend from, a method from a module, and no method
+                // at all, which would have been a NoMethodError.
+                //
+                // In return, `super` in a method body needs no check, so only
+                // the places that can switch `self` pay. A method body
+                // starts with `self` descending from the first class at or
+                // after its defined class. `super` in the body keeps `self` and
+                // searches further along the same ancestry, so the body it
+                // lands in starts the same way. Out here `self` can be any
+                // object, so check to give the next body the same start.
+                VALUE next_class = vm_super_nearest_class(search_start);
+                if (next_class && !rb_obj_is_kind_of(recv, next_class)) {
+                    expected = next_class;
+                }
+            }
+        }
+        else if (!rb_obj_is_kind_of(recv, current_defined_class)) {
+            expected = current_defined_class;
+        }
+
+        if (expected) {
             rb_raise(rb_eTypeError,
                      "self has wrong type to call super in this context: "
                      "%"PRIsVALUE" (expected %"PRIsVALUE")",
-                     rb_obj_class(recv), m);
+                     rb_obj_class(recv), expected);
         }
     }
 
@@ -5328,15 +5393,13 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     const struct rb_callcache *cc;
 
-    VALUE klass = vm_search_normal_superclass(me->defined_class);
-
-    if (!klass) {
+    if (!search_start) {
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
     }
     else {
-        cc = vm_search_method_fastpath(reg_cfp, cd, klass);
+        cc = vm_search_method_fastpath(reg_cfp, cd, search_start);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
 
         // define_method can cache for different method id
@@ -5345,9 +5408,9 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             cd->cc = empty_cc_for_super();
         }
         else if (cached_cme->called_id != mid) {
-            const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+            const rb_callable_method_entry_t *cme = rb_callable_method_entry(search_start, mid);
             if (cme) {
-                cc = vm_cc_new(klass, cme, vm_call_super_method, cc_type_super);
+                cc = vm_cc_new(search_start, cme, vm_call_super_method, cc_type_super);
                 RB_OBJ_WRITE(iseq, &cd->cc, cc);
             }
             else {
