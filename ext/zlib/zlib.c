@@ -4499,10 +4499,11 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	gzreader_skip_linebreaks(gz);
     }
 
-    while (ZSTREAM_BUF_FILLED(&gz->z) < rslen) {
+    rb_len_t minlen = (limit > 0 && limit < rslen) ? limit : rslen;
+    while (ZSTREAM_BUF_FILLED(&gz->z) < minlen) {
 	if (ZSTREAM_IS_FINISHED(&gz->z)) {
 	    if (ZSTREAM_BUF_FILLED(&gz->z) > 0) gz->lineno++;
-	    return gzfile_read(gz, rslen, Qnil);
+	    return gzfile_read(gz, minlen, Qnil);
 	}
 	gzfile_read_more(gz, Qnil);
     }
