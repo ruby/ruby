@@ -134,12 +134,9 @@ mod snapshot_tests {
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
           PatchPoint NoTracePoint, v8
-          v10:Fixnum[1] = Const Value(1)
-          v12:Fixnum[2] = Const Value(2)
-          v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
-          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020), v13
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018), v8
           v35:Fixnum[6] = Const Value(6)
-          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
+          v21:Any = Snapshot FrameState { pc: 0x1040, stack: [v35], locals: [] }
           CheckInterrupts
           Return v35
         ");
@@ -202,15 +199,15 @@ mod snapshot_tests {
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
           PatchPoint NoTracePoint, v8
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018), v8
           v11:Fixnum[3] = Const Value(3)
           v13:Fixnum[1] = Const Value(1)
           v15:Fixnum[2] = Const Value(2)
-          v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v16
-          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v24, v13, v15, v11], locals: [] }
+          v16:Any = Snapshot FrameState { pc: 0x1040, stack: [v6, v11, v13, v15], locals: [] }
+          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v25:Any = Snapshot FrameState { pc: 0x1040, stack: [v24, v13, v15, v11], locals: [] }
           v43:Fixnum[0] = Const Value(0)
-          v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          v27:Any = Snapshot FrameState { pc: 0x1040, stack: [], locals: [] }
           PushInlineFrame :foo, v24 (0x1048), num_args=3
           v38:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v43], caller: v27 }
           v39:ArrayExact = NewArray v13, v15, v11
@@ -244,13 +241,13 @@ mod snapshot_tests {
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
           PatchPoint NoTracePoint, v8
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018), v8
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[2] = Const Value(2)
-          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v14
-          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v14:Any = Snapshot FrameState { pc: 0x1040, stack: [v6, v11, v13], locals: [] }
+          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v38:Fixnum[0] = Const Value(0)
-          v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          v24:Any = Snapshot FrameState { pc: 0x1040, stack: [], locals: [] }
           PushInlineFrame :foo, v22 (0x1048), num_args=2
           v33:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v38], caller: v24 }
           v34:ArrayExact = NewArray v11, v13
@@ -284,6 +281,7 @@ mod snapshot_tests {
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
           PatchPoint NoTracePoint, v8
+          PatchPoint MethodRedefined(Object@0x1008, foo@0x1010, cme:0x1018), v8
           v11:Fixnum[5] = Const Value(5)
           v13:Fixnum[6] = Const Value(6)
           v15:Fixnum[4] = Const Value(4)
@@ -292,12 +290,11 @@ mod snapshot_tests {
           v21:Fixnum[2] = Const Value(2)
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
-          v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v26
-          v34:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v35:Any = Snapshot FrameState { pc: 0x1008, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
+          v26:Any = Snapshot FrameState { pc: 0x1040, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
+          v34:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v35:Any = Snapshot FrameState { pc: 0x1040, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
           v63:Fixnum[0] = Const Value(0)
-          v37:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          v37:Any = Snapshot FrameState { pc: 0x1040, stack: [], locals: [] }
           PushInlineFrame :foo, v34 (0x1048), num_args=8
           v58:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v63], caller: v37 }
           v59:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
@@ -366,6 +363,10 @@ mod snapshot_tests {
             def test(x, y) = [:prefix, leaf(a: x, b: y)]
             test(1, 2); test(1, 2)
         ");
+        // Building the keyword hash ends the PatchPoint span, so `leaf`'s PushInlineFrame starts
+        // the next one. The PatchPoints hoisted out of the inlined frames adopt the inline frame's
+        // `exit_state` (i.e., the Snapshot of the original inline caller). Any later Snapshot would
+        // be wrong because the interpreter has to redo the send with its original arguments.
         assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:4:
         bb0():
@@ -386,28 +387,20 @@ mod snapshot_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v15:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [x=v12, y=v13] }
           PatchPoint NoTracePoint, v15
-          v17:StaticSymbol[:prefix] = Const Value(VALUE(0x1010))
-          v21:Any = Snapshot FrameState { pc: 0x1018, stack: [v17, v11, v12, v13], locals: [x=v12, y=v13] }
-          PatchPoint MethodRedefined(Object@0x1020, leaf@0x1028, cme:0x1030), v21
-          v33:ObjectSubclass[class_exact*:Object@VALUE(0x1020)] = GuardType v11, ObjectSubclass[class_exact*:Object@VALUE(0x1020)] recompile
+          PatchPoint MethodRedefined(Object@0x1010, leaf@0x1018, cme:0x1020), v15
+          v17:StaticSymbol[:prefix] = Const Value(VALUE(0x1048))
+          v21:Any = Snapshot FrameState { pc: 0x1050, stack: [v17, v11, v12, v13], locals: [x=v12, y=v13] }
+          v33:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v11, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v34:StaticSymbol[:a] = Const Value(VALUE(0x1058))
           v35:StaticSymbol[:b] = Const Value(VALUE(0x1060))
           v36:HashExact = NewHash v34: v12, v35: v13
-          v37:Any = Snapshot FrameState { pc: 0x1018, stack: [v17, v33, v36], locals: [x=v12, y=v13] }
-          v39:Any = Snapshot FrameState { pc: 0x1018, stack: [v17], locals: [x=v12, y=v13] }
-          PushInlineFrame :leaf, v33 (0x1068), num_args=1
-          v43:Any = Snapshot FrameState { pc: 0x1088, stack: [], locals: [h=v36], caller: v39 }
-          PatchPoint NoTracePoint, v43
-          v46:Any = Snapshot FrameState { pc: 0x1090, stack: [v33, v36], locals: [h=v36], caller: v39 }
-          PatchPoint MethodRedefined(Object@0x1020, inner_reply@0x1098, cme:0x10a0), v46
-          v48:Any = Snapshot FrameState { pc: 0x10c8, stack: [v36], locals: [h=v36], caller: v39 }
-          PatchPoint NoEPEscape(leaf), v48
-          PopInlineFrame
-          v23:Any = Snapshot FrameState { pc: 0x10d0, stack: [v17, v36], locals: [x=v12, y=v13] }
-          PatchPoint NoEPEscape(test), v23
-          v25:Any = Snapshot FrameState { pc: 0x10d0, stack: [v17, v36], locals: [x=v12, y=v13] }
+          PatchPoint NoTracePoint, v21
+          PatchPoint MethodRedefined(Object@0x1010, inner_reply@0x1068, cme:0x1070), v21
+          PatchPoint NoEPEscape(leaf), v21
+          PatchPoint NoEPEscape(test), v21
+          v25:Any = Snapshot FrameState { pc: 0x1098, stack: [v17, v36], locals: [x=v12, y=v13] }
           v26:ArrayExact = NewArray v17, v36
-          v27:Any = Snapshot FrameState { pc: 0x10d8, stack: [v26], locals: [x=v12, y=v13] }
+          v27:Any = Snapshot FrameState { pc: 0x10a0, stack: [v26], locals: [x=v12, y=v13] }
           CheckInterrupts
           Return v26
         ");
