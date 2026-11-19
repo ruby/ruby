@@ -634,14 +634,16 @@ such a reference is called a +backreference+:
 This table shows how each subexpression in the regexp above
 matches a substring in the target string:
 
-  | Subexpression in Regexp   | Matching Substring in Target String |
-  |---------------------------|-------------------------------------|
-  |       First '[csh]'       |            Character 'c'            |
-  |          '(..)'           |        First substring 'at'         |
-  |      First space ' '      |      First space character ' '      |
-  |       Second '[csh]'      |            Character 's'            |
-  | '\1' (backreference 'at') |        Second substring 'at'        |
-  |           ' in'           |            Substring ' in'          |
+  ┌───────────────────────────┬─────────────────────────────────────┐
+  │ Subexpression in Regexp   │ Matching Substring in Target String │
+  ├───────────────────────────┼─────────────────────────────────────┤
+  │       First '[csh]'       │            Character 'c'            │
+  │          '(..)'           │        First substring 'at'         │
+  │      First space ' '      │      First space character ' '      │
+  │       Second '[csh]'      │            Character 's'            │
+  │ '\1' (backreference 'at') │        Second substring 'at'        │
+  │           ' in'           │            Substring ' in'          │
+  └───────────────────────────┴─────────────────────────────────────┘
 
 A regexp may contain any number of groups:
 
@@ -1255,11 +1257,13 @@ because an appropriate limit highly depends on an application requirement and co
 When regexp.timeout is +nil+, the timeout "falls through" to Regexp.timeout;
 when regexp.timeout is non-+nil+, that value controls timing out:
 
-  | regexp.timeout Value | Regexp.timeout Value |            Result           |
-  |----------------------|----------------------|-----------------------------|
-  |         nil          |          nil         |       Never times out.      |
-  |         nil          |         Float        | Times out in Float seconds. |
-  |        Float         |          Any         | Times out in Float seconds. |
+  ┌──────────────────────┬──────────────────────┬─────────────────────────────┐
+  │ regexp.timeout Value │ Regexp.timeout Value │            Result           │
+  ├──────────────────────┼──────────────────────┼─────────────────────────────┤
+  │         nil          │          nil         │       Never times out.      │
+  │         nil          │         Float        │ Times out in Float seconds. │
+  │        Float         │          Any         │ Times out in Float seconds. │
+  └──────────────────────┴──────────────────────┴─────────────────────────────┘
 
 == Optimization
 
