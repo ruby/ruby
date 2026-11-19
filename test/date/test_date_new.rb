@@ -213,6 +213,36 @@ class TestDateNew < Test::Unit::TestCase
     assert_equal(0, d.offset)
   end
 
+  def test_civil__fractional_zone_offset_deprecated
+    with_deprecation_warnings do
+      # An offset that is already ignored as invalid gets only that warning.
+      ['+00.123', '-00.123', '+01.123'].each do |z|
+        assert_warning(/\A(?!.*decimal hour).*invalid offset is ignored/m) do
+          assert_equal(0, DateTime.civil(2001,2,3, 0,0,0, z).offset)
+        end
+      end
+
+      # Here the fraction reaches the result.
+      assert_warning(/decimal hour/) do
+        assert_equal(Rational(1800, 86400), DateTime.civil(2001,2,3, 0,0,0, '+00.5').offset)
+      end
+
+      # A zero fraction and the colon forms change nothing.
+      assert_warning('') do
+        assert_equal(Rational(3600, 86400), DateTime.civil(2001,2,3, 0,0,0, '+01.0').offset)
+        assert_equal(Rational(1800, 86400), DateTime.civil(2001,2,3, 0,0,0, '+00:30').offset)
+      end
+    end
+  end
+
+  def with_deprecation_warnings
+    deprecated = Warning[:deprecated] if Warning.respond_to?(:[])
+    Warning[:deprecated] = true if Warning.respond_to?(:[]=)
+    yield
+  ensure
+    Warning[:deprecated] = deprecated if Warning.respond_to?(:[]=)
+  end
+
   def test_civil__reform
     d = Date.jd(Date::ENGLAND, Date::ENGLAND)
     dt = DateTime.jd(Date::ENGLAND, 0,0,0,0, Date::ENGLAND)
@@ -231,6 +261,31 @@ class TestDateNew < Test::Unit::TestCase
     dt -= 1
     assert_equal([1582, 10, 4], [d.year, d.mon, d.mday])
     assert_equal([1582, 10, 4], [dt.year, dt.mon, dt.mday])
+
+    d = Date.civil(1582,10,-17)
+    assert_equal([1582, 10, 15], [d.year, d.mon, d.mday])
+    d = Date.civil(1582,10,-18)
+    assert_equal([1582, 10, 4], [d.year, d.mon, d.mday])
+    d = DateTime.civil(1582,10,-21)
+    assert_equal([1582, 10, 1], [d.year, d.mon, d.mday])
+    assert_equal(false, Date.valid_civil?(1582,10,-22))
+  end
+
+  def test_invalid_start
+    d = nil
+    assert_warning(/invalid start/) do
+      d = Date.jd(0, 0)
+    end
+    assert_equal([-4712, 1, 1, Date::ITALY],
+		 [d.year, d.mon, d.mday, d.start])
+    assert_warning(/invalid start/) do
+      d = Date.civil(2001,2,3, 3000000)
+    end
+    assert_equal([2451944, Date::ITALY], [d.jd, d.start])
+    assert_warning(/invalid start/) do
+      d = Date.civil(2001,2,3).new_start(1)
+    end
+    assert_equal(Date::ITALY, d.start)
   end
 
   def test_commercial

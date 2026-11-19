@@ -122,6 +122,12 @@ class TestDate < Test::Unit::TestCase
 
     assert_equal(d, dt)
     assert_equal(d2, dt2)
+
+    dt = DateTime.new(2001,2,3,9,0,0,'+09:00')
+    dt2 = DateTime.new(2001,2,3,0,0,0,'+00:00')
+    assert_equal(dt, dt2)
+    assert_equal(true, dt.eql?(dt2))
+    assert_equal(dt.hash, dt2.hash)
   end
 
   def test_hash
@@ -148,6 +154,10 @@ class TestDate < Test::Unit::TestCase
     assert_equal(9, h[DateTime.new(1999,5,25)])
 
     assert_instance_of(String, Date.new(1999,5,25).hash.to_s)
+
+    h = {}
+    h[Date.new(2001,2,3)] = 0
+    assert_equal(0, h[Date.new(2001,2,3,Date::GREGORIAN)])
   end
 
   def test_freeze
@@ -156,6 +166,9 @@ class TestDate < Test::Unit::TestCase
     assert_equal(true, d.frozen?)
     assert_instance_of(Integer, d.yday)
     assert_instance_of(String, d.to_s)
+
+    d = Date.jd(2451944).clone(freeze: true)
+    assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
   end
 
   def test_submillisecond_comparison

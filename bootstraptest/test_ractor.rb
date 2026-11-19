@@ -2827,6 +2827,38 @@ rescue NotImplementedError
 end
 }
 
+# A main Ractor thread waiting in Port#receive across fork must not leave
+# its waiter behind for a Ractor sending in the child
+assert_equal 'ok', %q{
+begin
+  port = Ractor::Port.new
+  th = Thread.new { port.receive }
+  Thread.pass until th.stop?
+  pid = fork {
+    q = Ractor::Port.new
+    t = Thread.new { q.receive }
+    Thread.pass until t.stop?
+    Ractor.new(q) { |q| q << :ok }.join
+    exit!(t.value == :ok)
+  }
+  status = nil
+  600.times { # 30s: generous for slow builds, but don't hang the suite
+    _, status = Process.waitpid2(pid, Process::WNOHANG)
+    break if status
+    sleep 0.05
+  }
+  unless status
+    Process.kill(:KILL, pid) # it may hang
+    _, status = Process.waitpid2(pid)
+  end
+  port << nil
+  th.join
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
 # Creating classes inside of Ractors
 # [Bug #18119]
 assert_equal 'ok', %q{
@@ -3425,4 +3457,27 @@ assert_equal 'false', %q{
     }
   }
   rs.map(&:value).any?
+}
+
+# A missing method's negative cache entry is used without the VM lock and
+# must be dropped once the method is defined
+assert_equal '[[:mm, :mm, :defined], [:mm, :mm, :defined]]', %q{
+  class MMNegCache
+    def method_missing(name, *) = name == :foo ? :mm : super
+  end
+
+  rs = 2.times.map {
+    Ractor.new {
+      obj = MMNegCache.new
+      a = obj.foo
+      b = obj.foo
+      Ractor.main << :ready
+      Ractor.receive
+      [a, b, obj.foo]
+    }
+  }
+  2.times { Ractor.receive }
+  MMNegCache.class_eval { def foo = :defined }
+  rs.each { it << :go }
+  rs.map(&:value)
 }

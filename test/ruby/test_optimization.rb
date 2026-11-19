@@ -498,6 +498,64 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
+  def test_newhash_eq_and_hash_redefinition
+    assert_separately([], <<~'RUBY')
+      $VERBOSE = false
+
+      [Symbol, String].each do |klass|
+        klass.class_eval do
+          def hash
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#hash"
+          end
+
+          def eql?(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#eql?"
+          end
+
+          def ==(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#=="
+          end
+        end
+      end
+
+      base = 0
+      hash = { # newhash insns
+        "a" => base + 1,
+        "b" => base + 2,
+        "c" => base + 3,
+        "d" => base + 4,
+        "e" => base + 5,
+        "f" => base + 6,
+        "g" => base + 7,
+        "h" => base + 8,
+      }
+      assert_equal 8, hash.size
+
+      1000.times do |i|
+        # hash being an ar_table with 1-byte hints, we have a high chance to run into a collision
+        assert_equal false, hash.key?(i.to_s)
+      end
+
+      hash = { # newhash insns
+      :a => base + 1,
+      "b".to_sym => base + 2,
+      :c => base + 3,
+      "d".to_sym => base + 4,
+      :e => base + 5,
+      "f".to_sym => base + 6,
+      :g => base + 7,
+      "h".to_sym => base + 8,
+    }
+    assert_equal 8, hash.size
+
+    1000.times do |i|
+      # hash being an ar_table with 1-byte hints, we have a high chance to run into a collision
+      assert_equal false, hash.key?(i.to_s.to_sym)
+    end
+
+    RUBY
+  end
+
   def self.tailcall(klass, src, file = nil, path = nil, line = nil, tailcall: true)
     unless file
       loc, = caller_locations(1, 1)
@@ -1447,6 +1505,34 @@ class TestRubyOptimization < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_new_string_initialize
+    assert_in_out_err([], <<~RUBY, ["OK"])
+      $VERBOSE = false
+      class String
+        def initialize foo:
+          super()
+          self << foo
+        end
+      end
+
+      puts String.new(foo: "OK")
+    RUBY
+  end
+
+  def test_opt_new_hash_initialize
+    assert_in_out_err([], <<~RUBY, ["OK"])
+      $VERBOSE = false
+      class Hash
+        def initialize
+          super()
+          self[:redefined] = "OK"
+        end
+      end
+
+      puts Hash.new[:redefined]
+    RUBY
+  end
+
   def test_opt_new_with_safe_navigation
     payload = nil
     assert_nil payload&.new
@@ -1499,5 +1585,76 @@ class TestRubyOptimization < Test::Unit::TestCase
       insn = iseq.disasm
       assert_no_match(/opt_new/, insn)
     end
+  end
+
+  class SimpleObj
+    attr_reader :called_method
+
+    def initialize
+      @called_method = :original
+    end
+  end
+
+  module SimpleObjRefinement
+    refine SimpleObj do
+      def initialize
+        @called_method = :refined
+      end
+    end
+  end
+
+  module RefineInitialize
+    using SimpleObjRefinement
+
+    def self.call_new
+      SimpleObj.new
+    end
+
+    def self.call_allocate_send_initialize
+      obj = SimpleObj.allocate
+      obj.send(:initialize)
+      obj
+    end
+  end
+
+  class ReverseSimpleObj
+    attr_reader :called_method
+
+    def initialize
+      @called_method = :original
+    end
+  end
+
+  module ReverseSimpleObjRefinement
+    refine ReverseSimpleObj do
+      def initialize
+        @called_method = :refined
+      end
+    end
+  end
+
+  module ReverseRefineInitialize
+    using ReverseSimpleObjRefinement
+
+    def self.call_new
+      ReverseSimpleObj.new
+    end
+
+    def self.call_allocate_send_initialize
+      obj = ReverseSimpleObj.allocate
+      obj.send(:initialize)
+      obj
+    end
+  end
+
+  def test_opt_new_with_refinement
+    assert_equal :original, SimpleObj.new.called_method
+    assert_equal :original, RefineInitialize.call_new.called_method
+    assert_equal :refined, RefineInitialize.call_allocate_send_initialize.called_method
+
+    # Same test in reverse to ensure neither call cache can be poisoned
+    assert_equal :refined, ReverseRefineInitialize.call_allocate_send_initialize.called_method
+    assert_equal :original, ReverseSimpleObj.new.called_method
+    assert_equal :original, ReverseRefineInitialize.call_new.called_method
   end
 end

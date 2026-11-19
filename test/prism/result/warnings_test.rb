@@ -95,6 +95,25 @@ module Ruby::Prism
       assert_warning("case 1; when 1, 1; end", "when' clause")
     end
 
+    def test_line_number_overflow
+      result = Ruby::Prism.parse("{\n__LINE__ => 1, -2147483648 => 2\n}", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+      assert_not_nil warning
+      assert_equal "key -2147483648 is duplicated and overwritten on line -2147483648", warning.message
+
+      result = Ruby::Prism.parse("\nif true\n end", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :indentation_mismatch }
+      assert_not_nil warning
+      assert_equal "mismatched indentations at 'end' with 'if' at -2147483648", warning.message
+    end
+
+    def test_line_number_at_maximum_without_overflow
+      result = Ruby::Prism.parse("{__LINE__ => 1, 2147483647 => 2}", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+      assert_not_nil warning
+      assert_equal "key 2147483647 is duplicated and overwritten on line 2147483647", warning.message
+    end
+
     # Negative zero and positive zero are the same key: Float#eql? treats them
     # as equal and Float#hash gives them the same hash, so the second one
     # overwrites the first.
@@ -367,6 +386,13 @@ module Ruby::Prism
       refute_warning("def foo; bar = 1; end", line: -2, compare: false)
     end
 
+    def test_unused_local_variables_in_declaration_order
+      names = %w[bufx bufy curx cury wattr maxx maxy]
+      source = "def foo\n#{names.map { |name| "  #{name} = 1\n" }.join}end\n"
+
+      assert_warning(source, *names.map { |name| "assigned but unused variable - #{name}" })
+    end
+
     def test_unused_local_variable_or_assign_with_begin_node
       assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
         var ||= begin
@@ -528,6 +554,29 @@ module Ruby::Prism
       warning = Ruby::Prism.parse("foo +1").warnings.first
       assert_equal "ambiguous first argument; put parentheses or a space even after `+` operator", warning.message
       assert_equal :verbose, warning.level
+    end
+
+    def test_invalid_character_syntax
+      { "\n" => "\\n", "\r\n" => "\\n", "\t" => "\\t", "\v" => "\\v", "\f" => "\\f", "\r" => "\\r" }.each do |whitespace, name|
+        assert_warning("foo(\"\\C-#{whitespace}\")", "invalid character syntax; use #{name}")
+        assert_warning("foo(\"\\c#{whitespace}\")", "invalid character syntax; use #{name}")
+        assert_warning("foo(\"\\M-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(\"\\M-\\C-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(\"\\C-\\M-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(/\\C-#{whitespace}/)", "invalid character syntax; use #{name}")
+        assert_warning("foo(?\\C-#{whitespace})", "invalid character syntax; use #{name}")
+      end
+    end
+
+    def test_invalid_character_syntax_space
+      assert_warning("foo(\"\\C- \")", "invalid character syntax; use \\C-\\s")
+      assert_warning("foo(\"\\M- \")", "invalid character syntax; use \\M-\\s")
+      assert_warning("foo(\"\\M-\\C- \")", "invalid character syntax; use \\M-\\C-\\s")
+      assert_warning("foo(\"\\C-\\M- \")", "invalid character syntax; use \\C-\\M-\\s")
+    end
+
+    def test_invalid_character_syntax_with_pending_heredoc
+      assert_warning("foo(\"\#{<<A}\\C-\nA\n\")", "invalid character syntax; use \\n")
     end
 
     private

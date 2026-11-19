@@ -1961,7 +1961,7 @@ module Ruby::Prism
           forwarding = []
           forwarding << :* if node.rest.is_a?(RestParameterNode) && node.rest.name.nil?
           forwarding << :** if node.keyword_rest.is_a?(KeywordRestParameterNode) && node.keyword_rest.name.nil?
-          forwarding << :& if !node.block.nil? && node.block.name.nil?
+          forwarding << :& if node.block.is_a?(BlockParameterNode) && node.block.name.nil?
           forwarding |= [:&, :"..."] if node.keyword_rest.is_a?(ForwardingParameterNode)
 
           forwarding

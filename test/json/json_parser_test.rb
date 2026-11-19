@@ -481,11 +481,9 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false) }
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false, symbolize_names: true) }
 
-    unless RUBY_ENGINE == 'jruby'
-      assert_raise(ParserError) do
-        fake_key = Object.new
-        JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
-      end
+    assert_raise(ParserError) do
+      fake_key = Object.new
+      JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
     end
   end
 

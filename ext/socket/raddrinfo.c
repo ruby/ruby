@@ -19,8 +19,7 @@
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
 #    define GETADDRINFO_IMPL 0
-#  elif defined(__MINGW32__) || defined(__MINGW64__) || \
-        (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH)))
+#  elif !defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH))
 #    define GETADDRINFO_IMPL 1
 #  else
 #    define GETADDRINFO_IMPL 2
@@ -1100,6 +1099,20 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         hints->ai_socktype = SOCK_DGRAM;
     }
     hints->ai_flags |= additional_flags;
+
+#if !defined(INET6) && defined(AF_INET6)
+    /*
+     * IPv6 support is disabled (--disable-ipv6), but the system resolver
+     * may still return IPv6 addresses.  Restrict resolution to IPv4 so that
+     * no IPv6 addresses leak into Ruby.
+     */
+    if (hints->ai_family == PF_UNSPEC) {
+        hints->ai_family = PF_INET;
+    }
+    else if (hints->ai_family == PF_INET6) {
+        rsock_raise_resolution_error_for_host("getaddrinfo", EAI_FAMILY, host);
+    }
+#endif
 
     error = numeric_getaddrinfo(hostp, portp, hints, &ai);
     if (error == 0) {
@@ -2384,7 +2397,6 @@ addrinfo_protocol(VALUE self)
 /*
  * call-seq:
  *   addrinfo.to_sockaddr => string
- *   addrinfo.to_s => string
  *
  * returns the socket address as packed struct sockaddr string.
  *
@@ -2399,6 +2411,20 @@ addrinfo_to_sockaddr(VALUE self)
     VALUE ret;
     ret = rb_str_new((char*)&rai->addr, rai->sockaddr_len);
     return ret;
+}
+
+/*
+ * call-seq:
+ *   addrinfo.to_s => string
+ *
+ * Deprecated at 1.9.2.  Do not use.
+ */
+static VALUE
+addrinfo_to_s(VALUE self)
+{
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "Addrinfo#to_s has been "
+                     "deprecated since 1.9.2; Use #to_sockaddr instead");
+    return addrinfo_to_sockaddr(self);
 }
 
 /*
@@ -3336,7 +3362,7 @@ rsock_init_addrinfo(void)
 #endif
 
     rb_define_method(rb_cAddrinfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
-    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_sockaddr, 0); /* compatibility for ruby before 1.9.2 */
+    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_s, 0); /* compatibility for ruby before 1.9.2 */
 
     rb_define_method(rb_cAddrinfo, "getnameinfo", addrinfo_getnameinfo, -1);
 

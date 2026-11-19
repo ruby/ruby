@@ -351,7 +351,9 @@ ossl_x509ext_set_critical(VALUE self, VALUE flag)
     X509_EXTENSION *ext;
 
     GetX509Ext(self, ext);
-    X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0);
+    if (!X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0)) {
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_critical");
+    }
 
     return flag;
 }
@@ -382,8 +384,12 @@ ossl_x509ext_get_value(VALUE obj)
     GetX509Ext(obj, ext);
     if (!(out = BIO_new(BIO_s_mem())))
         ossl_raise(eX509ExtError, NULL);
-    if (!X509V3_EXT_print(out, ext, 0, 0))
-        ASN1_STRING_print(out, X509_EXTENSION_get_data(ext));
+    if (!X509V3_EXT_print(out, ext, 0, 0)) {
+        if (!ASN1_STRING_print(out, X509_EXTENSION_get_data(ext))) {
+            BIO_free(out);
+            ossl_raise(eX509ExtError, "ASN1_STRING_print");
+        }
+    }
     ret = ossl_membio2str(out);
 
     return ret;

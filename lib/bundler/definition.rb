@@ -159,7 +159,7 @@ module Bundler
       end
       @unlocking ||= @unlocking_ruby ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      @excluded_ruby_abis = @ruby_version ? @ruby_abis.select {|ruby_abi| ruby_abi_excluded?(ruby_abi) } : []
+      @excluded_ruby_abis = @ruby_version && content_addressing_supported? ? @ruby_abis.select {|ruby_abi| ruby_abi_excluded?(ruby_abi) } : []
       @ruby_abis -= @excluded_ruby_abis
 
       @current_platform_missing = add_current_platform unless Bundler.frozen_bundle?
@@ -558,10 +558,13 @@ module Bundler
     end
 
     def ruby_abis
+      return [] unless content_addressing_supported? || content_addresses_carried_over?
+
       @ruby_abis.sort_by {|ruby_abi| Gem::Version.new(ruby_abi) }
     end
 
     def add_ruby_abi(ruby_abi)
+      ensure_content_addressing_supported!
       if @ruby_version && ruby_abi_excluded?(ruby_abi)
         raise InvalidOption, "Unable to add the Ruby ABI `#{ruby_abi}` since your Gemfile requires #{@ruby_version}"
       end
@@ -572,6 +575,7 @@ module Bundler
     end
 
     def remove_ruby_abi(ruby_abi)
+      ensure_content_addressing_supported!
       raise InvalidOption, "Unable to remove the Ruby ABI `#{ruby_abi}` since the only Ruby ABIs are #{ruby_abis.join(", ")}" unless @ruby_abis.include?(ruby_abi)
 
       @removed_ruby_abis << ruby_abi
@@ -950,10 +954,35 @@ module Bundler
     end
 
     def add_current_ruby_abi
+      return unless content_addressing_supported?
       return if @ruby_abis.include?(Gem.ruby_abi)
 
       @ruby_abis << Gem.ruby_abi
       @locked_specs.any? {|spec| spec.content_addresses.any? }
+    end
+
+    # RubyGems before 4.1 can't lock content-addressed gems, so changing the
+    # locked Ruby ABIs there would leave CONTENT ADDRESSES out of step with them.
+    def content_addressing_supported?
+      Bundler.rubygems.provides?(">= 4.1.0.a")
+    end
+
+    def ensure_content_addressing_supported!
+      return if content_addressing_supported?
+
+      raise InvalidOption, "Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later, but you are using RubyGems #{Bundler.rubygems.version}"
+    end
+
+    # Older RubyGems resolves platform gems without the content addresses the
+    # lockfile had for them, and may swap a locked one for its ruby variant. Unless
+    # every platform gem comes through as locked, the lockfile then drops its Ruby
+    # ABIs, so that RubyGems 4.1 resolves again and records the content addresses
+    # instead of falling back.
+    def content_addresses_carried_over?
+      locked = @originally_locked_specs.select {|spec| spec.platform != Gem::Platform::RUBY && resolve[spec.name].any? }
+      resolved = resolve.select {|spec| spec.platform != Gem::Platform::RUBY }
+
+      locked.to_h {|spec| [spec.full_name, spec.content_addresses] } == resolved.to_h {|spec| [spec.full_name, spec.content_addresses] }
     end
 
     def ruby_abi_excluded?(ruby_abi)

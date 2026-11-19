@@ -162,8 +162,7 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 // Raw accessor
 #define RCLASSEXT_BOX(ext) (ext->box)
 #define RCLASSEXT_SUPER(ext) (ext->super)
-#define RCLASSEXT_FIELDS(ext) (ext->fields_obj ? ROBJECT_FIELDS(ext->fields_obj) : NULL)
-#define RCLASSEXT_FIELDS_OBJ(ext) (ext->fields_obj)
+#define RCLASSEXT_FIELDS_OBJ(ext) rbimpl_atomic_value_load(&(ext)->fields_obj, RBIMPL_ATOMIC_ACQUIRE)
 #define RCLASSEXT_M_TBL(ext) (ext->m_tbl)
 #define RCLASSEXT_CONST_TBL(ext) (ext->const_tbl)
 #define RCLASSEXT_CALLABLE_M_TBL(ext) (ext->callable_m_tbl)
@@ -191,7 +190,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_PRIME_BOX(c) (RCLASS_EXT_PRIME(c)->box)
 // To invalidate CC by inserting&invalidating method entry into tables containing the target cme
 // See clear_method_cache_by_id_in_class()
-#define RCLASS_PRIME_FIELDS_OBJ(c) (RCLASS_EXT_PRIME(c)->fields_obj)
+#define RCLASS_PRIME_FIELDS_OBJ(c) RCLASSEXT_FIELDS_OBJ(RCLASS_EXT_PRIME(c))
 #define RCLASS_PRIME_M_TBL(c) (RCLASS_EXT_PRIME(c)->m_tbl)
 #define RCLASS_PRIME_CONST_TBL(c) (RCLASS_EXT_PRIME(c)->const_tbl)
 #define RCLASS_PRIME_CALLABLE_M_TBL(c) (RCLASS_EXT_PRIME(c)->callable_m_tbl)
@@ -525,17 +524,6 @@ static inline void
 RCLASS_WRITE_SUPER(VALUE klass, VALUE super)
 {
     RB_OBJ_WRITE(klass, &RCLASSEXT_SUPER(RCLASS_EXT_WRITABLE(klass)), super);
-}
-
-static inline VALUE
-RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
-    if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, ROOT_SHAPE_ID, true));
-    }
-    return ext->fields_obj;
 }
 
 static inline VALUE

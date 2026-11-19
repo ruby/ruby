@@ -92,6 +92,13 @@ __EOS__
     # Can OpenSSL handle t>2038y correctly? Version?
     sess.time = 2**31 - 1
     assert_equal(2**31 - 1, sess.time.to_i)
+
+    # The next year of 2038y
+    if openssl?(3, 3, 0) and RbConfig::SIZEOF["time_t"] > 4
+      t = 2**31 + 365 * 86400
+      sess.time = t
+      assert_equal(t, sess.time.to_i)
+    end
   end
 
   def test_session_timeout

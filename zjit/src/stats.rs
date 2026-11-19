@@ -453,7 +453,6 @@ make_counters! {
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
-    vm_write_locals_count,
     vm_write_stack_count,
     vm_write_to_parent_iseq_local_count,
     // TODO(max): Implement
@@ -468,13 +467,6 @@ make_counters! {
 
     load_field_count,
     store_field_count,
-
-    invokeblock_handler_monomorphic_iseq,
-    invokeblock_handler_monomorphic_ifunc,
-    invokeblock_handler_monomorphic_other,
-    invokeblock_handler_polymorphic,
-    invokeblock_handler_megamorphic,
-    invokeblock_handler_no_profiles,
 
     // HIR-level method inliner counters. Rejection counters are incremented once per
     // SendDirect the inliner considers.

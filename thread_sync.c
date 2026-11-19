@@ -473,11 +473,9 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
                 rb_threadptr_interrupt(cur->th);
                 return NULL;
               case THREAD_STOPPED: /* probably impossible */
-                rb_bug("unexpected THREAD_STOPPED");
-              case THREAD_KILLED:
-                /* not sure about this, possible in exit GC? */
-                rb_bug("unexpected THREAD_KILLED");
-                continue;
+              case THREAD_KILLED: /* not sure about this, possible in exit GC? */
+                /* MSVC 14.52 for ARM64 crashes with /Os on two separate rb_bug calls here */
+                rb_bug("unexpected %s", cur->th->status == THREAD_STOPPED ? "THREAD_STOPPED" : "THREAD_KILLED");
             }
         }
     }

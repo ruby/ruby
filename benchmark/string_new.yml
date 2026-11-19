@@ -1,0 +1,22 @@
+prelude: |
+  # frozen_string_literal: true
+  BLOB = ("a" * 500).b.freeze
+
+benchmark:
+  new_empty: |
+    "".b
+
+  new_empty_concat: |
+    "".b << BLOB
+
+  new_embed_capa: |
+    String.new(capacity: 512)
+
+  new_embed_concat: |
+    String.new(capacity: 512) << BLOB
+
+  new_heap_capa: |
+    String.new(capacity: 2048)
+
+  new_heap_concat: |
+    String.new(capacity: 2048) << BLOB

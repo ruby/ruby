@@ -327,6 +327,12 @@ typedef struct {
     VALUE env[VM_ENV_DATA_SIZE + 1]; /* ..., envval */
 } cfunc_proc_t;
 
+static inline bool
+cfunc_proc_inline_env_p(const rb_proc_t *proc)
+{
+    return proc->block.as.captured.ep == ((const cfunc_proc_t *)proc)->env + VM_ENV_DATA_SIZE - 1;
+}
+
 static size_t
 proc_memsize(const void *ptr)
 {
@@ -1443,7 +1449,7 @@ rb_func_proc_dup(VALUE src_obj)
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
     const VALUE *src_ep = src_proc->block.as.captured.ep;
-    if (src_ep == ((const cfunc_proc_t *)src_proc)->env + VM_ENV_DATA_SIZE - 1) {
+    if (cfunc_proc_inline_env_p(src_proc)) {
         VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
         ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
         ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
@@ -2106,11 +2112,15 @@ rb_proc_eq(VALUE self, VALUE other)
             return Qfalse;
         }
 
-        if (memcmp(
-                ((cfunc_proc_t *)self_proc)->env,
-                ((cfunc_proc_t *)other_proc)->env,
-                sizeof(((cfunc_proc_t *)self_proc)->env))) {
-            return Qfalse;
+        if (self_block->as.captured.ep != other_block->as.captured.ep) {
+            if (!cfunc_proc_inline_env_p(self_proc) ||
+                    !cfunc_proc_inline_env_p(other_proc) ||
+                    memcmp(
+                        ((const cfunc_proc_t *)self_proc)->env,
+                        ((const cfunc_proc_t *)other_proc)->env,
+                        sizeof(((const cfunc_proc_t *)self_proc)->env))) {
+                return Qfalse;
+            }
         }
         break;
       case block_type_proc:
@@ -2535,11 +2545,35 @@ find_refined_target_ancestor(VALUE start, VALUE refined_target)
 }
 
 static VALUE
+find_ancestor(VALUE start, VALUE ancestor)
+{
+    VALUE klass;
+    for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
+        if (klass == ancestor) return klass;
+    }
+    return 0;
+}
+
+static VALUE
 find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
 {
     VALUE refined_target = rb_refinement_module_get_refined_class(owner);
 
     if (RB_TYPE_P(refined_target, T_MODULE)) {
+        /* If the iclass given is already the refinement iclass we want,
+         * return it instead of generating a new refinement iclass, so that
+         * Method/UnboundMethod equality works as expected.
+         */
+        VALUE refinement_iclass = RCLASS_SUPER(iclass);
+        while (RICLASS_FOR_REFINEMENT_P(refinement_iclass)) {
+            refinement_iclass = RCLASS_SUPER(refinement_iclass);
+        }
+        if (RB_TYPE_P(refinement_iclass, T_ICLASS) &&
+                RBASIC(refinement_iclass)->klass == refined_target &&
+                find_ancestor(klass, refinement_iclass)) {
+            return iclass;
+        }
+
         VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
         if (refined_ancestor) {
             iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
@@ -3056,7 +3090,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     }
 
   /* undef: */
-    vid = ID2SYM(id);
+    if (id) vid = ID2SYM(id);
     rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);
@@ -3493,7 +3527,7 @@ static void
 convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out, const bool clone)
 {
     VALUE methclass = data->owner;
-    VALUE iclass = data->me->defined_class;
+    VALUE iclass = data->iclass;
     VALUE klass = CLASS_OF(recv);
 
     if (RB_TYPE_P(methclass, T_MODULE)) {
@@ -3525,12 +3559,13 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(data->iclass)) {
-            iclass = find_refinement_iclass(me->owner, klass, data->iclass);
+        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, iclass);
             klass = iclass;
         }
         else {
-            VALUE ic = rb_class_search_ancestor(klass, me->owner);
+            VALUE ic = RB_TYPE_P(iclass, T_ICLASS) ? find_ancestor(klass, iclass) : 0;
+            if (!ic) ic = rb_class_search_ancestor(klass, me->owner);
             if (ic) {
                 klass = ic;
                 iclass = ic;
@@ -3665,7 +3700,7 @@ method_def_min_max_arity(const rb_method_definition_t *def, int *max)
       case VM_METHOD_TYPE_IVAR:
         return *max = 0;
       case VM_METHOD_TYPE_ALIAS:
-        def = def->body.alias.original_me->def;
+        def = rb_method_entry_def_acquire(rb_method_alias_original_me(def));
         goto again;
       case VM_METHOD_TYPE_BMETHOD:
         return rb_proc_min_max_arity(def->body.bmethod.proc, max);
@@ -3717,7 +3752,7 @@ method_def_arity(const rb_method_definition_t *def)
 int
 rb_method_entry_arity(const rb_method_entry_t *me)
 {
-    return method_def_arity(me->def);
+    return method_def_arity(rb_method_entry_def_acquire(me));
 }
 
 /*
@@ -3803,7 +3838,7 @@ method_min_max_arity(VALUE method, int *max)
     const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return method_def_min_max_arity(data->me->def, max);
+    return method_def_min_max_arity(rb_method_entry_def_acquire(data->me), max);
 }
 
 int
@@ -3841,7 +3876,7 @@ rb_method_def(VALUE method)
     const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return data->me->def;
+    return rb_method_entry_def_acquire(data->me);
 }
 
 static const rb_iseq_t *
@@ -3853,7 +3888,7 @@ method_def_iseq(const rb_method_definition_t *def)
       case VM_METHOD_TYPE_BMETHOD:
         return rb_proc_get_iseq(def->body.bmethod.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
-        return method_def_iseq(def->body.alias.original_me->def);
+        return method_def_iseq(rb_method_entry_def_acquire(rb_method_alias_original_me(def)));
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
@@ -3884,7 +3919,7 @@ method_cref(VALUE method)
       case VM_METHOD_TYPE_ISEQ:
         return def->body.iseq.cref;
       case VM_METHOD_TYPE_ALIAS:
-        def = def->body.alias.original_me->def;
+        def = rb_method_entry_def_acquire(rb_method_alias_original_me(def));
         goto again;
       default:
         return NULL;
@@ -3906,7 +3941,7 @@ VALUE
 rb_method_entry_location(const rb_method_entry_t *me)
 {
     if (!me) return Qnil;
-    return method_def_location(me->def);
+    return method_def_location(rb_method_entry_def_acquire(me));
 }
 
 /*
@@ -3995,7 +4030,7 @@ method_def_parameters(const rb_method_definition_t *def)
         break;
 
       case VM_METHOD_TYPE_ALIAS:
-        return method_def_parameters(def->body.alias.original_me->def);
+        return method_def_parameters(rb_method_entry_def_acquire(rb_method_alias_original_me(def)));
 
       case VM_METHOD_TYPE_OPTIMIZED:
         if (def->body.optimized.type == OPTIMIZED_METHOD_TYPE_STRUCT_ASET) {
@@ -4112,8 +4147,9 @@ method_inspect(VALUE method)
         mklass = RBASIC_CLASS(mklass);
     }
 
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
-        defined_class = data->me->def->body.alias.original_me->owner;
+    const rb_method_definition_t *def = rb_method_entry_def_acquire(data->me);
+    if (def->type == VM_METHOD_TYPE_ALIAS) {
+        defined_class = rb_method_alias_original_me(def)->owner;
     }
     else {
         defined_class = method_entry_defined_class(data->me);
@@ -4165,11 +4201,11 @@ method_inspect(VALUE method)
     }
     rb_str_buf_cat2(str, sharp);
     rb_str_append(str, rb_id2str(data->me->called_id));
-    if (data->me->called_id != data->me->def->original_id) {
+    if (data->me->called_id != def->original_id) {
         rb_str_catf(str, "(%"PRIsVALUE")",
-                    rb_id2str(data->me->def->original_id));
+                    rb_id2str(def->original_id));
     }
-    if (data->me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+    if (def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
         rb_str_buf_cat2(str, " (not-implemented)");
     }
 
@@ -4346,10 +4382,12 @@ method_super_method(VALUE method)
     iclass = data->iclass;
     if (!iclass) return Qnil;
     bool is_refinement_method = refinement_module_p(data->me->owner);
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
+    const rb_method_definition_t *def = rb_method_entry_def_acquire(data->me);
+    if (def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
+        const rb_method_entry_t *orig_me = rb_method_alias_original_me(def);
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
-            data->me->def->body.alias.original_me->owner));
-        mid = data->me->def->body.alias.original_me->def->original_id;
+            orig_me->owner));
+        mid = rb_method_entry_def_acquire(orig_me)->original_id;
     }
     else if (is_refinement_method) {
         if (RICLASS_FOR_REFINEMENT_P(iclass)) {
@@ -4364,7 +4402,7 @@ method_super_method(VALUE method)
                 super_class = RCLASS_SUPER(data->me->owner);
             }
         }
-        mid = data->me->def->original_id;
+        mid = def->original_id;
     }
     else {
         VALUE klass = iclass;
@@ -4373,25 +4411,25 @@ method_super_method(VALUE method)
             klass = RBASIC(klass)->klass;
         }
         super_class = RCLASS_SUPER(RCLASS_ORIGIN(klass));
-        mid = data->me->def->original_id;
+        mid = def->original_id;
     }
     if (!super_class) return Qnil;
 
     // For refined methods, skip refinements for the same definition, but consider
     // refinements for superclass methods
-    const rb_method_definition_t *skip_def = is_refinement_method ? data->me->def : NULL;
+    const rb_method_definition_t *skip_def = is_refinement_method ? def : NULL;
 
     // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
     // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
     // implicitly use the refinements activated in of the caller of super_method.
     const rb_cref_t *cref = NULL;
-    switch (data->me->def->type) {
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-        cref = data->me->def->body.iseq.cref;
+        cref = def->body.iseq.cref;
         break;
       case VM_METHOD_TYPE_BMETHOD: {
         const rb_proc_t *proc;
-        GetProcPtr(data->me->def->body.bmethod.proc, proc);
+        GetProcPtr(def->body.bmethod.proc, proc);
         const struct rb_block *block = &proc->block;
         if (vm_block_type(block) == block_type_iseq)
             cref = rb_vm_get_cref(block->as.captured.ep);
@@ -4439,7 +4477,8 @@ method_super_method(VALUE method)
         klass = RCLASS_SUPER(cme->defined_class);
     }
     if (!me) return Qnil;
-    return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
+    VALUE mklass = (RB_TYPE_P(me->owner, T_MODULE) || UNDEF_P(data->recv)) ? iclass : CLASS_OF(data->recv);
+    return mnew_internal(me, mklass, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*

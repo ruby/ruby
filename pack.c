@@ -1576,7 +1576,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
 
           case 'm':
             {
-                VALUE buf = rb_str_new(0, (send - s + 3)*3/4); /* +3 is for skipping paddings */
+                VALUE buf = rb_str_new(0, (send - s + 3) / 4 * 3); /* +3 is for skipping paddings */
                 char *ptr = RSTRING_PTR(buf);
                 int a = -1,b = -1,c = 0,d = 0;
                 static signed char b64_xtable[256];

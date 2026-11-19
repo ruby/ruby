@@ -670,18 +670,20 @@ io_unread(rb_io_t *fptr, bool discard_rbuf)
     }
 
     /* add extra offset for removed '\r' in rbuf */
-    extra_max = (long)(pos - fptr->rbuf.len);
+    extra_max = (pos - fptr->rbuf.len < fptr->rbuf.len) ?
+        (long)(pos - fptr->rbuf.len) : fptr->rbuf.len;
     p = fptr->rbuf.ptr + fptr->rbuf.off;
-
-    /* if the end of rbuf is '\r', rbuf doesn't have '\r' within rbuf.len */
-    if (*(fptr->rbuf.ptr + fptr->rbuf.capa - 1) == '\r') {
-        newlines++;
-    }
 
     for (i = 0; i < fptr->rbuf.len; i++) {
         if (*p == '\n') newlines++;
         if (extra_max == newlines) break;
         p++;
+    }
+
+    /* if the end of rbuf is '\r', rbuf doesn't have '\r' within rbuf.len */
+    if (*(fptr->rbuf.ptr + fptr->rbuf.capa - 1) == '\r' &&
+        newlines < pos - fptr->rbuf.len) {
+        newlines++;
     }
 
     buf = ALLOC_N(char, fptr->rbuf.len + newlines);
@@ -3934,6 +3936,7 @@ rscheck(const char *rsptr, rb_len_t rslen, VALUE rs)
 static const char *
 search_delim(const char *p, rb_len_t len, int delim, rb_encoding *enc)
 {
+    if (delim < 0) return NULL;
     if (rb_enc_mbminlen(enc) == 1) {
         p = memchr(p, delim, len);
         if (p) return p + 1;
@@ -6362,15 +6365,21 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LEN(len);
-
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative length %"PRIdLEN" given", ilen);
+    }
     shrinkable = io_setstrbuf(&str, ilen);
-    if (ilen == 0) return str;
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
     if (READ_DATA_BUFFERED(fptr)) {
         rb_raise(rb_eIOError, "sysread for buffered IO");
+    }
+
+    if (ilen == 0) {
+        io_set_read_length(str, 0, shrinkable);
+        return str;
     }
 
     rb_io_check_closed(fptr);
@@ -6392,7 +6401,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     io_set_read_length(str, n, shrinkable);
 
-    if (n == 0 && ilen > 0) {
+    if (n == 0) {
         rb_eof_error();
     }
 
@@ -6464,25 +6473,35 @@ static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
 {
     VALUE len, offset, str;
+    rb_len_t ilen;
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg;
     int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
-    arg.count = NUM2SIZET(len);
+    ilen = NUM2LEN(len);
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative length %"PRIdLEN" given", ilen);
+    }
     arg.offset = NUM2OFFT(offset);
 
-    shrinkable = io_setstrbuf(&str, (rb_len_t)arg.count);
-    if (arg.count == 0) return str;
-    rb_str_make_heap(str);
-    arg.buf = RSTRING_PTR(str);
+    shrinkable = io_setstrbuf(&str, ilen);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
+    if (ilen == 0) {
+        io_set_read_length(str, 0, shrinkable);
+        return str;
+    }
+
+    io_setstrbuf(&str, ilen);
+    rb_str_make_heap(str);
     arg.io = fptr;
     arg.fd = fptr->fd;
+    arg.buf = RSTRING_PTR(str);
+    arg.count = (size_t)ilen;
     rb_io_check_closed(fptr);
 
     rb_str_locktmp(str);
@@ -6492,7 +6511,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
         rb_sys_fail_path(fptr->pathv);
     }
     io_set_read_length(str, n, shrinkable);
-    if (n == 0 && arg.count > 0) {
+    if (n == 0) {
         rb_eof_error();
     }
 
@@ -13404,6 +13423,21 @@ nogvl_copy_stream_func(void *arg)
     return 0;
 }
 
+struct copy_stream_fallback_read_arg {
+    struct copy_stream_struct *stp;
+    VALUE buf;
+    rb_len_t len;
+    rb_off_t offset;
+};
+
+static VALUE
+copy_stream_fallback_read(VALUE arg)
+{
+    struct copy_stream_fallback_read_arg *p = (void *)arg;
+    return (VALUE)maygvl_copy_stream_read(1, p->stp, RSTRING_PTR(p->buf),
+                                          p->len, p->offset);
+}
+
 static VALUE
 copy_stream_fallback_body(VALUE arg)
 {
@@ -13442,9 +13476,11 @@ copy_stream_fallback_body(VALUE arg)
                 break;
         }
         else {
-            ssize_t ss;
             rb_str_resize(buf, buflen);
-            ss = maygvl_copy_stream_read(1, stp, RSTRING_PTR(buf), l, off);
+            struct copy_stream_fallback_read_arg read_arg = {stp, buf, l, off};
+            ssize_t ss =
+                (ssize_t)rb_str_locktmp_ensure(buf, copy_stream_fallback_read,
+                                               (VALUE)&read_arg);
             rb_str_resize(buf, ss > 0 ? ss : 0);
             if (ss < 0)
                 return Qnil;

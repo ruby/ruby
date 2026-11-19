@@ -584,6 +584,18 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       end
     end
 
+    it "records the running Ruby's ABI again once older RubyGems dropped the RUBY ABIS section" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi))
+
+        bundle_with_content_addressed_gems "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
     context "when resolving locally" do
       it "fails under an uncovered Ruby ABI without touching the lockfile, until an online install locks its gems" do
         simulate_platform "x86_64-linux" do
@@ -736,6 +748,200 @@ RSpec.describe "bundle install with content-addressable gems invisible to pre-4.
       expect(spec.required_rubygems_version).to eq(Gem::Requirement.new(">= 4.1.0.a"))
       expect(spec.required_rubygems_version.satisfied_by?(Gem::Version.new("4.0.9"))).to be false
       expect(spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version)).to be true
+    end
+  end
+end
+
+RSpec.describe "content-addressed lockfiles on older RubyGems", :compact_index, rubygems: "< 4.1.0.a" do
+  before do
+    skip_unless_content_addressing_available!
+    build_repo2_with_content_addressed_gems
+
+    gemfile <<~G
+      source "https://gem.repo2"
+      gem "mygem"
+    G
+
+    lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), checksums: true, ruby_abis: [current_abi, mismatched_abi].sort)
+  end
+
+  it "installs the multi-ABI gem without confusing the checksum with its content-addressed counterpart" do
+    simulate_platform "x86_64-linux" do
+      bundle "install"
+
+      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+      [current_abi, mismatched_abi].each do |ruby_abi|
+        address = addresses_by_abi.fetch(ruby_abi)
+        checksum = checksum_digest(gem_repo2, "mygem", "1.0", address)
+        expect(lockfile).to include("#{address} abi=#{ruby_abi} sha256=#{checksum}")
+      end
+      expect(Bundler::LockfileParser.new(lockfile).ruby_abis).to include(current_abi, mismatched_abi)
+
+      bundle "check"
+      expect(out).to include("The Gemfile's dependencies are satisfied")
+    end
+  end
+
+  it "keeps the lockfile unchanged when installing the multi-ABI fallback in frozen mode" do
+    simulate_platform "x86_64-linux" do
+      original_lockfile = lockfile
+      bundle_config "frozen true"
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
+  it "does not lock the running Ruby's ABI when the lockfile does not cover it" do
+    simulate_platform "x86_64-linux" do
+      lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
+      original_lockfile = lockfile
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
+  context "when the Gemfile has a ruby directive" do
+    before do
+      lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort, ruby_version: Bundler::RubyVersion.system.to_s)
+
+      gemfile <<~G
+        source "https://gem.repo2"
+        ruby "#{RUBY_VERSION}"
+        gem "mygem"
+      G
+    end
+
+    it "keeps the locked Ruby ABIs the directive rules out" do
+      simulate_platform "x86_64-linux" do
+        original_lockfile = lockfile
+
+        bundle "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
+    it "installs in frozen mode despite the locked Ruby ABIs the directive rules out" do
+      simulate_platform "x86_64-linux" do
+        original_lockfile = lockfile
+        bundle_config "frozen true"
+
+        bundle "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+  end
+end
+
+RSpec.describe "content-addressed lockfiles on older RubyGems when resolving again", :compact_index, rubygems: "< 4.1.0.a" do
+  before do
+    skip_unless_content_addressing_available!
+
+    build_repo2 do
+      %w[mygem othergem ca_only].each {|name| build_gem name, "1.0" }
+
+      %w[mygem othergem].each do |name|
+        build_gem name, "1.0" do |s|
+          s.platform = Gem::Platform.new("x86_64-linux")
+        end
+      end
+    end
+
+    %w[mygem othergem ca_only].product([current_abi, mismatched_abi]) do |name, ruby_abi|
+      build_gem name, "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
+        s.platform = Gem::Platform.new("x86_64-linux")
+        s.required_ruby_version = "~> #{ruby_abi}.0"
+      end
+    end
+
+    lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
+  end
+
+  def gemfile_with(*dependencies)
+    gemfile <<~G
+      source "https://gem.repo2"
+      gem "mygem"
+      #{dependencies.map {|name| "gem #{name.inspect}\n" }.join}
+    G
+  end
+
+  def lockfile_with_platform_gems(*names)
+    rows = names.flat_map do |name|
+      addresses(current_abi, mismatched_abi, name: name).map {|address, ruby_abi| "  #{name} (1.0-x86_64-linux) #{address} abi=#{ruby_abi}\n" }
+    end
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+      #{names.map {|name| "    #{name} (1.0-x86_64-linux)\n" }.join}
+      PLATFORMS
+        x86_64-linux
+
+      DEPENDENCIES
+      #{names.map {|name| "  #{name}\n" }.join}
+      CONTENT ADDRESSES
+      #{rows.sort.join}
+      RUBY ABIS
+      #{[current_abi, mismatched_abi].sort.map {|ruby_abi| "  #{ruby_abi}\n" }.join}
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "drops the Ruby ABIs once a gem loses the content addresses locked for it" do
+    simulate_platform "x86_64-linux" do
+      lockfile_with_platform_gems "mygem", "othergem"
+      gemfile_with "othergem"
+
+      bundle "update othergem"
+
+      expect(lockfile).not_to include("RUBY ABIS")
+      expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
+    end
+  end
+
+  it "drops the Ruby ABIs once a locked platform gem falls back to its ruby variant" do
+    simulate_platform "x86_64-linux" do
+      lockfile_with_platform_gems "mygem", "ca_only"
+      gemfile_with "ca_only", "myrack"
+
+      bundle "install"
+
+      expect(lockfile).to include("    ca_only (1.0)\n")
+      expect(lockfile).not_to include("RUBY ABIS")
+      expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
+    end
+  end
+
+  it "drops the Ruby ABIs when adding a platform gem" do
+    simulate_platform "x86_64-linux" do
+      gemfile_with "othergem"
+
+      bundle "install"
+
+      expect(lockfile).not_to include("RUBY ABIS")
+      expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
+    end
+  end
+
+  it "keeps the Ruby ABIs when adding a gem for the ruby platform" do
+    simulate_platform "x86_64-linux" do
+      gemfile_with "myrack"
+
+      bundle "install"
+
+      expect(lockfile).to include("RUBY ABIS\n  #{[current_abi, mismatched_abi].sort.join("\n  ")}\n")
+      expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
     end
   end
 end

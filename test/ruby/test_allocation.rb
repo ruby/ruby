@@ -90,6 +90,15 @@ class TestAllocation < Test::Unit::TestCase
       RUBY
     end
 
+    def test_hash_literal_keyword_splat
+      check_allocations(<<~RUBY)
+        check_allocations(0, 1, "{a: array1, **hash1}")
+        check_allocations(0, 1, "{**nil}")
+        check_allocations(0, 1, "{**hash1, **nil}")
+        check_allocations(0, 1, "{a: 1, **{}}")
+      RUBY
+    end
+
     def test_hash_literal
       check_allocations(<<~RUBY)
         check_allocations(0, 1, "{}")

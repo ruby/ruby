@@ -89,6 +89,30 @@ module Ruby::Prism
       assert_equal [gutters.first], gutters.uniq
     end
 
+    def test_syntax_error_extreme_line_numbers
+      [-(2**31), 2**31 - 1].each do |line|
+        error = assert_raise(SyntaxError) { Ruby::Prism.parse("}\n", raise_error: :plain, line: line) }
+        assert_include error.message, "> #{line} | }\n"
+      end
+    end
+
+    def test_syntax_error_context_across_line_number_wraparound
+      source = "\n}\n\n\n"
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain, line: 2**31 - 4) }
+      assert_include error.message, "> 2147483645 | }\n"
+      assert_include error.message, "  2147483647 | \n"
+
+      source = "1 2\n3 4\n5 6\n"
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain, line: 2**31 - 1) }
+      source_lines = error.message.lines.grep(/^> /)
+      assert_equal [
+        ">  2147483647 | 1 2\n",
+        "> -2147483648 | 3 4\n",
+        "> -2147483647 | 5 6\n"
+      ], source_lines
+      assert_equal [14], error.message.lines.grep(/\|/).map { |line| line.index("|") }.uniq
+    end
+
     def test_syntax_error_not_utf8_in_context
       # A line of context is displayed, so it must be valid UTF-8 for the
       # snippet to be displayed, even though it has no error of its own.

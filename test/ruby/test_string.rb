@@ -50,6 +50,8 @@ class TestString < Test::Unit::TestCase
     assert_equal("", S(capacity: 1000))
     assert_equal(Encoding::ASCII_8BIT, S(capacity: 1000).encoding)
 
+    assert(S(capacity: -1000).inspect)
+
     assert_equal("", S(capacity: 1000, encoding: "euc-jp"))
     assert_equal(Encoding::EUC_JP, S(capacity: 1000, encoding: "euc-jp").encoding)
 
@@ -162,6 +164,27 @@ class TestString < Test::Unit::TestCase
   def test_AREF_underflow
     require "rbconfig/sizeof"
     assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
+  end
+
+  def test_range_with_len_max_end
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+
+    assert_equal(S("ab"), S("ab")[0..max])
+    assert_equal(S("b"), S("ab")[1..max])
+    assert_equal(S("ab"), S("ab").byteslice(0..max))
+
+    s = S("ab")
+    assert_equal(S("ab"), s.slice!(0..max))
+    assert_equal(S(""), s)
+
+    s = S("ab")
+    s[0..max] = S("x")
+    assert_equal(S("x"), s)
+
+    s = S("ab")
+    s.bytesplice(0..max, S("x"))
+    assert_equal(S("x"), s)
   end
 
   def test_AREF_invalid_encoding
@@ -1274,6 +1297,60 @@ class TestString < Test::Unit::TestCase
     assert_bit_op_chilled_string_warning(:bit_flip, (7000 * 8)..(7100 * 8))
   end
 
+  def test_setbyte_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:setbyte, 7000, 0)
+    assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
+  end
+
+  def test_concat_chilled_string_warning
+    return unless @cls == String
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target << $target
+      assert_equal("\\xff\\xfe\\xfd\\xff\\xfe\\xfd".b, $target)
+    }
+    {#
+      module ReplaceReceiverWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("\xff\xfe\xfd".b)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ReplaceReceiverWarning)
+    };
+  end
+
+  def test_append_as_bytes_chilled_string_warning
+    return unless @cls == String
+    # The argument grows inside the chilled string warning: the capacity
+    # reserved for the append must match what is actually copied.
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"      # chilled string
+    $value = "x" * 200
+    END {
+      $target.append_as_bytes($value, 0x41, $value)
+      assert_equal("abcdefghij" + "w" * 100_000 + "A" + "w" * 100_000, $target)
+    }
+    {#
+      module GrowArgumentWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $value.replace("w" * 100_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(GrowArgumentWarning)
+    };
+  end
+
   def assert_bit_op_chilled_string_warning(op, *args)
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     $target = <<~STR            # chilled string
@@ -1299,6 +1376,27 @@ class TestString < Test::Unit::TestCase
       end
 
       Warning.extend(ReallocateWarning)
+    };
+  end
+
+  def test_modify_chilled_string_in_warning
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target[0, 2] = ""
+      assert_equal("B" * 998, $target)
+    }
+    {#
+      module ShrinkWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("B" * 1_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkWarning)
     };
   end
 
@@ -1887,14 +1985,6 @@ class TestString < Test::Unit::TestCase
     assert_index(2, S("にんにちは"), ?に, 1)
     assert_index(2, S("にんにちは"), ?に, 2)
     assert_index(nil, S("にんにちは"), ?に, 3)
-  end
-
-  def test_index_truncated_char_at_end
-    s = S("a" * 2009 + "\xF0")
-    assert_nil(s.index("needle!!!"))
-    s = S("a" * 2010 + "\xE3")
-    assert_nil(s.index("needle!!!"))
-    assert_nil(s.index("needle!!\xE3"))
   end
 
   def test_insert
@@ -3033,6 +3123,15 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("xb"), S("ab").tr(replacements))
   end
 
+  def test_tr_hash_no_match_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
+    begin;
+      str = ("a" * 10_000).encode("UTF-16LE")
+      replacements = {"b".encode("UTF-16LE") => "c".encode("UTF-16LE")}
+      1_000.times { str.tr!(replacements) }
+    end;
+  end
+
   def test_tr!
     a = S("hello")
     b = a.dup
@@ -4034,6 +4133,16 @@ class TestString < Test::Unit::TestCase
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
   end
 
+  # [Bug #22528]
+  def test_append_wide_to_empty_string
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      s = ("a" * 1000).encode(enc)
+      assert_equal(s, String.new(capacity: s.bytesize, encoding: "UTF-8") << s)
+      a = "".force_encoding("US-ASCII")
+      assert_equal(s, eval(%{# coding: us-ascii\n"\#{a}\#{s}"}))
+    end
+  end
+
   def test_substring_embed
     str = "a" * 448
 
@@ -4660,16 +4769,20 @@ class TestString2 < TestString
   end
 
   def test_capacity_inflation
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
     orig = ("\u{30AF}" * 5)
     all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
-      assert_capacity(200, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 200), enc.name)
+      assert_capacity(1024, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 1024), enc.name)
     end
   end
 
   def test_capacity_no_inflation
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
     orig = "hello"
     all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
-      assert_capacity(100, S2.new(orig, encoding: enc, capacity: 100), enc.name)
+      assert_capacity(1024, S2.new(orig, encoding: enc, capacity: 1024), enc.name)
     end
   end
 

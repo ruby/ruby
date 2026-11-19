@@ -26,6 +26,10 @@ typedef long rb_len_t;
 
 #define USE_PACK
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 static ID id_cmp, id_le_p, id_ge_p, id_eqeq_p;
 static VALUE cDate, cDateTime;
 static VALUE eDateError;
@@ -2566,7 +2570,12 @@ valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 }
 #endif
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 VALUE date_zone_to_diff(VALUE);
+VALUE date_zone_to_diff_frac(VALUE, int *, long *);
 
 static int
 offset_to_sec(VALUE vof, int *rof)
@@ -2638,13 +2647,20 @@ offset_to_sec(VALUE vof, int *rof)
 	}
       case T_STRING:
 	{
-	    VALUE vs = date_zone_to_diff(vof);
-	    long n;
+	    int frac, ok = 0;
+	    long whole, n = 0;
+	    VALUE vs = date_zone_to_diff_frac(vof, &frac, &whole);
 
-	    if (!FIXNUM_P(vs))
-		return 0;
-	    n = FIX2LONG(vs);
-	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+	    if (FIXNUM_P(vs)) {
+		n = FIX2LONG(vs);
+		if (n >= -DAY_IN_SECONDS && n <= DAY_IN_SECONDS)
+		    ok = 1;
+	    }
+	    /* an invalid offset already warns that it is ignored */
+	    if (frac && ok && n != whole)
+		rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "decimal hour in a zone offset is deprecated"
+				 " and will be ignored in a future version");
+	    if (!ok)
 		return 0;
 	    *rof = (int)n;
 	    return 1;
@@ -3365,6 +3381,7 @@ old_to_new(VALUE ajd, VALUE of, VALUE sg,
 
     if (f_lt_p(*rsf, INT2FIX(0)) ||
 	f_ge_p(*rsf, INT2FIX(SECOND_IN_NANOSECONDS)))
+	rb_raise(eDateError, "invalid second fraction");
 
     if (*rof < -DAY_IN_SECONDS || *rof > DAY_IN_SECONDS) {
 	*rof = 0;
@@ -4682,10 +4699,6 @@ get_limit(VALUE opt)
     }
     return 128;
 }
-
-#ifndef HAVE_RB_CATEGORY_WARN
-#define rb_category_warn(category, fmt) rb_warn(fmt)
-#endif
 
 static VALUE
 check_limit(VALUE str, VALUE opt)
@@ -6155,6 +6168,15 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
     return dup_obj_with_new_offset(self, rof);
 }
 
+static void
+check_date_fraction(VALUE self)
+{
+    if (!f_kind_of_p(self, cDateTime))
+	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+			 "Date with fractional day is deprecated, "
+			 "use DateTime if you need a fractional day");
+}
+
 /*
  * call-seq:
  *    d + other  ->  date
@@ -6162,6 +6184,8 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
  * Returns a date object pointing +other+ days after self.  The other
  * should be a numeric value.  If the other is a fractional number,
  * assumes its precision is at most nanosecond.
+ * Passing a fractional number to Date#+ is deprecated; use DateTime
+ * if you need a fractional day.
  *
  *    Date.new(2001,2,3) + 1	#=> #<Date: 2001-02-04 ...>
  *    DateTime.new(2001,2,3) + Rational(1,2)
@@ -6291,6 +6315,9 @@ d_lite_plus(VALUE self, VALUE other)
 
 	    o = RFLOAT_VALUE(other);
 
+	    if (modf(o, &tmp) != 0.0)
+		check_date_fraction(self);
+
 	    if (o > 0)
 		s = +1;
 	    else {
@@ -6402,6 +6429,8 @@ d_lite_plus(VALUE self, VALUE other)
 		other = rb_rational_num(other);
 		goto again;
 	    }
+
+	    check_date_fraction(self);
 
 	    if (f_positive_p(other))
 		s = +1;
@@ -6553,6 +6582,8 @@ minus_dd(VALUE self, VALUE other)
  * pointing +other+ days before self.
  * If the other is a fractional number,
  * assumes its precision is at most nanosecond.
+ * Passing a fractional number to Date#- is deprecated; use DateTime
+ * if you need a fractional day.
  *
  *     Date.new(2001,2,3) - 1	#=> #<Date: 2001-02-02 ...>
  *     DateTime.new(2001,2,3) - Rational(1,2)
@@ -6854,7 +6885,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
     date = self;
     c = f_cmp(step, INT2FIX(0));
     if (c < 0) {
-	while (FIX2INT(d_lite_cmp(date, limit)) >= 0) {
+	while (rb_cmpint(d_lite_cmp(date, limit), date, limit) >= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
@@ -6864,7 +6895,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
 	    rb_yield(date);
     }
     else /* if (c > 0) */ {
-	while (FIX2INT(d_lite_cmp(date, limit)) <= 0) {
+	while (rb_cmpint(d_lite_cmp(date, limit), date, limit) <= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
@@ -6886,7 +6917,7 @@ d_lite_upto(VALUE self, VALUE max)
     RETURN_ENUMERATOR(self, 1, &max);
 
     date = self;
-    while (FIX2INT(d_lite_cmp(date, max)) <= 0) {
+    while (rb_cmpint(d_lite_cmp(date, max), date, max) <= 0) {
 	rb_yield(date);
 	date = d_lite_plus(date, INT2FIX(1));
     }
@@ -6907,7 +6938,7 @@ d_lite_downto(VALUE self, VALUE min)
     RETURN_ENUMERATOR(self, 1, &min);
 
     date = self;
-    while (FIX2INT(d_lite_cmp(date, min)) >= 0) {
+    while (rb_cmpint(d_lite_cmp(date, min), date, min) >= 0) {
 	rb_yield(date);
 	date = d_lite_plus(date, INT2FIX(-1));
     }
@@ -6919,8 +6950,10 @@ cmp_gen(VALUE self, VALUE other)
 {
     get_d1(self);
 
-    if (k_numeric_p(other))
-	return INT2FIX(f_cmp(m_ajd(dat), other));
+    if (k_numeric_p(other)) {
+	VALUE c = rb_funcallv(m_ajd(dat), id_cmp, 1, &other);
+	return NIL_P(c) ? Qnil : INT2FIX(rb_cmpint(c, self, other));
+    }
     else if (k_date_p(other))
 	return INT2FIX(f_cmp(m_ajd(dat), f_ajd(other)));
     return rb_num_coerce_cmp(self, other, id_cmp);

@@ -390,6 +390,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
+  def test_json_state_dup
+    state = JSON::State.new(
+      allow_duplicate_key: true,
+      allow_nan: true,
+      array_nl: "\t",
+      as_json: false,
+      ascii_only: true,
+      buffer_initial_length: 42,
+      depth: 42,
+      script_safe: true,
+      strict: true,
+      indent: "\t",
+      max_nesting: 42,
+      object_nl: "\t",
+      space: "\t",
+      space_before: "\t",
+      sort_keys: true,
+    )
+    assert_equal state.to_h, state.dup.to_h
+
+    state = JSON::State.new(
+      rfc8785: true,
+    )
+    assert_equal state.to_h, state.dup.to_h
+  end
+
   def test_allow_nan
     error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_same JSON::NaN, error.invalid_object
@@ -731,6 +757,56 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
   end
 
+  def test_script_safe_ascii_only
+    run_script_safe_test(true)
+  end
+
+  def test_script_safe
+    run_script_safe_test(false)
+  end
+
+  def run_script_safe_test(ascii_only)
+    data = '<ok><script><!----</script></ok>'
+    json = '"<ok>\\u003cscript>\\u003c!----\\u003c/script></ok>"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<ok><ScrIpT><!----</sCRiPt></ok>'
+    json = '"<ok>\\u003cScrIpT>\\u003c!----\\u003c/sCRiPt></ok>"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<scriP'
+    json = '"<scriP"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '</scriP'
+    json = '"</scriP"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<!--'
+    json = '"\\u003c!--"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '<scriPt'
+    json = '"\\u003cscriPt"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = '</scriPt'
+    json = '"\\u003c/scriPt"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = "a\"b\\c\nd\te\u0001f"
+    json = '"a\\"b\\\\c\\nd\\te\\u0001f"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = "<a href=\"/\">\n</script>"
+    json = '"<a href=\\"/\\">\\n\\u003c/script>"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+
+    data = ("a" * 100 + "</script>")[100..] # JRuby shared string.
+    json = '"\\u003c/script>"'
+    assert_equal json, generate(data, script_safe: true, ascii_only: ascii_only)
+  end
+
   def test_backslash
     data = [ '\\.(?i:gif|jpe?g|png)$' ]
     json = '["\\\\.(?i:gif|jpe?g|png)$"]'
@@ -753,27 +829,27 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal json, generate(data)
     #
     data = [ '/' ]
-    json = '["\/"]'
+    json = '["/"]'
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ '///////////' ]
-    json = '["\/\/\/\/\/\/\/\/\/\/\/"]'
+    json = '["///////////"]'
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ '///////////////////////////////////////////////////////' ]
-    json = '["\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/"]'
+    json = '["///////////////////////////////////////////////////////"]'
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "\u2028\u2029" ]
-    json = '["\u2028\u2029"]'
+    json = %{["\u2028\u2029"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "ABC \u2028 DEF \u2029 GHI" ]
-    json = '["ABC \u2028 DEF \u2029 GHI"]'
+    json = %{["ABC \u2028 DEF \u2029 GHI"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = [ "/\u2028\u2029" ]
-    json = '["\/\u2028\u2029"]'
+    json = %{["/\u2028\u2029"]}
     assert_equal json, generate(data, script_safe: true)
     #
     data = ['"']

@@ -15,6 +15,7 @@ VALUE rb_get_expanded_load_path(rb_len_t *maxlen);
 VALUE rb_load_entrypoint(VALUE fname, VALUE wrap);
 VALUE rb_require_relative_entrypoint(VALUE fname);
 int rb_require_internal(VALUE fname);
+bool rb_feature_provided_ractor_safe(VALUE fname);
 NORETURN(void rb_load_fail(VALUE, const char*));
 
 #endif /* INTERNAL_LOAD_H */

@@ -948,8 +948,17 @@ opt_new
         if (FIXNUM_P(capacity)) {
             capa = NUM2LEN(capacity);
         }
-
         val = rb_hash_alloc_capa(val, capa);
+        TOPN(argc) = val;
+        TOPN(argc + 1) = val;
+    }
+    else if (is_cfunc && cfunc_equal(cme, rb_str_s_new)) {
+        VALUE capacity = Qundef, encoding = Qundef;
+        if (!(vm_ci_flag(cd->ci) & VM_CALL_ARGS_SIMPLE)) {
+            capacity = vm_call_get_kwarg(reg_cfp, cd, idCapacity);
+            encoding = vm_call_get_kwarg(reg_cfp, cd, idEncoding);
+        }
+        val = rb_str_alloc_enc_capa(val, encoding, capacity);
         TOPN(argc) = val;
         TOPN(argc + 1) = val;
     }

@@ -43,6 +43,11 @@ typedef unsigned long rb_ulen_t;
 # define RB_INTEGER_TYPE_P(c) (FIXNUM_P(c) || RB_TYPE_P(c, T_BIGNUM))
 #endif
 
+/* TruffleRuby doesn't have write barriers */
+#ifndef RB_OBJ_WB_UNPROTECT
+# define RB_OBJ_WB_UNPROTECT(obj) ((void)(obj))
+#endif
+
 /* strio_free may run on any thread, so the refcount shared by #initialize_copy must be atomic */
 #ifdef RUBY_TYPED_THREAD_SAFE_FREE
 # include "ruby/atomic.h"
@@ -330,6 +335,7 @@ detect_bom(VALUE str, int *bomlen)
     const char *p;
     rb_len_t len;
 
+    if (NIL_P(str)) return 0;
     RSTRING_GETMEM(str, p, len);
     if (len < 1) return 0;
     switch ((unsigned char)p[0]) {
@@ -396,16 +402,20 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, vmode, opt;
     int oflags;
+    rb_io_mode_t fmode;
     rb_io_enc_t convconfig;
 
     argc = rb_scan_args(argc, argv, "02:", &string, &vmode, &opt);
-    rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &ptr->flags, &convconfig);
+    rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
     if (!NIL_P(string)) {
 	StringValue(string);
     }
     else if (!argc) {
 	string = rb_enc_str_new("", 0, rb_default_external_encoding());
     }
+    /* The conversions above may freeze this stream. */
+    rb_check_frozen(self);
+    ptr->flags = fmode;
 
     if (!NIL_P(string) && readonly_string_p(string)) {
 	if (ptr->flags & FMODE_WRITABLE) {
@@ -785,18 +795,21 @@ static VALUE
 strio_copy(VALUE copy, VALUE orig)
 {
     struct StringIO *ptr, *old_ptr;
-    VALUE old_string = Qundef;
 
     orig = rb_convert_type(orig, T_DATA, "StringIO", "to_strio");
     if (copy == orig) return copy;
+    rb_check_frozen(copy);
     ptr = StringIOForRead(orig);
     old_ptr = check_strio(copy);
     if (old_ptr) {
-	old_string = old_ptr->string;
 	strio_free(old_ptr);
     }
+    /* copy and orig share ptr now.  A write barrier through one of them
+     * can't notify the other, so the generational GC can miss an
+     * old-to-young reference in ptr->string.  Unprotect both. */
+    RB_OBJ_WB_UNPROTECT(copy);
+    RB_OBJ_WB_UNPROTECT(orig);
     DATA_PTR(copy) = ptr;
-    RB_OBJ_WRITTEN(copy, old_string, ptr->string);
     RB_FL_UNSET_RAW(copy, STRIO_READWRITE);
     RB_FL_SET_RAW(copy, RB_FL_TEST_RAW(orig, STRIO_READWRITE));
     STRIO_REFCNT_INC(ptr);
@@ -1555,7 +1568,10 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
     e = s + RSTRING_LEN(ptr->string);
     s += ptr->pos;
     if (limit > 0 && (size_t)limit < (size_t)(e - s)) {
+	const char *const end = e;
 	e = rb_enc_right_char_head(s, s + limit, e, get_enc(ptr));
+	/* a fixed-width encoding may step past a truncated last character */
+	if (e > end) e = end;
     }
     if (NIL_P(str)) {
 	if (arg->chomp) {
@@ -2045,8 +2061,8 @@ strio_write(VALUE self, VALUE str)
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
+    if (NIL_P(ptr->string)) return 0;
     enc = get_enc(ptr);
-    if (!enc) return 0;
     enc2 = rb_enc_get(str);
     if (enc != enc2 && enc != ascii8bit && enc != (usascii = rb_usascii_encoding())) {
 	VALUE converted = rb_str_conv_enc(str, enc2, enc);
@@ -2330,7 +2346,11 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    }
 	    if (eos_p(ptr)) {
 		if (!NIL_P(str)) rb_str_resize(str, 0);
-		return len > 0 ? Qnil : rb_str_new(0, 0);
+		if (len == 0) {
+		    if (NIL_P(str)) str = rb_str_new(0, 0);
+		    return str;
+		}
+		return Qnil;
 	    }
 	    binary = 1;
 	    break;
@@ -2468,6 +2488,7 @@ strio_pread(int argc, VALUE *argv, VALUE self)
 	if (NIL_P(rb_buf)) {
 	    return rb_str_new("", 0);
 	}
+	rb_str_resize(rb_buf, 0);
 	return rb_buf;
     }
 

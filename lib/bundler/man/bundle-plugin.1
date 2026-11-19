@@ -69,6 +69,67 @@ No options\.
 Describe subcommands or one specific subcommand\.
 .P
 No options\.
+.SH "HOOKS"
+A plugin can run code at defined points of Bundler's work by registering a hook\. In the plugin's \fBplugins\.rb\fR, pass one of the event constants of \fBBundler::Plugin::Events\fR and a block to \fBBundler::Plugin::API\.hook\fR\. Bundler loads a plugin that registers a hook for an event when that event fires, and calls the block with the arguments listed for the event below\.
+.IP "" 4
+.nf
+Bundler::Plugin::API\.hook Bundler::Plugin::Events::GEM_BEFORE_INSTALL_ALL do |dependencies|
+  puts "about to install #{dependencies\.map(&:name)\.join(", ")}"
+end
+.fi
+.IP "" 0
+.P
+The events fire in the order listed here\.
+.P
+\fBGEMFILE EVALUATION\fR
+.TP
+\fBGEM_BEFORE_EVAL\fR (\fBbefore\-eval\fR)
+Called before the Gemfile is evaluated, with the path to the Gemfile and the path to the lockfile (\fBnil\fR when there is no lockfile)\.
+.TP
+\fBGEM_AFTER_EVAL\fR (\fBafter\-eval\fR)
+Called after the Gemfile is evaluated, with the resulting \fBBundler::Definition\fR\.
+.P
+\fBINSTALLATION\fR
+.TP
+\fBGEM_BEFORE_INSTALL_ALL\fR (\fBbefore\-install\-all\fR)
+Called before any gem is installed, with an Array of the \fBBundler::Dependency\fR objects declared in the Gemfile\.
+.TP
+\fBGEM_BEFORE_FETCH\fR (\fBbefore\-fetch\fR)
+Called before each individual gem is downloaded from a remote source, with a spec\-like object responding to the \fBGem::Specification\fR API (for example a \fBBundler::EndpointSpecification\fR or \fBBundler::RemoteSpecification\fR)\. Does not fire for a gem that is already present in the download cache\.
+.TP
+\fBGEM_AFTER_FETCH\fR (\fBafter\-fetch\fR)
+Called after each individual gem is downloaded from a remote source, with the same spec\-like object as \fBGEM_BEFORE_FETCH\fR\. Also fires when the download fails\.
+.TP
+\fBGIT_BEFORE_FETCH\fR (\fBbefore\-git\-fetch\fR)
+Called before a git source is fetched or checked out, with the \fBBundler::Source::Git\fR being fetched\.
+.TP
+\fBGIT_AFTER_FETCH\fR (\fBafter\-git\-fetch\fR)
+Called after a git source is fetched or checked out, with the same \fBBundler::Source::Git\fR\. Also fires when the fetch or checkout fails\.
+.TP
+\fBGEM_BEFORE_INSTALL\fR (\fBbefore\-install\fR)
+Called before each individual gem is installed, with a \fBBundler::ParallelInstaller::SpecInstallation\fR\. Its \fBstate\fR, \fBerror\fR and \fBpost_install_message\fR are not set yet, as nothing has been installed\.
+.TP
+\fBGEM_AFTER_INSTALL\fR (\fBafter\-install\fR)
+Called after each individual gem is installed, with the same \fBBundler::ParallelInstaller::SpecInstallation\fR\. If its \fBstate\fR is \fBfailed\fR, \fBerror\fR holds the exception; if the \fBstate\fR is \fBsuccess\fR, a \fBpost_install_message\fR may be present\.
+.TP
+\fBGEM_AFTER_INSTALL_ALL\fR (\fBafter\-install\-all\fR)
+Called after all gems are installed, with an Array of the \fBBundler::Dependency\fR objects declared in the Gemfile\.
+.P
+\fBREQUIRE\fR
+.P
+These events fire from \fBBundler\.require\fR\.
+.TP
+\fBGEM_BEFORE_REQUIRE_ALL\fR (\fBbefore\-require\-all\fR)
+Called before any gem is required, with an Array of the \fBBundler::Dependency\fR objects being required\.
+.TP
+\fBGEM_BEFORE_REQUIRE\fR (\fBbefore\-require\fR)
+Called before each individual gem is required, with its \fBBundler::Dependency\fR\.
+.TP
+\fBGEM_AFTER_REQUIRE\fR (\fBafter\-require\fR)
+Called after each individual gem is required, with its \fBBundler::Dependency\fR\.
+.TP
+\fBGEM_AFTER_REQUIRE_ALL\fR (\fBafter\-require\-all\fR)
+Called after all gems are required, with an Array of the \fBBundler::Dependency\fR objects that were required\.
 .SH "SEE ALSO"
 .IP "\(bu" 4
 How to write a Bundler plugin \fIhttps://guides\.rubygems\.org/bundler_plugins/\fR

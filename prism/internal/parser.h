@@ -10,6 +10,7 @@
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/list.h"
+#include "prism/internal/node.h"
 #include "prism/internal/options.h"
 #include "prism/internal/static_literals.h"
 #include "prism/internal/strpbrk.h"
@@ -21,6 +22,38 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/*
+ * A place in the unescaped content of a regular expression where it stops
+ * lining up with the source, because the lexer dropped or rewrote an escape
+ * just before it. From here up to the next such place, each byte of the content
+ * is the byte at the same distance into the source.
+ */
+typedef struct {
+    /* The offset of the place in the unescaped content. */
+    uint32_t content;
+
+    /* The offset in the source of the byte at that place. */
+    uint32_t source;
+} pm_regexp_offset_t;
+
+/*
+ * The places where the unescaped content of a regular expression stops lining
+ * up with the source, in order. Before the first one, each byte of the content
+ * is the byte at the same distance from the start of the content in the source.
+ * The values are allocated in the scratch arena, since they are only read while
+ * the regular expression is validated.
+ */
+typedef struct {
+    /* The places, in order of their offsets in the content. */
+    pm_regexp_offset_t *values;
+
+    /* The number of places. */
+    size_t size;
+
+    /* The number of places that fit in the values before they must grow. */
+    size_t capacity;
+} pm_regexp_offsets_t;
 
 /*
  * This enum provides various bits that represent different kinds of states that
@@ -226,6 +259,10 @@ typedef struct pm_lex_mode {
              * string.
              */
             bool label_allowed;
+
+            /* Whether the final content token joined text after the last
+             * breakpoint, where this string used to split at EOF. */
+            bool joined_at_eof;
 
             /*
              * When lexing a string, it takes into account balancing the
@@ -470,7 +507,9 @@ static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMEN
 
 /*
  * This tracks an individual local variable in a certain lexical context, as
- * well as the number of times is it read.
+ * well as the number of times is it read. The locals of every live scope are
+ * kept on a single stack on the parser, since a local is only ever declared in
+ * the innermost scope and is discarded when that scope is popped.
  */
 typedef struct {
     /* The name of the local variable. */
@@ -479,38 +518,19 @@ typedef struct {
     /* The location of the local variable in the source. */
     pm_location_t location;
 
-    /* The index of the local variable in the local table. */
-    uint32_t index;
-
     /* The number of times the local variable is read. */
     uint32_t reads;
 
-    /* The hash of the local variable. */
-    uint32_t hash;
-} pm_local_t;
-
-/*
- * This is a set of local variables in a certain lexical context (method, class,
- * module, etc.). We need to track how many times these variables are read in
- * order to warn if they only get written.
- */
-typedef struct pm_locals {
-    /* The number of local variables in the set. */
-    uint32_t size;
-
-    /* The capacity of the local variables set. */
-    uint32_t capacity;
+    /* The level of the scope that declares the local variable. */
+    uint32_t level;
 
     /*
-     * A bloom filter over constant IDs stored in this set. Used to quickly
-     * reject lookups for names that are definitely not present, avoiding the
-     * cost of a linear scan or hash probe.
+     * The index in the locals stack of the local with the same name that this
+     * local hides while its scope is live, or 0 if it hides nothing. It is
+     * restored as the binding of the name when the scope is popped.
      */
-    uint32_t bloom;
-
-    /* The nullable allocated memory for the local variables in the set. */
-    pm_local_t *locals;
-} pm_locals_t;
+    uint32_t shadowed;
+} pm_local_t;
 
 /* The flags about scope parameters that can be set. */
 typedef uint8_t pm_scope_parameters_t;
@@ -531,8 +551,24 @@ typedef struct pm_scope {
     /* A pointer to the previous scope in the linked list. */
     struct pm_scope *previous;
 
-    /* The IDs of the locals in the given scope. */
-    pm_locals_t locals;
+    /*
+     * The index in the locals stack of the first local of this scope. The
+     * locals of this scope run from here to the top of the stack.
+     */
+    uint32_t locals_start;
+
+    /*
+     * The position of this scope in the scope stack, where the outermost scope
+     * is at level 1.
+     */
+    uint32_t level;
+
+    /*
+     * The locals_start of the nearest closed scope at or above this one. Every
+     * local below this index in the locals stack belongs to a scope that this
+     * scope cannot see into.
+     */
+    uint32_t floor;
 
     /*
      * This is a list of the implicit parameters contained within the block.
@@ -540,7 +576,7 @@ typedef struct pm_scope {
      * of parameters node that should be used and to check if any errors need to
      * be added.
      */
-    pm_node_list_t implicit_parameters;
+    pm_scratch_node_list_t implicit_parameters;
 
     /*
      * This is a bitfield that indicates the parameters that are being used in
@@ -699,6 +735,12 @@ struct pm_parser_t {
         pm_lex_mode_t *free;
     } lex_modes;
 
+    /*
+     * The chunks that open node lists are built in. They are carved from the
+     * scratch arena, so they are never freed individually.
+     */
+    pm_node_chunks_t node_chunks;
+
     /* The pointer to the start of the source. */
     const uint8_t *start;
 
@@ -753,6 +795,30 @@ struct pm_parser_t {
 
     /* The current local scope. */
     pm_scope_t *current_scope;
+
+    /*
+     * The locals of every live scope, in the order they were declared. Index 0
+     * is never used, so that 0 can mean the absence of a local.
+     */
+    pm_local_t *locals;
+
+    /* The number of slots in use in locals, including the unused slot 0. */
+    uint32_t locals_size;
+
+    /* The number of slots allocated in locals. */
+    uint32_t locals_capacity;
+
+    /*
+     * The index in the locals stack of the innermost live local with each
+     * constant id as its name, or 0 if there is none. A local that is declared
+     * in a scope replaces the binding of its name, and the binding it replaced
+     * is restored when the scope is popped. Constant ids at or beyond the
+     * capacity have never been declared as locals, so they are unbound.
+     */
+    uint32_t *bindings;
+
+    /* The number of slots allocated in bindings. */
+    uint32_t bindings_capacity;
 
     /*
      * Scopes that have been popped, kept for reuse by the next push. Scopes
@@ -864,6 +930,15 @@ struct pm_parser_t {
     pm_string_t current_string;
 
     /*
+     * Where current_string stops lining up with the source, when it is the
+     * content of a regular expression.
+     */
+    pm_regexp_offsets_t current_regexp_offsets;
+
+    /* Named captures from the regexp immediately before a pending =~. */
+    const struct pm_regexp_match *regexp_match;
+
+    /*
      * The line number at the start of the parse. This will be used to offset
      * the line numbers of all of the locations.
      */
@@ -911,7 +986,7 @@ struct pm_parser_t {
      * We use a pointer here because we don't want to keep a whole list attached
      * since this will only be used in the context of begin/end expressions.
      */
-    pm_node_list_t *current_block_exits;
+    pm_scratch_node_list_t *current_block_exits;
 
     /*
      * The address of the C stack when pm_parse was entered. The stack budget

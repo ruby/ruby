@@ -100,6 +100,7 @@ VALUE rb_chilled_str_with_debug_created_info(VALUE, VALUE, int);
 VALUE rb_str_frozen_bare_string(VALUE);
 const char *rb_str_null_check(VALUE);
 VALUE rb_str_casecmp(VALUE str1, VALUE str2);
+VALUE rb_str_s_new(int argc, VALUE *argv, VALUE klass);
 
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);
@@ -124,6 +125,7 @@ void rb_gc_free_fstring(VALUE obj);
 bool rb_obj_is_fstring_table(VALUE obj);
 void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
+VALUE rb_str_alloc_enc_capa(VALUE klass, VALUE encoding, VALUE capacity);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_new_owned(char *ptr, rb_len_t len, rb_len_t capa, int encindex);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);

@@ -80,6 +80,9 @@ module Ruby::Prism
     ]
 
     omitted_lex = [
+      # Ripper's lex state on a newline delimited %r depends on what follows it.
+      "heredoc_percent_newline_delimiter.txt",
+
       "heredoc_with_escaped_newline_at_start.txt",
       "heredocs_with_fake_newlines.txt",
       "indented_file_end.txt",

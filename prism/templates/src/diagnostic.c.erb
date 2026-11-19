@@ -83,6 +83,7 @@ typedef struct {
  * * `PM_ERROR_LEVEL_ARGUMENT` - Errors that should raise ArgumentError.
  * * `PM_ERROR_LEVEL_LOAD` - Errors that should raise LoadError.
  * * `PM_ERROR_LEVEL_STACK` - Errors that should raise SystemStackError.
+ * * `PM_ERROR_LEVEL_ENCODING_COMPATIBILITY` - Errors that should raise Encoding::CompatibilityError.
  *
  * For warnings, they are:
  *
@@ -101,6 +102,9 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
 
     /* Errors that should raise system stack errors */
     [PM_ERR_STACK_EXHAUSTED]                    = { "stack level too deep", PM_ERROR_LEVEL_STACK },
+
+    /* Errors that should raise encoding compatibility errors */
+    [PM_ERR_REGEXP_INTERPOLATION_ENCODING]      = { "incompatible character encodings: %s and %s", PM_ERROR_LEVEL_ENCODING_COMPATIBILITY },
 
     /* Errors that should raise syntax errors */
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_SYNTAX },
@@ -261,7 +265,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_INVALID_CHARACTER]                  = { "Invalid char '\\x%02X' in expression", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_MULTIBYTE_CHAR]             = { "invalid multibyte char (%s)", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_MULTIBYTE_CHARACTER]        = { "invalid multibyte character 0x%X", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_INVALID_MULTIBYTE_ESCAPE]           = { "invalid multibyte escape: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_INVALID_MULTIBYTE_ESCAPE]           = { "invalid multibyte escape: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_PRINTABLE_CHARACTER]        = { "invalid character `%c`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_PERCENT]                    = { "unknown type of %string", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_INVALID_PERCENT_EOF]                = { "unterminated quoted string meets end of file", PM_ERROR_LEVEL_SYNTAX },
@@ -347,15 +351,15 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_PATTERN_TERM_PAREN]                 = { "expected a `)` to close the pattern expression", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_PIPEPIPEEQ_MULTI_ASSIGN]            = { "unexpected `||=` in a multiple assignment", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH]    = { "regexp encoding option '%c' differs from source encoding '%s'", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8]   = { "escaped non ASCII character in UTF-8 regexp: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING]      = { "incompatible character encoding: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_REGEXP_INVALID_CHAR_PROPERTY]       = { "invalid character property name {%.*s}: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_REGEXP_INVALID_UNICODE_RANGE]       = { "invalid Unicode range: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_REGEXP_NON_ESCAPED_MBC]             = { "/.../n has a non escaped non ASCII character in non ASCII-8BIT script: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_ESCAPED_NON_ASCII_IN_UTF8]   = { "escaped non ASCII character in UTF-8 regexp: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING]      = { "incompatible character encoding: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_INVALID_CHAR_PROPERTY]       = { "invalid character property name {%.*s}: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_INVALID_UNICODE_RANGE]       = { "invalid Unicode range: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_NON_ESCAPED_MBC]             = { "/.../n has a non escaped non ASCII character in non ASCII-8BIT script: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_PARSE_ERROR]                 = { "%s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_UNKNOWN_OPTIONS]             = { "unknown regexp %s - %.*s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_REGEXP_TERM]                        = { "unterminated regexp meets end of file; expected a closing delimiter", PM_ERROR_LEVEL_SYNTAX },
-    [PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP]   = { "UTF-8 character in non UTF-8 regexp: /%.*s/", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_REGEXP_UTF8_CHAR_NON_UTF8_REGEXP]   = { "UTF-8 character in non UTF-8 regexp: /%.*s/%s", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_RESCUE_EXPRESSION]                  = { "expected a rescued expression", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_RESCUE_MODIFIER_VALUE]              = { "expected a value after the `rescue` modifier", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_RESCUE_TERM]                        = { "expected a closing delimiter for the `rescue` clause", PM_ERROR_LEVEL_SYNTAX },
@@ -520,7 +524,7 @@ pm_diagnostic_next(const pm_diagnostic_t *diagnostic) {
  */
 void
 pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) pm_arena_zalloc(arena, sizeof(pm_diagnostic_t), PRISM_ALIGNOF(pm_diagnostic_t));
+    pm_diagnostic_t *diagnostic = PM_ARENA_ZALLOC(arena, pm_diagnostic_t);
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },
@@ -554,10 +558,10 @@ pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t st
         return;
     }
 
-    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) pm_arena_zalloc(arena, sizeof(pm_diagnostic_t), PRISM_ALIGNOF(pm_diagnostic_t));
+    pm_diagnostic_t *diagnostic = PM_ARENA_ZALLOC(arena, pm_diagnostic_t);
 
     size_t message_length = (size_t) (result + 1);
-    char *message = (char *) pm_arena_alloc(arena, message_length, 1);
+    char *message = PM_ARENA_ALLOC_ARRAY(arena, char, message_length);
 
     if (message_length <= sizeof(stack)) {
         memcpy(message, stack, message_length);

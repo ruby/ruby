@@ -866,6 +866,9 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     sched->runnable_hot_th = NULL;
     sched->runnable_hot_th_waiting = 0;
 
+    // also on the M:N path and when the waker already made th running
+    rb_ractor_thread_switch(th->ractor, th, false);
+
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
 }
@@ -1803,11 +1806,13 @@ thread_sched_atfork(struct rb_thread_sched *sched)
         thread_sched_setup_running_threads(sched, th->ractor, vm, th, NULL);
     }
 
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
     if (th->nt) {
+        // no known pthread gives the child a new pthread_t, but just in case
+        th->nt->thread_id = pthread_self();
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
         th->nt->tid = get_native_thread_id();
-    }
 #endif
+    }
 }
 
 #endif

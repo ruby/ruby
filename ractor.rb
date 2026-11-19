@@ -629,16 +629,7 @@ class Ractor
   #     #=> raises the exception "foo (RuntimeError)"
   #
   def join
-    port = Port.new
-
-    self.monitor port
-    if port.receive[1] == :aborted
-      __builtin_ractor_value
-    end
-
-    self
-  ensure
-    port.close
+    __builtin_ractor_join
   end
 
   #

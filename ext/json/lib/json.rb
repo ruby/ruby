@@ -118,7 +118,7 @@ require 'json/common'
 #
 # ==== Parsing Options
 #
-# ====== Input Options
+# ===== Input Options
 #
 # Option +max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
 # defaults to +100+;
@@ -214,7 +214,7 @@ require 'json/common'
 # When enabled:
 #   JSON.parse('"Hell\o"', allow_invalid_escape: true) # => "Hello"
 #
-# ====== Output Options
+# ===== Output Options
 #
 # Option +freeze+ (boolean) specifies whether the returned objects will be frozen;
 # defaults to +false+.
@@ -323,7 +323,7 @@ require 'json/common'
 #
 # ==== Generating Options
 #
-# ====== Input Options
+# ===== Input Options
 #
 # Option +allow_nan+ (boolean) specifies whether
 # +NaN+, +Infinity+, and +-Infinity+ may be generated;
@@ -378,7 +378,7 @@ require 'json/common'
 # which may leave the process in an unrecoverable state.
 # It is highly discouraged.
 #
-# ====== Escaping Options
+# ===== Escaping Options
 #
 # Options +script_safe+ (boolean) specifies wether <tt>'\u2028'</tt>, <tt>'\u2029'</tt>
 # and <tt>'/'</tt> should be escaped as to make the JSON object safe to interpolate in script
@@ -387,7 +387,7 @@ require 'json/common'
 # Options +ascii_only+ (boolean) specifies wether all characters outside the ASCII range
 # should be escaped.
 #
-# ====== Output Options
+# ===== Output Options
 #
 # The default formatting options generate the most compact
 # \JSON data, all on one line and with no whitespace.

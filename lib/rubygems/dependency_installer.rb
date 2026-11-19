@@ -203,16 +203,6 @@ class Gem::DependencyInstaller
     @installed_gems
   end
 
-  def install_development_deps # :nodoc:
-    if @development && @dev_shallow
-      :shallow
-    elsif @development
-      :all
-    else
-      :none
-    end
-  end
-
   def resolve_dependencies(dep_or_name, version) # :nodoc:
     request_set = Gem::RequestSet.new
     request_set.development         = @development

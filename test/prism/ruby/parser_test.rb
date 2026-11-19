@@ -62,6 +62,7 @@ module Ruby::Prism
 
       # %Q with newline delimiter and heredoc interpolation
       "heredoc_percent_q_newline_delimiter.txt",
+      "heredoc_percent_newline_delimiter.txt",
 
       # 1.. && 2
       "ranges.txt",
@@ -71,6 +72,9 @@ module Ruby::Prism
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
+
+      # ? followed by a character that is not ASCII and not alphanumeric
+      "ternary_operator_non_ascii.txt",
     ]
 
     # These files contain code that is being parsed incorrectly by the parser
@@ -167,8 +171,10 @@ module Ruby::Prism
       assert_raise(Parser::SyntaxError) { parser.tokenize(buffer) }
     end
 
+    # These regular expressions are valid to prism, which accepts any property
+    # name in UTF-8, but do not compile in Ruby, so the builder reports them.
     def test_invalid_regexp_match_receiver
-      ["/(?:a)\\g<b>/ =~ x", "/(?<a>a)\\g<b>/ =~ x"].each do |code|
+      ["/(?:a)\\p{Foo}/ =~ x", "/(?<a>a)\\p{Foo}/ =~ x"].each do |code|
         buffer = Parser::Source::Buffer.new("(string)")
         buffer.source = code
 
@@ -186,7 +192,7 @@ module Ruby::Prism
 
     def test_builder_errors_after_the_first_are_reported
       buffer = Parser::Source::Buffer.new("(string)")
-      buffer.source = "/(?:a)\\g<b>/ =~ x\n/(?:a)\\g<c>/ =~ y\n"
+      buffer.source = "/(?:a)\\p{Foo}/ =~ x\n/(?:a)\\p{Bar}/ =~ y\n"
 
       diagnostics = []
       parser = Ruby::Prism::Translation::Parser34.new
@@ -233,7 +239,11 @@ module Ruby::Prism
         s(:block,
           s(:lambda),
             s(:args,
-              s(:blocknilarg)), nil))
+              s(:blocknilarg)), nil),
+        s(:def, :foo,
+          s(:args,
+            s(:blocknilarg)),
+          s(:send, nil, :bar)))
       end
     end
 

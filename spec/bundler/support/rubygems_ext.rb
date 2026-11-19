@@ -111,7 +111,7 @@ module Spec
 
       require "shellwords"
       # We don't use `Open3` here because it does not work on JRuby + Windows
-      output = `ruby #{Path.dev_binstub} #{args.shelljoin}`
+      output = `ruby #{Path.dev_binstub} #{args.shelljoin} 2>&1`
       raise output unless $?.success?
       output
     ensure

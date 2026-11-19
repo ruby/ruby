@@ -79,6 +79,90 @@ Describe subcommands or one specific subcommand.
 
 No options.
 
+## HOOKS
+
+A plugin can run code at defined points of Bundler's work by registering a
+hook. In the plugin's `plugins.rb`, pass one of the event constants of
+`Bundler::Plugin::Events` and a block to `Bundler::Plugin::API.hook`. Bundler
+loads a plugin that registers a hook for an event when that event fires, and
+calls the block with the arguments listed for the event below.
+
+    Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_BEFORE_INSTALL_ALL do |dependencies|
+      puts "about to install #{dependencies.map(&:name).join(", ")}"
+    end
+
+The events fire in the order listed here.
+
+**GEMFILE EVALUATION**
+
+* `GEM_BEFORE_EVAL` (`before-eval`):
+  Called before the Gemfile is evaluated, with the path to the Gemfile and
+  the path to the lockfile (`nil` when there is no lockfile).
+
+* `GEM_AFTER_EVAL` (`after-eval`):
+  Called after the Gemfile is evaluated, with the resulting
+  `Bundler::Definition`.
+
+**INSTALLATION**
+
+* `GEM_BEFORE_INSTALL_ALL` (`before-install-all`):
+  Called before any gem is installed, with an Array of the
+  `Bundler::Dependency` objects declared in the Gemfile.
+
+* `GEM_BEFORE_FETCH` (`before-fetch`):
+  Called before each individual gem is downloaded from a remote source, with
+  a spec-like object responding to the `Gem::Specification` API (for example
+  a `Bundler::EndpointSpecification` or `Bundler::RemoteSpecification`).
+  Does not fire for a gem that is already present in the download cache.
+
+* `GEM_AFTER_FETCH` (`after-fetch`):
+  Called after each individual gem is downloaded from a remote source, with
+  the same spec-like object as `GEM_BEFORE_FETCH`. Also fires when the
+  download fails.
+
+* `GIT_BEFORE_FETCH` (`before-git-fetch`):
+  Called before a git source is fetched or checked out, with the
+  `Bundler::Source::Git` being fetched.
+
+* `GIT_AFTER_FETCH` (`after-git-fetch`):
+  Called after a git source is fetched or checked out, with the same
+  `Bundler::Source::Git`. Also fires when the fetch or checkout fails.
+
+* `GEM_BEFORE_INSTALL` (`before-install`):
+  Called before each individual gem is installed, with a
+  `Bundler::ParallelInstaller::SpecInstallation`. Its `state`, `error` and
+  `post_install_message` are not set yet, as nothing has been installed.
+
+* `GEM_AFTER_INSTALL` (`after-install`):
+  Called after each individual gem is installed, with the same
+  `Bundler::ParallelInstaller::SpecInstallation`. If its `state` is
+  `failed`, `error` holds the exception; if the `state` is `success`, a
+  `post_install_message` may be present.
+
+* `GEM_AFTER_INSTALL_ALL` (`after-install-all`):
+  Called after all gems are installed, with an Array of the
+  `Bundler::Dependency` objects declared in the Gemfile.
+
+**REQUIRE**
+
+These events fire from `Bundler.require`.
+
+* `GEM_BEFORE_REQUIRE_ALL` (`before-require-all`):
+  Called before any gem is required, with an Array of the
+  `Bundler::Dependency` objects being required.
+
+* `GEM_BEFORE_REQUIRE` (`before-require`):
+  Called before each individual gem is required, with its
+  `Bundler::Dependency`.
+
+* `GEM_AFTER_REQUIRE` (`after-require`):
+  Called after each individual gem is required, with its
+  `Bundler::Dependency`.
+
+* `GEM_AFTER_REQUIRE_ALL` (`after-require-all`):
+  Called after all gems are required, with an Array of the
+  `Bundler::Dependency` objects that were required.
+
 ## SEE ALSO
 
 * [How to write a Bundler plugin](https://guides.rubygems.org/bundler_plugins/)

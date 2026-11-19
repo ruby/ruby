@@ -1904,6 +1904,9 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
  * +rb_ary_aset+ and +rb_ary_fill+.
  *
  * The case of <code>err = 2</code> is used in +rb_str_aset+.
+ *
+ * On success, <code>*begp</code> and <code>*lenp</code> are non-negative and
+ * their sum does not exceed +RB_LEN_MAX+.
  */
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
@@ -1921,17 +1924,18 @@ rb_range_component_beg_len(VALUE b, VALUE e, int excl,
     }
     if (end < 0)
         end += len;
-    if (!excl)
-        end++;			/* include end point */
+    /* Include the end point.  RB_LEN_MAX + 1 is not representable, so
+     * saturate instead of overflowing. */
+    if (!excl && end < RB_LEN_MAX)
+        end++;
     if (err == 0 || err == 2) {
         if (beg > len)
             goto out_of_range;
         if (end > len)
             end = len;
     }
-    len = end - beg;
-    if (len < 0)
-        len = 0;
+    /* beg is non-negative here, so end - beg cannot overflow. */
+    len = end > beg ? end - beg : 0;
 
     *begp = beg;
     *lenp = len;

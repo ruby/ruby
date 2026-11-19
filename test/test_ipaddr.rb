@@ -105,7 +105,11 @@ class TC_IPAddr < Test::Unit::TestCase
     }
     assert_equal("1:2:3:4:5:6:7:0", IPAddr.new("1:2:3:4:5:6:7::").to_s)
     assert_equal("0:2:3:4:5:6:7:8", IPAddr.new("::2:3:4:5:6:7:8").to_s)
+    assert_equal("0:1:2:3:4:5:102:304", IPAddr.new("::1:2:3:4:5:1.2.3.4").to_s)
+    assert_equal("1:0:2:3:4:5:102:304", IPAddr.new("1::2:3:4:5:1.2.3.4").to_s)
 
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("::1:2:3:4:5:6:1.2.3.4") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("1:2:3:4:5:6::1.2.3.4") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.256") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%") }
@@ -597,6 +601,27 @@ class TC_Operator < Test::Unit::TestCase
 
     # Global unicast addresses with 0xffff in group 5 must not be mistaken for ::ffff:127.x.x.x
     assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:7f00:1').loopback?)
+  end
+
+  def test_unspecified?
+    assert_equal(true,  IPAddr.new('0.0.0.0').unspecified?)
+    assert_equal(true,  IPAddr.new('0.0.0.0/32').unspecified?)
+    assert_equal(false, IPAddr.new('0.0.0.0/31').unspecified?)
+    assert_equal(false, IPAddr.new('0.0.0.0/0').unspecified?)
+    assert_equal(false, IPAddr.new('127.0.0.1').unspecified?)
+    assert_equal(false, IPAddr.new('8.8.8.8').unspecified?)
+
+    assert_equal(true,  IPAddr.new('::').unspecified?)
+    assert_equal(true,  IPAddr.new('::/128').unspecified?)
+    assert_equal(false, IPAddr.new('::/127').unspecified?)
+    assert_equal(false, IPAddr.new('::/0').unspecified?)
+    assert_equal(false, IPAddr.new('::1').unspecified?)
+    assert_equal(false, IPAddr.new('3ffe:505:2::1').unspecified?)
+
+    assert_equal(true,  IPAddr.new('::ffff:0.0.0.0').unspecified?)
+    assert_equal(true,  IPAddr.new('::ffff:0.0.0.0/128').unspecified?)
+    assert_equal(false, IPAddr.new('::ffff:0.0.0.0/127').unspecified?)
+    assert_equal(false, IPAddr.new('::ffff:127.0.0.1').unspecified?)
   end
 
   def test_private?

@@ -83,8 +83,9 @@ ossl_pkey_wrap(EVP_PKEY *pkey)
 # include <openssl/decoder.h>
 
 static EVP_PKEY *
-ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass)
+ossl_pkey_read(BIO *bio, int from_pem, int selection, VALUE pass)
 {
+    const char *input_type = from_pem ? "PEM" : "DER";
     void *ppass = (void *)pass;
     OSSL_DECODER_CTX *dctx;
     EVP_PKEY *pkey = NULL;
@@ -101,7 +102,7 @@ ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass)
     while (1) {
         if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
-        if (BIO_eof(bio))
+        if (!from_pem || BIO_eof(bio))
             break;
         pos2 = BIO_tell(bio);
         if (pos2 < 0 || pos2 <= pos)
@@ -119,9 +120,6 @@ EVP_PKEY *
 ossl_pkey_read_generic(BIO *bio, VALUE pass)
 {
     EVP_PKEY *pkey = NULL;
-    /* First check DER, then check PEM. */
-    const char *input_types[] = {"DER", "PEM"};
-    int input_type_num = (int)(sizeof(input_types) / sizeof(char *));
     /*
      * Non-zero selections to try to decode.
      *
@@ -169,9 +167,10 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
     int selection_num = (int)(sizeof(selections) / sizeof(int));
     int i, j;
 
-    for (i = 0; i < input_type_num; i++) {
+    /* First check DER, then check PEM. */
+    for (i = 0; i <= 1; i++) {
         for (j = 0; j < selection_num; j++) {
-            pkey = ossl_pkey_read(bio, input_types[i], selections[j], pass);
+            pkey = ossl_pkey_read(bio, i, selections[j], pass);
             if (pkey) {
                 goto out;
             }

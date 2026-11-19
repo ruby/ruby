@@ -52,7 +52,7 @@ module Gem
       end
 
       def self.valid_ruby_abi?(value)
-        false
+        value.is_a?(String) && /\A\d+\.\d+\z/.match?(value)
       end
 
       def self.ruby_abi_requirement(ruby_abi)
@@ -521,15 +521,6 @@ module Gem
       end
     end
 
-    unless instance_method(:initialize).parameters.any? {|kind, name| kind == :key && name == :content_address }
-      alias_method :initialize_without_content_address, :initialize
-
-      def initialize(name, version, platform = Gem::Platform::RUBY, content_address: nil)
-        initialize_without_content_address(name, version, platform)
-        @content_address = content_address
-      end
-    end
-
     def lock_name
       if platform == Gem::Platform::RUBY
         "#{name} (#{version})"
@@ -537,6 +528,24 @@ module Gem
         "#{name} (#{version}-#{platform})"
       end
     end
+  end
+
+  # Defined unconditionally for testability, see SplitCompactIndexEntryOnFirstColon.
+  module NameTupleContentAddress
+    def initialize(name, version, platform = Gem::Platform::RUBY, content_address: nil)
+      super(name, version, platform)
+      @content_address = content_address
+    end
+
+    def full_name
+      return super unless @content_address
+
+      "#{@name}-#{@version}-#{@content_address}"
+    end
+  end
+
+  unless NameTuple.instance_method(:initialize).parameters.any? {|kind, name| kind == :key && name == :content_address }
+    NameTuple.prepend(NameTupleContentAddress)
   end
 
   unless Gem.rubygems_version >= Gem::Version.new("3.5.19")

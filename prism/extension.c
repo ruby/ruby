@@ -201,6 +201,15 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 }
 
 /**
+ * Return true if the running Ruby is older than 3.3, the lowest version of Ruby
+ * that prism supports.
+ */
+static bool
+ruby_version_before_lowest_p(void) {
+    return ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3');
+}
+
+/**
  * Set the version option to the syntax version of the currently running Ruby,
  * or to the closest version prism supports if it does not know that one.
  */
@@ -208,7 +217,7 @@ static void
 options_version_set_nearest(pm_options_t *options) {
     if (!pm_options_version_set(options, ruby_version, 3)) {
         // Prism doesn't know this specific version. Is it lower?
-        if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+        if (ruby_version_before_lowest_p()) {
             pm_options_version_set_lowest(options);
         } else {
             // Must be higher.
@@ -497,6 +506,9 @@ check_raise_error_option(pm_parser_t *parser, const pm_options_t *options, rb_en
             error = rb_exc_new_str(rb_eSysStackError, message);
             break;
         }
+        case PM_ERROR_LEVEL_ENCODING_COMPATIBILITY:
+            error = rb_exc_new_str(rb_eEncCompatError, message);
+            break;
     }
 
     return result_err(error);
@@ -722,6 +734,9 @@ parser_error(const pm_diagnostic_t *diagnostic, rb_encoding *encoding, VALUE sou
             break;
         case PM_ERROR_LEVEL_STACK:
             level = ID2SYM(rb_intern("stack"));
+            break;
+        case PM_ERROR_LEVEL_ENCODING_COMPATIBILITY:
+            level = ID2SYM(rb_intern("encoding_compatibility"));
             break;
         default:
             rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error_level);
@@ -962,6 +977,7 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
          * completes. */
         rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
         rb_enc_associate(source_string, encoding);
+        rb_funcall(source, rb_intern("replace_encoding"), 1, rb_enc_from_encoding(encoding));
 
         const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
         for (size_t index = 0; index < line_offsets->size; index++) {
@@ -1595,12 +1611,62 @@ parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
 /******************************************************************************/
 
 /**
+ * Return the version that a string query answers for by default: the running
+ * Ruby if prism supports it, otherwise the closest version that it does. 3.3 is
+ * the lowest version that prism supports, and NULL is the latest.
+ */
+static const char *
+string_query_nearest_version(void) {
+    if (pm_options_version_supported_p(ruby_version, 3)) return ruby_version;
+    return ruby_version_before_lowest_p() ? "3.3" : NULL;
+}
+
+/**
+ * Read the arguments of a string query, which look like (string, version:
+ * nil), and return the version that the query takes. The version is read the
+ * way the version: option of the parse methods reads it: the nearest version to
+ * the running Ruby by default or with "nearest", and the running Ruby with
+ * "current", which prism must support. Any other version is passed on as it is,
+ * and the query itself checks it.
+ */
+static const char *
+string_query_arguments(int argc, VALUE *argv, VALUE *string) {
+    VALUE keywords;
+    rb_scan_args(argc, argv, "1:", string, &keywords);
+    check_string(*string);
+
+    VALUE value = Qundef;
+    if (!NIL_P(keywords)) {
+        ID keys[1] = { rb_id_option_version };
+        rb_get_kwargs(keywords, keys, 0, 1, &value);
+    }
+
+    if (value == Qundef || NIL_P(value)) return string_query_nearest_version();
+
+    const char *version = StringValueCStr(value);
+    if (strcmp(version, "nearest") == 0) return string_query_nearest_version();
+
+    if (strcmp(version, "current") == 0) {
+        if (!pm_options_version_supported_p(ruby_version, 3)) {
+            rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
+        }
+
+        return ruby_version;
+    }
+
+    return version;
+}
+
+/**
  * Process the result of a call to a string query method and return an
- * appropriate value.
+ * appropriate value. The version is the one that the query was given.
  */
 static VALUE
-string_query(pm_string_query_t result) {
+string_query(pm_string_query_t result, const char *version) {
     switch (result) {
+        case PM_STRING_QUERY_ERROR_VERSION:
+            rb_raise(rb_eArgError, "invalid version: %s", version);
+            return Qfalse;
         case PM_STRING_QUERY_ERROR:
             rb_raise(rb_eArgError, "Invalid or non ascii-compatible encoding");
             return Qfalse;
@@ -1609,64 +1675,85 @@ string_query(pm_string_query_t result) {
         case PM_STRING_QUERY_TRUE:
             return Qtrue;
     }
+
     return Qfalse;
 }
 
 /**
  * :markup: markdown
  * call-seq:
- *   local?(string) -> bool
+ *   local?(string, version: nil) -> bool
  *
  * Returns true if the string constitutes a valid local variable name. Note that
  * this means the names that can be set through Binding#local_variable_set, not
  * necessarily the ones that can be set through a local variable assignment.
+ *
+ * The version is the version of Ruby to answer for, as the `version` option of
+ * the parse methods reads it. It defaults to the nearest version to the running
+ * Ruby.
  */
 static VALUE
-string_query_local_p(VALUE self, VALUE string) {
-    const uint8_t *source = (const uint8_t *) check_string(string);
-    return string_query(pm_string_query_local(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+string_query_local_p(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    const char *version = string_query_arguments(argc, argv, &string);
+    return string_query(pm_string_query_local((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), rb_enc_get(string)->name, version), version);
 }
 
 /**
  * :markup: markdown
  * call-seq:
- *   constant?(string) -> bool
+ *   constant?(string, version: nil) -> bool
  *
  * Returns true if the string constitutes a valid constant name. Note that this
  * means the names that can be set through Module#const_set, not necessarily the
  * ones that can be set through a constant assignment.
+ *
+ * The version is the version of Ruby to answer for, as the `version` option of
+ * the parse methods reads it. It defaults to the nearest version to the running
+ * Ruby. Which letters begin a constant name depends on it.
  */
 static VALUE
-string_query_constant_p(VALUE self, VALUE string) {
-    const uint8_t *source = (const uint8_t *) check_string(string);
-    return string_query(pm_string_query_constant(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+string_query_constant_p(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    const char *version = string_query_arguments(argc, argv, &string);
+    return string_query(pm_string_query_constant((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), rb_enc_get(string)->name, version), version);
 }
 
 /**
  * :markup: markdown
  * call-seq:
- *   method_name?(string) -> bool
+ *   method_name?(string, version: nil) -> bool
  *
  * Returns true if the string constitutes a valid method name.
+ *
+ * The version is the version of Ruby to answer for, as the `version` option of
+ * the parse methods reads it. It defaults to the nearest version to the running
+ * Ruby.
  */
 static VALUE
-string_query_method_name_p(VALUE self, VALUE string) {
-    const uint8_t *source = (const uint8_t *) check_string(string);
-    return string_query(pm_string_query_method_name(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+string_query_method_name_p(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    const char *version = string_query_arguments(argc, argv, &string);
+    return string_query(pm_string_query_method_name((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), rb_enc_get(string)->name, version), version);
 }
 
 /**
  * :markup: markdown
  * call-seq:
- *   keyword?(string) -> bool
+ *   keyword?(string, version: nil) -> bool
  *
  * Returns true if the string is a valid keyword, such as `if`, `defined?`, or
  * `__FILE__`.
+ *
+ * The version is the version of Ruby to answer for, as the `version` option of
+ * the parse methods reads it. It defaults to the nearest version to the running
+ * Ruby.
  */
 static VALUE
-string_query_keyword_p(VALUE self, VALUE string) {
-    const uint8_t *source = (const uint8_t *) check_string(string);
-    return string_query(pm_string_query_keyword(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+string_query_keyword_p(int argc, VALUE *argv, VALUE self) {
+    VALUE string;
+    const char *version = string_query_arguments(argc, argv, &string);
+    return string_query(pm_string_query_keyword((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), rb_enc_get(string)->name, version), version);
 }
 
 /******************************************************************************/
@@ -1766,10 +1853,10 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
 #endif
 
-    rb_define_singleton_method(rb_cPrismStringQuery, "local?", string_query_local_p, 1);
-    rb_define_singleton_method(rb_cPrismStringQuery, "constant?", string_query_constant_p, 1);
-    rb_define_singleton_method(rb_cPrismStringQuery, "method_name?", string_query_method_name_p, 1);
-    rb_define_singleton_method(rb_cPrismStringQuery, "keyword?", string_query_keyword_p, 1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "local?", string_query_local_p, -1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "constant?", string_query_constant_p, -1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "method_name?", string_query_method_name_p, -1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "keyword?", string_query_keyword_p, -1);
 
     Init_prism_api_node();
 }

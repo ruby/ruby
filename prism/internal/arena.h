@@ -1,14 +1,17 @@
 #ifndef PRISM_INTERNAL_ARENA_H
 #define PRISM_INTERNAL_ARENA_H
 
-#include "prism/compiler/exported.h"
+#include "prism/compiler/align.h"
+#include "prism/compiler/branch.h"
 #include "prism/compiler/flex_array.h"
 #include "prism/compiler/force_inline.h"
 #include "prism/compiler/inline.h"
+#include "prism/compiler/noreturn.h"
 
 #include "prism/arena.h"
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 /*
@@ -32,13 +35,21 @@ typedef struct pm_arena_block {
 /*
  * A bump allocator. Allocations are made by bumping a pointer within the
  * current block. When a block is full, a new block is allocated and linked to
- * the previous one. All blocks are freed at once by walking the chain.
+ * the previous one. An allocation too large to share a block gets one of its
+ * own on a separate chain, so it does not displace the current block. All
+ * blocks are freed at once by walking both chains.
  */
 struct pm_arena_t {
     /* The active block (allocate from here). */
     pm_arena_block_t *current;
 
-    /* The number of blocks allocated. */
+    /* Blocks that each hold a single large allocation, never bumped into. */
+    pm_arena_block_t *large;
+
+    /*
+     * The number of blocks allocated on the current chain, which sets the size
+     * of the next one.
+     */
     size_t block_count;
 };
 
@@ -56,10 +67,18 @@ void pm_arena_cleanup(pm_arena_t *arena);
 void pm_arena_reserve(pm_arena_t *arena, size_t capacity);
 
 /*
- * Slow path for pm_arena_alloc: allocate a new block and return a pointer to
+ * Slow path for pm_arena_alloc: allocate a new block, either the next current
+ * block or a block of its own for a large allocation, and return a pointer to
  * the first `size` bytes. Do not call directly — use pm_arena_alloc instead.
  */
 void * pm_arena_alloc_slow(pm_arena_t *arena, size_t size);
+
+/*
+ * Report an allocation whose total size does not fit in a size_t. This
+ * goes through PRISM_OOM like any other allocation failure, and lives out of
+ * line so this header does not need the headers PRISM_OOM depends on.
+ */
+PRISM_NORETURN void pm_arena_alloc_overflow(void);
 
 /*
  * Allocate memory from the arena. The returned memory is NOT zeroed. This
@@ -84,6 +103,35 @@ pm_arena_alloc(pm_arena_t *arena, size_t size, size_t alignment) {
 }
 
 /*
+ * Allocate memory from the arena whose address is aligned to the given power of
+ * two. Unlike pm_arena_alloc, the alignment may exceed the alignment of the
+ * arena's blocks, at the cost of a slower path that is not inlined.
+ */
+void * pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment);
+
+/*
+ * Allocate memory for a single element of type T_ from the arena.
+ */
+#define PM_ARENA_ALLOC(arena_, T_) \
+    ((T_ *) pm_arena_alloc(arena_, sizeof(T_), PRISM_ALIGNOF(T_)))
+
+/*
+ * Allocate an array of elements from the arena. The returned memory is NOT
+ * zeroed. This function is infallible — it aborts on allocation failure.
+ */
+static PRISM_INLINE void *
+pm_arena_alloc_array(pm_arena_t *arena, size_t count, size_t size, size_t alignment) {
+    if (PRISM_UNLIKELY(count > SIZE_MAX / size)) pm_arena_alloc_overflow();
+    return pm_arena_alloc(arena, count * size, alignment);
+}
+
+/*
+ * Allocate an array of elements of type T_ from the arena.
+ */
+#define PM_ARENA_ALLOC_ARRAY(arena_, T_, count_) \
+    ((T_ *) pm_arena_alloc_array(arena_, count_, sizeof(T_), PRISM_ALIGNOF(T_)))
+
+/*
  * Allocate zero-initialized memory from the arena. This function is infallible
  * — it aborts on allocation failure.
  */
@@ -93,6 +141,29 @@ pm_arena_zalloc(pm_arena_t *arena, size_t size, size_t alignment) {
     memset(ptr, 0, size);
     return ptr;
 }
+
+/*
+ * Allocate a zero-initialized element of type T_ from the arena.
+ */
+#define PM_ARENA_ZALLOC(arena_, T_) \
+    ((T_ *) pm_arena_zalloc(arena_, sizeof(T_), PRISM_ALIGNOF(T_)))
+
+/*
+ * Allocate a zero-initialized array of elements from the arena. This function
+ * is infallible — it aborts on allocation failure.
+ */
+static PRISM_INLINE void *
+pm_arena_zalloc_array(pm_arena_t *arena, size_t count, size_t size, size_t alignment) {
+    void *ptr = pm_arena_alloc_array(arena, count, size, alignment);
+    memset(ptr, 0, count * size);
+    return ptr;
+}
+
+/*
+ * Allocate a zero-initialized array of elements of type T_ from the arena.
+ */
+#define PM_ARENA_ZALLOC_ARRAY(arena_, T_, count_) \
+    ((T_ *) pm_arena_zalloc_array(arena_, count_, sizeof(T_), PRISM_ALIGNOF(T_)))
 
 /*
  * Allocate memory from the arena and copy the given data into it. This is a
@@ -142,5 +213,11 @@ pm_arena_realloc(pm_arena_t *arena, void *ptr, size_t new_size, size_t old_size,
 
     return result;
 }
+
+/*
+ * Reallocate an element of type T_ from the arena.
+ */
+#define PM_ARENA_REALLOC(arena_, ptr_, new_size_, old_size_, T_) \
+    ((T_ *) pm_arena_realloc(arena_, ptr_, new_size_, old_size_, PRISM_ALIGNOF(T_)))
 
 #endif

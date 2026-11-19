@@ -366,8 +366,9 @@ RARRAY_PTR(VALUE ary)
 {
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
-    VALUE tmp = RB_OBJ_WB_UNPROTECT(ary);
-    return RBIMPL_CAST((VALUE *)RARRAY_CONST_PTR(tmp));
+    /* no store can follow on a frozen array */
+    if (!RB_OBJ_FROZEN_RAW(ary)) RB_OBJ_WB_UNPROTECT(ary);
+    return RBIMPL_CAST((VALUE *)RARRAY_CONST_PTR(ary));
 }
 
 /**

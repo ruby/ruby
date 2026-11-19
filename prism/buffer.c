@@ -53,29 +53,34 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 
 /**
  * Append the given amount of space to the buffer. Returns false when there is
- * nothing to write: either the allocation failed or the length is zero. A
- * zero-initialized buffer has a NULL value until its first allocation, and
- * passing NULL to memcpy/memset/memmove is undefined behavior even for zero
- * bytes, so callers must not write in the zero case.
+ * nothing to write because the length is zero. A zero-initialized buffer has a
+ * NULL value until its first allocation, and passing NULL to
+ * memcpy/memset/memmove is undefined behavior even for zero bytes, so callers
+ * must not write in the zero case.
+ *
+ * The value and capacity are only updated together once the allocation has
+ * succeeded, so the buffer remains valid to free if PRISM_OOM unwinds.
  */
 static PRISM_INLINE bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     if (length == 0) return false;
 
     size_t next_length = buffer->length + length;
-    const size_t original_capacity = buffer->capacity;
+    if (next_length < buffer->length) PRISM_OOM();
 
     if (next_length > buffer->capacity) {
-        if (buffer->capacity == 0) {
-            buffer->capacity = 1;
+        size_t next_capacity = buffer->capacity == 0 ? 1 : buffer->capacity;
+
+        while (next_length > next_capacity) {
+            if (next_capacity > SIZE_MAX / 2) PRISM_OOM();
+            next_capacity *= 2;
         }
 
-        while (next_length > buffer->capacity) {
-            buffer->capacity *= 2;
-        }
+        char *next_value = xrealloc_sized(buffer->value, next_capacity, buffer->capacity);
+        if (next_value == NULL) PRISM_OOM();
 
-        buffer->value = xrealloc_sized(buffer->value, buffer->capacity, original_capacity);
-        if (buffer->value == NULL) return false;
+        buffer->value = next_value;
+        buffer->capacity = next_capacity;
     }
 
     buffer->length = next_length;
@@ -264,35 +269,35 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
             switch (byte) {
                 case '\a':
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                        pm_buffer_append_string(buffer, "\\a", 2);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\a");
                     } else {
                         pm_buffer_append_format(buffer, "\\u%04X", byte);
                     }
                     break;
                 case '\b':
-                    pm_buffer_append_string(buffer, "\\b", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\b");
                     break;
                 case '\t':
-                    pm_buffer_append_string(buffer, "\\t", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\t");
                     break;
                 case '\n':
-                    pm_buffer_append_string(buffer, "\\n", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\n");
                     break;
                 case '\v':
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                        pm_buffer_append_string(buffer, "\\v", 2);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\v");
                     } else {
                         pm_buffer_append_format(buffer, "\\u%04X", byte);
                     }
                     break;
                 case '\f':
-                    pm_buffer_append_string(buffer, "\\f", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\f");
                     break;
                 case '\r':
-                    pm_buffer_append_string(buffer, "\\r", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\r");
                     break;
                 case '"':
-                    pm_buffer_append_string(buffer, "\\\"", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\\"");
                     break;
                 case '#': {
                     if (escaping == PM_BUFFER_ESCAPING_RUBY && index + 1 < length) {
@@ -306,7 +311,7 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
                     break;
                 }
                 case '\\':
-                    pm_buffer_append_string(buffer, "\\\\", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\\\");
                     break;
                 default:
                     pm_buffer_append_byte(buffer, byte);

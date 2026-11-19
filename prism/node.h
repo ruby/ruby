@@ -23,10 +23,10 @@ extern "C" {
     for (size_t index = 0; index < (list)->size && ((node) = (list)->nodes[index]); index++)
 
 /**
- * Append a node to the end of a node list. If the list is full, its storage is
- * grown by allocating from the given arena, so the arena must live as long as
- * the list does. For a list in a parsed tree, that is the arena that was passed
- * to pm_parser_new.
+ * Append a node to the end of a node list. A node list's storage is always
+ * exactly its size, so it is regrown to exactly one more node by allocating from
+ * the given arena, which must live as long as the list does. For a list in a
+ * parsed tree, that is the arena that was passed to pm_parser_new.
  *
  * @param arena The arena to allocate the list's storage from.
  * @param list The list to append to.

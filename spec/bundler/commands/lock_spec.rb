@@ -3158,6 +3158,51 @@ RSpec.describe "bundle lock" do
     end
   end
 
+  describe "--add-ruby-abi and --remove-ruby-abi on older RubyGems", rubygems: "< 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "refuses to change the locked Ruby ABIs" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi), ruby_abis: [current_abi])
+        original_lockfile = lockfile
+
+        bundle "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later")
+        expect(lockfile).to eq(original_lockfile)
+
+        bundle "lock --remove-ruby-abi #{current_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later")
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
+    it "refuses to add a Ruby ABI to a lockfile without content-addressed gems" do
+      simulate_platform "x86_64-linux" do
+        bundle "install"
+        original_lockfile = lockfile
+
+        bundle "lock --add-ruby-abi #{current_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later")
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+  end
+
   describe "--normalize-platforms with content-addressed gems", rubygems: ">= 4.1.0.a" do
     before do
       skip_unless_content_addressing_available!

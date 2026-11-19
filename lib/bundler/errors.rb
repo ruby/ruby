@@ -303,4 +303,12 @@ module Bundler
 
     status_code(41)
   end
+
+  class CleanError < BundlerError
+    def initialize(errors)
+      super("Bundler could not remove some unused files:\n\n#{errors.map(&:message).uniq.join("\n")}")
+    end
+
+    status_code(44)
+  end
 end

@@ -213,9 +213,23 @@ module Ruby::Prism
     def test_repeated_escape_prefixes
       count = 100_000
 
-      assert_repeated_escape_prefixes("\"#{"\\M-" * count}a\"", "meta cannot be repeated", count - 1)
-      assert_repeated_escape_prefixes("?#{"\\C-" * count}a", "control cannot be repeated", count - 1)
-      assert_repeated_escape_prefixes("/#{"\\c" * count}a/", "control cannot be repeated", count - 1)
+      # A repeated prefix ends its escape, so each pair of prefixes is one
+      # malformed escape, and a character literal ends after the first one.
+      assert_repeated_escape_prefixes("\"#{"\\M-" * count}a\"", "meta cannot be repeated", count / 2)
+      assert_repeated_escape_prefixes("?#{"\\C-" * count}a", "control cannot be repeated", 1)
+      assert_repeated_escape_prefixes("/#{"\\c" * count}a/", "control cannot be repeated", count / 2)
+    end
+
+    def test_malformed_escapes
+      assert_equal "\x80-a".b, Ruby::Prism.parse_statement('"\M-\M-a"').unescaped.b
+      assert_equal "\x00a", Ruby::Prism.parse_statement('"\C-\C-a"').unescaped
+      assert_equal "\x00", Ruby::Prism.parse_statement('"\Mx"').unescaped
+    end
+
+    def test_control_character_escape_in_meta_and_control_escapes
+      assert Ruby::Prism.parse_success?("\"\\M-\\\x01\"")
+      assert_equal "\x81".b, Ruby::Prism.parse_statement("\"\\M-\\\x01\"").unescaped.b
+      assert_equal "\x1F", Ruby::Prism.parse_statement("\"\\c\\\x7F\"").unescaped
     end
 
     private

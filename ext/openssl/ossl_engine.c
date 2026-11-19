@@ -376,7 +376,8 @@ ossl_engine_set_default(VALUE self, VALUE flag)
     int f = NUM2INT(flag);
 
     GetEngine(self, e);
-    ENGINE_set_default(e, f);
+    if (!ENGINE_set_default(e, f))
+        ossl_raise(eEngineError, "ENGINE_set_default");
 
     return Qtrue;
 }

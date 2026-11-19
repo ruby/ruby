@@ -735,6 +735,24 @@ class TestEnv < Test::Unit::TestCase
     end;
   end
 
+  def test_transcode_to_default_internal_in_ractor
+    # Converting to default_internal autoloads the transcoder, which must
+    # not happen while ENV holds the VM lock.
+    env = {"LC_ALL" => "C.UTF-8", "ENV_TEST_VALUE" => "\u3042"}
+    assert_ractor(<<-"end;", args: [env])
+      return unless Encoding.find("locale") == Encoding::UTF_8
+      EnvUtil.suppress_warning { Encoding.default_internal = Encoding::EUC_JP }
+      aref, to_h, to_a, values = Ractor.new do
+        [ENV["ENV_TEST_VALUE"], ENV.to_h["ENV_TEST_VALUE"], ENV.to_a, ENV.values]
+      end.value
+      expected = "\u3042".encode(Encoding::EUC_JP)
+      assert_equal(expected, aref)
+      assert_equal(expected, to_h)
+      assert_equal(expected, to_a.assoc("ENV_TEST_VALUE")&.last)
+      assert_include(values, expected)
+    end;
+  end
+
   def test_dup_in_ractor
     assert_ractor(<<-"end;")
       Ractor.new port = Ractor::Port.new do |port|

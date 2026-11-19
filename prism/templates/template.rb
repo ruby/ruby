@@ -7,10 +7,19 @@ require "yaml"
 
 module Ruby::Prism
   module Template # :nodoc: all
-    SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
-    CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
+    # The environment variables that change the generated files. The Rakefile
+    # records their values in a stamp file that every generated file depends
+    # on, so any variable read by a template must be listed here.
+    ENVIRONMENT = %w[
+      CHECK_FIELD_KIND
+      PRISM_JAVA_BACKEND
+      PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS
+    ].to_h { |name| [name, ENV[name]] }.freeze
 
-    JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "default"
+    SERIALIZE_ONLY_SEMANTICS_FIELDS = ENVIRONMENT["PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS"] || false
+    CHECK_FIELD_KIND = ENVIRONMENT["CHECK_FIELD_KIND"] || false
+
+    JAVA_BACKEND = ENVIRONMENT["PRISM_JAVA_BACKEND"] || "default"
     JAVA_IDENTIFIER_TYPE = JAVA_BACKEND == "truffleruby" ? "String" : "byte[]"
     INCLUDE_NODE_ID = !SERIALIZE_ONLY_SEMANTICS_FIELDS || JAVA_BACKEND == "jruby"
 

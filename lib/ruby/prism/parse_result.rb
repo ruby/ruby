@@ -45,7 +45,11 @@ module Ruby::Prism
         source.force_encoding(Encoding::UTF_8)
 
         if source.valid_encoding?
-          new(source, start_line, offsets, comments, comment_attachments, comment_ranges, checksum)
+          # The characters of the source are read as UTF-8 so that locations
+          # count them, but the source itself is still binary.
+          result = new(source, start_line, offsets, comments, comment_attachments, comment_ranges, checksum)
+          result.replace_encoding(Encoding::BINARY)
+          result
         else
           # This is an extremely niche use case where the file is marked as
           # binary, contains multi-byte characters, and those characters are not
@@ -111,6 +115,7 @@ module Ruby::Prism
       @comments = comments
       @comment_attachments = comment_attachments
       @comment_ranges = comment_ranges
+      @encoding = source.encoding
     end
 
     # Replace the value of start_line with the given value.
@@ -125,6 +130,13 @@ module Ruby::Prism
     #: (Integer checksum) -> void
     def replace_checksum(checksum)
       @checksum = checksum
+    end
+
+    # Replace the value of encoding with the given value.
+    #
+    #: (Encoding encoding) -> void
+    def replace_encoding(encoding)
+      @encoding = encoding
     end
 
     # Replace the value of offsets with the given value.
@@ -149,11 +161,7 @@ module Ruby::Prism
 
     # Returns the encoding of the source code, which is set by parameters to the
     # parser or by the encoding magic comment.
-    #
-    #: () -> Encoding
-    def encoding
-      source.encoding
-    end
+    attr_reader :encoding #: Encoding
 
     # Returns the lines of the source code as an array of strings.
     #

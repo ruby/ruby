@@ -1516,6 +1516,7 @@ rb_ary_pop_m(int argc, VALUE *argv, VALUE ary)
 
     rb_ary_modify_check(ary);
     result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
+    rb_ary_modify_check(ary);
     ARY_INCREASE_LEN(ary, -RARRAY_LEN(result));
     ary_verify(ary);
     return result;
@@ -2787,7 +2788,7 @@ rb_builtin_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 VALUE
 rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
-    return LONG2FIX(FIX2LEN(num) + 1);
+    return LEN2FIX(FIX2LEN(num) + 1);
 }
 
 VALUE
@@ -3102,10 +3103,12 @@ ary_join_fast(VALUE ary, VALUE sep)
     }
 
     /* One pass: confirm the shared encoding, measure the length, merge code ranges. */
+    if (sep_len > 0 && n - 1 > (RB_LEN_MAX - 1) / sep_len) return Qundef;
     rb_len_t len = 1 + sep_len * (n - 1);
     for (rb_len_t i = 0; i < n; i++) {
         VALUE s = RARRAY_AREF(ary, i);
         if (!RB_TYPE_P(s, T_STRING) || ENCODING_GET(s) != encidx) return Qundef;
+        if (RSTRING_LEN(s) > RB_LEN_MAX - len) return Qundef;
         len += RSTRING_LEN(s);
         cr = ENC_CODERANGE_AND(cr, rb_enc_str_coderange(s));
     }
@@ -5223,6 +5226,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
         for (i=beg; i<end; i++) {
             v = rb_yield(LEN2NUM(i));
             if (i>=RARRAY_LEN(ary)) break;
+            rb_ary_modify(ary);
             ARY_SET(ary, i, v);
         }
     }

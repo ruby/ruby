@@ -468,8 +468,7 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
 
         switch (curr_key) {
           case CONCURRENT_SET_EMPTY:
-            // We didn't find our entry to delete.
-            return 0;
+            // May be an insert in progress (hash set, key not yet stored).
           case CONCURRENT_SET_DELETED:
             break;
           case CONCURRENT_SET_MOVED:
@@ -482,6 +481,11 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
                 return curr_key;
             }
             break;
+        }
+
+        // Stop once nothing was inserted past this entry.
+        if (!(entry->hash & CONCURRENT_SET_CONTINUATION_BIT)) {
+            return 0;
         }
 
         idx = concurrent_set_probe_next(&probe);

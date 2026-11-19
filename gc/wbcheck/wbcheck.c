@@ -239,7 +239,8 @@ typedef struct {
     size_t gc_threshold;     // Trigger GC when object count reaches this
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
-    size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
+    size_t simulated_gc_count; // Simulated GC count incremented on each full GC
+    size_t total_allocated_objects; // Total objects allocated over the process lifetime
     bool measure_total_time;   // Whether to accumulate :time in stats
     struct wbcheck_final_job *finalizer_jobs; // Linked list of finalizer jobs
     rb_nativethread_lock_t finalizer_lock;   // Protects finalizer_jobs list
@@ -426,6 +427,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
 
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
+    objspace->total_allocated_objects++;
 }
 
 static void
@@ -567,11 +569,6 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
 void
 rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
-    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    if (objspace) {
-        objspace->simulated_gc_count++;
-    }
-
     if (!ruby_native_thread_p()) return;
 
     unsigned int lev = RB_GC_VM_LOCK();
@@ -993,6 +990,8 @@ wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
 {
     WBCHECK_DEBUG("wbcheck: starting full GC\n");
 
+    objspace->simulated_gc_count++;
+
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_ENTER);
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_START);
 
@@ -1060,10 +1059,16 @@ gc_step(void *objspace_ptr, bool force)
 
 }
 
+// No barrier when GC is disabled: the NEWOBJ hook holds the VM lock without barrier support.
 static void
-maybe_gc(void *objspace_ptr)
+maybe_gc_with_barrier(void *objspace_ptr)
 {
-    gc_step(objspace_ptr, false);
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    if (objspace && objspace->gc_enabled) {
+        rb_gc_vm_barrier();
+        gc_step(objspace_ptr, false);
+    }
 }
 
 static void
@@ -1078,10 +1083,7 @@ static void *
 lock_and_maybe_gc_gvl(void *objspace_ptr)
 {
     unsigned int lev = RB_GC_VM_LOCK();
-    rb_gc_vm_barrier();
-
-    maybe_gc(objspace_ptr);
-
+    maybe_gc_with_barrier(objspace_ptr);
     RB_GC_VM_UNLOCK(lev);
     return NULL;
 }
@@ -1103,10 +1105,9 @@ VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
-    rb_gc_vm_barrier();
 
     // Check if we should trigger GC before allocating
-    maybe_gc(objspace_ptr);
+    maybe_gc_with_barrier(objspace_ptr);
 
     // Ensure minimum allocation size of BASE_SLOT_SIZE
     alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
@@ -1923,10 +1924,35 @@ rb_gc_impl_gc_count(void *objspace_ptr)
 }
 
 VALUE
-rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key)
+rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE hash_or_key)
 {
-    // Stub implementation
-    return Qnil;
+    VALUE hash = Qnil, key = Qnil;
+
+    if (SYMBOL_P(hash_or_key)) {
+        key = hash_or_key;
+    }
+    else if (RB_TYPE_P(hash_or_key, T_HASH)) {
+        hash = hash_or_key;
+    }
+    else {
+        rb_bug("rb_gc_impl_latest_gc_info: non-hash or symbol given");
+    }
+
+#define SET(name, attr) \
+    if (key == ID2SYM(rb_intern_const(#name))) \
+        return (attr); \
+    else if (hash != Qnil) \
+        rb_hash_aset(hash, ID2SYM(rb_intern_const(#name)), (attr));
+
+    /* wbcheck doesn't do incremental GC, so the state is always :none. */
+    SET(state, ID2SYM(rb_intern_const("none")));
+#undef SET
+
+    if (!NIL_P(key)) {
+        return Qundef;
+    }
+
+    return hash;
 }
 
 VALUE
@@ -1960,14 +1986,13 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     /* Pretend each GC takes 1ms; :time is reported in milliseconds. */
     SET(count, objspace->simulated_gc_count);
     SET(time, objspace->measure_total_time ? objspace->simulated_gc_count : 0);
+    SET(total_allocated_objects, objspace->total_allocated_objects);
     SET(tracked_objects, st_table_size(objspace->object_table));
 #undef SET
 
     if (!NIL_P(key)) {
         rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
     }
-
-    rb_hash_aset(hash, ID2SYM(rb_intern("gc_implementation")), rb_str_new_cstr("wbcheck"));
 
     return hash;
 }
@@ -2003,18 +2028,23 @@ rb_gc_impl_active_gc_name(void)
 }
 
 // Miscellaneous
-#define WBCHECK_OBJECT_METADATA_ENTRY_COUNT 2
+#define WBCHECK_OBJECT_METADATA_ENTRY_COUNT 3
 static struct rb_gc_object_metadata_entry object_metadata_entries[WBCHECK_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    static ID ID_object_id, ID_shareable;
+    static ID ID_wb_protected, ID_object_id, ID_shareable;
 
     if (!ID_object_id) {
+        ID_wb_protected = rb_intern("wb_protected");
         ID_object_id = rb_intern("object_id");
         ID_shareable = rb_intern("shareable");
     }
+
+    unsigned int lev = RB_GC_VM_LOCK();
+    bool wb_protected = wbcheck_get_object_info(obj)->wb_protected;
+    RB_GC_VM_UNLOCK(lev);
 
     size_t n = 0;
 
@@ -2025,6 +2055,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     n++; \
 } while (0)
 
+    if (wb_protected) SET_ENTRY(wb_protected, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 #undef SET_ENTRY

@@ -243,6 +243,8 @@ pub const ZJIT_STACK_MAP_OP_SKIP: u32 = 2;
 pub const ZJIT_STACK_MAP_OP_BASE_PTR: u32 = 3;
 pub const ZJIT_STACK_MAP_OP_IMM: u32 = 4;
 pub const ZJIT_STACK_MAP_OP_NIL: u32 = 5;
+pub const ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA: u32 = 6;
+pub const ZJIT_STACK_MAP_OP_PREV_FRAME: u32 = 7;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
 pub type rb_len_t = ::std::os::raw::c_long;
@@ -1726,7 +1728,8 @@ pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 10;
 pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 11;
 pub const VM_CALL_ARGS_SPLAT_MUT_bit: vm_call_flag_bits = 12;
 pub const VM_CALL_FORWARDING_bit: vm_call_flag_bits = 13;
-pub const VM_CALL__END: vm_call_flag_bits = 14;
+pub const VM_CALL_IGNORE_REFINEMENTS_bit: vm_call_flag_bits = 14;
+pub const VM_CALL__END: vm_call_flag_bits = 15;
 pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo_kwarg {

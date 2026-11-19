@@ -81,6 +81,50 @@ class Test_StringCStr < Test::Unit::TestCase
     end
   end
 
+  # [Bug #22517]
+  def test_wchar_casemap
+    [:upcase, :downcase, :swapcase, :capitalize].each do |m|
+      [[], [:ascii]].each do |opts|
+        assert_wchars_long_term {|s| s.__send__(m, *opts)}
+      end
+    end
+  end
+
+  # [Bug #22517]
+  def test_wchar_interpolation
+    assert_wchars_long_term {|s| "#{s}#{s}"}
+    assert_wchars_long_term do |s|
+      a = s.b.force_encoding("US-ASCII")
+      b = s[0, 0]
+      eval(%{# coding: us-ascii\n"\#{a}\#{b}"})
+    end
+  end
+
+  # [Bug #22517]
+  def test_wchar_reverse
+    assert_wchars_long_term {|s| s.reverse}
+  end
+
+  # [Bug #22517]
+  def test_wchar_succ
+    assert_wchars_long_term {|s| s.succ}
+  end
+
+  # [Bug #22517]
+  def test_wchar_scrub
+    assert_wchars_long_term {|s| s.b.tr("\0", "\xDC".b).force_encoding(s.encoding).scrub}
+  end
+
+  # [Bug #22517]
+  def test_wchar_fstring
+    assert_wchars_long_term {|s| -Ractor.make_shareable(Bug::String.new(s))}
+  end
+
+  # [Bug #22517]
+  def test_wchar_slice!
+    assert_wchars_long_term {|s| s.slice!(0, 900)}
+  end
+
   def test_wchar_lstrip!
     assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
@@ -153,6 +197,16 @@ class Test_StringCStr < Test::Unit::TestCase
       result[enc] = c if c
     end
     assert_empty(result, gh821)
+  end
+
+  def assert_wchars_long_term
+    result = {}
+    WCHARS.each do |enc|
+      s = yield(("a" * 1000).encode(enc))
+      c = Bug::String.cstr_term(s)
+      result[enc] = c unless c == 0
+    end
+    assert_empty(result)
   end
 
   def assert_wchars_term_char(str)

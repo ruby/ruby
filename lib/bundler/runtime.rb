@@ -210,25 +210,24 @@ module Bundler
       stale_gemspec_files  = gemspec_files - spec_gemspec_paths
       stale_extension_dirs = extension_dirs - spec_extension_paths
 
-      removed_stale_gem_dirs = stale_gem_dirs.collect {|dir| remove_dir(dir, dry_run) }
-      removed_stale_git_dirs = stale_git_dirs.collect {|dir| remove_dir(dir, dry_run) }
+      failures = []
+      removed_stale_gem_dirs = stale_gem_dirs.filter_map {|dir| remove_dir(dir, dry_run, failures) }
+      removed_stale_git_dirs = stale_git_dirs.filter_map {|dir| remove_dir(dir, dry_run, failures) }
       output = removed_stale_gem_dirs + removed_stale_git_dirs
 
       unless dry_run
         stale_files = stale_gem_bins + stale_gem_files + stale_gemspec_files
         stale_files.each do |file|
-          SharedHelpers.filesystem_access(File.dirname(file)) do |_p|
-            FileUtils.rm(file) if File.exist?(file)
-          end
+          remove_path(file, failures, File.dirname(file))
         end
 
         stale_dirs = stale_git_cache_dirs + stale_extension_dirs
         stale_dirs.each do |stale_dir|
-          SharedHelpers.filesystem_access(stale_dir) do |dir|
-            FileUtils.rm_rf(dir) if File.exist?(dir)
-          end
+          remove_path(stale_dir, failures)
         end
       end
+
+      raise CleanError.new(failures) unless failures.empty?
 
       output
     end
@@ -359,7 +358,7 @@ module Bundler
       ).uniq.join(File::PATH_SEPARATOR)
     end
 
-    def remove_dir(dir, dry_run)
+    def remove_dir(dir, dry_run, failures)
       full_name = Pathname.new(dir).basename.to_s
 
       parts    = full_name.split("-")
@@ -370,11 +369,26 @@ module Bundler
       if dry_run
         Bundler.ui.info "Would have removed #{output}"
       else
+        return unless remove_path(dir, failures)
         Bundler.ui.info "Removing #{output}"
-        FileUtils.rm_rf(dir)
       end
 
       output
+    end
+
+    # Collects the error instead of raising it, so that one path that cannot be
+    # removed does not stop the rest of the bundle from being cleaned.
+    def remove_path(path, failures, access_path = path)
+      SharedHelpers.filesystem_access(access_path) do
+        FileUtils.rm_r(path)
+      end
+      true
+    rescue Errno::ENOENT
+      # Removed by something else since the bundle was scanned
+      true
+    rescue BundlerError => e
+      failures << e
+      false
     end
 
     def check_for_activated_spec!(spec)

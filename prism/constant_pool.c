@@ -11,57 +11,42 @@
  * Initialize a list of constant ids.
  */
 void
-pm_constant_id_list_init(pm_constant_id_list_t *list) {
-    list->ids = NULL;
-    list->size = 0;
-    list->capacity = 0;
-}
-
-/**
- * Initialize a list of constant ids with a given capacity.
- */
-void
-pm_constant_id_list_init_capacity(pm_arena_t *arena, pm_constant_id_list_t *list, size_t capacity) {
-    if (capacity) {
-        list->ids = (pm_constant_id_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t));
+pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_t size) {
+    if (size) {
+        list->ids = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_id_t, size);
     } else {
         list->ids = NULL;
     }
 
-    list->size = 0;
-    list->capacity = capacity;
+    list->size = size;
 }
 
 /**
- * Append a constant id to a list of constant ids.
+ * Append a constant id to a list of constant ids. A list's array is always
+ * exactly its size, so it grows to exactly one more id, in place when it is the
+ * most recent allocation in the arena and by copying it otherwise.
  */
 void
 pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) {
-    if (list->size >= list->capacity) {
-        size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
-        pm_constant_id_t *new_ids = (pm_constant_id_t *) pm_arena_alloc(arena, sizeof(pm_constant_id_t) * new_capacity, PRISM_ALIGNOF(pm_constant_id_t));
-
-        if (list->size > 0) {
-            memcpy(new_ids, list->ids, list->size * sizeof(pm_constant_id_t));
-        }
-
-        list->ids = new_ids;
-        list->capacity = new_capacity;
+    if (list->size == 0) {
+        list->ids = PM_ARENA_ALLOC(arena, pm_constant_id_t);
+        list->ids[list->size++] = id;
+    } else {
+        list->ids = PM_ARENA_REALLOC(arena, list->ids, sizeof(pm_constant_id_t) * (list->size + 1), sizeof(pm_constant_id_t) * list->size, pm_constant_id_t);
+        list->ids[list->size++] = id;
     }
-
-    list->ids[list->size++] = id;
 }
 
 /**
- * Insert a constant id into a list of constant ids at the specified index.
+ * Set the constant id at the specified index of a list of constant ids. The
+ * slot must still be unset.
  */
 void
-pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_constant_id_t id) {
-    PRISM_ASSERT(index < list->capacity);
+pm_constant_id_list_insert(pm_constant_id_list_t *list, uint32_t index, pm_constant_id_t id) {
+    PRISM_ASSERT(index < list->size);
     PRISM_ASSERT(list->ids[index] == PM_CONSTANT_ID_UNSET);
 
     list->ids[index] = id;
-    list->size++;
 }
 
 /**
@@ -91,7 +76,7 @@ pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_const
     PRISM_ASSERT(id != PM_CONSTANT_ID_UNSET);
 
     /*
-     * Grow at the same load factor the locals table and the constant pool use.
+     * Grow at the same load factor the constant pool uses.
      * An empty set has no slots at all, so this also builds the first table.
      */
     if (set->size >= (set->capacity / 4 * 3)) {
@@ -99,7 +84,7 @@ pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_const
         pm_constant_id_set_t grown = {
             .size = set->size,
             .capacity = capacity,
-            .ids = (pm_constant_id_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_id_t), PRISM_ALIGNOF(pm_constant_id_t))
+            .ids = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_id_t, capacity)
         };
 
         for (size_t index = 0; index < set->capacity; index++) {
@@ -202,6 +187,29 @@ next_power_of_two(uint32_t v) {
 }
 
 /**
+ * Return the number of constants that a pool with the given capacity has room
+ * for. The pool grows before an insert once it is three quarters full, so at
+ * most three quarters of its capacity, rounded up, ever holds a constant.
+ */
+static PRISM_INLINE size_t
+pm_constant_pool_constants_capacity(uint32_t capacity) {
+    return (size_t) (capacity - capacity / 4);
+}
+
+/**
+ * Return whether the given bucket holds the given string. The stored hash is
+ * compared first, so that probe collisions are rejected without reading the
+ * constant or calling memcmp.
+ */
+static PRISM_INLINE bool
+pm_constant_pool_bucket_match(const pm_constant_pool_t *pool, const pm_constant_pool_bucket_t *bucket, uint32_t hash, const uint8_t *start, size_t length) {
+    if (bucket->hash != hash) return false;
+
+    const pm_constant_t *constant = &pool->constants[bucket->id - 1];
+    return constant->length == length && memcmp(constant->start, start, length) == 0;
+}
+
+/**
  * Resize a constant pool to a given capacity.
  */
 static PRISM_INLINE void
@@ -209,8 +217,15 @@ pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
     uint32_t next_capacity = pool->capacity * 2;
     const uint32_t mask = next_capacity - 1;
 
-    pm_constant_pool_bucket_t *next_buckets = (pm_constant_pool_bucket_t *) pm_arena_zalloc(arena, next_capacity * sizeof(pm_constant_pool_bucket_t), PRISM_ALIGNOF(pm_constant_pool_bucket_t));
-    pm_constant_t *next_constants = (pm_constant_t *) pm_arena_alloc(arena, next_capacity * sizeof(pm_constant_t), PRISM_ALIGNOF(pm_constant_t));
+    /* The constants are indexed by id, which a resize does not change, so
+     * they only need more room. They grow before the buckets are allocated,
+     * which lets them grow in place when they are the most recent allocation
+     * in the arena. */
+    size_t constants_size = pm_constant_pool_constants_capacity(pool->capacity) * sizeof(pm_constant_t);
+    size_t next_constants_size = pm_constant_pool_constants_capacity(next_capacity) * sizeof(pm_constant_t);
+    pool->constants = PM_ARENA_REALLOC(arena, pool->constants, next_constants_size, constants_size, pm_constant_t);
+
+    pm_constant_pool_bucket_t *next_buckets = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_pool_bucket_t, next_capacity);
 
     // For each bucket in the current constant pool, find the index in the
     // next constant pool, and insert it.
@@ -235,10 +250,6 @@ pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
         }
     }
 
-    // The constants are stable with respect to hash table resizes.
-    memcpy(next_constants, pool->constants, pool->size * sizeof(pm_constant_t));
-
-    pool->constants = next_constants;
     pool->buckets = next_buckets;
     pool->capacity = next_capacity;
 }
@@ -250,10 +261,20 @@ void
 pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity) {
     capacity = next_power_of_two(capacity);
 
-    pool->buckets = (pm_constant_pool_bucket_t *) pm_arena_zalloc(arena, capacity * sizeof(pm_constant_pool_bucket_t), PRISM_ALIGNOF(pm_constant_pool_bucket_t));
-    pool->constants = (pm_constant_t *) pm_arena_alloc(arena, capacity * sizeof(pm_constant_t), PRISM_ALIGNOF(pm_constant_t));
+    pool->buckets = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_pool_bucket_t, capacity);
+    pool->constants = PM_ARENA_ALLOC_ARRAY(arena, pm_constant_t, pm_constant_pool_constants_capacity(capacity));
     pool->size = 0;
     pool->capacity = capacity;
+}
+
+/**
+ * Return the number of bytes that pm_constant_pool_init allocates for the given
+ * capacity.
+ */
+size_t
+pm_constant_pool_init_size(uint32_t capacity) {
+    capacity = next_power_of_two(capacity);
+    return capacity * sizeof(pm_constant_pool_bucket_t) + pm_constant_pool_constants_capacity(capacity) * sizeof(pm_constant_t);
 }
 
 /**
@@ -278,9 +299,7 @@ pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size
     pm_constant_pool_bucket_t *bucket;
 
     while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
-        // Compare the stored hash before touching the contents so that probe
-        // collisions are rejected without a memcmp call.
-        if ((bucket->hash == hash) && (bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
+        if (pm_constant_pool_bucket_match(pool, bucket, hash, start, length)) {
             return bucket->id;
         }
 
@@ -308,9 +327,8 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
     while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
         // If there is a collision, then we need to check if the content is the
         // same as the content we are trying to insert. If it is, then we can
-        // return the id of the existing constant. Compare the stored hash
-        // first so that probe collisions are rejected without a memcmp call.
-        if ((bucket->hash == hash) && (bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
+        // return the id of the existing constant.
+        if (pm_constant_pool_bucket_match(pool, bucket, hash, start, length)) {
             // Since we have found a match, we need to check if this is
             // attempting to insert a shared or an owned constant. We want to
             // prefer shared constants since they don't require allocations.
@@ -318,7 +336,6 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
                 // If we're attempting to insert a shared constant and the
                 // existing constant is owned, then we can replace it with the
                 // shared constant to prefer non-owned references.
-                bucket->start = start;
                 bucket->type = (unsigned int) (type & 0x3);
                 pool->constants[bucket->id - 1].start = start;
             }
@@ -337,9 +354,7 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
     *bucket = (pm_constant_pool_bucket_t) {
         .id = (unsigned int) (id & 0x3fffffff),
         .type = (unsigned int) (type & 0x3),
-        .hash = hash,
-        .start = start,
-        .length = length
+        .hash = hash
     };
 
     pool->constants[id - 1] = (pm_constant_t) {

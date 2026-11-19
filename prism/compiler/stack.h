@@ -8,6 +8,10 @@
 
 #include <stdint.h>
 
+#if defined(__FILC__)
+    #include <stdfil.h>
+#endif
+
 #if defined(__has_builtin)
     #if __has_builtin(__builtin_stack_address)
         #define PRISM_HAS_BUILTIN_STACK_ADDRESS
@@ -28,7 +32,9 @@
  */
 static PRISM_INLINE uintptr_t
 pm_stack_address(void) {
-#if defined(PRISM_HAS_BUILTIN_STACK_ADDRESS)
+#if defined(__FILC__)
+    return (uintptr_t) zstack_pointer();
+#elif defined(PRISM_HAS_BUILTIN_STACK_ADDRESS)
     return (uintptr_t) __builtin_stack_address();
 #elif defined(_MSC_VER) && defined(_M_ARM64)
     return (uintptr_t) __getReg(31);

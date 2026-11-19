@@ -251,6 +251,7 @@ errors:
   - REGEXP_INVALID_UNICODE_RANGE
   - REGEXP_NON_ESCAPED_MBC
   - REGEXP_PARSE_ERROR
+  - REGEXP_INTERPOLATION_ENCODING
   - REGEXP_TERM
   - REGEXP_UNKNOWN_OPTIONS
   - REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
@@ -339,6 +340,8 @@ tokens:
     comment: ","
   - name: EMBEXPR_END
     comment: "}"
+  - name: HEREDOC_END
+    comment: "the end of a heredoc"
   - name: KEYWORD_DO
     comment: "do"
   - name: KEYWORD_ELSE
@@ -464,8 +467,6 @@ tokens:
     comment: ">>"
   - name: GREATER_GREATER_EQUAL
     comment: ">>="
-  - name: HEREDOC_END
-    comment: "the end of a heredoc"
   - name: HEREDOC_START
     comment: "the start of a heredoc"
   - name: IDENTIFIER
@@ -786,6 +787,11 @@ flags:
       - name: EXPERIMENTAL_COPY
         comment: "constant writes that should be modified with shareable constant value experimental copy"
     comment: Flags for shareable constant nodes.
+  - name: StatementsFlags
+    values:
+      - name: CONTAINS_PRE_EXECUTION
+        comment: "the statement list directly contains a `BEGIN` block"
+    comment: Flags for statement lists.
   - name: StringFlags
     values:
       - name: FORCED_UTF8_ENCODING
@@ -4491,6 +4497,7 @@ nodes:
           [*a]
            ^^
   - name: StatementsNode
+    flags: StatementsFlags
     fields:
       - name: body
         type: node[]

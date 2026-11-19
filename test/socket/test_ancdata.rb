@@ -36,6 +36,7 @@ class TestSocketAncData < Test::Unit::TestCase
   end
 
   def test_ipv6_pktinfo
+    omit_unless_ipv6
     addr = Addrinfo.ip("::1")
     ifindex = 0
     begin
@@ -82,5 +83,11 @@ class TestSocketAncData < Test::Unit::TestCase
       assert_include(s, 'groups[9999]')
       assert_include(s, '(sockcred)')
     end
+  end
+
+  private
+
+  def omit_unless_ipv6(reason = "IPv6 is not supported")
+    omit reason unless defined?(Socket::AF_INET6)
   end
 end if defined? Socket::AncillaryData

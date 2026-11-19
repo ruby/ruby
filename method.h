@@ -216,6 +216,22 @@ struct rb_hook_list_struct;
 typedef struct rb_method_definition_struct rb_method_definition_t;
 STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body) <= 8);
 
+/* Resolving an alias (aliased_callable_method_entry) republishes me->def or
+ * def->body.alias.original_me while other ractors read them without the VM lock.
+ * Both are written with release stores, so unlocked readers on the alias paths
+ * load them with acquire to see a fully built definition or entry. */
+static inline rb_method_definition_t *
+rb_method_entry_def_acquire(const rb_method_entry_t *me)
+{
+    return (rb_method_definition_t *)rbimpl_atomic_ptr_load((void **)&me->def, RBIMPL_ATOMIC_ACQUIRE);
+}
+
+static inline const rb_method_entry_t *
+rb_method_alias_original_me(const rb_method_definition_t *def)
+{
+    return (const rb_method_entry_t *)rbimpl_atomic_ptr_load((void **)&def->body.alias.original_me, RBIMPL_ATOMIC_ACQUIRE);
+}
+
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
     ((def)->type == VM_METHOD_TYPE_REFINED && \

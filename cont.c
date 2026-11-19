@@ -1002,7 +1002,7 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // In addition, it's actually slightly desirable to not do anything here,
     // but that results in higher memory usage.
 
-    rb_vm_map_reusable_lazy(base, size, advice);
+    rb_vm_map_reusable_lazy(base, size, advice, NULL);
 
 #if defined(COROUTINE_SANITIZE_ADDRESS)
     __asan_poison_memory_region(fiber_pool_stack_poison_base(stack), fiber_pool_stack_poison_size(stack));

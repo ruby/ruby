@@ -2,6 +2,57 @@
 
 require "bundler/rubygems_ext"
 
+RSpec.describe Gem::NameTupleContentAddress do
+  # Reproduces the RubyGems < 4.1 `Gem::NameTuple`, which neither takes a
+  # content address nor includes one in its full name.
+  let(:legacy_name_tuple_class) do
+    Class.new(Gem::NameTuple) do
+      def initialize(name, version, platform = Gem::Platform::RUBY)
+        @name = name
+        @version = version
+
+        platform &&= platform.to_s
+        platform = Gem::Platform::RUBY if !platform || platform.empty?
+        @platform = platform
+      end
+
+      def full_name
+        case @platform
+        when nil, "", Gem::Platform::RUBY
+          "#{@name}-#{@version}"
+        else
+          "#{@name}-#{@version}-#{@platform}"
+        end
+      end
+    end
+  end
+
+  let(:version) { Gem::Version.new("1.0") }
+
+  before { legacy_name_tuple_class.prepend(described_class) }
+
+  it "preserves the full name of a Ruby gem" do
+    expect(legacy_name_tuple_class.new("mygem", version).full_name).to eq("mygem-1.0")
+  end
+
+  it "preserves the full name of a multi-ABI gem" do
+    tuple = legacy_name_tuple_class.new("mygem", version, Gem::Platform.new("x86_64-linux"))
+
+    expect(tuple.full_name).to eq("mygem-1.0-x86_64-linux")
+  end
+
+  it "distinguishes content-addressed artifacts that share a platform and lock name" do
+    platform_tuple = legacy_name_tuple_class.new("mygem", version, "x86_64-linux")
+    first = legacy_name_tuple_class.new("mygem", version, "x86_64-linux", content_address: "abcdef12")
+    second = legacy_name_tuple_class.new("mygem", version, "x86_64-linux", content_address: "12345678")
+
+    expect(first.full_name).to eq("mygem-1.0-abcdef12")
+    expect(second.full_name).to eq("mygem-1.0-12345678")
+    expect(first.lock_name).to eq(platform_tuple.lock_name)
+    expect(second.lock_name).to eq(platform_tuple.lock_name)
+  end
+end
+
 RSpec.describe Gem::SplitCompactIndexEntryOnFirstColon do
   # Reproduces the RubyGems < 4.0.13 `Gem::Resolver::APISet::GemParser` that
   # split each compact index entry on every colon, corrupting metadata values

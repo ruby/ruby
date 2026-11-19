@@ -162,6 +162,43 @@ class TestGemSafeYAML < Gem::TestCase
     assert_raise(expected_error) { Gem::SafeYAML.safe_load(yaml) }
   end
 
+  def test_unknown_alias_message
+    expected_error = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+    error = assert_raise(expected_error) do
+      Gem::YAMLSerializer.load("foo: 1\nbar: *missing\n")
+    end
+    assert_equal "An alias referenced an unknown anchor: missing", error.message
+  end
+
+  def test_alias_expansion_limit
+    # Each anchor aliases the previous one twice, doubling the expanded size.
+    yaml = +"seq:\n- &a0\n  - x\n  - y\n"
+    1.upto(20) {|i| yaml << "- &a#{i}\n  - *a#{i - 1}\n  - *a#{i - 1}\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
+  def test_alias_expansion_limit_with_mappings
+    yaml = +"seq:\n- &a0\n  k: x\n"
+    1.upto(20) {|i| yaml << "- &a#{i}\n  a: *a#{i - 1}\n  b: *a#{i - 1}\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
+  def test_alias_expansion_limit_with_long_scalar
+    yaml = +"s: &s #{"x" * 1_000}\nrefs:\n"
+    200.times { yaml << "- *s\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
+  def test_later_documents_are_ignored
+    assert_equal "a", Gem::SafeYAML.safe_load("--- a\n--- [unclosed\n")
+  end
+
   def test_unused_anchor_with_aliases_disabled_is_allowed
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
@@ -427,16 +464,38 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal [], spec.rdoc_options
   end
 
-  def test_load_returns_nil_for_comment_only_yaml
-    # Bundler config files may contain only comments after deleting all keys
-    result = yaml_load("---\n# BUNDLE_FOO: \"bar\"\n")
-    assert_nil result
+  def test_yaml_serializer_load_returns_empty_hash_for_empty_document
+    assert_equal({}, Gem::YAMLSerializer.load(""))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n# BUNDLE_FOO: \"bar\"\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n...\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("--- ~\n"))
+    assert_raise(TypeError) { Gem::YAMLSerializer.load(nil) }
   end
 
-  def test_load_returns_nil_for_empty_document
-    assert_nil yaml_load("---\n")
-    assert_nil yaml_load("")
-    assert_raise(TypeError) { yaml_load(nil) }
+  def test_safe_load_returns_nil_for_empty_document
+    assert_nil Gem::SafeYAML.safe_load("")
+    assert_nil Gem::SafeYAML.safe_load("---\n")
+    assert_nil Gem::SafeYAML.safe_load("---\n# BUNDLE_FOO: \"bar\"\n")
+    assert_nil Gem::SafeYAML.safe_load("---\n...\n")
+    assert_nil Gem::SafeYAML.safe_load("--- ~\n")
+    assert_raise(TypeError) { Gem::SafeYAML.safe_load(nil) }
+  end
+
+  def test_load_stops_at_document_end_marker
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n...\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n... # end\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n...\t\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\r\n...\r\nb: 2\r\n"))
+    assert_equal({ "a" => 1 }, Gem::SafeYAML.safe_load("a: 1\n...\nb: 2\n"))
+    assert_equal({ "a" => "..." }, yaml_load("a: ...\n"))
+  end
+
+  def test_load_ignores_leading_utf8_bom
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("\uFEFFBUNDLE_PATH: vendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, Gem::YAMLSerializer.load("\uFEFF---\nBUNDLE_PATH: vendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, Gem::YAMLSerializer.load("\uFEFFBUNDLE_PATH: vendor\n".b))
+    assert_equal({}, Gem::YAMLSerializer.load("\uFEFF"))
   end
 
   def test_load_returns_hash_for_flow_empty_hash
@@ -903,6 +962,24 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "line1\nline2\n", loaded["text"]
   end
 
+  def test_roundtrip_block_scalar_indicators
+    require "yaml"
+    strings = [
+      "  starts with spaces\nsecond line\n",
+      "\n  first line empty, second indented\n",
+      "line1\nline2\n\n",
+      "  starts with spaces\nends with three newlines\n\n\n",
+    ]
+
+    strings.each do |str|
+      [{ "text" => str }, [str], { "list" => [str] }].each do |obj|
+        yaml = Gem::YAMLSerializer.dump(obj)
+        assert_equal obj, Gem::YAMLSerializer.load(yaml), yaml
+        assert_equal obj, Psych.unsafe_load(yaml), yaml
+      end
+    end
+  end
+
   def test_roundtrip_special_characters
     obj = {
       "dollar" => "$HOME",
@@ -1066,6 +1143,75 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal "no escape \\n here", result["key"]
   end
 
+  def test_load_multiline_single_quoted_scalar
+    yaml = <<~YAML
+      ---
+      summary: 'A short summary.
+
+        '
+      description: 'It''s wrapped: onto
+        the next line
+
+        and keeps # as is'
+      legacy: ! '
+
+        Written by old RubyGems'
+      other: 1
+    YAML
+
+    expected = {
+      "summary" => "A short summary.\n",
+      "description" => "It's wrapped: onto the next line\nand keeps # as is",
+      "legacy" => "\nWritten by old RubyGems",
+      "other" => 1,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_double_quoted_scalar
+    yaml = <<~'YAML'
+      ---
+      description: "Ends with \"quoted\"
+        and wraps\n
+        \ indented\
+
+        joined"
+      other: 1
+    YAML
+
+    expected = {
+      "description" => "Ends with \"quoted\" and wraps\n  indented\njoined",
+      "other" => 1,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_quoted_scalar_in_sequence
+    yaml = <<~'YAML'
+      ---
+      requirements:
+      - 'libfoo: version 1.0
+        or later'
+      - "second item\
+        \ joined"
+      - ! 'legacy: tag
+        continued'
+      - plain
+    YAML
+
+    expected = {
+      "requirements" => ["libfoo: version 1.0 or later", "second item joined", "legacy: tag continued", "plain"],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_quoted_scalar_in_linear_time
+    pre = ->(n) { "description: '#{"word\n  " * n}end'\n" }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
+      Gem::YAMLSerializer.load(yaml)
+    end
+  end
+
   def test_load_quoted_numeric_stays_string
     result = yaml_load("key: \"42\"")
     assert_equal "42", result["key"]
@@ -1189,6 +1335,41 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal expected, yaml_load(yaml)
   end
 
+  def test_load_block_scalar_keep_indicator
+    yaml = <<~YAML
+      ---
+      message: |+
+        Thanks!
+
+
+      indented: |2+
+          indented
+
+
+      reversed: |+2
+          indented
+
+      last: |+
+        at the end
+
+
+    YAML
+
+    expected = {
+      "message" => "Thanks!\n\n\n",
+      "indented" => "  indented\n\n\n",
+      "reversed" => "  indented\n\n",
+      "last" => "at the end\n\n\n",
+    }
+    assert_equal expected, yaml_load(yaml)
+    assert_equal expected, yaml_load(yaml + "...\n")
+  end
+
+  def test_load_block_scalar_clip_drops_trailing_empty_lines
+    yaml = "text: |\n  line\n\n\nempty: |\n\n\nother: value\n"
+    assert_equal({ "text" => "line\n", "empty" => "", "other" => "value" }, yaml_load(yaml))
+  end
+
   def test_load_flow_array
     result = yaml_load("items: [a, b, c]")
     assert_equal ["a", "b", "c"], result["items"]
@@ -1208,6 +1389,18 @@ class TestGemSafeYAML < Gem::TestCase
     result = yaml_load("key:")
     assert_kind_of Hash, result
     assert_nil result["key"]
+  end
+
+  def test_load_tab_after_mapping_colon
+    # Psych treats tabs after the ":" as separation whitespace, like spaces.
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH:\tvendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH: \tvendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH:\t\tvendor\n"))
+    assert_equal({ "key" => "quoted" }, yaml_load("key:\t\"quoted\"\n"))
+    assert_equal({ "key" => "a\tb" }, yaml_load("key:\ta\tb\n"))
+    assert_equal({ "key" => { "nested" => 1 } }, yaml_load("key:\t\n  nested: 1\n"))
+    assert_equal([{ "key" => "v" }], yaml_load("- key:\tv\n"))
+    assert_equal({ "q" => "v" }, yaml_load("\"q\":\tv\n"))
   end
 
   def test_load_sequence_item_as_mapping
@@ -1264,10 +1457,8 @@ class TestGemSafeYAML < Gem::TestCase
       other: 1
     YAML
 
-    result = yaml_load(yaml)
-    # Gem::YAMLSerializer does not fold multi-line quoted scalars, so only check that no text is lost.
-    assert_include result["summary"], "#tag and the rest"
-    assert_equal 1, result["other"]
+    expected = { "summary" => "first part of a summary Psych folded #tag and the rest", "other" => 1 }
+    assert_equal expected, yaml_load(yaml)
   end
 
   def test_skipping_blank_and_comment_lines_does_not_allocate
@@ -1278,6 +1469,20 @@ class TestGemSafeYAML < Gem::TestCase
     calls = 100
     before = GC.stat(:total_allocated_objects)
     calls.times { parser.send(:skip_blank_and_comments) }
+    allocated = GC.stat(:total_allocated_objects) - before
+
+    assert_operator allocated, :<, calls
+  end
+
+  def test_folding_a_single_line_scalar_does_not_allocate
+    omit "GC.stat(:total_allocated_objects) is CRuby only" unless RUBY_ENGINE == "ruby"
+
+    parser = Gem::YAMLSerializer::Parser.new("")
+    value = +"lib/file.rb"
+    parser.send(:fold_continuation_lines, value, value, 0)
+    calls = 100
+    before = GC.stat(:total_allocated_objects)
+    calls.times { parser.send(:fold_continuation_lines, value, value, 0) }
     allocated = GC.stat(:total_allocated_objects) - before
 
     assert_operator allocated, :<, calls
@@ -1467,6 +1672,29 @@ class TestGemSafeYAML < Gem::TestCase
     assert_include yaml, " |-\n"
   end
 
+  def test_dump_block_scalar_indentation_indicator
+    require "yaml"
+    hash = { "text" => "  indented\nnot indented\n" }
+    array = ["\n  second line indented"]
+
+    assert_equal "---\ntext: |2\n    indented\n  not indented\n", Gem::YAMLSerializer.dump(hash)
+    assert_equal "---\n- |2-\n\n    second line indented\n", Gem::YAMLSerializer.dump(array)
+    assert_equal Psych.dump(hash), Gem::YAMLSerializer.dump(hash)
+    assert_equal Psych.dump(array), Gem::YAMLSerializer.dump(array)
+  end
+
+  def test_dump_block_scalar_keep_indicator
+    require "yaml"
+    hash = { "text" => "line1\nline2\n\n", "other" => "value" }
+    array = ["  indented\nthree trailing newlines\n\n\n"]
+
+    assert_equal "---\ntext: |+\n  line1\n  line2\n\nother: value\n...\n", Gem::YAMLSerializer.dump(hash)
+    assert_equal "---\n- |2+\n    indented\n  three trailing newlines\n\n\n...\n", Gem::YAMLSerializer.dump(array)
+    # JRuby's Psych.dump leaves out the trailing `...`, so compare what Psych reads back.
+    assert_equal hash, Psych.load(Gem::YAMLSerializer.dump(hash))
+    assert_equal array, Psych.load(Gem::YAMLSerializer.dump(array))
+  end
+
   def test_dump_nil_value
     yaml = yaml_dump({ "key" => nil })
 
@@ -1554,6 +1782,50 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal result["items"][0], result["items"][1]
   ensure
     Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_load_anchor_at_end_of_line_before_sequence
+    result = yaml_load("a: &1\n- x\n- y\nb: *1\n")
+    assert_equal({ "a" => ["x", "y"], "b" => ["x", "y"] }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_line_before_indented_sequence
+    result = yaml_load("a: &1\n  - x\n  - y\nb: *1\n")
+    assert_equal({ "a" => ["x", "y"], "b" => ["x", "y"] }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_line_before_mapping
+    result = yaml_load("a: &1\n  k: v\nb: *1\n")
+    assert_equal({ "a" => { "k" => "v" }, "b" => { "k" => "v" } }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_document_start_line
+    assert_equal ["x", "y"], yaml_load("--- &1\n- x\n- y\n")
+  end
+
+  def test_load_anchor_alone_at_end_of_document
+    assert_nil Gem::SafeYAML.safe_load("--- &1\n")
+  end
+
+  def test_load_anchor_alone_on_line_before_dedent
+    assert_equal({ "a" => nil, "b" => 2 }, yaml_load("a:\n  &1\nb: 2\n"))
+  end
+
+  def test_load_anchor_alone_on_line_under_empty_sequence_item
+    assert_equal [nil, "x", "y"], yaml_load("-\n  &1\n- x\n- y\n")
+  end
+
+  def test_load_alias_to_anchored_empty_node
+    assert_equal({ "a" => nil, "b" => nil }, yaml_load("a: &1\nb: *1\n"))
+    assert_equal({ "a" => nil, "b" => nil }, yaml_load("a:\n  &1\nb: *1\n"))
+    assert_equal [nil, nil], yaml_load("- &1\n- *1\n")
+  end
+
+  def test_load_anchor_redefined_on_empty_node
+    assert_equal({ "a" => "old", "b" => nil, "c" => nil }, yaml_load("a: &1 old\nb: &1\nc: *1\n"))
   end
 
   def test_regression_coerce_empty_hash_not_wrapped_in_scalar

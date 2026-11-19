@@ -49,11 +49,12 @@ pm_constant_id_index(pm_constant_id_t constant_id) {
  * A list of constant IDs. Usually used to represent a set of locals.
  */
 typedef struct {
-    /** The number of constant ids in the list. */
-    size_t size;
-
-    /** The number of constant ids that have been allocated in the list. */
-    size_t capacity;
+    /**
+     * The number of constant ids in the list. Source offsets are 32 bits, so
+     * the source is less than 4 GiB, and a list built from it stays far below
+     * what this can count.
+     */
+    uint32_t size;
 
     /** The constant ids in the list. */
     pm_constant_id_t *ids;
@@ -86,12 +87,17 @@ PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant)
 /**
  * Initialize a list of constant ids.
  *
+ * @param arena The arena to use for allocations.
  * @param list The list to initialize.
+ * @param size The size of the list.
  */
-PRISM_EXPORTED_FUNCTION void pm_constant_id_list_init(pm_constant_id_list_t *list) PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION void pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_t size) PRISM_NONNULL(1, 2);
 
 /**
- * Append a constant id to a list of constant ids.
+ * Append a constant id to a list of constant ids. A list's storage is always
+ * exactly its size, so it is regrown to exactly one more id by allocating from
+ * the given arena, which must live as long as the list does. For a list in a
+ * parsed tree, that is the arena that was passed to pm_parser_new.
  *
  * @param arena The arena to use for allocations.
  * @param list The list to append to.

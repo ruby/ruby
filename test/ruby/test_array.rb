@@ -1424,6 +1424,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_pop_frozen_in_to_int
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.pop(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.shift(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+  end
+
   def test_prepend
     a = @cls[]
     assert_equal(@cls['cat'], a.prepend('cat'))
@@ -1831,6 +1845,33 @@ class TestArray < Test::Unit::TestCase
     assert_equal @cls[], a.slice(10..7)
 
     assert_equal([100], a.slice(-1, 1_000_000_000))
+  end
+
+  def test_range_with_len_max_end
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+
+    a = @cls[1, 2]
+    assert_equal(@cls[1, 2], a[0..max])
+    assert_equal(@cls[2], a[1..max])
+    assert_equal(@cls[2], a[-1..max])
+    assert_equal(@cls[1, 2], a[(0..max) % 1])
+    assert_raise(RangeError) { a[(0..max) % 2] }
+
+    a = @cls[1, 2]
+    assert_equal(@cls[1, 2], a.slice!(0..max))
+    assert_equal(@cls[], a)
+
+    a = @cls[1, 2]
+    assert_equal(@cls[2], a.slice!(1..max))
+    assert_equal(@cls[1], a)
+
+    a = @cls[1, 2]
+    a[0..max] = 9
+    assert_equal(@cls[9], a)
+
+    # Same as with 0...max
+    assert_raise(ArgumentError) { @cls[1, 2].fill(0, 0..max) }
+    assert_raise(IndexError) { @cls[1, 2].values_at(0..max) }
   end
 
   def test_slice_shrinking_array_by_to_int
@@ -3235,6 +3276,24 @@ class TestArray < Test::Unit::TestCase
 
   def test_fill2
     assert_raise(ArgumentError) { [].fill(0, 1, LONGP) }
+  end
+
+  def test_fill_block_freezes_array
+    a = [1, 2, 3]
+    assert_raise(FrozenError) { a.fill { a.freeze; 9 } }
+    assert_equal([1, 2, 3], a)
+
+    a = [1, 2, 3]
+    assert_raise(FrozenError) { a.fill { |i| a.freeze if i == 1; 9 } }
+    assert_equal([9, 2, 3], a)
+  end
+
+  def test_fill_block_shares_buffer
+    a = Array.new(20) { _1 }
+    s = nil
+    a.fill { |i| s ||= a[0, 20]; -1 }
+    assert_equal([-1] * 20, a)
+    assert_equal((0...20).to_a, s, "slice taken inside the block must not alias the filled array")
   end
 
   def test_times

@@ -303,6 +303,59 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     end
+
+    # Extra certificates from an earlier call are not sent
+    sctx = OpenSSL::SSL::SSLContext.new
+    sctx.add_certificate(@svr_cert, @svr_key, [@ca_cert])
+    sctx.add_certificate(@cli_cert, @cli_key)
+
+    start_server(sctx) do |port|
+      server_connect(port) { |ssl|
+        assert_equal [@cli_cert], ssl.peer_cert_chain
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+    end
+  end
+
+  def test_socket_add_certificate
+    server_proc = -> sock {
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new)
+      ssl.add_certificate(@svr_cert, @svr_key, [@ca_cert])
+      ssl.accept
+      readwrite_loop(ssl)
+    }
+    start_server_proc(server_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+    }
+
+    # Extra certificates copied from the SSLContext are not sent
+    server_proc = -> sock {
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.add_certificate(@svr_cert, @svr_key, [@ca_cert])
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.add_certificate(@cli_cert, @cli_key)
+      ssl.accept
+      readwrite_loop(ssl)
+    }
+    start_server_proc(server_proc) { |port|
+      server_connect(port) { |ssl|
+        assert_equal [@cli_cert], ssl.peer_cert_chain
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+    }
+
+    # Invalid
+    IO.pipe { |r, _w|
+      ssl = OpenSSL::SSL::SSLSocket.new(r)
+      assert_raise(ArgumentError) { ssl.add_certificate(@svr_cert, @cli_key) }
+    }
   end
 
   def test_add_certificate_multiple_certs
@@ -1159,6 +1212,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl&.close
         sock.close
       end
+    end
+  end
+
+  def test_servername_cb_add_certificate
+    called = []
+    sctx = OpenSSL::SSL::SSLContext.new
+    sctx.add_certificate(@svr_cert, @svr_key, [@ca_cert])
+    sctx.servername_cb = proc do |ssl, servername|
+      called << servername
+      ssl.add_certificate(@cli_cert, @cli_key)
+      nil
+    end
+    start_server(sctx) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.hostname = "example.org"
+      ssl.connect
+      assert_equal([@cli_cert], ssl.peer_cert_chain)
+      assert_equal(["example.org"], called)
+      ssl.puts("abc"); ssl.gets
+    ensure
+      ssl&.close
+      sock&.close
     end
   end
 

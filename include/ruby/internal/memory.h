@@ -507,36 +507,6 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 # pragma optimize("", on)
 #endif
 
-/**
- * @deprecated  This   function   was   an   implementation   detail   of   old
- *              #RB_ALLOCV_N().  We no longer  use it.  @shyouhei suspects that
- *              there are  no actual usage now.   However it was not  marked as
- *              private before.  We cannot delete it any longer.
- * @param[in]   a    Arbitrary value.
- * @param[in]   b    Arbitrary value.
- * @param[in]   max  Possible maximum value.
- * @param[out]  c    A pointer to return the computation result.
- * @retval      1    `c` is insane.
- * @retval      0    `c` is sane.
- * @post        `c` holds `a` * `b`, but could be overflowed.
- */
-static inline int
-rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
-{
-#ifdef DSIZE_T
-    RB_GNUC_EXTENSION DSIZE_T da, db, c2;
-    da = a;
-    db = b;
-    c2 = da * db;
-    if (c2 > max) return 1;
-    *c = RBIMPL_CAST((size_t)c2);
-#else
-    if (b != 0 && a > max / b) return 1;
-    *c = a * b;
-#endif
-    return 0;
-}
-
 #if defined(__DOXYGEN__)
 RBIMPL_ATTR_CONSTEXPR(CXX14)
 #elif RBIMPL_COMPILER_SINCE(GCC, 7, 0, 0)

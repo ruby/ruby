@@ -24,6 +24,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/random.h"
 #include "internal/variable.h"
 #include "internal/set.h"
@@ -1126,13 +1127,24 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                 rb_const_entry_t entry, *ce = &entry;
               search_continue:
                 if (rb_const_lookup_copy(klass, id, ce)) {
-                    rb_const_warn_if_deprecated(ce, klass, id);
                     val = ce->value;
+                    // before the warning, which may run Ruby: only this stack holds val until the owner has it
+                    if (!is_defined && !UNDEF_P(val) && UNLIKELY(!rb_class_owned_p(klass)) &&
+                        !rb_class_field_shareable_p(klass, val)) {
+                        rb_const_warn_if_deprecated(ce, klass, id);
+                        rb_const_unshareable_error(klass, id);
+                    }
+                    rb_const_warn_if_deprecated(ce, klass, id);
                     if (UNDEF_P(val)) {
                         if (am == klass) break;
                         am = klass;
                         if (is_defined) return 1;
-                        if (rb_autoloading_value(klass, id, &av, NULL)) return av;
+                        if (rb_autoloading_value(klass, id, &av, NULL)) {
+                            if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_class_field_shareable_p(klass, av)) {
+                                rb_const_unshareable_error(klass, id);
+                            }
+                            return av;
+                        }
                         rb_autoload_load(klass, id);
                         goto search_continue;
                     }
@@ -1141,12 +1153,6 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             return 1;
                         }
                         else {
-                            if (UNLIKELY(!rb_class_owned_p(klass))) {
-                                if (!rb_ractor_shareable_p(val)) {
-                                    rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
-                                }
-                            }
                             return val;
                         }
                     }
@@ -2186,6 +2192,10 @@ retry:
                 }
                 goto retry;
             }
+            else if (UNDEFINED_METHOD_ENTRY_P(ccs->cme)) {
+                // vm_populate_cc would return the empty cc for this too
+                return &rb_vm_empty_cc;
+            }
             else {
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
@@ -3152,7 +3162,13 @@ static VALUE
 vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
                                     struct rb_calling_info *calling)
 {
-    const struct rb_builtin_function *bf = calling->cc->aux_.bf;
+    const struct rb_callcache *cc = calling->cc;
+    // Pairs with the release store in vm_callee_setup_arg so aux_.bf is visible.
+    vm_call_handler call = (vm_call_handler)(uintptr_t)rbimpl_atomic_ptr_load((void **)&cc->call_, RBIMPL_ATOMIC_ACQUIRE);
+    if (UNLIKELY(call != vm_call_single_noarg_leaf_builtin)) {
+        return call(ec, cfp, calling);
+    }
+    const struct rb_builtin_function *bf = cc->aux_.bf;
     cfp->sp -= (calling->argc + 1);
     rb_insn_func_t func_ptr = (rb_insn_func_t)(uintptr_t)bf->func_ptr;
     return builtin_invoker0(ec, calling->recv, NULL, func_ptr);
@@ -3251,7 +3267,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if ((ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
                     VM_ASSERT(ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF);
                     vm_cc_bf_set(cc, (void *)ISEQ_BODY(iseq)->iseq_encoded[1]);
-                    CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
+                    rbimpl_atomic_ptr_store((volatile void **)&cc->call_,
+                                            (void *)(uintptr_t)vm_call_single_noarg_leaf_builtin,
+                                            RBIMPL_ATOMIC_RELEASE);
                 }
                 else {
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), true);
@@ -4302,21 +4320,42 @@ rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
 static const rb_callable_method_entry_t *
 aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 {
-    const rb_method_entry_t *orig_me = me->def->body.alias.original_me;
-    const rb_callable_method_entry_t *cme;
+    const rb_method_entry_t *orig_me =
+        rb_method_alias_original_me(rb_method_entry_def_acquire((const rb_method_entry_t *)me));
+    const rb_callable_method_entry_t *cme = NULL;
 
-    if (orig_me->defined_class == 0) {
-        VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
-        VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
-        cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
+    if (orig_me->defined_class == 0) { // only true on first resolution
+        // Resolving the alias mutates `me` (and may replace me->def, dropping a
+        // reference to the shared definition), so it has to be serialized. Two
+        // ractors calling the same aliased method would otherwise both release
+        // the same definition which could result in a UAF.
+        RB_VM_LOCKING() {
+            orig_me = me->def->body.alias.original_me;
+            // me is the ALIAS me. It has a def that's different from orig_me->def.
+            if (orig_me->defined_class == 0) {
+                // orig_me is the unresolved me clone that rb_add_alias stored.
+                VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
+                VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
+                cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
-        if (me->def->reference_count == 1) {
-            RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
-        }
-        else {
-            rb_method_definition_t *def =
-                rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
-            rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
+                if (me->def->reference_count == 1) {
+                    rbimpl_atomic_ptr_store((volatile void **)&me->def->body.alias.original_me,
+                                            (void *)cme, RBIMPL_ATOMIC_RELEASE);
+                    RB_OBJ_WRITTEN(me, Qundef, cme);
+                }
+                else {
+                    rb_method_definition_t *def =
+                        rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
+                    def->body.alias.original_me = (rb_method_entry_t *)cme;
+                    def->original_module = cme->def->original_module;
+                    rb_method_definition_set((rb_method_entry_t *)me, def, NULL);
+                    RB_OBJ_WRITTEN(me, Qundef, cme);
+                    RB_OBJ_WRITTEN(me, Qundef, def->original_module);
+                }
+            }
+            else {
+                cme = (const rb_callable_method_entry_t *)orig_me;
+            }
         }
     }
     else {
@@ -4751,8 +4790,10 @@ rb_vm_refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_metho
 static const rb_callable_method_entry_t *
 search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
-    ID mid = vm_ci_mid(calling->cd->ci);
-    const rb_cref_t *cref = vm_get_cref(cfp->ep);
+    const struct rb_callinfo *ci = calling->cd->ci;
+    ID mid = vm_ci_mid(ci);
+    // The initialize call of opt_new must behave like Class#new, which does not see the caller's refinements. [Bug #22501]
+    const rb_cref_t *cref = (vm_ci_flag(ci) & VM_CALL_IGNORE_REFINEMENTS) ? NULL : vm_get_cref(cfp->ep);
     const struct rb_callcache * const cc = calling->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 

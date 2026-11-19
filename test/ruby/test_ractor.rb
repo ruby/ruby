@@ -13,6 +13,37 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Resolving an aliased, complemented method entry used to run unserialized.
+  # The alias definition is shared between the module's own entry and the
+  # complemented entry created for the includer, so every Ractor read
+  # reference_count != 1 and called rb_method_definition_set(), which releases
+  # me->def.  That released the shared definition once per Ractor instead of
+  # once: it was freed while the module's own entry still pointed at it, giving
+  # a use-after-free on `def`.
+  def test_concurrent_aliased_method_entry_resolution
+    assert_ractor(<<~'RUBY', timeout: 120)
+      ROUNDS = 1000
+      N_RACT = 8
+
+      src = +""
+      ROUNDS.times do |i|
+        src << "module M#{i}; def foo#{i}; #{i}; end; alias bar#{i} foo#{i}; end\n"
+        src << "class C#{i}; include M#{i}; end\n"
+      end
+      eval(src)
+
+      targets = Ractor.make_shareable(ROUNDS.times.map { |i| [Object.const_get(:"C#{i}"), :"bar#{i}"] })
+
+      rs = N_RACT.times.map do
+        Ractor.new(targets) do |targets|
+          targets.each { |klass, mid| klass.new.__send__(mid) }
+          :ok
+        end
+      end
+      assert_equal [:ok] * N_RACT, rs.map(&:value)
+    RUBY
+  end
+
   def test_alive_p
     assert_ractor(<<~'RUBY')
       r = Ractor.new { Ractor.receive }
@@ -286,6 +317,125 @@ class TestRactor < Test::Unit::TestCase
       10.times { |i| Foo.class_variable_set(:"@@bar#{i}", i) }
 
       assert_equal(Foo.foo, 1)
+    RUBY
+  end
+
+  # [Bug #22419] a deep-frozen class field is made shareable by its owner Ractor
+  def test_read_frozen_class_fields_of_main
+    assert_ractor(<<~'RUBY')
+      class C
+        @iv = Set[1, 2].freeze
+        CONST = ["c".dup.freeze].freeze
+        SET = Set[:a].freeze
+        @@cv = ["v".dup.freeze].freeze
+        def self.cv = @@cv
+      end
+      r = Ractor.new { [C.instance_variable_get(:@iv).include?(1), C::CONST, C::SET.include?(:a), C.cv] }.value
+      assert_equal [true, ["c"], true, ["v"]], r
+      assert_predicate C::CONST, :frozen?
+      assert Ractor.shareable?(C::CONST)
+    RUBY
+  end
+
+  def test_kept_reply_port_passes_verify
+    assert_ractor(<<~'RUBY')
+      owner = Ractor.new { c = Class.new; c.const_set(:V, ["x".dup.freeze].freeze); Ractor.main << c; Ractor.receive }
+      c = Ractor.receive
+      sleep 0.1 # let the owner block in Ractor.receive, so main waits on its kept reply port
+      assert_equal ["x"], c::V
+      GC.verify_internal_consistency # the Ractor object (shareable) refers to that port
+      owner << :done
+      owner.join
+    RUBY
+  end
+
+  def test_join_on_kept_reply_port
+    assert_ractor(<<~'RUBY')
+      # many joins reuse one port; a Ractor that terminated before the join answers at once
+      rs = 50.times.map { Ractor.new { 1 } }
+      rs.each(&:join)
+      rs.each(&:join)
+      GC.verify_internal_consistency # the Ractor object (shareable) refers to the kept port
+
+      # a join given up while the token may still come: the next join must not see that token
+      r = Ractor.new { Ractor.receive }
+      th = Thread.new { r.join }
+      Thread.pass until th.status == "sleep"
+      th.kill.join
+      r << :go
+      assert_same r, r.join
+      Ractor.new { Ractor.receive }.tap { |r2| r2 << :go }.join
+      assert_equal 1, Ractor.new { 1 }.value
+
+      # two threads joining at once: one has the kept port, the other makes its own
+      r1, r2 = Ractor.new { Ractor.receive }, Ractor.new { Ractor.receive }
+      t1 = Thread.new { r1.join }
+      t2 = Thread.new { r2.join }
+      Thread.pass until t1.status == "sleep" && t2.status == "sleep"
+      r2 << :go; t2.join
+      r1 << :go; t1.join
+      assert_raise(Ractor::RemoteError) { Ractor.new { Thread.current.report_on_exception = false; raise "boom" }.join }
+    RUBY
+  end
+
+  def test_require_on_kept_reply_port
+    assert_ractor(<<~'RUBY')
+      # require asks main and waits on the kept port of the requesting Ractor, many times
+      r = Ractor.new do
+        20.times.map { require "set"; require "English" }
+        begin
+          require "no_such_feature_#{$$}"
+        rescue LoadError => e
+          e.class
+        end
+      end
+      assert_equal LoadError, r.value
+    RUBY
+  end
+
+  def test_read_frozen_class_fields_of_non_main
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      owner = Ractor.new(port) do |pt|
+        c = Class.new
+        c.instance_variable_set(:@iv, ["i".dup.freeze].freeze)
+        c.const_set(:CONST, ["c".dup.freeze].freeze)
+        c.class_variable_set(:@@cv, ["v".dup.freeze].freeze)
+        pt << c
+        Ractor.receive
+      end
+      c = port.receive
+      read = ->(k) { [k.instance_variable_get(:@iv), k::CONST, k.class_variable_get(:@@cv)] }
+      assert_equal [["i"], ["c"], ["v"]], read.(c)
+      assert_equal [["i"], ["c"], ["v"]], Ractor.new(c) { |k| [k.instance_variable_get(:@iv), k::CONST, k.class_variable_get(:@@cv)] }.value
+      owner << :done
+      owner.join
+    RUBY
+  end
+
+  def test_read_frozen_class_fields_of_terminated_owner
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      owner = Ractor.new(port) do |pt|
+        c = Class.new
+        c.instance_variable_set(:@iv, [Set[1].freeze, "i".dup.freeze].freeze)
+        c.const_set(:CONST, ["c".dup.freeze].freeze)
+        # a Set's elements are reached through its T_DATA mark function
+        c.const_set(:SET, Set[["s".dup.freeze].freeze].freeze)
+        c.const_set(:BAD_SET, Set[[+"b"]].freeze)
+        pt << c
+        :done
+      end
+      c = port.receive
+      Thread.pass until owner.inspect.include?("terminated")
+      # nobody has absorbed the owner's objspace yet
+      r = Ractor.new(c) { |k| [k.instance_variable_get(:@iv)[0].include?(1), k::CONST] }.value
+      assert_equal [true, ["c"]], r
+      r = Ractor.new(c) { |k| [Ractor.shareable?(k::SET.first), (k::BAD_SET rescue $!.class)] }.value
+      assert_equal [true, Ractor::IsolationError], r
+      assert_equal :done, owner.value
+      GC.start
+      assert_equal ["c"], c::CONST
     RUBY
   end
 
@@ -609,6 +759,182 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_require_already_loaded_with_extension
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      results = Ractor.new do
+        [require("tmpdir"), require("tmpdir.rb")]
+      end.value
+      assert_equal [false, false], results
+    RUBY
+  end
+
+  # Init_pathname() does rb_provide("pathname.so"), so the features index has a
+  # match for "pathname" while lib/pathname.rb is still unloaded. A non-.rb match
+  # is not "already loaded": search_required() goes on to find the shadowing .rb
+  # and load it, so the fast path must decline rather than answer false.
+  def test_require_provided_so_with_shadowing_rb_still_loads
+    assert_ractor(<<~'RUBY')
+      refute Pathname.instance_methods.include?(:find), "lib/pathname.rb preloaded"
+      assert_equal true, Ractor.new { require "pathname" }.value
+      assert_include Pathname.instance_methods, :find
+    RUBY
+  end
+
+  def test_require_not_loaded_still_loads_from_ractor
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      f = Tempfile.new(["fast_path_miss", ".rb"])
+      f.write("FAST_PATH_MISS = 42")
+      f.flush
+      result = Ractor.new(f.path) do |path|
+        [require(path), require(path)]
+      end.value
+      assert_equal [true, false], result
+      assert_equal 42, FAST_PATH_MISS
+    RUBY
+  end
+
+  # Makes a require that reached the main Ractor observable.  The hand-off calls
+  # Kernel#require there (require_body() in ractor.c), while a require the fast path
+  # answers never leaves the requiring Ractor -- so with the answer alone being the
+  # same either way, an entry here is what shows the fast path declined.  Recording
+  # into Ractor-local storage keeps each Ractor's list to itself and shareable.
+  MAIN_RACTOR_REQUIRE_RECORDER = <<~'RUBY'
+    old = $-w; $-w = nil
+    module Kernel
+      alias __require_without_recording require
+      def require(feature)
+        (Ractor.current[:required] ||= []) << feature.to_s
+        __require_without_recording(feature)
+      end
+    end
+    $-w = old
+
+    def requires_served_by_main_ractor
+      Ractor.current[:required] = []
+      result = yield
+      [result, Ractor.current[:required]]
+    end
+  RUBY
+
+  # The next three make one of the fast path's guards decline. require must still
+  # give the right answer, by falling back to the main Ractor as before.
+  def test_require_fast_path_declines_on_relative_load_path
+    # A relative $LOAD_PATH entry leaves load_path_check_cache set, so
+    # expanded_load_path_current_p() stays false and the probe gets no expanded load
+    # path -- which a short name needs to match the absolute path in
+    # $LOADED_FEATURES.
+    assert_ractor(MAIN_RACTOR_REQUIRE_RECORDER + <<~'RUBY')
+      require "tmpdir"
+      $LOAD_PATH.unshift(".")
+      result, served = requires_served_by_main_ractor do
+        Ractor.new { require "tmpdir" }.value
+      end
+      assert_equal false, result
+      assert_include served, "tmpdir"
+    RUBY
+  end
+
+  def test_require_fast_path_declines_on_mutated_loaded_features
+    # Pushing to $LOADED_FEATURES breaks its sharing with the snapshot, which is
+    # how the probe detects that the features index is stale.
+    assert_ractor(MAIN_RACTOR_REQUIRE_RECORDER + <<~'RUBY')
+      require "tmpdir"
+      $LOADED_FEATURES << "not_a_real_feature_xyz.rb"
+      result, served = requires_served_by_main_ractor do
+        Ractor.new { require "tmpdir" }.value
+      end
+      assert_equal false, result
+      assert_include served, "tmpdir"
+    RUBY
+  end
+
+  def test_require_fast_path_declines_on_dot_relative_feature
+    # "./foo" is expanded against Dir.pwd by feature_provided(), which the probe
+    # does not do, so it must hand these to the main Ractor.
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      f = Tempfile.new(["fast_path_dot_rel", ".rb"])
+      f.write("DOT_REL_LOADED = 1")
+      f.flush
+      dir, base = File.split(f.path)
+      Dir.chdir(dir) do
+        assert_equal true, Ractor.new(base) { |b| require("./#{b}") }.value
+      end
+      assert_equal 1, DOT_REL_LOADED
+    RUBY
+  end
+
+  def test_require_fast_path_declines_when_only_the_so_is_loaded
+    # An already-loaded "foo.so" does not make `require "foo"` a no-op: after
+    # that 's' match search_required() keeps going, resolves a foo.rb on
+    # $LOAD_PATH and loads it.  The probe short-circuits only on an 'r' match,
+    # so a Ractor must reach the same answer.
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        # $LOAD_PATH entries are realpath-expanded, so the fake feature below
+        # has to be rooted at the realpath to match through loaded_feature_path.
+        dir = File.realpath(dir)
+        File.write(File.join(dir, "so_shadowed_feature.rb"), "SO_SHADOWED = 42")
+        $LOAD_PATH.unshift(dir)
+        # Stand in for a C extension required by explicit extension, with the
+        # same-named .rb not loaded yet.
+        $LOADED_FEATURES << File.join(dir, "so_shadowed_feature.so")
+        # Rebuild the features index and expanded load path that the probe
+        # requires to be current, so the fast path is live for the Ractor.
+        require "tmpdir"
+
+        assert_equal true, Ractor.new { require "so_shadowed_feature" }.value
+        assert_equal 42, SO_SHADOWED
+      end
+    RUBY
+  end
+
+  def test_require_fast_path_declines_on_unrecognized_extension
+    # search_required() makes no already-provided probe at all for an extension
+    # it does not recognize, so neither may the fast path.
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        dir = File.realpath(dir)
+        File.write(File.join(dir, "weird.json.rb"), "WEIRD_JSON = 7")
+        $LOAD_PATH.unshift(dir)
+        $LOADED_FEATURES << File.join(dir, "weird.json")
+        require "tmpdir"
+
+        assert_equal true, Ractor.new { require "weird.json" }.value
+        assert_equal 7, WEIRD_JSON
+      end
+    RUBY
+  end
+
+  def test_require_concurrent_while_load_path_churns
+    # Exercises the probe against a main Ractor that is repeatedly invalidating
+    # and rebuilding the expanded load path underneath it.
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tmpdir"
+      stop = false
+      churn = Thread.new do
+        until stop
+          $LOAD_PATH.unshift("/nonexistent_xyz")
+          $LOAD_PATH.delete("/nonexistent_xyz")
+          sleep 0.001
+        end
+      end
+      begin
+        rs = 4.times.map do
+          Ractor.new { 100.times.map { require "tmpdir" }.uniq }
+        end
+        assert_equal [[false]] * 4, rs.map(&:value)
+      ensure
+        stop = true
+        churn.join
+      end
+    RUBY
+  end
+
   def test_require_non_string
     assert_ractor(<<~'RUBY')
       require "tempfile"
@@ -683,6 +1009,12 @@ class TestRactor < Test::Unit::TestCase
       f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
       f.write("")
       f.flush
+      # The second Ractor below must require a *different* file: a require of an
+      # already-loaded feature is answered inside the requiring Ractor and never
+      # reaches the main one, so it would not exercise Kernel#require at all.
+      f2 = Tempfile.new(["file_to_require_from_ractor2", ".rb"])
+      f2.write("")
+      f2.flush
       old = $-w; $-w = nil
       class << Ractor
         alias __orig_ractor_require _require
@@ -707,12 +1039,44 @@ class TestRactor < Test::Unit::TestCase
         end
       end
       $-w = old
-      result = Ractor.new(f.path) do |path|
+      result = Ractor.new(f2.path) do |path|
         require Pathname.new(path)
         Ractor.current[:required]
       end.value
-      assert_equal [["Ractor", :_require, f.path]], result
-      assert_equal ["nil", :require, f.path], Ractor.current[:required]&.first
+      assert_equal [["Ractor", :_require, f2.path]], result
+      assert_equal ["nil", :require, f2.path], Ractor.current[:required]&.first
+    RUBY
+  end
+
+  # A require of an already-loaded feature is answered inside the requiring
+  # Ractor, so it must not dispatch require again in the main Ractor.
+  def test_require_already_loaded_skips_main_ractor_dispatch
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      refute defined?(Gem), "rubygems must not be loaded"
+
+      require "tempfile"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("")
+      f.flush
+      old = $-w; $-w = nil
+      module Kernel
+        alias some_original_require require
+        def require(feature)
+          (Ractor.current[:required] ||= []) << feature.to_s
+          some_original_require(feature)
+        end
+      end
+      $-w = old
+
+      # Cold: crosses to the main Ractor, which dispatches the redefined require.
+      assert_equal true, Ractor.new(f.path) { |path| require path }.value
+      assert_equal [f.path], Ractor.current[:required]
+
+      Ractor.current[:required] = nil
+      # Warm: answered locally, so nothing runs in the main Ractor.
+      assert_equal false, Ractor.new(f.path) { |path| require path }.value
+      assert_nil Ractor.current[:required]
     RUBY
   end
 

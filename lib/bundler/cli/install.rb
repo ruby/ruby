@@ -68,7 +68,7 @@ module Bundler
 
       if CLI::Common.clean_after_install?
         require_relative "clean"
-        Bundler::CLI::Clean.new(options).run
+        Bundler::CLI::Clean.new(options).run_after_install
       else
         CLI::Common.prune(options)
       end

@@ -157,6 +157,9 @@ class TestProc < Test::Unit::TestCase
     assert_not_equal(a, b, "[ruby-dev:22601]")
 
     assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
+
+    c = proc { |a, b| }.curry
+    assert_equal(c, c)
   end
 
   def test_hash_equal

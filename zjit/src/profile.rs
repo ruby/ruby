@@ -85,7 +85,7 @@ fn profile_insn_sample(
         YARVINSN_opt_ltlt  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
-        YARVINSN_getinstancevariable => profile_self(profiler, profile),
+        YARVINSN_getinstancevariable => profile_self_shape(profiler, profile),
         YARVINSN_setinstancevariable => profile_self(profiler, profile),
         YARVINSN_definedivar   => profile_self(profiler, profile),
         YARVINSN_opt_regexpmatch2    => profile_operands(profiler, profile, 2),
@@ -229,6 +229,18 @@ fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
     observe_profiled_type(profiler, &mut entry.opnd_types[0], obj, ty);
 }
 
+/// Profile the shape of self, but not its class. ivar reads dispatch on shape alone, so the class
+/// is not needed. Since we don't retain the class, we can record receivers with singleton classes
+/// too (see observe_profiled_type).
+fn profile_self_shape(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types = vec![TypeDistribution::new()];
+    }
+    let obj = profiler.peek_at_self();
+    entry.opnd_types[0].observe(ProfiledType::shape_only(obj));
+}
+
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
     let entry = profile.entry_mut(profiler.insn_idx);
     if entry.opnd_types.is_empty() {
@@ -280,6 +292,8 @@ impl Flags {
     const IS_IFUNC_BLOCK_HANDLER: u32 = 1 << 5;
     /// The profiled block handler is a Proc. The Proc object itself is not retained.
     const IS_PROC_BLOCK_HANDLER: u32 = 1 << 6;
+    /// Only the shape and layout flags were recorded; the class is not retained.
+    const IS_SHAPE_ONLY: u32 = 1 << 7;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -291,6 +305,7 @@ impl Flags {
     pub fn is_object_profiling(self) -> bool { (self.0 & Self::IS_OBJECT_PROFILING) != 0 }
     pub fn is_ifunc_block_handler(self) -> bool { (self.0 & Self::IS_IFUNC_BLOCK_HANDLER) != 0 }
     pub fn is_proc_block_handler(self) -> bool { (self.0 & Self::IS_PROC_BLOCK_HANDLER) != 0 }
+    pub fn is_shape_only(self) -> bool { (self.0 & Self::IS_SHAPE_ONLY) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -363,6 +378,14 @@ impl ProfiledType {
         Self { class: obj.class_of(), shape, flags }
     }
 
+    /// Profile the shape and layout flags of the given object, but not its class.
+    fn shape_only(obj: VALUE) -> Self {
+        let mut ty = Self::new(obj);
+        ty.class = Qnil;
+        ty.flags.0 |= Flags::IS_SHAPE_ONLY;
+        ty
+    }
+
     pub fn empty() -> Self {
         Self { class: VALUE(0), shape: INVALID_SHAPE_ID, flags: Flags::none() }
     }
@@ -372,6 +395,7 @@ impl ProfiledType {
     }
 
     pub fn class(&self) -> VALUE {
+        debug_assert!(!self.flags.is_shape_only(), "shape-only ProfiledType has no class");
         self.class
     }
 

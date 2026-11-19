@@ -451,6 +451,8 @@ Init_ossl_config(void)
      * The default system configuration file for OpenSSL.
      */
     path = CONF_get1_default_config_file();
+    if (!path)
+        rb_raise(rb_eRuntimeError, "CONF_get1_default_config_file failed");
     path_str = rb_obj_freeze(ossl_buf2str(path));
     rb_define_const(cConfig, "DEFAULT_CONFIG_FILE", path_str);
 }

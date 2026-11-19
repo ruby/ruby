@@ -41,7 +41,7 @@ require 'socket'
 
 class IPAddr
   # The version string
-  VERSION = "1.3.0"
+  VERSION = "1.3.1"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
@@ -388,6 +388,22 @@ class IPAddr
   end
 
   alias link_local_unicast? link_local?
+
+  # Returns true if the ipaddr is an unspecified address.  The IPv4
+  # address 0.0.0.0 and the IPv6 address :: are unspecified.  Unspecified
+  # IPv4 addresses in the IPv4-mapped IPv6 address range are also
+  # considered unspecified.
+  def unspecified?
+    case @family
+    when Socket::AF_INET
+      @addr == 0 && prefix == 32 # 0.0.0.0
+    when Socket::AF_INET6
+      @addr == 0 && prefix == 128 || # ::
+        (@addr >> 32 == 0xffff && (@addr & IN4MASK) == 0) && prefix == 128 # ::ffff:0.0.0.0
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
 
   # Returns true if the ipaddr is a multicast address. IPv4
   # addresses in 224.0.0.0/4 and IPv6 multicast addresses
@@ -833,7 +849,7 @@ class IPAddr
       right = ''
     when RE_IPV6ADDRLIKE_COMPRESSED
       if $4
-        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{left}"
+        left.count(':') <= ($1.empty? ? 7 : 6) or raise InvalidAddressError, "invalid address: #{left}"
         addr = in_addr($~[4,4])
         left = $1
         right = $3 + '0:0'
@@ -850,9 +866,6 @@ class IPAddr
     l = left.split(':')
     r = right.split(':')
     rest = 8 - l.size - r.size
-    if rest < 0
-      return nil
-    end
     (l + Array.new(rest, '0') + r).inject(0) { |i, s|
       i << 16 | s.hex
     } | addr

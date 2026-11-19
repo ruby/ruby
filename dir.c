@@ -1891,28 +1891,16 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
 #define sys_warning(val, enc) \
     ((flags & GLOB_VERBOSE) ? sys_enc_warning_in(RUBY_FUNCTION_NAME_STRING, (val), (enc)) :(void)0)
 
-static inline size_t
-glob_alloc_size(size_t x, size_t y)
-{
-    size_t z;
-    if (rb_mul_size_overflow(x, y, SSIZE_MAX, &z)) {
-        rb_memerror();          /* or...? */
-    }
-    else {
-        return z;
-    }
-}
-
 static inline void *
 glob_alloc_n(size_t x, size_t y)
 {
-    return malloc(glob_alloc_size(x, y));
+    return malloc(rbimpl_size_mul_or_raise(x, y));
 }
 
 static inline void *
 glob_realloc_n(void *p, size_t x, size_t y)
 {
-    return realloc(p, glob_alloc_size(x, y));
+    return realloc(p, rbimpl_size_mul_or_raise(x, y));
 }
 
 #define GLOB_ALLOC(type) ((type *)malloc(sizeof(type)))

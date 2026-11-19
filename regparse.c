@@ -1570,6 +1570,15 @@ node_str_cat_codepoint(Node* node, OnigEncoding enc, OnigCodePoint c)
   return onig_node_str_cat(node, buf, buf + num);
 }
 
+static int
+check_code_point(OnigCodePoint code, OnigEncoding enc)
+{
+  if (ONIGENC_IS_UNICODE(enc) &&
+      (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)))
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
+  return 0;
+}
+
 #if 0
 extern void
 onig_node_conv_to_str_node(Node* node, int flag)
@@ -4771,7 +4780,6 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
       /* tok->base != 0 : octal or hexadec. */
       if (! ONIGENC_IS_SINGLEBYTE(env->enc) && tok->base != 0) {
         UChar buf[ONIGENC_CODE_TO_MBC_MAXLEN];
-        UChar* bufe = buf + ONIGENC_CODE_TO_MBC_MAXLEN;
         UChar* psave = p;
         int i, base = tok->base;
 
@@ -4791,9 +4799,10 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           goto err;
         }
 
-        len = enclen(env->enc, buf, buf + i);
-        if (i < len) {
-          r = ONIGERR_TOO_SHORT_MULTI_BYTE_STRING;
+        len = ONIGENC_PRECISE_MBC_ENC_LEN(env->enc, buf, buf + i);
+        if (! ONIGENC_MBCLEN_CHARFOUND_P(len)) {
+          r = ONIGENC_MBCLEN_NEEDMORE_P(len) ?
+            ONIGERR_TOO_SHORT_MULTI_BYTE_STRING : ONIGERR_INVALID_CODE_POINT_VALUE;
           goto err;
         }
         else if (i > len) { /* fetch back */
@@ -4810,7 +4819,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           goto raw_single;
         }
         else {
-          v = ONIGENC_MBC_TO_CODE(env->enc, buf, bufe);
+          v = ONIGENC_MBC_TO_CODE(env->enc, buf, buf + len);
           in_type = CCV_CODE_POINT;
         }
       }
@@ -4825,6 +4834,8 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
 
     case TK_CODE_POINT:
       v = tok->u.code;
+      r = check_code_point(v, env->enc);
+      if (r != 0) goto err;
       in_israw = 1;
     val_entry:
       len = ONIGENC_CODE_TO_MBCLEN(env->enc, v);
@@ -4855,12 +4866,12 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
     case TK_CHAR_TYPE:
       r = add_ctype_to_cc(cc, tok->u.prop.ctype, tok->u.prop.not,
                           IS_ASCII_RANGE(env->option), env);
-      if (r != 0) return r;
+      if (r != 0) goto err;
       if (IS_NOT_NULL(asc_cc)) {
         if (tok->u.prop.ctype != ONIGENC_CTYPE_WORD)
           r = add_ctype_to_cc(asc_cc, tok->u.prop.ctype, tok->u.prop.not,
                               IS_ASCII_RANGE(env->option), env);
-        if (r != 0) return r;
+        if (r != 0) goto err;
       }
 
     next_class:
@@ -4873,13 +4884,16 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
         int ctype;
 
         ctype = fetch_char_property_to_ctype(&p, end, env);
-        if (ctype < 0) return ctype;
+        if (ctype < 0) {
+          r = ctype;
+          goto err;
+        }
         r = add_ctype_to_cc(cc, ctype, tok->u.prop.not, 0, env);
-        if (r != 0) return r;
+        if (r != 0) goto err;
         if (IS_NOT_NULL(asc_cc)) {
           if (ctype != ONIGENC_CTYPE_ASCII)
             r = add_ctype_to_cc(asc_cc, ctype, tok->u.prop.not, 0, env);
-          if (r != 0) return r;
+          if (r != 0) goto err;
         }
         goto next_class;
       }
@@ -4980,6 +4994,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           r = and_cclass(prev_cc, cc, env);
           if (r != 0) goto err;
           bbuf_free(cc->mbuf);
+          cc->mbuf = NULL;
           if (IS_NOT_NULL(asc_cc)) {
             r = and_cclass(asc_prev_cc, asc_cc, env);
             if (r != 0) goto err;
@@ -6393,6 +6408,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
         }
 #ifndef NUMBERED_CHAR_IS_NOT_CASE_AMBIG
         else if (r == TK_CODE_POINT) {
+          r = check_code_point(tok->u.code, env->enc);
+          if (r != 0) return r;
           r = node_str_cat_codepoint(*np, env->enc, tok->u.code);
         }
 #endif
@@ -6416,11 +6433,15 @@ parse_exp(Node** np, OnigToken* tok, int term,
       len = 1;
       while (1) {
         if (len >= ONIGENC_MBC_MINLEN(env->enc)) {
-          if (len == enclen(env->enc, NSTR(*np)->s, NSTR(*np)->end)) {
+          int n = ONIGENC_IS_SINGLEBYTE(env->enc) ? 1 :
+            ONIGENC_PRECISE_MBC_ENC_LEN(env->enc, NSTR(*np)->s, NSTR(*np)->end);
+          if (n == len) {
             r = fetch_token(tok, src, end, env);
             NSTRING_CLEAR_RAW(*np);
             goto string_end;
           }
+          if (! ONIGENC_MBCLEN_NEEDMORE_P(n))
+            return ONIGERR_INVALID_CODE_POINT_VALUE;
         }
 
         r = fetch_token(tok, src, end, env);
@@ -6451,6 +6472,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
   case TK_CODE_POINT:
     {
+      r = check_code_point(tok->u.code, env->enc);
+      if (r != 0) return r;
       *np = node_new_empty();
       CHECK_NULL_RETURN_MEMERR(*np);
       r = node_str_cat_codepoint(*np, env->enc, tok->u.code);

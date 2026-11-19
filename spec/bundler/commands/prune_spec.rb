@@ -111,6 +111,33 @@ RSpec.describe "the prune setting" do
       expect(vendored_gems("cache")).not_to exist
     end
 
+    it "prunes on bundle clean even when an unused gem cannot be removed", :permissions do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "foo"
+        gem "myrack"
+      G
+      bundle "install"
+
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "myrack"
+      G
+      bundle "install"
+
+      stale_gem_path = vendored_gems("gems/foo-1.0")
+      FileUtils.chmod(0o500, stale_gem_path)
+
+      bundle "clean", env: { "BUNDLE_PRUNE" => "cache" }, raise_on_error: false
+
+      expect(err).to include(stale_gem_path.to_s)
+      expect(vendored_gems("cache")).not_to exist
+    ensure
+      FileUtils.chmod(0o755, stale_gem_path) if stale_gem_path&.exist?
+    end
+
     it "does not prune on a dry run of bundle clean" do
       bundle "install"
 

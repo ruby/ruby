@@ -253,7 +253,7 @@ class Integer
   #
   # With no block given, returns an Enumerator.
   def times
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, int_dotimes_size)'
     end
@@ -344,7 +344,7 @@ class Integer
   #
   # With no block given, returns an Enumerator.
   def upto(to)
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
 
     # When no block is given, return an Enumerator that enumerates from `self` to `to`.
     # Not using `block_given?` and `to_enum` to keep them unaffected by redefinitions.
@@ -368,7 +368,7 @@ class Integer
       undef :downto
 
       def downto(to) # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :always_inline, :c_trace
 
         # When no block is given, return an Enumerator that enumerates from `self` to `to`.
         # Not using `block_given?` and `to_enum` to keep them unaffected by redefinitions.

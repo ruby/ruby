@@ -49,6 +49,29 @@ module Ruby::Prism
       assert_location(AssocNode, "foo(bar: :baz)", 4...13) { |node| node.arguments.arguments.first.elements.first }
     end
 
+    def test_unconsumed_error_recovery_locations
+      ["{not %", "{not   ", "{not \x01", "alias   ", "undef   ", "case x; in [   ", "case x; in a |   "].each do |source|
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :failure?
+
+        nodes = [result.value]
+        until nodes.empty?
+          node = nodes.pop
+          location = node.location
+          assert_operator location.start_offset, :>=, 0, source.inspect
+          assert_operator location.end_offset, :<=, source.bytesize, source.inspect
+          assert_operator location.length, :>=, 0, source.inspect
+          nodes.concat(node.compact_child_nodes)
+        end
+      end
+
+      assoc = Ruby::Prism.parse_statement("{not %").receiver.elements.first
+      assert_equal 4, assoc.location.start_offset
+      assert_equal 0, assoc.location.length
+      assert_equal 4, assoc.key.location.start_offset
+      assert_equal 0, assoc.key.location.length
+    end
+
     def test_AssocSplatNode
       assert_location(AssocSplatNode, "{ **foo }", 2...7) { |node| node.elements.first }
       assert_location(AssocSplatNode, "foo(**bar)", 4...9) { |node| node.arguments.arguments.first.elements.first }
@@ -529,6 +552,23 @@ module Ruby::Prism
 
     def test_InterpolatedSymbolNode
       assert_location(InterpolatedSymbolNode, ':"#{foo}bar"')
+    end
+
+    def test_interpolated_symbol_array_locations
+      ['#{1}#{2}', '#@a#@b', '#{1}#@a', '#@a#{1}', 'a#{1}#{2}', '#{1}a#{2}'].each do |element|
+        source = "%I[#{element} second]"
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :success?
+
+        array = result.value.statements.body.first
+        symbol, second = array.elements
+        assert_kind_of InterpolatedSymbolNode, symbol
+        assert_equal 3, symbol.location.start_offset
+        assert_equal 3 + element.bytesize, symbol.location.end_offset
+        assert_equal element, symbol.location.slice
+        assert_equal "second", second.location.slice
+        assert_equal source, array.location.slice
+      end
     end
 
     def test_InterpolatedXStringNode

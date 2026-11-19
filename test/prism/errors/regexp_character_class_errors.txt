@@ -1,0 +1,16 @@
+/[a/
+ ^~ premature end of char-class: /[a/
+/[b-a]/
+  ^~~ empty range in char class: /[b-a]/
+/[a-\d]/
+  ^~~~ char-class value at end of range: /[a-\d]/
+/[\d-a]/
+  ^~~~ unmatched range specifier in char-class: /[\d-a]/
+/[[:foo:]]/
+  ^~~~~~~ invalid POSIX bracket type: /[[:foo:]]/
+/[^]/
+   ^ empty char-class: /[^]/
+/(?<>a)[b-a]/
+    ^ group name is empty: /(?<>a)[b-a]/
+        ^~~ empty range in char class: /(?<>a)[b-a]/
+

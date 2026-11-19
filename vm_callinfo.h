@@ -27,6 +27,7 @@ enum vm_call_flag_bits {
     VM_CALL_KW_SPLAT_MUT_bit,   // kw splat hash can be modified (to avoid allocating a new one)
     VM_CALL_ARGS_SPLAT_MUT_bit, // args splat can be modified (to avoid allocating a new one)
     VM_CALL_FORWARDING_bit,     // m(...)
+    VM_CALL_IGNORE_REFINEMENTS_bit, // internal flag: ignore the caller's refinements (initialize call of opt_new)
     VM_CALL__END
 };
 
@@ -44,6 +45,7 @@ enum vm_call_flag_bits {
 #define VM_CALL_KW_SPLAT_MUT    (0x01 << VM_CALL_KW_SPLAT_MUT_bit)
 #define VM_CALL_ARGS_SPLAT_MUT  (0x01 << VM_CALL_ARGS_SPLAT_MUT_bit)
 #define VM_CALL_FORWARDING      (0x01 << VM_CALL_FORWARDING_bit)
+#define VM_CALL_IGNORE_REFINEMENTS (0x01 << VM_CALL_IGNORE_REFINEMENTS_bit)
 
 struct rb_callinfo_kwarg {
     int keyword_len;

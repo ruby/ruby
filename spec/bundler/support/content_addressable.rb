@@ -39,8 +39,9 @@ module Spec
       end
     end
 
-    def addresses_by_abi
-      @addresses_by_abi ||= Dir[gem_repo2("gems", "mygem-1.0-*.gem").to_s].to_h do |path|
+    def addresses_by_abi(name: "mygem")
+      @addresses_by_abi ||= {}
+      @addresses_by_abi[name] ||= Dir[gem_repo2("gems", "#{name}-1.0-*.gem").to_s].to_h do |path|
         ruby_abi = Gem::ContentAddress.ruby_abi_for(Gem::Package.new(path).spec.required_ruby_version)
         [ruby_abi, File.basename(path, ".gem").rpartition("-").last]
       end
@@ -54,8 +55,8 @@ module Spec
       addresses_by_abi.fetch(mismatched_abi)
     end
 
-    def addresses(*ruby_abis)
-      ruby_abis.to_h {|ruby_abi| [addresses_by_abi.fetch(ruby_abi), ruby_abi] }
+    def addresses(*ruby_abis, name: "mygem")
+      ruby_abis.to_h {|ruby_abi| [addresses_by_abi(name: name).fetch(ruby_abi), ruby_abi] }
     end
 
     def locked_addresses(name: "mygem", version: "1.0", platform: "x86_64-linux")

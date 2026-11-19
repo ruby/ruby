@@ -565,6 +565,97 @@ class TestRubyLiteral < Test::Unit::TestCase
     2
   end
 
+  def test_hash_double_splat_result
+    kw = ->(**k) { k }
+    builders = [
+      ->(h) { {**h} },
+      ->(h) { {**h, a: 1} },
+      ->(h) { {**h, **h} },
+      ->(h) { {**h, **nil} },
+      ->(h) { {**nil, **h} },
+      ->(h) { {**h, **nil, **h} },
+      ->(h) { {b: 2, **h} },
+      ->(h) { kw.(**h, a: 1) },
+      ->(h) { kw.(**h, **nil) },
+      ->(h) { kw.(**nil, **h) },
+    ]
+
+    builders.each do |build|
+      result = build[Hash.new(5)]
+      assert_nil(result.default)
+      assert_nil(result[:missing])
+
+      result = build[Hash.new { 7 }]
+      assert_nil(result.default_proc)
+      assert_nil(result.default)
+      assert_nil(result[:missing])
+
+      assert_not_predicate(build[{a: 1}.compare_by_identity], :compare_by_identity?)
+      assert_instance_of(Hash, build[Class.new(Hash).new])
+      assert_not_predicate(build[{a: 1}.freeze], :frozen?)
+    end
+  end
+
+  def test_hash_double_splat_copies_to_hash_result
+    hash = {a: 1}.freeze
+    object = Object.new
+    object.define_singleton_method(:to_hash) { hash }
+
+    result = {**object}
+    assert_equal({a: 1}, result)
+    assert_not_same(hash, result)
+    assert_not_predicate(result, :frozen?)
+  end
+
+  def test_hash_double_splat_conversion_order
+    log = []
+    splat = ->(tag) do
+      Object.new.tap { |object| object.define_singleton_method(:to_hash) { log << tag; {tag => 1} } }
+    end
+    value = ->(tag) { log << tag; 1 }
+    kw = ->(**k) { k }
+    x, y, z = splat[:x], splat[:y], splat[:z]
+
+    assert_equal({x: 1, y: 1}, {**x, **y})
+    assert_equal([:x, :y], log.slice!(0..))
+
+    assert_equal({x: 1, a: 1}, {**x, a: value[:v]})
+    assert_equal([:x, :v], log.slice!(0..))
+
+    assert_equal({x: 1, a: 1, y: 1, z: 1}, {**x, a: value[:v], **y, **z})
+    assert_equal([:x, :v, :y, :z], log.slice!(0..))
+
+    assert_equal({x: 1, y: 1}, kw.(**x, **y))
+    assert_equal([:x, :y], log.slice!(0..))
+
+    assert_equal({x: 1, a: 1}, kw.(**x, a: value[:v]))
+    assert_equal([:x, :v], log.slice!(0..))
+  end
+
+  def test_hash_double_splat_converts_operand_before_nil
+    object = Object.new
+    def object.to_hash = {a: 1}
+
+    assert_equal({a: 1}, {**object, **nil})
+    assert_equal({a: 1}, {**nil, **object})
+    assert_raise(TypeError) { {**1, **nil} }
+    assert_raise(TypeError) { {**"string", **nil} }
+    assert_raise(TypeError) { {**[1], **nil} }
+    assert_raise(TypeError) { {**Object.new, **nil} }
+  end
+
+  def test_hash_double_splat_after_literal_is_a_new_hash
+    build = -> { {a: 1, **nil} }
+    assert_not_same(build.call, build.call)
+    assert_not_predicate(build.call, :frozen?)
+    assert_equal({a: 1}, build.call)
+
+    build = ->(h) { {a: 1, **h} }
+    empty = {}
+    assert_not_same(build[empty], build[empty])
+    assert_not_predicate(build[empty], :frozen?)
+  end
+
   def test_range
     assert_instance_of Range, (1..2)
     assert_equal(1..2, 1..2)

@@ -36,7 +36,6 @@
 
 #ifdef RIPPER
 #define STATIC_ID2SYM p->config->static_id2sym
-#define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 #endif
 
 #else
@@ -1058,6 +1057,8 @@ static int parser_yyerror0(struct parser_params*, const char*);
 #define lex_eol_n_p(p,n) lex_eol_ptr_n_p(p, (p)->lex.pcur, n)
 #define lex_eol_ptr_p(p,ptr) lex_eol_ptr_n_p(p,ptr,0)
 #define lex_eol_ptr_n_p(p,ptr,n) ((ptr)+(n) >= (p)->lex.pend)
+
+static enum yytokentype parser_variable_name_p(const struct parser_params *p);
 
 static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
@@ -2408,6 +2409,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
 
     if (len < 0) {
         compile_error(p, "negative string size (or size too big)");
+        return 0;
     }
     parser_str_cat(str, ptr, len);
     PARSER_ENCODING_CODERANGE_SET(str, res_enc, res_cr);
@@ -2416,8 +2418,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
   incompatible:
     compile_error(p, "incompatible character encodings: %s and %s",
                   rb_enc_name(str_enc), rb_enc_name(ptr_enc));
-    UNREACHABLE_RETURN(0);
-
+    return 0;
 }
 
 static rb_parser_string_t *
@@ -4559,7 +4560,7 @@ primary		: inline_primary
               case_body[body]
               k_end[k_end]
                 {
-                    if (p->case_labels) st_free_table(p->case_labels);
+                    if (CASE_LABELS_ENABLED_P(p->case_labels)) st_free_table(p->case_labels);
                     p->case_labels = $labels;
                     $$ = NEW_CASE2($body, &@$, &@k_case, &@k_end);
                 /*% ripper: case!(Qnil, $:body) %*/
@@ -4637,6 +4638,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_class.in_class;
                     p->ctxt.cant_return = $k_class.cant_return;
                     p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_class.in_rescue;
                 }
             | k_class tLSHFT expr_value
                 {
@@ -4656,6 +4658,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_class.in_class;
                     p->ctxt.cant_return = $k_class.cant_return;
                     p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_class.in_rescue;
                 }
             | k_module cpath
                 {
@@ -4673,6 +4676,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_module.in_class;
                     p->ctxt.cant_return = $k_module.cant_return;
                     p->ctxt.shareable_constant_value = $k_module.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_module.in_rescue;
                 }
             | defn_head[head]
               f_arglist[args]
@@ -5212,6 +5216,11 @@ block_call	: command do_block
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
                 | block_call call_op2 operation2 command_args do_block
+                    {
+                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                    /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
+                    }
+                | block_call call_op2 operation2 command_args cmd_brace_block
                     {
                         $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
@@ -5962,7 +5971,7 @@ word_list	: /* none */
                     }
                 | word_list word ' '+
                     {
-                        $$ = list_append(p, $1, evstr2dstr(p, $2));
+                        $$ = $2 ? list_append(p, $1, evstr2dstr(p, $2)) : $2;
                     /*% ripper: words_add!($:1, $:2) %*/
                     }
                 ;
@@ -5986,7 +5995,7 @@ symbol_list	: /* none */
                     }
                 | symbol_list word ' '+
                     {
-                        $$ = symbol_append(p, $1, evstr2dstr(p, $2));
+                        $$ = $2 ? symbol_append(p, $1, evstr2dstr(p, $2)) : $2;
                     /*% ripper: symbols_add!($:1, $:2) %*/
                     }
                 ;
@@ -7739,7 +7748,17 @@ pushback(struct parser_params *p, int c)
     }
 }
 
-#define was_bol(p) ((p)->lex.pcur == (p)->lex.pbeg + 1)
+static inline bool
+was_bol(struct parser_params *p)
+{
+    switch (p->lex.pcur - p->lex.pbeg) {
+      case 1:
+        return true;
+      case 2:
+        return *(p->lex.pcur-1) == '\n';
+    }
+    return false;
+}
 
 #define tokfix(p) ((p)->tokenbuf[(p)->tokidx]='\0')
 #define tok(p) (p)->tokenbuf
@@ -8409,12 +8428,9 @@ tokadd_string(struct parser_params *p,
             }
             --*nest;
         }
-        else if ((func & STR_FUNC_EXPAND) && c == '#' && !lex_eol_p(p)) {
-            unsigned char c2 = *p->lex.pcur;
-            if (c2 == '$' || c2 == '@' || c2 == '{') {
-                pushback(p, c);
-                break;
-            }
+        else if ((func & STR_FUNC_EXPAND) && c == '#' && parser_variable_name_p(p)) {
+            pushback(p, c);
+            break;
         }
         else if (c == '\\') {
             c = nextc(p);
@@ -8574,6 +8590,18 @@ const uint_least32_t ruby_global_name_punct_bits[] = {
 static enum yytokentype
 parser_peek_variable_name(struct parser_params *p)
 {
+    enum yytokentype t = parser_variable_name_p(p);
+    if (t == tSTRING_DBEG) {
+        p->lex.pcur++;
+        p->command_start = TRUE;
+        yylval.state = p->lex.state;
+    }
+    return t;
+}
+
+static enum yytokentype
+parser_variable_name_p(const struct parser_params *p)
+{
     int c;
     const char *ptr = p->lex.pcur;
 
@@ -8596,9 +8624,6 @@ parser_peek_variable_name(struct parser_params *p)
         }
         break;
       case '{':
-        p->lex.pcur = ptr;
-        p->command_start = TRUE;
-        yylval.state = p->lex.state;
         return tSTRING_DBEG;
       default:
         return 0;
@@ -8792,7 +8817,7 @@ heredoc_identifier(struct parser_params *p)
 
     p->lex.strterm = new_heredoc(p);
     rb_strterm_heredoc_t *here = &p->lex.strterm->u.heredoc;
-    here->offset = offset;
+    here->offset = offset + (p->lex.pbeg - PARSER_STRING_PTR(p->lex.lastline));
     here->sourceline = p->ruby_sourceline;
     here->length = (unsigned)len;
     here->quote = quote;
@@ -9667,7 +9692,7 @@ parser_prepare(struct parser_params *p)
         if (peek(p, '!')) p->has_shebang = 1;
         break;
       case 0xef:		/* UTF-8 BOM marker */
-        if (!lex_eol_n_p(p, 2) &&
+        if (!lex_eol_n_p(p, 1) &&
             (unsigned char)p->lex.pcur[0] == 0xbb &&
             (unsigned char)p->lex.pcur[1] == 0xbf) {
             p->enc = rb_utf8_encoding();
@@ -10606,10 +10631,10 @@ parser_yylex(struct parser_params *p)
                 if (peek_word_at(p, "r", 1, 0)) goto leading_logical;
                 goto bol;
               case '|':
-                if (peek(p, '|')) goto leading_logical;
+                if (peek(p, '|') && !peek_n(p, '=', 1)) goto leading_logical;
                 goto bol;
               case '&':
-                if (peek(p, '&')) {
+                if (peek(p, '&') && !peek_n(p, '=', 1)) {
                   leading_logical:
                     pushback(p, c);
                     dispatch_delayed_token(p, tIGNORED_NL);
@@ -14278,6 +14303,7 @@ static NODE*
 cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc, bool top)
 {
     if (node == 0) return 0;
+    NODE *original = node;
     if (!(node = nd_once_body(node))) return 0;
     assign_in_cond(p, node);
 
@@ -14301,7 +14327,8 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_DREGX:
         if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ");
 
-        return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
+        /* Preserve the NODE_ONCE wrapper around interpolated /o regexps. */
+        return NEW_MATCH2(original, NEW_GVAR(idLASTLINE, loc), loc);
 
       case NODE_BLOCK:
         {
@@ -15545,11 +15572,18 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     NODE *node, *succ;
 
     if (!len) return ST_CONTINUE;
+
+    if (UNLIKELY(p->enc != enc)) {
+        int cr = ENC_CODERANGE_7BIT;
+        rb_str_coderange_scan_restartable(s, s + len, rb_ascii8bit_encoding(), &cr);
+        if (UNLIKELY(cr != ENC_CODERANGE_7BIT)) return ST_CONTINUE;
+    }
+
     if (!VALID_SYMNAME_P(s, len, enc, ID_LOCAL))
         return ST_CONTINUE;
 
     var = intern_cstr(s, len, enc);
-    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
+    if (len <= MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) {
         if (!lvar_defined(p, var)) return ST_CONTINUE;
     }
     node = node_assign(p, assignable(p, var, 0, loc), NEW_SYM(rb_id2str(var), loc), NO_LEX_CTXT, loc);

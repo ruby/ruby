@@ -457,7 +457,7 @@ void
 pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_FALSE_NODE:
-            pm_buffer_append_string(buffer, "false", 5);
+            PM_BUFFER_APPEND_LITERAL(buffer, "false");
             break;
         case PM_FLOAT_NODE: {
             const double value = ((const pm_float_node_t *) node)->value;
@@ -466,12 +466,12 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
                 if (parser->start[node->location.start] == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
-                pm_buffer_append_string(buffer, "Infinity", 8);
+                PM_BUFFER_APPEND_LITERAL(buffer, "Infinity");
             } else if (value == 0.0) {
                 if (parser->start[node->location.start] == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
-                pm_buffer_append_string(buffer, "0.0", 3);
+                PM_BUFFER_APPEND_LITERAL(buffer, "0.0");
             } else {
                 pm_buffer_append_format(buffer, "%g", value);
 
@@ -489,20 +489,20 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
         }
         case PM_IMAGINARY_NODE: {
             const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
-            pm_buffer_append_string(buffer, "(0", 2);
+            PM_BUFFER_APPEND_LITERAL(buffer, "(0");
             if (pm_static_literal_positive_p(numeric)) pm_buffer_append_byte(buffer, '+');
             pm_static_literal_inspect(buffer, parser, numeric);
             if (PM_NODE_TYPE_P(numeric, PM_RATIONAL_NODE)) {
                 pm_buffer_append_byte(buffer, '*');
             }
-            pm_buffer_append_string(buffer, "i)", 2);
+            PM_BUFFER_APPEND_LITERAL(buffer, "i)");
             break;
         }
         case PM_INTEGER_NODE:
             pm_integer_string(buffer, &((const pm_integer_node_t *) node)->value);
             break;
         case PM_NIL_NODE:
-            pm_buffer_append_string(buffer, "nil", 3);
+            PM_BUFFER_APPEND_LITERAL(buffer, "nil");
             break;
         case PM_RATIONAL_NODE: {
             const pm_rational_node_t *rational = (const pm_rational_node_t *) node;
@@ -519,10 +519,10 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             pm_buffer_append_source(buffer, pm_string_source(unescaped), pm_string_length(unescaped), PM_BUFFER_ESCAPING_RUBY);
             pm_buffer_append_byte(buffer, '/');
 
-            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE)) pm_buffer_append_string(buffer, "m", 1);
-            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE)) pm_buffer_append_string(buffer, "i", 1);
-            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED)) pm_buffer_append_string(buffer, "x", 1);
-            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) pm_buffer_append_string(buffer, "n", 1);
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE)) pm_buffer_append_byte(buffer, 'm');
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE)) pm_buffer_append_byte(buffer, 'i');
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_EXTENDED)) pm_buffer_append_byte(buffer, 'x');
+            if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) pm_buffer_append_byte(buffer, 'n');
 
             break;
         }
@@ -553,7 +553,7 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             break;
         }
         case PM_TRUE_NODE:
-            pm_buffer_append_string(buffer, "true", 4);
+            PM_BUFFER_APPEND_LITERAL(buffer, "true");
             break;
         default:
             PRISM_ASSERT(false && "unreachable");

@@ -780,4 +780,51 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(lockfile).to eq(original_lockfile)
   end
+
+  it "runs the script's at_exit hooks only once when installing gems" do
+    script <<-RUBY
+      at_exit { puts "at_exit" }
+
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      puts MYRACK
+    RUBY
+
+    expect(out).to eq("1.0.0\nat_exit")
+    expect(err).to be_empty
+  end
+
+  it "lets the script rescue an installation failure" do
+    script <<-RUBY
+      begin
+        gemfile do
+          source "https://gem.repo1"
+          gem "doesnotexist"
+        end
+      rescue Bundler::BundlerError => e
+        puts "rescued \#{e.class}"
+      end
+
+      puts "main"
+    RUBY
+
+    expect(out).to eq("rescued Bundler::GemNotFound\nmain")
+    expect(err).to be_empty
+  end
+
+  it "resolves only once when installing gems" do
+    script <<-RUBY
+      gemfile(true) do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+    RUBY
+
+    expect(out.scan("Fetching gem metadata").size).to eq(1)
+    expect(out.scan("Resolving dependencies...").size).to eq(1)
+    expect(err).to be_empty
+  end
 end

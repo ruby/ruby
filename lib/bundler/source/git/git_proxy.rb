@@ -169,6 +169,9 @@ module Bundler
             git "fetch", "--force", "--quiet", *extra_fetch_args(ref), dir: destination
           end
 
+          # A checkout that already had a working tree may be a local override, which
+          # is the user's own working copy, so a failure only discards one that had none.
+          checked_out = installed_to?(destination)
           begin
             git "reset", "--hard", revision, dir: destination
 
@@ -179,8 +182,10 @@ module Bundler
               git_retry "submodule", "foreach", "--quiet", inner_command, dir: destination
             end
           rescue GitCommandError
-            SharedHelpers.filesystem_access(destination) do |p|
-              FileUtils.rm_rf(p)
+            unless checked_out
+              SharedHelpers.filesystem_access(destination) do |p|
+                FileUtils.rm_rf(p)
+              end
             end
             raise
           end

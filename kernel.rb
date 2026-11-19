@@ -77,7 +77,7 @@ module Kernel
   #++
   #
   def tap
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     yield(self)
     self
   end
@@ -109,7 +109,7 @@ module Kernel
   #     2.then.detect(&:odd?)            # => nil
   #
   def then
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
@@ -149,7 +149,7 @@ module Kernel
   #      puts enum.next
   #    } #=> :ok
   def loop
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size)'
     end

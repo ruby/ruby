@@ -879,6 +879,10 @@ x = __ENCODING__
     end
     assert_equal(Encoding.find("UTF-8"), x)
     assert_raise(NameError) { eval "\xef" }
+
+    assert_nothing_raised do
+      eval "\xef\xbb\xbf"
+    end
   end
 
   def test_dot_in_next_line
@@ -1201,6 +1205,14 @@ x = __ENCODING__
     end
   end
 
+  def test_named_capture_incompatible_encoding
+    assert_empty eval(<<~'RUBY')
+        # encoding: us-ascii
+        /(?<\u3042>x)/ =~ "x"
+        binding.local_variables
+    RUBY
+  end
+
   def test_rescue_in_command_assignment
     bug = '[ruby-core:75621] [Bug #12402]'
     all_assertions(bug) do |a|
@@ -1380,6 +1392,17 @@ x = __ENCODING__
     HEREDOC
 
     assert_syntax_error(code, /can't find string "A"/)
+  end
+
+  def test_heredoc_empty_terminator
+    assert_valid_syntax("<<''\n\n")
+    assert_valid_syntax("<<''\r\n\n")
+    assert_valid_syntax("<<''\n\r\n")
+    assert_valid_syntax("<<''\r\n\r\n")
+  end
+
+  def test_heredoc_with_bom
+    assert_valid_syntax("\uFEFF(<<EOF)\nEOF\n", parser: :*)
   end
 
   def test_unexpected_token_error
@@ -1778,6 +1801,40 @@ x = __ENCODING__
     end;
   end
 
+  def test_shareable_constant_value_literal_op_assign
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to OP_ASGN_C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      OP_ASGN_C ||= ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to OP_ASGN_C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      OP_ASGN_C = true
+      OP_ASGN_C &&= ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to OP_ASGN_C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      OP_ASGN_C = [].freeze
+      OP_ASGN_C += ["Not " + "shareable"]
+    end;
+
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      var = [:shareable].freeze
+      OP_ASGN_C ||= var
+    end;
+    assert_equal([:shareable], a)
+    assert_ractor_shareable(a)
+  end
+
   def test_shareable_constant_value_unfrozen
     assert_raise_separately(Ractor::Error, /does not freeze object correctly/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
@@ -1847,6 +1904,25 @@ x = __ENCODING__
   def test_ungettable_gvar
     assert_syntax_error('$01234', /not allowed/)
     assert_syntax_error('"#$01234"', /not allowed/)
+  end
+
+  def test_invalid_nested_case
+    assert_syntax_error('case; when 1; case; value; in 1; end; end', /expect.*\bwhen\b/)
+  end
+
+  def test_encoding_mismatching_word_list
+    invalid = /invalid (?:byte sequence|multibyte char)/n
+    assert_syntax_error("#encoding: sjis\n%I \xE2\xE2\xE20\\u0400 ", invalid)
+    assert_syntax_error("#encoding: sjis\n%W \xE2\xE2\xE20\\u0400 ", invalid)
+  end
+
+  def test_false_interpolation
+    code = '[/(?<captured>#@)/ =~ "#@", defined?(captured)]'
+    inst = RubyVM::InstructionSequence
+    results = inst.methods(false).grep(/\Acompile_(?!file|option)\w+\z/).group_by do |compile|
+      inst.__send__(compile, code).eval
+    end
+    assert_equal [[0, "local-variable"]], results.keys, results
   end
 
 =begin

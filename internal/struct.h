@@ -8,6 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Struct.
  */
+#include "internal/gc.h"        /* for RB_OBJ_ATOMIC_WRITE */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
@@ -109,12 +110,12 @@ RSTRUCT_GET_RAW(VALUE st, rb_len_t k)
 static inline VALUE
 RSTRUCT_FIELDS_OBJ(VALUE st)
 {
-    return RSTRUCT(st)->fields_obj;
+    return rbimpl_atomic_value_load(&RSTRUCT(st)->fields_obj, RBIMPL_ATOMIC_ACQUIRE);
 }
 
 static inline void
 RSTRUCT_SET_FIELDS_OBJ(VALUE st, VALUE fields_obj)
 {
-    RB_OBJ_WRITE(st, &RSTRUCT(st)->fields_obj, fields_obj);
+    RB_OBJ_ATOMIC_WRITE(st, &RSTRUCT(st)->fields_obj, fields_obj);
 }
 #endif /* INTERNAL_STRUCT_H */

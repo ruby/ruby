@@ -27,12 +27,14 @@ class Test_StrSetLen < Test::Unit::TestCase
   end
 
   def test_capacity_equals_to_new_size
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
     bug12757 = "[ruby-core:77257] [Bug #12757]"
     # fill to ensure capacity does not decrease with force_encoding
-    str = Bug::String.new("\x00" * 128, capacity: 128)
+    str = Bug::String.new("\x00" * 1024, capacity: 1024)
     str.force_encoding("UTF-32BE")
-    assert_equal 128, Bug::String.capacity(str)
-    assert_equal 127, str.set_len(127).bytesize, bug12757
+    assert_equal 1024, Bug::String.capacity(str)
+    assert_equal 1023, str.set_len(1023).bytesize, bug12757
   end
 
   def test_coderange_after_append

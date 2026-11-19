@@ -74,11 +74,37 @@ module OpenSSL
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new # :nodoc:
       DEFAULT_CERT_STORE.set_default_paths
 
-      # A callback invoked at connect time to distinguish between multiple
-      # server names.
+      # A callback invoked during the server-side handshake when the client
+      # sends the Server Name Indication (SNI) extension.
       #
-      # The callback is invoked with an SSLSocket and a server name.  The
-      # callback must return an SSLContext for the server name or nil.
+      # The callback is invoked with an SSLSocket and the server name requested
+      # by the client as a String.
+      #
+      # A typical use case is to select the appropriate server certificate.
+      # The callback can use SSLSocket#add_certificate to add certificates and
+      # their corresponding private keys. It should return +nil+ to continue
+      # the handshake and notify the client that the server name is accepted.
+      #
+      # Alternatively, the callback can return an SSLContext to switch the
+      # context used for the connection. However, doing so is discouraged
+      # because the underlying \OpenSSL API SSL_set_SSL_CTX() has complex and
+      # inconsistent semantics.
+      #
+      # See also the man page SSL_CTX_set_tlsext_servername_callback(3).
+      #
+      # === Example
+      #   ctx = OpenSSL::SSL::SSLContext.new
+      #   ctx.servername_cb = proc do |ssl_socket, server_name|
+      #     if server_name == "example.com"
+      #       cert = OpenSSL::X509::Certificate.new(File.read("cert.pem"))
+      #       privkey = OpenSSL::PKey.read(File.read("cert_privkey.pem"))
+      #       ssl_socket.add_certificate(cert, privkey)
+      #     else
+      #       # Aborts the handshake with an "unrecognized_name" alert.
+      #       raise "unknown SNI hostname: #{server_name}"
+      #     end
+      #     nil
+      #   end
       attr_accessor :servername_cb
 
       # call-seq:

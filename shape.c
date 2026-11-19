@@ -725,6 +725,7 @@ rb_shape_object_id(shape_id_t original_shape_id)
     return SHAPE_ID(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
 }
 
+#if RUBY_DEBUG
 static bool
 shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
@@ -750,6 +751,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 
     return false;
 }
+#endif
 
 static inline rb_shape_t *
 shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id, bool emit_warnings)
@@ -973,7 +975,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         shape = initial_shape;
     }
     *shape_id_hint = shape_id;
-    return shape_get_iv_index(shape, id, value);
+    return rb_shape_get_iv_index(SHAPE_ID(shape, shape_id), id, value);
 }
 
 static bool

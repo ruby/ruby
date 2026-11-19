@@ -158,7 +158,7 @@ class TestEtc < Test::Unit::TestCase
 
   def test_pathconf
     begin
-      Etc.confstr
+      $stdin.pathconf
     rescue NotImplementedError
       return
     rescue ArgumentError
@@ -179,7 +179,7 @@ class TestEtc < Test::Unit::TestCase
 
   def test_sysconfdir
     assert_operator(File, :absolute_path?, Etc.sysconfdir)
-  end if File.method_defined?(:absolute_path?)
+  end
 
   # All Ractor-safe methods should be tested here
   def test_ractor_parallel

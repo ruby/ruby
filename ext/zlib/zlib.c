@@ -15,9 +15,23 @@
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
+#endif
+#ifndef SIZEOF_RB_LEN_T
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
+#endif
+#ifndef LEN2NUM
 # define LEN2NUM LONG2NUM
+#endif
+#ifndef ULEN2NUM
+# define ULEN2NUM ULONG2NUM
+#endif
+#ifndef NUM2LEN
 # define NUM2LEN NUM2LONG
+#endif
+#ifndef NUM2ULEN
+# define NUM2ULEN NUM2ULONG
+#endif
+#ifndef PRIdLEN
 # define PRIdLEN "ld"
 #endif
 
@@ -532,8 +546,8 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 {
-    return ULONG2NUM(
-	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
+    return ULEN2NUM(
+	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2ULEN(len2)));
 }
 #else
 #define rb_zlib_crc32_combine rb_f_notimplement
@@ -1205,6 +1219,13 @@ loop:
        }
     }
 
+    if (err == Z_BUF_ERROR && z->func == &deflate_funcs && z->stream.avail_in == 0) {
+	/* deflate() reports Z_BUF_ERROR for a flush when no input was consumed
+	 * since the previous flush of the same or higher rank. Nothing is lost,
+	 * so treat it as a no-op like zlib's own gzflush() does. */
+	err = Z_OK;
+    }
+
     if (flush != Z_FINISH && err == Z_BUF_ERROR && z->stream.avail_out > 0) {
         z->flags |= ZSTREAM_FLAG_IN_STREAM;
     }
@@ -1224,6 +1245,8 @@ loop:
 		}
 	    }
 	}
+	z->stream.next_in = Z_NULL;
+	z->stream.avail_in = 0;
 	raise_zlib_error(err, z->stream.msg);
     }
 
@@ -1231,6 +1254,9 @@ loop:
     if (!NIL_P(old_input)) {
 	rb_str_resize(old_input, 0);
     }
+    /* the rest is in z->input now; do not leave next_in in old_input */
+    z->stream.next_in = Z_NULL;
+    z->stream.avail_in = 0;
 
     return Qnil;
 }
@@ -2169,7 +2195,8 @@ do_inflate(struct zstream *z, VALUE src)
 	return;
     }
     StringValue(src);
-    if (RSTRING_LEN(src) > 0 || z->stream.avail_in > 0) { /* prevent Z_BUF_ERROR */
+    if (RSTRING_LEN(src) > 0 ||
+	(!NIL_P(z->input) && RSTRING_LEN(z->input) > 0)) { /* prevent Z_BUF_ERROR */
 	zstream_run(z, (Bytef*)RSTRING_PTR(src), RSTRING_LEN(src), Z_SYNC_FLUSH);
     }
 }

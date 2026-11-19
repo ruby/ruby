@@ -2,3 +2,7 @@ def foo(&nil)
 end
 
 -> (&nil) {}
+
+def foo(&nil)
+  bar
+end

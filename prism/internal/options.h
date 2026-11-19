@@ -46,6 +46,13 @@ typedef enum {
     PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_4_1
 } pm_options_version_t;
 
+/*
+ * Read the version of Ruby that the given string names, such as "3.4", "4.0.1",
+ * or "latest", into the given version. NULL names the latest version. Returns
+ * false, leaving the version alone, if prism does not support the version.
+ */
+bool pm_options_version_parse(const char *version, size_t length, pm_options_version_t *result);
+
 /* The options that can be passed to the parser. */
 struct pm_options_t {
     /*
