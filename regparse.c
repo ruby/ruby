@@ -6156,10 +6156,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
         if (ONIGENC_MBC_MINLEN(env->enc) > 1) { /* UTF-16/UTF-32 */
           BBuf *inverted_buf = NULL;
 
-          /* TODO: fix false warning */
-          const int dup_not_warned = env->warnings_flag | ~ONIG_SYN_WARN_CC_DUP;
-          env->warnings_flag |= ONIG_SYN_WARN_CC_DUP;
-
           /* Start with a positive buffer and invert at the end.
            * Otherwise, adding single-character ranges work the wrong way. */
           R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Control", 0, env));
@@ -6168,8 +6164,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           R_ERR(not_code_range_buf(env->enc, cc->mbuf, &inverted_buf, env));
           bbuf_free(cc->mbuf);
           cc->mbuf = inverted_buf;
-
-          env->warnings_flag &= dup_not_warned; /* TODO: fix false warning */
         }
         else {
           R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Control", 1, env));
