@@ -302,6 +302,47 @@ MAYBE_UNUSED(static int waitfd_to_waiting_flag(int wfd_event));
 #  define USE_EVENTFD (0)
 #endif
 
+static VALUE
+scheduler_wait_ensure(VALUE arg)
+{
+    struct rb_scheduler_wait *wait = (struct rb_scheduler_wait *)arg;
+    if (!wait->ensure) return Qnil;
+    ccan_list_del(&wait->node);
+    return wait->ensure(wait->ensure_arg);
+}
+
+/* A scheduler may never resume a non-blocking fiber, so its thread keeps the
+ * fiber alive and runs +ensure+ on its behalf when the thread terminates, or
+ * in a forked child before the holders of the waits are reset. */
+static VALUE
+thread_wait_ensure(rb_execution_context_t *ec, VALUE (*body)(VALUE), VALUE body_arg, VALUE (*ensure)(VALUE), VALUE ensure_arg)
+{
+    if (rb_fiberptr_blocking(ec->fiber_ptr)) {
+        return rb_ec_ensure(ec, body, body_arg, ensure, ensure_arg);
+    }
+
+    struct rb_scheduler_wait wait = {
+        .fiber = ec->fiber_ptr,
+        .ensure = ensure,
+        .ensure_arg = ensure_arg,
+    };
+    ccan_list_add_tail(&ec->thread_ptr->scheduler_waits, &wait.node);
+    return rb_ec_ensure(ec, body, body_arg, scheduler_wait_ensure, (VALUE)&wait);
+}
+
+static void
+threadptr_abandon_scheduler_waits(rb_thread_t *th)
+{
+    struct rb_scheduler_wait *wait, *next;
+
+    ccan_list_for_each_safe(&th->scheduler_waits, wait, next, node) {
+        VALUE (*ensure)(VALUE) = wait->ensure;
+        ccan_list_del(&wait->node);
+        wait->ensure = NULL;
+        ensure(wait->ensure_arg);
+    }
+}
+
 #include "thread_sync.c"
 
 void
@@ -798,6 +839,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // The thread is effectively finished and can be joined.
     VM_ASSERT(!UNDEF_P(th->value));
 
+    threadptr_abandon_scheduler_waits(th);
     rb_threadptr_join_list_wakeup(th);
     rb_threadptr_unlock_all_locking_mutexes(th);
 
@@ -1335,7 +1377,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
         arg.timeout = timeout;
         arg.limit = limit;
 
-        if (!rb_ensure(thread_join_sleep, (VALUE)&arg, remove_from_join_list, (VALUE)&arg)) {
+        if (!thread_wait_ensure(ec, thread_join_sleep, (VALUE)&arg, remove_from_join_list, (VALUE)&arg)) {
             return Qnil;
         }
     }
@@ -5403,6 +5445,14 @@ void
 rb_thread_atfork(void)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_thread_t *i;
+
+    // Must run before terminate_atfork_i resets mutex waitqs; queues and
+    // condvars reset theirs lazily on next use.
+    ccan_list_for_each(&th->ractor->threads.set, i, lt_node) {
+        threadptr_abandon_scheduler_waits(i);
+    }
+
     rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
