@@ -6028,7 +6028,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   if (ONIGENC_IS_UNICODE(env->enc)) {  /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
 
-    if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
+    r = propname2ctype(env, "Grapheme_Cluster_Break=Extend");
+    if (r < 0) goto err;
     /* Unicode 11.0.0
      *   CRLF     (already done)
      * | [Control CR LF]
@@ -6262,7 +6263,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   onig_node_free(np1);
   for (i=0; i<NODE_COMMON_SIZE; i++)
     onig_node_free(node_common[i]);
-  return (r == 0) ? ONIGERR_MEMORY : r;
+  return (r < 0) ? r : ONIGERR_MEMORY;
 }
 #undef R_ERR
 
