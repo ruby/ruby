@@ -1864,7 +1864,7 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     const uint8x16_t high_lut = vld1q_u8(high_lut_data);
     const uint8x16_t mask_0f = vdupq_n_u8(0x0F);
 
-    while (cursor + 16 <= end) {
+    while (end - cursor >= 16) {
         uint8x16_t v = vld1q_u8(cursor);
 
         uint8x16_t lo_class = vqtbl1q_u8(low_lut, vandq_u8(v, mask_0f));
@@ -1901,7 +1901,7 @@ static PRISM_INLINE size_t
 scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     const uint8_t *cursor = start;
 
-    while (cursor + 16 <= end) {
+    while (end - cursor >= 16) {
         __m128i v = _mm_loadu_si128((const __m128i *) cursor);
         __m128i zero = _mm_setzero_si128();
 
@@ -1957,7 +1957,7 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     static const uint64_t highs = 0x8080808080808080ULL;
     const uint8_t *cursor = start;
 
-    while (cursor + 8 <= end) {
+    while (end - cursor >= 8) {
         uint64_t word;
         memcpy(&word, cursor, 8);
 
@@ -1974,11 +1974,12 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
         uint64_t lowered = word | (ones * 0x20);
         uint64_t letter = ((lowered | highs) - ones * 0x61) & ((ones * 0x7A | highs) - lowered) & highs;
 
-        // Standard SWAR "has zero byte" idiom on (word XOR 0x5F) to find
-        // bytes equal to underscore. Safe from cross-byte borrows because
-        // the ASCII guard above ensures all bytes are < 0x80.
+        // Borrow-free SWAR "has zero byte" idiom on (word XOR 0x5F) to find
+        // bytes equal to underscore. Adding 0x7F sets bit 7 iff xor_us is in
+        // [1, 0x7F]; ORing xor_us covers [0x80, 0xFF]. Subtracting ones would
+        // borrow from '_' (xor_us == 0x00) into an adjacent '^' (xor_us == 0x01).
         uint64_t xor_us = word ^ (ones * 0x5F);
-        uint64_t underscore = (xor_us - ones) & ~xor_us & highs;
+        uint64_t underscore = ~((xor_us + ones * 0x7F) | xor_us) & highs;
 
         uint64_t ident = digit | letter | underscore;
 

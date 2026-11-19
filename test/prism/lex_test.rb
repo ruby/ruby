@@ -127,6 +127,18 @@ module Ruby::Prism
       )
     end
 
+    def test_lex_identifier_underscore_caret
+      assert_equal(
+        %i[IDENTIFIER CARET IDENTIFIER EOF],
+        token_types("foo____^bar")
+      )
+
+      assert_equal(
+        %i[IDENTIFIER CARET IDENTIFIER EOF],
+        token_types("a_1234_^b")
+      )
+    end
+
     def token_types(code)
       Ruby::Prism.lex(code).value.map(&:type)
     end
