@@ -4635,6 +4635,7 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
     rb_define_method(rb_cNilClass, "===", case_equal, 1);
     rb_define_method(rb_cNilClass, "==", rb_obj_equal, 1);
+    rb_define_method(rb_cNilClass, "eql?", rb_obj_equal, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
@@ -4721,6 +4722,7 @@ InitVM_Object(void)
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_define_method(rb_cTrueClass, "===", case_equal, 1);
     rb_define_method(rb_cTrueClass, "==", rb_obj_equal, 1);
+    rb_define_method(rb_cTrueClass, "eql?", rb_obj_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
 
@@ -4734,6 +4736,7 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_define_method(rb_cFalseClass, "==", rb_obj_equal, 1);
+    rb_define_method(rb_cFalseClass, "eql?", rb_obj_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
 }
