@@ -5580,12 +5580,10 @@ mod hir_opt_tests {
         bb8():
           v28:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v29:CBool = IsBitEqual v22, v28
-          CondBranch v29, bb9(), bb10()
+          CondBranch v29, bb9(), bb6()
         bb9():
           v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
-        bb10():
-          Jump bb6()
         bb6():
           v34:CInt64[3] = Const CInt64(3)
           v35:CBool = IsBitEqual v15, v34
@@ -5654,12 +5652,10 @@ mod hir_opt_tests {
         bb8():
           v28:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v29:CBool = IsBitEqual v22, v28
-          CondBranch v29, bb9(), bb10()
+          CondBranch v29, bb9(), bb6()
         bb9():
           v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
-        bb10():
-          Jump bb6()
         bb6():
           v34:CInt64[3] = Const CInt64(3)
           v35:CBool = IsBitEqual v15, v34
@@ -5727,12 +5723,10 @@ mod hir_opt_tests {
         bb8():
           v28:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v29:CBool = IsBitEqual v22, v28
-          CondBranch v29, bb9(), bb10()
+          CondBranch v29, bb9(), bb6()
         bb9():
           v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
-        bb10():
-          Jump bb6()
         bb6():
           v34:CInt64[3] = Const CInt64(3)
           v35:CBool = IsBitEqual v15, v34
@@ -5787,12 +5781,10 @@ mod hir_opt_tests {
           v22:Iseq = LoadField v21, :code_iseq@0x1001
           v23:Iseq[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v24:CBool = IsBitEqual v22, v23
-          CondBranch v24, bb7(), bb8()
+          CondBranch v24, bb7(), bb6()
         bb7():
           v26:BasicObject = InvokeBlockIseqDirect (0x1008), v21, v10
           Jump bb4(v26)
-        bb8():
-          Jump bb6()
         bb6():
           v29:CInt64[3] = Const CInt64(3)
           v30:CBool = IsBitEqual v15, v29
@@ -5894,12 +5886,10 @@ mod hir_opt_tests {
           v22:Iseq = LoadField v21, :code_iseq@0x1011
           v23:Iseq[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           v24:CBool = IsBitEqual v22, v23
-          CondBranch v24, bb7(), bb8()
+          CondBranch v24, bb7(), bb6()
         bb7():
           v26:BasicObject = InvokeBlockIseqDirect (0x1018), v21, v10
           Jump bb4(v26)
-        bb8():
-          Jump bb6()
         bb6():
           v29:CInt64[3] = Const CInt64(3)
           v30:CBool = IsBitEqual v15, v29
@@ -23891,9 +23881,7 @@ mod hir_opt_tests {
           v4:CPtr = LoadPC
           v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v6:CBool = IsBitEqual v4, v5
-          CondBranch v6, bb3(v1, v3), bb6()
-        bb6():
-          Jump bb5(v1, v3)
+          CondBranch v6, bb3(v1, v3), bb5(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v10:BasicObject = LoadArg :self@0
@@ -24020,9 +24008,7 @@ mod hir_opt_tests {
           v5:CPtr = LoadPC
           v6:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
           v7:CBool = IsBitEqual v5, v6
-          CondBranch v7, bb3(v1, v3, v4), bb6()
-        bb6():
-          Jump bb5(v1, v3, v4)
+          CondBranch v7, bb3(v1, v3, v4), bb5(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
           v11:BasicObject = LoadArg :self@0
@@ -24185,9 +24171,7 @@ mod hir_opt_tests {
           v4:CPtr = LoadPC
           v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v6:CBool = IsBitEqual v4, v5
-          CondBranch v6, bb3(v1, v3), bb6()
-        bb6():
-          Jump bb5(v1, v3)
+          CondBranch v6, bb3(v1, v3), bb5(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v10:HeapBasicObject = LoadArg :self@0
@@ -24823,9 +24807,7 @@ mod hir_opt_tests {
         bb9():
           v11:CPtr[CPtr(0x1004)] = Const CPtr(0x1004)
           v12:CBool = IsBitEqual v7, v11
-          CondBranch v12, bb5(v1, v3, v4, v5), bb10()
-        bb10():
-          Jump bb7(v1, v3, v4, v5)
+          CondBranch v12, bb5(v1, v3, v4, v5), bb7(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
           v16:BasicObject = LoadArg :self@0
@@ -29671,27 +29653,19 @@ mod hir_opt_tests {
           v94:CShape = LoadField v74, :shape_id@0x1058
           v96:CShape[0x1059] = Const CShape(0x1059)
           v97:CBool = IsBitEqual v94, v96
-          CondBranch v97, bb7(), bb8()
-        bb7():
-          Jump bb6()
+          CondBranch v97, bb6(), bb8()
         bb8():
           v101:CShape[0x105a] = Const CShape(0x105a)
           v102:CBool = IsBitEqual v94, v101
-          CondBranch v102, bb9(), bb10()
-        bb9():
-          Jump bb6()
+          CondBranch v102, bb6(), bb10()
         bb10():
           v106:CShape[0x105b] = Const CShape(0x105b)
           v107:CBool = IsBitEqual v94, v106
-          CondBranch v107, bb11(), bb12()
-        bb11():
-          Jump bb6()
+          CondBranch v107, bb6(), bb12()
         bb12():
           v111:CShape[0x105c] = Const CShape(0x105c)
           v112:CBool = IsBitEqual v94, v111
-          CondBranch v112, bb13(), bb14()
-        bb13():
-          Jump bb6()
+          CondBranch v112, bb6(), bb14()
         bb14():
           v116:CShape[0x105d] = GuardBitEquals v94, CShape(0x105d) recompile
           Jump bb6()
@@ -29708,27 +29682,19 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v74 (0x1038), num_args=0
           v135:CShape[0x1059] = Const CShape(0x1059)
           v136:CBool = IsBitEqual v22, v135
-          CondBranch v136, bb19(), bb20()
-        bb19():
-          Jump bb18()
+          CondBranch v136, bb18(), bb20()
         bb20():
           v140:CShape[0x105a] = Const CShape(0x105a)
           v141:CBool = IsBitEqual v22, v140
-          CondBranch v141, bb21(), bb22()
-        bb21():
-          Jump bb18()
+          CondBranch v141, bb18(), bb22()
         bb22():
           v145:CShape[0x105b] = Const CShape(0x105b)
           v146:CBool = IsBitEqual v22, v145
-          CondBranch v146, bb23(), bb24()
-        bb23():
-          Jump bb18()
+          CondBranch v146, bb18(), bb24()
         bb24():
           v150:CShape[0x105c] = Const CShape(0x105c)
           v151:CBool = IsBitEqual v22, v150
-          CondBranch v151, bb25(), bb26()
-        bb25():
-          Jump bb18()
+          CondBranch v151, bb18(), bb26()
         bb26():
           v155 = GuardBitEquals v22, CShape(0x105d) recompile
           Jump bb18()
@@ -29745,27 +29711,19 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v74 (0x1038), num_args=0
           v174:CShape[0x1059] = Const CShape(0x1059)
           v175:CBool = IsBitEqual v39, v174
-          CondBranch v175, bb31(), bb32()
-        bb31():
-          Jump bb30()
+          CondBranch v175, bb30(), bb32()
         bb32():
           v179:CShape[0x105a] = Const CShape(0x105a)
           v180:CBool = IsBitEqual v39, v179
-          CondBranch v180, bb33(), bb34()
-        bb33():
-          Jump bb30()
+          CondBranch v180, bb30(), bb34()
         bb34():
           v184:CShape[0x105b] = Const CShape(0x105b)
           v185:CBool = IsBitEqual v39, v184
-          CondBranch v185, bb35(), bb36()
-        bb35():
-          Jump bb30()
+          CondBranch v185, bb30(), bb36()
         bb36():
           v189:CShape[0x105c] = Const CShape(0x105c)
           v190:CBool = IsBitEqual v39, v189
-          CondBranch v190, bb37(), bb38()
-        bb37():
-          Jump bb30()
+          CondBranch v190, bb30(), bb38()
         bb38():
           v194 = GuardBitEquals v39, CShape(0x105d) recompile
           Jump bb30()
@@ -29779,27 +29737,19 @@ mod hir_opt_tests {
           v211:CShape = LoadField v74, :shape_id@0x1058
           v213:CShape[0x1059] = Const CShape(0x1059)
           v214:CBool = IsBitEqual v211, v213
-          CondBranch v214, bb43(), bb44()
-        bb43():
-          Jump bb42()
+          CondBranch v214, bb42(), bb44()
         bb44():
           v218:CShape[0x105a] = Const CShape(0x105a)
           v219:CBool = IsBitEqual v211, v218
-          CondBranch v219, bb45(), bb46()
-        bb45():
-          Jump bb42()
+          CondBranch v219, bb42(), bb46()
         bb46():
           v223:CShape[0x105b] = Const CShape(0x105b)
           v224:CBool = IsBitEqual v211, v223
-          CondBranch v224, bb47(), bb48()
-        bb47():
-          Jump bb42()
+          CondBranch v224, bb42(), bb48()
         bb48():
           v228:CShape[0x105c] = Const CShape(0x105c)
           v229:CBool = IsBitEqual v211, v228
-          CondBranch v229, bb49(), bb50()
-        bb49():
-          Jump bb42()
+          CondBranch v229, bb42(), bb50()
         bb50():
           v233:CShape[0x105d] = GuardBitEquals v211, CShape(0x105d) recompile
           Jump bb42()
@@ -29813,27 +29763,19 @@ mod hir_opt_tests {
           v250:CShape = LoadField v74, :shape_id@0x1058
           v252:CShape[0x1059] = Const CShape(0x1059)
           v253:CBool = IsBitEqual v250, v252
-          CondBranch v253, bb55(), bb56()
-        bb55():
-          Jump bb54()
+          CondBranch v253, bb54(), bb56()
         bb56():
           v257:CShape[0x105a] = Const CShape(0x105a)
           v258:CBool = IsBitEqual v250, v257
-          CondBranch v258, bb57(), bb58()
-        bb57():
-          Jump bb54()
+          CondBranch v258, bb54(), bb58()
         bb58():
           v262:CShape[0x105b] = Const CShape(0x105b)
           v263:CBool = IsBitEqual v250, v262
-          CondBranch v263, bb59(), bb60()
-        bb59():
-          Jump bb54()
+          CondBranch v263, bb54(), bb60()
         bb60():
           v267:CShape[0x105c] = Const CShape(0x105c)
           v268:CBool = IsBitEqual v250, v267
-          CondBranch v268, bb61(), bb62()
-        bb61():
-          Jump bb54()
+          CondBranch v268, bb54(), bb62()
         bb62():
           v272:CShape[0x105d] = GuardBitEquals v250, CShape(0x105d) recompile
           Jump bb54()
