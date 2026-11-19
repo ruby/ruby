@@ -5828,6 +5828,8 @@ impl Function {
                             ReceiverTypeResolution::Monomorphic { profiled_type }
                             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => {
                                 if self.policy.no_side_exits && can_dispatch {
+                                    // Do "polymorphic" dispatch (the profile we know about and a
+                                    // fallback) if we can't exit.
                                     block = self.specialize_polymorphic_send(block, insn_id, &[profiled_type]);
                                     continue;
                                 }
