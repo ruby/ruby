@@ -130,6 +130,8 @@ VALUE rb_obj_is_fiber(VALUE obj);
  * @exception   rb_eException   Any exceptions happen in `fiber`.
  * @return      (See above)
  * @note        This function _does_ return.
+ * @note        A suspended non-root fiber can be resumed by another thread.
+ *              It becomes associated with that thread while it runs.
  *
  * @internal
  *
@@ -236,6 +238,8 @@ VALUE rb_fiber_yield_kw(int argc, const VALUE *argv, int kw_splat);
  * @exception   rb_eFiberError  (See above)
  * @exception   rb_eException   What was raised using `Fiber#raise`.
  * @return      (See rb_fiber_resume() for details)
+ * @note        A suspended non-root fiber can be transferred to by another
+ *              thread.  It becomes associated with that thread while it runs.
  */
 VALUE rb_fiber_transfer(VALUE fiber, int argc, const VALUE *argv);
 
