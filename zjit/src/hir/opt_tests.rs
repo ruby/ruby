@@ -29634,4 +29634,214 @@ mod hir_opt_tests {
           Return v172
         ");
     }
+
+    #[test]
+    fn test_fold_trampoline_branches() {
+        set_call_threshold(2);
+        set_inline_budget(1000);
+        eval(r#"
+            def foo = @foo
+            def test
+              foo
+              @a = 1
+              foo
+              @b = 2
+              foo
+              @c = 3
+              foo
+              @d = 4
+              foo
+            end
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v74:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :foo, v74 (0x1038), num_args=0
+          v94:CShape = LoadField v74, :shape_id@0x1058
+          v96:CShape[0x1059] = Const CShape(0x1059)
+          v97:CBool = IsBitEqual v94, v96
+          CondBranch v97, bb7(), bb8()
+        bb7():
+          Jump bb6()
+        bb8():
+          v101:CShape[0x105a] = Const CShape(0x105a)
+          v102:CBool = IsBitEqual v94, v101
+          CondBranch v102, bb9(), bb10()
+        bb9():
+          Jump bb6()
+        bb10():
+          v106:CShape[0x105b] = Const CShape(0x105b)
+          v107:CBool = IsBitEqual v94, v106
+          CondBranch v107, bb11(), bb12()
+        bb11():
+          Jump bb6()
+        bb12():
+          v111:CShape[0x105c] = Const CShape(0x105c)
+          v112:CBool = IsBitEqual v94, v111
+          CondBranch v112, bb13(), bb14()
+        bb13():
+          Jump bb6()
+        bb14():
+          v116:CShape[0x105d] = GuardBitEquals v94, CShape(0x105d) recompile
+          Jump bb6()
+        bb6():
+          v283:NilClass = Const Value(nil)
+          PopInlineFrame
+          v15:Fixnum[1] = Const Value(1)
+          v18:CShape = LoadField v74, :shape_id@0x1058
+          v19:CShape[0x105a] = GuardBitEquals v18, CShape(0x105a) recompile
+          StoreField v74, :@a@0x105e, v15
+          v22:CShape[0x105b] = Const CShape(0x105b)
+          StoreField v74, :shape_id@0x1058, v22
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PushInlineFrame :foo, v74 (0x1038), num_args=0
+          v135:CShape[0x1059] = Const CShape(0x1059)
+          v136:CBool = IsBitEqual v22, v135
+          CondBranch v136, bb19(), bb20()
+        bb19():
+          Jump bb18()
+        bb20():
+          v140:CShape[0x105a] = Const CShape(0x105a)
+          v141:CBool = IsBitEqual v22, v140
+          CondBranch v141, bb21(), bb22()
+        bb21():
+          Jump bb18()
+        bb22():
+          v145:CShape[0x105b] = Const CShape(0x105b)
+          v146:CBool = IsBitEqual v22, v145
+          CondBranch v146, bb23(), bb24()
+        bb23():
+          Jump bb18()
+        bb24():
+          v150:CShape[0x105c] = Const CShape(0x105c)
+          v151:CBool = IsBitEqual v22, v150
+          CondBranch v151, bb25(), bb26()
+        bb25():
+          Jump bb18()
+        bb26():
+          v155 = GuardBitEquals v22, CShape(0x105d) recompile
+          Jump bb18()
+        bb18():
+          v284:NilClass = Const Value(nil)
+          PopInlineFrame
+          v32:Fixnum[2] = Const Value(2)
+          v35:CShape = LoadField v74, :shape_id@0x1058
+          v36:CShape[0x105b] = GuardBitEquals v35, CShape(0x105b) recompile
+          StoreField v74, :@b@0x105f, v32
+          v39:CShape[0x105c] = Const CShape(0x105c)
+          StoreField v74, :shape_id@0x1058, v39
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PushInlineFrame :foo, v74 (0x1038), num_args=0
+          v174:CShape[0x1059] = Const CShape(0x1059)
+          v175:CBool = IsBitEqual v39, v174
+          CondBranch v175, bb31(), bb32()
+        bb31():
+          Jump bb30()
+        bb32():
+          v179:CShape[0x105a] = Const CShape(0x105a)
+          v180:CBool = IsBitEqual v39, v179
+          CondBranch v180, bb33(), bb34()
+        bb33():
+          Jump bb30()
+        bb34():
+          v184:CShape[0x105b] = Const CShape(0x105b)
+          v185:CBool = IsBitEqual v39, v184
+          CondBranch v185, bb35(), bb36()
+        bb35():
+          Jump bb30()
+        bb36():
+          v189:CShape[0x105c] = Const CShape(0x105c)
+          v190:CBool = IsBitEqual v39, v189
+          CondBranch v190, bb37(), bb38()
+        bb37():
+          Jump bb30()
+        bb38():
+          v194 = GuardBitEquals v39, CShape(0x105d) recompile
+          Jump bb30()
+        bb30():
+          v285:NilClass = Const Value(nil)
+          PopInlineFrame
+          v49:Fixnum[3] = Const Value(3)
+          SetIvar v74, :@c, v49
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PushInlineFrame :foo, v74 (0x1038), num_args=0
+          v211:CShape = LoadField v74, :shape_id@0x1058
+          v213:CShape[0x1059] = Const CShape(0x1059)
+          v214:CBool = IsBitEqual v211, v213
+          CondBranch v214, bb43(), bb44()
+        bb43():
+          Jump bb42()
+        bb44():
+          v218:CShape[0x105a] = Const CShape(0x105a)
+          v219:CBool = IsBitEqual v211, v218
+          CondBranch v219, bb45(), bb46()
+        bb45():
+          Jump bb42()
+        bb46():
+          v223:CShape[0x105b] = Const CShape(0x105b)
+          v224:CBool = IsBitEqual v211, v223
+          CondBranch v224, bb47(), bb48()
+        bb47():
+          Jump bb42()
+        bb48():
+          v228:CShape[0x105c] = Const CShape(0x105c)
+          v229:CBool = IsBitEqual v211, v228
+          CondBranch v229, bb49(), bb50()
+        bb49():
+          Jump bb42()
+        bb50():
+          v233:CShape[0x105d] = GuardBitEquals v211, CShape(0x105d) recompile
+          Jump bb42()
+        bb42():
+          v286:NilClass = Const Value(nil)
+          PopInlineFrame
+          v60:Fixnum[4] = Const Value(4)
+          SetIvar v74, :@d, v60
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          PushInlineFrame :foo, v74 (0x1038), num_args=0
+          v250:CShape = LoadField v74, :shape_id@0x1058
+          v252:CShape[0x1059] = Const CShape(0x1059)
+          v253:CBool = IsBitEqual v250, v252
+          CondBranch v253, bb55(), bb56()
+        bb55():
+          Jump bb54()
+        bb56():
+          v257:CShape[0x105a] = Const CShape(0x105a)
+          v258:CBool = IsBitEqual v250, v257
+          CondBranch v258, bb57(), bb58()
+        bb57():
+          Jump bb54()
+        bb58():
+          v262:CShape[0x105b] = Const CShape(0x105b)
+          v263:CBool = IsBitEqual v250, v262
+          CondBranch v263, bb59(), bb60()
+        bb59():
+          Jump bb54()
+        bb60():
+          v267:CShape[0x105c] = Const CShape(0x105c)
+          v268:CBool = IsBitEqual v250, v267
+          CondBranch v268, bb61(), bb62()
+        bb61():
+          Jump bb54()
+        bb62():
+          v272:CShape[0x105d] = GuardBitEquals v250, CShape(0x105d) recompile
+          Jump bb54()
+        bb54():
+          v287:NilClass = Const Value(nil)
+          PopInlineFrame
+          CheckInterrupts
+          Return v287
+        ");
+    }
 }
