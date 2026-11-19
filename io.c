@@ -1973,12 +1973,7 @@ io_binwrite(const char *ptr, rb_len_t len, rb_io_t *fptr, int nosync)
         arg.ptr = ptr;
         arg.length = len;
 
-        if (!NIL_P(fptr->write_lock)) {
-            return rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
-        }
-        else {
-            return io_binwrite_string((VALUE)&arg);
-        }
+        return rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
     }
     else {
         if (fptr->wbuf.off) {
@@ -2245,12 +2240,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
     arg.iovcnt = iovcnt;
     arg.total = total;
 
-    if (!NIL_P(fptr->write_lock)) {
-        return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, (VALUE)&arg);
-    }
-    else {
-        return io_binwritev_internal((VALUE)&arg);
-    }
+    return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, (VALUE)&arg);
 }
 
 static rb_len_t
