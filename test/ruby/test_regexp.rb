@@ -605,6 +605,33 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal([2, 3], m.offset(3))
   end
 
+  # Character offsets of a shareable MatchData are computed lazily on first use.
+  # Ractors racing on that first use read the cache before it was filled in and
+  # got 0 instead of the offsets.
+  def test_match_char_offset_shared_across_ractors
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      Warning[:experimental] = false
+      re = /(x)(y)(z)(\u3044+)(q)?(nomatch)?/
+      mk = ->(i) { re.match("\u3042" * (i % 7 + 1) + "xyz" + "\u3044" * 3 + "q") }
+      def read(m) = [m.offset(1), m.offset(4), m.begin(5), m.end(0), m.match_length(4)]
+      want = Ractor.make_shareable(Array.new(200) { |i| read(mk.(i)) })
+
+      10.times do
+        mds = Ractor.make_shareable(Array.new(200) { |i| mk.(i) })
+        rs = Array.new(4) do
+          Ractor.new(mds, want) do |mds, want|
+            Ractor.receive
+            mds.each_index.reject { |i| read(mds[i]) == want[i] }
+          end
+        end
+        rs.each { |r| r.send(nil) }
+        rs.each { |r| assert_equal([], r.value) }
+        assert_equal(want[3], read(mds[3].dup))
+      end
+    end;
+  end
+
   def test_match_byteoffset_begin_end
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal([3, 6], m.byteoffset("x"))
