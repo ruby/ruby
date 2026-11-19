@@ -24379,9 +24379,6 @@ mod hir_opt_tests {
 
     #[test]
     fn specialize_polymorphic_send_iseq_result_feeds_inlined_cfunc() {
-        // The arms' SendDirect results are created after type inference; the join Param must
-        // still get a real type so that inlining Hash#[]= (which returns its value argument)
-        // does not try to infer the type of a Param.
         set_inline_threshold(0);
         set_call_threshold(4);
         eval("

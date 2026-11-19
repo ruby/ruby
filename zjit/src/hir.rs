@@ -773,19 +773,11 @@ pub enum ReceiverTypeResolution {
     StaticallyKnown { class: VALUE },
 }
 
-/// How the receiver class (and shape) that a Send is specialized against is established at
-/// runtime. Specialization emits receiver guards only for a `Speculated` receiver.
 #[derive(Debug, Clone, Copy)]
 enum SpecializedReceiver {
-    /// Known statically from the receiver's HIR type; nothing to guard.
     Static { class: VALUE },
-    /// Speculated from profiling; specialization must guard the receiver (GuardType, plus a
-    /// shape guard for shape-dependent rewrites) before committing.
     Speculated { profiled_type: ProfiledType },
-    /// Established by enclosing dispatch branches (class and shape tests); emit no guards.
     Guaranteed { profiled_type: ProfiledType },
-    /// The class is established by an enclosing dispatch branch, but the shape matched none of
-    /// the profiled shapes. Emit no guards; shape-dependent rewrites use generic instructions.
     ShapeMiss { class: VALUE },
 }
 
@@ -798,7 +790,6 @@ impl SpecializedReceiver {
         }
     }
 
-    /// The profiled receiver type, if any (None for a statically known receiver).
     fn profiled_type(&self) -> Option<ProfiledType> {
         match *self {
             SpecializedReceiver::Static { .. } | SpecializedReceiver::ShapeMiss { .. } => None,
@@ -807,7 +798,6 @@ impl SpecializedReceiver {
         }
     }
 
-    /// The profiled type to guard against, if guards are needed (only for `Speculated`).
     fn speculated_type(&self) -> Option<ProfiledType> {
         match *self {
             SpecializedReceiver::Speculated { profiled_type } => Some(profiled_type),
@@ -5091,11 +5081,7 @@ impl Function {
         }
     }
 
-    /// Like [`Function::polymorphic_summary`], but reads this Function's own profile oracle.
     fn send_polymorphic_summary(&self, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
-        // If the receiver's class is already known statically, branching on profiled classes
-        // can only produce arms that are dead or redundant; let the static type drive
-        // specialization instead.
         if self.type_of(recv).runtime_exact_ruby_class().is_some() {
             return None;
         }
@@ -5103,9 +5089,6 @@ impl Function {
         self.polymorphic_summary(profiles, recv, state)
     }
 
-    /// Return the definition type of the method `cd` names on `klass`, chasing aliases, or None
-    /// if lookup fails. This is advisory (no patch point): [`Function::type_specialize_send`]
-    /// repeats the lookup and emits the MethodRedefined patch point itself.
     fn resolved_method_def_type(klass: VALUE, cd: *const rb_call_data) -> Option<rb_method_type_t> {
         let ci = unsafe { (*cd).ci };
         let mut cme = unsafe { rb_callable_method_entry(klass, vm_ci_mid(ci)) };
@@ -5121,41 +5104,12 @@ impl Function {
         Some(def_type)
     }
 
-    /// Push `insn` into `block` and infer its type. Type specialization runs after type
-    /// inference, so instructions it creates must compute their own types.
     fn push_insn_typed(&mut self, block: BlockId, insn: Insn) -> InsnId {
         let id = self.push_insn(block, insn);
         self.insn_types[id] = self.infer_type(id);
         id
     }
 
-    /// Split `block` into a dispatch chain for a Send with a polymorphic receiver:
-    ///
-    /// ```text
-    /// for class in profiles:
-    ///     if HasType class:
-    ///         RefineType class
-    ///         if method(class) is an ivar accessor:
-    ///             s = load shape
-    ///             for shape in class:
-    ///                 if s == shape:
-    ///                     specialize send for (class, shape)
-    ///             goto fallback
-    ///         else:
-    ///             specialize send for class
-    /// fallback:
-    ///     dynamic send
-    /// ```
-    ///
-    /// The outer chain tests the receiver's class (CondBranchHasType/RefineType) and the inner
-    /// chain its shape (IsBitEqual on the loaded shape id), so each arm's send specializes against
-    /// a fully guaranteed (class, shape) pair and emits no receiver guards of its own. Only ivar
-    /// accessors (attr_reader/attr_writer) consume the receiver's shape, so the shape dispatch is
-    /// emitted only for them; every other method type specializes against the class alone. ISEQ
-    /// callees with a polymorphic caller-splat length profile are further split by length.
-    /// Receivers matching no profiled class, shape, or length share one generic dynamic send.
-    /// All branches join on a block whose Param replaces the original send. Returns the join
-    /// block, which the caller should continue filling.
     fn specialize_polymorphic_send(&mut self, mut block: BlockId, insn_id: InsnId, profiled_types: &[ProfiledType]) -> BlockId {
         let (recv, cd, state, args, send_block, caller_splat_length, reason) = match self.resolve(insn_id).insn(self) {
             &Insn::Send { recv, cd, state, ref args, block, caller_splat_length, reason } => (recv, cd, state, args.clone(), block, caller_splat_length, reason),
@@ -5166,17 +5120,12 @@ impl Function {
         let join_block = self.new_block(insn_idx);
         let join_param = self.push_insn(join_block, Insn::Param);
         let fallback_block = self.new_block(insn_idx);
-        // The join Param's type is the union of the incoming edge arguments.
         let mut join_type = types::Empty;
-        // Group buckets by expected HIR type so immediate/heap variants under the same Ruby
-        // class still get separate class branches, and each class branch dispatches only on the
-        // shapes profiled for that class.
         let arms = polymorphic_arms(profiled_types);
         for (index, (expected, buckets)) in arms.iter().enumerate() {
             let expected = *expected;
-            // if HasType class: ... else: goto next class
             let class_block = self.new_block(insn_idx);
-            // The final class miss joins shape and length misses at the shared fallback.
+            // The final receiver miss joins length misses at the shared fallback.
             let next_class = if index + 1 == arms.len() { fallback_block } else { self.new_block(insn_idx) };
             self.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
                 val: recv,
@@ -5186,13 +5135,10 @@ impl Function {
             })));
             block = next_class;
             let refined_recv = self.push_insn_typed(class_block, Insn::RefineType { val: recv, new_type: expected });
-            // Only ivar accessors consume the receiver's shape, so only they need per-shape
-            // dispatch arms.
             let needs_shape = matches!(
                 Self::resolved_method_def_type(buckets[0].class(), cd),
                 Some(VM_METHOD_TYPE_IVAR | VM_METHOD_TYPE_ATTRSET)
             );
-            // Dedup this class's buckets by shape so each shape gets one arm.
             let mut shapes: Vec<ProfiledType> = Vec::with_capacity(buckets.len());
             if needs_shape {
                 for &profiled_type in buckets {
@@ -5203,18 +5149,14 @@ impl Function {
                 }
             }
             if shapes.is_empty() {
-                // No shape dispatch needed: either the method doesn't consume the receiver's
-                // shape, or the receivers are immediates, which carry no shape. Specialize
-                // directly against the class.
                 let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
-                // Length selection needs the refined receiver to identify the ISEQ callee.
                 let lengths = if send_block.is_none() {
                     self.profiles.as_ref().map_or(vec![], |profiles| self.caller_splat_lengths(ci, refined_recv, state, profiles))
                 } else {
                     vec![]
                 };
                 if lengths.len() > 1 {
-                    // Length misses share the receiver fallback's unexpanded Send.
+                    // Receiver and length misses share the original, unexpanded Send.
                     let mut length_block = class_block;
                     let splat_array = self.caller_splat_array(&arm_send);
                     let actual = self.push_insn_typed(length_block, Insn::ArrayLength { array: splat_array });
@@ -5244,15 +5186,11 @@ impl Function {
                 }
                 continue;
             }
-            // s = load shape
             let shape = self.load_shape(class_block, refined_recv);
             let mut shape_block = class_block;
-            // The class matched, so a shape miss still knows the method: rather than the shared
-            // dynamic send, it gets its own arm that uses the generic ivar instruction.
             let shape_miss_block = self.new_block(insn_idx);
             let num_shapes = shapes.len();
             for (shape_index, profiled_type) in shapes.into_iter().enumerate() {
-                // if s == shape: specialize send for (class, shape); else: goto next shape
                 let expected_shape = self.push_insn_typed(shape_block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
                 let has_shape = self.push_insn_typed(shape_block, Insn::IsBitEqual { left: shape, right: expected_shape });
                 let arm_block = self.new_block(insn_idx);
@@ -5273,7 +5211,7 @@ impl Function {
             join_type = join_type.union(self.type_of(result));
             self.push_insn(shape_miss_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
         }
-        // In the fallthrough case, do a generic dynamic send and then join.
+        // In the fallthrough case, do a generic interpreter send and then join.
         let fallback_send = self.push_insn_typed(fallback_block, Insn::Send { recv, cd, block: send_block, args, caller_splat_length, state, reason: SendPolymorphicFallback });
         join_type = join_type.union(self.type_of(fallback_send));
         self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_send] }));
@@ -5282,7 +5220,6 @@ impl Function {
         join_block
     }
 
-    /// Return the caller-splat array operand of `send`.
     fn caller_splat_array(&self, send: &Insn) -> InsnId {
         let Insn::Send { cd, ref args, .. } = *send else { unreachable!() };
         let ci = unsafe { (*cd).ci };
@@ -5293,21 +5230,12 @@ impl Function {
         args[caller_args.splat_arg_idx.unwrap()]
     }
 
-    /// Specialize `send` (a copy of a polymorphic Send whose receiver is refined to one profiled
-    /// class) into the dispatch arm `arm_block`. The receiver's class (and shape, for ivar
-    /// accessors, unless `recv_spec` is a shape miss) is guaranteed by the enclosing branch tests,
-    /// so the specialized code emits no receiver guards. On failure the send stays in the arm as
-    /// a dynamic send. Returns the arm's result value.
     fn specialize_send_arm(&mut self, arm_block: BlockId, send: Insn, recv_spec: SpecializedReceiver) -> InsnId {
-        // Give each arm its own Send so per-send counters and fallback reasons belong to it.
         let arm_send = self.new_insn(send);
         self.insn_types[arm_send] = self.infer_type(arm_send);
         match self.type_specialize_send(arm_block, arm_send, recv_spec) {
             Ok(replacement) => {
                 self.make_equal_to(arm_send, replacement);
-                // type_specialize runs after type inference, so the specialized replacement may
-                // still be untyped (Any). Type it now: the arm result feeds the join Param's type,
-                // and later sends in this pass rely on that type.
                 let replacement = self.union_find.borrow_mut().find(replacement);
                 if self.insn_types[replacement].bit_equal(types::Any) && !matches!(self.insns[replacement], Insn::Param) {
                     self.insn_types[replacement] = self.infer_type(replacement);
@@ -5322,13 +5250,6 @@ impl Function {
         }
     }
 
-    /// Try to specialize the `Send` at `insn_id` against the receiver described by `recv_spec`,
-    /// emitting guards (for a speculated receiver only), patch points, and a specialized call
-    /// into `block`. On success, return the replacement value; the caller is responsible for
-    /// `make_equal_to`. On failure, return the fallback reason; the caller is responsible for
-    /// setting the reason and pushing the dynamic send (guards already emitted before the
-    /// failure stay in the block, which is safe because they re-enter the interpreter at the
-    /// pre-send state).
     fn type_specialize_send(&mut self, block: BlockId, insn_id: InsnId, recv_spec: SpecializedReceiver) -> Result<InsnId, SendFallbackReason> {
         let (mut recv, cd, state, send_block, caller_splat_length, mut args) = match self.resolve(insn_id).insn(self) {
             &Insn::Send { recv, cd, state, block, caller_splat_length, ref args, .. } => (recv, cd, state, block, caller_splat_length, args.to_vec()),
@@ -5460,7 +5381,8 @@ impl Function {
                 // Count the profile shape for every caller-splat execution;
                 // complex_arg_pass_caller_splat separately tracks fallbacks.
                 self.count_caller_splat_profile(block, insn_id, state);
-                // A Send without a selected caller-splat expansion stays dynamic.
+                // A Send without a caller-splat expansion selected by
+                // `add_iseq_to_hir` stays dynamic.
                 let Some(length) = caller_splat_length else {
                     self.count_send(block, insn_id, Counter::complex_arg_pass_caller_splat);
                     return Err(ComplexArgPass);
@@ -5555,8 +5477,6 @@ impl Function {
                     self.try_emit_optimized_getivar(block, recv, id, profiled_type, state)
                 }
                 SpecializedReceiver::Guaranteed { profiled_type } => {
-                    // Class and shape are established by the enclosing dispatch branches; load
-                    // the ivar without guards.
                     self.emit_guaranteed_getivar(block, recv, id, profiled_type, state)
                 }
                 SpecializedReceiver::Static { .. } => {
@@ -5583,8 +5503,6 @@ impl Function {
                     self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, recompile)
                 }
                 SpecializedReceiver::Guaranteed { profiled_type } => {
-                    // Class and shape are established by the enclosing dispatch branches; write
-                    // the ivar without guards.
                     self.prepare_optimized_setivar(id, profiled_type)
                         .map(|spec| self.emit_optimized_setivar(block, recv, id, val, spec))
                 }
@@ -5635,7 +5553,7 @@ impl Function {
                             return Err(OperandTooLarge);
                         }
                     }
-                    // Use the profiled type to check if the fields are embedded or heap allocated.
+                    // Get the profiled type to check if the fields is embedded or heap allocated.
                     let profiled_type = match recv_spec {
                         SpecializedReceiver::Static { .. } => self.profiled_type_of_at(recv, state),
                         _ => recv_spec.profiled_type(),
@@ -5693,8 +5611,6 @@ impl Function {
                 args: Vec<InsnId>,
                 state: InsnId,
                 recv_class: VALUE,
-                // The profiled type to guard against, if the receiver is speculated rather than
-                // statically known or guaranteed by dispatch branches.
                 speculated_type: Option<ProfiledType>,
                 cme: *const rb_callable_method_entry_struct,
                 lookup_cme: *const rb_callable_method_entry_struct,
@@ -5893,8 +5809,6 @@ impl Function {
         for entry_block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[entry_block].insns);
             assert!(self.blocks[entry_block].insns.is_empty());
-            // Polymorphic send dispatch splits the block; `block` tracks the current
-            // tail block that the remaining instructions flow into.
             let mut block = entry_block;
             for insn_id in old_insns {
                 // Retry dynamic sends without accumulating counters from previous attempts.
@@ -5908,11 +5822,6 @@ impl Function {
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
                     &Insn::Send { recv, state, reason, .. } => {
-                        // A polymorphic receiver gets a chain of class tests (with nested shape
-                        // tests for ivar accessors), and the send specialized separately against
-                        // each profiled arm. Only dispatch sends that haven't been through
-                        // specialization yet (Uncategorized) so the per-arm and fallback sends
-                        // aren't re-expanded on later fixpoint iterations.
                         let can_dispatch = matches!(reason, Uncategorized(_));
                         if can_dispatch {
                             if let Some(summary) = self.send_polymorphic_summary(recv, state) {
@@ -5924,10 +5833,6 @@ impl Function {
                             ReceiverTypeResolution::StaticallyKnown { class } => SpecializedReceiver::Static { class },
                             ReceiverTypeResolution::Monomorphic { profiled_type }
                             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => {
-                                // Speculating on the profile needs receiver guards. On the final
-                                // version, where guard side exits are not allowed, use branch
-                                // dispatch instead: a single guaranteed arm plus a dynamic
-                                // fallback.
                                 if self.policy.no_side_exits && can_dispatch {
                                     block = self.specialize_polymorphic_send(block, insn_id, &[profiled_type]);
                                     continue;
@@ -6777,8 +6682,6 @@ impl Function {
         shape.layout() != ShapeLayout::RClass || self.assume_single_ractor_mode(block, state)
     }
 
-    /// Shape-based ivar load preconditions shared by the guarded ([`Self::try_emit_optimized_getivar`])
-    /// and dispatch-guaranteed ([`Self::emit_guaranteed_getivar`]) paths.
     fn can_optimize_getivar(profiled_type: ProfiledType) -> Result<(), Counter> {
         if profiled_type.flags().is_immediate() {
             // Instance variable lookups on immediate values are always nil
@@ -6792,8 +6695,6 @@ impl Function {
         Ok(())
     }
 
-    /// Like [`Self::try_emit_optimized_getivar`], but for a receiver whose class and shape are
-    /// already established by enclosing dispatch branches: no receiver guards are emitted.
     fn emit_guaranteed_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
         Self::can_optimize_getivar(profiled_type)?;
         if !self.assume_ivar_read_ractor_independent(block, profiled_type.shape(), state) {
@@ -9708,15 +9609,6 @@ impl ProfileOracle {
     }
 }
 
-/// Group profiled receiver types into polymorphic dispatch arms, one per receiver Type (class +
-/// heap/immediate representation), in profile order:
-///
-/// * class C arm
-/// * String arm
-///
-/// This is enough for method sends, which only need the class, but attr_reader/attr_writer read
-/// the receiver's shape too. Each arm therefore keeps the profiled types (with shapes) it stands
-/// for, so type_specialize can further dispatch on shape within the arm.
 fn polymorphic_arms(profiled_types: &[ProfiledType]) -> Vec<(Type, Vec<ProfiledType>)> {
     let mut arms: Vec<(Type, Vec<ProfiledType>)> = Vec::with_capacity(profiled_types.len());
     for &profiled_type in profiled_types {
@@ -10962,8 +10854,6 @@ fn add_iseq_to_hir(
                     let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
                     let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };
 
-                    // Polymorphic receivers are dispatched (including per-receiver caller-splat
-                    // lengths) in type_specialize.
                     if lengths.len() > 1 && fun.polymorphic_summary(&profiles, recv, exit_id).is_none() {
                         // Without polymorphic receiver dispatch, branch only on the profiled splat lengths.
                         let join_block = fun.new_block(insn_idx);
@@ -11010,7 +10900,6 @@ fn add_iseq_to_hir(
                     let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
                     let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };
                     let send_state = spill_locals_for_block(fun, &mut profiles, block, blockiseq, &exit_state, exit_id, ep_escaped);
-                    // Receiver dispatch (mono- and polymorphic) is handled in type_specialize.
                     let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: send_state, reason: Uncategorized(opcode.into()) });
                     state.stack_push(send);
 
