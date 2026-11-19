@@ -5120,6 +5120,9 @@ static VALUE get_pat(VALUE);
  *
  *      regexp = Regexp.new(pattern)
  *
+ *    Passing untrusted input as a string +pattern+ is generally not recommended;
+ *    see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
+ *
  *  - Computes +matchdata+, which will be either a MatchData object or +nil+
  *    (see Regexp#match):
  *
@@ -5170,6 +5173,9 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  Computes +regexp+ by converting +pattern+ (if not already a Regexp):
  *
  *    regexp = Regexp.new(pattern)
+ *
+ *  Passing untrusted input as a string +pattern+ is generally not recommended;
+ *  see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
  *
  *  Returns +true+ if <tt>self[offset..].match(regexp)</tt> returns a MatchData object,
  *  +false+ otherwise:

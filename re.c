@@ -4003,6 +4003,9 @@ void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const ch
  *    r.source              # => "foo"
  *    r.options             # => 0
  *
+ *  Passing untrusted input as +string+ is generally not recommended;
+ *  see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
+ *
  *  Optional argument +options+ is one of the following:
  *
  *  - A String of options:
