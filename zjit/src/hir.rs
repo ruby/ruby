@@ -784,12 +784,15 @@ enum SpecializedReceiver {
     Speculated { profiled_type: ProfiledType },
     /// Established by enclosing dispatch branches (class and shape tests); emit no guards.
     Guaranteed { profiled_type: ProfiledType },
+    /// The class is established by an enclosing dispatch branch, but the shape matched none of
+    /// the profiled shapes. Emit no guards; shape-dependent rewrites use generic instructions.
+    ShapeMiss { class: VALUE },
 }
 
 impl SpecializedReceiver {
     fn class(&self) -> VALUE {
         match *self {
-            SpecializedReceiver::Static { class } => class,
+            SpecializedReceiver::Static { class } | SpecializedReceiver::ShapeMiss { class } => class,
             SpecializedReceiver::Speculated { profiled_type }
             | SpecializedReceiver::Guaranteed { profiled_type } => profiled_type.class(),
         }
@@ -798,7 +801,7 @@ impl SpecializedReceiver {
     /// The profiled receiver type, if any (None for a statically known receiver).
     fn profiled_type(&self) -> Option<ProfiledType> {
         match *self {
-            SpecializedReceiver::Static { .. } => None,
+            SpecializedReceiver::Static { .. } | SpecializedReceiver::ShapeMiss { .. } => None,
             SpecializedReceiver::Speculated { profiled_type }
             | SpecializedReceiver::Guaranteed { profiled_type } => Some(profiled_type),
         }
@@ -5230,12 +5233,12 @@ impl Function {
                         if let Insn::Send { caller_splat_length, .. } = &mut arm_send {
                             *caller_splat_length = Some(length);
                         }
-                        let result = self.specialize_send_arm(arm_block, arm_send, buckets[0]);
+                        let result = self.specialize_send_arm(arm_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type: buckets[0] });
                         join_type = join_type.union(self.type_of(result));
                         self.push_insn(arm_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                     }
                 } else {
-                    let result = self.specialize_send_arm(class_block, arm_send, buckets[0]);
+                    let result = self.specialize_send_arm(class_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type: buckets[0] });
                     join_type = join_type.union(self.type_of(result));
                     self.push_insn(class_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                 }
@@ -5244,15 +5247,16 @@ impl Function {
             // s = load shape
             let shape = self.load_shape(class_block, refined_recv);
             let mut shape_block = class_block;
+            // The class matched, so a shape miss still knows the method: rather than the shared
+            // dynamic send, it gets its own arm that uses the generic ivar instruction.
+            let shape_miss_block = self.new_block(insn_idx);
             let num_shapes = shapes.len();
             for (shape_index, profiled_type) in shapes.into_iter().enumerate() {
                 // if s == shape: specialize send for (class, shape); else: goto next shape
                 let expected_shape = self.push_insn_typed(shape_block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
                 let has_shape = self.push_insn_typed(shape_block, Insn::IsBitEqual { left: shape, right: expected_shape });
                 let arm_block = self.new_block(insn_idx);
-                // Once shapes are exhausted, no other class can match either, so the final
-                // shape miss goes straight to the fallback.
-                let next_shape = if shape_index + 1 == num_shapes { fallback_block } else { self.new_block(insn_idx) };
+                let next_shape = if shape_index + 1 == num_shapes { shape_miss_block } else { self.new_block(insn_idx) };
                 self.push_insn(shape_block, Insn::CondBranch {
                     val: has_shape,
                     if_true: BranchEdge { target: arm_block, args: vec![] },
@@ -5260,10 +5264,14 @@ impl Function {
                 });
                 shape_block = next_shape;
                 let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
-                let result = self.specialize_send_arm(arm_block, arm_send, profiled_type);
+                let result = self.specialize_send_arm(arm_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type });
                 join_type = join_type.union(self.type_of(result));
                 self.push_insn(arm_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
             }
+            let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
+            let result = self.specialize_send_arm(shape_miss_block, arm_send, SpecializedReceiver::ShapeMiss { class: buckets[0].class() });
+            join_type = join_type.union(self.type_of(result));
+            self.push_insn(shape_miss_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
         }
         // In the fallthrough case, do a generic dynamic send and then join.
         let fallback_send = self.push_insn_typed(fallback_block, Insn::Send { recv, cd, block: send_block, args, caller_splat_length, state, reason: SendPolymorphicFallback });
@@ -5287,14 +5295,14 @@ impl Function {
 
     /// Specialize `send` (a copy of a polymorphic Send whose receiver is refined to one profiled
     /// class) into the dispatch arm `arm_block`. The receiver's class (and shape, for ivar
-    /// accessors) is guaranteed by the enclosing branch tests, so the specialized code emits no
-    /// receiver guards. On failure the send stays in the arm as a dynamic send. Returns the
-    /// arm's result value.
-    fn specialize_send_arm(&mut self, arm_block: BlockId, send: Insn, profiled_type: ProfiledType) -> InsnId {
+    /// accessors, unless `recv_spec` is a shape miss) is guaranteed by the enclosing branch tests,
+    /// so the specialized code emits no receiver guards. On failure the send stays in the arm as
+    /// a dynamic send. Returns the arm's result value.
+    fn specialize_send_arm(&mut self, arm_block: BlockId, send: Insn, recv_spec: SpecializedReceiver) -> InsnId {
         // Give each arm its own Send so per-send counters and fallback reasons belong to it.
         let arm_send = self.new_insn(send);
         self.insn_types[arm_send] = self.infer_type(arm_send);
-        match self.type_specialize_send(arm_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type }) {
+        match self.type_specialize_send(arm_block, arm_send, recv_spec) {
             Ok(replacement) => {
                 self.make_equal_to(arm_send, replacement);
                 // type_specialize runs after type inference, so the specialized replacement may
@@ -5556,6 +5564,7 @@ impl Function {
                     let resolution = self.resolve_receiver_type_from_profile(recv, state);
                     Err(Self::getivar_fallback_reason(resolution, std::ptr::null()))
                 }
+                SpecializedReceiver::ShapeMiss { .. } => Err(Counter::getivar_fallback_shape_miss),
             };
             Ok(result.unwrap_or_else(|counter| {
                 self.count(block, counter);
@@ -5584,6 +5593,7 @@ impl Function {
                     self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                     Ok(())
                 }
+                SpecializedReceiver::ShapeMiss { .. } => Err(Counter::setivar_fallback_shape_miss),
             };
             if let Err(counter) = result {
                 self.count(block, counter);
