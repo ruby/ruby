@@ -9500,6 +9500,29 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
 }
 
 /**
+ * Start rewriting a token, keeping any capacity from the previous token.
+ */
+static PRISM_INLINE void
+pm_lex_buffer_start(pm_buffer_t *buffer) {
+    if (buffer->capacity == 0) {
+        pm_buffer_init(buffer, 16);
+    } else {
+        pm_buffer_clear(buffer);
+    }
+}
+
+/**
+ * Keep the rewritten token in the AST arena so subsequent tokens can reuse
+ * the lexer buffer.
+ */
+static PRISM_INLINE void
+pm_lex_buffer_copy(pm_parser_t *parser) {
+    const pm_buffer_t *buffer = &parser->lex_buffer;
+    void *arena_data = pm_arena_memdup(parser->arena, buffer->value, buffer->length, PRISM_ALIGNOF(uint8_t));
+    pm_string_init(&parser->current_string, (const uint8_t *) arena_data, buffer->length);
+}
+
+/**
  * This function is responsible for lexing either a character literal or the ?
  * operator. The supported character literals are described below.
  *
@@ -9554,15 +9577,9 @@ lex_question_mark(pm_parser_t *parser) {
     if (match(parser, '\\')) {
         lex_state_set(parser, PM_LEX_STATE_END);
 
-        pm_buffer_t buffer;
-        pm_buffer_init(&buffer, 3);
-
-        escape_read(parser, &buffer, PM_ESCAPE_FLAG_SINGLE);
-
-        // Copy buffer data into the arena and free the heap buffer.
-        void *arena_data = pm_arena_memdup(parser->arena, buffer.value, buffer.length, PRISM_ALIGNOF(uint8_t));
-        pm_string_init(&parser->current_string, (const uint8_t *) arena_data, buffer.length);
-        pm_buffer_cleanup(&buffer);
+        pm_lex_buffer_start(&parser->lex_buffer);
+        escape_read(parser, &parser->lex_buffer, PM_ESCAPE_FLAG_SINGLE);
+        pm_lex_buffer_copy(parser);
 
         return PM_TOKEN_CHARACTER_LITERAL;
     } else {
@@ -9760,46 +9777,6 @@ parser_end_of_line_p(const pm_parser_t *parser) {
 }
 
 /**
- * When we're lexing certain types (strings, symbols, lists, etc.) we have
- * string content associated with the tokens. For example:
- *
- *     "foo"
- *
- * In this case, the string content is foo. Since there is no escaping, there's
- * no need to track additional information and the token can be returned as
- * normal. However, if we have escape sequences:
- *
- *     "foo\n"
- *
- * then the bytes in the string are "f", "o", "o", "\", "n", but we want to
- * provide our consumers with the string content "f", "o", "o", "\n". In these
- * cases, when we find the first escape sequence, we initialize a pm_buffer_t
- * to keep track of the string content. Then in the parser, it will
- * automatically attach the string content to the node that it belongs to.
- */
-typedef struct {
-    /**
-     * The buffer that we're using to keep track of the string content. It will
-     * only be initialized if we receive an escape sequence.
-     */
-    pm_buffer_t buffer;
-
-    /**
-     * The cursor into the source string that points to how far we have
-     * currently copied into the buffer.
-     */
-    const uint8_t *cursor;
-} pm_token_buffer_t;
-
-/**
- * Push the given byte into the token buffer.
- */
-static PRISM_INLINE void
-pm_token_buffer_push_byte(pm_token_buffer_t *token_buffer, uint8_t byte) {
-    pm_buffer_append_byte(&token_buffer->buffer, byte);
-}
-
-/**
  * Return the width of the character at the end of the current token.
  */
 static PRISM_INLINE size_t
@@ -9820,25 +9797,10 @@ parser_char_width(const pm_parser_t *parser) {
  * Push an escaped character into the token buffer.
  */
 static void
-pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parser) {
+pm_token_buffer_push_escaped(pm_parser_t *parser) {
     size_t width = parser_char_width(parser);
-    pm_buffer_append_bytes(&token_buffer->buffer, parser->current.end, width);
+    pm_buffer_append_bytes(&parser->lex_buffer, parser->current.end, width);
     parser->current.end += width;
-}
-
-/**
- * When we're about to return from lexing the current token and we know for sure
- * that we have found an escape sequence, this function is called to copy the
- * contents of the token buffer into the current string on the parser so that it
- * can be attached to the correct node.
- */
-static PRISM_INLINE void
-pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
-    // Copy buffer data into the arena and free the heap buffer.
-    size_t len = pm_buffer_length(&token_buffer->buffer);
-    void *arena_data = pm_arena_memdup(parser->arena, pm_buffer_value(&token_buffer->buffer), len, PRISM_ALIGNOF(uint8_t));
-    pm_string_init(&parser->current_string, (const uint8_t *) arena_data, len);
-    pm_buffer_cleanup(&token_buffer->buffer);
 }
 
 /**
@@ -9851,16 +9813,14 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
  * attached to a node.
  */
 static void
-pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
-    if (token_buffer->cursor == NULL) {
+pm_token_buffer_flush(pm_parser_t *parser, const uint8_t *cursor) {
+    if (cursor == NULL) {
         pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
     } else {
-        pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
-        pm_token_buffer_copy(parser, token_buffer);
+        pm_buffer_append_bytes(&parser->lex_buffer, cursor, (size_t) (parser->current.end - cursor));
+        pm_lex_buffer_copy(parser);
     }
 }
-
-#define PM_TOKEN_BUFFER_DEFAULT_SIZE 16
 
 /**
  * When we've found an escape sequence, we need to copy everything up to this
@@ -9871,23 +9831,21 @@ pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
  * byte past the backslash that starts the escape sequence.
  */
 static void
-pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
+pm_token_buffer_escape(pm_parser_t *parser, const uint8_t **cursor) {
     const uint8_t *start;
-    if (token_buffer->cursor == NULL) {
-        pm_buffer_init(&token_buffer->buffer, PM_TOKEN_BUFFER_DEFAULT_SIZE);
+    if (*cursor == NULL) {
+        pm_lex_buffer_start(&parser->lex_buffer);
         start = parser->current.start;
     } else {
-        start = token_buffer->cursor;
+        start = *cursor;
     }
 
     const uint8_t *end = parser->current.end - 1;
     PRISM_ASSERT(end >= start);
-    pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
+    pm_buffer_append_bytes(&parser->lex_buffer, start, (size_t) (end - start));
 
-    token_buffer->cursor = end;
+    *cursor = end;
 }
-
-#undef PM_TOKEN_BUFFER_DEFAULT_SIZE
 
 /**
  * The token buffer for the content of a regular expression. It also records
@@ -9896,8 +9854,8 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
  * source.
  */
 typedef struct {
-    /** The buffer of the content. */
-    pm_token_buffer_t base;
+    /** Where copying from the source should resume. */
+    const uint8_t *cursor;
 
     /** The places recorded so far. */
     pm_regexp_offsets_t offsets;
@@ -9916,9 +9874,9 @@ typedef struct {
  */
 static PRISM_INLINE void
 pm_regexp_token_buffer_resume(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer, const uint8_t *cursor) {
-    token_buffer->base.cursor = cursor;
+    token_buffer->cursor = cursor;
 
-    uint32_t content = U32(pm_buffer_length(&token_buffer->base.buffer));
+    uint32_t content = U32(pm_buffer_length(&parser->lex_buffer));
     uint32_t source = U32(cursor - parser->start);
     pm_regexp_offsets_record(parser, &token_buffer->offsets, content, source, U32(parser->current.start - parser->start));
 }
@@ -9978,11 +9936,11 @@ pm_regexp_lex_braced_unicode(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t t
 
 /**
  * Copy the content of a regular expression into the current string, as
- * pm_token_buffer_copy does, and give the parser its recorded places.
+ * pm_lex_buffer_copy does, and give the parser its recorded places.
  */
 static void
 pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
-    pm_token_buffer_copy(parser, &token_buffer->base);
+    pm_lex_buffer_copy(parser);
     parser->current_regexp_offsets = token_buffer->offsets;
 }
 
@@ -9992,7 +9950,7 @@ pm_regexp_token_buffer_copy(pm_parser_t *parser, pm_regexp_token_buffer_t *token
  */
 static void
 pm_regexp_token_buffer_flush(pm_parser_t *parser, pm_regexp_token_buffer_t *token_buffer) {
-    pm_token_buffer_flush(parser, &token_buffer->base);
+    pm_token_buffer_flush(parser, token_buffer->cursor);
     parser->current_regexp_offsets = token_buffer->offsets;
 }
 
@@ -11588,7 +11546,7 @@ parser_lex(pm_parser_t *parser) {
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
-            pm_token_buffer_t token_buffer = { 0 };
+            const uint8_t *token_cursor = NULL;
 
             while (breakpoint != NULL) {
                 // If we hit whitespace, then we must have received content by
@@ -11597,7 +11555,7 @@ parser_lex(pm_parser_t *parser) {
                 // delimiter) is handled by the terminator check below, not here.
                 if (pm_char_is_whitespace(*breakpoint) && *breakpoint != lex_mode->as.list.terminator) {
                     parser->current.end = breakpoint;
-                    pm_token_buffer_flush(parser, &token_buffer);
+                    pm_token_buffer_flush(parser, token_cursor);
                     lex_mode->as.list.separated = false;
                     LEX(PM_TOKEN_STRING_CONTENT);
                 }
@@ -11618,7 +11576,7 @@ parser_lex(pm_parser_t *parser) {
                     // past content, then we can return a list node.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
-                        pm_token_buffer_flush(parser, &token_buffer);
+                        pm_token_buffer_flush(parser, token_cursor);
                         lex_mode->as.list.separated = false;
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
@@ -11674,7 +11632,7 @@ parser_lex(pm_parser_t *parser) {
                         continue;
                     }
 
-                    pm_token_buffer_escape(parser, &token_buffer);
+                    pm_token_buffer_escape(parser, &token_cursor);
                     uint8_t peeked = peek(parser);
 
                     switch (peeked) {
@@ -11683,25 +11641,25 @@ parser_lex(pm_parser_t *parser) {
                         case '\t':
                         case '\v':
                         case '\\':
-                            pm_token_buffer_push_byte(&token_buffer, peeked);
+                            pm_buffer_append_byte(&parser->lex_buffer, peeked);
                             parser->current.end++;
                             break;
                         case '\r':
                             parser->current.end++;
                             if (peek(parser) != '\n') {
-                                pm_token_buffer_push_byte(&token_buffer, '\r');
+                                pm_buffer_append_byte(&parser->lex_buffer, '\r');
                                 break;
                             }
                         PRISM_FALLTHROUGH
                         case '\n':
-                            pm_token_buffer_push_byte(&token_buffer, '\n');
+                            pm_buffer_append_byte(&parser->lex_buffer, '\n');
 
                             if (parser->heredoc_end) {
                                 // ... if we are on the same line as a heredoc,
                                 // flush the heredoc and continue parsing after
                                 // heredoc_end.
                                 parser_flush_heredoc_end(parser);
-                                pm_token_buffer_copy(parser, &token_buffer);
+                                pm_lex_buffer_copy(parser);
                                 LEX(PM_TOKEN_STRING_CONTENT);
                             } else {
                                 // ... else track the newline.
@@ -11712,26 +11670,26 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         default:
                             if (peeked == lex_mode->as.list.incrementor || peeked == lex_mode->as.list.terminator) {
-                                pm_token_buffer_push_byte(&token_buffer, peeked);
+                                pm_buffer_append_byte(&parser->lex_buffer, peeked);
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
-                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                escape_read(parser, &parser->lex_buffer, PM_ESCAPE_FLAG_NONE);
 
                                 /* The escape consumed a newline with a heredoc body pending. */
                                 if (parser->next_start != NULL) {
-                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    pm_lex_buffer_copy(parser);
                                     lex_mode->as.list.separated = false;
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 }
                             } else {
-                                pm_token_buffer_push_byte(&token_buffer, '\\');
-                                pm_token_buffer_push_escaped(&token_buffer, parser);
+                                pm_buffer_append_byte(&parser->lex_buffer, '\\');
+                                pm_token_buffer_push_escaped(parser);
                             }
 
                             break;
                     }
 
-                    token_buffer.cursor = parser->current.end;
+                    token_cursor = parser->current.end;
                     breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                     continue;
                 }
@@ -11750,7 +11708,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (type == PM_TOKEN_STRING_CONTENT) {
-                        pm_token_buffer_flush(parser, &token_buffer);
+                        pm_token_buffer_flush(parser, token_cursor);
                     }
 
                     lex_mode->as.list.separated = false;
@@ -11770,7 +11728,7 @@ parser_lex(pm_parser_t *parser) {
              * token runs to the end of the file. That keeps the last element of
              * a list that is not terminated in one piece. */
             parser->current.end = parser->end;
-            pm_token_buffer_flush(parser, &token_buffer);
+            pm_token_buffer_flush(parser, token_cursor);
             LEX(PM_TOKEN_STRING_CONTENT);
         }
         case PM_LEX_REGEXP: {
@@ -11902,7 +11860,7 @@ parser_lex(pm_parser_t *parser) {
 
                         breakpoint++;
                         parser->current.end = breakpoint;
-                        pm_token_buffer_escape(parser, &token_buffer.base);
+                        pm_token_buffer_escape(parser, &token_buffer.cursor);
                         pm_regexp_token_buffer_resume(parser, &token_buffer, breakpoint);
 
                         PRISM_FALLTHROUGH
@@ -11930,7 +11888,7 @@ parser_lex(pm_parser_t *parser) {
                          * so it is left out of the content, and the regular
                          * expression is validated without it. */
                         if (parser->current.end == parser->end) {
-                            pm_token_buffer_escape(parser, &token_buffer.base);
+                            pm_token_buffer_escape(parser, &token_buffer.cursor);
                             pm_regexp_token_buffer_resume(parser, &token_buffer, parser->end);
                             breakpoint = NULL;
                             break;
@@ -11947,16 +11905,16 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         }
 
-                        pm_token_buffer_escape(parser, &token_buffer.base);
+                        pm_token_buffer_escape(parser, &token_buffer.cursor);
 
                         switch (peeked) {
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
                                     if (lex_mode->as.regexp.terminator != '\r') {
-                                        pm_token_buffer_push_byte(&token_buffer.base, '\\');
+                                        pm_buffer_append_byte(&parser->lex_buffer, '\\');
                                     }
-                                    pm_token_buffer_push_byte(&token_buffer.base, '\r');
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\r');
                                     break;
                                 }
                             PRISM_FALLTHROUGH
@@ -11981,9 +11939,9 @@ parser_lex(pm_parser_t *parser) {
                             case 'u':
                             case 'x':
                                 if (peeked == 'u' && peek_offset(parser, 1) == '{') {
-                                    pm_regexp_lex_braced_unicode(parser, &token_buffer.base.buffer, lex_mode->as.regexp.terminator);
+                                    pm_regexp_lex_braced_unicode(parser, &parser->lex_buffer, lex_mode->as.regexp.terminator);
                                 } else {
-                                    escape_read(parser, &token_buffer.base.buffer, PM_ESCAPE_FLAG_REGEXP);
+                                    escape_read(parser, &parser->lex_buffer, PM_ESCAPE_FLAG_REGEXP);
                                 }
 
                                 /* The escape consumed a newline with a heredoc body pending. */
@@ -11999,7 +11957,7 @@ parser_lex(pm_parser_t *parser) {
                                  * ASCII, which the search below reads as content
                                  * like any other. */
                                 if (peeked == lex_mode->as.regexp.terminator) {
-                                    pm_token_buffer_push_byte(&token_buffer.base, peeked);
+                                    pm_buffer_append_byte(&parser->lex_buffer, peeked);
                                     parser->current.end++;
                                 }
 
@@ -12067,7 +12025,7 @@ parser_lex(pm_parser_t *parser) {
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
-            pm_token_buffer_t token_buffer = { 0 };
+            const uint8_t *token_cursor = NULL;
 
             while (breakpoint != NULL) {
                 // If we hit the incrementor, then we'll increment then nesting and
@@ -12115,7 +12073,7 @@ parser_lex(pm_parser_t *parser) {
                     // then we need to return that content as string content first.
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
-                        pm_token_buffer_flush(parser, &token_buffer);
+                        pm_token_buffer_flush(parser, token_cursor);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     }
 
@@ -12171,8 +12129,8 @@ parser_lex(pm_parser_t *parser) {
                         // as a newline.
                         breakpoint++;
                         parser->current.end = breakpoint;
-                        pm_token_buffer_escape(parser, &token_buffer);
-                        token_buffer.cursor = breakpoint;
+                        pm_token_buffer_escape(parser, &token_cursor);
+                        token_cursor = breakpoint;
 
                         PRISM_FALLTHROUGH
                     case '\n':
@@ -12189,7 +12147,7 @@ parser_lex(pm_parser_t *parser) {
 
                         parser->current.end = breakpoint + 1;
                         parser_flush_heredoc_end(parser);
-                        pm_token_buffer_flush(parser, &token_buffer);
+                        pm_token_buffer_flush(parser, token_cursor);
                         LEX(PM_TOKEN_STRING_CONTENT);
                     case '\\': {
                         // Here we hit escapes.
@@ -12202,28 +12160,28 @@ parser_lex(pm_parser_t *parser) {
                             continue;
                         }
 
-                        pm_token_buffer_escape(parser, &token_buffer);
+                        pm_token_buffer_escape(parser, &token_cursor);
                         uint8_t peeked = peek(parser);
 
                         switch (peeked) {
                             case '\\':
-                                pm_token_buffer_push_byte(&token_buffer, '\\');
+                                pm_buffer_append_byte(&parser->lex_buffer, '\\');
                                 parser->current.end++;
                                 break;
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
                                     if (!lex_mode->as.string.interpolation) {
-                                        pm_token_buffer_push_byte(&token_buffer, '\\');
+                                        pm_buffer_append_byte(&parser->lex_buffer, '\\');
                                     }
-                                    pm_token_buffer_push_byte(&token_buffer, '\r');
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\r');
                                     break;
                                 }
                             PRISM_FALLTHROUGH
                             case '\n':
                                 if (!lex_mode->as.string.interpolation) {
-                                    pm_token_buffer_push_byte(&token_buffer, '\\');
-                                    pm_token_buffer_push_byte(&token_buffer, '\n');
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\\');
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\n');
                                 }
 
                                 if (parser->heredoc_end) {
@@ -12231,7 +12189,7 @@ parser_lex(pm_parser_t *parser) {
                                     // flush the heredoc and continue parsing after
                                     // heredoc_end.
                                     parser_flush_heredoc_end(parser);
-                                    pm_token_buffer_copy(parser, &token_buffer);
+                                    pm_lex_buffer_copy(parser);
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 } else {
                                     // ... else track the newline.
@@ -12242,28 +12200,28 @@ parser_lex(pm_parser_t *parser) {
                                 break;
                             default:
                                 if (lex_mode->as.string.incrementor != '\0' && peeked == lex_mode->as.string.incrementor) {
-                                    pm_token_buffer_push_byte(&token_buffer, peeked);
+                                    pm_buffer_append_byte(&parser->lex_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.terminator != '\0' && peeked == lex_mode->as.string.terminator) {
-                                    pm_token_buffer_push_byte(&token_buffer, peeked);
+                                    pm_buffer_append_byte(&parser->lex_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.interpolation) {
-                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &parser->lex_buffer, PM_ESCAPE_FLAG_NONE);
 
                                     /* The escape consumed a newline with a heredoc body pending. */
                                     if (parser->next_start != NULL) {
-                                        pm_token_buffer_copy(parser, &token_buffer);
+                                        pm_lex_buffer_copy(parser);
                                         LEX(PM_TOKEN_STRING_CONTENT);
                                     }
                                 } else {
-                                    pm_token_buffer_push_byte(&token_buffer, '\\');
-                                    pm_token_buffer_push_escaped(&token_buffer, parser);
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\\');
+                                    pm_token_buffer_push_escaped(parser);
                                 }
 
                                 break;
                         }
 
-                        token_buffer.cursor = parser->current.end;
+                        token_cursor = parser->current.end;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, PM_STRPBRK_STRING);
                         break;
                     }
@@ -12280,7 +12238,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (type == PM_TOKEN_STRING_CONTENT) {
-                            pm_token_buffer_flush(parser, &token_buffer);
+                            pm_token_buffer_flush(parser, token_cursor);
                         }
 
                         LEX(type);
@@ -12295,7 +12253,7 @@ parser_lex(pm_parser_t *parser) {
              * That keeps the content in one piece. */
             lex_mode->as.string.joined_at_eof = parser->current.end > parser->current.start && parser->current.end < parser->end;
             parser->current.end = parser->end;
-            pm_token_buffer_flush(parser, &token_buffer);
+            pm_token_buffer_flush(parser, token_cursor);
             LEX(PM_TOKEN_STRING_CONTENT);
         }
         case PM_LEX_HEREDOC: {
@@ -12413,7 +12371,7 @@ parser_lex(pm_parser_t *parser) {
             }
 
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
-            pm_token_buffer_t token_buffer = { 0 };
+            const uint8_t *token_cursor = NULL;
             bool was_line_continuation = false;
 
             while (breakpoint != NULL) {
@@ -12434,15 +12392,15 @@ parser_lex(pm_parser_t *parser) {
                         // If we hit a \r\n sequence, then we want to replace it
                         // with a single \n character in the final string.
                         breakpoint++;
-                        pm_token_buffer_escape(parser, &token_buffer);
-                        token_buffer.cursor = breakpoint;
+                        pm_token_buffer_escape(parser, &token_cursor);
+                        token_cursor = breakpoint;
 
                         PRISM_FALLTHROUGH
                     case '\n': {
                         if (parser->heredoc_end != NULL && (parser->heredoc_end > breakpoint)) {
                             parser_flush_heredoc_end(parser);
                             parser->current.end = breakpoint + 1;
-                            pm_token_buffer_flush(parser, &token_buffer);
+                            pm_token_buffer_flush(parser, token_cursor);
                             /* A continued line cannot hold this heredoc's terminator. */
                             lex_mode->as.heredoc.line_continuation = was_line_continuation;
                             LEX(PM_TOKEN_STRING_CONTENT);
@@ -12492,7 +12450,7 @@ parser_lex(pm_parser_t *parser) {
                                     (memcmp(terminator_start, ident_start, ident_length) == 0)
                                 ) {
                                     parser->current.end = breakpoint + 1;
-                                    pm_token_buffer_flush(parser, &token_buffer);
+                                    pm_token_buffer_flush(parser, token_cursor);
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 }
                             }
@@ -12511,7 +12469,7 @@ parser_lex(pm_parser_t *parser) {
                             }
 
                             parser->current.end = breakpoint + 1;
-                            pm_token_buffer_flush(parser, &token_buffer);
+                            pm_token_buffer_flush(parser, token_cursor);
                             LEX(PM_TOKEN_STRING_CONTENT);
                         }
 
@@ -12537,7 +12495,7 @@ parser_lex(pm_parser_t *parser) {
                             continue;
                         }
 
-                        pm_token_buffer_escape(parser, &token_buffer);
+                        pm_token_buffer_escape(parser, &token_cursor);
                         uint8_t peeked = peek(parser);
 
                         if (quote == PM_HEREDOC_QUOTE_SINGLE) {
@@ -12545,20 +12503,20 @@ parser_lex(pm_parser_t *parser) {
                                 case '\r':
                                     parser->current.end++;
                                     if (peek(parser) != '\n') {
-                                        pm_token_buffer_push_byte(&token_buffer, '\\');
-                                        pm_token_buffer_push_byte(&token_buffer, '\r');
+                                        pm_buffer_append_byte(&parser->lex_buffer, '\\');
+                                        pm_buffer_append_byte(&parser->lex_buffer, '\r');
                                         break;
                                     }
                                 PRISM_FALLTHROUGH
                                 case '\n':
-                                    pm_token_buffer_push_byte(&token_buffer, '\\');
-                                    pm_token_buffer_push_byte(&token_buffer, '\n');
-                                    token_buffer.cursor = parser->current.end + 1;
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\\');
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\n');
+                                    token_cursor = parser->current.end + 1;
                                     breakpoint = parser->current.end;
                                     continue;
                                 default:
-                                    pm_token_buffer_push_byte(&token_buffer, '\\');
-                                    pm_token_buffer_push_escaped(&token_buffer, parser);
+                                    pm_buffer_append_byte(&parser->lex_buffer, '\\');
+                                    pm_token_buffer_push_escaped(parser);
                                     break;
                             }
                         } else {
@@ -12566,7 +12524,7 @@ parser_lex(pm_parser_t *parser) {
                                 case '\r':
                                     parser->current.end++;
                                     if (peek(parser) != '\n') {
-                                        pm_token_buffer_push_byte(&token_buffer, '\r');
+                                        pm_buffer_append_byte(&parser->lex_buffer, '\r');
                                         break;
                                     }
                                 PRISM_FALLTHROUGH
@@ -12586,7 +12544,7 @@ parser_lex(pm_parser_t *parser) {
                                         // Here we want the buffer to only
                                         // include up to the backslash.
                                         parser->current.end = breakpoint;
-                                        pm_token_buffer_flush(parser, &token_buffer);
+                                        pm_token_buffer_flush(parser, token_cursor);
 
                                         // Now we can advance the end of the
                                         // token past the newline.
@@ -12596,11 +12554,11 @@ parser_lex(pm_parser_t *parser) {
                                     }
 
                                     was_line_continuation = true;
-                                    token_buffer.cursor = parser->current.end + 1;
+                                    token_cursor = parser->current.end + 1;
                                     breakpoint = parser->current.end;
                                     continue;
                                 default:
-                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &parser->lex_buffer, PM_ESCAPE_FLAG_NONE);
 
                                     /* The escape consumed a newline with a heredoc
                                      * body pending, and the line it continues onto
@@ -12615,7 +12573,7 @@ parser_lex(pm_parser_t *parser) {
                                             break;
                                         }
 
-                                        pm_token_buffer_copy(parser, &token_buffer);
+                                        pm_lex_buffer_copy(parser);
                                         lex_mode->as.heredoc.line_continuation = true;
                                         LEX(PM_TOKEN_STRING_CONTENT);
                                     }
@@ -12624,7 +12582,7 @@ parser_lex(pm_parser_t *parser) {
                             }
                         }
 
-                        token_buffer.cursor = parser->current.end;
+                        token_cursor = parser->current.end;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
                         break;
                     }
@@ -12642,7 +12600,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (type == PM_TOKEN_STRING_CONTENT) {
-                            pm_token_buffer_flush(parser, &token_buffer);
+                            pm_token_buffer_flush(parser, token_cursor);
                         }
 
                         LEX(type);
@@ -12656,14 +12614,14 @@ parser_lex(pm_parser_t *parser) {
 
             if (parser->current.end > parser->current.start) {
                 parser->current.end = parser->end;
-                pm_token_buffer_flush(parser, &token_buffer);
+                pm_token_buffer_flush(parser, token_cursor);
                 LEX(PM_TOKEN_STRING_CONTENT);
             }
 
             // If we've hit the end of the string, then this is an unterminated
             // heredoc. In that case we'll return a string content token.
             parser->current.end = parser->end;
-            pm_token_buffer_flush(parser, &token_buffer);
+            pm_token_buffer_flush(parser, token_cursor);
             LEX(PM_TOKEN_STRING_CONTENT);
         }
     }
@@ -23302,6 +23260,7 @@ pm_parser_new(pm_arena_t *arena, const uint8_t *source, size_t size, const pm_op
  */
 void
 pm_parser_cleanup(pm_parser_t *parser) {
+    pm_buffer_cleanup(&parser->lex_buffer);
     pm_arena_cleanup(&parser->metadata_arena);
     pm_arena_cleanup(&parser->scratch_arena);
 }
