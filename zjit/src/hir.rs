@@ -5075,11 +5075,11 @@ impl Function {
         }
     }
 
-    fn resolved_method_def_type(klass: VALUE, cd: *const rb_call_data) -> Option<rb_method_type_t> {
+    fn is_special_ivar_method(klass: VALUE, cd: *const rb_call_data) -> bool {
         let ci = unsafe { (*cd).ci };
         let mut cme = unsafe { rb_callable_method_entry(klass, vm_ci_mid(ci)) };
         if cme.is_null() {
-            return None;
+            return false;
         }
         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
         let mut def_type = unsafe { get_cme_def_type(cme) };
@@ -5087,7 +5087,7 @@ impl Function {
             cme = unsafe { rb_aliased_callable_method_entry(cme) };
             def_type = unsafe { get_cme_def_type(cme) };
         }
-        Some(def_type)
+        def_type == VM_METHOD_TYPE_IVAR || def_type == VM_METHOD_TYPE_ATTRSET
     }
 
     fn push_insn_typed(&mut self, block: BlockId, insn: Insn) -> InsnId {
@@ -5132,12 +5132,8 @@ impl Function {
             })));
             block = next_class;
             let refined_recv = self.push_insn_typed(class_block, Insn::RefineType { val: recv, new_type: expected });
-            let needs_shape = matches!(
-                Self::resolved_method_def_type(buckets[0].class(), cd),
-                Some(VM_METHOD_TYPE_IVAR | VM_METHOD_TYPE_ATTRSET)
-            );
             let mut shapes: Vec<ProfiledType> = Vec::with_capacity(buckets.len());
-            if needs_shape {
+            if Self::is_special_ivar_method(buckets[0].class(), cd) {
                 for &profiled_type in buckets {
                     if !profiled_type.flags().is_immediate()
                         && !shapes.iter().any(|seen| seen.shape() == profiled_type.shape()) {
