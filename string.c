@@ -10832,8 +10832,6 @@ struct tr_pair {
 struct tr_trans_pairs_coerce_args {
     struct tr_pair *pairs;
     size_t index;
-    rb_encoding *enc;
-    int cr;
 };
 
 static int
@@ -10847,13 +10845,6 @@ tr_trans_pairs_coerce_i(st_data_t key, st_data_t value, st_data_t _args)
     VALUE replace = (VALUE)value;
     StringValue(search);
     StringValue(replace);
-
-    if (RSTRING_LEN(search) != 1 && str_strlen(search, NULL) != 1) {
-        rb_raise(rb_eArgError, "keys must be of size 1"); // TODO: better error message
-    }
-
-    args->enc = rb_enc_check_multi_str(args->enc, &args->cr, search);
-    args->enc = rb_enc_check_multi_str(args->enc, &args->cr, replace);
 
     pair->search = search;
     pair->replace = replace;
@@ -11069,28 +11060,46 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     Check_Type(pairs_val, T_HASH);
     size_t pairs_count = RHASH_SIZE(pairs_val);
     mustnot_broken(str);
-    rb_str_modify(str);
+    str_modifiable(str);
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str) || pairs_count == 0) return Qnil;
 
     VALUE pairs_handle;
     struct tr_pair *pairs = ALLOCV_N(struct tr_pair, pairs_handle, pairs_count);
 
-    int cr = rb_enc_str_coderange(str);
-    rb_encoding *enc = rb_str_enc_get(str);
-
     struct tr_trans_pairs_coerce_args coerce_args = {
         .pairs = pairs,
-        .enc = enc,
-        .cr = cr,
     };
     rb_hash_foreach(pairs_val, tr_trans_pairs_coerce_i, (VALUE)&coerce_args);
-    rb_encoding *e1 = coerce_args.enc;
 
     /* Keys could be deleted from pairs_val during rb_hash_foreach when coercing
      * the keys/values, so we need to update pairs_count to the number of pairs we
      * were actually able to extract from pairs_val. */
     pairs_count = coerce_args.index;
+
+    mustnot_broken(str);
+    rb_str_modify(str);
+
+    if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) {
+        ALLOCV_END(pairs_handle);
+        return Qnil;
+    }
+
+    int cr = rb_enc_str_coderange(str);
+    rb_encoding *enc = rb_str_enc_get(str);
+
+    rb_encoding *e1 = enc;
+    int pairs_cr = cr;
+    for (size_t index = 0; index < pairs_count; index++) {
+        struct tr_pair *pair = &pairs[index];
+
+        if (RSTRING_LEN(pair->search) != 1 && str_strlen(pair->search, NULL) != 1) {
+            rb_raise(rb_eArgError, "keys must be of size 1"); // TODO: better error message
+        }
+
+        e1 = rb_enc_check_multi_str(e1, &pairs_cr, pair->search);
+        e1 = rb_enc_check_multi_str(e1, &pairs_cr, pair->replace);
+    }
 
     VALUE hash = 0;
 

@@ -3123,6 +3123,18 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("xb"), S("ab").tr(replacements))
   end
 
+  def test_tr_hash_modify_receiver
+    str = S("abc" * 1000)
+    other = "\x8F\xA1\xA1".force_encoding("EUC-JP") * 1000
+    key = Object.new
+    key.define_singleton_method(:to_str) do
+      str.replace(other)
+      "\xA4\xA2".force_encoding("EUC-JP")
+    end
+    assert_nil(str.tr!({key => "X"}))
+    assert_equal(other, str)
+  end
+
   def test_tr_hash_no_match_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
     begin;
