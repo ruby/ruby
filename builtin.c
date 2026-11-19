@@ -11,7 +11,16 @@
 #ifndef BUILTIN_BINARY_SIZE
 
 #define BUILTIN_LOADED(feature_name, iseq) ((void)0)
+#define BUILTIN_LOAD_GEM_PRELUDE 1
 #include "mini_builtin.c"
+
+// Without builtin binaries (cross compiling), compile gem_prelude.rb from
+// its embedded source like the other builtin features.
+void
+rb_load_gem_prelude(VALUE box)
+{
+    rb_iseq_eval(builtin_iseq_load("gem_prelude", NULL), (const rb_box_t *)box);
+}
 
 #else
 
@@ -86,6 +95,14 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     load_with_builtin_functions(feature_name, table, rb_root_box());
 }
 
+void
+rb_load_gem_prelude(VALUE box)
+{
+    load_with_builtin_functions("gem_prelude", NULL, (const rb_box_t *)box);
+}
+
+#endif
+
 VALUE
 rb_define_gem_modules(VALUE flags_value, VALUE _)
 {
@@ -111,14 +128,6 @@ rb_define_gem_modules(VALUE flags_value, VALUE _)
 }
 
 void
-rb_load_gem_prelude(VALUE box)
-{
-    load_with_builtin_functions("gem_prelude", NULL, (const rb_box_t *)box);
-}
-
-#endif
-
-void
 rb_free_loaded_builtin_table(void)
 {
     // do nothing
@@ -133,13 +142,7 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
-
-#ifdef BUILTIN_BINARY_SIZE
-
     rb_load_gem_prelude((VALUE)rb_root_box());
 
     rb_load_gem_prelude((VALUE)rb_main_box());
-
-#endif
-
 }
