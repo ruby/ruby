@@ -1509,6 +1509,53 @@ class TestRange < Test::Unit::TestCase
     end;
   end
 
+  def test_to_a_with_to_a_in_included_module
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Range.include(Module.new { def to_a = [:included] + super })
+      assert_equal([:included, 1, 2, 3], (1..3).to_a)
+      assert_equal([1, 2, 3], (1..3).entries)
+    end;
+  end
+
+  def test_entries_with_entries_in_included_module
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Range.include(Module.new { def entries = [:included] + super })
+      assert_equal([:included, 1, 2, 3], (1..3).entries)
+      assert_equal([1, 2, 3], (1..3).to_a)
+    end;
+  end
+
+  def test_to_a_with_redefined_enumerable_to_a
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      module Enumerable
+        alias_method :orig_to_a, :to_a
+        def to_a(*args) = [:redefined] + orig_to_a(*args)
+      end
+      assert_equal([:redefined, 1, 2, 3], (1..3).to_a)
+      assert_equal([:redefined, 1, 2, 3], [*1..3])
+      assert_equal([1, 2, 3], (1..3).entries)
+    end;
+  end
+
+  def test_to_a_with_to_a_prepended_to_enumerable
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Enumerable.prepend(Module.new { def to_a(*) = [:prepended] + super })
+      assert_equal([:prepended, 1, 2, 3], (1..3).to_a)
+    end;
+  end
+
+  def test_to_a_with_to_a_prepended_to_range
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Range.prepend(Module.new { def to_a = [:prepended] + super })
+      assert_equal([:prepended, 1, 2, 3], (1..3).to_a)
+    end;
+  end
+
   def test_to_set
     assert_equal(Set[1,2,3,4,5], (1..5).to_set)
     assert_equal(Set[1,2,3,4], (1...5).to_set)
