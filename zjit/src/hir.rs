@@ -777,24 +777,16 @@ pub enum ReceiverTypeResolution {
 enum SpecializedReceiver {
     Static { class: VALUE },
     Speculated { profiled_type: ProfiledType },
-    Guaranteed { profiled_type: ProfiledType },
-    ShapeMiss { class: VALUE },
+    /// The class is established by dispatch branches. `shape` is the profile whose shape a shape
+    /// branch also established, if any.
+    Guaranteed { class: VALUE, shape: Option<ProfiledType> },
 }
 
 impl SpecializedReceiver {
     fn class(&self) -> VALUE {
         match *self {
-            SpecializedReceiver::Static { class } | SpecializedReceiver::ShapeMiss { class } => class,
-            SpecializedReceiver::Speculated { profiled_type }
-            | SpecializedReceiver::Guaranteed { profiled_type } => profiled_type.class(),
-        }
-    }
-
-    fn profiled_type(&self) -> Option<ProfiledType> {
-        match *self {
-            SpecializedReceiver::Static { .. } | SpecializedReceiver::ShapeMiss { .. } => None,
-            SpecializedReceiver::Speculated { profiled_type }
-            | SpecializedReceiver::Guaranteed { profiled_type } => Some(profiled_type),
+            SpecializedReceiver::Static { class } | SpecializedReceiver::Guaranteed { class, .. } => class,
+            SpecializedReceiver::Speculated { profiled_type } => profiled_type.class(),
         }
     }
 
@@ -804,6 +796,16 @@ impl SpecializedReceiver {
             _ => None,
         }
     }
+}
+
+/// The method a Send calls for one receiver class.
+#[derive(Debug, Clone, Copy)]
+struct ResolvedMethod {
+    /// The entry found by lookup, before following aliases. Patch points watch this one.
+    lookup_cme: *const rb_callable_method_entry_t,
+    /// The entry that gets called, after following aliases.
+    cme: *const rb_callable_method_entry_t,
+    def_type: rb_method_type_t,
 }
 
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
@@ -5075,19 +5077,23 @@ impl Function {
         }
     }
 
-    fn is_special_ivar_method(klass: VALUE, cd: *const rb_call_data) -> bool {
-        let ci = unsafe { (*cd).ci };
+    /// Look up the method that `ci` calls on instances of `klass`.
+    fn resolve_method(klass: VALUE, ci: *const rb_callinfo) -> Result<ResolvedMethod, SendFallbackReason> {
         let mut cme = unsafe { rb_callable_method_entry(klass, vm_ci_mid(ci)) };
         if cme.is_null() {
-            return false;
+            return Err(SendNotOptimizedMethodType(MethodType::Null));
         }
+        // Load an overloaded cme if applicable. See vm_search_cc().
+        // It allows you to use a faster ISEQ if possible.
         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+        // Guard the lookup entry: re-aliasing invalidates it, not the resolved target.
+        let lookup_cme = cme;
         let mut def_type = unsafe { get_cme_def_type(cme) };
         while def_type == VM_METHOD_TYPE_ALIAS {
             cme = unsafe { rb_aliased_callable_method_entry(cme) };
             def_type = unsafe { get_cme_def_type(cme) };
         }
-        def_type == VM_METHOD_TYPE_IVAR || def_type == VM_METHOD_TYPE_ATTRSET
+        Ok(ResolvedMethod { lookup_cme, cme, def_type })
     }
 
     fn push_insn_typed(&mut self, block: BlockId, insn: Insn) -> InsnId {
@@ -5105,25 +5111,25 @@ impl Function {
         let insn_idx = self.frame_state_insn_idx(state) as u32;
         let join_block = self.new_block(insn_idx);
         let join_param = self.push_insn(join_block, Insn::Param);
+        // type_specialize runs after type inference, so type the join here.
+        self.insn_types[join_param] = types::BasicObject;
         let fallback_block = self.new_block(insn_idx);
-        let mut join_type = types::Empty;
-        let arms = {
-            let mut arms: Vec<(Type, Vec<ProfiledType>)> = Vec::with_capacity(profiled_types.len());
-            for &profiled_type in profiled_types {
-                if profiled_type.is_empty() { break; }
-                let expected = Type::from_profiled_type(profiled_type);
-                match arms.iter_mut().find(|(ty, _)| ty.bit_equal(expected)) {
-                    Some((_, buckets)) => buckets.push(profiled_type),
-                    None => arms.push((expected, vec![profiled_type])),
-                }
+        // One entry per receiver class (split by heap/immediate representation), holding the
+        // profiles seen for that class.
+        let mut classes: Vec<(Type, VALUE, Vec<ProfiledType>)> = Vec::with_capacity(profiled_types.len());
+        for &profiled_type in profiled_types {
+            if profiled_type.is_empty() { break; }
+            let expected = Type::from_profiled_type(profiled_type);
+            match classes.iter_mut().find(|(ty, _, _)| ty.bit_equal(expected)) {
+                Some((_, _, class_profiles)) => class_profiles.push(profiled_type),
+                None => classes.push((expected, profiled_type.class(), vec![profiled_type])),
             }
-            arms
-        };
-        for (index, (expected, buckets)) in arms.iter().enumerate() {
-            let expected = *expected;
+        }
+        let num_classes = classes.len();
+        for (index, (expected, class, class_profiles)) in classes.into_iter().enumerate() {
             let class_block = self.new_block(insn_idx);
             // The final receiver miss joins length misses at the shared fallback.
-            let next_class = if index + 1 == arms.len() { fallback_block } else { self.new_block(insn_idx) };
+            let next_class = if index + 1 == num_classes { fallback_block } else { self.new_block(insn_idx) };
             self.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
                 val: recv,
                 expected,
@@ -5132,23 +5138,42 @@ impl Function {
             })));
             block = next_class;
             let refined_recv = self.push_insn_typed(class_block, Insn::RefineType { val: recv, new_type: expected });
-            let mut shapes: Vec<ProfiledType> = Vec::with_capacity(buckets.len());
-            if Self::is_special_ivar_method(buckets[0].class(), cd) {
-                for &profiled_type in buckets {
-                    if !profiled_type.flags().is_immediate()
-                        && !shapes.iter().any(|seen| seen.shape() == profiled_type.shape()) {
-                        shapes.push(profiled_type);
+            let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
+            let class_only = SpecializedReceiver::Guaranteed { class, shape: None };
+            let method = Self::resolve_method(class, ci);
+            match method.map(|method| method.def_type) {
+                Ok(VM_METHOD_TYPE_IVAR | VM_METHOD_TYPE_ATTRSET) if !expected.is_immediate() => {
+                    let shape = self.load_shape(class_block, refined_recv);
+                    let mut shape_block = class_block;
+                    let mut shapes: Vec<ProfiledType> = Vec::with_capacity(class_profiles.len());
+                    for profiled_type in class_profiles {
+                        if !shapes.iter().any(|seen| seen.shape() == profiled_type.shape()) {
+                            shapes.push(profiled_type);
+                        }
                     }
+                    for profiled_type in shapes {
+                        let expected_shape = self.push_insn_typed(shape_block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
+                        let has_shape = self.push_insn_typed(shape_block, Insn::IsBitEqual { left: shape, right: expected_shape });
+                        let arm_block = self.new_block(insn_idx);
+                        let next_shape = self.new_block(insn_idx);
+                        self.push_insn(shape_block, Insn::CondBranch {
+                            val: has_shape,
+                            if_true: BranchEdge { target: arm_block, args: vec![] },
+                            if_false: BranchEdge { target: next_shape, args: vec![] }
+                        });
+                        shape_block = next_shape;
+                        let recv_spec = SpecializedReceiver::Guaranteed { class, shape: Some(profiled_type) };
+                        self.specialize_send_arm(arm_block, arm_send.clone(), recv_spec, method, join_block);
+                    }
+                    // The class matched but no profiled shape did. The method is still known.
+                    self.specialize_send_arm(shape_block, arm_send, class_only, method, join_block);
                 }
-            }
-            if shapes.is_empty() {
-                let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
-                let lengths = if send_block.is_none() {
-                    self.caller_splat_lengths(ci, refined_recv, state, &self.profiles)
-                } else {
-                    vec![]
-                };
-                if lengths.len() > 1 {
+                Ok(VM_METHOD_TYPE_ISEQ) if send_block.is_none() => {
+                    let lengths = self.caller_splat_lengths(ci, refined_recv, state, &self.profiles);
+                    if lengths.len() <= 1 {
+                        self.specialize_send_arm(class_block, arm_send, class_only, method, join_block);
+                        continue;
+                    }
                     // Receiver and length misses share the original, unexpanded Send.
                     let mut length_block = class_block;
                     let splat_array = self.caller_splat_array(&arm_send);
@@ -5168,47 +5193,17 @@ impl Function {
                         if let Insn::Send { caller_splat_length, .. } = &mut arm_send {
                             *caller_splat_length = Some(length);
                         }
-                        let result = self.specialize_send_arm(arm_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type: buckets[0] });
-                        join_type = join_type.union(self.type_of(result));
-                        self.push_insn(arm_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        self.specialize_send_arm(arm_block, arm_send, class_only, method, join_block);
                     }
-                } else {
-                    let result = self.specialize_send_arm(class_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type: buckets[0] });
-                    join_type = join_type.union(self.type_of(result));
-                    self.push_insn(class_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                 }
-                continue;
+                _ => {
+                    self.specialize_send_arm(class_block, arm_send, class_only, method, join_block);
+                }
             }
-            let shape = self.load_shape(class_block, refined_recv);
-            let mut shape_block = class_block;
-            let shape_miss_block = self.new_block(insn_idx);
-            let num_shapes = shapes.len();
-            for (shape_index, profiled_type) in shapes.into_iter().enumerate() {
-                let expected_shape = self.push_insn_typed(shape_block, Insn::Const { val: Const::CShape(profiled_type.shape()) });
-                let has_shape = self.push_insn_typed(shape_block, Insn::IsBitEqual { left: shape, right: expected_shape });
-                let arm_block = self.new_block(insn_idx);
-                let next_shape = if shape_index + 1 == num_shapes { shape_miss_block } else { self.new_block(insn_idx) };
-                self.push_insn(shape_block, Insn::CondBranch {
-                    val: has_shape,
-                    if_true: BranchEdge { target: arm_block, args: vec![] },
-                    if_false: BranchEdge { target: next_shape, args: vec![] }
-                });
-                shape_block = next_shape;
-                let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
-                let result = self.specialize_send_arm(arm_block, arm_send, SpecializedReceiver::Guaranteed { profiled_type });
-                join_type = join_type.union(self.type_of(result));
-                self.push_insn(arm_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
-            }
-            let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
-            let result = self.specialize_send_arm(shape_miss_block, arm_send, SpecializedReceiver::ShapeMiss { class: buckets[0].class() });
-            join_type = join_type.union(self.type_of(result));
-            self.push_insn(shape_miss_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
         }
         // In the fallthrough case, do a generic interpreter send and then join.
         let fallback_send = self.push_insn_typed(fallback_block, Insn::Send { recv, cd, block: send_block, args, caller_splat_length, state, reason: SendPolymorphicFallback });
-        join_type = join_type.union(self.type_of(fallback_send));
         self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_send] }));
-        self.insn_types[join_param] = join_type;
         self.make_equal_to(insn_id, join_param);
         join_block
     }
@@ -5223,16 +5218,13 @@ impl Function {
         args[caller_args.splat_arg_idx.unwrap()]
     }
 
-    fn specialize_send_arm(&mut self, arm_block: BlockId, send: Insn, recv_spec: SpecializedReceiver) -> InsnId {
+    /// Specialize `send` into `arm_block`, then jump to `join_block` with the result.
+    fn specialize_send_arm(&mut self, arm_block: BlockId, send: Insn, recv_spec: SpecializedReceiver, method: Result<ResolvedMethod, SendFallbackReason>, join_block: BlockId) {
         let arm_send = self.new_insn(send);
         self.insn_types[arm_send] = self.infer_type(arm_send);
-        match self.type_specialize_send(arm_block, arm_send, recv_spec) {
+        let result = match method.and_then(|method| self.type_specialize_send(arm_block, arm_send, recv_spec, method)) {
             Ok(replacement) => {
                 self.make_equal_to(arm_send, replacement);
-                let replacement = self.union_find.borrow_mut().find(replacement);
-                if self.insn_types[replacement].bit_equal(types::Any) && !matches!(self.insns[replacement], Insn::Param) {
-                    self.insn_types[replacement] = self.infer_type(replacement);
-                }
                 replacement
             }
             Err(reason) => {
@@ -5240,10 +5232,11 @@ impl Function {
                 self.push_insn_id(arm_block, arm_send);
                 arm_send
             }
-        }
+        };
+        self.push_insn(arm_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
     }
 
-    fn type_specialize_send(&mut self, block: BlockId, insn_id: InsnId, recv_spec: SpecializedReceiver) -> Result<InsnId, SendFallbackReason> {
+    fn type_specialize_send(&mut self, block: BlockId, insn_id: InsnId, recv_spec: SpecializedReceiver, method: ResolvedMethod) -> Result<InsnId, SendFallbackReason> {
         let (mut recv, cd, state, send_block, caller_splat_length, mut args) = match self.resolve(insn_id).insn(self) {
             &Insn::Send { recv, cd, state, block, caller_splat_length, ref args, .. } => (recv, cd, state, block, caller_splat_length, args.to_vec()),
             insn => panic!("Expected Send instruction, got {insn:?}"),
@@ -5255,27 +5248,13 @@ impl Function {
         let flags = unsafe { rb_vm_ci_flag(ci) };
 
         let mid = unsafe { vm_ci_mid(ci) };
-        // Do method lookup
-        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
-        if cme.is_null() {
-            return Err(SendNotOptimizedMethodType(MethodType::Null));
-        }
-        // Load an overloaded cme if applicable. See vm_search_cc().
-        // It allows you to use a faster ISEQ if possible.
-        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
-        let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
+        let ResolvedMethod { lookup_cme, cme, def_type } = method;
+        let visibility = unsafe { METHOD_ENTRY_VISI(lookup_cme) };
         match (visibility, flags & VM_CALL_FCALL != 0) {
             (METHOD_VISI_PUBLIC, _) => {}
             (METHOD_VISI_PRIVATE, true) => {}
             (METHOD_VISI_PROTECTED, true) => {}
             _ => return Err(SendNotOptimizedNeedPermission),
-        }
-        // Guard the lookup entry: re-aliasing invalidates it, not the resolved target.
-        let lookup_cme = cme;
-        let mut def_type = unsafe { get_cme_def_type(cme) };
-        while def_type == VM_METHOD_TYPE_ALIAS {
-            cme = unsafe { rb_aliased_callable_method_entry(cme) };
-            def_type = unsafe { get_cme_def_type(cme) };
         }
 
         // Check if we can optimize `foo(&block)` to a direct send: either `block` is
@@ -5487,7 +5466,7 @@ impl Function {
                         Ok(self.load_ivar(block, recv, profiled_type, id))
                     }
                 }
-                SpecializedReceiver::Guaranteed { profiled_type } => 'getivar: {
+                SpecializedReceiver::Guaranteed { shape: Some(profiled_type), .. } => 'getivar: {
                     if let Err(counter) = Self::can_optimize_getivar(profiled_type) {
                         break 'getivar Err(counter);
                     }
@@ -5496,12 +5475,13 @@ impl Function {
                     }
                     Ok(self.load_ivar(block, recv, profiled_type, id))
                 }
+                SpecializedReceiver::Guaranteed { shape: None, .. } if self.type_of(recv).is_immediate() => Err(Counter::getivar_fallback_immediate),
+                SpecializedReceiver::Guaranteed { shape: None, .. } => Err(Counter::getivar_fallback_shape_miss),
                 SpecializedReceiver::Static { .. } => {
                     // No shape information, just static class information
                     let resolution = self.resolve_receiver_type_from_profile(recv, state);
                     Err(Self::getivar_fallback_reason(resolution, std::ptr::null()))
                 }
-                SpecializedReceiver::ShapeMiss { .. } => Err(Counter::getivar_fallback_shape_miss),
             };
             Ok(result.unwrap_or_else(|counter| {
                 self.count(block, counter);
@@ -5519,16 +5499,17 @@ impl Function {
                     let recompile = None;
                     self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, recompile)
                 }
-                SpecializedReceiver::Guaranteed { profiled_type } => {
+                SpecializedReceiver::Guaranteed { shape: Some(profiled_type), .. } => {
                     self.prepare_optimized_setivar(id, profiled_type)
                         .map(|spec| self.emit_optimized_setivar(block, recv, id, val, spec))
                 }
+                SpecializedReceiver::Guaranteed { shape: None, .. } if self.type_of(recv).is_immediate() => Err(Counter::setivar_fallback_immediate),
+                SpecializedReceiver::Guaranteed { shape: None, .. } => Err(Counter::setivar_fallback_shape_miss),
                 SpecializedReceiver::Static { .. } => {
                     // No shape information, just static class information
                     self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                     Ok(())
                 }
-                SpecializedReceiver::ShapeMiss { .. } => Err(Counter::setivar_fallback_shape_miss),
             };
             if let Err(counter) = result {
                 self.count(block, counter);
@@ -5570,15 +5551,9 @@ impl Function {
                             return Err(OperandTooLarge);
                         }
                     }
-                    // Get the profiled type to check if the fields is embedded or heap allocated.
-                    let profiled_type = match recv_spec {
-                        SpecializedReceiver::Static { .. } => self.profiled_type_of_at(recv, state),
-                        _ => recv_spec.profiled_type(),
-                    };
-                    let Some(is_embedded) = profiled_type.map(|t| t.flags().is_struct_embedded()) else {
-                        // No (monomorphic/skewed polymorphic) profile info
-                        return Err(SendNoProfiles);
-                    };
+                    // Embeddedness depends only on the member count. See struct_embedded_p and
+                    // struct_alloc.
+                    let is_embedded = unsafe { rb_zjit_struct_embedded_p(rb_zjit_struct_num_members(klass)) };
                     // Check singleton class assumption first, before emitting other patchpoints
                     if !self.assume_no_singleton_classes(block, klass, state) {
                         return Err(SingletonClassSeen);
@@ -5838,7 +5813,7 @@ impl Function {
                 }
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
-                    &Insn::Send { recv, state, reason, .. } => {
+                    &Insn::Send { recv, cd, state, reason, .. } => {
                         let can_dispatch = matches!(reason, Uncategorized(_));
                         let class_statically_known = self.type_of(recv).runtime_exact_ruby_class().is_some();
                         // Don't do polymorphic dispatch if we already know the class statically; fall through.
@@ -5875,7 +5850,8 @@ impl Function {
                                 continue;
                             }
                         };
-                        match self.type_specialize_send(block, insn_id, recv_spec) {
+                        let method = Self::resolve_method(recv_spec.class(), unsafe { (*cd).ci });
+                        match method.and_then(|method| self.type_specialize_send(block, insn_id, recv_spec, method)) {
                             Ok(replacement) => self.make_equal_to(insn_id, replacement),
                             Err(reason) => {
                                 self.set_dynamic_send_reason(insn_id, reason);
