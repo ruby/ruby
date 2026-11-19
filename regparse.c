@@ -445,6 +445,7 @@ onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
   int result;
 
   key = (st_str_end_key* )xmalloc(sizeof(st_str_end_key));
+  CHECK_NULL_RETURN_MEMERR(key);
   key->s   = (UChar* )str_key;
   key->end = (UChar* )end_key;
   result = onig_st_insert(table, (st_data_t )key, value);
@@ -929,8 +930,12 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
       xfree(e);
       return ONIGERR_MEMORY;
     }
-    onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
-                          (HashDataType )e);
+    if (onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
+                              (HashDataType )e) < 0) {
+      xfree(e->name);
+      xfree(e);
+      return ONIGERR_MEMORY;
+    }
 
     e->name_len   = name_end - name;
     e->back_num   = 0;
