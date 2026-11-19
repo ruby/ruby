@@ -1100,6 +1100,20 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     }
     hints->ai_flags |= additional_flags;
 
+#if !defined(INET6) && defined(AF_INET6)
+    /*
+     * IPv6 support is disabled (--disable-ipv6), but the system resolver
+     * may still return IPv6 addresses.  Restrict resolution to IPv4 so that
+     * no IPv6 addresses leak into Ruby.
+     */
+    if (hints->ai_family == PF_UNSPEC) {
+        hints->ai_family = PF_INET;
+    }
+    else if (hints->ai_family == PF_INET6) {
+        rsock_raise_resolution_error_for_host("getaddrinfo", EAI_FAMILY, host);
+    }
+#endif
+
     error = numeric_getaddrinfo(hostp, portp, hints, &ai);
     if (error == 0) {
         res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
