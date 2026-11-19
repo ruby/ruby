@@ -5304,7 +5304,6 @@ vm_super_nearest_class(VALUE klass)
 static const struct rb_callcache *
 vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
-    VALUE current_defined_class;
     const rb_iseq_t *iseq = CFP_ISEQ(reg_cfp);
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
@@ -5315,20 +5314,20 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     // Could be 0.
     const VALUE search_start = vm_search_normal_superclass(me->defined_class);
 
-    current_defined_class = vm_defined_class_for_protected_call(me);
-
-    if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-        iseq != method_entry_iseqptr(me)) {
+    if (iseq != method_entry_iseqptr(me)) {
         // `super` outside of the method body (in a block or eval string).
         // `self` might not be the receiver of the method.
+        VALUE defined_class = me->defined_class;
         VALUE expected = 0; // set when rejecting `self`
 
         // `super` from within a module is complicated...
-        if (RB_TYPE_P(current_defined_class, T_ICLASS)) {
-            if (RCLASS_INCLUDER(current_defined_class) &&
-                !rb_obj_is_kind_of(recv, current_defined_class)) {
-                // Method from a module and `self` doesn't have the module
-                expected = RCLASS_INCLUDER(current_defined_class);
+        if (RB_TYPE_P(defined_class, T_ICLASS)) {
+            // When defined_class is part of a plain ancestry chain
+            // (not a refinement, not a bound UnboundMethod),
+            // require `self` to have the module in its ancestry.
+            if (RCLASS_INCLUDER(defined_class) &&
+                !rb_obj_is_kind_of(recv, defined_class)) {
+                expected = RCLASS_INCLUDER(defined_class);
             }
             else {
                 // Require `self` to descend from the first class after the
@@ -5336,7 +5335,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
                 // since the search continues onto that class and its
                 // ancestors. Iclasses without an includer also come here:
                 // ones UnboundMethod#bind and bind_call use to run the method
-                // on any object.
+                // on any object, and ones for refinements.
                 //
                 // This is conservative. It rejects without looking at where
                 // `super` lands, so it also rejects when the landing is fine
@@ -5347,7 +5346,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
                 // In return, `super` in a method body needs no check, so only
                 // the places that can switch `self` pay. A method body
                 // starts with `self` descending from the first class at or
-                // after its defined class. `super` in the body keeps `self` and
+                // after defined_class. `super` in the body keeps `self` and
                 // searches further along the same ancestry, so the body it
                 // lands in starts the same way. Out here `self` can be any
                 // object, so check to give the next body the same start.
@@ -5357,8 +5356,8 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
                 }
             }
         }
-        else if (!rb_obj_is_kind_of(recv, current_defined_class)) {
-            expected = current_defined_class;
+        else if (!rb_obj_is_kind_of(recv, defined_class)) {
+            expected = defined_class;
         }
 
         if (expected) {

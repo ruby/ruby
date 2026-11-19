@@ -2283,6 +2283,124 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_super_in_instance_exec_in_refined_module_method
+    assert_separately([], <<-"end;")
+      module M
+        def last = :M
+      end
+
+      module R
+        refine M do
+          def first = $block_self.instance_exec { super() }
+          def last = $block_self.instance_exec { super() }
+          def frozen? = $block_self.instance_exec { super() }
+        end
+      end
+      using R
+
+      class Sub < Array
+        include M
+      end
+
+      class Other
+        include M
+      end
+
+      class Prepended < Array
+        prepend M
+
+        def first = [:prepended, super]
+      end
+
+      # `super` continues onto the ancestors of the class with the refined
+      # module, so `self` needs to be an instance of the next class.
+      [0x6f56, Other.new].each do |block_self|
+        $block_self = block_self
+        assert_raise_with_message(TypeError, /\#{block_self.class} \\(expected Array\\)/) do
+          Sub.new.first
+        end
+        assert_raise_with_message(TypeError, /\#{block_self.class} \\(expected Array\\)/) do
+          Sub.new.last
+        end
+      end
+
+      # The next class is the one the module is prepended to
+      [0x6f56, [], Sub.new].each do |block_self|
+        $block_self = block_self
+        assert_raise_with_message(TypeError, /\#{block_self.class} \\(expected Prepended\\)/) do
+          Prepended.new.first
+        end
+      end
+
+      # Control: `self` is an instance of the next class
+      $block_self = [:array]
+      assert_equal(:array, Sub.new.first)
+      assert_equal(:M, Sub.new.last)
+      $block_self = Prepended.new.push(:array)
+      assert_equal([:prepended, :array], Prepended.new.first)
+      $block_self = [].freeze
+      assert_equal(true, Other.new.frozen?)
+    end;
+  end
+
+  def test_super_in_instance_exec_in_refined_module_method_with_late_include
+    assert_separately([], <<-"end;")
+      module M; end
+
+      module R
+        refine M do
+          def first = super()
+        end
+      end
+      using R
+
+      class Sub < Array
+        include M
+      end
+
+      class Other
+        include M
+      end
+
+      assert_nil(Sub.new.first)
+
+      # Include into the refined module after activation
+      module Late
+        def first = $block_self.instance_exec { super() }
+      end
+      M.include(Late)
+
+      $block_self = Other.new
+      assert_raise_with_message(TypeError, /Other \\(expected Array\\)/) do
+        Sub.new.first
+      end
+
+      $block_self = Sub.new.push(:sub)
+      assert_equal(:sub, Sub.new.first)
+    end;
+  end
+
+  def test_super_in_instance_exec_in_refined_class_method
+    assert_separately([], <<-"end;")
+      class Sub < Array; end
+
+      module R
+        refine Sub do
+          def first = $block_self.instance_exec { super() }
+        end
+      end
+      using R
+
+      $block_self = []
+      assert_raise_with_message(TypeError, /Array \\(expected Sub\\)/) do
+        Sub.new.first
+      end
+
+      $block_self = Class.new(Sub).new.push(:sub)
+      assert_equal(:sub, Sub.new.first)
+    end;
+  end
+
   def test_super_in_instance_exec_in_bound_refined_class_method
     assert_separately([], <<-"end;")
       class Sub < Array
