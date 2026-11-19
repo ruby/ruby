@@ -6034,13 +6034,22 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
                 }
             }
         }
-        /* both edges are all digits */
+        /*
+         * both edges are all digits, and the methods that the iteration
+         * below calls are not redefined
+         */
         if (ISDIGIT(*bp) && ISDIGIT(*ep) &&
             all_digits_p(bp, RSTRING_LEN(beg)) &&
-            all_digits_p(ep, RSTRING_LEN(end))) {
+            all_digits_p(ep, RSTRING_LEN(end)) &&
+            BASIC_OP_UNREDEFINED_P(BOP_EQ, STRING_REDEFINED_OP_FLAG) &&
+            BASIC_OP_UNREDEFINED_P(BOP_LT, INTEGER_REDEFINED_OP_FLAG) &&
+            BASIC_OP_UNREDEFINED_P(BOP_LE, INTEGER_REDEFINED_OP_FLAG) &&
+            BASIC_OP_UNREDEFINED_P(BOP_SUCC, INTEGER_REDEFINED_OP_FLAG)) {
             /*
              * rb_str_upto_each() yields the numbers from beg to end, each
              * in as many digits as beg has, or more if it does not fit.
+             * It compares them with val by String#==, and if beg or end
+             * is not a Fixnum, it counts with Integer#<, #<= and #succ.
              */
             const rb_len_t len = RSTRING_LEN(val), width = RSTRING_LEN(beg);
             rb_len_t digits = len;

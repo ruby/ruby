@@ -1068,15 +1068,20 @@ class TestRange < Test::Unit::TestCase
     assert_not_include("10".."20", 15)
     assert_not_include("10".."20", "15".encode("UTF-16LE"))
 
-    # too many to iterate
-    big = "1" + "0" * 40
-    assert_include("1"..big, "9" * 40)
-    assert_include("1"..big, big)
-    assert_not_include("1"...big, big)
-    assert_not_include("1"..big, "1" + "0" * 41)
-    assert_not_include("1"..big, "0" + "9" * 40)
-    assert_include("0001"..big, "0999")
-    assert_not_include("0001"..big, "999")
+    # too many to iterate, so in a process where String#== and Integer#<,
+    # #<= and #succ are not redefined or refined, as they would have to
+    # be iterated otherwise
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      big = "1" + "0" * 40
+      assert_include("1"..big, "9" * 40)
+      assert_include("1"..big, big)
+      assert_not_include("1"...big, big)
+      assert_not_include("1"..big, "1" + "0" * 41)
+      assert_not_include("1"..big, "0" + "9" * 40)
+      assert_include("0001"..big, "0999")
+      assert_not_include("0001"..big, "999")
+    end;
 
     # the same as iterating; the single characters are another case
     edges = %w[0 00 1 01 001 8 08 9 09 10 010 12 0012 99 100 0100]
@@ -1089,6 +1094,41 @@ class TestRange < Test::Unit::TestCase
         assert_equal(a.include?(v), r.include?(v), "#{r.inspect} #{v.inspect}")
       end
     end
+  end
+
+  def test_include_numeric_string_with_redefined_methods
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class String
+        alias_method :orig_eq, :==
+        def ==(other) = orig_eq(other) || (other.is_a?(String) && other.end_with?("x"))
+      end
+      assert_include("10".."20", "15x")
+      assert_include("10".."20", "15")
+    end;
+
+    big = "1" + "0" * 20
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class Integer
+        alias_method :orig_succ, :succ
+        def succ = orig_succ.orig_succ
+      end
+      assert_include("#{big}".."#{big.succ.succ}", "#{big.succ.succ}")
+      assert_not_include("#{big}".."#{big.succ.succ}", "#{big.succ}")
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class Integer
+        alias_method :orig_le, :<=
+        alias_method :orig_lt, :<
+        def <=(other) = false
+        def <(other) = false
+      end
+      assert_not_include("#{big}".."#{big.succ}", "#{big}")
+      assert_include("10".."20", "15")
+    end;
   end
 
   def test_cover
