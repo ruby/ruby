@@ -1068,6 +1068,9 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
   else if (qn->upper == 0 && qn->is_referred != 0) { /* /(?<n>..){0}/ */
     len = SIZE_OP_JUMP + tlen;
   }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    len = 0;
+  }
   else if (!infinite && qn->greedy &&
            (qn->upper == 1 ||
             IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
@@ -1190,6 +1193,9 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
     if (r) return r;
     r = compile_tree(qn->target, reg);
+  }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    r = 0;
   }
   else if (!infinite && qn->greedy &&
            (qn->upper == 1 ||
