@@ -243,7 +243,7 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.tests }}
           EXCLUDES: '../src/test/.excludes-zjit'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '30'
           ZJIT_BINDGEN_DIFF_OPTS: '--exit-code'

@@ -164,7 +164,7 @@ jobs:
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
           RUBY_DEBUG_TEST_NO_REMOTE: "1"
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}

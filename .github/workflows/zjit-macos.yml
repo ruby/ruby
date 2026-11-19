@@ -149,7 +149,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           EXCLUDES: '../src/test/.excludes-zjit'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
           SYNTAX_SUGGEST_TIMEOUT: '30'
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}

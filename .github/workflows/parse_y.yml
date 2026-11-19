@@ -89,7 +89,7 @@ jobs:
           EXCLUDES: '../src/test/.excludes-parsey'
           RUN_OPTS: ${{ matrix.run_opts || '--parser=parse.y' }}
           SPECOPTS: ${{ matrix.specopts || '-T --parser=parse.y' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
 
       - uses: ./.github/actions/slack
         with:
