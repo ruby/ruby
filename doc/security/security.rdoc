@@ -110,6 +110,11 @@ String#include?, or escape it with Regexp.escape:
 
   Regexp.new(Regexp.escape(input))
 
+To match any of several untrusted strings, use Regexp.union, which escapes
+each String argument:
+
+  Regexp.union(inputs)
+
 == +eval+
 
 Never pass untrusted or user controlled input to +eval+.
