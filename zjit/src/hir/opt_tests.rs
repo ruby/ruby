@@ -3022,6 +3022,80 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_hoist_patch_points_to_first_in_span() {
+        eval("
+            def test(a, b, c) = (a + b) - c
+            test(1, 2, 3); test(4, 5, 6)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          v5:BasicObject = LoadField v2, :c@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
+          v11:BasicObject = LoadArg :c@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v35:Fixnum = GuardType v14, Fixnum recompile
+          v36:Fixnum = GuardType v15, Fixnum recompile
+          v37:Fixnum = FixnumAdd v35, v36
+          PatchPoint MethodRedefined(Integer@0x1008, -@0x1040, cme:0x1048)
+          v41:Fixnum = GuardType v16, Fixnum recompile
+          v42:Fixnum = FixnumSub v37, v41
+          CheckInterrupts
+          Return v42
+        ");
+    }
+
+    #[test]
+    fn test_hoist_patch_points_stops_at_call() {
+        eval("
+            def test(a, b) = a.to_s.bytesize + b
+            test(1, 2); test(3, 4)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
+          v36:Fixnum = GuardType v12, Fixnum recompile
+          v37:StringExact = CCallVariadic v36, :Integer#to_s@0x1040
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(String@0x1048)
+          PatchPoint MethodRedefined(String@0x1048, bytesize@0x1050, cme:0x1058)
+          v42:CInt64 = LoadField v37, :len@0x1080
+          v43:Fixnum = BoxFixnum v42
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1081, cme:0x1088)
+          v47:Fixnum = GuardType v13, Fixnum recompile
+          v48:Fixnum = FixnumAdd v43, v47
+          CheckInterrupts
+          Return v48
+        ");
+    }
+
+    #[test]
     fn test_call_with_correct_and_too_many_args_for_method() {
         eval("
             def target(a = 1, b = 2, c = 3, d = 4) = [a, b, c, d]

@@ -357,6 +357,61 @@ mod snapshot_tests {
           Return v17
         ");
     }
+
+    #[test]
+    fn test_hoisted_patch_point_adopts_inline_frame_exit_state() {
+        eval("
+            def inner_reply(h) = h
+            def leaf(h) = inner_reply(h)
+            def test(x, y) = [:prefix, leaf(a: x, b: y)]
+            test(1, 2); test(1, 2)
+        ");
+        assert_snapshot!(optimized_hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb0():
+          Entries bb1, bb2
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:BasicObject = LoadField v2, :y@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:BasicObject = LoadArg :y@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v15:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [x=v12, y=v13] }
+          PatchPoint NoTracePoint, v15
+          v17:StaticSymbol[:prefix] = Const Value(VALUE(0x1010))
+          v21:Any = Snapshot FrameState { pc: 0x1018, stack: [v17, v11, v12, v13], locals: [x=v12, y=v13] }
+          PatchPoint MethodRedefined(Object@0x1020, leaf@0x1028, cme:0x1030), v21
+          v33:ObjectSubclass[class_exact*:Object@VALUE(0x1020)] = GuardType v11, ObjectSubclass[class_exact*:Object@VALUE(0x1020)] recompile
+          v34:StaticSymbol[:a] = Const Value(VALUE(0x1058))
+          v35:StaticSymbol[:b] = Const Value(VALUE(0x1060))
+          v36:HashExact = NewHash v34: v12, v35: v13
+          v37:Any = Snapshot FrameState { pc: 0x1018, stack: [v17, v33, v36], locals: [x=v12, y=v13] }
+          v39:Any = Snapshot FrameState { pc: 0x1018, stack: [v17], locals: [x=v12, y=v13] }
+          PushInlineFrame :leaf, v33 (0x1068), num_args=1
+          v43:Any = Snapshot FrameState { pc: 0x1088, stack: [], locals: [h=v36], caller: v39 }
+          PatchPoint NoTracePoint, v43
+          v46:Any = Snapshot FrameState { pc: 0x1090, stack: [v33, v36], locals: [h=v36], caller: v39 }
+          PatchPoint MethodRedefined(Object@0x1020, inner_reply@0x1098, cme:0x10a0), v46
+          v48:Any = Snapshot FrameState { pc: 0x10c8, stack: [v36], locals: [h=v36], caller: v39 }
+          PatchPoint NoEPEscape(leaf), v48
+          PopInlineFrame
+          v23:Any = Snapshot FrameState { pc: 0x10d0, stack: [v17, v36], locals: [x=v12, y=v13] }
+          PatchPoint NoEPEscape(test), v23
+          v25:Any = Snapshot FrameState { pc: 0x10d0, stack: [v17, v36], locals: [x=v12, y=v13] }
+          v26:ArrayExact = NewArray v17, v36
+          v27:Any = Snapshot FrameState { pc: 0x10d8, stack: [v26], locals: [x=v12, y=v13] }
+          CheckInterrupts
+          Return v26
+        ");
+    }
 }
 
 #[cfg(test)]
