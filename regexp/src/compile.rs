@@ -2799,6 +2799,9 @@ fn check_stack(&self) -> R<()> {
             NT_CANY => opt.len.set(enc.min_len(), enc.max_len()),
             NT_ANCHOR => {
                 let an = self.ast.anchor(node);
+                if an.typ & !(ANCHOR_BEGIN_BUF | ANCHOR_BEGIN_POSITION | ANCHOR_KEEP) != 0 {
+                    opt.anc.head_asserts |= an.typ;
+                }
                 match an.typ {
                     ANCHOR_BEGIN_BUF
                     | ANCHOR_BEGIN_POSITION
@@ -3145,6 +3148,7 @@ struct OptEnv {
 struct OptAncInfo {
     left_anchor: i32,
     right_anchor: i32,
+    head_asserts: i32,
 }
 
 fn is_left_anchor(anc: i32) -> bool {
@@ -3157,9 +3161,20 @@ fn is_left_anchor(anc: i32) -> bool {
 
 impl OptAncInfo {
     fn concat(left: &OptAncInfo, right: &OptAncInfo, left_len: usize, right_len: usize) -> OptAncInfo {
-        let mut to = OptAncInfo { left_anchor: left.left_anchor, right_anchor: right.right_anchor };
+        let mut to = OptAncInfo {
+            left_anchor: left.left_anchor,
+            right_anchor: right.right_anchor,
+            head_asserts: left.head_asserts,
+        };
         if left_len == 0 {
-            to.left_anchor |= right.left_anchor;
+            let mut right_left = right.left_anchor;
+            if left.head_asserts & !ANCHOR_BEGIN_LINE != 0 {
+                right_left &= !ANCHOR_ANYCHAR_STAR_MASK;
+            } else if left.head_asserts & ANCHOR_BEGIN_LINE != 0 {
+                right_left &= !ANCHOR_ANYCHAR_STAR_ML;
+            }
+            to.left_anchor |= right_left;
+            to.head_asserts |= right.head_asserts;
         }
         if right_len == 0 {
             to.right_anchor |= left.right_anchor;
@@ -3188,6 +3203,7 @@ impl OptAncInfo {
     fn alt_merge(&mut self, add: &OptAncInfo) {
         self.left_anchor &= add.left_anchor;
         self.right_anchor &= add.right_anchor;
+        self.head_asserts |= add.head_asserts;
     }
 }
 
