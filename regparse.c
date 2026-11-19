@@ -6727,6 +6727,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
   }
   else {
     *top  = node_new_list(node, NULL);
+    if (IS_NULL(*top)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp = &(NCDR(*top));
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
@@ -6742,6 +6746,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
       }
       else {
         *headp = node_new_list(node, NULL);
+        if (IS_NULL(*headp)) {
+          onig_node_free(node);
+          return ONIGERR_MEMORY;
+        }
         headp = &(NCDR(*headp));
       }
     }
@@ -6773,6 +6781,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
   }
   else if (r == TK_ALT) {
     topnode = onig_node_new_alt(node, NULL);
+    if (IS_NULL(topnode)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp   = &(NCDR(topnode));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
@@ -6789,6 +6801,11 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       }
 
       *headp = onig_node_new_alt(node, NULL);
+      if (IS_NULL(*headp)) {
+        onig_node_free(node);
+        onig_node_free(topnode);
+        return ONIGERR_MEMORY;
+      }
       headp  = &(NCDR(*headp));
     }
 
