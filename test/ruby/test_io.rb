@@ -4380,6 +4380,36 @@ __END__
     end
   end
 
+  def test_write_multiple_arguments_during_flush
+    mkcdtmpdir do
+      File.mkfifo("fifo")
+    rescue NotImplementedError
+    else
+      assert_separately([], <<-'EOS')
+        r = File.open("fifo", File::RDONLY | File::NONBLOCK)
+        w = File.open("fifo", "w")
+        filler = File.open("fifo", File::WRONLY | File::NONBLOCK)
+        r.close
+        r = File.open("fifo", "r")
+
+        nil while filler.write_nonblock("x" * 4096, exception: false) != :wait_writable
+
+        w.write("a" * 8000)
+        t1 = Thread.new { w.flush }
+        Thread.pass until t1.stop?
+        t2 = Thread.new { w.sync = true; w.write("b" * 100, "c" * 100) }
+        Thread.pass until t2.stop?
+
+        reader = Thread.new { r.read }
+        assert_join_threads([t1, t2])
+        w.close
+        filler.close
+        data = reader.value
+        assert_equal([8000, 100, 100], %w[a b c].map {|c| data.count(c) })
+      EOS
+    end
+  end
+
   def test_open_fifo_restart_at_signal_intterupt
     mkcdtmpdir do
       File.mkfifo("fifo")
