@@ -3105,7 +3105,7 @@ pub fn search(
                     do_end_buf = true;
                 }
             }
-        } else if reg.anchor & ANCHOR_ANYCHAR_STAR_ML != 0 {
+        } else if reg.anchor & ANCHOR_ANYCHAR_STAR_ML != 0 && range > start {
             range = begin_position(start, range, global_pos);
         }
 
