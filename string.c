@@ -5357,6 +5357,9 @@ static VALUE get_pat(VALUE);
  *
  *      regexp = Regexp.new(pattern)
  *
+ *    Passing untrusted input as a string +pattern+ is generally not recommended;
+ *    see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
+ *
  *  - Calls <tt>regexp.match</tt> with +self+ to compute +matchdata+.
  *    If +offset+ is given, it is also passed (see Regexp#match).
  *
@@ -5405,6 +5408,9 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  Computes +regexp+ by converting +pattern+ (if not already a Regexp):
  *
  *    regexp = Regexp.new(pattern)
+ *
+ *  Passing untrusted input as a string +pattern+ is generally not recommended;
+ *  see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
  *
  *  The search for +regexp+ in +self+ begins at the given character +offset+.
  *  Returns +true+ if a match is found, +false+ otherwise:

@@ -88,6 +88,28 @@ any string of their choosing.
 If you want to match the beginning and end of the entire string in Ruby, use
 the anchors +\A+ and +\z+.
 
+=== Untrusted patterns
+
+Passing untrusted or user supplied input as a regular expression pattern is
+generally not recommended. A string is compiled into a regular expression by:
+
+- Regexp.new and Regexp.compile.
+- Interpolation in a regexp literal, such as <code>/#{input}/</code>.
+- Methods that compile a string argument, such as String#match and
+  String#match?.
+
+Ruby aims to never crash, whatever string is compiled into a regular
+expression, and a crash or memory corruption caused by a pattern is a bug to be
+fixed. However, a goal is not a guarantee. A pattern can also be written so
+that matching it takes a very long time; see
+{Timeouts}[rdoc-ref:Regexp@Timeouts].
+
+If you only need to search for untrusted text, do not compile it as a pattern.
+Pass it to a method that treats a string argument literally, such as
+String#include?, or escape it with Regexp.escape:
+
+  Regexp.new(Regexp.escape(input))
+
 == +eval+
 
 Never pass untrusted or user controlled input to +eval+.

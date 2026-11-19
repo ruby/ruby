@@ -1220,6 +1220,15 @@ in the second argument for Regexp.new:
   s.encoding   # => #<Encoding:UTF-8>
   re.match(s)  # Raises Encoding::CompatibilityError.
 
+== Untrusted Patterns
+
+Passing untrusted input as a pattern is generally not recommended.
+This applies wherever a string is compiled into a regexp:
+Regexp.new and Regexp.compile, interpolation in a regexp literal,
+and methods that compile a string argument, such as String#match and String#match?.
+
+See {Untrusted patterns}[rdoc-ref:security/security.rdoc@Untrusted+patterns].
+
 == Timeouts
 
 When using a regexp to match untrusted input, you should set a timeout
