@@ -2725,7 +2725,7 @@ rb_vm_base_ptr(const rb_control_frame_t *cfp)
 
 static inline VALUE vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, int opt_pc, int param_size, int local_size);
 ALWAYS_INLINE(static VALUE vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me, int opt_pc, int param_size, int local_size));
-static inline VALUE vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, int opt_pc);
+static inline VALUE vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, int opt_pc, int param_size, int local_size);
 static VALUE vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
 static VALUE vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling);
 static VALUE vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling);
@@ -2738,7 +2738,11 @@ vm_call_iseq_setup_tailcall_0start(rb_execution_context_t *ec, rb_control_frame_
 {
     RB_DEBUG_COUNTER_INC(ccf_iseq_setup_tailcall_0start);
 
-    return vm_call_iseq_setup_tailcall(ec, cfp, calling, 0);
+    const struct rb_callcache *cc = calling->cc;
+    const rb_iseq_t *iseq = def_iseq_ptr(vm_cc_cme(cc)->def);
+    int param = ISEQ_BODY(iseq)->param.size;
+    int local = ISEQ_BODY(iseq)->local_table_size;
+    return vm_call_iseq_setup_tailcall(ec, cfp, calling, 0, param, local);
 }
 
 static VALUE
@@ -3060,6 +3064,8 @@ vm_call_iseq_setup_tailcall_opt_start(rb_execution_context_t *ec, rb_control_fra
     const int lead_num = ISEQ_BODY(iseq)->param.lead_num;
     const int opt = calling->argc - lead_num;
     const int opt_pc = (int)ISEQ_BODY(iseq)->param.opt_table[opt];
+    const int param = ISEQ_BODY(iseq)->param.size;
+    const int local = ISEQ_BODY(iseq)->local_table_size;
 
     RB_DEBUG_COUNTER_INC(ccf_iseq_opt);
 
@@ -3072,7 +3078,7 @@ vm_call_iseq_setup_tailcall_opt_start(rb_execution_context_t *ec, rb_control_fra
     }
 #endif
 
-    return vm_call_iseq_setup_tailcall(ec, cfp, calling, opt_pc);
+    return vm_call_iseq_setup_tailcall(ec, cfp, calling, opt_pc, param, local);
 }
 
 static void
@@ -3509,7 +3515,7 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
         return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), opt_pc, param_size, local_size);
     }
     else {
-        return vm_call_iseq_setup_tailcall(ec, cfp, calling, opt_pc);
+        return vm_call_iseq_setup_tailcall(ec, cfp, calling, opt_pc, param_size, local_size);
     }
 }
 
@@ -3531,10 +3537,10 @@ vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, s
 }
 
 static inline VALUE
-vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, int opt_pc)
+vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling,
+                            int opt_pc, int param_size, int local_size)
 {
     const struct rb_callcache *cc = calling->cc;
-    unsigned int i;
     VALUE *argv = cfp->sp - calling->argc;
     const rb_callable_method_entry_t *me = vm_cc_cme(cc);
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
@@ -3564,14 +3570,14 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
     sp++;
 
     /* copy arguments */
-    for (i=0; i < ISEQ_BODY(iseq)->param.size; i++) {
+    for (int i = 0; i < param_size; i++) {
         *sp++ = src_argv[i];
     }
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
                   calling->recv, calling->block_handler, (VALUE)me,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc, sp,
-                  ISEQ_BODY(iseq)->local_table_size - ISEQ_BODY(iseq)->param.size,
+                  local_size - param_size,
                   ISEQ_BODY(iseq)->stack_max);
 
     cfp->sp = sp_orig;
