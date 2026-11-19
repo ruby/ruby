@@ -5081,14 +5081,6 @@ impl Function {
         }
     }
 
-    fn send_polymorphic_summary(&self, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
-        if self.type_of(recv).runtime_exact_ruby_class().is_some() {
-            return None;
-        }
-        let profiles = self.profiles.as_ref()?;
-        self.polymorphic_summary(profiles, recv, state)
-    }
-
     fn resolved_method_def_type(klass: VALUE, cd: *const rb_call_data) -> Option<rb_method_type_t> {
         let ci = unsafe { (*cd).ci };
         let mut cme = unsafe { rb_callable_method_entry(klass, vm_ci_mid(ci)) };
@@ -5121,7 +5113,18 @@ impl Function {
         let join_param = self.push_insn(join_block, Insn::Param);
         let fallback_block = self.new_block(insn_idx);
         let mut join_type = types::Empty;
-        let arms = polymorphic_arms(profiled_types);
+        let arms = {
+            let mut arms: Vec<(Type, Vec<ProfiledType>)> = Vec::with_capacity(profiled_types.len());
+            for &profiled_type in profiled_types {
+                if profiled_type.is_empty() { break; }
+                let expected = Type::from_profiled_type(profiled_type);
+                match arms.iter_mut().find(|(ty, _)| ty.bit_equal(expected)) {
+                    Some((_, buckets)) => buckets.push(profiled_type),
+                    None => arms.push((expected, vec![profiled_type])),
+                }
+            }
+            arms
+        };
         for (index, (expected, buckets)) in arms.iter().enumerate() {
             let expected = *expected;
             let class_block = self.new_block(insn_idx);
@@ -5474,10 +5477,34 @@ impl Function {
             let result = match recv_spec {
                 SpecializedReceiver::Speculated { profiled_type } => {
                     recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
-                    self.try_emit_optimized_getivar(block, recv, id, profiled_type, state)
+                    'getivar: {
+                        if let Err(counter) = Self::can_optimize_getivar(profiled_type) {
+                            break 'getivar Err(counter);
+                        }
+                        if self.policy.no_side_exits {
+                            // On the final version, skip GetIvar shape specialization.
+                            // iseq_to_hir already generates polymorphic branches with a
+                            // GetIvar C call fallback for getinstancevariable, so we don't
+                            // need to wrap it again here.
+                            break 'getivar Err(Counter::getivar_fallback_no_side_exits);
+                        }
+                        if !self.assume_ivar_read_ractor_independent(block, profiled_type.shape(), state) {
+                            break 'getivar Err(Counter::getivar_fallback_multi_ractor);
+                        }
+                        let recv = self.guard_heap(block, recv, state);
+                        let shape = self.load_shape(block, recv);
+                        self.guard_shape(block, shape, profiled_type.shape(), state, Some(Recompile));
+                        Ok(self.load_ivar(block, recv, profiled_type, id))
+                    }
                 }
-                SpecializedReceiver::Guaranteed { profiled_type } => {
-                    self.emit_guaranteed_getivar(block, recv, id, profiled_type, state)
+                SpecializedReceiver::Guaranteed { profiled_type } => 'getivar: {
+                    if let Err(counter) = Self::can_optimize_getivar(profiled_type) {
+                        break 'getivar Err(counter);
+                    }
+                    if !self.assume_ivar_read_ractor_independent(block, profiled_type.shape(), state) {
+                        break 'getivar Err(Counter::getivar_fallback_multi_ractor);
+                    }
+                    Ok(self.load_ivar(block, recv, profiled_type, id))
                 }
                 SpecializedReceiver::Static { .. } => {
                     // No shape information, just static class information
@@ -5823,8 +5850,10 @@ impl Function {
                 match resolved.insn(self) {
                     &Insn::Send { recv, state, reason, .. } => {
                         let can_dispatch = matches!(reason, Uncategorized(_));
-                        if can_dispatch {
-                            if let Some(summary) = self.send_polymorphic_summary(recv, state) {
+                        let class_statically_known = self.type_of(recv).runtime_exact_ruby_class().is_some();
+                        // Don't do polymorphic dispatch if we already know the class statically; fall through.
+                        if can_dispatch && !class_statically_known && let Some(profiles) = self.profiles.as_ref() {
+                            if let Some(summary) = self.polymorphic_summary(profiles, recv, state) {
                                 block = self.specialize_polymorphic_send(block, insn_id, summary.buckets());
                                 continue;
                             }
@@ -6693,32 +6722,6 @@ impl Function {
             return Err(Counter::getivar_fallback_complex);
         }
         Ok(())
-    }
-
-    fn emit_guaranteed_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
-        Self::can_optimize_getivar(profiled_type)?;
-        if !self.assume_ivar_read_ractor_independent(block, profiled_type.shape(), state) {
-            return Err(Counter::getivar_fallback_multi_ractor);
-        }
-        Ok(self.load_ivar(block, self_val, profiled_type, id))
-    }
-
-    fn try_emit_optimized_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
-        Self::can_optimize_getivar(profiled_type)?;
-        if self.policy.no_side_exits {
-            // On the final version, skip GetIvar shape specialization.
-            // iseq_to_hir already generates polymorphic branches with a
-            // GetIvar C call fallback for getinstancevariable, so we don't
-            // need to wrap it again here.
-            return Err(Counter::getivar_fallback_no_side_exits);
-        }
-        if !self.assume_ivar_read_ractor_independent(block, profiled_type.shape(), state) {
-            return Err(Counter::getivar_fallback_multi_ractor);
-        }
-        let self_val = self.guard_heap(block, self_val, state);
-        let shape = self.load_shape(block, self_val);
-        self.guard_shape(block, shape, profiled_type.shape(), state, Some(Recompile));
-        Ok(self.load_ivar(block, self_val, profiled_type, id))
     }
 
     fn prepare_optimized_setivar(&mut self, id: ID, profiled_type: ProfiledType) -> Result<SetIvarSpec, Counter> {
@@ -9607,19 +9610,6 @@ impl ProfileOracle {
         let Some(entries) = self.types.get(&src).cloned() else { return };
         self.types.entry(dst).or_default().extend(entries);
     }
-}
-
-fn polymorphic_arms(profiled_types: &[ProfiledType]) -> Vec<(Type, Vec<ProfiledType>)> {
-    let mut arms: Vec<(Type, Vec<ProfiledType>)> = Vec::with_capacity(profiled_types.len());
-    for &profiled_type in profiled_types {
-        if profiled_type.is_empty() { break; }
-        let expected = Type::from_profiled_type(profiled_type);
-        match arms.iter_mut().find(|(ty, _)| ty.bit_equal(expected)) {
-            Some((_, buckets)) => buckets.push(profiled_type),
-            None => arms.push((expected, vec![profiled_type])),
-        }
-    }
-    arms
 }
 
 fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
