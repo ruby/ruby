@@ -2112,6 +2112,23 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_quantifier_with_zero_upper
+    check(/a{0}(?:a$|b)/, [["b", "ab"]])
+    check(/a{0,0}?(?:a$|b)/, [["b", "ab"]])
+    check(/a{,0}?(?:a$|b)/, [["b", "ab"]])
+    check(/(?:xa){0,0}?(?:xa$|b)/, [["b", "xab"]])
+    check(/\Aa{0,0}?(?:a$|b)/, [], %w(ab))
+    assert_equal(["b", nil], /(a){0,0}?(?:a$|b)/.match("ab").to_a)
+
+    # [Bug #22606]
+    assert_nil(/\Ax{0,0}?x\z/.match("xx"))
+    assert_nil(/\A(\w){0,0}?\w\z/.match("ab"))
+    assert_nil(/\A(?:ab){0,0}?ab\z/.match("abab"))
+    assert_equal([""], /(?:x{0,0}?a+?)?/.match("").to_a)
+    assert_equal(["", nil], /(a)\1{0,0}?|$/.match("").to_a)
+    assert_equal([""], /(?:ab{0,0}?)*/.match("x").to_a)
+  end
+
   def test_once
     pr1 = proc{|i| /#{i}/o}
     assert_equal(/0/, pr1.call(0))
@@ -2545,6 +2562,18 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_zero_upper
+    pre = ->(n) {"a" * n + "x"}
+    [
+      /\A(?:a{0,0}?|a)*\z/,
+      /\A(?:(?:a|a)*){0,0}?\z/,
+    ].each do |re|
+      assert_linear_performance([10, 29], pre: pre) do |s|
+        assert_nil(re =~ s)
+      end
+    end
+  end
+
   def test_cache_opcodes_initialize
     str = 'test1-test2-test3-test4-test_5'
     re = '^([0-9a-zA-Z\-/]*){1,256}$'
@@ -2633,6 +2662,10 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_not_send [Regexp, :linear_time?, /(?=(a))/]
     assert_not_send [Regexp, :linear_time?, /(?!(a))/]
+
+    assert_send [Regexp, :linear_time?, /(?:b{0,0}?a){2,3}/]
+
+    assert_send [Regexp, :linear_time?, /(a\1){0}/]
 
     assert_raise(TypeError) {Regexp.linear_time?(nil)}
     assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
