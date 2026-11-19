@@ -2377,6 +2377,13 @@ class TestRefinement < Test::Unit::TestCase
 
       $block_self = Sub.new.push(:sub)
       assert_equal(:sub, Sub.new.first)
+
+      # Without the module. The includer of the iclass of the module
+      # is the iclass of the refined module, not a class.
+      $block_self = Object.new
+      assert_raise_with_message(TypeError, /Object \\(expected Sub\\)/) do
+        Sub.new.first
+      end
     end;
   end
 

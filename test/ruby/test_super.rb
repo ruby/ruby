@@ -519,6 +519,13 @@ class TestSuper < Test::Unit::TestCase
 
     receiver.block_self = Class.new(Array) { include mod }.new.push(:sibling)
     assert_equal(:sibling, receiver.first)
+
+    # Without the module. The includer of the iclass of the module
+    # is the iclass of `intermediary`, not a class.
+    receiver.block_self = Object.new
+    assert_raise_with_message(TypeError, /Object \(expected #{Regexp.quote(array_sub.inspect)}\)/) do
+      receiver.first
+    end
   end
 
   def test_super_in_instance_exec_in_extended_module_method

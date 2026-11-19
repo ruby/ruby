@@ -5327,7 +5327,14 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             // require `self` to have the module in its ancestry.
             if (RCLASS_INCLUDER(defined_class) &&
                 !rb_obj_is_kind_of(recv, defined_class)) {
-                expected = RCLASS_INCLUDER(defined_class);
+                // Report the class with the module. The includer is another
+                // iclass when it's from including into an already included
+                // module, so follow it to get to a class.
+                VALUE includer = RCLASS_INCLUDER(defined_class);
+                while (includer && RB_TYPE_P(includer, T_ICLASS)) {
+                    includer = RCLASS_INCLUDER(includer);
+                }
+                expected = includer ? includer : RBASIC_CLASS(defined_class);
             }
             else {
                 // Require `self` to descend from the first class after the
