@@ -853,8 +853,6 @@ pub enum SendFallbackReason {
     SuperComplexArgsPass,
     /// The cached target of a `super` call could not be found.
     SuperTargetNotFound,
-    /// Attempted to specialize a `super` call that doesn't have profile data.
-    SuperNoProfiles,
     /// Cannot optimize the `super` call due to the target method.
     SuperNotOptimizedMethodType(MethodType),
     /// The `super` call is polymorpic.
@@ -907,7 +905,6 @@ impl Display for SendFallbackReason {
             SuperCallWithBlock => write!(f, "super: call made with a block"),
             SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
             SuperComplexArgsPass => write!(f, "super: complex argument passing to `super` call"),
-            SuperNoProfiles => write!(f, "super: no profile data available"),
             SuperNotOptimizedMethodType(method_type) => write!(f, "super: unsupported target method type {:?}", method_type),
             SuperPolymorphic => write!(f, "super: polymorphic call site"),
             SuperTargetNotFound => write!(f, "super: profiled target method cannot be found"),
