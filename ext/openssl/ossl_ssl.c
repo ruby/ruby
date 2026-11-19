@@ -911,7 +911,8 @@ parse_proto_version(VALUE str)
         str = rb_sym2str(str);
     StringValue(str);
     for (i = 0; i < numberof(map); i++)
-        if (!strncmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)))
+        if ((size_t)RSTRING_LEN(str) == strlen(map[i].name) &&
+            memcmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
             return map[i].version;
     rb_raise(rb_eArgError, "unrecognized version %+"PRIsVALUE, str);
 }

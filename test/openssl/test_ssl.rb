@@ -1573,6 +1573,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert_raise(ArgumentError) {
         ctx.min_version = :bogus
       }
+      assert_raise(ArgumentError) {
+        ctx.min_version = "TLS"
+      }
     }
   end
 
