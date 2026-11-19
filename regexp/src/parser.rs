@@ -2531,10 +2531,12 @@ impl<'a> Parser<'a> {
                         if i < self.enc.min_len() {
                             return Err(ONIGERR_TOO_SHORT_MULTI_BYTE_STRING);
                         }
-                        let len = self.enc.enclen(&buf, 0, i);
-                        if i < len {
-                            return Err(ONIGERR_TOO_SHORT_MULTI_BYTE_STRING);
-                        } else if i > len {
+                        let len = match self.enc.mbclen(&buf, 0, i) {
+                            MbcLen::CharFound(n) => n,
+                            MbcLen::NeedMore(_) => return Err(ONIGERR_TOO_SHORT_MULTI_BYTE_STRING),
+                            MbcLen::Invalid => return Err(ONIGERR_INVALID_CODE_POINT_VALUE),
+                        };
+                        if i > len {
                             /* fetch back */
                             p = psave;
                             for _ in 1..len {
@@ -2548,7 +2550,7 @@ impl<'a> Parser<'a> {
                             v = buf[0] as u32;
                             in_type = CcValType::Sb;
                         } else {
-                            v = self.enc.mbc_to_code(&buf, 0, ONIGENC_CODE_TO_MBC_MAXLEN);
+                            v = self.enc.mbc_to_code(&buf, 0, len);
                             in_type = CcValType::CodePoint;
                         }
                     } else {
@@ -3474,10 +3476,16 @@ impl<'a> Parser<'a> {
                 let r = loop {
                     if len >= self.enc.min_len() {
                         let s = &self.ast.str(np).s;
-                        if len == self.enc.enclen(s, 0, s.len()) {
-                            let r = self.fetch_token(tok, src)?;
-                            self.ast.str_mut(np).flag &= !NSTR_RAW;
-                            break r;
+                        let n =
+                            if self.enc.is_single_byte() { MbcLen::CharFound(1) } else { self.enc.mbclen(s, 0, s.len()) };
+                        match n {
+                            MbcLen::CharFound(n) if n == len => {
+                                let r = self.fetch_token(tok, src)?;
+                                self.ast.str_mut(np).flag &= !NSTR_RAW;
+                                break r;
+                            }
+                            MbcLen::NeedMore(_) => {}
+                            _ => return Err(ONIGERR_INVALID_CODE_POINT_VALUE),
                         }
                     }
                     let r = self.fetch_token(tok, src)?;

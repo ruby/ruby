@@ -204,7 +204,7 @@ fn copy_rest(s: &[u8], p: &mut usize, end: usize, out: &mut [u8]) -> usize {
 
 /// A result of `precise_mbc_enc_len`, decoded from the `ONIGENC_MBCLEN_*`
 /// encoding of onigmo.h.
-enum MbcLen {
+pub enum MbcLen {
     /// A whole character of this many bytes.
     CharFound(usize),
     /// A character cut short by `end`, missing this many bytes.
@@ -273,7 +273,7 @@ impl Enc {
     }
 
     #[inline]
-    fn mbclen(self, s: &[u8], p: usize, end: usize) -> MbcLen {
+    pub fn mbclen(self, s: &[u8], p: usize, end: usize) -> MbcLen {
         match self.precise_mbc_enc_len(s, p, end) {
             n @ 1.. => MbcLen::CharFound(n as usize),
             n @ ..=-2 => MbcLen::NeedMore((-1 - n) as usize),
