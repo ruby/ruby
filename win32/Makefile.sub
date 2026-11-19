@@ -379,6 +379,9 @@ YJIT_SUPPORT = no
 RUSTC = no
 !endif
 !endif
+!if defined(RUST_REGEXP_SUPPORT) && "$(RUST_REGEXP_SUPPORT)" != "no"
+!error The Rust regexp engine requires GNU make.  Retry with --with-gnu-make.
+!endif
 !if !defined(INSTALL_STATIC_LIBRARY)
 INSTALL_STATIC_LIBRARY = yes
 !endif

@@ -245,22 +245,56 @@ RUST_TARGET = aarch64-pc-windows-msvc
 else
 $(error YJIT is supported only on x64 and arm64, not $(ARCH).  Retry without --enable-yjit.)
 endif
-RUSTC ?= rustc
 YJIT_OBJ = yjit.$(OBJEXT)
 JIT_OBJ = jit.$(OBJEXT)
 YJIT_LIBS = target/release/yjit.lib
-RUST_LIB = $(YJIT_LIBS)
-JIT_LIBS = $(RUST_LIB) ntdll.lib userenv.lib dbghelp.lib synchronization.lib
-INSTALL_STATIC_LIBRARY ?= no
-ifneq ($(INSTALL_STATIC_LIBRARY),no)
-$(error YJIT does not support the static library.  Retry without --enable-install-static-library.)
-endif
-JIT_RUST_FLAGS = --crate-type=staticlib --target=$(RUST_TARGET) --cfg feature=\"stats_allocator\"
-RUSTC_FLAGS ?= -g -C lto=thin -C opt-level=3 -C overflow-checks=on
 else ifneq ($(filter-out no,$(YJIT_SUPPORT)),)
 $(error YJIT_SUPPORT accepts only yes or no, not $(YJIT_SUPPORT).  Retry without YJIT_SUPPORT=$(YJIT_SUPPORT).)
 else
 YJIT_SUPPORT = no
+endif
+
+ifeq ($(RUST_REGEXP_SUPPORT),yes)
+ifneq ($(ARCH),x64)
+$(error The Rust regexp engine is supported only on x64, not $(ARCH).  Retry without --enable-rust-regexp.)
+endif
+RUST_TARGET = x86_64-pc-windows-msvc
+REGEXP_LIBS = target/release/regexp.lib
+else ifneq ($(filter-out no,$(RUST_REGEXP_SUPPORT)),)
+$(error RUST_REGEXP_SUPPORT accepts only yes or no, not $(RUST_REGEXP_SUPPORT).  Retry without RUST_REGEXP_SUPPORT=$(RUST_REGEXP_SUPPORT).)
+else
+RUST_REGEXP_SUPPORT = no
+endif
+
+REGEXP_ENGINE ?= onigmo
+ifeq ($(REGEXP_ENGINE),rust)
+ifeq ($(RUST_REGEXP_SUPPORT),no)
+$(error --with-regexp-engine=rust requires --enable-rust-regexp)
+endif
+else ifneq ($(REGEXP_ENGINE),onigmo)
+$(error Unknown regexp engine: $(REGEXP_ENGINE))
+endif
+
+ifneq ($(YJIT_LIBS)$(REGEXP_LIBS),)
+RUSTC ?= rustc
+RUST_TARGET_FLAG = --target=$(RUST_TARGET)
+ifeq ($(YJIT_SUPPORT)$(RUST_REGEXP_SUPPORT),yesyes)
+# Each staticlib would carry its own copy of the Rust runtime, so combine
+# the crates into one staticlib from ruby.rs as defs/jit.mk does.
+RLIB_DIR = target/release
+RUST_LIB = $(RLIB_DIR)/ruby.lib
+JIT_RUST_FLAGS = --crate-type=rlib $(RUST_TARGET_FLAG)
+else
+RUST_LIB = $(YJIT_LIBS)$(REGEXP_LIBS)
+JIT_RUST_FLAGS = --crate-type=staticlib $(RUST_TARGET_FLAG) --cfg feature=\"stats_allocator\"
+endif
+JIT_LIBS = $(RUST_LIB) ntdll.lib userenv.lib dbghelp.lib synchronization.lib
+INSTALL_STATIC_LIBRARY ?= no
+ifneq ($(INSTALL_STATIC_LIBRARY),no)
+$(error The Rust code does not support the static library.  Retry without --enable-install-static-library.)
+endif
+RUSTC_FLAGS ?= -g -C lto=thin -C opt-level=3 -C overflow-checks=on
+else
 RUSTC ?= no
 endif
 
@@ -753,7 +787,7 @@ $(sharp)define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 $(sharp)define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 $(sharp)define LOAD_RELATIVE 1
 $(sharp)define DLEXT ".$(DLEXT)"
-$(if $(filter-out lib,$(libdir_basename)),$(sharp)define LIBDIR_BASENAME "$(libdir_basename)"$(newline))$(if $(filter static,$(EXTSTATIC)),$(sharp)define EXTSTATIC 1$(newline))$(if $(USE_GMP),$(sharp)define USE_GMP 1$(newline))$(if $(filter yes,$(WITH_MIMALLOC)),$(sharp)define USE_MIMALLOC 1$(newline))$(if $(filter yes,$(YJIT_SUPPORT)),$(sharp)define USE_YJIT 1$(newline))$(sharp)define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
+$(if $(filter-out lib,$(libdir_basename)),$(sharp)define LIBDIR_BASENAME "$(libdir_basename)"$(newline))$(if $(filter static,$(EXTSTATIC)),$(sharp)define EXTSTATIC 1$(newline))$(if $(USE_GMP),$(sharp)define USE_GMP 1$(newline))$(if $(filter yes,$(WITH_MIMALLOC)),$(sharp)define USE_MIMALLOC 1$(newline))$(if $(filter yes,$(YJIT_SUPPORT)),$(sharp)define USE_YJIT 1$(newline))$(if $(filter yes,$(RUST_REGEXP_SUPPORT)),$(sharp)define USE_RUST_REGEXP 1$(newline))$(if $(filter rust,$(REGEXP_ENGINE)),$(sharp)define RB_DEFAULT_REGEXP_ENGINE RB_REGEXP_ENGINE_RUST$(newline))$(sharp)define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 $(sharp)define RUBY_COREDLL "$(RT)"
 $(sharp)define RUBY_PLATFORM "$(arch)"
 $(sharp)define RUBY_SITEARCH "$(sitearch)"
@@ -879,6 +913,7 @@ s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@YJIT_SUPPORT@,$(YJIT_SUPPORT),;t t
+s,@RUST_REGEXP_SUPPORT@,$(RUST_REGEXP_SUPPORT),;t t
 s,@RUSTC@,$(RUSTC),;t t
 s,@BASERUBY@,$(BASERUBY),;t t
 s,@OUTFLAG@,$(OUTFLAG),;t t
@@ -1009,18 +1044,52 @@ $(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG) $(RUST_LIB)
 	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
 	  -output=$@ -arch=$(ARCH) $(if $(RUST_LIB),-rustlib=$(RUST_LIB)) $(LIBRUBY_A) -- $(DLDOBJS)
 
-ifeq ($(YJIT_SUPPORT),yes)
-# No `+` unlike defs/jit.mk, since it would run rustc under `make -n`,
-# and the jobserver semaphore reaches every recipe on Windows anyway.
-$(YJIT_LIBS): $(wildcard $(srcdir)/yjit/src/*.rs $(srcdir)/yjit/src/asm/*.rs \
+ifneq ($(RUST_LIB),)
+YJIT_SRC_FILES = $(wildcard $(srcdir)/yjit/src/*.rs $(srcdir)/yjit/src/asm/*.rs \
 		$(srcdir)/yjit/src/asm/x86_64/*.rs $(srcdir)/yjit/src/asm/arm64/*.rs \
 		$(srcdir)/yjit/src/asm/arm64/arg/*.rs $(srcdir)/yjit/src/asm/arm64/inst/*.rs \
 		$(srcdir)/yjit/src/backend/*.rs $(srcdir)/yjit/src/backend/x86_64/*.rs \
-		$(srcdir)/yjit/src/backend/arm64/*.rs $(srcdir)/jit/src/lib.rs) \
-		target/.rustc-version
+		$(srcdir)/yjit/src/backend/arm64/*.rs $(srcdir)/jit/src/lib.rs)
+REGEXP_SRC_FILES = $(wildcard $(srcdir)/regexp/src/*.rs)
+
+# No `+` unlike defs/jit.mk, since it would run rustc under `make -n`,
+# and the jobserver semaphore reaches every recipe on Windows anyway.
+ifeq ($(RLIB_DIR),)
+ifneq ($(YJIT_LIBS),)
+$(YJIT_LIBS): $(YJIT_SRC_FILES) target/.rustc-version
 	$(ECHO) building Rust YJIT (release mode)
 	$(Q) $(RUSTC) --crate-name=yjit $(JIT_RUST_FLAGS) $(RUSTC_FLAGS) \
 		--edition=2021 --out-dir=$(@D) $(srcdir)/yjit/src/lib.rs
+endif
+ifneq ($(REGEXP_LIBS),)
+$(REGEXP_LIBS): $(REGEXP_SRC_FILES) target/.rustc-version
+	$(ECHO) building Rust regexp engine (release mode)
+	$(Q) $(RUSTC) --crate-name=regexp $(JIT_RUST_FLAGS) $(RUSTC_FLAGS) -C overflow-checks=off \
+		--edition=2024 --out-dir=$(@D) $(srcdir)/regexp/src/lib.rs
+endif
+else
+$(RUST_LIB): $(srcdir)/ruby.rs $(RLIB_DIR)/libyjit.rlib $(RLIB_DIR)/libregexp.rlib
+	$(ECHO) building $(@F)
+	$(Q) $(RUSTC) --crate-type=staticlib $(RUST_TARGET_FLAG) $(RUSTC_FLAGS) \
+		-L$(@D) --extern=yjit --extern=regexp \
+		--cfg feature=\"yjit\" --cfg feature=\"regexp\" \
+		--edition=2024 --out-dir=$(@D) $(srcdir)/ruby.rs
+
+$(RLIB_DIR)/libjit.rlib: $(srcdir)/jit/src/lib.rs target/.rustc-version
+	$(ECHO) building $(@F)
+	$(Q) $(RUSTC) --crate-name=jit $(JIT_RUST_FLAGS) $(RUSTC_FLAGS) \
+		--edition=2024 --out-dir=$(@D) $(srcdir)/jit/src/lib.rs
+
+$(RLIB_DIR)/libyjit.rlib: $(YJIT_SRC_FILES) $(RLIB_DIR)/libjit.rlib
+	$(ECHO) building $(@F)
+	$(Q) $(RUSTC) --crate-name=yjit $(JIT_RUST_FLAGS) $(RUSTC_FLAGS) \
+		-L$(@D) --extern=jit --edition=2021 --out-dir=$(@D) $(srcdir)/yjit/src/lib.rs
+
+$(RLIB_DIR)/libregexp.rlib: $(REGEXP_SRC_FILES) target/.rustc-version
+	$(ECHO) building $(@F)
+	$(Q) $(RUSTC) --crate-name=regexp $(JIT_RUST_FLAGS) $(RUSTC_FLAGS) -C overflow-checks=off \
+		--edition=2024 --out-dir=$(@D) $(srcdir)/regexp/src/lib.rs
+endif
 
 target/.rustc-version: PHONY
 	@if not exist target md target

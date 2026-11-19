@@ -170,6 +170,13 @@ goto :loopend ;
   if "%feature%" == "yjit" (
      echo>> %config_make% YJIT_SUPPORT = %enable%
   )
+  if "%feature%" == "rust-regexp" if not "%enable%" == "yes" if not "%enable%" == "no" (
+    echo 1>&2 %configure%: --enable-rust-regexp accepts only yes or no, not %enable%
+    exit /b 1
+  )
+  if "%feature%" == "rust-regexp" (
+     echo>> %config_make% RUST_REGEXP_SUPPORT = %enable%
+  )
 goto :loopend ;
 :withoutarg
   ::- These take an argument and are recorded in :witharg.  Recording
@@ -202,6 +209,7 @@ goto :loop ;
   if "%opt%" == "--with-gnu-make" goto :gnu-make
   if "%opt%" == "--with-gnumake" goto :gnu-make
   if "%opt%" == "--with-gmake" goto :gnu-make
+  if "%opt%" == "--with-regexp-engine" goto :regexp-engine
 goto :loop ;
 :ntver
   ::- For version constants, see
@@ -262,6 +270,9 @@ goto :loop ;
   set "MAKEFILE=GNUmakefile"
   if defined arg (set "make_command=%arg%") else (set "make_command=make")
 goto :loop ;
+:regexp-engine
+  echo>> %config_make% REGEXP_ENGINE = %arg%
+goto :loop ;
 :opt-dir
   if "%arg%" == "" (
     echo 1>&2 %configure%: missing argument for %opt%
@@ -295,6 +306,8 @@ goto :loop ;
   echo   --with-mimalloc         allocate memory for the GC with mimalloc
   echo   --disable-install-doc   do not install rdoc indexes during install
   echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 and arm64)
+  echo   --enable-rust-regexp    build the experimental regexp engine written in Rust (x64 and GNU make only)
+  echo   --with-regexp-engine=ENGINE default regexp engine, onigmo or rust [onigmo]
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX

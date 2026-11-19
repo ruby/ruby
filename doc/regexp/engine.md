@@ -19,6 +19,11 @@ macOS, Linux and BSD, not cross-compiling).
     ./configure --enable-rust-regexp=dev                 # debug build through cargo
     ./configure --enable-rust-regexp --with-regexp-engine=rust   # make it the default
 
+On mswin it is built only when asked for, as a release build on x64 with GNU
+make:
+
+    win32\configure.bat --with-gnu-make --enable-rust-regexp [--with-regexp-engine=rust]
+
 At run time `--regexp-engine=onigmo|rust` selects the engine for new Regexp
 objects. `ruby -v` shows `+RUST_REGEXP` when the Rust engine is selected.
 
@@ -63,10 +68,11 @@ Problems found while porting. Each one needs a decision before the Rust
 engine can become the default or Onigmo can be removed.
 
 1. **Platforms.** Rust code is built only where YJIT is (`JIT_TARGET_OK` in
-   `configure.ac`). There is no Rust build for mswin, mingw or cygwin
-   (`win32/` has no rules), for cross-compiling, or for ppc64le, s390x,
-   riscv64, armv7 and i686. Removing Onigmo needs all of these, plus `ld -r`
-   and `objcopy` on each ELF platform for the partial link in `defs/jit.mk`.
+   `configure.ac`), and on mswin only for x64 with GNU make. There is no Rust
+   build for mswin with nmake or on x86 and arm64, for mingw or cygwin, for
+   cross-compiling, or for ppc64le, s390x, riscv64, armv7 and i686. Removing
+   Onigmo needs all of these, plus `ld -r` and `objcopy` on each ELF platform
+   for the partial link in `defs/jit.mk`.
 2. **Minimum rustc.** The crate uses edition 2024 (rustc 1.85.0) like ZJIT,
    while YJIT still builds with 1.58.0. Once Onigmo is removed, 1.85.0
    becomes the minimum for every Ruby build, which distributions must ship.
