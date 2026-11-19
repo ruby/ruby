@@ -3053,7 +3053,7 @@ pub struct Function {
     /// Entry block for JIT-to-JIT calls. Length will be `opt_num+1`, for callers
     /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
-    profiles: Option<ProfileOracle>,
+    profiles: ProfileOracle,
     /// Rough estimate for the number of (actually executable) instructions in the function. Does
     /// not count Snapshot, PatchPoint, etc.
     /// Currently updated by `infer_types` as a heuristic but that is not a guarantee.
@@ -3319,7 +3319,7 @@ impl Function {
             entry_block: BlockId(1),
             jit_entry_blocks: vec![],
             param_types: vec![],
-            profiles: None,
+            profiles: ProfileOracle::new(),
             num_instructions: 0,
         }
     }
@@ -4786,10 +4786,7 @@ impl Function {
     ///   (SkewedMegamorphic may be optimized in the future, but for now we don't)
     /// - `NoProfile` if we have no type information
     fn resolve_receiver_type_from_profile(&self, recv: InsnId, state: InsnId) -> ReceiverTypeResolution {
-        let Some(profiles) = self.profiles.as_ref() else {
-            return ReceiverTypeResolution::NoProfile;
-        };
-        let Some(entries) = profiles.get(state) else {
+        let Some(entries) = self.profiles.get(state) else {
             return ReceiverTypeResolution::NoProfile;
         };
         let recv = self.chase_insn(recv);
@@ -5154,7 +5151,7 @@ impl Function {
             if shapes.is_empty() {
                 let arm_send = Insn::Send { recv: refined_recv, cd, block: send_block, args: args.clone(), caller_splat_length, state, reason };
                 let lengths = if send_block.is_none() {
-                    self.profiles.as_ref().map_or(vec![], |profiles| self.caller_splat_lengths(ci, refined_recv, state, profiles))
+                    self.caller_splat_lengths(ci, refined_recv, state, &self.profiles)
                 } else {
                     vec![]
                 };
@@ -5852,8 +5849,8 @@ impl Function {
                         let can_dispatch = matches!(reason, Uncategorized(_));
                         let class_statically_known = self.type_of(recv).runtime_exact_ruby_class().is_some();
                         // Don't do polymorphic dispatch if we already know the class statically; fall through.
-                        if can_dispatch && !class_statically_known && let Some(profiles) = self.profiles.as_ref() {
-                            if let Some(summary) = self.polymorphic_summary(profiles, recv, state) {
+                        if can_dispatch && !class_statically_known {
+                            if let Some(summary) = self.polymorphic_summary(&self.profiles, recv, state) {
                                 block = self.specialize_polymorphic_send(block, insn_id, summary.buckets());
                                 continue;
                             }
@@ -6001,13 +5998,6 @@ impl Function {
                         if unspecializable_c_call_type(flags) {
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperComplexArgsPass);
-                            continue;
-                        }
-
-                        // Get the profiled CME from the current method.
-                        if self.profiles.is_none() {
-                            self.push_insn_id(block, insn_id);
-                            self.set_dynamic_send_reason(insn_id, SuperNoProfiles);
                             continue;
                         }
 
@@ -6591,11 +6581,7 @@ impl Function {
 
                 // Append the callee's profile entries. The callee body was emitted directly into
                 // this Function, so its Snapshot and operand InsnIds already live in caller space.
-                if let Some(caller_profiles) = self.profiles.as_mut() {
-                    caller_profiles.append(&add_result.profiles);
-                } else {
-                    self.profiles = Some(add_result.profiles);
-                }
+                self.profiles.append(&add_result.profiles);
 
                 // The post-Send tail now lives in `continuation` and may itself
                 // contain further inlinable SendDirects. Queue it for scanning
@@ -9677,7 +9663,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     fun.self_is_heap_object = payload.self_is_heap_object;
 
     let result = add_iseq_to_hir(&mut fun, iseq, AddIseqMode::Standalone)?;
-    fun.profiles = Some(result.profiles);
+    fun.profiles = result.profiles;
 
     if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
         debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
