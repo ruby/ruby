@@ -4860,6 +4860,9 @@ static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
  *    r.source              # => "foo"
  *    r.options             # => 0
  *
+ *  Passing untrusted input as +string+ is generally not recommended;
+ *  see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
+ *
  *  Optional argument +options+ is one of the following:
  *
  *  - A String of options:
