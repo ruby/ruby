@@ -92,6 +92,37 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_raise(ArgumentError, "Should not be possible to swapcase invalid string.") { "\xEB".dup.force_encoding('UTF-8').swapcase }
   end
 
+  def test_ignorecase_of_single_byte_encodings
+    {
+      "Windows-1251" => [[0x80, 0x90], [0x81, 0x83], [0x8a, 0x9a], [0xa1, 0xa2], [0xa3, 0xbc], [0xa5, 0xb4], [0xbd, 0xbe]],
+      "Windows-1253" => [[0xa2, 0xdc]],
+      "Windows-1254" => [[0x8a, 0x9a], [0x8c, 0x9c], [0x9f, 0xff]],
+    }.each do |name, pairs|
+      enc = Encoding.find(name)
+      pairs.each do |a, b|
+        x, y = a.chr.force_encoding(enc), b.chr.force_encoding(enc)
+        [[x, y], [y, x]].each do |c, d|
+          msg = format("%s %02x %02x", name, c.ord, d.ord)
+          assert_match(Regexp.new(Regexp.escape(c), Regexp::IGNORECASE), "-".encode(enc) + d, msg)
+          assert_match(Regexp.new("[" + Regexp.escape(c) + "]", Regexp::IGNORECASE), d, msg)
+        end
+      end
+    end
+    {
+      "ISO-8859-16" => [[0xa4, 0xa5]], "Windows-1250" => [[0xd7, 0xf7]],
+      "Windows-1252" => [[0xd7, 0xf7], [0xaf, 0xbf]], "Windows-1253" => [[0xb6, 0xdc]],
+    }.each do |name, pairs|
+      enc = Encoding.find(name)
+      pairs.each do |a, b|
+        x, y = a.chr.force_encoding(enc), b.chr.force_encoding(enc)
+        [[x, y], [y, x]].each do |c, d|
+          assert_no_match(Regexp.new("\\A" + Regexp.escape(c) + "\\z", Regexp::IGNORECASE), d, format("%s %02x %02x", name, c.ord, d.ord))
+        end
+      end
+    end
+    assert_no_match(Regexp.new("[[:upper:]]".encode("Windows-1253")), 0xb6.chr.force_encoding("Windows-1253"))
+  end
+
   def test_general
     check_downcase_properties   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ'
     check_upcase_properties     'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', 'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ'
