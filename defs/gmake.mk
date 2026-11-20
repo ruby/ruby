@@ -146,20 +146,6 @@ ifneq ($(if $(filter -flto%,$(CFLAGS)),$(subst darwin,,$(arch)),$(arch)),$(arch)
 override EXE_LDFLAGS = $(filter-out -g%,$(LDFLAGS))
 endif
 
-$(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
-ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
-	touch $@
-else
-	@$(ECHO) building make_des_table
-	$(CC) $(INCFLAGS) $(CPPFLAGS) -DDUMP $(EXE_LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
-	@[ -x ./make_des_table ]
-	@$(ECHO) generating $@
-	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) ./make_des_table > $@.new
-	$(Q) mv $@.new $@
-	$(Q) $(RMALL) make_des_table*
-endif
-
 config.status: $(wildcard config.cache)
 
 ifneq (ruby,$(PROGRAM))

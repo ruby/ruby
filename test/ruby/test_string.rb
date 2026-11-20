@@ -770,40 +770,45 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) { S("foo").count }
   end
 
-  def crypt_supports_des_crypt?
-    /openbsd/ !~ RUBY_PLATFORM
-  end
-
   def test_crypt
-    if crypt_supports_des_crypt?
-      pass      = "aaGUC/JkO9/Sc"
-      good_salt = "aa"
-      bad_salt  = "ab"
-    else
-      pass      = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWuBQGbkjzgtSc3gJbmdy0GAGMa45MFM2."
-      good_salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWu"
-      bad_salt  = "$2a$04$0WVaz0pV3jzfZ5G5tpmHXu"
-    end
-    assert_equal(S(pass), S("mypassword").crypt(S(good_salt)))
-    assert_not_equal(S(pass), S("mypassword").crypt(S(bad_salt)))
-    assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
-    assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
-    assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
-    assert_raise(ArgumentError) {S("poison\u0000null").crypt(S("aa"))}
-    WIDE_ENCODINGS.each do |enc|
-      assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
-      assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
-    end
+    assert_deprecated_warning(/String#crypt is deprecated/) do
+      des_crypt = begin
+        s = "aa".crypt("ab")
+        s.start_with?("ab") && s.bytesize == 13
+      rescue NotImplementedError, SystemCallError
+        false
+      end
 
-    if @cls == String
-      assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", samples: 2..100)
-      s = ''
-      salt = -""#{(crypt_supports_des_crypt? ? '..' : good_salt).dump}
-      begin;
-        10.times { s.crypt(salt).clear  }
-      end;
+      if des_crypt
+        pass      = "aaGUC/JkO9/Sc"
+        good_salt = "aa"
+        bad_salt  = "ab"
+      else
+        pass      = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWuBQGbkjzgtSc3gJbmdy0GAGMa45MFM2."
+        good_salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWu"
+        bad_salt  = "$2a$04$0WVaz0pV3jzfZ5G5tpmHXu"
+      end
+      assert_equal(S(pass), S("mypassword").crypt(S(good_salt)))
+      assert_not_equal(S(pass), S("mypassword").crypt(S(bad_salt)))
+      assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
+      assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
+      assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
+      assert_raise(ArgumentError) {S("poison\u0000null").crypt(S("aa"))}
+      WIDE_ENCODINGS.each do |enc|
+        assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
+        assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
+      end
+
+      if @cls == String
+        assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", samples: 2..100)
+        s = ''
+        salt = -""#{(des_crypt ? '..' : good_salt).dump}
+        begin;
+          10.times { s.crypt(salt).clear  }
+        end;
+      end
     end
-  end
+  end if "".respond_to?(:crypt)
 
   def test_delete
     assert_equal(S("heo"),  S("hello").delete(S("l"), S("lo")))

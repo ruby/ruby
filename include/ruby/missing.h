@@ -92,10 +92,6 @@ RUBY_EXTERN double asinh(double);
 RUBY_EXTERN double atanh(double);
 #endif
 
-#ifndef HAVE_CRYPT
-RUBY_EXTERN char *crypt(const char *, const char *);
-#endif
-
 #ifndef HAVE_EACCESS
 RUBY_EXTERN int eaccess(const char*, int);
 #endif
