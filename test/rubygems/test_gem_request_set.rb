@@ -848,6 +848,19 @@ ruby "0"
     assert_equal %w[c-2 b-2 a-2], names
   end
 
+  def test_sorted_requests_with_shared_prerelease_dependency
+    cc = util_spec "cc", "1.0.0", "aa" => ">= 0", "bb" => ">= 1.0"
+    aa = util_spec "aa", "1.0.0", "bb" => ">= 1.1.0.rc1"
+    bb = util_spec "bb", "1.0.0"
+    bb_pre = util_spec "bb", "1.1.0.rc1"
+
+    rs = Gem::RequestSet.new
+    rs.gem "cc"
+    rs.resolve StaticSet.new([cc, aa, bb, bb_pre])
+
+    assert_equal %w[bb-1.1.0.rc1 aa-1.0.0 cc-1.0.0], rs.sorted_requests.map(&:full_name)
+  end
+
   def test_install
     done_installing_ran = false
 
