@@ -2960,6 +2960,14 @@ class TestArray < Test::Unit::TestCase
     end
     a = [nil, o]
     assert_equal(nil, a.rindex(0))
+
+    a = Array.new(100, 0)
+    o = Object.new
+    o.define_singleton_method(:to_int) { a.pop(99); 0 }
+    assert_equal(0, a.rindex(0, offset: o))
+    a = Array.new(100, 0)
+    o.define_singleton_method(:to_int) { a.pop(99); -1 }
+    assert_equal(0, a.rindex(0, offset: o))
   end
 
   def test_ary_to_ary

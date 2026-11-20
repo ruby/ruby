@@ -2378,6 +2378,8 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
         VALUE offset_arg = offset_option(opts);
         if (!UNDEF_P(offset_arg)) {
             rb_len_t offset = NUM2LEN(offset_arg);
+            /* to_int may have resized the array */
+            i = RARRAY_LEN(ary) - 1;
             if (offset < 0) {
                 if ((i += offset + 1) < 0) return Qnil;
             }
