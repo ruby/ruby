@@ -3700,6 +3700,17 @@ rb_ary_sort_bang(VALUE ary)
             ary_memcpy(ary, 0, ARY_EMBED_LEN(tmp), ARY_EMBED_PTR(tmp));
             ARY_SET_LEN(ary, ARY_EMBED_LEN(tmp));
         }
+        else if (ARY_SHARED_ROOT_REFCNT(tmp) > 1) {
+            RUBY_ASSERT(!ARY_SHARED_P(ary));
+            if (len > ARY_CAPA(ary)) {
+                ary_resize_capa(ary, len);
+            }
+            ary_memcpy(ary, 0, len, ARY_HEAP_PTR(tmp));
+            ARY_SET_LEN(ary, len);
+            FL_UNSET(tmp, RARRAY_SHARED_ROOT_FLAG);
+            ARY_SET_CAPA(tmp, RARRAY_LEN(tmp));
+            OBJ_FREEZE(tmp);
+        }
         else {
             if (!ARY_EMBED_P(ary) && ARY_HEAP_PTR(ary) == ARY_HEAP_PTR(tmp)) {
                 FL_UNSET_SHARED(ary);

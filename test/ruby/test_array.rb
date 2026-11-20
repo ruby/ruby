@@ -2120,6 +2120,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(orig, ary, "must not be modified once frozen")
   end
 
+  def test_sort_bang_slice_in_block
+    ary = Array.new(1000) { |i| "s#{i}" }
+    x = nil
+    ary.sort! do |p, q|
+      x ||= ary[0, 500]
+      p <=> q
+    end
+    ary.clear
+    assert_equal("s0", x[0])
+  end
+
   def test_short_heap_array_sort_bang_memory_leak
     bug11332 = '[ruby-dev:49166] [Bug #11332]'
     assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.3, timeout: 60, samples: 2..100)
