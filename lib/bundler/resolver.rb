@@ -368,8 +368,10 @@ module Bundler
       "Gemfile"
     end
 
-    def raise_incomplete!(incomplete_specs)
-      raise_not_found!(@base.get_package(incomplete_specs.first.name))
+    def raise_incomplete!(incomplete_specs, platform = nil)
+      spec = incomplete_specs.first
+      # An unresolved dependency may be missing for a different resolution platform.
+      raise_not_found!(@base.get_package(spec.name), spec.version && platform)
     end
 
     def sort_versions_by_preferred(package, versions)
@@ -378,7 +380,7 @@ module Bundler
 
     private
 
-    def raise_not_found!(package)
+    def raise_not_found!(package, platform = nil)
       name = package.name
       source = source_for(name)
       specs = @all_specs[name]
@@ -394,7 +396,7 @@ module Bundler
       not_found_message = if specs_matching_requirement.any?
         specs = specs_matching_requirement
         matching_part = requirement_label
-        platforms = package.platforms
+        platforms = platform ? [platform] : package.platforms
 
         if platforms.size == 1
           "Could not find gem '#{requirement_label}' with platform '#{platforms.first}'"
