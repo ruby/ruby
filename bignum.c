@@ -6303,7 +6303,7 @@ rb_big_fdiv_double(VALUE x, VALUE y)
     dx = big2dbl(x);
     if (FIXNUM_P(y)) {
         dy = (double)FIX2LONG(y);
-        if (isinf(dx))
+        if (isinf(dx) && !FIXNUM_ZERO_P(y))
             return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -6313,7 +6313,9 @@ rb_big_fdiv_double(VALUE x, VALUE y)
         dy = RFLOAT_VALUE(y);
         if (isnan(dy))
             return dy;
-        if (isinf(dx))
+        if (isinf(dy))
+            return signbit(dx) == signbit(dy) ? 0.0 : -0.0;
+        if (isinf(dx) && dy != 0.0)
             return big_fdiv_float(x, y);
     }
     else {
