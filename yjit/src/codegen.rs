@@ -9515,9 +9515,19 @@ fn gen_send_general(
                         );
 
                         let name_opnd = asm.stack_opnd(argc);
-                        let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
-                        asm.cmp(symbol_id_opnd, mid.into());
+                        // A Symbol, or a frozen String, always names the same method, so
+                        // guard on its identity with a single compare. Otherwise convert the
+                        // name to an ID, which is a symbol table lookup for a String. Each
+                        // link of the guard chain repeats this check, so the lookup is paid
+                        // once per link a call goes through.
+                        if compile_time_name.symbol_p() ||
+                            (compile_time_name.string_p() && compile_time_name.is_frozen()) {
+                            asm.cmp(name_opnd, compile_time_name.into());
+                        } else {
+                            let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
+                            asm.cmp(symbol_id_opnd, mid.into());
+                        }
                         jit_chain_guard(
                             JCC_JNE,
                             jit,
