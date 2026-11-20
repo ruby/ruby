@@ -3098,6 +3098,11 @@ class TestString < Test::Unit::TestCase
     assert_not_predicate(result, :ascii_only?, bug13950)
 
     assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
+
+    assert_equal(S("aああ"), S("abc").tr("^a", "あ"))
+    result = S("abc").tr("^a", "é")
+    assert_equal(S("aéé"), result)
+    assert_not_predicate(result, :ascii_only?)
   end
 
   def test_tr_hash

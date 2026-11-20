@@ -10580,6 +10580,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         while ((c = trnext(&trrepl, enc)) != errc)
             /* retrieve last replacer */;
         last = trrepl.now;
+        if (rb_enc_codelen(last, enc) != 1) singlebyte = 0;
         for (i=0; i<256; i++) {
             if (trans[i] != errc) {
                 trans[i] = last;
