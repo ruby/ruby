@@ -4838,10 +4838,45 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     }
 }
 
+NORETURN(static void vm_super_wrong_context(VALUE recv, VALUE expected));
+
+static void
+vm_super_wrong_context(VALUE recv, VALUE expected)
+{
+    rb_raise(rb_eTypeError,
+             "self has wrong type to call super in this context: "
+             "%"PRIsVALUE" (expected %"PRIsVALUE")",
+             rb_obj_class(recv), expected);
+}
+
+// Check `self` against the method `super` lands in, if any. A method from a
+// class assumes `self` is an instance of the class, and so does a method
+// from a refinement of a class.
+static void
+vm_super_check_self(VALUE recv, const rb_callable_method_entry_t *super_cme)
+{
+    // A refined method entry is not the method to call yet. vm_call_refined
+    // checks after resolving it.
+    if (!super_cme || super_cme->def->type == VM_METHOD_TYPE_REFINED) return;
+
+    VALUE owner = super_cme->owner;
+    if (RB_TYPE_P(owner, T_MODULE) && FL_TEST(owner, RMODULE_IS_REFINEMENT)) {
+        owner = rb_refinement_module_get_refined_class(owner);
+    }
+
+    if (RB_TYPE_P(owner, T_CLASS) && !rb_obj_is_kind_of(recv, owner)) {
+        vm_super_wrong_context(recv, owner);
+    }
+}
+
 static VALUE
 vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, cfp, calling);
+
+    if (vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER) {
+        vm_super_check_self(calling->recv, ref_cme);
+    }
 
     if (ref_cme) {
         if (calling->cd->cc) {
@@ -5277,30 +5312,6 @@ empty_cc_for_super(void)
     return &rb_vm_empty_cc_for_super;
 }
 
-// Find the first class that contributes methods for `super` when the search
-// starts from `klass`. Methods found before reaching it are from modules, and
-// what is at and after it are for instances of the returned class. Returns 0
-// when there is no such class.
-static VALUE
-vm_super_nearest_class(VALUE klass)
-{
-    while (klass) {
-        if (RB_TYPE_P(klass, T_CLASS)) {
-            return klass;
-        }
-        else {
-            VM_ASSERT_TYPE(klass, T_ICLASS);
-            VALUE iclass_of = RBASIC_CLASS(klass);
-            if (RICLASS_IS_ORIGIN_P(klass) && RB_TYPE_P(iclass_of, T_CLASS)) {
-                return iclass_of;
-            }
-        }
-
-        klass = RCLASS_SUPER(klass);
-    }
-    return 0;
-}
-
 static const struct rb_callcache *
 vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
@@ -5336,31 +5347,12 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
                 }
                 expected = includer ? includer : RBASIC_CLASS(defined_class);
             }
-            else {
-                // Require `self` to descend from the first class after the
-                // module in the ancestry. Having the module is not enough
-                // since the search continues onto that class and its
-                // ancestors. Iclasses without an includer also come here:
-                // ones UnboundMethod#bind and bind_call use to run the method
-                // on any object, and ones for refinements.
-                //
-                // This is conservative. It rejects without looking at where
-                // `super` lands, so it also rejects when the landing is fine
-                // for `self`: a method from a class further up that `self`
-                // does descend from, a method from a module, and no method
-                // at all, which would have been a NoMethodError.
-                //
-                // In return, `super` in a method body needs no check, so only
-                // the places that can switch `self` pay. A method body
-                // starts with `self` descending from the first class at or
-                // after defined_class. `super` in the body keeps `self` and
-                // searches further along the same ancestry, so the body it
-                // lands in starts the same way. Out here `self` can be any
-                // object, so check to give the next body the same start.
-                VALUE next_class = vm_super_nearest_class(search_start);
-                if (next_class && !rb_obj_is_kind_of(recv, next_class)) {
-                    expected = next_class;
-                }
+            else if (RICLASS_FOR_REFINEMENT_P(defined_class) &&
+                     RB_TYPE_P(RCLASS_REFINED_CLASS(defined_class), T_CLASS) &&
+                     !rb_obj_is_kind_of(recv, RCLASS_REFINED_CLASS(defined_class))) {
+                // A method in a refinement of a class is for instances of
+                // the class, same as a method in the class.
+                expected = RCLASS_REFINED_CLASS(defined_class);
             }
         }
         else if (!rb_obj_is_kind_of(recv, defined_class)) {
@@ -5368,10 +5360,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         }
 
         if (expected) {
-            rb_raise(rb_eTypeError,
-                     "self has wrong type to call super in this context: "
-                     "%"PRIsVALUE" (expected %"PRIsVALUE")",
-                     rb_obj_class(recv), expected);
+            vm_super_wrong_context(recv, expected);
         }
     }
 
@@ -5436,6 +5425,17 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
                 break; // use fastpath
             }
         }
+    }
+
+    // A method body of a class starts with `self` being an instance of the
+    // class, and what `super` finds from there is from an ancestor of the
+    // class or from a module. So only check when `self` might have been
+    // switched or the method is not from a class.
+    //
+    // Note that `super` calls this function even when cd->cc is a cache hit
+    // -- the cc->call fastpath does not skip the `self` check below.
+    if (iseq != method_entry_iseqptr(me) || !RB_TYPE_P(me->defined_class, T_CLASS)) {
+        vm_super_check_self(recv, vm_cc_cme(cc));
     }
 
     VM_ASSERT((vm_cc_cme(cc), true));

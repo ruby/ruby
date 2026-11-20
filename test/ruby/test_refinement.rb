@@ -2313,15 +2313,14 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       # `super` continues onto the ancestors of the class with the refined
-      # module, so `self` needs to be an instance of the next class.
+      # module. `self` needs to be an instance of the class when it lands in
+      # a method from a class, but not when it lands in one from a module.
       [0x6f56, Other.new].each do |block_self|
         $block_self = block_self
         assert_raise_with_message(TypeError, /\#{block_self.class} \\(expected Array\\)/) do
           Sub.new.first
         end
-        assert_raise_with_message(TypeError, /\#{block_self.class} \\(expected Array\\)/) do
-          Sub.new.last
-        end
+        assert_equal(:M, Sub.new.last)
       end
 
       # The next class is the one the module is prepended to
@@ -2340,6 +2339,61 @@ class TestRefinement < Test::Unit::TestCase
       assert_equal([:prepended, :array], Prepended.new.first)
       $block_self = [].freeze
       assert_equal(true, Other.new.frozen?)
+    end;
+  end
+
+  def test_super_in_instance_exec_landing_in_refined_class_method
+    assert_separately([], <<-"end;")
+      class Base
+        def foo = :base
+      end
+
+      class Refined < Base; end
+      class Unused < Base; end
+
+      module R
+        refine(Refined) { def foo = [:refined, self.class] }
+      end
+
+      module Inactive
+        refine(Unused) { def foo = :unused }
+      end
+
+      using R
+
+      module M
+        def foo = $block_self.instance_exec { super() }
+      end
+
+      class Sub < Refined
+        include M
+      end
+
+      class SubOfUnused < Unused
+        include M
+      end
+
+      class Other < Base
+        include M
+      end
+
+      # A method from a refinement of a class is for instances of the class.
+      # Repeat since the call site caches the method from the refinement.
+      $block_self = Other.new
+      3.times do
+        assert_raise_with_message(TypeError, /Other \\(expected Refined\\)/) do
+          Sub.new.foo
+        end
+      end
+
+      # Control: `self` is an instance of the refined class
+      $block_self = Sub.new
+      assert_equal([:refined, Sub], Sub.new.foo)
+
+      # Without the refinement activated, `super` goes past the refined class
+      # and lands in a method that `self` can run.
+      $block_self = Other.new
+      2.times { assert_equal(:base, SubOfUnused.new.foo) }
     end;
   end
 
