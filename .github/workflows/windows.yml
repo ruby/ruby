@@ -159,6 +159,9 @@ jobs:
           call ..\src\win32\vssetup.cmd ^
             -arch=${{ matrix.target || 'amd64' }} ^
             ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
+          rem The STL of newer MSVC rejects older clang, so prefer the clang-cl
+          rem bundled with VS over the standalone LLVM preinstalled in the image.
+          ${{ matrix.cc == 'clang-cl' && 'set "PATH=%VCINSTALLDIR%Tools\Llvm\x64\bin;%PATH%"' || '' }}
           nmake -f nul
           set TMP=%RUNNER_TEMP%
           set TEMP=%RUNNER_TEMP%
