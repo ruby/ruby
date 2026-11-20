@@ -1693,6 +1693,50 @@ class TestRactor < Test::Unit::TestCase
     GC.start
   end
 
+  def test_make_shareable_deep_and_cyclic_graphs
+    chain = ->(depth, tail = nil) { depth.times.inject([tail]) { |a, i| [a, "s#{i}"] } }
+    each_node = ->(ary, &blk) do
+      seen = {}.compare_by_identity
+      stack = [ary]
+      until stack.empty?
+        o = stack.pop
+        next if seen[o]
+        seen[o] = true
+        blk.(o)
+        stack.concat(o) if o.is_a?(Array)
+      end
+    end
+
+    [1, 7, 8, 9, 100].each do |depth|
+      # acyclic, deeper than the traversal's stack
+      ary = chain.(depth)
+      assert_make_shareable(ary)
+      each_node.(ary) { |o| assert Ractor.shareable?(o), "depth=#{depth}" }
+
+      # cycle back to the root, closed at the bottom of the chain
+      tail = []
+      ary = chain.(depth, tail)
+      tail << ary
+      assert_make_shareable(ary)
+      each_node.(ary) { |o| assert Ractor.shareable?(o), "cyclic depth=#{depth}" }
+
+      # cycle in the middle of the chain, entered after acyclic siblings
+      inner = chain.(depth)
+      inner_tail = []
+      inner_chain = chain.(depth, inner_tail)
+      inner_tail << inner_chain
+      ary = [inner, inner_chain, chain.(depth)]
+      assert_make_shareable(ary)
+      each_node.(ary) { |o| assert Ractor.shareable?(o), "inner cyclic depth=#{depth}" }
+    end
+
+    # the same subgraph reached by two paths
+    shared = chain.(20)
+    ary = [shared, [[shared]], shared]
+    assert_make_shareable(ary)
+    each_node.(ary) { |o| assert Ractor.shareable?(o) }
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
