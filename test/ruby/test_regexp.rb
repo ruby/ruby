@@ -2336,6 +2336,20 @@ class TestRegexp < Test::Unit::TestCase
     assert_nil(/(k)\1\z/i =~ "k\u212ax")
   end
 
+  def test_ignorecase_fold_length_estimate
+    assert_equal(0, /k\z/i =~ "\u212a")
+    assert_equal(1, /k\z/i =~ "a\u212a")
+    assert_equal(0, /(?:k|s)\z/i =~ "\u212a")
+    assert_equal(0, /(?:k|s)x/i =~ "\u212ax")
+    assert_equal(0, /s\z/i =~ "\u017f")
+    assert_nil(/k\z/i =~ "\u212ax")
+    assert_equal(0, /\u2c65\z/i =~ "\u023a")
+    assert_equal(0, /\A\u2c65/i =~ "\u023a")
+    assert_equal(0, /x\u2c65/i =~ "x\u023a")
+    assert_equal(0, /\u2c65\u2c65\u2c65\u2c65\z/i =~ "\u023a" * 4)
+    assert_equal(0, /kkkk\z/i =~ "\u212a" * 4)
+  end
+
   def test_backref_overrun
     assert_raise_with_message(SyntaxError, /invalid backref number/) do
       eval(%["".match(/(())(?<X>)((?(90000)))/)])
