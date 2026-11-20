@@ -72,7 +72,6 @@ jobs:
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           RUBY_DEBUG_TEST_NO_REMOTE: "1"
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
         timeout-minutes: 60
       # leaked-globals since 2.7
       - name: Leaked Globals
