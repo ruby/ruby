@@ -1069,6 +1069,9 @@ pub enum Insn {
     /// `index` but may be out-of-bounds, in which case it returns `nil`.
     ArrayArefChecked { array: InsnId, index: InsnId, length: InsnId  },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
+    // ArrayStore lowers to a C function call (rb_ary_store) which can do lots
+    // more. It can raise, it fires a write barrier, and it can allocate.
+    ArrayStore { array: InsnId, index: InsnId, val: InsnId, state: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
@@ -1621,6 +1624,12 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*index);
                 $visit_one!(*val);
             }
+            Insn::ArrayStore { array, index, val, state } => {
+                $visit_one!(*array);
+                $visit_one!(*index);
+                $visit_one!(*val);
+                $visit_one!(*state);
+            }
             Insn::ArrayPop { array, state } => {
                 $visit_one!(*array);
                 $visit_one!(*state);
@@ -1776,7 +1785,7 @@ impl Insn {
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
-            | Insn::ArrayAset { .. }
+            | Insn::ArrayAset { .. } | Insn::ArrayStore { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } => false,
             _ => true,
         }
@@ -1878,6 +1887,7 @@ impl Insn {
             Insn::ArrayAref { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::ArrayArefChecked { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::ArrayAset { .. } => effects::Any,
+            Insn::ArrayStore { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
             Insn::AdjustBounds { .. } => effects::Empty,
@@ -2185,6 +2195,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
+            }
+            Insn::ArrayStore { array, index, val, .. } => {
+                write!(f, "ArrayStore {array}, {index}, {val}")
             }
             Insn::ArrayPop { array, .. } => {
                 write!(f, "ArrayPop {array}")
@@ -3844,7 +3857,7 @@ impl Function {
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } | Insn::ArrayStore { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -8526,6 +8539,11 @@ impl Function {
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
+            }
+            Insn::ArrayStore { array, index, val, .. } => {
+                self.assert_subtype(insn_id, array, types::Array)?;
+                self.assert_subtype(insn_id, index, types::CInt64)?;
+                self.assert_subtype(insn_id, val, types::BasicObject)
             }
             Insn::AdjustBounds { index, length } => {
                 self.assert_subtype(insn_id, index, types::CInt64)?;
