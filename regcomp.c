@@ -4925,8 +4925,18 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
 
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
-      if (add->len.max <= INT_MAX && to->expr.len > (int )add->len.max)
-        to->expr.len = (int )add->len.max;
+      if (add->len.max <= INT_MAX && to->expr.len > (int )add->len.max) {
+        int i, len;
+        UChar* s = to->expr.s;
+        UChar* end = s + to->expr.len;
+
+        /* find the last character boundary not beyond add->len.max (expr is at most OPT_EXACT_MAXLEN bytes) */
+        for (i = 0; i < to->expr.len; i += len) {
+          len = enclen(enc, s + i, end);
+          if (i + len > (int )add->len.max) break;
+        }
+        to->expr.len = i;
+      }
 
       if (to->expr.mmd.max == 0)
         select_opt_exact_info(enc, &to->exb, &to->expr);

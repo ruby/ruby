@@ -1915,6 +1915,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
+  def test_lookahead_exact_shortened_at_char_boundary
+    assert_equal(2, /(?=a\u{10428})./i =~ "xxa\u{10428}x")
+    re = Regexp.new("(?=a\u{10000}).".encode("UTF-16LE"), Regexp::IGNORECASE)
+    assert_equal(2, re =~ "xxa\u{10000}x".encode("UTF-16LE"))
+  end
+
   def test_lookahead_exact_with_long_following_node
     assert_nil(Regexp.new("(?=abc)(?>(?:.{32768}){65536}.{5})x") =~ "abc")
   end
