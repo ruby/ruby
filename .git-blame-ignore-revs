@@ -57,3 +57,7 @@ b839989fd22fef85e2af19de1bc83aa72a5b22bd
 
 # ZJIT cargo-insta snapshot raw string literals
 b78e0a6ddf7df8a7568ea71284f593423c739551
+
+# [Feature #17056] offset for `Array#index` and `Array#rindex`
+1b560fae2a64d7a6ed4d8f3129945a59e04da43f
+99f92c4874ddd08a50f74eb37e6a51f0194c9c76
