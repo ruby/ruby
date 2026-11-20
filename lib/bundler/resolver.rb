@@ -622,6 +622,13 @@ module Bundler
           versions = versions_for(dep_package, dep_range)
         end
 
+        if versions.empty? && locked_version_missing?(dep_package)
+          @base.unlock_names([name])
+          @all_versions.delete(dep_package)
+          @sorted_versions.delete(dep_package)
+          versions = versions_for(dep_package, dep_range)
+        end
+
         if versions.empty? && select_all_versions(dep_package, dep_range).any?
           raise_all_versions_filtered_out!(dep_package)
         end
@@ -632,6 +639,16 @@ module Bundler
 
         raise_not_found!(dep_package)
       end.to_h
+    end
+
+    def locked_version_missing?(package)
+      return false unless package.unlock?
+
+      name = package.name
+      version = package.locked_version
+      return false unless base_requirements[name]&.requirements == [[">=", version]]
+
+      source_for(name).specs.search([name, version]).empty?
     end
 
     def select_all_versions(package, range)
