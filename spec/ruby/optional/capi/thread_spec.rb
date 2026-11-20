@@ -190,6 +190,17 @@ describe "C-API Thread function" do
       it "returns true if the current thread has the GVL" do
         @t.ruby_thread_has_gvl_p.should == true
       end
+
+      it "returns false without the GVL and true after reacquiring it" do
+        @t.ruby_thread_has_gvl_p_without_gvl.should == false
+        @t.ruby_thread_has_gvl_p.should == true
+      end
+
+      platform_is_not :windows do
+        it "returns false on a native thread not created by Ruby" do
+          @t.ruby_thread_has_gvl_p_new_thread.should == false
+        end
+      end
     end
   end
 

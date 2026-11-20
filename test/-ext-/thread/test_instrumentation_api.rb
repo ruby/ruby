@@ -54,6 +54,93 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     thread&.join
   end
 
+  def test_gvl_state_during_thread_pass # [Bug #19172]
+    queue = Queue.new
+    thread = Thread.new do
+      queue << true
+      loop { Thread.pass }
+    end
+    queue.pop
+
+    ready, ready_with_gvl, resumed, resumed_with_gvl, suspended, suspended_with_gvl = Bug::ThreadInstrumentation.gvl_state do
+      Thread.pass
+    end
+
+    assert_operator ready, :>, 0
+    assert_equal 0, ready_with_gvl
+    assert_operator resumed, :>, 0
+    assert_equal resumed, resumed_with_gvl
+    assert_operator suspended, :>, 0
+    assert_equal 0, suspended_with_gvl
+  ensure
+    thread&.kill
+    thread&.join
+  end
+
+  def test_gvl_state_after_blocking_region
+    require '-test-/gvl/call_without_gvl'
+
+    ready, ready_with_gvl, resumed, resumed_with_gvl, suspended, suspended_with_gvl = Bug::ThreadInstrumentation.gvl_state do
+      Bug::Thread.runnable_sleep 0.001
+    end
+
+    assert_operator ready, :>, 0
+    assert_equal 0, ready_with_gvl
+    assert_operator resumed, :>, 0
+    assert_equal resumed, resumed_with_gvl
+    assert_operator suspended, :>, 0
+    assert_equal 0, suspended_with_gvl
+  end
+
+  def test_gvl_state_during_native_thread_migration # [Bug #19172]
+    omit "No native signal sampling support" unless Bug::ThreadInstrumentation.respond_to?(:start_gvl_sampling)
+    out, = EnvUtil.invoke_ruby([{'RUBY_MN_THREADS' => '2'}, '-v'], '', true)
+    omit "No M:N thread support" unless /\+MN/ =~ out
+
+    assert_ractor(<<~'RUBY', args: [{'RUBY_MN_THREADS' => '2', 'RUBY_MAX_CPU' => '4'}], require: '-test-/thread/instrumentation')
+      ready = Ractor::Port.new
+      ractors = 4.times.map do |index|
+        Ractor.new(ready, index) do |ready, index|
+          ready << :ready
+          while Ractor.receive == :start
+            150.times do |iteration|
+              sleep (1 + ((iteration * 31 + index * 13) % 19)) / 1000.0
+              finish = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.003
+              while Process.clock_gettime(Process::CLOCK_MONOTONIC) < finish
+                500.times { 1 + 1 }
+              end
+            end
+            ready << :done
+          end
+        end
+      end
+
+      begin
+        # Begin sampling only after every Ractor has entered its Ruby block.
+        4.times { ready.receive }
+        # Reuse the Ruby threads to also exercise native registration across
+        # sampling sessions, including slots left by retired native threads.
+        2.times do
+          Bug::ThreadInstrumentation.start_gvl_sampling
+          ractors.each { |ractor| ractor.send :start }
+          4.times { ready.receive }
+          samples, empty, errors, send_errors, registration_errors = Bug::ThreadInstrumentation.stop_gvl_sampling
+
+          assert_operator samples, :>, 0
+          assert_operator empty, :>, 0, 'No idle native scheduler threads were sampled'
+          assert_equal 0, errors, 'Idle native scheduler threads reported GVL ownership'
+          assert_equal 0, send_errors, 'Unexpected error sending a native sampling signal'
+          assert_equal 0, registration_errors, 'Could not register native scheduler threads'
+        end
+      ensure
+        # Keep the Ruby threads alive until all native signal handlers finish.
+        Bug::ThreadInstrumentation.stop_gvl_sampling
+        ractors.each { |ractor| ractor.send :stop }
+        ractors.each(&:join)
+      end
+    RUBY
+  end
+
   def test_multi_thread_timeline
     threads = nil
     full_timeline = record do
