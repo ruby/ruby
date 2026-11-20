@@ -69,6 +69,7 @@ VALUE rb_reg_check_preprocess(VALUE);
 rb_len_t rb_reg_search0(VALUE, VALUE, rb_len_t, int, int, VALUE *);
 VALUE rb_reg_match_p(VALUE re, VALUE str, rb_len_t pos);
 VALUE rb_reg_regsub_match(VALUE str, VALUE src, VALUE match);
+VALUE rb_reg_init_copy(VALUE copy, VALUE re);
 VALUE rb_match_init_copy(VALUE copy, VALUE orig);
 /* MatchData transfer for the Ractor courier (ractor.c). */
 void *rb_match_blob_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs_out, bool release_source);
