@@ -289,49 +289,29 @@ impl JITFrame {
 
 /// A [JITFrame] that is not allocated yet, so no stable address usable for baking into generated
 /// code. Used at compile-time by [crate::backend::lir::SideExitStackMap].
-#[derive(Clone, Copy, Debug)]
-pub struct PendingJITFrame(JITFrame);
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct PendingJITFrame {
+    pc: *const VALUE,
+    iseq: IseqPtr,
+    /// The flag the allocated JITFrame's stack map starts with. See [JITFrame::materialize_block_code].
+    materialize_block_code: bool,
+}
 
 impl PendingJITFrame {
     /// Describe a JITFrame for an ISEQ frame without allocating it.
     pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> Self {
-        let materialize_block_code = !iseq_may_write_block_code(iseq);
-        Self(JITFrame {
-            pc,
-            iseq,
-            stack_map: &EMPTY_STACK_MAPS[usize::from(materialize_block_code)],
-        })
+        Self { pc, iseq, materialize_block_code: !iseq_may_write_block_code(iseq) }
     }
 
     pub fn stack_map_writer(&self) -> StackMapWriter {
-        self.0.stack_map_writer()
+        StackMapWriter::new(self.materialize_block_code)
     }
 
     /// Allocate the JITFrame with a stack map built from [Self::stack_map_writer].
     pub fn alloc(self, writer: StackMapWriter) -> *const JITFrame {
-        let jit_frame = JITFrame::alloc(self.0.pc, self.0.iseq, self.0.materialize_block_code());
+        let jit_frame = JITFrame::alloc(self.pc, self.iseq, self.materialize_block_code);
         unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
         jit_frame
-    }
-}
-
-impl PartialEq for PendingJITFrame {
-    fn eq(&self, other: &Self) -> bool {
-        // The stack map is always one of EMPTY_STACK_MAPS, so comparing stack map addresses
-        // compares `materialize_block_code`.
-        let JITFrame { pc, iseq, stack_map } = self.0;
-        pc == other.0.pc && iseq == other.0.iseq && ptr::eq(stack_map, other.0.stack_map)
-    }
-}
-
-impl Eq for PendingJITFrame {}
-
-impl std::hash::Hash for PendingJITFrame {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let JITFrame { pc, iseq, stack_map } = self.0;
-        pc.hash(state);
-        iseq.hash(state);
-        stack_map.hash(state);
     }
 }
 
