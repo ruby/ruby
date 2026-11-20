@@ -450,6 +450,13 @@ jobs:
       - name: ruby version
         run: .\ruby.exe -v --disable-gems -e "puts :ok"
 
+      - name: Fixnum is still long
+        run: >-
+          lmax, fmax = RbConfig::LIMITS.values_at(*%w[LONG_MAX FIXNUM_MAX])
+          p(lmax:, fmax:)
+          exit lmax / 2 == fmax
+        shell: .\ruby.exe -rrbconfig/sizeof {0}
+
       - uses: ./.github/actions/slack
         with:
           label: Windows 2022 / VS${{ matrix.vs }} toolset
