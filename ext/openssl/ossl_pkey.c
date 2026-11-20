@@ -242,10 +242,9 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     return ossl_pkey_wrap(pkey);
 }
 
-static VALUE
-pkey_ctx_apply_options_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ctx_v))
+static int
+pkey_ctx_apply_options_i(VALUE key, VALUE value, VALUE ctx_v)
 {
-    VALUE key = rb_ary_entry(i, 0), value = rb_ary_entry(i, 1);
     EVP_PKEY_CTX *ctx = (EVP_PKEY_CTX *)ctx_v;
 
     if (SYMBOL_P(key))
@@ -255,7 +254,7 @@ pkey_ctx_apply_options_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ctx_v))
     if (EVP_PKEY_CTX_ctrl_str(ctx, StringValueCStr(key), StringValueCStr(value)) <= 0)
         ossl_raise(ePKeyError, "EVP_PKEY_CTX_ctrl_str(ctx, %+"PRIsVALUE", %+"PRIsVALUE")",
                    key, value);
-    return Qnil;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -264,8 +263,7 @@ pkey_ctx_apply_options0(VALUE args_v)
     VALUE *args = (VALUE *)args_v;
     Check_Type(args[1], T_HASH);
 
-    rb_block_call(args[1], rb_intern("each"), 0, NULL,
-                  pkey_ctx_apply_options_i, args[0]);
+    rb_hash_foreach(args[1], pkey_ctx_apply_options_i, args[0]);
     return Qnil;
 }
 
