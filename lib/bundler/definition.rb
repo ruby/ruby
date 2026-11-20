@@ -893,7 +893,7 @@ module Bundler
       end
 
       if should_add_extra_platforms?
-        result.add_extra_platforms!(platforms)
+        result.add_extra_platforms!(platforms, prefer_local: @prefer_local)
       elsif @originally_invalid_platforms.any?
         result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
       end
