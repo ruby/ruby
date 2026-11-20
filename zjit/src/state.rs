@@ -73,7 +73,7 @@ pub extern "C" fn rb_zjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
 /// Global state needed for code generation
 pub struct ZJITState {
     /// Inline code block (fast path)
-    code_block: CodeBlock,
+    code_block: CodeBlock<'static>,
 
     /// ZJIT statistics
     counters: Counters,
@@ -252,7 +252,7 @@ impl ZJITState {
     }
 
     /// Get a mutable reference to the inline code block
-    pub fn get_code_block() -> &'static mut CodeBlock {
+    pub fn get_code_block() -> &'static mut CodeBlock<'static> {
         &mut ZJITState::get_instance().code_block
     }
 

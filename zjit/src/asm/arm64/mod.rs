@@ -1288,9 +1288,9 @@ mod tests {
     use insta::assert_snapshot;
     use crate::assert_disasm_snapshot;
 
-    fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut super::CodeBlock) {
+    fn compile<R>(run: R) -> CodeBlock<'static> where R: FnOnce(&mut super::CodeBlock) {
         let mut cb = super::CodeBlock::new_dummy();
-        run(&mut cb);
+        cb.with_write_scope(run);
         cb
     }
 

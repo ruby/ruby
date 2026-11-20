@@ -9,14 +9,116 @@ use crate::{asm::x86_64::*, hexdumps, assert_disasm_snapshot};
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
     let mut cb = super::CodeBlock::new_dummy();
-    run(&mut cb);
+    cb.with_write_scope(run);
     assert_eq!(format!("{:x}", cb), bytes);
 }
 
-fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut super::CodeBlock) {
+fn compile<R>(run: R) -> CodeBlock<'static> where R: FnOnce(&mut super::CodeBlock) {
     let mut cb = super::CodeBlock::new_dummy();
-    run(&mut cb);
+    cb.with_write_scope(run);
     cb
+}
+
+#[test]
+fn encoder_sequence_across_pages() {
+    fn emit(cb: &mut CodeBlock) {
+        write_lock_prefix(cb);
+        add(cb, mem_opnd_sib(64, R12, R9, 4, 0x1234), imm_opnd(0x123456));
+        movabs(cb, R11, 0x123456789abcdef0);
+        cmp(cb, AX, imm_opnd(0x1234));
+        call_rel32(cb, -12345);
+        nop(cb, 9);
+        ret(cb);
+    }
+
+    let page = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+    let expected = compile(emit);
+    let len = expected.get_write_pos();
+    let expected_bytes = unsafe { std::slice::from_raw_parts(expected.get_ptr(0).raw_ptr(&expected), len) };
+
+    for offset in [0, page - 1, page - 7] {
+        let mut cb = CodeBlock::new_dummy();
+
+        cb.set_write_ptr(cb.get_ptr(offset));
+        cb.with_write_scope(|cb| {
+            emit(cb);
+
+            assert_eq!(cb.get_write_pos(), offset + len);
+            assert!(!cb.has_dropped_bytes());
+        });
+
+        assert_eq!(unsafe { std::slice::from_raw_parts(cb.get_ptr(offset).raw_ptr(&cb), len) }, expected_bytes);
+    }
+}
+
+#[test]
+fn address_dependent_calls_and_jumps() {
+    let mut cb = CodeBlock::new_dummy();
+
+    cb.with_write_scope(|cb| {
+        nop(cb, 1);
+
+        let start = cb.get_write_ptr();
+        call_ptr(cb, RAX, start.raw_ptr(cb));
+        jmp_ptr(cb, start);
+        je_ptr(cb, start);
+
+        assert_eq!(cb.get_write_ptr(), start.add_bytes(16));
+    });
+    assert_eq!(cb.hexdump(), "90e8fbffffffe9f6ffffff0f84f0ffffff");
+
+    let mut far = CodeBlock::new_dummy();
+    let target = far.get_write_ptr().raw_addr(&far) + (1usize << 32);
+    let mut expected = CodeBlock::new_dummy();
+
+    expected.with_write_scope(|cb| {
+        mov(cb, RAX, const_ptr_opnd(target as *const u8));
+        call(cb, RAX);
+    });
+    far.with_write_scope(|cb| {
+        call_ptr(cb, RAX, target as *const u8);
+        assert!(!cb.has_dropped_bytes());
+    });
+
+    assert_eq!(far.hexdump(), expected.hexdump());
+}
+
+#[test]
+fn label_encoders_link_after_scope() {
+    let mut cb = CodeBlock::new_dummy();
+    let label = cb.new_label("end");
+
+    cb.with_write_scope(|cb| {
+        call_label(cb, label);
+        jmp_label(cb, label);
+        je_label(cb, label);
+        cb.write_label(label);
+        ret(cb);
+    });
+
+    assert_eq!(cb.resolve_label(label), cb.get_ptr(16));
+    cb.link_labels().unwrap();
+    assert_eq!(cb.hexdump(), "e80b000000e9060000000f8400000000c3");
+}
+
+#[test]
+fn movabs_partial_failure() {
+    let page = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+
+    let mut cb = CodeBlock::new_dummy_sized(2 * page);
+    cb.set_write_ptr(cb.get_ptr(page - 5));
+    cb.with_write_scope(|cb| {
+        movabs(cb, RAX, 0x123456789abcdef0);
+        assert!(cb.has_dropped_bytes());
+        assert_eq!(cb.get_write_pos(), page);
+
+        ret(cb);
+        assert_eq!(cb.get_write_pos(), page);
+    });
+    assert!(cb.has_dropped_bytes());
+
+    let ptr = cb.get_ptr(page - 5).raw_ptr(&cb);
+    assert_eq!(unsafe { std::slice::from_raw_parts(ptr, 5) }, &[0x48, 0xb8, 0xf0, 0xde, 0xbc]);
 }
 
 #[test]
