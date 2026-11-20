@@ -826,9 +826,8 @@ module Bundler
     end
 
     def serializer_class
-      # The Bundler gem ships its own copy of Gem::YAMLSerializer, so this
-      # resolves even on RubyGems versions that predate it.
-      require "rubygems/yaml_serializer"
+      # See lib/rubygems/yaml_serializer/core.rb.
+      require_relative "../rubygems/yaml_serializer/core"
       Gem::YAMLSerializer
     end
 
