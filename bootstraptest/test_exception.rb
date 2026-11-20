@@ -385,7 +385,7 @@ assert_match /undefined method 'foo\'/, %q{#`
   C.new.foo
 }, "[ruby-dev:31407]"
 
-assert_equal 'nil', %q{
+assert_equal '["fatal", "thread killed"]', %q{
   doit = false
   exc = nil
   t = Thread.new {
@@ -399,7 +399,7 @@ assert_equal 'nil', %q{
   Thread.pass until doit
   t.kill
   t.join
-  exc.inspect
+  [exc.class.name, exc.message].inspect
 }, '[ruby-dev:32608]'
 
 assert_equal 'divided by 0', %q{
