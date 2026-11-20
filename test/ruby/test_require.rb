@@ -530,6 +530,38 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
+  def test_require_skips_unreadable_file
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        Dir.mkdir "a"
+        Dir.mkdir "b"
+        File.write("a/lib.rb", 'puts "a/lib.rb"')
+        File.write("b/lib.rb", 'puts "b/lib.rb"')
+        File.chmod(0044, "a/lib.rb")
+        omit "a/lib.rb is still readable" if File.readable?("a/lib.rb")
+        result = IO.popen([EnvUtil.rubybin, "--disable-gems", "-Ia", "-Ib", "-e", "require 'lib'"], &:read)
+        assert_equal("b/lib.rb\n", result)
+      }
+    }
+  end
+
+  def test_require_skips_file_denied_by_acl
+    omit "macOS ACL" unless RUBY_PLATFORM.include?("darwin")
+    require "etc"
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        Dir.mkdir "a"
+        Dir.mkdir "b"
+        File.write("a/lib.rb", 'puts "a/lib.rb"')
+        File.write("b/lib.rb", 'puts "b/lib.rb"')
+        system("chmod", "+a", "user:#{Etc.getpwuid.name} deny read", "a/lib.rb")
+        omit "a/lib.rb is still readable" if File.readable?("a/lib.rb")
+        result = IO.popen([EnvUtil.rubybin, "--disable-gems", "-Ia", "-Ib", "-e", "require 'lib'"], &:read)
+        assert_equal("b/lib.rb\n", result)
+      }
+    }
+  end
+
   def test_frozen_loaded_features
     bug3756 = '[ruby-core:31913]'
     assert_in_out_err(['-e', '$LOADED_FEATURES.freeze; require "erb"'], "",
