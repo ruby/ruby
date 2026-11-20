@@ -180,8 +180,10 @@ module Bundler
       names_to_allow_remote_specs_for = []
       extended_explanation = nil
 
+      satisfiers = []
       while incompatibility.conflict?
         cause = incompatibility.cause
+        satisfiers << cause.satisfier
         incompatibility = cause.incompatibility
 
         incompatibility.terms.each do |term|
@@ -190,7 +192,7 @@ module Bundler
 
           if base_requirements[name]
             names_to_unlock << name
-          elsif package.ignores_prereleases? && @all_specs[name].any? {|s| s.version.prerelease? }
+          elsif filtered_prereleases?(package)
             names_to_allow_prereleases_for << name
           elsif package.prefer_local? && @all_specs[name].any? {|s| !s.is_a?(StubSpecification) }
             names_to_allow_remote_specs_for << name
@@ -201,6 +203,11 @@ module Bundler
 
           extended_explanation = no_versions_incompat.extended_explanation
         end
+      end
+
+      # Preserve the usual retry order when it can already resolve the conflict.
+      if names_to_unlock.empty? && names_to_allow_prereleases_for.empty? && names_to_allow_remote_specs_for.empty?
+        names_to_allow_prereleases_for = prerelease_names_in(satisfiers)
       end
 
       [names_to_unlock.uniq, names_to_allow_prereleases_for.uniq, names_to_allow_remote_specs_for.uniq, extended_explanation]
@@ -461,6 +468,30 @@ module Bundler
 
     def filter_specs(specs, package)
       filter_remote_specs(filter_cooldown(filter_prereleases(specs, package)), package)
+    end
+
+    def prerelease_names_in(incompatibilities)
+      seen = {}.compare_by_identity
+      packages = []
+      while (incompatibility = incompatibilities.pop)
+        next if seen[incompatibility]
+        seen[incompatibility] = true
+
+        if incompatibility.conflict?
+          cause = incompatibility.cause
+          incompatibilities.push(cause.incompatibility, cause.satisfier)
+        else
+          incompatibility.terms.each {|term| packages << term.package }
+        end
+      end
+
+      packages.uniq.filter_map do |package|
+        package.name if !base_requirements[package.name] && filtered_prereleases?(package)
+      end
+    end
+
+    def filtered_prereleases?(package)
+      package.ignores_prereleases? && @all_specs[package.name].any? {|s| s.version.prerelease? }
     end
 
     def filter_prereleases(specs, package)

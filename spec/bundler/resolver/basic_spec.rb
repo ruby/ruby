@@ -80,6 +80,39 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[need-pre-1.0.0 activesupport-3.0.0.beta1]
   end
 
+  it "resolves a transitive prerelease when the stable release has a conflicting dependency" do
+    @index = build_index do
+      gem "aa", "1.0.0" do
+        dep "bb", "~> 1.0.0.rc1"
+        dep "cc", "~> 1.0"
+      end
+      gem "bb", "1.0.0.rc1"
+      gem("bb", "1.0.0") { dep "cc", ">= 2.0" }
+      gem "cc", "1.0.0"
+    end
+
+    dep "aa"
+    should_resolve_as %w[aa-1.0.0 bb-1.0.0.rc1 cc-1.0.0]
+  end
+
+  it "keeps a locked transitive dependency when a prerelease can resolve the conflict" do
+    @index = build_index do
+      gem("aa", "1.0.0.rc1") { dep "bb", "~> 1.0" }
+      gem "aa", "1.0.0" do
+        dep "bb", "~> 1.0"
+        dep "cc", "~> 1.0"
+      end
+      gem("bb", "1.0.0") { dep "cc", ">= 2.0" }
+      gem "bb", "1.0.1"
+      gem "cc", %w[1.0.0 2.0.0]
+    end
+
+    dep "aa"
+    bb = @index.search(["bb", Gem::Version.new("1.0.0")]).first
+    base = Bundler::SpecSet.new([Bundler::LazySpecification.from_spec(bb)])
+    should_resolve_and_include %w[aa-1.0.0.rc1 bb-1.0.0 cc-2.0.0], [base, nil, locked(["bb", "1.0.0"])]
+  end
+
   it "selects a pre-release if it's specified in the Gemfile" do
     dep "activesupport", "= 3.0.0.beta"
     dep "actionpack"

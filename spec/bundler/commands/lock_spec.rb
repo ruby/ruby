@@ -2575,6 +2575,28 @@ RSpec.describe "bundle lock" do
     L
   end
 
+  it "locks a transitive prerelease when the stable release has a conflicting dependency" do
+    build_repo4 do
+      build_gem "aa", "1.0.0" do |s|
+        s.add_dependency "bb", "~> 1.0.0.rc1"
+        s.add_dependency "cc", "~> 1.0"
+      end
+      build_gem "bb", "1.0.0.rc1"
+      build_gem "bb", "1.0.0" do |s|
+        s.add_dependency "cc", ">= 2.0"
+      end
+      build_gem "cc", "1.0.0"
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+      gem "aa"
+    G
+    bundle "lock"
+
+    expect(lockfile).to include("aa (1.0.0)", "bb (1.0.0.rc1)", "cc (1.0.0)")
+  end
+
   context "when re-resolving to include prereleases" do
     before do
       build_repo4 do
