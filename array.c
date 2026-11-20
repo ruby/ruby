@@ -19,6 +19,7 @@
 #include "internal/enum.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/imemo.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -4746,10 +4747,10 @@ rb_ary_delete_if(VALUE ary)
 static VALUE
 take_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, cbarg))
 {
-    VALUE *args = (VALUE *)cbarg;
+    struct MEMO *memo = MEMO_CAST(cbarg);
     if (argc > 1) val = rb_ary_new4(argc, argv);
-    rb_ary_push(args[0], val);
-    if (--args[1] == 0) rb_iter_break();
+    rb_ary_push(memo->v1, val);
+    if (--memo->u3.cnt == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -4757,15 +4758,16 @@ static VALUE
 take_items(VALUE obj, rb_len_t n)
 {
     VALUE result = rb_check_array_type(obj);
-    VALUE args[2];
+    VALUE memo;
 
     if (n == 0) return result;
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
     result = rb_ary_new2(n);
-    args[0] = result; args[1] = (VALUE)n;
-    if (UNDEF_P(rb_check_block_call(obj, idEach, 0, 0, take_i, (VALUE)args)))
+    memo = (VALUE)rb_imemo_memo_new(result, Qnil, n);
+    if (UNDEF_P(rb_check_block_call(obj, idEach, 0, 0, take_i, memo)))
         rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
                  rb_obj_class(obj));
+    RB_GC_GUARD(memo);
     return result;
 }
 

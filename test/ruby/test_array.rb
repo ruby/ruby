@@ -3278,6 +3278,25 @@ class TestArray < Test::Unit::TestCase
     assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e), bug17814)
   end
 
+  def test_zip_with_saved_block
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        attr_reader :block
+
+        def each(&block)
+          @block = block
+          self
+        end
+      end
+
+      assert_equal([[1, nil], [2, nil]], [1, 2].zip(enum))
+      GC.start
+      assert_nil(enum.block.call(3))
+    };
+  end
+
   def test_zip_modify_during_to_ary
     # [Bug #22319]
     a = (1..100_000).to_a
