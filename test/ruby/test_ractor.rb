@@ -61,6 +61,23 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_shareability_of_outer_variable_read_before_assignment
+    assert_ractor(<<~'RUBY')
+      # The block reads the variable before its assignment, while it is nil
+      assert_raise(Ractor::IsolationError) { klass = Class.new { Ractor.shareable_proc { klass } } }
+      assert_raise(Ractor::IsolationError) { pr = Ractor.shareable_proc { pr } }
+      obj = Object.new
+      def obj.opt(a = Ractor.shareable_proc { a }) = a
+      assert_raise(Ractor::IsolationError) { obj.opt }
+
+      # Assigned before
+      c = 1
+      assert_equal 1, Ractor.shareable_proc { c }.call
+      def obj.opt2(a = 2, b = Ractor.shareable_proc { a }) = b
+      assert_equal 2, obj.opt2.call
+    RUBY
+  end
+
   def test_alive_p_after_fork
     omit "fork not supported" unless Process.respond_to?(:fork)
     assert_ractor(<<~'RUBY')
@@ -73,11 +90,46 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_shareable_proc_reading_block_parameter
+    assert_ractor(<<~'RUBY')
+      def read_block(&b) = Ractor.shareable_proc { b }
+      def call_block(&b) = Ractor.shareable_proc { b.call }
+
+      # The block parameter is only set when first read, check its actual value
+      assert_raise(Ractor::IsolationError) { read_block { 1 } }
+      assert_raise(Ractor::IsolationError) { call_block { 1 } }
+
+      assert_nil read_block.call
+      shareable = Ractor.shareable_proc { 2 }
+      assert_same shareable, read_block(&shareable).call
+      assert_equal 2, call_block(&shareable).call
+      assert_equal 2, Ractor.new(call_block(&shareable)) { |pr| pr.call }.value
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
       Ractor.shareable_proc{ foo }
     end
+  end
+
+  def test_shareable_proc_special_variables_do_not_overwrite_root_frame
+    assert_ractor(<<~'RUBY')
+      set = Ractor.shareable_proc { |s| s =~ /(.)/; $_ = s; nil }
+      get = Ractor.shareable_proc { [$~ && $~[1], $_] }
+
+      # Special variables of shareable Procs are per Fiber
+      set.("a")
+      assert_equal ["a", "a"], get.()
+      assert_equal [[nil, nil], ["b", "b"]], Fiber.new { [get.(), (set.("b"); get.())] }.resume
+      assert_equal ["a", "a"], get.()
+
+      # and do not overwrite the special variables of the root frame of the Fiber/Thread
+      assert_equal ["z", "line"], Fiber.new { $_ = "line"; "z" =~ /(z)/; set.("c"); [$~[1], $_] }.resume
+      assert_equal ["z", "line"], Thread.new { $_ = "line"; "z" =~ /(z)/; set.("d"); [$~[1], $_] }.value
+      assert_equal [nil, nil], Fiber.new { set.("e"); [$~, $_] }.resume
+    RUBY
   end
 
   def test_shareability_of_method_proc
@@ -111,6 +163,190 @@ class TestRactor < Test::Unit::TestCase
     x = str.instance_exec { method(:itself).to_proc }
     assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
 =end
+  end
+
+  def test_shareability_of_outer_variables_assigned_in_loops
+    assert_ractor(<<~'RUBY')
+      # Each of these assigns the captured variable more than once
+      for a in [1, 2]
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { a } }
+      end
+
+      i = 0
+      while i < 2
+        b = i
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { b } }
+        i += 1
+      end
+
+      i = 0
+      begin
+        c = i
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { c } }
+        raise if (i += 1) < 2
+      rescue
+        retry
+      end
+
+      i = 0
+      [1].each do
+        d = i
+        assert_raise(Ractor::IsolationError) { Ractor.shareable_proc { d } }
+        redo if (i += 1) < 2
+      end
+
+      # A new frame per iteration, so each variable is assigned once
+      [1, 2].each do |e|
+        f = e * 2
+        assert_equal [e, f], Ractor.shareable_proc { [e, f] }.call
+      end
+
+      g = 1
+      i = 0
+      i += 1 while i < 2
+      begin
+        h = 2
+      rescue
+        nil
+      end
+      assert_equal [1, 2], Ractor.shareable_proc { [g, h] }.call
+    RUBY
+  end
+
+  def test_define_method_body_is_shareable_if_possible
+    assert_ractor(<<~'RUBY')
+      class DefineMethodShareable
+        CONST = :const
+        sym = :sym
+        frozen = "frozen".freeze
+
+        define_method(:no_capture) { |x = 1| [self.class, x] }
+        define_method(:capture) { [sym, frozen, CONST] }
+        define_method(:explicit, &proc { sym })
+        define_singleton_method(:singleton) { sym }
+      end
+
+      obj = DefineMethodShareable.new
+      expected = [[DefineMethodShareable, 2], [:sym, "frozen", :const], :sym, :sym]
+      assert_equal expected, [obj.no_capture(2), obj.capture, obj.explicit, DefineMethodShareable.singleton]
+      assert_equal expected, Ractor.new(obj) { |o|
+        [o.no_capture(2), o.capture, o.explicit, DefineMethodShareable.singleton]
+      }.value
+
+      # The given Proc is not modified
+      local = :local
+      pr = proc { local }
+      DefineMethodShareable.define_method(:from_proc, &pr)
+      assert_not_predicate pr, :frozen?
+      assert_not_send [Ractor, :shareable?, pr]
+      assert_equal :local, Ractor.new(obj) { |o| o.from_proc }.value
+    RUBY
+  end
+
+  def test_define_method_body_is_kept_if_not_shareable
+    assert_ractor(<<~'RUBY')
+      class DefineMethodNotShareable
+        str = +"str"
+        reassigned = 1
+        reassigned = 2
+        writes = 1
+        define_method(:unshareable) { str }
+        define_method(:reassigned) { reassigned }
+        define_method(:writes) { writes += 1 }
+
+        # The block parameter of the method defining the method
+        def self.define_calling(name, &block) = define_method(name) { |x| block.call(x) }
+        def self.define_instance_eval(name, &block) = define_method(name) { instance_eval(&block) }
+        define_calling(:block_param) { |x| x * 2 }
+        define_instance_eval(:block_param_instance_eval) { self.class }
+        define_calling(:shareable_block_param, &Ractor.shareable_proc { |x| x + 1 })
+      end
+
+      # The body reads the variable before its assignment, like ActionView::Base.with_empty_template_cache
+      subclass = Class.new(DefineMethodNotShareable) do
+        define_method(:container) { subclass }
+        define_singleton_method(:container) { subclass }
+      end
+      assert_equal [subclass, subclass], [subclass.new.container, subclass.container]
+
+      obj = DefineMethodNotShareable.new
+      assert_equal ["str", 2, 2, 3], [obj.unshareable, obj.reassigned, obj.writes, obj.writes]
+      assert_equal [4, DefineMethodNotShareable], [obj.block_param(2), obj.block_param_instance_eval]
+      assert_equal 3, Ractor.new(obj) { |o| o.shareable_block_param(2) }.value
+      %i[unshareable reassigned writes block_param block_param_instance_eval].each do |m|
+        e = assert_raise(Ractor::RemoteError) do
+          Ractor.new(obj, m) do |o, m|
+            Thread.current.report_on_exception = false
+            o.public_send(m, *([2] if m == :block_param))
+          end.value
+        end
+        assert_equal "defined with an un-shareable Proc in a different Ractor", e.cause.message
+      end
+    RUBY
+  end
+
+  def test_shareability_of_block_using_the_block_of_the_method
+    assert_ractor(<<~'RUBY')
+      obj = Object.new
+      def obj.block_given = Ractor.shareable_proc { block_given? }
+      def obj.iterator = Ractor.shareable_proc { iterator? }
+      def obj.defined_yield = Ractor.shareable_proc { defined?(yield) }
+      def obj.zsuper = Ractor.shareable_proc { super }
+      def obj.super_call = Ractor.shareable_proc { super() }
+      %i[block_given iterator defined_yield zsuper super_call].each do |m|
+        assert_raise(Ractor::IsolationError, m.to_s) { obj.public_send(m) }
+      end
+      assert_raise_with_message(Ractor::IsolationError, /uses 'block_given\?'/) { obj.block_given }
+      assert_raise_with_message(Ractor::IsolationError, /uses 'super'/) { obj.super_call }
+
+      # The block is passed explicitly
+      def obj.super_block_pass = Ractor.shareable_proc { super(&nil) }
+      def obj.super_literal_block = Ractor.shareable_proc { super() {} }
+      assert_kind_of Proc, obj.super_block_pass
+      assert_kind_of Proc, obj.super_literal_block
+
+      # There is no block of a method outside a method
+      assert_equal false, Ractor.shareable_proc { block_given? }.call
+      assert_equal false, Ractor.new { block_given? }.value
+    RUBY
+  end
+
+  def test_define_method_keeps_the_block_of_the_method
+    assert_ractor(<<~'RUBY')
+      class DefineMethodBlockOfTheMethod
+        def self.define_block_given(name, &) = define_method(name) { block_given? }
+        def self.define_super(name) = define_method(name) { super() }
+      end
+
+      DefineMethodBlockOfTheMethod.define_block_given(:without_block)
+      DefineMethodBlockOfTheMethod.define_block_given(:with_block) {}
+      # super() passes the block given to define_super to Kernel#then
+      DefineMethodBlockOfTheMethod.define_super(:then) { :from_define_super }
+
+      obj = DefineMethodBlockOfTheMethod.new
+      assert_equal [false, true], [obj.without_block, obj.with_block]
+      assert_equal :from_define_super, obj.then { :ignored }
+    RUBY
+  end
+
+  def test_define_method_in_loops_keeps_block_semantics
+    assert_ractor(<<~'RUBY')
+      class DefineMethodInLoops
+        for name in %i[a b]
+          define_method(name) { name }
+        end
+
+        i = 0
+        while i < 2
+          value = :"w#{i}"
+          define_method(value) { value }
+          i += 1
+        end
+      end
+
+      obj = DefineMethodInLoops.new
+      assert_equal [:b, :b, :w1, :w1], [obj.a, obj.b, obj.w0, obj.w1]
+    RUBY
   end
 
   def test_shareable_proc_define_method_super_method_missing

@@ -591,19 +591,32 @@ rescue Ractor::IsolationError
 end
 ```
 
-In order to dynamically define a method with `Module#define_method` that can be used from different ractors, you must define it with a shareable proc. Alternatively, you can use `Module#class_eval` or `Module#module_eval` with a String. Even though the shareable proc's `self` is initially bound to `nil`, `define_method` will bind `self` to the correct value in the method.
+`Module#define_method` (and `Kernel#define_singleton_method`) makes the method body shareable whenever it is possible, as if by `Ractor.shareable_proc`, so that the method can be used from different ractors. `define_method` binds `self` to the receiver of the method anyway.
 
 ```ruby
 class A
-  define_method(:testing, Ractor.shareable_proc { p self })
+  name = :a
+  define_method(:testing) { p [self, name] }
 end
 Ractor.new do
   a = A.new
-  a.testing #=> #<A:0x0000000101acfe10>
+  a.testing #=> [#<A:0x0000000101acfe10>, :a]
 end.join
 ```
 
-This isolation must be done to prevent the method from accessing and assigning captured outer variables across ractors.
+If the body cannot be made shareable, for example because it refers to an outer variable which is reassigned or to an unshareable object, the method is defined with the body as is and can only be called from the ractor which defined it. This isolation must be done to prevent the method from accessing and assigning captured outer variables across ractors.
+
+```ruby
+class B
+  list = []
+  define_method(:add) { |x| list << x }
+end
+B.new.add(1) # OK
+Ractor.new { B.new.add(2) }.join # raises Ractor::RemoteError, caused by
+# RuntimeError: defined with an un-shareable Proc in a different Ractor
+```
+
+Alternatively, you can use `Module#class_eval` or `Module#module_eval` with a String.
 
 ### Ractor-local storage
 
