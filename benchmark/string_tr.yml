@@ -15,6 +15,14 @@ prelude: |
   }.freeze
   ESCAPE_PATTERN = Regexp.union(ESCAPED_CHARS.keys)
 
+  # STR only contains "<" as a needle; the other needles never match, so the
+  # match density is the same for every needle count and only the number of
+  # needles searched for varies.
+  NEEDLES = ["<", ">", "&", "\"", "\\", "!", "#", "$", "%", "'", "(", ")", "*", "+", ",", "-"].freeze
+  (1..NEEDLES.size).each do |n|
+    Object.const_set(:"PAIRS_#{n}", NEEDLES.first(n).to_h { |c| [c, "&##{c.ord};"] }.freeze)
+  end
+
 benchmark:
   tr_escape: |
     STR.tr(ESCAPED_CHARS)
@@ -30,4 +38,35 @@ benchmark:
     # ERB has a dedicated SIMD fastpath, so it's
     # likely the performance ceiling
     ERB::Util.html_escape(STR)
-
+  tr_needles_1: |
+    STR.tr(PAIRS_1)
+  tr_needles_2: |
+    STR.tr(PAIRS_2)
+  tr_needles_3: |
+    STR.tr(PAIRS_3)
+  tr_needles_4: |
+    STR.tr(PAIRS_4)
+  tr_needles_5: |
+    STR.tr(PAIRS_5)
+  tr_needles_6: |
+    STR.tr(PAIRS_6)
+  tr_needles_7: |
+    STR.tr(PAIRS_7)
+  tr_needles_8: |
+    STR.tr(PAIRS_8)
+  tr_needles_9: |
+    STR.tr(PAIRS_9)
+  tr_needles_10: |
+    STR.tr(PAIRS_10)
+  tr_needles_11: |
+    STR.tr(PAIRS_11)
+  tr_needles_12: |
+    STR.tr(PAIRS_12)
+  tr_needles_13: |
+    STR.tr(PAIRS_13)
+  tr_needles_14: |
+    STR.tr(PAIRS_14)
+  tr_needles_15: |
+    STR.tr(PAIRS_15)
+  tr_needles_16: |
+    STR.tr(PAIRS_16)
