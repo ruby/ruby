@@ -3605,8 +3605,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_EL
              *   => in this case, first jump instruction should jump to
              *      LABEL2 directly
              */
-            if (replace_destination(iobj, diobj)) {
-                remove_unreachable_chunk(iseq, unref, iobj->link.next);
+            if (replace_destination(iobj, diobj) && remove_unreachable_chunk(iseq, unref, iobj->link.next)) {
                 goto again;
             }
         }
