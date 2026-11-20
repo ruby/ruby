@@ -450,13 +450,11 @@ class TestSuper < Test::Unit::TestCase
       mod.instance_method(:first).bind_call([])
     end
 
-    # Array < Object, but it is not type-safe to
-    # run an Array method on an Object instance.
+    # `super` lands in Kernel#itself, which any object can run
     array = []
     itself_super = mod.instance_method(:itself).bind_call(array)
-    assert_raise_with_message(TypeError, /Object \(expected Array\)/) do
-      Object.new.instance_exec(&itself_super)
-    end
+    obj = Object.new
+    assert_same(obj, obj.instance_exec(&itself_super))
 
     # Control: no self switching
     assert_same(array, itself_super.call)
