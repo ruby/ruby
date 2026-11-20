@@ -1468,6 +1468,26 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_select_closed_port_raises_regardless_of_order
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      ready, closed = Ractor::Port.new, Ractor::Port.new
+      ready << :msg
+      closed.close
+
+      assert_raise(Ractor::ClosedError) { Ractor.select(ready, closed, timeout: 0) }
+      assert_raise(Ractor::ClosedError) { Ractor.select(closed, ready, timeout: 0) }
+      assert_raise(Ractor::ClosedError) { Ractor.select(ready, closed) }
+      assert_equal [ready, :msg], Ractor.select(ready, timeout: 0)
+
+      queued = Ractor::Port.new
+      queued << :kept
+      queued.close
+      assert_equal [queued, :kept], Ractor.select(ready, queued, timeout: 0)
+      assert_raise(Ractor::ClosedError) { Ractor.select(ready, queued, timeout: 0) }
+    RUBY
+  end
+
   def test_receive_timeout_racing_with_send
     assert_separately([], __FILE__, __LINE__, <<-'RUBY')
       Warning[:experimental] = false
