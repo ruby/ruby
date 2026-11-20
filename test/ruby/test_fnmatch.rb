@@ -141,6 +141,16 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.for(feature5422).fnmatch?("{.g,t}*", ".gem", File::FNM_EXTGLOB)
   end
 
+  def test_extglob_brace_expansion_is_interruptible
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      require "timeout"
+      assert_raise(Timeout::Error) do
+        Timeout.timeout(0.1) { File.fnmatch("{a,b}" * 64, "x", File::FNM_EXTGLOB) }
+      end
+    end;
+  end
+
   def test_unmatched_encoding
     bug7911 = '[ruby-dev:47069] [Bug #7911]'
     path = "\u{3042}"
