@@ -1393,6 +1393,9 @@ node_new_backref(int back_num, int* backrefs, int by_name,
   NBREF(node)->back_dynamic = (int* )NULL;
   if (by_name != 0)
     NBREF(node)->state |= NST_NAME_REF;
+  if (IS_IGNORECASE(env->option) &&
+      ONIGENC_MBC_MAXLEN(env->enc) != ONIGENC_MBC_MINLEN(env->enc))
+    NBREF(node)->state |= NST_FOLD_VARLEN;
 
 #ifdef USE_BACKREF_WITH_LEVEL
   if (exist_level != 0) {

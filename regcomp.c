@@ -2276,6 +2276,9 @@ get_min_match_length(Node* node, OnigDistance *min, ScanEnv* env)
         if (r != 0) break;
         if (*min > tmin) *min = tmin;
       }
+      if (IS_BACKREF_FOLD_VARLEN(br) &&
+          *min > (OnigDistance )ONIGENC_MBC_MINLEN(env->enc))
+        *min = ONIGENC_MBC_MINLEN(env->enc);
     }
     break;
 
@@ -2438,6 +2441,8 @@ get_max_match_length(Node* node, OnigDistance *max, ScanEnv* env)
         if (r != 0) break;
         if (*max < tmax) *max = tmax;
       }
+      if (IS_BACKREF_FOLD_VARLEN(br))
+        *max = distance_multiply(*max, ONIGENC_MBC_MAXLEN(env->enc));
     }
     break;
 
@@ -5192,6 +5197,11 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         if (r != 0) break;
         if (min > tmin) min = tmin;
         if (max < tmax) max = tmax;
+      }
+      if (IS_BACKREF_FOLD_VARLEN(br)) {
+        if (min > (OnigDistance )ONIGENC_MBC_MINLEN(env->enc))
+          min = ONIGENC_MBC_MINLEN(env->enc);
+        max = distance_multiply(max, ONIGENC_MBC_MAXLEN(env->enc));
       }
       if (r == 0) set_mml(&opt->len, min, max);
     }
