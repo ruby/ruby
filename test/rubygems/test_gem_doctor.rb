@@ -24,6 +24,9 @@ class TestGemDoctor < Gem::TestCase
 
     FileUtils.rm b.spec_file
 
+    lock_file = File.join(@gemhome, "gems", ".#{a.full_name}.lock")
+    FileUtils.touch lock_file
+
     File.open c.spec_file, "w" do |io|
       io.write "this will raise an exception when evaluated."
     end
@@ -47,6 +50,7 @@ class TestGemDoctor < Gem::TestCase
 
     assert_path_exist File.join(a.gem_dir, "Rakefile")
     assert_path_exist File.join(a.gem_dir, "lib", "a.rb")
+    assert_path_exist lock_file
 
     assert_path_not_exist b.gem_dir
     assert_path_not_exist b.spec_file

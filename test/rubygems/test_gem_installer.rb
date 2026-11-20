@@ -1576,6 +1576,30 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_same installer, @pre_install_hook_arg
   end
 
+  def test_install_holds_lock_while_replacing_gem_files
+    installer = util_setup_installer {|s| s.executables.clear }
+    previous_file = File.join(installer.gem_dir, "previous")
+    FileUtils.touch previous_file
+
+    locked_path = nil
+    with_lock = lambda do |path, &install|
+      locked_path = path
+      assert_path_exist previous_file
+      install.call
+      assert_path_not_exist previous_file
+      assert_path_exist installer.spec.gem_build_complete_path
+      assert_path_exist installer.spec.cache_file
+    end
+
+    build_rake_in do
+      Gem.stub(:open_file_with_lock, with_lock) do
+        use_ui(@ui) { installer.install }
+      end
+    end
+
+    assert_equal File.join(@gemhome, "gems", ".#{@spec.full_name}"), locked_path
+  end
+
   def test_install_creates_working_binstub
     installer = util_setup_installer
 
