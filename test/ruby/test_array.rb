@@ -1264,6 +1264,10 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.index(99, offset: a.size))
     assert_nil(a.index(99, offset: -a.size - 1))
 
+    assert_equal(1, a.index(offset: 0).each {|e| e == 99})
+    assert_equal(3, a.index(offset: 2).each {|e| e == 99})
+    assert_equal(2, a.index(offset: -4).each {|e| e == /a/})
+
     assert_equal(1, assert_warn(/given block not used/) {a.index(99) {|x| x == 'cat' }})
     assert_equal(3, assert_warn(/given block not used/) {a.index(99, offset: 2) {|x| x == 'cat' }})
   end
@@ -1660,6 +1664,10 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.rindex(/a/, offset: -4))
     assert_nil(a.index(99, offset: a.size))
     assert_nil(a.index(99, offset: -a.size - 1))
+
+    assert_equal(3, a.rindex(offset: 0).each {|e| e == 99})
+    assert_equal(3, a.rindex(offset: 2).each {|e| e == 99})
+    assert_equal(1, a.rindex(offset: -3).each {|e| e == 99})
 
     assert_equal(3, assert_warning(/given block not used/) {a.rindex(99) {|x| x == [1,2,3] }})
     assert_equal(3, assert_warning(/given block not used/) {a.rindex(99, offset: 2) {|x| x == [1,2,3] }})

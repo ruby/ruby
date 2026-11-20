@@ -2226,6 +2226,18 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
     return Qnil;
 }
 
+static VALUE
+offset_option(VALUE opts)
+{
+    static ID keywords[1];
+    VALUE initpos;
+    if (!keywords[0]) {
+        keywords[0] = rb_intern_const("offset");
+    }
+    rb_get_kwargs(opts, keywords, 0, 1, &initpos);
+    return initpos;
+}
+
 /*
  *  call-seq:
  *    find_index(object, offset: 0) -> integer or nil
@@ -2277,39 +2289,27 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE val, opts = Qnil, initpos = Qnil;
-    rb_len_t pos = 0;
-    rb_len_t i;
+    VALUE val, opts = Qnil;
+    rb_len_t i, pos = 0;
 
-    if (argc == 0) {
-        RETURN_ENUMERATOR(ary, 0, 0);
-        for (i=0; i<RARRAY_LEN(ary); i++) {
-            if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
-                return LEN2NUM(i);
-            }
-        }
-        return Qnil;
+    int nargc = rb_scan_args(argc, argv, "01:", &val, &opts);
+    if (nargc == 0) {
+        RETURN_ENUMERATOR(ary, argc, argv);
     }
-    rb_check_arity(argc, 0, 2);
-    rb_scan_args(argc, argv, "1:", &val, &opts);
-    if (!NIL_P(opts)) {
-        static ID keywords[1];
-        if (!keywords[0]) {
-            keywords[0] = rb_intern_const("offset");
-        }
-        rb_get_kwargs(opts, keywords, 0, 1, &initpos);
-        if (!UNDEF_P(initpos))
-            pos = NUM2LONG(initpos);
-    }
-    if (rb_block_given_p())
+    else if (rb_block_given_p()) {
         rb_warn("given block not used");
-    if (pos < 0)
-        pos += RARRAY_LEN(ary);
-    if (pos < 0)
-        return Qnil;
+    }
+    if (!NIL_P(opts)) {
+        VALUE initpos = offset_option(opts);
+        if (!UNDEF_P(initpos)) {
+            pos = NUM2LEN(initpos);
+            if (pos < 0 && (pos += RARRAY_LEN(ary)) < 0)
+                return Qnil;
+        }
+    }
     for (i=pos; i<RARRAY_LEN(ary); i++) {
         VALUE e = RARRAY_AREF(ary, i);
-        if (rb_equal(e, val)) {
+        if (nargc == 0 ? RTEST(rb_yield(e)) : rb_equal(e, val)) {
             return LEN2NUM(i);
         }
     }
@@ -2364,46 +2364,32 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE val, opts = Qnil, offset_arg = Qnil;
-    rb_len_t i = RARRAY_LEN(ary) - 1, len, end_pos = 0, offset;
+    VALUE val, opts = Qnil;
+    rb_len_t i = RARRAY_LEN(ary) - 1, end_pos = 0;
 
-    if (argc == 0) {
-        RETURN_ENUMERATOR(ary, 0, 0);
-        while (i >= 0) {
-            if (RTEST(rb_yield(RARRAY_AREF(ary, i))))
-                return LEN2NUM(i);
-            if (i > (len = RARRAY_LEN(ary))) {
-                i = len;
-            }
-            i--;
-        }
-        return Qnil;
+    int nargc = rb_scan_args(argc, argv, "01:", &val, &opts);
+    if (nargc == 0) {
+        RETURN_ENUMERATOR(ary, argc, argv);
     }
-    rb_check_arity(argc, 0, 2);
-    rb_scan_args(argc, argv, "1:", &val, &opts);
+    else if (rb_block_given_p()) {
+        rb_warn("given block not used");
+    }
     if (!NIL_P(opts)) {
-        static ID keywords[1];
-        if (!keywords[0]) {
-            keywords[0] = rb_intern_const("offset");
-        }
-        rb_get_kwargs(opts, keywords, 0, 1, &offset_arg);
-        if (!UNDEF_P(offset_arg)){
-            offset = NUM2LONG(offset_arg);
+        VALUE offset_arg = offset_option(opts);
+        if (!UNDEF_P(offset_arg)) {
+            rb_len_t offset = NUM2LEN(offset_arg);
             if (offset < 0) {
-                i += offset + 1;
+                if ((i += offset + 1) < 0) return Qnil;
             }
             else {
+                if (offset >= RARRAY_LEN(ary)) return Qnil;
                 end_pos = offset;
             }
         }
     }
-    if (rb_block_given_p())
-        rb_warn("given block not used");
-    if (i < 0 || end_pos >= RARRAY_LEN(ary))
-        return Qnil;
     for (; i >= end_pos; i--) {
         VALUE e = RARRAY_AREF(ary, i);
-        if (rb_equal(e, val)) {
+        if (nargc == 0 ? RTEST(rb_yield(e)) : rb_equal(e, val)) {
             return LEN2NUM(i);
         }
         if (i > RARRAY_LEN(ary)) {
