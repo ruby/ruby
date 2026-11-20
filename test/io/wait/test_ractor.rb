@@ -4,9 +4,7 @@ require 'rbconfig'
 
 class TestIOWaitInRactor < Test::Unit::TestCase
   def test_ractor
-    ext = "/io/wait.#{RbConfig::CONFIG['DLEXT']}"
-    path = $".find {|path| path.end_with?(ext)}
-    assert_in_out_err(%W[-r#{path}], <<-"end;", ["true"], [])
+    assert_in_out_err([], <<-"end;", ["true"], [])
       class Ractor
         alias value take
       end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
