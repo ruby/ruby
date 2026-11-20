@@ -286,7 +286,6 @@ jobs:
           ${{ matrix.make || 'nmake' }} ${{ matrix.test_task || 'check' }} ${{ matrix.yjit && 'RUN_OPTS=--yjit-call-threshold=1' || '' }}
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
           RUBY_DEBUG: wer
         timeout-minutes: 70
 

@@ -100,7 +100,6 @@ jobs:
         run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'repl_type_completor'
       # test_sync_default_gems triggers gpg, whose agent processes leave
       # $HOME/.gnupg around even when GNUPGHOME points elsewhere.
       - name: Forcibly remove ~/.gnupg
