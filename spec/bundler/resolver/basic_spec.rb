@@ -23,6 +23,22 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[activemodel-3.2.11 builder-3.0.4 grape-0.2.6 my_app-1.0.0]
   end
 
+  it "backtracks when all versions of a dependency conflict" do
+    @index = build_index do
+      gem "aa", "1.0.0"
+      gem "aa", "2.0.0" do
+        dep "ff", ">= 0"
+        dep "ll", ">= 0"
+      end
+      gem("ff", "1.0.0") { dep "ll", "< 1" }
+      gem("ff", "2.0.0") { dep "ll", "= 3" }
+      gem "ll", "2.0.0"
+    end
+    dep "aa"
+
+    should_resolve_as %w[aa-1.0.0]
+  end
+
   it "resolves a complex conflicting index" do
     @index = a_complex_conflict_index
     dep "my_app"

@@ -95,7 +95,7 @@ module Gem::PubGrub
     end
 
     def empty?
-      @empty ||= normalized_constraint.empty?
+      @empty ||= constraint.empty?
     end
 
     def inspect

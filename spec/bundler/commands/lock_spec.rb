@@ -2070,8 +2070,9 @@ RSpec.describe "bundle lock" do
 
       Because rails >= 7.0.4 depends on railties = 7.0.4
         and rails < 7.0.4 depends on railties = 7.0.3.1,
-        railties = 7.0.3.1 OR = 7.0.4 is required.
-      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository https://gem.repo4/ or installed locally,
+        every version of rails requires railties = 7.0.3.1 OR = 7.0.4.
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository https://gem.repo4/ or installed locally
+        and Gemfile depends on rails >= 7.0.3.1,
         version solving has failed.
     ERR
   end
