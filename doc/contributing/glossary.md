@@ -32,6 +32,7 @@ Just a list of acronyms I've run across in the Ruby source code and their meanin
 | JIT | Just In Time compiler |
 | `lep` | Local Environment Pointer. An `ep` which is tagged `VM_ENV_FLAG_LOCAL`. Usually this is the `ep` of a method (rather than a block, whose `ep` isn't "local") |
 | `local` | Local. Refers to a local variable. |
+| `local_iseq` | Nearest enclosing `iseq` that owns a local-variable scope. Found by walking up the parent chain (`parent_iseq`) and skipping block iseqs (`ISEQ_TYPE_BLOCK`) until a non-block iseq (method, top, class, eval, etc.) is reached. For a method iseq, the local iseq is itself; for a block, it's the method (or other non-block scope) the block was defined in. Used to resolve local-variable slots, decide what a bare `return` returns from, and similar scope-level questions. |
 | `me` | Method Entry. Refers to an `rb_method_entry_t` struct, the internal representation of a Ruby method. |
 | MRI | Matz's Ruby Implementation |
 | `pc` | Program Counter. Usually the instruction that will be executed _next_ by the VM. Pointed to by the `cfp` and incremented by the VM |
