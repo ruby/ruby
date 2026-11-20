@@ -460,12 +460,15 @@ module Bundler
     end
 
     def with_gemfile(gemfile)
+      previous_evaluating_gemfile = Thread.current[:bundler_evaluating_gemfile]
       expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
       original_gemfile = @gemfile
       @gemfile = expanded_gemfile_path
       @gemfiles << expanded_gemfile_path
+      Thread.current[:bundler_evaluating_gemfile] = @gemfile
       yield @gemfile.to_s
     ensure
+      Thread.current[:bundler_evaluating_gemfile] = previous_evaluating_gemfile
       @gemfile = original_gemfile
     end
 

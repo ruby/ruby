@@ -395,7 +395,11 @@ module Bundler
       return unless activated_spec = Bundler.rubygems.loaded_specs(spec.name)
       return if activated_spec.version == spec.version
 
-      suggestion = if activated_spec.default_gem?
+      activating_gemfile = activated_spec.bundler_activating_gemfile if activated_spec.respond_to?(:bundler_activating_gemfile)
+      suggestion = if @definition.gemfiles.include?(activating_gemfile)
+        "#{spec.name} was activated while evaluating your Gemfile. If a `require` in your Gemfile loads it, " \
+        "remove that call or move it outside the Gemfile, after `Bundler.setup`."
+      elsif activated_spec.default_gem?
         "Since #{spec.name} is a default gem, you can either remove your dependency on it" \
         " or try updating to a newer version of bundler that supports #{spec.name} as a default gem."
       else
