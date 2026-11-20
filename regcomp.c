@@ -4925,7 +4925,7 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
 
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
-      if (to->expr.len > (int )add->len.max)
+      if (add->len.max <= INT_MAX && to->expr.len > (int )add->len.max)
         to->expr.len = (int )add->len.max;
 
       if (to->expr.mmd.max == 0)

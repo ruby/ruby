@@ -1915,6 +1915,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
+  def test_lookahead_exact_with_long_following_node
+    assert_nil(Regexp.new("(?=abc)(?>(?:.{32768}){65536}.{5})x") =~ "abc")
+  end
+
   def test_matchdata_large_capture_groups_stack
     env = {"RUBY_THREAD_MACHINE_STACK_SIZE" => (256 * 1024).to_s}
     assert_separately([env], <<~'RUBY')
