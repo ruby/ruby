@@ -11229,6 +11229,9 @@ fn add_iseq_to_hir(
                         fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
                         if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                             for (expected, buckets) in polymorphic_arms(&summary) {
+                                if buckets[0].is_string() {
+                                    continue;
+                                }
                                 let arm_block = fun.new_block(insn_idx);
                                 let refined = fun.push_insn(arm_block, Insn::RefineType { val: recv, new_type: expected });
                                 if let Some(str) = fun.try_objtostring_cfunc(arm_block, refined, buckets[0], cd, exit_id) {

@@ -10499,24 +10499,24 @@ mod hir_opt_tests {
           v19:String = RefineType v10, String
           Jump bb6(v19)
         bb5():
-          v23:NotString = RefineType v10, NotString
-          v24:BasicObject = Send v23, :to_s # SendFallbackReason: Send: polymorphic call site
-          Jump bb6(v24)
-        bb6(v26:BasicObject):
+          v22:NotString = RefineType v10, NotString
+          v23:BasicObject = Send v22, :to_s # SendFallbackReason: Send: polymorphic call site
+          Jump bb6(v23)
+        bb6(v25:BasicObject):
           PatchPoint NoEPEscape(test)
-          CondBranchHasType v26, String, bb9(), bb10()
+          CondBranchHasType v25, String, bb8(), bb9()
+        bb8():
+          v30:String = RefineType v25, String
+          Jump bb10(v30)
         bb9():
-          v31:String = RefineType v26, String
-          Jump bb11(v31)
-        bb10():
-          v33:StringExact = AnyToString v10
-          Jump bb11(v33)
-        bb11(v35:String):
-          v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v39:StringExact = StringConcat v14, v35, v37
+          v32:StringExact = AnyToString v10
+          Jump bb10(v32)
+        bb10(v34:String):
+          v36:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v38:StringExact = StringConcat v14, v34, v36
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v39
+          Return v38
         ");
     }
 
@@ -10560,24 +10560,24 @@ mod hir_opt_tests {
           v25:StringExact = FixnumToString v21
           Jump bb6(v25)
         bb8():
-          v29:NotString = RefineType v10, NotString
-          v30:BasicObject = Send v29, :to_s # SendFallbackReason: Send: polymorphic call site
-          Jump bb6(v30)
-        bb6(v32:BasicObject):
+          v28:NotString = RefineType v10, NotString
+          v29:BasicObject = Send v28, :to_s # SendFallbackReason: Send: polymorphic call site
+          Jump bb6(v29)
+        bb6(v31:BasicObject):
           PatchPoint NoEPEscape(test)
-          CondBranchHasType v32, String, bb10(), bb11()
+          CondBranchHasType v31, String, bb9(), bb10()
+        bb9():
+          v36:String = RefineType v31, String
+          Jump bb11(v36)
         bb10():
-          v37:String = RefineType v32, String
-          Jump bb12(v37)
-        bb11():
-          v39:StringExact = AnyToString v10
-          Jump bb12(v39)
-        bb12(v41:String):
-          v43:StringExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
-          v45:StringExact = StringConcat v14, v41, v43
+          v38:StringExact = AnyToString v10
+          Jump bb11(v38)
+        bb11(v40:String):
+          v42:StringExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
+          v44:StringExact = StringConcat v14, v40, v42
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v45
+          Return v44
         ");
     }
 
