@@ -83,6 +83,21 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("(?-mix:".force_encoding(Encoding::Shift_JIS) + src + ")", EnvUtil.suppress_warning { re.to_s })
   end
 
+  def test_to_s_no_warning_from_trial_compilation
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      re = EnvUtil.suppress_warning { Regexp.new("(?:[]a])") }
+      called = 0
+      Warning.singleton_class.class_eval do
+        define_method(:warn) {|*, **| called += 1; raise "warn" }
+      end
+      $VERBOSE = true
+      assert_equal("(?-mix:[]a])", re.to_s)
+      assert_equal(0, called)
+      assert_equal(true, $VERBOSE)
+    end;
+  end
+
   def test_to_s_wide_char_looks_like_option_prefix
     [Encoding::UTF_16LE, Encoding::UTF_16BE].each do |enc|
       src = "(?mi:ab)".force_encoding(enc)
