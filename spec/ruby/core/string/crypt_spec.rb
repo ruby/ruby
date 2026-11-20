@@ -2,6 +2,18 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#crypt" do
+  if RUBY_VERSION >= "4.1"
+    next unless "".respond_to?(:crypt)
+
+    before :each do
+      @verbose, $VERBOSE = $VERBOSE, nil
+    end
+
+    after :each do
+      $VERBOSE = @verbose
+    end
+  end
+
   platform_is :openbsd do
     it "returns a cryptographic hash of self by applying the bcrypt algorithm with the specified salt" do
       "mypassword".crypt("$2a$04$0WVaz0pV3jzfZ5G5tpmHWu").should == "$2a$04$0WVaz0pV3jzfZ5G5tpmHWuBQGbkjzgtSc3gJbmdy0GAGMa45MFM2."
