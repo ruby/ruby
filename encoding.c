@@ -1661,9 +1661,18 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
         overridden = TRUE;
 
     int index = 0;
+    int fallback_index = ENCINDEX_ASCII_8BIT;
     if (!NIL_P(encoding)) {
         enc_check_encoding(encoding); // loads it if necessary. Needs to be done outside of VM lock.
         index = rb_enc_to_index(rb_to_encoding(encoding));
+        if (def == &default_external && !rb_enc_asciicompat(rb_enc_from_index(index))) {
+            /* File paths are byte strings. An ASCII-incompatible encoding
+             * such as UTF-16 can't describe them, so the filesystem encoding
+             * falls back to the locale encoding instead. Resolve it here, as
+             * it may need to be loaded, which can't happen under VM lock. */
+            int locale_index = rb_locale_encindex();
+            if (rb_enc_asciicompat(rb_enc_from_index(locale_index))) fallback_index = locale_index;
+        }
     }
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
@@ -1688,6 +1697,7 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
 
         if (def == &default_external) {
             int fs_idx = Init_enc_set_filesystem_encoding();
+            if (!rb_enc_asciicompat(rb_enc_from_index(fs_idx))) fs_idx = fallback_index;
             enc_alias_internal(enc_table, "filesystem", fs_idx);
             filesystem_encindex = fs_idx;
         }
