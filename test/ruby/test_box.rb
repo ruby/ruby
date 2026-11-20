@@ -1224,6 +1224,106 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_prelude_method_require_loads_feature_into_calling_box
+    # `Kernel#pp` in <internal:prelude> requires 'pp' and calls the real pp.
+    # The require must load the feature into the box of the caller, not into
+    # the master box, which only boxes created afterwards inherit.
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        root = Ruby::Box.root
+        root.eval("pp 42")
+        puts root.eval("defined?(PP)").inspect
+        puts root.eval("method(:pp).source_location.first")
+        puts root.eval("$LOADED_FEATURES").grep(%r{/pp\.rb\z}).size
+        puts defined?(PP).inspect
+        pp :main
+        puts defined?(PP).inspect
+        puts method(:pp).source_location.first
+      end;
+      assert_equal "42", output[0]
+      assert_equal '"constant"', output[1], "PP must be defined in the root box"
+      assert_match(%r{/pp\.rb\z}, output[2], "lib/pp.rb must redefine pp in the root box")
+      assert_equal "1", output[3], "pp.rb must be in the root box's $LOADED_FEATURES"
+      assert_equal "nil", output[4], "PP must not leak into the main box"
+      assert_equal ":main", output[5]
+      assert_equal '"constant"', output[6], "PP must be defined in the main box"
+      assert_match(%r{/pp\.rb\z}, output[7], "lib/pp.rb must redefine pp in the main box")
+    end
+  end
+
+  def test_prelude_method_require_loads_feature_into_user_box
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        box = Ruby::Box.new
+        box.eval("pp :user")
+        puts box.eval("defined?(PP)").inspect
+        puts box.eval("method(:pp).source_location.first")
+        puts defined?(PP).inspect
+      end;
+      assert_equal ":user", output[0]
+      assert_equal '"constant"', output[1], "PP must be defined in the user box"
+      assert_match(%r{/pp\.rb\z}, output[2], "lib/pp.rb must redefine pp in the user box")
+      assert_equal "nil", output[3], "PP must not leak into the main box"
+    end
+  end
+
+  def test_prelude_method_require_is_visible_only_in_calling_box
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        before = Ruby::Box.new
+        pp :main
+        after = Ruby::Box.new
+        p $LOADED_FEATURES.grep(%r{/pp\.rb\z}).size
+        p [defined?(PP), Ruby::Box.root.eval("defined?(PP)"), before.eval("defined?(PP)"), after.eval("defined?(PP)")]
+      end;
+      assert_equal [":main", "1", '["constant", nil, nil, nil]'], output
+    end
+  end
+
+  def test_prelude_method_require_does_not_load_feature_twice
+    assert_in_out_err([ENV_ENABLE_BOX, "-w"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        pp :main
+        p require("pp")
+      end;
+      assert_equal [":main", "false"], output
+      assert_empty error.grep(/method redefined|already initialized/)
+    end
+  end
+
+  def test_prelude_binding_irb_requires_into_calling_box
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "irb.rb"), "class Binding; def irb(*) = puts('fake irb'); end\n")
+      assert_in_out_err([ENV_ENABLE_BOX, "-I", dir], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          binding.irb
+          p $LOADED_FEATURES.grep(%r{/irb\.rb\z}).size
+          p Binding.instance_method(:irb).source_location.first.end_with?("/irb.rb")
+        end;
+        assert_equal ["fake irb", "1", "true"], output
+      end
+    end
+  end
+
+  def test_create_boxes_from_ractors_concurrently
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable-gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        rs = 4.times.map do
+          Ractor.new do
+            100.times do
+              Ruby::Box.new
+            rescue Ractor::IsolationError
+            end
+            :ok
+          end
+        end
+        100.times { Ruby::Box.new }
+        p rs.map(&:value)
+      end;
+      assert_equal ["[:ok, :ok, :ok, :ok]"], output
+    end
+  end
+
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;

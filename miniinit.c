@@ -97,6 +97,12 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
+    rb_load_prelude((VALUE)rb_root_box());
+
+    if (rb_box_available()) {
+        rb_load_prelude((VALUE)rb_main_box());
+    }
+
     // register for ruby
     builtin_iseq_load("gem_prelude", NULL);
 }
