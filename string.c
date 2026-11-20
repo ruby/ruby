@@ -1597,8 +1597,13 @@ rb_str_tmp_frozen_acquire(VALUE orig)
 VALUE
 rb_str_no_gvl_safe_acquire(VALUE orig)
 {
-    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig)) return orig;
-    if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
+    bool in_gc_heap = STR_EMBED_P(orig) ||
+        (STR_SHARED_P(orig) && STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared));
+
+    if (OBJ_FROZEN_RAW(orig) && !in_gc_heap) return orig;
+    /* rb_str_tmp_frozen_acquire copies a string into an embedded binary string,
+     * which has a 1-byte terminator, if it fits in one. */
+    if (STR_SHARED_P(orig) && !in_gc_heap && !STR_EMBEDDABLE_P(RSTRING_LEN(orig), 1)) return rb_str_tmp_frozen_acquire(orig);
 
     VALUE str = str_alloc_heap(0);
     OBJ_FREEZE(str);
@@ -1607,13 +1612,11 @@ rb_str_no_gvl_safe_acquire(VALUE orig)
 
     size_t capa = str_capacity(orig, TERM_LEN(orig));
 
-    /* If the string is embedded then we want to create a copy that is heap
-     * allocated. If the string is shared then the shared root must be
-     * embedded, so we want to create a copy. If the string is a shared root
-     * then it must be embedded, so we want to create a copy. */
+    /* Copy the buffer if it is in a GC slot or shared with other strings. */
     if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
+        TERM_FILL(RSTRING(str)->as.heap.ptr + RSTRING_LEN(orig), TERM_LEN(orig));
     }
     else {
         /* orig must be heap allocated and not shared, so we can safely transfer
