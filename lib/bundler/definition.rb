@@ -213,7 +213,8 @@ module Bundler
         sources.remote!
         true
       else
-        Bundler.settings.set_command_option(:jobs, 1) unless install_needed? # to avoid the overhead of Bundler::Worker
+        # A locked local install skips the missing specs check that preloads Git sources.
+        preload_git_sources if options[:local] && no_resolve_needed?
         sources.local!
         false
       end

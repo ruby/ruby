@@ -1411,6 +1411,22 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).to include("make -j3")
     end
 
+    it "uses the requested number of jobs to build a cached copy of a default gem", rubygems: ">= 4.1.0.a" do
+      ENV.delete("MAKEFLAGS")
+
+      gemfile <<~G
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+      bundle "lock"
+      cache_gems "mypsych-4.0.6", gem_repo: gem_repo4
+      build_gem "mypsych", "4.0.6", to_system: true, default: true
+
+      bundle "install --jobs 2", env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, raise_on_error: false
+
+      expect(gem_make_out).to include("make -j2")
+    end
+
     it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set", rubygems: ">= 4.1.0.a" do
       ENV.delete("MAKEFLAGS")
 
