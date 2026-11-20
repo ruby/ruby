@@ -1468,6 +1468,21 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_select_on_port_of_other_ractor
+    assert_ractor(<<~'RUBY')
+      mine = Ractor::Port.new
+      r = Ractor.new { Ractor.main << Ractor::Port.new; Ractor.receive }
+      foreign = Ractor.receive
+      mine << :secret
+
+      assert_raise(Ractor::Error) { Ractor.select(foreign, timeout: 0) }
+      assert_equal :secret, mine.receive(timeout: 0)
+
+      r << :done
+      r.join
+    RUBY
+  end
+
   def test_receive_timeout_racing_with_send
     assert_separately([], __FILE__, __LINE__, <<-'RUBY')
       Warning[:experimental] = false
