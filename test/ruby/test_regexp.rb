@@ -2317,6 +2317,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/(k\0)\1/i, "k\0\u212a\0")
   end
 
+  def test_backref_ignorecase_fold_length
+    assert_equal(0, /(\u212a)\1/i =~ "\u212ak")
+    assert_equal(0, /(?:(?<a>\u212a)|(?<a>x))\k<a>/i =~ "\u212ak")
+    assert_equal(0, /(?<a>\u212a)\k<a+0>/i =~ "\u212ak")
+    assert_nil(/(\u212a)\1/i =~ "\u212a")
+  end
+
   def test_backref_overrun
     assert_raise_with_message(SyntaxError, /invalid backref number/) do
       eval(%["".match(/(())(?<X>)((?(90000)))/)])
