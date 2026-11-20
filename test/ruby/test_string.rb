@@ -1351,13 +1351,31 @@ class TestString < Test::Unit::TestCase
     };
   end
 
-  def assert_bit_op_chilled_string_warning(op, *args)
+  def test_aset_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:[]=, 7000, "x")
+    assert_bit_op_chilled_string_warning(:[]=, 7000..7100, "x", exception: RangeError)
+    assert_bit_op_chilled_string_warning(:[]=, "AAAA", "x")
+    assert_bit_op_chilled_string_warning(:[]=, /A+/, "x")
+  end
+
+  def test_insert_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:insert, 7000, "x")
+  end
+
+  def test_bytesplice_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bytesplice, 7000, 100, "x")
+  end
+
+  def assert_bit_op_chilled_string_warning(op, *args, exception: IndexError)
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     $target = <<~STR            # chilled string
     #{("A"*63+"\n")*128}        # 64*128 = 8192
     STR
     END {
-      assert_raise(IndexError) {$target.#{op}(#{args.map(&:inspect).join(", ")})}
+      assert_raise(#{exception}) {$target.#{op}(#{args.map(&:inspect).join(", ")})}
     }
     {#
       $reentered = false
