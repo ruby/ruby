@@ -3670,6 +3670,7 @@ rb_ary_sort_bang(VALUE ary)
                 ARY_SET_PTR(ary, ARY_HEAP_PTR(tmp));
                 ARY_SET_HEAP_LEN(ary, len);
                 ARY_SET_CAPA(ary, ARY_HEAP_LEN(tmp));
+                rb_gc_writebarrier_remember(ary);
             }
             /* tmp was lost ownership for the ptr */
             FL_SET_EMBED(tmp);
