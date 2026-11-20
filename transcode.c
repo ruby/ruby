@@ -1624,6 +1624,15 @@ allocate_converted_string(const char *sname, const char *dname,
     return NULL;
 }
 
+/* Inserts ptr[0, len] at start, before the data in [start, *end_p). */
+static void
+insert_before(unsigned char *start, unsigned char **end_p, const unsigned char *ptr, size_t len)
+{
+    MEMMOVE(start + len, start, unsigned char, *end_p - start);
+    memcpy(start, ptr, len);
+    *end_p += len;
+}
+
 /* result: 0:success -1:failure */
 int
 rb_econv_insert_output(rb_econv_t *ec,
@@ -1722,12 +1731,21 @@ rb_econv_insert_output(rb_econv_t *ec,
         }
     }
 
-    memcpy(*data_end_p, insert_str, insert_len);
-    *data_end_p += insert_len;
     if (tc && tc->transcoder->asciicompat_type == asciicompat_encoder) {
-        memcpy(*data_end_p, TRANSCODING_READBUF(tc)+tc->recognized_len, tc->readagain_len);
-        *data_end_p += tc->readagain_len;
+        /*
+         * The last transcoder encodes into an ASCII-incompatible encoding,
+         * so str goes to its input instead of the output of the converter.
+         * The input still in the buffer comes after the bytes that caused
+         * this insertion, so put str and the bytes that the transcoder
+         * reads again before it, not after.
+         */
+        insert_before(*data_start_p, data_end_p, TRANSCODING_READBUF(tc)+tc->recognized_len, tc->readagain_len);
+        insert_before(*data_start_p, data_end_p, insert_str, insert_len);
         tc->readagain_len = 0;
+    }
+    else {
+        memcpy(*data_end_p, insert_str, insert_len);
+        *data_end_p += insert_len;
     }
 
     if (insert_str != str && insert_str != insert_buf)
@@ -2875,7 +2893,9 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     else {
         if (senc && denc && !rb_enc_asciicompat(senc) && !rb_enc_asciicompat(denc)) {
             rb_encoding *utf8 = rb_utf8_encoding();
-            str = rb_str_conv_enc(str, senc, utf8);
+            str = rb_enc_associate(rb_str_dup(str), senc);
+            str = rb_str_encode(str, rb_enc_from_encoding(utf8),
+                                ecflags & ECONV_ERROR_HANDLER_MASK, ecopts);
             senc = utf8;
             sname = "UTF-8";
         }
