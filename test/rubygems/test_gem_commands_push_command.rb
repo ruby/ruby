@@ -502,6 +502,19 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_attestation_multipart '{"attestation":"a"},{"attestation":"b"}'
   end
 
+  def test_execute_attestation_non_ascii
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    File.write("#{@path}.sigstore.json", '{"checkpoint":"— rekor.sigstore.dev"}')
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    @cmd.execute
+
+    assert_attestation_multipart Gem.read_binary("#{@path}.sigstore.json")
+  end
+
   def test_execute_attestation_auto
     omit if RUBY_ENGINE == "jruby"
 
