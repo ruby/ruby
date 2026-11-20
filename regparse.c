@@ -445,6 +445,7 @@ onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
   int result;
 
   key = (st_str_end_key* )xmalloc(sizeof(st_str_end_key));
+  CHECK_NULL_RETURN_MEMERR(key);
   key->s   = (UChar* )str_key;
   key->end = (UChar* )end_key;
   result = onig_st_insert(table, (st_data_t )key, value);
@@ -929,8 +930,12 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
       xfree(e);
       return ONIGERR_MEMORY;
     }
-    onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
-                          (HashDataType )e);
+    if (onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
+                              (HashDataType )e) < 0) {
+      xfree(e->name);
+      xfree(e);
+      return ONIGERR_MEMORY;
+    }
 
     e->name_len   = name_end - name;
     e->back_num   = 0;
@@ -6023,7 +6028,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   if (ONIGENC_IS_UNICODE(env->enc)) {  /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
 
-    if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
+    r = propname2ctype(env, "Grapheme_Cluster_Break=Extend");
+    if (r < 0) goto err;
     /* Unicode 11.0.0
      *   CRLF     (already done)
      * | [Control CR LF]
@@ -6257,7 +6263,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   onig_node_free(np1);
   for (i=0; i<NODE_COMMON_SIZE; i++)
     onig_node_free(node_common[i]);
-  return (r == 0) ? ONIGERR_MEMORY : r;
+  return (r < 0) ? r : ONIGERR_MEMORY;
 }
 #undef R_ERR
 
@@ -6727,6 +6733,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
   }
   else {
     *top  = node_new_list(node, NULL);
+    if (IS_NULL(*top)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp = &(NCDR(*top));
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
@@ -6742,6 +6752,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
       }
       else {
         *headp = node_new_list(node, NULL);
+        if (IS_NULL(*headp)) {
+          onig_node_free(node);
+          return ONIGERR_MEMORY;
+        }
         headp = &(NCDR(*headp));
       }
     }
@@ -6773,6 +6787,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
   }
   else if (r == TK_ALT) {
     topnode = onig_node_new_alt(node, NULL);
+    if (IS_NULL(topnode)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp   = &(NCDR(topnode));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
@@ -6789,6 +6807,11 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       }
 
       *headp = onig_node_new_alt(node, NULL);
+      if (IS_NULL(*headp)) {
+        onig_node_free(node);
+        onig_node_free(topnode);
+        return ONIGERR_MEMORY;
+      }
       headp  = &(NCDR(*headp));
     }
 
