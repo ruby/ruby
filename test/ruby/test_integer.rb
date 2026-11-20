@@ -140,12 +140,19 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(2 ** 50, Integer(2.0 ** 50))
     assert_raise(TypeError) { Integer(nil) }
 
-    bug14552 = '[ruby-core:85813]'
+    bug22080 = '[Bug #22080]'
     obj = Object.new
     def obj.to_int; "str"; end
-    assert_raise(TypeError, bug14552) { Integer(obj) }
+    def obj.to_str; raise "to_str should not be called"; end
+    def obj.to_i; raise "to_i should not be called"; end
+    assert_raise_with_message(TypeError, /Object#to_int gives String/, bug22080) {
+      Integer(obj)
+    }
+
+    obj = Object.new
+    def obj.to_int; raise "conversion failed"; end
     def obj.to_i; 42; end
-    assert_equal(42, Integer(obj), bug14552)
+    assert_equal(42, Integer(obj))
 
     obj = Object.new
     def obj.to_i; "str"; end
@@ -204,6 +211,13 @@ class TestInteger < Test::Unit::TestCase
       o = Object.new
       def o.to_int; raise; end
       assert_equal(nil, Integer(o, exception: false))
+    }
+    o = Object.new
+    def o.to_int; "str"; end
+    def o.to_str; raise "to_str should not be called"; end
+    def o.to_i; raise "to_i should not be called"; end
+    assert_raise_with_message(TypeError, /Object#to_int gives String/, '[Bug #22080]') {
+      Integer(o, exception: false)
     }
     assert_nothing_raised(FloatDomainError) {
       assert_equal(nil, Integer(Float::INFINITY, exception: false))
