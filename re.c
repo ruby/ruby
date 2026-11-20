@@ -669,7 +669,7 @@ rb_reg_str_with_term(VALUE re, int term)
             unescaped = rb_reg_preprocess((const char *)ptr, (const char *)ptr + len,
                                           enc, &fixed_enc, errmsg, options);
             if (!NIL_P(unescaped) && (!fixed_enc || fixed_enc == enc)) {
-                ruby_verbose = Qfalse;
+                ruby_verbose = Qnil;
                 err = onig_new(&rp, (UChar *)RSTRING_PTR(unescaped),
                                (UChar *)RSTRING_END(unescaped), options,
                                enc, OnigDefaultSyntax, NULL);
