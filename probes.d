@@ -331,6 +331,167 @@ provider ruby {
      * `new_thread` the new thread running on the ractor
   */
   probe rts__set_running(void *sched, void *old_thread, void *new_thread);
+
+  /*
+     JIT invalidation probes.
+
+     These are fired when a JIT throws away compiled code because an
+     assumption it was compiled under no longer holds.  Each one corresponds
+     to an invalidation counter in yjit/src/stats.rs or zjit/src/stats.rs.
+     All of them take the same arguments:
+
+     ruby:::yjit-invalidate_*(subject, count, filename, lineno);
+     ruby:::zjit-invalidate_*(subject, count, filename, lineno);
+
+     * `subject` what changed, e.g. "Integer#+" (a string, "" when there is
+                 nothing more specific than the probe name)
+     * `count` the amount of code invalidated (a long). For YJIT, this is the
+               number of blocks, so the sum of `count` matches the
+               corresponding counter (except for invalidate_everything,
+               whose counter is the number of times it happened).  For ZJIT,
+               this is the number of patch points.
+     * `filename` the file name of the Ruby code that caused the
+                  invalidation (a string)
+     * `lineno` the line number of the Ruby code that caused the
+                invalidation (an int)
+
+     Except for yjit-invalidate_everything and zjit-invalidate_no_tracepoint,
+     probes only fire when `count` is non-zero.
+  */
+
+  /*
+     ruby:::yjit-invalidate_method_lookup(subject, count, filename, lineno);
+
+     Fired when a method lookup YJIT depends on changes, e.g. because the
+     method is redefined.  `subject` is the method, e.g. "Foo#bar".
+  */
+  probe yjit__invalidate_method_lookup(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_bop_redefined(subject, count, filename, lineno);
+
+     Fired when a basic operator is redefined.  `subject` is the operator,
+     e.g. "Integer#+".
+  */
+  probe yjit__invalidate_bop_redefined(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_ractor_spawn(subject, count, filename, lineno);
+
+     Fired when a Ractor is spawned and code that assumes there is only one
+     Ractor is invalidated.  `subject` is "".
+  */
+  probe yjit__invalidate_ractor_spawn(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_constant_state_bump(subject, count, filename, lineno);
+
+     Fired when a constant is defined, redefined, or removed.  `subject` is
+     the constant's name, e.g. "Foo".
+  */
+  probe yjit__invalidate_constant_state_bump(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_constant_ic_fill(subject, count, filename, lineno);
+
+     Fired when an inline constant cache is filled.  `subject` is the
+     constant path, e.g. "Foo::Bar".
+  */
+  probe yjit__invalidate_constant_ic_fill(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_no_singleton_class(subject, count, filename, lineno);
+
+     Fired when a singleton class is created for an instance of a class that
+     YJIT assumed had none.  `subject` is the class, e.g. "String".
+  */
+  probe yjit__invalidate_no_singleton_class(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_ep_escape(subject, count, filename, lineno);
+
+     Fired when the environment of a method or block escapes to the heap.
+     `subject` is the ISEQ, e.g. "foo@/path/to/file.rb:1".
+  */
+  probe yjit__invalidate_ep_escape(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::yjit-invalidate_everything(subject, count, filename, lineno);
+
+     Fired when all YJIT code is invalidated, e.g. because a TracePoint is
+     enabled.  `subject` is "".  Fired even when `count` is zero.
+  */
+  probe yjit__invalidate_everything(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_bop_redefined(subject, count, filename, lineno);
+
+     Fired when a basic operator is redefined.  `subject` is the operator,
+     e.g. "Integer#+".
+  */
+  probe zjit__invalidate_bop_redefined(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_method_redefined(subject, count, filename, lineno);
+
+     Fired when a method lookup ZJIT depends on changes, e.g. because the
+     method is redefined.  `subject` is the method, e.g. "Foo#bar".
+  */
+  probe zjit__invalidate_method_redefined(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_stable_constant_names(subject, count, filename, lineno);
+
+     Fired when a constant is defined, redefined, or removed.  `subject` is
+     the constant's name, e.g. "Foo".
+  */
+  probe zjit__invalidate_stable_constant_names(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_no_tracepoint(subject, count, filename, lineno);
+
+     Fired when all ZJIT code is invalidated because a TracePoint is enabled.
+     `subject` is "".  Fired even when `count` is zero.
+  */
+  probe zjit__invalidate_no_tracepoint(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_no_newobj_hook(subject, count, filename, lineno);
+
+     Fired when a NEWOBJ internal event hook is enabled.  `subject` is "".
+  */
+  probe zjit__invalidate_no_newobj_hook(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_no_ep_escape(subject, count, filename, lineno);
+
+     Fired when the environment of a method or block escapes to the heap.
+     `subject` is the ISEQ, e.g. "foo@/path/to/file.rb:1".
+  */
+  probe zjit__invalidate_no_ep_escape(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_single_ractor_mode(subject, count, filename, lineno);
+
+     Fired when a Ractor is spawned and code that assumes there is only one
+     Ractor is invalidated.  `subject` is "".
+  */
+  probe zjit__invalidate_single_ractor_mode(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_no_singleton_class(subject, count, filename, lineno);
+
+     Fired when a singleton class is created for an instance of a class that
+     ZJIT assumed had none.  `subject` is the class, e.g. "String".
+  */
+  probe zjit__invalidate_no_singleton_class(const char *subject, long count, const char *filename, int lineno);
+
+  /*
+     ruby:::zjit-invalidate_root_box_only(subject, count, filename, lineno);
+
+     Fired when a non-root Ruby::Box is created.  `subject` is "".
+  */
+  probe zjit__invalidate_root_box_only(const char *subject, long count, const char *filename, int lineno);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider
