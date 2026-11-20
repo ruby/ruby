@@ -1738,4 +1738,16 @@ class TestM17N < Test::Unit::TestCase
     bug12204 = '[ruby-core:74478] [Bug #12204] GREEK CAPITAL RHO and SIGMA'
     assert_equal("\u03A3", "\u03A1".succ, bug12204)
   end
+
+  def test_emacs_mule_codepoint_with_low_first_byte
+    # [Bug #22516]
+    %w[Emacs-Mule stateless-ISO-2022-JP].each do |name|
+      enc = Encoding.find(name)
+      [0x01018000, 0x018000, 0x0180a0].each do |code|
+        assert_raise(RangeError) { "".force_encoding(enc) << code }
+        assert_raise(RangeError) { code.chr(enc) }
+        assert_raise(ArgumentError) { format(("a" * 100 + "%c").force_encoding(enc), code) }
+      end
+    end
+  end
 end
