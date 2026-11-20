@@ -86,7 +86,7 @@ use std::convert::From;
 use std::ffi::{CString, CStr};
 use std::fmt::{Debug, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
-use std::panic::{catch_unwind, UnwindSafe};
+use std::panic::{catch_unwind, AssertUnwindSafe, UnwindSafe};
 
 // We check that we can do this with the configure script and a couple of
 // static asserts. u64 and not usize to play nice with lowering to x86.
@@ -281,6 +281,16 @@ pub fn vm_stack_canary() -> u64 {
 pub fn vm_stack_canary() -> u64 {
     0
 }
+
+/// Must only be called under a VM barrier; see rb_jit_class_set_singleton_class_tracked().
+#[cfg(not(test))]
+pub fn set_jit_singleton_class_tracked(klass: VALUE, tracked: bool) {
+    unsafe { rb_jit_class_set_singleton_class_tracked(klass, tracked) }
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn set_jit_singleton_class_tracked(_klass: VALUE, _tracked: bool) {}
 
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
@@ -698,6 +708,55 @@ where
 
             let _ = catch_unwind(|| {
                 // IO functions can panic too.
+                eprintln!(
+                    "YJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
+                    loc.file.to_string_lossy(),
+                    line,
+                );
+            });
+            std::process::abort();
+        }
+    };
+
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
+
+    ret
+}
+
+/// The VM lock held while running [with_vm_lock_lazy_barrier]'s closure.
+pub struct VmLock {
+    barrier: bool,
+}
+
+impl VmLock {
+    /// Stop other Ractors, as [with_vm_lock] does, so code can be patched. Releases the
+    /// VM lock while waiting for them, so recheck anything read under it before this call.
+    pub fn take_barrier(&mut self) {
+        if !self.barrier {
+            unsafe { rb_jit_vm_barrier() };
+            self.barrier = true;
+        }
+    }
+}
+
+/// Acquire the VM lock without stopping other Ruby threads and run `func`. Enough to read or
+/// update YJIT bookkeeping guarded by the VM lock; `func` must call [VmLock::take_barrier]
+/// before patching code.
+pub fn with_vm_lock_lazy_barrier<F, R>(loc: SourceLocation, func: F) -> R
+where
+    F: FnOnce(&mut VmLock) -> R,
+{
+    let file = loc.file.as_ptr();
+    let line = loc.line;
+    let mut recursive_lock_level: c_uint = 0;
+
+    unsafe { rb_jit_vm_lock(&mut recursive_lock_level, file, line) };
+    let mut lock = VmLock { barrier: false };
+
+    let ret = match catch_unwind(AssertUnwindSafe(|| func(&mut lock))) {
+        Ok(result) => result,
+        Err(_) => {
+            let _ = catch_unwind(|| {
                 eprintln!(
                     "YJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
                     loc.file.to_string_lossy(),

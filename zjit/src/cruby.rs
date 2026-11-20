@@ -87,7 +87,7 @@ use std::convert::From;
 use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_char, c_int, c_long, c_uint};
-use std::panic::{catch_unwind, UnwindSafe};
+use std::panic::{catch_unwind, AssertUnwindSafe, UnwindSafe};
 use std::ptr::NonNull;
 
 use crate::cast::IntoUsize;
@@ -1142,6 +1142,64 @@ where
 
     unsafe {
         if !gc_disabled_pre_call {
+            rb_gc_enable();
+        }
+        rb_jit_vm_unlock(&mut recursive_lock_level, file, line);
+    };
+
+    ret
+}
+
+/// The VM lock held while running [with_vm_lock_lazy_barrier]'s closure.
+pub struct VmLock {
+    barrier: bool,
+    gc_disabled_pre_barrier: bool,
+}
+
+impl VmLock {
+    /// Stop other Ractors and disable GC, as [with_vm_lock] does, so code can be patched.
+    /// Releases the VM lock while waiting for them, so recheck anything read under it before
+    /// this call.
+    pub fn take_barrier(&mut self) {
+        if !self.barrier {
+            unsafe { rb_jit_vm_barrier() };
+            self.gc_disabled_pre_barrier = unsafe { rb_gc_disable() }.test();
+            self.barrier = true;
+        }
+    }
+}
+
+/// Acquire the VM lock without stopping other Ractors and run `func`. Enough to read or
+/// update [crate::invariants::Invariants], whose writers all hold the VM lock; `func` must
+/// call [VmLock::take_barrier] before patching code. GC stays enabled until then, so `func`
+/// must not allocate Ruby objects before it.
+pub fn with_vm_lock_lazy_barrier<F, R>(loc: SourceLocation, func: F) -> R
+where
+    F: FnOnce(&mut VmLock) -> R,
+{
+    let file = loc.file.as_ptr();
+    let line = loc.line;
+    let mut recursive_lock_level: c_uint = 0;
+
+    unsafe { rb_jit_vm_lock(&mut recursive_lock_level, file, line) };
+    let mut lock = VmLock { barrier: false, gc_disabled_pre_barrier: false };
+
+    let ret = match catch_unwind(AssertUnwindSafe(|| func(&mut lock))) {
+        Ok(result) => result,
+        Err(_) => {
+            let _ = catch_unwind(|| {
+                eprintln!(
+                    "ZJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
+                    loc.file.to_string_lossy(),
+                    line,
+                );
+            });
+            std::process::abort();
+        }
+    };
+
+    unsafe {
+        if lock.barrier && !lock.gc_disabled_pre_barrier {
             rb_gc_enable();
         }
         rb_jit_vm_unlock(&mut recursive_lock_level, file, line);
