@@ -833,6 +833,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Unreachable => no_output!(asm.abort()),
         &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), &function.frame_state(state)) },
+        &Insn::HashFetch { hash, key, default, state } => { gen_hash_fetch(jit, asm, function, opnd!(hash), opnd!(key), opnd!(default), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, function, opnd!(val), &function.frame_state(state)) },
@@ -1462,6 +1463,13 @@ fn gen_hash_dup(
 
     gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_hash_resurrect, val)
+}
+
+fn gen_hash_fetch(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, default: Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    // rb_hash_lookup2 returns `default` when the key is missing, without consulting Hash#default,
+    // which matches Hash#fetch(key, default).
+    asm_ccall!(asm, rb_hash_lookup2, hash, key, default)
 }
 
 fn gen_hash_aref(jit: &mut JITState, asm: &mut Assembler, function: &Function, hash: Opnd, key: Opnd, state: &FrameState) -> lir::Opnd {
