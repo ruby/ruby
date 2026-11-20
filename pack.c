@@ -923,6 +923,17 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
         }
     }
 
+    if (NIL_P(buffer)) {
+        /* The result was built by doubling its buffer (rb_str_buf_cat), so
+         * a length just past a doubling step keeps the whole doubled
+         * capacity.  Copy it out at its exact size instead; the copy is
+         * cheap next to the packing itself.  A caller-supplied buffer is
+         * left alone: it is the caller's string. */
+        rb_len_t res_len = RSTRING_LEN(res);
+        if (rb_str_capacity(res) - res_len >= 64) {
+            res = rb_str_new(RSTRING_PTR(res), res_len);
+        }
+    }
     if (associates) {
         str_associate(res, associates);
     }
