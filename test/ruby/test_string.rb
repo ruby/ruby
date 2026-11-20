@@ -2249,6 +2249,28 @@ class TestString < Test::Unit::TestCase
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
   end
 
+  def test_scan_timeout
+    re = Regexp.new('B{10}|(a|aa)+\\1Z', timeout: 0.01)
+    s = S("x" * 15 + "B" * 10 + "a" * 5000)
+    /(A)/ =~ "A" * 1000
+    assert_raise(Regexp::TimeoutError) { s.scan(re) }
+    assert_equal("B" * 10, $&)
+
+    s = S("x" * 15 + "B" * 20 + "a" * 5000)
+    assert_raise(Regexp::TimeoutError) { s.scan(re) }
+    assert_equal(MatchData, $~.class)
+    assert_equal("B" * 10, $&)
+
+    assert_raise(Regexp::TimeoutError) { s.gsub(re, "") }
+    assert_equal(MatchData, $~.class)
+    assert_equal("B" * 10, $&)
+
+    assert_raise(Regexp::TimeoutError) { s.gsub(re, "") }
+    assert_equal(true, S("abc").start_with?(/ab/))
+    assert_equal(MatchData, $~.class)
+    assert_equal("ab", $&)
+  end
+
   def test_scan_gc_compact_stress
     EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
