@@ -1062,8 +1062,8 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
         unreachable!("PatchPoint's target should have been lowered to Target::Label by compile_exits: {target:?}");
     };
 
-    // Fill nop instructions if the last patch point is too close.
-    asm.patch_point_pad();
+    // Fill nop instructions if the last patch point is too close and can't share its address.
+    asm.patch_point_pad(exit_label);
 
     // Remember the current address as a patch point
     asm.pos_marker(move |code_ptr, cb| {

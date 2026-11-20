@@ -952,8 +952,11 @@ pub enum Insn {
     /// distance from it in turn.
     ///
     /// Zero-width whenever there is already enough room, which is the common
-    /// case.
-    PatchPointPad,
+    /// case. It is also zero-width when the preceding patch point is at the
+    /// same address and has the same side exit, given here: the two then share
+    /// that address, since invalidating either one writes the same jump there.
+    /// See [`patch_point_shares_address`] for when that applies.
+    PatchPointPad(Label),
 
     /// Space reserved at a boundary that a preceding PatchPoint's invalidation
     /// jump must not cross: the start of a non-entry block, the start of a side
@@ -1053,7 +1056,7 @@ macro_rules! for_each_operand_impl {
             Insn::Breakpoint | Insn::Abort |
             Insn::Comment(_) |
             Insn::CPop { .. } |
-            Insn::PatchPointPad |
+            Insn::PatchPointPad(_) |
             Insn::PosMarker(_) |
             Insn::PosMarkerAtBlockEnd(_) => {},
 
@@ -1244,7 +1247,7 @@ impl Insn {
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
             Insn::PatchPoint(..) => "PatchPoint",
-            Insn::PatchPointPad => "PatchPointPad",
+            Insn::PatchPointPad(_) => "PatchPointPad",
             Insn::PosMarker(_) => "PosMarker",
             Insn::PosMarkerAtBlockEnd(_) => "PosMarkerAtBlockEnd",
             Insn::RShift { .. } => "RShift",
@@ -3452,6 +3455,36 @@ impl Assembler
     }
 }
 
+/// Where a backend emitted a patch point, and the side exit that invalidation
+/// would make it jump to. The two are kept together because they describe a
+/// single patch point and are only meaningful as a pair.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct PatchPointSite {
+    /// The write position of the patch point, which is where invalidation
+    /// writes its jump
+    pub pos: usize,
+    /// The side exit that invalidation makes the patch point jump to
+    pub side_exit: Label,
+}
+
+/// Whether a patch point emitted at `write_pos` that jumps to `side_exit` on
+/// invalidation can share the address of `last_patch_point` rather than being
+/// padded away from it.
+///
+/// A patch point right behind another one with the same side exit can share
+/// its address: invalidating either writes the same jump there, so there is
+/// nothing to keep apart. Consecutive HIR PatchPoints often have the same
+/// FrameState, and so the same side exit.
+///
+/// The side exits only compare equal when `compile_exits` gives patch points
+/// that restore the same state the same label. It gives every patch point a
+/// counted exit of its own with `--zjit-stats`, with a `--zjit-trace-exits`
+/// setting that matches the exit's counter, and in test builds, so patch
+/// points never share an address in any of those.
+pub fn patch_point_shares_address(last_patch_point: Option<PatchPointSite>, write_pos: usize, side_exit: Label) -> bool {
+    last_patch_point == Some(PatchPointSite { pos: write_pos, side_exit })
+}
+
 /// Return a result of fmt::Display for Assembler without escape sequence
 pub fn lir_string(asm: &Assembler) -> String {
     use crate::ttycolors::TTY_TERMINAL_COLOR;
@@ -4147,8 +4180,8 @@ impl Assembler {
         self.push_insn(Insn::PatchPoint(Box::new(PatchPointData { target, invariant, version })));
     }
 
-    pub fn patch_point_pad(&mut self) {
-        self.push_insn(Insn::PatchPointPad);
+    pub fn patch_point_pad(&mut self, side_exit: Label) {
+        self.push_insn(Insn::PatchPointPad(side_exit));
     }
 
     pub fn boundary_pad(&mut self) {
@@ -5304,5 +5337,57 @@ mod tests {
             }
         });
         assert!(has_stack_opnd, "v0 should be rewritten to a Stack memory operand");
+    }
+
+    #[test]
+    fn test_compile_exits_deduplicates_side_exits_that_restore_the_same_state() {
+        use crate::backend::current::ALLOC_REGS;
+        use crate::cruby::rb_iseq_pc_at_idx;
+        use crate::cruby::test_utils::{compile_to_iseq, with_rubyvm};
+
+        let iseq = compile_to_iseq("nil");
+
+        let (num_side_exits, num_jit_frames) = with_rubyvm(|| {
+            crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler.
+            let mut asm = Assembler::new();
+            let bb0 = asm.new_block(hir::BlockId(0), true, 0);
+            asm.set_current_block(bb0);
+
+            let side_exit_at = |insn_idx: u32| {
+                let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+                Target::SideExit(Box::new(SideExitTarget {
+                    reason: SideExitReason::Interrupt,
+                    exit: SideExit {
+                        pc: Opnd::const_ptr(pc),
+                        iseq,
+                        vm_stack_size: 0,
+                        stack_map: SideExitStackMap {
+                            stack: vec![],
+                            frame_depth: 0,
+                            jit_frame: PendingJITFrame::new_iseq(pc, iseq),
+                        },
+                        recompile: None,
+                    },
+                }))
+            };
+
+            // The first two side exits restore the same state, so they share exit code. The third
+            // one restores a different PC, so it needs exit code of its own.
+            let opnd = Opnd::Reg(ALLOC_REGS[0]);
+            asm.push_insn(Insn::Joz(opnd, side_exit_at(0)));
+            asm.push_insn(Insn::Joz(opnd, side_exit_at(0)));
+            asm.push_insn(Insn::Joz(opnd, side_exit_at(1)));
+
+            let jit_frames_before = ZJITState::get_jit_frames().len();
+            let num_side_exits = asm.compile_exits().iter().filter(|insn| {
+                matches!(insn, Insn::Label(Target::Label(label)) if asm.label_names[label.0] == LabelName::Static("side_exit"))
+            }).count();
+
+            (num_side_exits, ZJITState::get_jit_frames().len() - jit_frames_before)
+        });
+
+        assert_eq!(2, num_side_exits);
+        // Only a side exit whose code gets compiled allocates a JITFrame.
+        assert_eq!(2, num_jit_frames);
     }
 }
