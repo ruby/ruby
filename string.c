@@ -10691,7 +10691,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
                     modify = 1;
                 }
                 else {
-                    *s = last;
+                    *s = c = last;
                     modify = 1;
                 }
             }

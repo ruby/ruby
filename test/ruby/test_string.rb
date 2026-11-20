@@ -3103,6 +3103,9 @@ class TestString < Test::Unit::TestCase
     result = S("abc").tr("^a", "é")
     assert_equal(S("aéé"), result)
     assert_not_predicate(result, :ascii_only?)
+    result = S("abc").b.tr("^a".b, "\xB0".b)
+    assert_equal("a\xB0\xB0".b, result)
+    assert_not_predicate(result, :ascii_only?)
   end
 
   def test_tr_hash
