@@ -3328,7 +3328,7 @@ rb_str_subpos(VALUE str, rb_len_t beg, rb_len_t *lenp)
     if (beg < 0) {
         if (len > -beg) len = -beg;
         if ((ENC_CODERANGE(str) == ENC_CODERANGE_VALID) &&
-            (-beg * rb_enc_mbmaxlen(enc) < blen / 8)) {
+            (-beg < blen / 8 / rb_enc_mbmaxlen(enc))) {
             beg = -beg;
             while (beg-- > len && (e = rb_enc_prev_char(s, e, e, enc)) != 0);
             p = e;
