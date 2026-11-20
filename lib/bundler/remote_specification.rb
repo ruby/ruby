@@ -25,6 +25,11 @@ module Bundler
       @content_address = content_address
     end
 
+    # Whether the full index gemspec is already available without a fetch.
+    def gemspec_loaded?
+      !@_remote_specification.nil?
+    end
+
     def insecurely_materialized?
       @locked_platform.to_s != @platform.to_s
     end

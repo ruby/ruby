@@ -28,6 +28,7 @@ module Bundler
     def start
       @requirements = @base.requirements
       @packages = @base.packages
+      @incompatible_specs = {}
 
       root, logger = setup_solver
 
@@ -71,6 +72,9 @@ module Bundler
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
           deps = version.dependencies.reject {|d| d.name == package.name }
+          if incompatible = @incompatible_specs[package.name]
+            deps.concat(version.specs.filter_map {|s| incompatible[s.full_name] })
+          end
           deps = Override.rewrite_dependencies(@base.overrides, package.name, deps)
           deps = apply_metadata_overrides(deps, package.name)
           versions[version] = to_dependency_hash(deps, @packages)
@@ -86,8 +90,23 @@ module Bundler
     end
 
     def solve_versions(root:, logger:)
-      solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
-      result = solver.solve
+      result = loop do
+        solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
+        solution = solver.solve
+
+        # Some indexes omit Ruby and RubyGems requirements. Fetch them only for
+        # selected versions, then solve again if the new requirements conflict.
+        incompatible = solution.values.flat_map(&:specs).filter_map do |s|
+          next unless s.is_a?(MatchRemoteMetadata)
+          dependency = s.incompatible_metadata_dependency(@base.overrides)
+          [s, dependency] if dependency
+        end
+        break solution if incompatible.empty?
+
+        incompatible.each {|s, dep| (@incompatible_specs[s.name] ||= {})[s.full_name] = dep }
+        root, logger = setup_solver
+      end
+
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
       check_replaced_gems(resolved_specs)
       Override.attach(resolved_specs, @base.overrides)
@@ -317,6 +336,17 @@ module Bundler
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
       results.group_by(&:version).reduce([]) do |groups, (version, specs)|
+        if rejected = @incompatible_specs[name]
+          compatible = specs.reject do |s|
+            if s.is_a?(RemoteSpecification) && s.gemspec_loaded?
+              rejected[s.full_name] ||= s.incompatible_metadata_dependency(@base.overrides)
+            end
+            rejected[s.full_name]
+          end
+          # Keep the conflicting dependencies when PubGrub needs to explain why no build works.
+          specs = compatible unless compatible.empty?
+        end
+
         platform_specs = package.platform_specs(specs)
 
         # If package is a top-level dependency,

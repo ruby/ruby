@@ -40,5 +40,11 @@ module Bundler
     include MatchMetadata
 
     prepend FetchMetadata
+
+    # Return the original dependency so the resolver can apply the same override to it.
+    def incompatible_metadata_dependency(overrides)
+      return Gem::Dependency.new("Ruby\0", @required_ruby_version) unless matches_current_ruby_with_overrides?(overrides)
+      Gem::Dependency.new("RubyGems\0", @required_rubygems_version) unless matches_current_rubygems_with_overrides?(overrides)
+    end
   end
 end
