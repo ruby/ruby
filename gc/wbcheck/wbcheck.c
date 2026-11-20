@@ -1552,6 +1552,17 @@ rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
     return false;
 }
 
+void
+rb_gc_impl_objspace_set_ractor(void *objspace_ptr, void *ractor)
+{
+}
+
+void *
+rb_gc_impl_obj_ractor(void *objspace_ptr, VALUE obj)
+{
+    return NULL;
+}
+
 bool
 rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
 {
