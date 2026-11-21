@@ -1047,6 +1047,48 @@ class TestEnumerator < Test::Unit::TestCase
     }
   end
 
+  def test_s_product_with_saved_block
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        attr_reader :block
+
+        def each_entry(&block)
+          @block = block
+          self
+        end
+      end
+
+      yielded = []
+      assert_nil(Enumerator.product(enum, [1, 2]) { |x| yielded << x })
+      assert_equal([], yielded)
+      GC.start
+      enum.block.call(3)
+      assert_equal([[3, 1], [3, 2]], yielded)
+    };
+  end
+
+  def test_s_product_with_reentrant_block
+    enum = Object.new
+    class << enum
+      attr_reader :block
+
+      def each_entry(&block)
+        @block = block
+        yield 1
+        self
+      end
+    end
+
+    yielded = []
+    Enumerator.product(enum, [2]) do |x|
+      yielded << x
+      enum.block.call(3) if yielded.size == 1
+    end
+    assert_equal([[1, 2], [3, 2]], yielded)
+  end
+
   def test_freeze
     e = 3.times.freeze
     assert_raise(FrozenError) { e.next }
