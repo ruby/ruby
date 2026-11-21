@@ -564,6 +564,10 @@ typedef struct rb_heap_struct {
     size_t total_pages;      /* total page count in a heap */
     size_t total_slots;      /* total slot count */
 
+    // Slots swept by, and total slots at, the minor GC that requested a major GC because this heap
+    // was out of free slots. See gc_sweep_finish_heap().
+    size_t nofree_swept_slots;
+    size_t nofree_total_slots;
 } rb_heap_t;
 
 enum {
@@ -5762,6 +5766,19 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     size_t init_slots = objspace_heap_init_bytes(objspace) / heap->slot_size;
     size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
 
+    // This heap requested this major GC because its minor GCs, which can't free old objects, left it
+    // too few free slots after the growth window below. The major GC frees the old objects that died,
+    // so it usually leaves enough free slots, and the heap would not grow. But the heap runs short again
+    // as its objects age, after the growth window again, so it keeps requesting major GCs or stays at a
+    // size where minor GCs run often. Grow it from the free slots the minor GC had instead.
+    if (heap->nofree_total_slots > 0 && is_full_marking(objspace)) {
+        if (objspace->heap_pages.allocatable_bytes < min_free_slots * heap->slot_size) {
+            heap_allocatable_bytes_expand(objspace, heap, heap->nofree_swept_slots, heap->nofree_total_slots, heap->slot_size);
+        }
+        heap->nofree_swept_slots = 0;
+        heap->nofree_total_slots = 0;
+    }
+
     if (swept_slots < min_free_slots &&
             /* The heap is a growth heap if it freed more slots than had empty slots. */
             ((heap->empty_slots == 0 && total_slots > 0) || heap->freed_slots > heap->empty_slots)) {
@@ -5795,6 +5812,8 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                      objspace->heap_pages.allocatable_bytes < (min_free_slots * 7 / 8 - swept_slots) * heap->slot_size) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
+                heap->nofree_swept_slots = swept_slots;
+                heap->nofree_total_slots = total_slots;
             }
         }
     }
