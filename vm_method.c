@@ -209,6 +209,42 @@ rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
     ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
 }
 
+static enum rb_id_table_iterator_result
+drop_cc_entries_i(ID mid, VALUE ccs_ptr, void *data)
+{
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    VM_ASSERT(vm_ccs_p(ccs));
+    // Only caches are dropped: no method changed, so cmes and JIT code stay
+    // valid. Invalidated ccs are released by call sites on their next mark.
+    rb_vm_ccs_invalidate_and_free(ccs);
+    return ID_TABLE_DELETE;
+}
+
+static void
+drop_classext_cc_tbl_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
+{
+    VALUE tbl = RCLASSEXT_CC_TBL(ext);
+    if (tbl) {
+        rb_managed_id_table_foreach(tbl, drop_cc_entries_i, NULL);
+        RCLASSEXT_CC_TBL(ext) = 0;
+    }
+}
+
+/*
+ * Drop all per-class method call caches of klass (Process.warmup).
+ *
+ * A boot sequence fills these tables for every class-level DSL call
+ * (has_many, validates, sig, ...) made in class bodies, and nothing
+ * frees them afterwards. Hot call sites repopulate them on next call.
+ */
+void
+rb_vm_drop_class_method_caches(VALUE klass)
+{
+    ASSERT_vm_locking();
+    if (rb_multi_ractor_p()) return;
+    rb_class_classext_foreach(klass, drop_classext_cc_tbl_i, NULL);
+}
+
 void
 rb_vm_cc_table_delete(VALUE table, ID mid)
 {

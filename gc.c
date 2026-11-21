@@ -5034,6 +5034,13 @@ rb_gc_prepare_heap_process_object(VALUE obj)
         // eventually needed, and avoid mutating heap pages after a potential fork.
         rb_enc_str_coderange(obj);
         break;
+      case T_CLASS:
+      case T_MODULE:
+      case T_ICLASS:
+        // Drop boot-time method caches before the full GC so it can free
+        // the call caches they held.
+        rb_vm_drop_class_method_caches(obj);
+        break;
       default:
         break;
     }

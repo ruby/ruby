@@ -8695,6 +8695,8 @@ static VALUE rb_mProcID_Syscall;
  *  * Precomputes the coderange of all strings.
  *  * Frees all empty heap pages and increments the allocatable pages counter
  *    by the number of pages freed.
+ *  * Drops per-class method call caches filled during boot (only while a
+ *    single Ractor is running). Call sites that run again refill them.
  *  * Invoke +malloc_trim+ if available to free empty malloc pages.
  *  * Eagerly loads the +error_highlight+, +did_you_mean+, and +syntax_suggest+
  *    gems, which are otherwise loaded lazily on the first error display.
