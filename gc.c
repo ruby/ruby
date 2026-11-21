@@ -1689,7 +1689,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return (flags & RHASH_ST_TABLE_FLAG);
 
       case T_MATCH:
-        return (flags & (RMATCH_ONIG | RMATCH_OFFSETS_EXTERNAL)) || USE_DEBUG_COUNTER;
+        return (flags & RMATCH_ONIG) || RMATCH(obj)->char_offset || USE_DEBUG_COUNTER;
 
       case T_BIGNUM:
         return !(flags & BIGNUM_EMBED_FLAG);
