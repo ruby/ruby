@@ -32,48 +32,68 @@ enum {
    on the C level, but is unrelated on the Ruby level. */
 VALUE rb_cStruct;
 static VALUE rb_cData;
-static ID id_members, id_back_members, id_keyword_init;
+
+// The classes that Struct.new, Data.define and the C API make have one inline
+// field, holding a hidden object that wraps this. Their subclasses share it.
+struct struct_info {
+    VALUE members;      // frozen hidden Array of the member names
+    VALUE back_members; // what struct_member_pos() searches
+    VALUE keyword_init; // the keyword_init option of Struct.new
+};
+
+RUBY_REFERENCES(struct_info_refs) = {
+    RUBY_REF_EDGE(struct struct_info, members),
+    RUBY_REF_EDGE(struct struct_info, back_members),
+    RUBY_REF_EDGE(struct struct_info, keyword_init),
+    RUBY_REF_END
+};
+
+static const rb_data_type_t struct_info_type = {
+    "struct/info",
+    {
+        RUBY_REFS_LIST_PTR(struct_info_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated outside of the object
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+};
 
 static VALUE struct_alloc(VALUE);
 
-static inline VALUE
-struct_ivar_get(VALUE c, ID id)
+// NULL when +klass+ is not a Struct / Data class.
+static inline const struct struct_info *
+struct_info_of(VALUE klass)
 {
-    VALUE orig = c;
-    VALUE ivar = rb_attr_get(c, id);
-
-    if (!NIL_P(ivar))
-        return ivar;
-
-    for (;;) {
-        c = rb_class_superclass(c);
-        if (c == rb_cStruct || c == rb_cData || !RTEST(c))
-            return Qnil;
-        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
-        ivar = rb_attr_get(c, id);
-        if (!NIL_P(ivar)) {
-            if (!OBJ_FROZEN(orig) && rb_class_owned_p(orig)) rb_ivar_set(orig, id, ivar);
-            return ivar;
-        }
+    if (LIKELY(RCLASS_HAS_STRUCT_INLINE_FIELD(klass))) {
+        VALUE info = RCLASS_STRUCT_INLINE_FIELD(klass);
+        if (LIKELY(!NIL_P(info))) return RTYPEDDATA_GET_DATA(info);
     }
+    return NULL;
+}
+
+// nil for a class that is not a Struct / Data class.
+static inline VALUE
+struct_s_members(VALUE klass)
+{
+    const struct struct_info *info = struct_info_of(klass);
+    return info ? info->members : Qnil;
 }
 
 VALUE
 rb_struct_s_keyword_init(VALUE klass)
 {
-    return struct_ivar_get(klass, id_keyword_init);
+    const struct struct_info *info = struct_info_of(klass);
+    return info ? info->keyword_init : Qnil;
 }
 
 VALUE
 rb_struct_s_members(VALUE klass)
 {
-    VALUE members = struct_ivar_get(klass, id_members);
+    Check_Type(klass, T_CLASS);
+    VALUE members = struct_s_members(klass);
 
     if (NIL_P(members)) {
         rb_raise(rb_eTypeError, "uninitialized struct");
-    }
-    if (!RB_TYPE_P(members, T_ARRAY)) {
-        rb_raise(rb_eTypeError, "corrupted struct");
     }
     return members;
 }
@@ -139,8 +159,12 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
         }
         OBJ_FREEZE(back);
     }
-    rb_ivar_set(klass, id_members, members);
-    rb_ivar_set(klass, id_back_members, back);
+    struct struct_info *info;
+    VALUE info_obj = TypedData_Make_Struct(0, struct struct_info, &struct_info_type, info);
+    RB_OBJ_WRITE(info_obj, &info->members, members);
+    RB_OBJ_WRITE(info_obj, &info->back_members, back);
+    info->keyword_init = Qnil;
+    RCLASS_SET_STRUCT_INLINE_FIELD(klass, info_obj);
 
     return members;
 }
@@ -148,15 +172,13 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 static inline int
 struct_member_pos(VALUE s, VALUE name)
 {
-    VALUE back = struct_ivar_get(rb_obj_class(s), id_back_members);
+    const struct struct_info *info = struct_info_of(rb_obj_class(s));
     rb_len_t j, mask;
 
-    if (UNLIKELY(NIL_P(back))) {
+    if (UNLIKELY(!info)) {
         rb_raise(rb_eTypeError, "uninitialized struct");
     }
-    if (UNLIKELY(!RB_TYPE_P(back, T_ARRAY))) {
-        rb_raise(rb_eTypeError, "corrupted struct");
-    }
+    VALUE back = info->back_members;
 
     mask = RARRAY_LEN(back);
 
@@ -251,7 +273,7 @@ rb_struct_modify(VALUE s)
 static VALUE
 anonymous_struct(VALUE klass)
 {
-    VALUE nstr = rb_class_new(klass);
+    VALUE nstr = rb_class_new_with_struct_inline_field(klass);
     rb_make_metaclass(nstr, RBASIC(klass)->klass);
     return nstr;
 }
@@ -309,7 +331,7 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         return rb_class_new_instance_pass_kw(argc, argv, klass);
     }
     else {
-        VALUE members = struct_ivar_get(klass, id_members);
+        VALUE members = struct_s_members(klass);
         int num_members = RARRAY_LENINT(members);
 
         rb_check_arity(argc, 0, num_members);
@@ -720,7 +742,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE super)
 
     VALUE klass = anonymous_struct(super);
     setup_struct(klass, rest);
-    rb_ivar_set(klass, id_keyword_init, keyword_init);
+    VALUE info_obj = RCLASS_STRUCT_INLINE_FIELD(klass);
+    struct struct_info *info = RTYPEDDATA_GET_DATA(info_obj);
+    RB_OBJ_WRITE(info_obj, &info->keyword_init, keyword_init);
 
     if (!NIL_P(name)) {
         struct_register_under(super, rb_str_to_str(name), klass);
@@ -739,7 +763,7 @@ static rb_len_t
 num_members(VALUE klass)
 {
     VALUE members;
-    members = struct_ivar_get(klass, id_members);
+    members = struct_s_members(klass);
     if (!RB_TYPE_P(members, T_ARRAY)) {
         rb_bug("broken members"); /* should never happen */
     }
@@ -919,7 +943,7 @@ rb_zjit_class_has_struct_allocator(VALUE klass)
 ID
 rb_zjit_struct_member_id(VALUE klass, rb_len_t index)
 {
-    VALUE members = struct_ivar_get(klass, id_members);
+    VALUE members = struct_s_members(klass);
     RUBY_ASSERT(RB_TYPE_P(members, T_ARRAY));
     RUBY_ASSERT(index >= 0 && index < RARRAY_LEN(members));
     return SYM2ID(RARRAY_AREF(members, index));
@@ -1894,7 +1918,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
 
     if (argc == 0) {
         if (num_members > 0) {
-            rb_exc_raise(rb_keyword_error_new("missing", struct_ivar_get(rb_obj_class(self), id_members)));
+            rb_exc_raise(rb_keyword_error_new("missing", struct_s_members(rb_obj_class(self))));
         }
         OBJ_FREEZE(self);
         return Qnil;
@@ -1921,7 +1945,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     // unfrozen copy on the heap, which could get exposed via ObjectSpace.
     OBJ_FREEZE(self);
     if (UNLIKELY(arg.missing_count > 0)) {
-        VALUE members = struct_ivar_get(rb_obj_class(self), id_members);
+        VALUE members = struct_s_members(rb_obj_class(self));
         RUBY_ASSERT(RARRAY_LEN(members) == num_members);
         VALUE missing = rb_ary_new_capa(arg.missing_count);
         for (rb_len_t i = 0; i < num_members; i++) {
@@ -2377,9 +2401,5 @@ InitVM_Struct(void)
 void
 Init_Struct(void)
 {
-    id_members = rb_intern("__members__");
-    id_back_members = rb_intern("__members_back__");
-    id_keyword_init = rb_intern("__keyword_init__");
-
     InitVM(Struct);
 }
