@@ -132,6 +132,141 @@ remove_from_constant_cache(ID id, IC ic)
 // When an ISEQ is being freed, all of its associated ICs are going to go away
 // as well. Because of this, we need to iterate over the ICs, and clear them
 // from the VM's constant cache.
+/*
+ * Constant path segment lists (IC->segments) are interned: every
+ * opt_getconstant_path with the same path (e.g. `Foo::Bar`) shares one
+ * 0-terminated ID list. A large app has ~8x more constant references than
+ * distinct paths, and most lists are 1-2 IDs, so a malloc each was mostly
+ * allocator overhead.
+ *
+ * Each list is preceded by a refcount. Releasing (from rb_iseq_free, i.e.
+ * during GC sweep) only decrements it and never touches the table, because
+ * GC can run while the table is being updated (an allocation inside
+ * st_update). Entries whose count reached zero stay in the table, can be
+ * revived by a later lookup, and are reclaimed by the interning path once
+ * they make up a large share of the table.
+ */
+struct const_segments_entry {
+    rb_atomic_t refcnt;
+    ID ids[FLEX_ARY_LEN];
+};
+
+static st_table *const_segments_tbl;
+static size_t const_segments_reclaim_at = 1024;
+
+static inline struct const_segments_entry *
+const_segments_entry(const ID *ids)
+{
+    return (struct const_segments_entry *)((char *)ids - offsetof(struct const_segments_entry, ids));
+}
+
+static size_t
+idlist_len(const ID *ids)
+{
+    size_t n = 0;
+    while (ids[n]) n++;
+    return n;
+}
+
+static size_t
+const_segments_entry_bytes(size_t len)
+{
+    return offsetof(struct const_segments_entry, ids) + (len + 1) * sizeof(ID);
+}
+
+static st_index_t
+idlist_hash(st_data_t key)
+{
+    const ID *ids = (const ID *)key;
+    return st_hash(ids, idlist_len(ids) * sizeof(ID), 0);
+}
+
+static int
+idlist_cmp(st_data_t a, st_data_t b)
+{
+    const ID *x = (const ID *)a, *y = (const ID *)b;
+    while (*x && *x == *y) { x++; y++; }
+    return *x != *y;
+}
+
+static const struct st_hash_type idlist_hash_type = {
+    idlist_cmp,
+    idlist_hash,
+};
+
+static int
+const_segments_reclaim_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    struct const_segments_entry *e = const_segments_entry((const ID *)key);
+    if (RUBY_ATOMIC_LOAD(e->refcnt) == 0) {
+        ruby_xfree_sized(e, const_segments_entry_bytes(idlist_len(e->ids)));
+        return ST_DELETE;
+    }
+    return ST_CONTINUE;
+}
+
+/* Returns an interned, 0-terminated ID list for an Array of Symbols. */
+const ID *
+rb_iseq_intern_const_segments(VALUE arr)
+{
+    RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
+    long len = RARRAY_LEN(arr);
+    size_t bytes = const_segments_entry_bytes(len);
+
+    /* Allocate before taking the lock: allocation can GC. */
+    struct const_segments_entry *fresh = ruby_xmalloc(bytes);
+    fresh->refcnt = 1;
+    for (long i = 0; i < len; i++) {
+        fresh->ids[i] = SYM2ID(RARRAY_AREF(arr, i));
+    }
+    fresh->ids[len] = 0;
+
+    const ID *result = NULL;
+
+    RB_VM_LOCKING() {
+        if (!const_segments_tbl) {
+            const_segments_tbl = st_init_table(&idlist_hash_type);
+        }
+
+        st_data_t existing;
+        if (st_get_key(const_segments_tbl, (st_data_t)fresh->ids, &existing)) {
+            struct const_segments_entry *e = const_segments_entry((const ID *)existing);
+            RUBY_ATOMIC_INC(e->refcnt);
+            result = e->ids;
+        }
+        else {
+            if (const_segments_tbl->num_entries >= const_segments_reclaim_at) {
+                st_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
+                const_segments_reclaim_at = const_segments_tbl->num_entries * 2 + 1024;
+            }
+            st_insert(const_segments_tbl, (st_data_t)fresh->ids, 0);
+            result = fresh->ids;
+            fresh = NULL;
+        }
+    }
+
+    if (fresh) ruby_xfree_sized(fresh, bytes);
+    return result;
+}
+
+static void
+iseq_release_const_segments(const ID *ids)
+{
+    struct const_segments_entry *e = const_segments_entry(ids);
+    RUBY_ASSERT(RUBY_ATOMIC_LOAD(e->refcnt) > 0);
+    RUBY_ATOMIC_DEC(e->refcnt);
+}
+
+/* Called at VM teardown after all ISeqs have been freed (RUBY_FREE_AT_EXIT). */
+void
+rb_iseq_free_const_segments_table(void)
+{
+    if (!const_segments_tbl) return;
+    st_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
+    st_free_table(const_segments_tbl);
+    const_segments_tbl = NULL;
+}
+
 static void
 iseq_clear_ic_references(const rb_iseq_t *iseq)
 {
@@ -155,14 +290,13 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
         if (segments == NULL)
             continue;
 
-        int i;
-        for (i = 0; segments[i]; i++) {
+        for (int i = 0; segments[i]; i++) {
             ID id = segments[i];
             if (id == idNULL) continue;
             remove_from_constant_cache(id, ic);
         }
 
-        SIZED_FREE_N(segments, i + 1);
+        iseq_release_const_segments(segments);
     }
 }
 
@@ -616,18 +750,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
 
-        if (ISEQ_BODY(iseq)->is_entries) {
-            /* IC entries constant segments */
-            for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
-                IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-                const ID *ids = ic->segments;
-                if (!ids) continue;
-                while (*ids++) {
-                    size += sizeof(ID);
-                }
-                size += sizeof(ID); // null terminator
-            }
-        }
+        /* IC constant segments are interned and shared; not counted here. */
 
         /* body->call_data */
         size += body->ci_size * sizeof(struct rb_call_data);

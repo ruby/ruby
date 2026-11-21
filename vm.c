@@ -3814,6 +3814,7 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_objspace_free_objects(objspace);
                 rb_free_generic_fields_tbl_();
                 rb_free_default_rand_key();
+                rb_iseq_free_const_segments_table();
             }
             rb_objspace_free(objspace);
         }

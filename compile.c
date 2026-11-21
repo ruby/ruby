@@ -2664,20 +2664,6 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
     return TRUE;
 }
 
-static ID *
-array_to_idlist(VALUE arr)
-{
-    RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
-    rb_len_t size = RARRAY_LEN(arr);
-    ID *ids = (ID *)ALLOC_N(ID, size + 1);
-    for (rb_len_t i = 0; i < size; i++) {
-        VALUE sym = RARRAY_AREF(arr, i);
-        ids[i] = SYM2ID(sym);
-    }
-    ids[size] = 0;
-    return ids;
-}
-
 static VALUE
 idlist_to_array(const ID *ids)
 {
@@ -2906,7 +2892,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = array_to_idlist(operands[j]);
+                            ic->segments = rb_iseq_intern_const_segments(operands[j]);
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -13393,7 +13379,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = array_to_idlist(arr);
+                    ic->segments = rb_iseq_intern_const_segments(arr);
 
                     code[code_index] = (VALUE)ic;
                 }
