@@ -2555,6 +2555,49 @@ find_ancestor(VALUE start, VALUE ancestor)
 }
 
 static VALUE
+module_refinement_using_iclass(VALUE refinement_iclass, VALUE module)
+{
+    VALUE refinement = RBASIC(refinement_iclass)->klass;
+    VALUE super = RCLASS_SUPER(refinement_iclass);
+    VALUE cache_key, iclass = Qundef;
+    ID id_using_iclasses;
+
+    if (RICLASS_FOR_REFINEMENT_P(super)) {
+        cache_key = super = module_refinement_using_iclass(super, module);
+    }
+    else {
+        cache_key = module;
+        super = Qundef;
+    }
+
+    CONST_ID(id_using_iclasses, "__using_iclasses__");
+    VALUE cache = rb_attr_get(refinement, id_using_iclasses);
+    if (!NIL_P(cache)) {
+        RB_VM_LOCKING() {
+            iclass = rb_wmap_lookup(cache, cache_key);
+        }
+        if (!UNDEF_P(iclass) && RCLASS_M_TBL(iclass) == RCLASS_M_TBL(refinement)) {
+            return iclass;
+        }
+    }
+
+    if (UNDEF_P(super)) {
+        super = rb_include_class_new(RCLASS_ORIGIN(module), rb_cBasicObject);
+    }
+    iclass = rb_include_class_new(refinement, super);
+    RCLASS_SET_REFINED_CLASS(iclass, module);
+    rb_class_subclass_add(module, iclass);
+
+    if (!NIL_P(cache)) {
+        RB_VM_LOCKING() {
+            rb_wmap_aset(cache, cache_key, iclass);
+        }
+    }
+
+    return iclass;
+}
+
+static VALUE
 find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
 {
     VALUE refined_target = rb_refinement_module_get_refined_class(owner);
@@ -2577,6 +2620,10 @@ find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
         VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
         if (refined_ancestor) {
             iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        }
+        else if (RB_TYPE_P(refinement_iclass, T_ICLASS) &&
+                RCLASS_SUPER(refinement_iclass) != rb_cBasicObject) {
+            iclass = module_refinement_using_iclass(iclass, refined_target);
         }
     }
 

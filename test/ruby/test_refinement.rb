@@ -1051,6 +1051,29 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_refined_module_instance_method_from_class_bind_to_unrelated_object
+    assert_separately([], <<-"end;")
+      module M; end
+      class A < Array; include M; end
+      using(Module.new { refine(M) { def first = super } })
+      um = A.instance_method(:first)
+      assert_equal(1, um.bind_call(A[1]))
+      assert_raise(NoMethodError) { um.bind_call(0x6f56) }
+      assert_equal(um.bind(1), um.bind(1))
+
+      module M2; def m = [:M2]; end
+      class B < Array; include M2; end
+      class Array; def m = [:Array]; end
+      using(Module.new { refine(M2) { def m = [:R1, *super] } })
+      using(Module.new { refine(M2) { def m = [:R2, *super] } })
+      um = B.instance_method(:m)
+      assert_equal([:R2, :R1, :M2], um.bind_call(B.new))
+      assert_equal([:R2, :R1, :M2], um.bind_call(1))
+      assert_equal(um.bind(1), um.bind(1))
+      assert_equal(M2.instance_method(:m).bind(1), um.bind(1))
+    end;
+  end
+
   def test_proc_refined_module_iclass_allocations_separate_classes
     assert_separately([], <<-"end;")
       module M
