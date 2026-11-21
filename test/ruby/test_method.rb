@@ -1169,6 +1169,21 @@ class TestMethod < Test::Unit::TestCase
       '[ruby-core:85231] [Bug #14421]'
   end
 
+  def test_super_method_after_bind_module_method_to_another_class
+    bug22614 = 'https://bugs.ruby-lang.org/issues/22614'
+    c1 = Class.new { def m = :c1 }
+    c2 = Class.new { def m = :c2 }
+    mod = Module.new { def m = super }
+    c3 = Class.new(c1) { include mod }
+    o = c2.new
+    [c3.instance_method(:m), c3.new.method(:m).unbind].each do |um|
+      sm = um.bind(o).super_method
+      assert_equal(c2.instance_method(:m), sm.unbind, bug22614)
+      assert_equal(:c2, sm.call, bug22614)
+      assert_nil(um.bind(Object.new).super_method, bug22614)
+    end
+  end
+
   def test_super_method_alias
     c0 = Class.new do
       def m1
