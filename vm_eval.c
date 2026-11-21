@@ -403,15 +403,17 @@ static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE rec
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
 static VALUE
-gccct_hash(VALUE klass, VALUE box_value, ID mid)
+gccct_hash(VALUE klass, long box_id, ID mid)
 {
-    return ((klass ^ box_value) >> 3) ^ (VALUE)mid;
+    // Added rather than mixed in, so the same method in boxes whose ids differ
+    // by less than the table size never shares an entry.
+    return ((klass >> 3) ^ (VALUE)mid) + (VALUE)box_id;
 }
 
-NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo * ci));
+NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, long box_id, unsigned int index, const struct rb_callinfo * ci));
 
 static const struct rb_callcache *
-gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo *ci)
+gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, long box_id, unsigned int index, const struct rb_callinfo *ci)
 {
     struct rb_call_data cd = {
             .ci = ci,
@@ -428,6 +430,7 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
     if (UNLIKELY(!vm->global_cc_cache_table_used)) {
         vm->global_cc_cache_table_used = true;
     }
+    vm->global_cc_cache_box_ids[index] = box_id;
     return vm->global_cc_cache_table[index] = cd.cc;
 }
 
@@ -458,8 +461,8 @@ scope_to_ci(call_type scope, ID mid, int argc, struct rb_callinfo *ci)
 static inline const struct rb_callcache *
 gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
 {
-    VALUE klass, box_value;
-    const rb_box_t *box = rb_current_box();
+    VALUE klass;
+    const long box_id = rb_current_box()->box_id;
 
     if (!SPECIAL_CONST_P(recv)) {
         klass = RBASIC_CLASS(recv);
@@ -469,19 +472,14 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
         klass = CLASS_OF(recv);
     }
 
-    if (BOX_USER_P(box)) {
-        box_value = box->box_object;
-    }
-    else {
-        box_value = 0;
-    }
     // search global method cache
-    unsigned int index = (unsigned int)(gccct_hash(klass, box_value, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+    unsigned int index = (unsigned int)(gccct_hash(klass, box_id, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     const struct rb_callcache *cc = vm->global_cc_cache_table[index];
 
     if (LIKELY(cc)) {
-        if (LIKELY(vm_cc_class_check(cc, klass))) {
+        if (LIKELY(vm_cc_class_check(cc, klass) &&
+                   vm->global_cc_cache_box_ids[index] == box_id)) {
             const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
             if (LIKELY(!METHOD_ENTRY_INVALIDATED(cme) &&
                        cme->called_id == mid)) {
@@ -498,7 +496,7 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
     }
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
-    return gccct_method_search_slowpath(vm, klass, index, ci);
+    return gccct_method_search_slowpath(vm, klass, box_id, index, ci);
 }
 
 VALUE
