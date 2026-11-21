@@ -848,6 +848,33 @@ class TestFileExhaustive < Test::Unit::TestCase
     ensure
       system("mountvol", mntpnt, "/d", chdir: @dir, out: IO::NULL, err: IO::NULL)
     end
+
+    def test_stat_dev_subst
+      drive = ("A".."Z").to_a.reverse.find {|l| !File.exist?("#{l}:/")}
+      omit "no free drive letter" unless drive
+      err = IO.popen(%W"subst #{drive}: #{@dir.tr('/', '\\')}", err: %i[child out], &:read)
+      omit err unless $?.success?
+      st1 = File.stat(regular_file)
+      st2 = File.stat("#{drive}:/#{File.basename(regular_file)}")
+      assert_equal([st1.dev, st1.ino], [st2.dev, st2.ino])
+    ensure
+      system("subst", "#{drive}:", "/d", out: IO::NULL, err: IO::NULL) if drive
+    end
+
+    def test_stat_dev_unc
+      unc = regular_file.sub(/\A([a-z]):/i) {"//localhost/#{$1}$"}
+      omit "#{regular_file} is not on a drive letter" if unc == regular_file
+      omit "#{unc} is not accessible" unless File.exist?(unc)
+      st1 = File.stat(regular_file)
+      st2 = File.stat(unc)
+      assert_equal([st1.dev, st1.ino], [st2.dev, st2.ino])
+    end
+
+    def test_stat_dev_fstat
+      st1 = File.stat(regular_file)
+      st2 = File.open(regular_file, &:stat)
+      assert_equal([st1.dev, st1.ino], [st2.dev, st2.ino])
+    end
   end
 
   def test_realpath_drive_relative_path
