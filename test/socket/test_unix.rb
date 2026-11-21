@@ -483,6 +483,18 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     s2.close if s2
   end
 
+  def test_stream_pair_sendmsg_recvmsg
+    UNIXSocket.pair(Socket::SOCK_STREAM) {|s1, s2|
+      assert_equal(4, s2.sendmsg("haha"))
+      assert_equal("ha", s1.recvmsg(2, Socket::MSG_PEEK)[0])
+      assert_equal("haha", s1.recvmsg(10)[0])
+
+      assert_equal(6, s2.sendmsg_nonblock("BBBBBB"))
+      IO.select([s1])
+      assert_equal("BBBBBB", s1.recvmsg_nonblock(10)[0])
+    }
+  end
+
   def test_seqpacket_pair
     s1, s2 = UNIXSocket.pair(Socket::SOCK_SEQPACKET)
     begin
