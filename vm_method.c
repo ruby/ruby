@@ -2259,6 +2259,14 @@ callable_method_entry_refinements0(VALUE klass, ID id, VALUE *defined_class_ptr,
     else {
         VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
         const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, with_refinements, dcp);
+        const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
+
+        if (me && me->defined_class == 0 && orig_me &&
+                me->def == orig_me->def && *dcp == orig_me->defined_class) {
+            VM_ASSERT(callable_method_entry_p((const rb_callable_method_entry_t *)orig_me));
+            return (const rb_callable_method_entry_t *)orig_me;
+        }
+
         return prepare_callable_method_entry(*dcp, id, me, TRUE);
     }
 }

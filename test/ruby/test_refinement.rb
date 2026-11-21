@@ -1074,6 +1074,20 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_unused_refinement_method_unbind_bind_call_super
+    assert_separately([], <<-"end;")
+      class C1; def m = :C1; end
+      module M2; def m = super; end
+      class U; include M2; end
+      um = U.new.method(:m).unbind
+      assert_equal(:C1, um.bind_call(C1.new))
+
+      module R; refine(M2) { def m = :unused }; end
+      um = U.new.method(:m).unbind
+      assert_equal(:C1, um.bind_call(C1.new))
+    end;
+  end
+
   def test_proc_refined_module_iclass_allocations_separate_classes
     assert_separately([], <<-"end;")
       module M
