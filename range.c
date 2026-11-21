@@ -1044,11 +1044,42 @@ range_reverse_size(VALUE range)
  *
  */
 
+/*
+ * Range#to_a and Range#entries call the method of the same name in
+ * Enumerable by super.  Fill the array directly only when that would be
+ * the original method of Enumerable, which is not the case if it has
+ * been redefined, or a module included into Range or prepended to
+ * Enumerable defines it.
+ */
 static VALUE
 range_to_a(VALUE range)
 {
-    if (NIL_P(RANGE_END(range))) {
+    VALUE beg = RANGE_BEG(range), end = RANGE_END(range);
+
+    if (NIL_P(end)) {
         rb_raise(rb_eRangeError, "cannot convert endless range to an array");
+    }
+    if (FIXNUM_P(beg) && FIXNUM_P(end) &&
+        rb_method_basic_definition_p(CLASS_OF(range), idEach) &&
+        rb_method_basic_definition_p(RCLASS_SUPER(RCLASS_ORIGIN(rb_cRange)),
+                                     rb_frame_this_func())) {
+        long i = FIX2LONG(beg), lim = FIX2LONG(end) + !EXCL(range);
+
+        if (lim <= i) return rb_ary_new();
+        /* a longer range does not fit in an array */
+        if ((unsigned long)lim - (unsigned long)i <=
+            RB_LEN_MAX / sizeof(VALUE)) {
+            rb_len_t len = lim - i;
+            VALUE ary = rb_ary_new_capa(len);
+
+            RARRAY_PTR_USE(ary, ptr, {
+                for (; i < lim; i++) {
+                    *ptr++ = LONG2FIX(i);
+                }
+            });
+            rb_ary_set_len(ary, len);
+            return ary;
+        }
     }
     return rb_call_super(0, 0);
 }
