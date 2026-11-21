@@ -7609,6 +7609,72 @@ impl Function {
         true
     }
 
+    fn trampoline_edge(&self, num_in_edges: &[u32], edge: &BranchEdge, from: BlockId) -> Option<BranchEdge> {
+        let to = edge.target;
+        if from == to {
+            // Let's not loop
+            return None;
+        }
+        if !edge.args.is_empty() {
+            // TODO(max): Forward all the arguments
+            return None;
+        }
+        if num_in_edges[to] != 1 {
+            // We are maintaining the invariant that num_in_edges is constant throughout
+            // `clean_cfg`, so skip blocks with multiple predecessors
+            return None;
+        }
+        if self.blocks[to].insns.len() != 1 {
+            // If it has more than one instruction, it's not a trampoline block
+            return None;
+        }
+        match &self.insns[self.blocks[to].insns[0]] {
+            // `to` has exactly one predecessor (`from`), so the Jump's args dominate the end of
+            // `from` and can be forwarded as-is.
+            Insn::Jump(new_edge) => Some(new_edge.clone()),
+            _ => None,
+        }
+    }
+
+    /// If we:
+    /// * have a block `block` ending in a conditional branch `CondBranch...(if_true, if_false)`
+    /// * where either `if_true` or `if_false` are their own blocks containing just `Jump(to)`
+    /// * and `to` is only reachable from `if_true` or `if_false`
+    /// then we can rewrite the `CondBranch` to skip `if_true`/`if_false` and jump directly to `to`.
+    fn bypass_trampoline_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
+        let Some(&terminator_id) = self.blocks[block].insns.last()
+            else { return false };
+        let (new_true, new_false) = match &self.insns[terminator_id] {
+            Insn::CondBranch { if_true, if_false, .. } => (
+                self.trampoline_edge(num_in_edges, if_true, block),
+                self.trampoline_edge(num_in_edges, if_false, block),
+            ),
+            Insn::CondBranchHasType(insn) => (
+                self.trampoline_edge(num_in_edges, &insn.if_true, block),
+                self.trampoline_edge(num_in_edges, &insn.if_false, block),
+            ),
+            _ => return false,
+        };
+        if new_true.is_none() && new_false.is_none() {
+            return false;
+        }
+        let (if_true, if_false) = match &mut self.insns[terminator_id] {
+            Insn::CondBranch { if_true, if_false, .. } => (if_true, if_false),
+            Insn::CondBranchHasType(insn) => (&mut insn.if_true, &mut insn.if_false),
+            _ => unreachable!(),
+        };
+        let mut bypassed = vec![];
+        if let Some(edge) = new_true { bypassed.push(std::mem::replace(if_true, edge).target); }
+        if let Some(edge) = new_false { bypassed.push(std::mem::replace(if_false, edge).target); }
+        // The bypassed trampolines are now unreachable, but `clean_cfg` may still visit them from
+        // a stale RPO. Empty them so they get skipped as transient empty blocks; otherwise a dead
+        // trampoline could absorb its (single-predecessor) target out from under us.
+        for trampoline in bypassed {
+            self.blocks[trampoline].insns.clear();
+        }
+        true
+    }
+
     /// Clean up linked lists of blocks A -> B -> C into A (with B's and C's instructions).
     fn clean_cfg(&mut self) {
         // num_in_edges is invariant throughout cleaning the CFG:
@@ -7629,7 +7695,8 @@ impl Function {
                 if self.blocks[block].insns.is_empty() { continue; }
                 loop {
                     let absorbed = self.absorb_dst_block(&num_in_edges, block);
-                    if !absorbed { break; }
+                    let bypassed = self.bypass_trampoline_block(&num_in_edges, block);
+                    if !absorbed && !bypassed { break; }
                     iter_changed = true;
                 }
             }
