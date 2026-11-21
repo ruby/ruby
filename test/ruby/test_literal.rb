@@ -527,6 +527,16 @@ class TestRubyLiteral < Test::Unit::TestCase
     end
   end
 
+  def test_hash_literal_colliding_keys
+    assert_separately(%w[--parser=parse.y], <<~'RUBY', timeout: 5)
+      keys = (0...65_536).map do |i|
+        (0...16).map { |j| i[j] == 0 ? "Ab" : "BA" }.join
+      end
+      source = "{" + keys.map { |key| "#{key.dump} => 0" }.join(", ") + "}"
+      RubyVM::InstructionSequence.compile(source)
+    RUBY
+  end
+
   def test_hash_frozen_key_id
     key = "a".freeze
     h = {key => 100}
