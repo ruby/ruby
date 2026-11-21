@@ -429,12 +429,20 @@ enum lvar_state {
 
 /* Lazily-allocated per-iseq variable data. NULL when unused (the common case:
  * no coverage, no script_lines, no flip-flops, no disassembly). */
+/* Rarely-set ISeq state, kept out of rb_iseq_constant_body and allocated on
+ * first use by rb_iseq_variable_ensure(). Read through the NULL-safe
+ * ISEQ_BODY_VARIABLE_* accessors in iseq.h. */
 struct rb_iseq_variable {
     rb_snum_t flip_count;
     VALUE script_lines;
     VALUE coverage;
     VALUE pc2branchindex;
     VALUE *original_iseq;
+
+    /* Set at compile/load time for few ISeqs: */
+    struct iseq_catch_table *catch_table;
+    struct rb_id_table *outer_variables;
+    const rb_iseq_t *mandatory_only_iseq;
 };
 
 struct rb_iseq_constant_body {
@@ -547,9 +555,6 @@ struct rb_iseq_constant_body {
         uint8_t single[sizeof(uint8_t *)];
     } lvar_states;
 
-    /* catch table */
-    struct iseq_catch_table *catch_table;
-
     /* for child iseq */
     const struct rb_iseq_struct *parent_iseq;
     struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
@@ -579,10 +584,6 @@ struct rb_iseq_constant_body {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;
     } mark_bits;
-
-    struct rb_id_table *outer_variables;
-
-    const rb_iseq_t *mandatory_only_iseq;
 
 #if USE_YJIT || USE_ZJIT
     // Number of calls on jit_exec()

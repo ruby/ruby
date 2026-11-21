@@ -3643,7 +3643,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         ISEQ_TYPE_METHOD,
         ISEQ_COMPILE_DATA(iseq)->option
     );
-    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
+    RB_OBJ_WRITE(iseq, &rb_iseq_variable_ensure(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     pm_scope_node_destroy(&next_scope_node);
     return COMPILE_OK;
@@ -3927,7 +3927,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
     }
 
-    if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
+    if (block_iseq && ISEQ_CATCH_TABLE(block_iseq)) {
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
         PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, start, retry_end_l, block_iseq, retry_end_l);
     }

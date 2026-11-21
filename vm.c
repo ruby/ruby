@@ -1687,9 +1687,9 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         VALUE read_only_variables = Qfalse;
 
-        if (ISEQ_BODY(iseq)->outer_variables) {
+        if (ISEQ_OUTER_VARIABLES(iseq)) {
             read_only_variables =
-                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, "make a Proc shareable");
+                proc_shared_outer_variables(ISEQ_OUTER_VARIABLES(iseq), "make a Proc shareable");
         }
 
         proc_isolate_env(self, proc, read_only_variables);
@@ -3234,7 +3234,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         THROW_DATA_STATE_SET(err, state = TAG_BREAK);
                     }
                     else {
-                        ct = ISEQ_BODY(CFP_ISEQ(cfp))->catch_table;
+                        ct = ISEQ_CATCH_TABLE(CFP_ISEQ(cfp));
                         if (ct) for (i = 0; i < ct->size; i++) {
                             entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                             if (entry->start < epc && entry->end >= epc) {
@@ -3268,7 +3268,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
         }
 
         if (state == TAG_RAISE) {
-            ct = ISEQ_BODY(CFP_ISEQ(cfp))->catch_table;
+            ct = ISEQ_CATCH_TABLE(CFP_ISEQ(cfp));
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                 if (entry->start < epc && entry->end >= epc) {
@@ -3284,7 +3284,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             }
         }
         else if (state == TAG_RETRY) {
-            ct = ISEQ_BODY(CFP_ISEQ(cfp))->catch_table;
+            ct = ISEQ_CATCH_TABLE(CFP_ISEQ(cfp));
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                 if (entry->start < epc && entry->end >= epc) {
@@ -3318,7 +3318,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                 /* otherwise = dontcare */
             }[state];
 
-            ct = ISEQ_BODY(CFP_ISEQ(cfp))->catch_table;
+            ct = ISEQ_CATCH_TABLE(CFP_ISEQ(cfp));
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 
@@ -3345,7 +3345,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             }
         }
         else {
-            ct = ISEQ_BODY(CFP_ISEQ(cfp))->catch_table;
+            ct = ISEQ_CATCH_TABLE(CFP_ISEQ(cfp));
             if (ct) for (i = 0; i < ct->size; i++) {
                 entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
                 if (entry->start < epc && entry->end >= epc) {

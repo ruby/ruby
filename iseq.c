@@ -105,6 +105,9 @@ compile_data_free(struct iseq_compile_data *compile_data)
         if (compile_data->ivar_cache_table) {
             rb_id_table_free(compile_data->ivar_cache_table);
         }
+        if (compile_data->catch_table) {
+            ruby_xfree_sized(compile_data->catch_table, iseq_catch_table_bytes(compile_data->catch_table->size));
+        }
         SIZED_FREE(compile_data);
     }
 }
@@ -214,16 +217,20 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #endif
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
-        if (body->catch_table) {
-            ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
-        }
         SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
             SIZED_FREE_N(body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size));
         }
 
         ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-        if (body->variable) xfree(body->variable);
+        if (body->variable) {
+            struct rb_iseq_variable *v = body->variable;
+            if (v->catch_table) {
+                ruby_xfree_sized(v->catch_table, iseq_catch_table_bytes(v->catch_table->size));
+            }
+            if (v->outer_variables) rb_id_table_free(v->outer_variables);
+            SIZED_FREE(v);
+        }
 
         struct rb_iseq_param_keyword *pkw = (struct rb_iseq_param_keyword *)body->param.keyword;
         if (pkw != NULL) {
@@ -242,7 +249,6 @@ rb_iseq_free(const rb_iseq_t *iseq)
         }
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
-        if (body->outer_variables) rb_id_table_free(body->outer_variables);
         SIZED_FREE(body);
     }
 
@@ -257,12 +263,10 @@ rb_iseq_variable_ensure(rb_iseq_t *iseq)
 {
     struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
     if (v) return v;
-    v = ALLOC(struct rb_iseq_variable);
-    v->flip_count = 0;
+    v = ZALLOC(struct rb_iseq_variable);
     v->script_lines = Qnil;
     v->coverage = Qfalse;
     v->pc2branchindex = Qfalse;
-    v->original_iseq = NULL;
     struct rb_iseq_variable *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable, NULL, v);
     if (prev) {
         xfree(v);
@@ -419,12 +423,14 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
         rb_iseq_mark_and_move_each_body_value(ctx, iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
         struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
-        if (v) rb_gc_mark_and_move_ctx(ctx, &v->script_lines);
+        if (v) {
+            rb_gc_mark_and_move_ctx(ctx, &v->script_lines);
+            if (v->mandatory_only_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &v->mandatory_only_iseq);
+        }
         rb_gc_mark_and_move_ctx(ctx, &body->location.label);
         rb_gc_mark_and_move_ctx(ctx, &body->location.pathobj);
         if (body->local_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->local_iseq);
         if (body->parent_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->parent_iseq);
-        if (body->mandatory_only_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->mandatory_only_iseq);
 
         if (body->call_data) {
             struct rb_call_data *cds = body->call_data;
@@ -466,8 +472,8 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
             }
         }
 
-        if (body->catch_table) {
-            struct iseq_catch_table *table = body->catch_table;
+        if (v && v->catch_table) {
+            struct iseq_catch_table *table = v->catch_table;
 
             for (unsigned int i = 0; i < table->size; i++) {
                 struct iseq_catch_table_entry *entry;
@@ -560,6 +566,13 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
 
             rb_gc_mark_and_move_ctx(ctx, (VALUE *)&compile_data->err_info);
             rb_gc_mark_and_move_ctx(ctx, (VALUE *)&compile_data->catch_table_ary);
+            if (compile_data->catch_table) {
+                struct iseq_catch_table *table = compile_data->catch_table;
+                for (unsigned int i = 0; i < table->size; i++) {
+                    struct iseq_catch_table_entry *entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
+                    if (entry->iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &entry->iseq);
+                }
+            }
         }
     }
     else {
@@ -605,13 +618,13 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
             size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
         }
         size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
-        if (body->catch_table) {
-            size += iseq_catch_table_bytes(body->catch_table->size);
+        if (ISEQ_CATCH_TABLE(iseq)) {
+            size += iseq_catch_table_bytes(ISEQ_CATCH_TABLE(iseq)->size);
         }
         size += (body->param.opt_num + 1) * sizeof(VALUE);
         size += param_keyword_size(body->param.keyword);
 
-        if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
+        if (ISEQ_OUTER_VARIABLES(iseq)) size += rb_id_table_memsize(ISEQ_OUTER_VARIABLES(iseq));
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
@@ -3050,16 +3063,16 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     rb_str_cat2(str, "\n");
 
     /* show catch table information */
-    if (body->catch_table) {
+    if (ISEQ_CATCH_TABLE(iseq)) {
         rb_str_cat(str, indent_str, indent_len);
         rb_str_cat2(str, "== catch table\n");
     }
-    if (body->catch_table) {
+    if (ISEQ_CATCH_TABLE(iseq)) {
         rb_str_cat_cstr(indent, "| ");
         indent_str = RSTRING_PTR(indent);
-        for (i = 0; i < body->catch_table->size; i++) {
+        for (i = 0; i < ISEQ_CATCH_TABLE(iseq)->size; i++) {
             const struct iseq_catch_table_entry *entry =
-                UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
+                UNALIGNED_MEMBER_PTR(ISEQ_CATCH_TABLE(iseq), entries[i]);
             rb_str_cat(str, indent_str, indent_len);
             rb_str_catf(str,
                         "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
@@ -3078,7 +3091,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         rb_str_resize(indent, indent_len);
         indent_str = RSTRING_PTR(indent);
     }
-    if (body->catch_table) {
+    if (ISEQ_CATCH_TABLE(iseq)) {
         rb_str_cat(str, indent_str, indent_len);
         rb_str_cat2(str, "|-------------------------------------"
                     "-----------------------------------\n");
@@ -3143,8 +3156,8 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         n += rb_iseq_disasm_insn(str, code, n, iseq, child);
     }
 
-    if (body->mandatory_only_iseq) {
-        rb_ary_push(child, (VALUE)body->mandatory_only_iseq);
+    if (ISEQ_MANDATORY_ONLY_ISEQ(iseq)) {
+        rb_ary_push(child, (VALUE)ISEQ_MANDATORY_ONLY_ISEQ(iseq));
     }
 
     for (l = 0; l < RARRAY_LEN(child); l++) {
@@ -3235,10 +3248,10 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
     const rb_iseq_t *child;
     VALUE all_children = rb_obj_hide(rb_ident_hash_new());
 
-    if (body->catch_table) {
-        for (i = 0; i < body->catch_table->size; i++) {
+    if (ISEQ_CATCH_TABLE(iseq)) {
+        for (i = 0; i < ISEQ_CATCH_TABLE(iseq)->size; i++) {
             const struct iseq_catch_table_entry *entry =
-                UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
+                UNALIGNED_MEMBER_PTR(ISEQ_CATCH_TABLE(iseq), entries[i]);
             child = entry->iseq;
             if (child) {
                 if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
@@ -3782,10 +3795,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     nbody = body;
 
     /* exception */
-    if (iseq_body->catch_table) for (i=0; i<iseq_body->catch_table->size; i++) {
+    if (ISEQ_CATCH_TABLE(iseq)) for (i=0; i<ISEQ_CATCH_TABLE(iseq)->size; i++) {
         VALUE ary = rb_ary_new();
         const struct iseq_catch_table_entry *entry =
-            UNALIGNED_MEMBER_PTR(iseq_body->catch_table, entries[i]);
+            UNALIGNED_MEMBER_PTR(ISEQ_CATCH_TABLE(iseq), entries[i]);
         rb_ary_push(ary, exception_type2symbol(entry->type));
         if (entry->iseq) {
             rb_ary_push(ary, iseq_data_to_ary(rb_iseq_check(entry->iseq)));

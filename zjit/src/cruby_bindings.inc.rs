@@ -666,6 +666,9 @@ pub struct rb_iseq_variable {
     pub coverage: VALUE,
     pub pc2branchindex: VALUE,
     pub original_iseq: *mut VALUE,
+    pub catch_table: *mut iseq_catch_table,
+    pub outer_variables: *mut rb_id_table,
+    pub mandatory_only_iseq: *const rb_iseq_t,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -2036,7 +2039,7 @@ pub type ruby_vminsn_type = u32;
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_compile_data {
-    pub _bindgen_opaque_blob: [u64; 24usize],
+    pub _bindgen_opaque_blob: [u64; 25usize],
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -2122,7 +2125,6 @@ pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 248;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
@@ -2476,6 +2478,7 @@ unsafe extern "C" {
         code_ptr: *mut ::std::os::raw::c_void,
     );
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+    pub fn rb_zjit_iseq_outer_variables(iseq: *const rb_iseq_t) -> *mut rb_id_table;
     pub fn rb_zjit_iseq_has_profiled_enough(iseq: *const rb_iseq_t) -> bool;
     pub fn rb_zjit_iseq_insn_set(
         iseq: *const rb_iseq_t,

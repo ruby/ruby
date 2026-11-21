@@ -844,8 +844,7 @@ impl IseqAccess for IseqPtr {
 
     /// The iseq's `outer_variables` table. See [`OuterVariables`].
     unsafe fn outer_variables(self) -> OuterVariables {
-        let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_id_table;
-        OuterVariables(NonNull::new(unsafe { *field }))
+        OuterVariables(NonNull::new(unsafe { rb_zjit_iseq_outer_variables(self) }))
     }
 }
 

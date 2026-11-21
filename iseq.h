@@ -115,6 +115,27 @@ ISEQ_BODY_VARIABLE_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
     return v ? v->original_iseq : NULL;
 }
 
+static inline struct iseq_catch_table *
+ISEQ_BODY_VARIABLE_CATCH_TABLE(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->catch_table : NULL;
+}
+
+static inline struct rb_id_table *
+ISEQ_BODY_VARIABLE_OUTER_VARIABLES(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->outer_variables : NULL;
+}
+
+static inline const rb_iseq_t *
+ISEQ_BODY_VARIABLE_MANDATORY_ONLY_ISEQ(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->mandatory_only_iseq : NULL;
+}
+
 /* Write accessors (lazily allocate variable as needed). */
 void rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov);
 void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);
@@ -134,6 +155,9 @@ rb_snum_t rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq);
 #define ISEQ_FLIP_CNT(iseq)             ISEQ_BODY_VARIABLE_FLIP_CNT(iseq)
 #define ISEQ_FLIP_CNT_INCREMENT(iseq)   rb_iseq_flip_cnt_increment(iseq)
 #define ISEQ_ORIGINAL_ISEQ(iseq)        ISEQ_BODY_VARIABLE_ORIGINAL_ISEQ(iseq)
+#define ISEQ_CATCH_TABLE(iseq)          ISEQ_BODY_VARIABLE_CATCH_TABLE(iseq)
+#define ISEQ_OUTER_VARIABLES(iseq)      ISEQ_BODY_VARIABLE_OUTER_VARIABLES(iseq)
+#define ISEQ_MANDATORY_ONLY_ISEQ(iseq)  ISEQ_BODY_VARIABLE_MANDATORY_ONLY_ISEQ(iseq)
 
 #define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1
 #define ISEQ_FROZEN_STRING_LITERAL_DISABLED 0
@@ -178,6 +202,9 @@ struct iseq_compile_data {
     /* GC is needed */
     const VALUE err_info;
     const VALUE catch_table_ary;	/* Array */
+    /* Built from catch_table_ary by iseq_set_exception_table(). iseq_setup()
+     * moves it to body->variable at the end if it is used, or frees it. */
+    struct iseq_catch_table *catch_table;
 
     /* Mirror fields from ISEQ_BODY so they are accessible during iseq setup */
     unsigned int iseq_size;

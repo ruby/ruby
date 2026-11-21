@@ -1633,7 +1633,7 @@ update_catch_except_flags(rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
     unsigned int pos;
     size_t i;
     int insn;
-    const struct iseq_catch_table *ct = body->catch_table;
+    const struct iseq_catch_table *ct = ISEQ_COMPILE_DATA(iseq)->catch_table;
 
     /* This assumes that a block has parent_iseq which may catch an exception from the block, and that
        BREAK/NEXT/REDO catch table entries are used only when `throw` insn is used in the block. */
@@ -1753,9 +1753,18 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     debugs("[compile step 6.1 (remove unused catch tables)] \n");
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
-    if (!ISEQ_COMPILE_DATA(iseq)->catch_except_p && ISEQ_BODY(iseq)->catch_table) {
-        ruby_xfree_sized(ISEQ_BODY(iseq)->catch_table, iseq_catch_table_bytes(ISEQ_BODY(iseq)->catch_table->size));
-        ISEQ_BODY(iseq)->catch_table = NULL;
+    struct iseq_catch_table *ct = ISEQ_COMPILE_DATA(iseq)->catch_table;
+    if (ct) {
+        if (ISEQ_COMPILE_DATA(iseq)->catch_except_p) {
+            /* This may GC, so keep ct in compile_data (which marks it) until it is published. */
+            struct rb_iseq_variable *v = rb_iseq_variable_ensure(iseq);
+            RUBY_ASSERT(!v->catch_table);
+            v->catch_table = ct;
+        }
+        else {
+            ruby_xfree_sized(ct, iseq_catch_table_bytes(ct->size));
+        }
+        ISEQ_COMPILE_DATA(iseq)->catch_table = NULL;
     }
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
@@ -1894,19 +1903,20 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
 
     for (int i=0; i<level; i++) {
         VALUE val;
-        struct rb_id_table *ovs = ISEQ_BODY(iseq)->outer_variables;
+        struct rb_id_table *ovs = ISEQ_OUTER_VARIABLES(iseq);
 
         if (!ovs) {
-            ovs = ISEQ_BODY(iseq)->outer_variables = rb_id_table_create(8);
+            ovs = rb_id_table_create(8);
+            rb_iseq_variable_ensure((rb_iseq_t *)iseq)->outer_variables = ovs;
         }
 
-        if (rb_id_table_lookup(ISEQ_BODY(iseq)->outer_variables, id, &val)) {
+        if (rb_id_table_lookup(ovs, id, &val)) {
             if (write && !val) {
-                rb_id_table_insert(ISEQ_BODY(iseq)->outer_variables, id, Qtrue);
+                rb_id_table_insert(ovs, id, Qtrue);
             }
         }
         else {
-            rb_id_table_insert(ISEQ_BODY(iseq)->outer_variables, id, RBOOL(write));
+            rb_id_table_insert(ovs, id, RBOOL(write));
         }
 
         iseq = ISEQ_BODY(iseq)->parent_iseq;
@@ -3101,7 +3111,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     unsigned int tlen, i, table_size = 0;
     struct iseq_catch_table_entry *entry;
 
-    ISEQ_BODY(iseq)->catch_table = NULL;
+    RUBY_ASSERT(!ISEQ_COMPILE_DATA(iseq)->catch_table);
 
     VALUE catch_table_ary = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
     if (NIL_P(catch_table_ary)) return COMPILE_OK;
@@ -3162,7 +3172,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         else if (table_size < tlen) {
             table = ruby_xrealloc(table, iseq_catch_table_bytes(table_size));
         }
-        ISEQ_BODY(iseq)->catch_table = table;
+        ISEQ_COMPILE_DATA(iseq)->catch_table = table;
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
     }
 
@@ -9627,7 +9637,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
                            nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option,
                            ISEQ_SCRIPT_LINES(iseq));
-    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
+    RB_OBJ_WRITE(iseq, &rb_iseq_variable_ensure(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     ALLOCV_END(idtmp);
     return COMPILE_OK;
@@ -13699,7 +13709,7 @@ ibf_load_lvar_states(const struct ibf_load *load, struct rb_iseq_constant_body *
 static ibf_offset_t
 ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    const struct iseq_catch_table *table = ISEQ_BODY(iseq)->catch_table;
+    const struct iseq_catch_table *table = ISEQ_CATCH_TABLE(iseq);
 
     if (table) {
         int *iseq_indices = ALLOCA_N(int, table->size);
@@ -13732,7 +13742,7 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
     if (size) {
         struct iseq_catch_table *table = ruby_xcalloc(1, iseq_catch_table_bytes(size));
         table->size = size;
-        ISEQ_BODY(parent_iseq)->catch_table = table;
+        rb_iseq_variable_ensure((rb_iseq_t *)parent_iseq)->catch_table = table;
 
         ibf_offset_t reading_pos = catch_table_offset;
 
@@ -13750,7 +13760,7 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
         }
     }
     else {
-        ISEQ_BODY(parent_iseq)->catch_table = NULL;
+        RUBY_ASSERT(!ISEQ_CATCH_TABLE(parent_iseq));
     }
 }
 
@@ -13835,7 +13845,7 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 static ibf_offset_t
 ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    struct rb_id_table * ovs = ISEQ_BODY(iseq)->outer_variables;
+    struct rb_id_table * ovs = ISEQ_OUTER_VARIABLES(iseq);
 
     ibf_offset_t offset = ibf_dump_pos(dump);
 
@@ -13970,12 +13980,12 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     const ibf_offset_t local_table_offset = ibf_dump_local_table(dump, iseq);
     const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
-    const unsigned int catch_table_size =   body->catch_table ? body->catch_table->size : 0;
+    const unsigned int catch_table_size =   ISEQ_CATCH_TABLE(iseq) ? ISEQ_CATCH_TABLE(iseq)->size : 0;
     const ibf_offset_t catch_table_offset = ibf_dump_catch_table(dump, iseq);
     /* a NULL parent (persisted root) and references outside a Proc#refined subtree dump come out absent (-1) */
     const int parent_iseq_index =           ibf_table_lookup(dump->iseq_table, (st_data_t)ISEQ_BODY(iseq)->parent_iseq);
     const int local_iseq_index =            ibf_table_lookup(dump->iseq_table, (st_data_t)ISEQ_BODY(iseq)->local_iseq);
-    const int mandatory_only_iseq_index =   ibf_dump_iseq(dump, ISEQ_BODY(iseq)->mandatory_only_iseq);
+    const int mandatory_only_iseq_index =   ibf_dump_iseq(dump, ISEQ_MANDATORY_ONLY_ISEQ(iseq));
     const ibf_offset_t ci_entries_offset =  ibf_dump_ci_entries(dump, iseq);
     const ibf_offset_t outer_variables_offset = ibf_dump_outer_variables(dump, iseq);
 
@@ -14273,7 +14283,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
         load_body->is_entries       = NULL;
     }
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
-    load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
+    struct rb_id_table *outer_variables = ibf_load_outer_variables(load, outer_variables_offset);
+    if (outer_variables) rb_iseq_variable_ensure(iseq)->outer_variables = outer_variables;
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
@@ -14289,7 +14300,9 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 
     RB_OBJ_WRITE(iseq, &load_body->parent_iseq, parent_iseq);
     RB_OBJ_WRITE(iseq, &load_body->local_iseq, local_iseq);
-    RB_OBJ_WRITE(iseq, &load_body->mandatory_only_iseq, mandatory_only_iseq);
+    if (mandatory_only_iseq) {
+        RB_OBJ_WRITE(iseq, &rb_iseq_variable_ensure(iseq)->mandatory_only_iseq, mandatory_only_iseq);
+    }
 
     // This must be done after the local table is loaded.
     if (load_body->param.keyword != NULL) {
