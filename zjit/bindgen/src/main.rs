@@ -439,6 +439,8 @@ fn main() {
         .allowlist_function("rb_get_def_original_id")
         .allowlist_function("rb_get_mct_argc")
         .allowlist_function("rb_get_mct_func")
+        .allowlist_function("rb_jit_iseq_check")
+        .allowlist_function("rb_jit_iseq_check_children")
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_jit_get_proc_ptr")

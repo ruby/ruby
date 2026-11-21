@@ -43,6 +43,7 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_debug.h"
+#include "vm_sync.h"
 #include "yjit.h"
 
 #include "builtin.h"
@@ -12882,6 +12883,7 @@ struct ibf_load {
     rb_iseq_t *iseq;
     VALUE str;
     struct ibf_load_buffer *current_buffer;
+    bool lazy;              /* leave child ISeqs unloaded until first use */
 };
 
 struct pinned_list {
@@ -13943,7 +13945,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     unsigned int *positions;
 
-    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(rb_iseq_check(iseq));
 
     const VALUE location_pathobj_index = ibf_dump_object(dump, body->location.pathobj); /* TODO: freeze */
     const VALUE location_label_index = ibf_dump_object(dump, body->location.label);
@@ -15212,8 +15214,12 @@ ibf_iseq_list(const struct ibf_load *load)
 void
 rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 {
-    struct ibf_load *load = RTYPEDDATA_DATA(iseq->aux.loader.obj);
+    VALUE loader_obj = iseq->aux.loader.obj;
+    struct ibf_load *load = RTYPEDDATA_DATA(loader_obj);
     rb_iseq_t *prev_src_iseq = load->iseq;
+    /* The loader may have been moved by compaction since the last load;
+     * aux.loader.obj is kept up to date by the ISeq's mark function. */
+    load->loader_obj = loader_obj;
     ibf_offset_t offset = ibf_iseq_list(load)[iseq->aux.loader.index];
     load->iseq = iseq;
 #if IBF_ISEQ_DEBUG
@@ -15226,13 +15232,48 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
     FL_UNSET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
     rb_iseq_init_trace(iseq);
     load->iseq = prev_src_iseq;
+    RB_GC_GUARD(loader_obj);
 }
 
 #if USE_LAZY_LOAD
+static VALUE
+iseq_complete_protected(VALUE iseq)
+{
+    rb_ibf_load_iseq_complete((rb_iseq_t *)iseq);
+    return Qnil;
+}
+
+/* Materialize a lazily loaded ISeq.  This can be reached from any Ractor, and
+ * the ISeq (e.g. a method body) can be shared by all of them, so load under
+ * the VM lock with a barrier: other Ractors must neither run the shared
+ * loader concurrently nor observe the body while it is half built (the body
+ * is attached to the ISeq before it is filled so that GC can mark it). */
 const rb_iseq_t *
 rb_iseq_complete(const rb_iseq_t *iseq)
 {
-    rb_ibf_load_iseq_complete((rb_iseq_t *)iseq);
+    int state = 0;
+
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
+        if (ISEQ_BODY(iseq) == NULL) {
+            VM_ASSERT(FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET));
+            rb_protect(iseq_complete_protected, (VALUE)iseq, &state);
+            if (state) {
+                /* e.g. SystemStackError from the loader's frame on a first
+                 * call deep in the stack: drop (leak) the half-built body so
+                 * that the next use loads it again instead of running it. */
+                VM_ASSERT(FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET));
+                ((rb_iseq_t *)iseq)->body = NULL;
+                if (FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED)) {
+                    FL_UNSET_RAW((VALUE)iseq, ISEQ_TRANSLATED);
+#if USE_YJIT
+                    rb_yjit_live_iseq_count--;
+#endif
+                }
+            }
+        }
+    }
+    if (state) rb_jump_tag(state);
     return iseq;
 }
 #endif
@@ -15272,7 +15313,9 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 #endif
             pinned_list_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
-            if (!USE_LAZY_LOAD || GET_VM()->builtin_function_table) {
+            /* The root is always needed right away; builtin ISeqs need the
+             * builtin function table, which only exists while loading. */
+            if (!load->lazy || iseq_index == 0 || GET_VM()->builtin_function_table) {
 #if IBF_ISEQ_DEBUG
                 fprintf(stderr, "ibf_load_iseq: loading iseq=%p\n", (void *)iseq);
 #endif
@@ -15340,12 +15383,24 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
         rb_raise(rb_eRuntimeError, "broken binary format");
     }
 
-    if (USE_LAZY_LOAD) {
-        str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
+    if (load->lazy) {
+        /* Later loads read from the buffer, so it must not change. This
+         * shares the buffer with the caller's string instead of copying. */
+        str = rb_str_new_frozen(str);
     }
 
     ibf_load_setup_bytes(load, loader_obj, RSTRING_PTR(str), RSTRING_LEN(str));
     RB_OBJ_WRITE(loader_obj, &load->str, str);
+
+    if (load->lazy) {
+        /* Completion can run in any Ractor and store objects allocated there
+         * into the lists; with them shareable, the write barrier records those
+         * references for the Ractor-local GCs. */
+        RB_OBJ_SET_SHAREABLE(str);
+        RB_OBJ_SET_SHAREABLE(load->iseq_list);
+        RB_OBJ_SET_SHAREABLE(load->global_buffer.obj_list);
+        RB_OBJ_SET_SHAREABLE(loader_obj);
+    }
 }
 
 static void
@@ -15376,18 +15431,50 @@ static const rb_data_type_t ibf_load_type = {
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
+/* Finding a non-builtin encoding can require an encoding library, which can
+ * switch threads.  That must not happen while a lazily loaded body is half
+ * built (other threads could run it), so resolve them all up front. */
+static void
+ibf_load_resolve_encodings(const struct ibf_load *load)
+{
+    const ibf_offset_t *offsets = (const ibf_offset_t *)(load->global_buffer.buff + load->global_buffer.obj_list_offset);
+
+    for (ibf_offset_t i = 1; i < load->global_buffer.obj_list_size; i++) {
+        ibf_offset_t offset = offsets[i];
+        if (offset >= load->global_buffer.size) {
+            rb_raise(rb_eIndexError, "object offset out of range: %u", offset);
+        }
+        const struct ibf_object_header header = ibf_load_object_object_header(load, &offset);
+        if (header.special_const || header.type != T_STRING) continue;
+
+        int encindex = (int)ibf_load_small_value(load, &offset);
+        if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
+            VALUE enc_name_str = ibf_load_object(load, encindex - RUBY_ENCINDEX_BUILTIN_MAX);
+            rb_enc_find_index(RSTRING_PTR(enc_name_str));
+        }
+    }
+}
+
 const rb_iseq_t *
-rb_iseq_ibf_load(VALUE str)
+rb_iseq_ibf_load_lazy(VALUE str, bool lazy)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
+    load->lazy = USE_LAZY_LOAD && lazy;
     ibf_load_setup(load, loader_obj, str);
+    if (load->lazy) ibf_load_resolve_encodings(load);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);
     return iseq;
+}
+
+const rb_iseq_t *
+rb_iseq_ibf_load(VALUE str)
+{
+    return rb_iseq_ibf_load_lazy(str, false);
 }
 
 const rb_iseq_t *

@@ -1691,7 +1691,7 @@ remove_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 
         if (rb_obj_is_iseq(v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;
-            if (ISEQ_VARIABLE(iseq)) {
+            if (ISEQ_BODY(iseq) && ISEQ_VARIABLE(iseq)) {
                 ISEQ_COVERAGE_SET(iseq, Qnil);
             }
         }
@@ -2140,9 +2140,7 @@ iseqw_check(VALUE iseqw)
     TypedData_Get_Struct(iseqw, rb_iseq_t *, &iseqw_data_type, iseq_ptr);
     rb_iseq_t *iseq = *iseq_ptr;
 
-    if (!ISEQ_BODY(iseq)) {
-        rb_ibf_load_iseq_complete(iseq);
-    }
+    rb_iseq_check(iseq);
 
     if (!ISEQ_BODY(iseq)->location.label) {
         rb_raise(rb_eTypeError, "uninitialized InstructionSequence");
@@ -3178,6 +3176,9 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
     set_table iv_names = { 0 };
     set_init_embedded_numtable_with_size(&iv_names, 0);
 
+    /* initialize is nearly always called, so materialize it if lazily loaded */
+    rb_iseq_check(initialize_iseq);
+
     for (unsigned int i = 0; i < ISEQ_BODY(initialize_iseq)->ivc_size; i++) {
         IVC cache = (IVC)&ISEQ_BODY(initialize_iseq)->is_entries[i];
 
@@ -3243,7 +3244,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
             if (child) {
                 if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
                     rb_hash_aset(all_children, (VALUE)child, Qtrue);
-                    (*iter_func)(child, data);
+                    (*iter_func)(rb_iseq_check(child), data);
                 }
             }
         }
@@ -3262,7 +3263,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
                 if (child) {
                     if (NIL_P(rb_hash_aref(all_children, (VALUE)child))) {
                         rb_hash_aset(all_children, (VALUE)child, Qtrue);
-                        (*iter_func)(child, data);
+                        (*iter_func)(rb_iseq_check(child), data);
                     }
                 }
                 break;
@@ -4347,12 +4348,12 @@ rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval, 
 void
 rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 {
-    if (iseq->aux.exec.global_trace_events == turnon_events) {
+    if (!ISEQ_EXECUTABLE_P(iseq)) {
+        /* this is building or not-yet-loaded ISeq (aux is not aux.exec) */
         return;
     }
 
-    if (!ISEQ_EXECUTABLE_P(iseq)) {
-        /* this is building ISeq */
+    if (iseq->aux.exec.global_trace_events == turnon_events) {
         return;
     }
     else {
@@ -4451,7 +4452,11 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
         rb_asan_unpoison_object(v, false);
 
         if (rb_obj_is_iseq(v)) {
-            rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
+            /* A not-yet-loaded ISeq gets the current global events when it
+             * is completed (rb_iseq_init_trace), so leave it unloaded. */
+            if (ISEQ_BODY((rb_iseq_t *)v)) {
+                rb_iseq_trace_set((rb_iseq_t *)v, turnon_events);
+            }
         }
         else if (clear_attr_cc(v)) {
         }
@@ -4501,10 +4506,15 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     RubyVM::InstructionSequence.load_from_binary(binary) -> iseq
+ *     RubyVM::InstructionSequence.load_from_binary(binary, lazy: false) -> iseq
  *
  *  Load an iseq object from binary format String object
  *  created by RubyVM::InstructionSequence.to_binary.
+ *
+ *  With <code>lazy: true</code>, only the top-level iseq is materialized;
+ *  child iseqs (method bodies, blocks, class bodies, ...) are loaded from
+ *  +binary+ the first time they are needed.  Until all of them are loaded,
+ *  the iseqs keep a frozen copy-on-write reference to +binary+ alive.
  *
  *  This loader does not have a verifier, so that loading broken/modified
  *  binary causes critical problem.
@@ -4513,9 +4523,18 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
  *  You should only use binary data translated by yourself.
  */
 static VALUE
-iseqw_s_load_from_binary(VALUE self, VALUE str)
+iseqw_s_load_from_binary(int argc, VALUE *argv, VALUE self)
 {
-    return iseqw_new(rb_iseq_ibf_load(str));
+    VALUE str, opt, lazy = Qfalse;
+    static ID kw_lazy;
+
+    rb_scan_args(argc, argv, "1:", &str, &opt);
+    if (!NIL_P(opt)) {
+        if (!kw_lazy) kw_lazy = rb_intern_const("lazy");
+        rb_get_kwargs(opt, &kw_lazy, 0, 1, &lazy);
+        if (UNDEF_P(lazy)) lazy = Qfalse;
+    }
+    return iseqw_new(rb_iseq_ibf_load_lazy(str, RTEST(lazy)));
 }
 
 VALUE
@@ -4746,7 +4765,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
 
     rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
-    rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);
+    rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, -1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary_extra_data", iseqw_s_load_from_binary_extra_data, 1);
 
     /* location APIs */

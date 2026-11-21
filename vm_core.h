@@ -629,20 +629,24 @@ struct rb_iseq_struct {
 
 #define ISEQ_BODY(iseq) ((iseq)->body)
 
-#if !defined(USE_LAZY_LOAD) || !(USE_LAZY_LOAD+0)
-#define USE_LAZY_LOAD 0
+/* Support for lazily loaded binary ISeqs
+ * (RubyVM::InstructionSequence.load_from_binary(bin, lazy: true)).  A lazily
+ * loaded ISeq has a NULL body until rb_iseq_check() completes it. */
+#ifndef USE_LAZY_LOAD
+#define USE_LAZY_LOAD 1
 #endif
 
-#if !USE_LAZY_LOAD
+#if USE_LAZY_LOAD
+const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
+#else
 static inline const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq) {return 0;}
 #endif
-const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
 
 static inline const rb_iseq_t *
 rb_iseq_check(const rb_iseq_t *iseq)
 {
-    if (USE_LAZY_LOAD && ISEQ_BODY(iseq) == NULL) {
-        rb_iseq_complete((rb_iseq_t *)iseq);
+    if (USE_LAZY_LOAD && RB_UNLIKELY(ISEQ_BODY(iseq) == NULL)) {
+        rb_iseq_complete(iseq);
     }
     return iseq;
 }

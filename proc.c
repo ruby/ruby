@@ -669,7 +669,7 @@ proc_refined(int argc, VALUE *argv, VALUE self)
         Check_Type(argv[i], T_MODULE);
     }
 
-    const rb_iseq_t *src_iseq = src->block.as.captured.code.iseq;
+    const rb_iseq_t *src_iseq = rb_iseq_check(src->block.as.captured.code.iseq);
     VALUE src_recipe = rb_proc_refinements_recipe(self);
     const rb_cref_t *src_cref, *base_cref;
     if (NIL_P(src_recipe)) {
@@ -2260,7 +2260,8 @@ rb_proc_parameters(int argc, VALUE *argv, VALUE self)
 static st_index_t
 iseq_location_hash(st_index_t hash, const rb_iseq_t *iseq)
 {
-    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    /* the location of a lazily loaded iseq is known only once it is loaded */
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(rb_iseq_check(iseq));
     if (body) {
         const rb_iseq_location_t *loc = &body->location;
         hash = rb_st_hash_uint(hash, (st_index_t)loc->code_location.beg_pos.lineno);
@@ -4999,6 +5000,7 @@ proc_ruby2_keywords(VALUE procval)
 
     switch (proc->block.type) {
       case block_type_iseq:
+        rb_iseq_check(proc->block.as.captured.code.iseq);
         if (ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_rest &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_post &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
