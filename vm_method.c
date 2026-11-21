@@ -1248,8 +1248,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     rb_method_entry_t *me;
     const rb_method_entry_t *refined_orig_me = NULL;
 
-    if (!src_me->defined_class &&
-        def->type == VM_METHOD_TYPE_REFINED &&
+    if (def->type == VM_METHOD_TYPE_REFINED &&
         def->body.refined.orig_me) {
         const rb_method_entry_t *orig_me =
             rb_method_entry_clone(def->body.refined.orig_me);

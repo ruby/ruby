@@ -1035,6 +1035,33 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_bind_module_method_with_unused_refinement
+    bug22614 = '[Bug #22614]'
+    assert_separately([], <<-"end;")
+      bug22614 = #{bug22614.dump}
+      class C
+        def m = :C
+      end
+      class D
+        def m = :D
+      end
+      module M
+        def m = super
+      end
+      class E < C
+        include M
+      end
+      module R
+        refine M do
+          def m = :R
+        end
+      end
+      um = E.new.method(:m).unbind
+      assert_equal(:D, um.bind_call(D.new), bug22614)
+      assert_equal(:D, um.bind(D.new).call, bug22614)
+    end;
+  end
+
   def test_refine_after_using
     assert_separately([], <<-"end;")
       bug8880 = '[ruby-core:57079] [Bug #8880]'
