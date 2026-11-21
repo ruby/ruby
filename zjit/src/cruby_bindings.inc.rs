@@ -2508,6 +2508,11 @@ unsafe extern "C" {
     pub fn rb_zjit_callable_method_entry_is_undefined(
         cme: *const rb_callable_method_entry_t,
     ) -> bool;
+    pub fn rb_zjit_symbol_block_handler(
+        cfp: *const rb_control_frame_t,
+        symbol: VALUE,
+        to_proc_cme: *const rb_callable_method_entry_t,
+    ) -> VALUE;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_vm_once_done_value(is: ISE, result: *mut VALUE) -> bool;
     pub fn rb_zjit_array_aref_with_adjusted_index(

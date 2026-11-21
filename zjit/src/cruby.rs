@@ -1746,6 +1746,7 @@ pub(crate) mod ids {
         name: to_ary
         name: to_s
         name: to_str
+        name: to_proc
         name: compile
         name: eval
         name: plus               content: b"+"

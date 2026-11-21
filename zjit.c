@@ -386,6 +386,15 @@ rb_zjit_callable_method_entry_is_undefined(const rb_callable_method_entry_t *cme
     return UNDEFINED_METHOD_ENTRY_P(cme);
 }
 
+// Defining Symbol#to_proc again with its own definition clears the basic flag in place,
+// without invalidating the entry ZJIT watches, so check the flag on every conversion.
+VALUE
+rb_zjit_symbol_block_handler(const rb_control_frame_t *cfp, VALUE symbol, const rb_callable_method_entry_t *to_proc_cme)
+{
+    if (!METHOD_ENTRY_BASIC(to_proc_cme)) return Qundef;
+    return rb_vm_symbol_block_handler(cfp, symbol);
+}
+
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 bool rb_vm_once_done_value(ISE is, VALUE *result);
 
