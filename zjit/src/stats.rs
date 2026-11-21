@@ -285,7 +285,6 @@ make_counters! {
         send_fallback_super_from_block,
         send_fallback_super_class_not_found,
         send_fallback_super_complex_args_pass,
-        send_fallback_super_fallback_no_profile,
         send_fallback_super_not_optimized_method_type,
         send_fallback_super_polymorphic,
         send_fallback_super_target_not_found,
@@ -320,6 +319,7 @@ make_counters! {
         setivar_fallback_new_shape_complex,
         setivar_fallback_new_shape_needs_extension,
         setivar_fallback_no_side_exits,
+        setivar_fallback_shape_miss,
     }
 
     // Ivar fallback counters that are summed as dynamic_getivar_count
@@ -336,6 +336,7 @@ make_counters! {
         getivar_fallback_complex,
         getivar_fallback_no_side_exits,
         getivar_fallback_multi_ractor,
+        getivar_fallback_shape_miss,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
@@ -687,7 +688,6 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperFromBlock                            => send_fallback_super_from_block,
         SuperClassNotFound                        => send_fallback_super_class_not_found,
         SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,
-        SuperNoProfiles                           => send_fallback_super_fallback_no_profile,
         SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
