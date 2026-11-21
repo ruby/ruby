@@ -581,6 +581,42 @@ class TestClass < Test::Unit::TestCase
     assert_empty(clone.singleton_class.singleton_class.instance_methods(false))
   end
 
+  def test_clone_singleton_class_with_prepended_module
+    mod = Module.new do
+      def foo; [:mod, super]; end
+      def bar; [0].each { return [:mod, super] }; end
+    end
+    klass = Class.new do
+      def foo; :klass; end
+      def bar; :klass; end
+    end
+
+    o = klass.new
+    o.singleton_class.prepend(mod)
+    def o.foo; [:singleton, self]; end
+    clone = o.clone
+
+    # The clone has its own copy of the prepended chain
+    # and does not run methods of the original's singleton class.
+    clone_singleton = clone.singleton_class
+    assert_equal([mod, clone_singleton, klass], clone_singleton.ancestors.first(3))
+    assert_equal([:mod, [:singleton, clone]], clone.foo)
+    assert_equal([:mod, [:singleton, o]], o.foo)
+    assert_equal([:mod, :klass], clone.bar)
+
+    def o.bar; :original_only; end
+    assert_equal([:mod, :original_only], o.bar)
+    assert_equal([:mod, :klass], clone.bar)
+
+    # Same for singleton classes of classes
+    klass.singleton_class.prepend(mod)
+    def klass.foo; [:singleton, self]; end
+    klass_clone = klass.clone
+    assert_equal([:mod, [:singleton, klass_clone]], klass_clone.foo)
+    def klass.foo; :original_only; end
+    assert_equal([:mod, [:singleton, klass_clone]], klass_clone.foo)
+  end
+
   def test_clone_when_singleton_class_of_singleton_class_exists
     klass = Class.new do
       def self.bar; :bar; end

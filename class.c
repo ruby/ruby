@@ -1051,6 +1051,73 @@ init_copy_owner_check(VALUE orig)
     }
 }
 
+// Give `clone` its own origin and its own copies of the iclasses between
+// `orig` and the origin of `orig`. For when `orig` has prepended modules.
+static void
+class_copy_prepended_chain(VALUE clone, VALUE orig)
+{
+    VALUE p = RCLASS_SUPER(orig);
+    VALUE orig_origin = RCLASS_ORIGIN(orig);
+    VALUE prev_clone_p = clone;
+    VALUE origin_stack = rb_ary_hidden_new(2);
+    VALUE origin[2];
+    VALUE clone_p = 0;
+    rb_len_t origin_len;
+    int add_subclass;
+    VALUE clone_origin;
+
+    ensure_origin(clone);
+    clone_origin = RCLASS_ORIGIN(clone);
+
+    while (p && p != orig_origin) {
+        if (BUILTIN_TYPE(p) != T_ICLASS) {
+            rb_bug("non iclass between module/class and origin");
+        }
+        clone_p = class_alloc(T_ICLASS, METACLASS_OF(p));
+        RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
+        rb_class_set_super(prev_clone_p, clone_p);
+        prev_clone_p = clone_p;
+        RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p), false);
+        RCLASS_SET_INCLUDER(clone_p, clone);
+        add_subclass = TRUE;
+        if (p != RCLASS_ORIGIN(p)) {
+            origin[0] = clone_p;
+            origin[1] = RCLASS_ORIGIN(p);
+            rb_ary_cat(origin_stack, origin, 2);
+        }
+        else if ((origin_len = RARRAY_LEN(origin_stack)) > 1 &&
+                 RARRAY_AREF(origin_stack, origin_len - 1) == p) {
+            RCLASS_WRITE_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), clone_p);
+            RICLASS_WRITE_ORIGIN_SHARED_MTBL(clone_p);
+            rb_ary_resize(origin_stack, origin_len);
+            add_subclass = FALSE;
+        }
+        if (add_subclass) {
+            rb_module_add_to_subclasses_list(METACLASS_OF(p), clone_p);
+        }
+        p = RCLASS_SUPER(p);
+    }
+
+    if (p == orig_origin) {
+        if (clone_p) {
+            rb_class_set_super(clone_p, clone_origin);
+            rb_class_set_super(clone_origin, RCLASS_SUPER(orig_origin));
+        }
+        copy_tables(clone_origin, orig_origin);
+        if (RCLASS_M_TBL(orig_origin)) {
+            struct clone_method_arg arg;
+            arg.new_klass = clone;
+            class_initialize_method_table(clone_origin);
+            rb_id_table_foreach(RCLASS_M_TBL(orig_origin), clone_method_i, &arg);
+        }
+    }
+    else {
+        rb_bug("no origin for class that has origin");
+    }
+
+    rb_class_update_superclasses(clone);
+}
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
@@ -1098,66 +1165,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         rb_class_set_super(clone, RCLASS_SUPER(orig));
     }
     else {
-        VALUE p = RCLASS_SUPER(orig);
-        VALUE orig_origin = RCLASS_ORIGIN(orig);
-        VALUE prev_clone_p = clone;
-        VALUE origin_stack = rb_ary_hidden_new(2);
-        VALUE origin[2];
-        VALUE clone_p = 0;
-        rb_len_t origin_len;
-        int add_subclass;
-        VALUE clone_origin;
-
-        ensure_origin(clone);
-        clone_origin = RCLASS_ORIGIN(clone);
-
-        while (p && p != orig_origin) {
-            if (BUILTIN_TYPE(p) != T_ICLASS) {
-                rb_bug("non iclass between module/class and origin");
-            }
-            clone_p = class_alloc(T_ICLASS, METACLASS_OF(p));
-            RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
-            rb_class_set_super(prev_clone_p, clone_p);
-            prev_clone_p = clone_p;
-            RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p), false);
-            RCLASS_SET_INCLUDER(clone_p, clone);
-            add_subclass = TRUE;
-            if (p != RCLASS_ORIGIN(p)) {
-                origin[0] = clone_p;
-                origin[1] = RCLASS_ORIGIN(p);
-                rb_ary_cat(origin_stack, origin, 2);
-            }
-            else if ((origin_len = RARRAY_LEN(origin_stack)) > 1 &&
-                     RARRAY_AREF(origin_stack, origin_len - 1) == p) {
-                RCLASS_WRITE_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), clone_p);
-                RICLASS_WRITE_ORIGIN_SHARED_MTBL(clone_p);
-                rb_ary_resize(origin_stack, origin_len);
-                add_subclass = FALSE;
-            }
-            if (add_subclass) {
-                rb_module_add_to_subclasses_list(METACLASS_OF(p), clone_p);
-            }
-            p = RCLASS_SUPER(p);
-        }
-
-        if (p == orig_origin) {
-            if (clone_p) {
-                rb_class_set_super(clone_p, clone_origin);
-                rb_class_set_super(clone_origin, RCLASS_SUPER(orig_origin));
-            }
-            copy_tables(clone_origin, orig_origin);
-            if (RCLASS_M_TBL(orig_origin)) {
-                struct clone_method_arg arg;
-                arg.new_klass = clone;
-                class_initialize_method_table(clone_origin);
-                rb_id_table_foreach(RCLASS_M_TBL(orig_origin), clone_method_i, &arg);
-            }
-        }
-        else {
-            rb_bug("no origin for class that has origin");
-        }
-
-        rb_class_update_superclasses(clone);
+        class_copy_prepended_chain(clone, orig);
     }
 
     if (RB_TYPE_P(clone, T_CLASS)) {
@@ -1211,7 +1219,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         // initialize method table before any GC chance
         class_initialize_method_table(clone);
 
-        rb_class_set_super(clone, RCLASS_SUPER(klass));
+        // With prepended modules, the chain up to the origin is copied below.
+        // Sharing it would have the clone run the methods of `klass`.
+        rb_class_set_super(clone, RCLASS_SUPER(RCLASS_ORIGIN(klass)));
         rb_fields_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
@@ -1230,6 +1240,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
             struct clone_method_arg arg;
             arg.new_klass = clone;
             rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
+        }
+        if (RCLASS_ORIGIN(klass) != klass) {
+            class_copy_prepended_chain(clone, klass);
         }
         if (klass_of_clone_is_new) {
             rb_singleton_class_attached(METACLASS_OF(clone), clone);
