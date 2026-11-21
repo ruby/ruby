@@ -793,8 +793,10 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                     if (numbytes == 0) {
                         numbytes = 1;
                     }
-                    else if (nlz_bits == 0 && type == 'r') {
-                        /* No leading zero bits, we need an extra byte for sign extension */
+                    else if (nlz_bits == 0 && type == 'r' &&
+                             !(rb_int_negative_p(from) && rb_absint_singlebit_p(from))) {
+                        /* No leading zero bits, we need an extra byte for sign extension,
+                         * except for -2**(7*numbytes-1), whose top bit is already the sign bit */
                         extra = 1;
                     }
                     rb_str_modify_expand(res, numbytes + extra);
