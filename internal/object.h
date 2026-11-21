@@ -89,11 +89,18 @@ rb_obj_embedded_size(uint32_t fields_count)
     return size;
 }
 
+/*
+ * Compares +recv+ and +obj+, which are not identical, by #== or #eql?
+ * without calling the method, or returns Qundef if it cannot.  +bop+ is
+ * BOP_EQ or BOP_EQL, the method that is compared by.  The answer is the
+ * same for both methods, but only while neither is redefined in any of
+ * the classes handled here.
+ */
 static inline VALUE
-opt_equality_specialized_miss(VALUE recv, VALUE obj)
+opt_equality_specialized_miss(VALUE recv, VALUE obj, enum ruby_basic_operators bop)
 {
     RBIMPL_ASSERT_OR_ASSUME(recv != obj);
-    if (BASIC_OP_UNREDEFINED_P(BOP_EQ, ANY_REDEFINED_OP_FLAG)) {
+    if (BASIC_OP_UNREDEFINED_P(bop, ANY_REDEFINED_OP_FLAG)) {
         if (recv == Qfalse) return Qfalse;
         if (IMMEDIATE_P(recv)) {
             // Numeric immediates can be equal to different VALUE via coercion.
@@ -125,7 +132,7 @@ rb_equal_inline(VALUE obj1, VALUE obj2)
 {
     if (obj1 == obj2) return Qtrue;
 
-    VALUE result = opt_equality_specialized_miss(obj1, obj2);
+    VALUE result = opt_equality_specialized_miss(obj1, obj2, BOP_EQ);
     if (UNDEF_P(result)) {
         result = rb_equal_opt(obj1, obj2);
     }
@@ -139,7 +146,7 @@ rb_eql_inline(VALUE obj1, VALUE obj2)
 {
     if (obj1 == obj2) return TRUE;
 
-    VALUE result = opt_equality_specialized_miss(obj1, obj2);
+    VALUE result = opt_equality_specialized_miss(obj1, obj2, BOP_EQL);
     if (UNDEF_P(result)) {
         result = rb_eql_opt(obj1, obj2);
     }

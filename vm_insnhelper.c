@@ -2584,7 +2584,7 @@ opt_equality_specialized(VALUE recv, VALUE obj)
         return Qundef;
     }
 
-    return opt_equality_specialized_miss(recv, obj);
+    return opt_equality_specialized_miss(recv, obj, BOP_EQ);
 }
 
 static VALUE

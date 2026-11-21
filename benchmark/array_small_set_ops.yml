@@ -1,0 +1,19 @@
+prelude: |
+  ids = Array.new(1000) { |i| i + 1 }
+  syms = Array.new(1000) { |i| :"s#{i}" }
+  strs = Array.new(1000) { |i| "s#{i}" }
+  ints = Array.new(8) { |i| i + 1 }
+  mixed = [nil, false, :a, "a", 9, 10, 11, 12]
+  dsyms = Array.new(8) { |i| :"d#{i}" }
+
+benchmark:
+  ids - [nil]: ids - [nil]
+  ids - [nil, ""]: ids - [nil, ""]
+  ids - [5]: ids - [5]
+  syms - [nil]: syms - [nil]
+  strs - [nil]: strs - [nil]
+  ints & mixed: ints & mixed
+  ints & ints: ints & ints
+  ints | mixed: ints | mixed
+  ints.intersect?(mixed): ints.intersect?(mixed)
+  dsyms & mixed: dsyms & mixed
