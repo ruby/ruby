@@ -3572,6 +3572,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             }
             else {
                 klass = rb_include_class_new(methclass, klass);
+                iclass = klass;
             }
         }
         me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);
