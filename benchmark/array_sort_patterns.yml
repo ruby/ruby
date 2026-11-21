@@ -1,0 +1,44 @@
+# The results of a single run vary a lot on a machine that is not idle.
+# Take the best of several runs, as:
+#
+#   make benchmark ITEM=array_sort_patterns OPTS="--repeat-count 6"
+prelude: |
+  srand(42)
+  sizes = [10, 1_000, 100_000]
+  # Each benchmark sorts many distinct arrays, since sorting one small
+  # array repeatedly lets the branch predictor learn the comparisons.
+  pools = ->(&gen) { sizes.to_h { |n| [n, Array.new(100_000 / n) { gen.(n) }] } }
+
+  int_random = pools.() { |n| Array.new(n) { rand(-(1 << 40)..(1 << 40)) } }
+  int_few_distinct = pools.() { |n| Array.new(n) { rand(8) } }
+  int_sorted = pools.() { |n| Array.new(n) { |i| i } }
+  int_reversed = pools.() { |n| Array.new(n) { |i| n - i } }
+  int_organ_pipe = pools.() { |n| Array.new(n) { |i| i < n / 2 ? i : n - i } }
+  float_random = pools.() { |n| Array.new(n) { rand * 2000 - 1000 } }
+  # not all elements are Integers, found at the last element
+  int_then_float = pools.() { |n| Array.new(n) { rand(1 << 40) }.tap { |a| a[-1] = 0.5 } }
+
+benchmark:
+  int_random_10: int_random[10].each { |a| a.sort }
+  int_random_1000: int_random[1_000].each { |a| a.sort }
+  int_random_100000: int_random[100_000].each { |a| a.sort }
+  int_few_distinct_10: int_few_distinct[10].each { |a| a.sort }
+  int_few_distinct_1000: int_few_distinct[1_000].each { |a| a.sort }
+  int_few_distinct_100000: int_few_distinct[100_000].each { |a| a.sort }
+  int_sorted_10: int_sorted[10].each { |a| a.sort }
+  int_sorted_1000: int_sorted[1_000].each { |a| a.sort }
+  int_sorted_100000: int_sorted[100_000].each { |a| a.sort }
+  int_reversed_10: int_reversed[10].each { |a| a.sort }
+  int_reversed_1000: int_reversed[1_000].each { |a| a.sort }
+  int_reversed_100000: int_reversed[100_000].each { |a| a.sort }
+  int_organ_pipe_10: int_organ_pipe[10].each { |a| a.sort }
+  int_organ_pipe_1000: int_organ_pipe[1_000].each { |a| a.sort }
+  int_organ_pipe_100000: int_organ_pipe[100_000].each { |a| a.sort }
+  float_random_10: float_random[10].each { |a| a.sort }
+  float_random_1000: float_random[1_000].each { |a| a.sort }
+  float_random_100000: float_random[100_000].each { |a| a.sort }
+  int_then_float_10: int_then_float[10].each { |a| a.sort }
+  int_then_float_1000: int_then_float[1_000].each { |a| a.sort }
+  int_then_float_100000: int_then_float[100_000].each { |a| a.sort }
+
+loop_count: 20
