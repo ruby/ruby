@@ -28,8 +28,14 @@ struct rb_io_blocking_operation {
     // The execution context of the blocking operation.
     struct rb_execution_context_struct *ec;
 
+    // The execution context that registered the operation; unlike `ec`, not cleared on exit.
+    struct rb_execution_context_struct *owner;
+
     // An operation-scoped target passed to the Fiber scheduler if interrupted.
     VALUE scheduler_interrupt_target;
+
+    // Whether the owner's fiber was blocking at registration. Only non-blocking fibers can be abandoned.
+    bool blocking;
 };
 
 /** Ruby's IO, metadata and buffers. */

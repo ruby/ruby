@@ -1553,6 +1553,12 @@ rb_gc_handle_weak_references(void *objspace, VALUE obj)
         }
         break;
 
+      case T_FILE:
+        if (RFILE(obj)->fptr) {
+            rb_io_blocking_operations_handle_weak_references(RFILE(obj)->fptr, objspace);
+        }
+        break;
+
       case T_IMEMO: {
         switch (imemo_type(obj)) {
           case imemo_callcache: {

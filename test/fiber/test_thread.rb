@@ -3,6 +3,8 @@ require "test/unit"
 require_relative 'scheduler'
 
 class TestFiberThread < Test::Unit::TestCase
+  include ParkedWaiterAssertions
+
   def test_thread_join
     thread = Thread.new do
       scheduler = Scheduler.new
@@ -171,5 +173,53 @@ class TestFiberThread < Test::Unit::TestCase
     thread.join
   ensure
     inner&.join
+  end
+
+  # A fiber parked in Thread#join by a scheduler that never resumes it leaves its
+  # on-stack join waiter linked into the target's join list. Once the fiber was
+  # collected, the target's exit read the freed waiter.
+  def test_thread_join_from_collected_fiber
+    assert_separately([], <<~'RUBY')
+      class Scheduler
+        def initialize = @main = Fiber.current
+        def block(blocker, timeout = nil) = @main.transfer
+        def unblock(blocker, fiber) = nil
+        def kernel_sleep(duration = nil) = block(:sleep, duration)
+        def io_wait(io, events, timeout) = block(:io_wait, timeout)
+        def fiber_interrupt(fiber, exception) = nil
+        def close = nil
+        def fiber(&) = Fiber.new(blocking: false, &).tap(&:transfer)
+      end
+
+      100.times do |i|
+        target = nil
+        Thread.new do
+          Fiber.set_scheduler(Scheduler.new)
+          Fiber.schedule { (target = Thread.new { sleep 0.001 }).join }
+        end.join
+        GC.start(full_mark: i.even?)
+        target.join
+      end
+    RUBY
+  end
+
+  # The holder is a target thread that waits on a queue, so it is still
+  # running when the joining fiber is collected; wake lets it exit.
+  JOIN_TARGET = "Thread::Queue.new.then { |q| [Thread.new { q.pop }, q] }"
+  JOIN = "->((t, _)) { t.join }"
+  JOIN_WAKE = "->((t, q)) { q.push(nil); t.join }"
+
+  def test_thread_join_from_collected_fiber_old_target
+    assert_parked_waiter_released(JOIN_TARGET, JOIN, JOIN_WAKE, old_holder: true)
+  end
+
+  # The joining fiber outlives its thread, so the target's exit wakes a waiter
+  # of a dead thread.
+  def test_thread_join_from_fiber_of_dead_thread
+    assert_parked_waiter_released(JOIN_TARGET, JOIN, JOIN_WAKE, keep_fiber: true)
+  end
+
+  def test_thread_join_from_collected_fiber_during_incremental_mark
+    assert_parked_waiter_released(JOIN_TARGET, JOIN, JOIN_WAKE, incremental: true)
   end
 end

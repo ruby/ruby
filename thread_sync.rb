@@ -123,9 +123,11 @@ class Thread
     def close
       Primitive.cstmt! %{
         if (!queue_closed_p(self)) {
+            struct rb_queue *q = queue_ptr(self);
+
             FL_SET_RAW(self, QUEUE_CLOSED);
 
-            wakeup_all(&queue_ptr(self)->waitq);
+            q->num_waiting -= wakeup_all(&q->waitq);
         }
 
         return self;
@@ -257,8 +259,8 @@ class Thread
             struct rb_szqueue *sq = szqueue_ptr(self);
 
             FL_SET(self, QUEUE_CLOSED);
-            wakeup_all(szqueue_waitq(sq));
-            wakeup_all(szqueue_pushq(sq));
+            sq->q.num_waiting -= wakeup_all(szqueue_waitq(sq));
+            sq->num_waiting_push -= wakeup_all(szqueue_pushq(sq));
         }
         return self;
       }
@@ -269,7 +271,7 @@ class Thread
       Primitive.cstmt! %{
         struct rb_szqueue *sq = szqueue_ptr(self);
         queue_clear(&sq->q);
-        wakeup_all(szqueue_pushq(sq));
+        sq->num_waiting_push -= wakeup_all(szqueue_pushq(sq));
         return self;
       }
     end
@@ -304,7 +306,7 @@ class Thread
             diff = max - sq->max;
         }
         sq->max = max;
-        sync_wakeup(szqueue_pushq(sq), diff);
+        sq->num_waiting_push -= sync_wakeup(szqueue_pushq(sq), diff);
         return vmax;
       }
     end
