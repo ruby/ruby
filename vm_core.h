@@ -571,25 +571,22 @@ struct rb_iseq_constant_body {
         } *keyword;
     } param;
 
-    rb_iseq_location_t location;
+    /* Read on every call: keep close to param and iseq_encoded. */
+    unsigned int local_table_size;
+    unsigned int stack_max; /* for stack overflow check */
 
-    /* insn info, must be freed */
-    struct iseq_insn_info {
-        const struct iseq_insn_info_entry *body;
-        union {
-            unsigned int *positions;
-#if VM_INSN_INFO_TABLE_IMPL == 2
-            struct succ_index_table *succ_index_table;
+#if USE_YJIT || USE_ZJIT
+    // Function pointer for JIT code on jit_exec()
+    rb_jit_func_t jit_entry;
+    // Number of calls on jit_exec()
+    unsigned int jit_entry_calls;
 #endif
-        } positions_or_succ_index_table;
-#ifdef USE_ISEQ_NODE_ID
-        const uint8_t *node_ids;
-#endif
-        unsigned int size;
-#ifdef USE_ISEQ_NODE_ID
-        unsigned int node_ids_size;
-#endif
-    } insns_info;
+
+    unsigned int ic_size;     // Number of IC caches
+    unsigned int ise_size;    // Number of ISE caches
+    unsigned int ivc_size;    // Number of IVC caches
+    unsigned int icvarc_size; // Number of ICVARC caches
+    unsigned int ci_size;
 
     const ID *local_table;		/* must free */
 
@@ -611,27 +608,32 @@ struct rb_iseq_constant_body {
     union iseq_inline_storage_entry *is_entries; /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
     struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
 
-    struct rb_iseq_variable *variable;
-
-    unsigned int local_table_size;
-    unsigned int ic_size;     // Number of IC caches
-    unsigned int ise_size;    // Number of ISE caches
-    unsigned int ivc_size;    // Number of IVC caches
-    unsigned int icvarc_size; // Number of ICVARC caches
-    unsigned int ci_size;
-    unsigned int stack_max; /* for stack overflow check */
-
     union {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;
     } mark_bits;
 
-#if USE_YJIT || USE_ZJIT
-    // Number of calls on jit_exec()
-    unsigned int jit_entry_calls;
-    // Function pointer for JIT code on jit_exec()
-    rb_jit_func_t jit_entry;
+    struct rb_iseq_variable *variable;
+
+    rb_iseq_location_t location;
+
+    /* insn info, must be freed */
+    struct iseq_insn_info {
+        const struct iseq_insn_info_entry *body;
+        union {
+            unsigned int *positions;
+#if VM_INSN_INFO_TABLE_IMPL == 2
+            struct succ_index_table *succ_index_table;
 #endif
+        } positions_or_succ_index_table;
+#ifdef USE_ISEQ_NODE_ID
+        const uint8_t *node_ids;
+#endif
+        unsigned int size;
+#ifdef USE_ISEQ_NODE_ID
+        unsigned int node_ids_size;
+#endif
+    } insns_info;
 };
 
 /* T_IMEMO/iseq */

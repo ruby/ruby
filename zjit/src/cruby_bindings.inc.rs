@@ -1291,21 +1291,6 @@ pub struct rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword {
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct rb_iseq_constant_body_iseq_insn_info {
-    pub body: *const iseq_insn_info_entry,
-    pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
-    pub node_ids: *const u8,
-    pub size: ::std::os::raw::c_uint,
-    pub node_ids_size: ::std::os::raw::c_uint,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
-    pub positions: *mut ::std::os::raw::c_uint,
-    pub succ_index_table: *mut succ_index_table,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
 pub union rb_iseq_constant_body__bindgen_ty_1 {
     pub list: *mut u8,
     pub single: [u8; 8usize],
@@ -1321,6 +1306,21 @@ pub union rb_iseq_constant_body__bindgen_ty_2 {
 pub union rb_iseq_constant_body__bindgen_ty_3 {
     pub list: *mut iseq_bits_t,
     pub single: iseq_bits_t,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct rb_iseq_constant_body_iseq_insn_info {
+    pub body: *const iseq_insn_info_entry,
+    pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
+    pub node_ids: *const u8,
+    pub size: ::std::os::raw::c_uint,
+    pub node_ids_size: ::std::os::raw::c_uint,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
+    pub positions: *mut ::std::os::raw::c_uint,
+    pub succ_index_table: *mut succ_index_table,
 }
 #[repr(C)]
 pub struct rb_iseq_struct {

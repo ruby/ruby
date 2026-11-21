@@ -63,6 +63,15 @@ static int succ_index_lookup(const struct succ_index_table *sd, int x);
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
+/* The type and builtin_attrs bit-fields of rb_iseq_constant_body are 8 bits wide. */
+STATIC_ASSERT(iseq_type_fits_in_8_bits, ISEQ_TYPE_PLAIN < (1 << 8));
+STATIC_ASSERT(builtin_attrs_fit_in_8_bits, BUILTIN_ATTR_ALWAYS_INLINE < (1 << 8));
+#if SIZEOF_VOIDP == 8
+/* Keep the body small enough that rb_iseq_t and the body could share a
+ * 256-byte GC slot. */
+STATIC_ASSERT(iseq_constant_body_size, sizeof(struct rb_iseq_constant_body) <= 224);
+#endif
+
 static inline VALUE
 obj_resurrect(VALUE obj)
 {
