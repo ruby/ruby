@@ -287,6 +287,34 @@ impl JITFrame {
     }
 }
 
+/// A [JITFrame] that is not allocated yet, so no stable address usable for baking into generated
+/// code. Used at compile-time by [crate::backend::lir::SideExitStackMap].
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct PendingJITFrame {
+    pc: *const VALUE,
+    iseq: IseqPtr,
+    /// The flag the allocated JITFrame's stack map starts with. See [JITFrame::materialize_block_code].
+    materialize_block_code: bool,
+}
+
+impl PendingJITFrame {
+    /// Describe a JITFrame for an ISEQ frame without allocating it.
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> Self {
+        Self { pc, iseq, materialize_block_code: !iseq_may_write_block_code(iseq) }
+    }
+
+    pub fn stack_map_writer(&self) -> StackMapWriter {
+        StackMapWriter::new(self.materialize_block_code)
+    }
+
+    /// Allocate the JITFrame with a stack map built from [Self::stack_map_writer].
+    pub fn alloc(self, writer: StackMapWriter) -> *const JITFrame {
+        let jit_frame = JITFrame::alloc(self.pc, self.iseq, self.materialize_block_code);
+        unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
+        jit_frame
+    }
+}
+
 /// Update the iseq pointer in an on-stack JITFrame during GC compaction.
 /// Called from rb_execution_context_update in vm.c.
 #[unsafe(no_mangle)]
