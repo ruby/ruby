@@ -140,6 +140,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define NST_IN_REPEAT             (1<<12) /* STK_REPEAT is nested in stack. */
 #define NST_NEST_LEVEL            (1<<13)
 #define NST_BY_NUMBER             (1<<14) /* {n,m} */
+#define NST_FOLD_VARLEN           (1<<15)
 
 #define SET_ENCLOSE_STATUS(node,f)      (node)->u.enclose.state |=  (f)
 #define CLEAR_ENCLOSE_STATUS(node,f)    (node)->u.enclose.state &= ~(f)
@@ -162,6 +163,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define IS_CALL_NAME_REF(cn)           (((cn)->state & NST_NAME_REF)   != 0)
 #define IS_BACKREF_NAME_REF(bn)        (((bn)->state & NST_NAME_REF)   != 0)
 #define IS_BACKREF_NEST_LEVEL(bn)      (((bn)->state & NST_NEST_LEVEL) != 0)
+#define IS_BACKREF_FOLD_VARLEN(bn)     (((bn)->state & NST_FOLD_VARLEN) != 0)
 #define IS_QUANTIFIER_IN_REPEAT(qn)    (((qn)->state & NST_IN_REPEAT)  != 0)
 #define IS_QUANTIFIER_BY_NUMBER(qn)    (((qn)->state & NST_BY_NUMBER)  != 0)
 

@@ -2276,6 +2276,9 @@ get_min_match_length(Node* node, OnigDistance *min, ScanEnv* env)
         if (r != 0) break;
         if (*min > tmin) *min = tmin;
       }
+      if (IS_BACKREF_FOLD_VARLEN(br) &&
+          *min > (OnigDistance )ONIGENC_MBC_MINLEN(env->enc))
+        *min = ONIGENC_MBC_MINLEN(env->enc);
     }
     break;
 
@@ -2438,6 +2441,8 @@ get_max_match_length(Node* node, OnigDistance *max, ScanEnv* env)
         if (r != 0) break;
         if (*max < tmax) *max = tmax;
       }
+      if (IS_BACKREF_FOLD_VARLEN(br))
+        *max = distance_multiply(*max, ONIGENC_MBC_MAXLEN(env->enc));
     }
     break;
 
@@ -3539,7 +3544,7 @@ expand_case_fold_make_rem_string(Node** rnode, UChar *s, UChar *end,
 
 static int
 is_case_fold_variable_len(int item_num, OnigCaseFoldCodeItem items[],
-                          int slen)
+                          int slen, OnigEncoding enc)
 {
   int i;
 
@@ -3548,6 +3553,9 @@ is_case_fold_variable_len(int item_num, OnigCaseFoldCodeItem items[],
       return 1;
     }
     if (items[i].code_len != 1) {
+      return 1;
+    }
+    if (ONIGENC_CODE_TO_MBCLEN(enc, items[i].code[0]) != slen) {
       return 1;
     }
   }
@@ -3703,7 +3711,7 @@ expand_case_fold_string(Node* node, regex_t* reg, int state)
 
     len = enclen(reg->enc, p, end);
 
-    varlen = is_case_fold_variable_len(n, items, len);
+    varlen = is_case_fold_variable_len(n, items, len, reg->enc);
     if (n == 0 || varlen == 0 || is_in_look_behind) {
       if (IS_NULL(snode)) {
         if (IS_NULL(root) && IS_NOT_NULL(prev_node)) {
@@ -5029,10 +5037,11 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         set_mml(&opt->len, slen, slen);
       }
       else {
-        OnigDistance max;
+        OnigDistance min = slen, max;
 
         if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
           int n = onigenc_strlen(env->enc, sn->s, sn->end);
+          min = (OnigDistance )ONIGENC_MBC_MINLEN(env->enc) * (OnigDistance)n;
           max = (OnigDistance )ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
         }
         else {
@@ -5049,7 +5058,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
           max = slen;
         }
 
-        set_mml(&opt->len, slen, max);
+        set_mml(&opt->len, min, max);
       }
 
       if ((OnigDistance )opt->exb.len == slen)
@@ -5192,6 +5201,11 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
         if (r != 0) break;
         if (min > tmin) min = tmin;
         if (max < tmax) max = tmax;
+      }
+      if (IS_BACKREF_FOLD_VARLEN(br)) {
+        if (min > (OnigDistance )ONIGENC_MBC_MINLEN(env->enc))
+          min = ONIGENC_MBC_MINLEN(env->enc);
+        max = distance_multiply(max, ONIGENC_MBC_MAXLEN(env->enc));
       }
       if (r == 0) set_mml(&opt->len, min, max);
     }
