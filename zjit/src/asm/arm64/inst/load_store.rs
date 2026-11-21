@@ -24,7 +24,8 @@ impl From<u8> for Size {
 enum Opc {
     STR = 0b00,
     LDR = 0b01,
-    LDURSW = 0b10
+    /// Sign extend into a 64-bit register. Pairs with Size8, Size16 and Size32.
+    LDURS64 = 0b10
 }
 
 /// What kind of indexing to perform for this instruction.
@@ -95,10 +96,22 @@ impl LoadStore {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDR, size: Size::Size8 }
     }
 
+    /// LDURSB (load register, byte, unscaled, signed)
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSB--Load-Register-Signed-Byte--unscaled-->
+    pub fn ldursb(rt: u8, rn: u8, imm9: i16) -> Self {
+        Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDURS64, size: Size::Size8 }
+    }
+
+    /// LDURSH (load register, halfword, unscaled, signed)
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSH--Load-Register-Signed-Halfword--unscaled-->
+    pub fn ldursh(rt: u8, rn: u8, imm9: i16) -> Self {
+        Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDURS64, size: Size::Size16 }
+    }
+
     /// LDURSW (load register, unscaled, signed)
     /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSW--Load-Register-Signed-Word--unscaled--?lang=en>
     pub fn ldursw(rt: u8, rn: u8, imm9: i16) -> Self {
-        Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDURSW, size: Size::Size32 }
+        Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDURS64, size: Size::Size32 }
     }
 
     /// STR (immediate, post-index)
@@ -202,6 +215,20 @@ mod tests {
         let inst = LoadStore::ldur(0, 1, 123, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf847b020, result);
+    }
+
+    #[test]
+    fn test_ldursb() {
+        let inst = LoadStore::ldursb(0, 1, 0);
+        let result: u32 = inst.into();
+        assert_eq!(0x38800020, result);
+    }
+
+    #[test]
+    fn test_ldursh() {
+        let inst = LoadStore::ldursh(0, 1, 0);
+        let result: u32 = inst.into();
+        assert_eq!(0x78800020, result);
     }
 
     #[test]
