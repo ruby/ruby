@@ -166,10 +166,10 @@ class Array
   def last n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
-      Primitive.cexpr! %q{ ary_last(self) }
+      Primitive.rb_builtin_ary_last
     else
       if unspecified
-        Primitive.cexpr! %q{ ary_last(self) }
+        Primitive.rb_builtin_ary_last
       else
         Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_LAST) }
       end
