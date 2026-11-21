@@ -4384,6 +4384,10 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           goto fail_match_cache;
         }
         if (msa->cache_opcodes == NULL) {
+          if ((size_t)msa->num_cache_opcodes > SIZE_MAX / sizeof(OnigCacheOpcode)) {
+            msa->match_cache_status = MATCH_CACHE_STATUS_DISABLED;
+            goto fail_match_cache;
+          }
           msa->match_cache_status = MATCH_CACHE_STATUS_ENABLED;
           OnigCacheOpcode* cache_opcodes = (OnigCacheOpcode*)xmalloc(msa->num_cache_opcodes * sizeof(OnigCacheOpcode));
           if (cache_opcodes == NULL) {
