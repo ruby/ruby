@@ -55,13 +55,8 @@
 #include "zjit.h"
 #include "ruby/internal/attr/nonstring.h"
 
-#if defined HAVE_CRYPT_R
-# if defined HAVE_CRYPT_H
+#if (defined HAVE_CRYPT_R || defined HAVE_CRYPT) && defined HAVE_CRYPT_H
 #  include <crypt.h>
-# endif
-#elif !defined HAVE_CRYPT
-# include "missing/crypt.h"
-# define HAVE_CRYPT_R 1
 #endif
 
 #undef rb_str_new
@@ -14151,7 +14146,7 @@ rb_str_oct(VALUE str)
     return rb_str_to_inum(str, -8, FALSE);
 }
 
-#ifndef HAVE_CRYPT_R
+#if defined HAVE_CRYPT && !defined HAVE_CRYPT_R
 # include "ruby/thread_native.h"
 # include "ruby/atomic.h"
 
@@ -14160,6 +14155,7 @@ static struct {
 } crypt_mutex = {PTHREAD_MUTEX_INITIALIZER};
 #endif
 
+#if defined HAVE_CRYPT_R || defined HAVE_CRYPT
 /*
  *  call-seq:
  *    crypt(salt_str) -> new_string
@@ -14215,14 +14211,16 @@ static struct {
  *
  *        "foo".crypt("$5$rounds=1000$salt$") # => "$5fNPQMxC5j6."
  *
- *  If for some reason you cannot migrate to other secure contemporary
- *  password hashing algorithms, install the string-crypt gem and
- *  <code>require 'string/crypt'</code> to continue using it.
+ *  This method is deprecated and will be removed in Ruby 4.2.
+ *  If you must continue to use it, install the string-crypt gem and
+ *  <code>require 'string/crypt'</code>.
  */
 
 static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
+    rb_warn_to_remove_at(4.2, "String#crypt", "the string-crypt gem");
+
 #ifdef HAVE_CRYPT_R
     VALUE databuf;
     struct crypt_data *data;
@@ -14286,6 +14284,9 @@ rb_str_crypt(VALUE str, VALUE salt)
 #endif
     return result;
 }
+#else
+# define rb_str_crypt rb_f_notimplement
+#endif
 
 
 /*

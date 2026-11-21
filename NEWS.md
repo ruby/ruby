@@ -206,6 +206,11 @@ Note: We're only listing outstanding class updates.
       (with their `!` variants) handle whole strings. [[Feature #22118]]
     * `String#tr` now accept a Hash for multi-character replacement.
       [[Feature #22238]]
+    * `String#crypt` is deprecated and will be removed in Ruby 4.2.
+      You can use the string-crypt gem for a `String#crypt` that doesn't
+      warn, or preferably switch to the bcrypt or argon2 gem to use a
+      more secure password hash algorithm.
+      [[Feature #22611]]
 
 * Symbol
 
@@ -472,6 +477,8 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   Integer index within the range of Array indices.  An index past the `int`
   range used to raise `RangeError`. [[Feature #22400]]
 
+* `String#crypt` now raises `NotImplementedError` if crypt(3) is not defined.
+
 ## Stdlib compatibility issues
 
 * prism is now a bundled gem.  Under Bundler, `require "prism"` needs prism
@@ -591,6 +598,9 @@ The following APIs, which have been deprecated for many years, are removed.
 * `rb_gc_force_recycle` function,
 * `rb_iterate` function,
 * and some functions and constants for internal use.
+
+Additionally, `ruby/missing.h` no longer declares `crypt` if crypt(3) is
+not defined.
 
 ## Implementation improvements
 
@@ -786,6 +796,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [Feature #22444]: https://bugs.ruby-lang.org/issues/22444
 [Feature #22503]: https://bugs.ruby-lang.org/issues/22503
+[Feature #22611]: https://bugs.ruby-lang.org/issues/22611
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [PR #19333]: https://github.com/ruby/ruby/pull/19333
 [GH-psych #805]: https://github.com/ruby/psych/pull/805

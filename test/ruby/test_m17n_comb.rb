@@ -760,7 +760,10 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def crypt_supports_des_crypt?
-    /openbsd/ !~ RUBY_PLATFORM
+    s = "aa".crypt("ab")
+    s.start_with?("ab") && s.bytesize == 13
+  rescue NotImplementedError, SystemCallError
+    false
   end
 
   # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
@@ -777,27 +780,34 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_crypt
-    combination(STRINGS, STRINGS) {|str, salt|
-      # skip input other than [0-9A-Za-z./] to confirm strict behavior
-      next unless salt.ascii_only? && /\A[0-9a-zA-Z.\/]+\z/ =~ salt
-
-      confirm_crypt_result(str, salt)
-    }
-  end
-
-  if !strict_crypt && /openbsd/ !~ RUBY_PLATFORM
-    def test_str_crypt_nonstrict
+    assert_deprecated_warning(/String#crypt is deprecated/) do
+      des_crypt = crypt_supports_des_crypt?
       combination(STRINGS, STRINGS) {|str, salt|
-        # only test input other than [0-9A-Za-z./] to confirm non-strict behavior
-        next if salt.ascii_only? && /\A[0-9a-zA-Z.\/]+\z/ =~ salt
+        # skip input other than [0-9A-Za-z./] to confirm strict behavior
+        next unless salt.ascii_only? && /\A[0-9a-zA-Z.\/]+\z/ =~ salt
 
-        confirm_crypt_result(str, salt)
+        confirm_crypt_result(str, salt, des_crypt)
       }
+    end
+  end if "".respond_to?(:crypt)
+
+  if !strict_crypt && "".respond_to?(:crypt)
+    def test_str_crypt_nonstrict
+      assert_deprecated_warning(/String#crypt is deprecated/) do
+        return unless crypt_supports_des_crypt?
+
+        combination(STRINGS, STRINGS) {|str, salt|
+          # only test input other than [0-9A-Za-z./] to confirm non-strict behavior
+          next if salt.ascii_only? && /\A[0-9a-zA-Z.\/]+\z/ =~ salt
+
+          confirm_crypt_result(str, salt, true)
+        }
+      end
     end
   end
 
-  private def confirm_crypt_result(str, salt)
-    if crypt_supports_des_crypt?
+  private def confirm_crypt_result(str, salt, des_crypt)
+    if des_crypt
       if b(salt).length < 2
         assert_raise(ArgumentError) { str.crypt(salt) }
         return
