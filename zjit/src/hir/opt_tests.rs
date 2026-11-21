@@ -23627,6 +23627,48 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_invokesuper_from_refined_method_remains_invokesuper() {
+        eval("
+            class A
+              def foo = 'A'
+            end
+
+            module R1
+              refine(A) { def foo = super }
+            end
+
+            module R2
+              refine(A) { def foo = super }
+            end
+
+            module Client
+              using R1
+              using R2
+              def self.test(a) = a.foo
+            end
+
+            a = A.new
+            Client.test(a); Client.test(a)
+        ");
+
+        assert_snapshot!(hir_string_proc("R2.refinements[0].instance_method(:foo)"), @"
+        fn foo@<compiled>:11:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: call from a refined method
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_invokesuper_from_a_block() {
         _ = eval("
             define_method(:itself) { super() }

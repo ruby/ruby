@@ -269,6 +269,12 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+bool
+rb_zjit_iclass_for_refinement_p(VALUE iclass)
+{
+    return RICLASS_FOR_REFINEMENT_P(iclass);
+}
+
 /* Sets all of the required shape flags for the object including the layout type,
  * the frozen status, and the slot size. Mimics `rb_newobj`.
  */

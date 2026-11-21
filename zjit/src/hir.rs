@@ -816,6 +816,8 @@ pub enum SendFallbackReason {
     SuperFromBlock,
     /// The profiled super class cannot be found.
     SuperClassNotFound,
+    /// The `super` call is in a refined method, whose superclass depends on the caller's refinements.
+    SuperFromRefinement,
     /// The `super` call uses a complex argument pattern that the optimizer does not support.
     SuperComplexArgsPass,
     /// The cached target of a `super` call could not be found.
@@ -873,6 +875,7 @@ impl Display for SendFallbackReason {
             SuperFromBlock => write!(f, "super: call from within a block"),
             SuperCallWithBlock => write!(f, "super: call made with a block"),
             SuperClassNotFound => write!(f, "super: profiled class cannot be found"),
+            SuperFromRefinement => write!(f, "super: call from a refined method"),
             SuperComplexArgsPass => write!(f, "super: complex argument passing to `super` call"),
             SuperNoProfiles => write!(f, "super: no profile data available"),
             SuperNotOptimizedMethodType(method_type) => write!(f, "super: unsupported target method type {:?}", method_type),
@@ -5808,6 +5811,13 @@ impl Function {
                         // Get defined_class and method ID from the profiled CME.
                         let current_defined_class = unsafe { (*current_cme).defined_class };
                         let mid = unsafe { get_def_original_id((*current_cme).def) };
+
+                        // The superclass of a refinement's iclass can be another refinement activated by the caller.
+                        if unsafe { rb_zjit_iclass_for_refinement_p(current_defined_class) } {
+                            self.push_insn_id(block, insn_id);
+                            self.set_dynamic_send_reason(insn_id, SuperFromRefinement);
+                            continue;
+                        }
 
                         // Compute superclass: RCLASS_SUPER(RCLASS_ORIGIN(defined_class))
                         let superclass = unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_defined_class)) };
