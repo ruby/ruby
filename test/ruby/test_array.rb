@@ -1658,19 +1658,23 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.rindex('ca'))
     assert_nil(a.rindex([1,2]))
 
-    assert_equal(3, a.rindex(99, offset: 0))
-    assert_equal(3, a.rindex(99, offset: 2))
+    assert_nil(a.rindex(99, offset: 0))
+    assert_equal(1, a.rindex(99, offset: 2))
+    assert_equal(3, a.rindex(99, offset: 3))
     assert_equal(1, a.rindex(99, offset: -3))
+    assert_nil(a.rindex(/a/, offset: 1))
     assert_nil(a.rindex(/a/, offset: -4))
-    assert_nil(a.index(99, offset: a.size))
-    assert_nil(a.index(99, offset: -a.size - 1))
+    assert_equal(3, a.rindex(99, offset: a.size))
+    assert_nil(a.rindex(99, offset: -a.size - 1))
+    assert_equal(0, a.rindex('cat', offset: -a.size))
+    assert_nil(@cls[].rindex(99, offset: 0))
 
-    assert_equal(3, a.rindex(offset: 0).each {|e| e == 99})
-    assert_equal(3, a.rindex(offset: 2).each {|e| e == 99})
+    assert_nil(a.rindex(offset: 0).each {|e| e == 99})
+    assert_equal(1, a.rindex(offset: 2).each {|e| e == 99})
     assert_equal(1, a.rindex(offset: -3).each {|e| e == 99})
 
     assert_equal(3, assert_warning(/given block not used/) {a.rindex(99) {|x| x == [1,2,3] }})
-    assert_equal(3, assert_warning(/given block not used/) {a.rindex(99, offset: 2) {|x| x == [1,2,3] }})
+    assert_equal(1, assert_warning(/given block not used/) {a.rindex(99, offset: 2) {|x| x == [1,2,3] }})
 
     bug15951 = "[Bug #15951]"
     o2 = Object.new
