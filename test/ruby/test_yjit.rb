@@ -2146,6 +2146,33 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  # Once a singleton class of String invalidated the no-singleton-class assumption, recompiled
+  # code must guard the class of a CString receiver. It used to elide the guard, so the second
+  # entry(true) called String#+ instead of the singleton method.
+  def test_singleton_class_invalidation_then_second_singleton
+    stats = assert_compiles(<<~'RUBY', result: ["bar", "foo", "bar", "foo"], exits: :any)
+      def define_singleton(str, define)
+        if define
+          # Wrap a C method frame to avoid exiting JIT code on defineclass
+          [nil].reverse_each do
+            class << str
+              def +(_) = "foo"
+            end
+          end
+        end
+        "bar"
+      end
+
+      def entry(define)
+        str = ""
+        str + define_singleton(str, define)
+      end
+
+      [entry(false), entry(true), entry(false), entry(true)]
+    RUBY
+    assert_equal 1, stats[:invalidate_no_singleton_class]
+  end
+
   def test_invalidate_after_failed_block_series
     assert_ruby_status(%w[--disable-all --yjit --yjit-call-threshold=2 --yjit-exec-mem-size=1], <<~'RUBY')
       class A; def m(esc) = esc ? 2 : 1; end

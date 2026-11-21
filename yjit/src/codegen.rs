@@ -5087,11 +5087,6 @@ fn jit_guard_known_klass(
         asm_comment!(asm, "guard known object with singleton class");
         asm.cmp(obj_opnd, sample_instance.into());
         jit_chain_guard(JCC_JNE, jit, asm, max_chain_depth, counter);
-    } else if val_type == Type::CString && unsafe { known_klass == rb_cString } {
-        // guard elided because the context says we've already checked
-        unsafe {
-            assert_eq!(sample_instance.class_of(), rb_cString, "context says class is exactly ::String")
-        };
     } else {
         assert!(!val_type.is_imm(), "{insn_opnd:?} should be a heap object, but was {val_type:?} for {sample_instance:?}");
 
