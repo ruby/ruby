@@ -1956,6 +1956,34 @@ io_binwrite_requires_flush_write(rb_io_t *fptr, rb_len_t len, int nosync)
     return 0;
 }
 
+static void
+io_binwrite_append(rb_io_t *fptr, const char *ptr, rb_len_t len)
+{
+    if (fptr->wbuf.off) {
+        if (fptr->wbuf.len)
+            MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
+        fptr->wbuf.off = 0;
+    }
+
+    MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr, char, len);
+    fptr->wbuf.len += (int)len;
+}
+
+static VALUE
+io_binwrite_buffered(VALUE arg)
+{
+    struct binwrite_arg *p = (struct binwrite_arg *)arg;
+    rb_io_t *fptr = p->fptr;
+
+    if (fptr->wbuf.capa <= fptr->wbuf.len + p->length) {
+        return io_binwrite_string(arg);
+    }
+
+    io_binwrite_append(fptr, p->ptr, p->length);
+
+    return p->length;
+}
+
 static rb_len_t
 io_binwrite(const char *ptr, rb_len_t len, rb_io_t *fptr, int nosync)
 {
@@ -1966,29 +1994,23 @@ io_binwrite(const char *ptr, rb_len_t len, rb_io_t *fptr, int nosync)
 
     io_allocate_write_buffer(fptr, !nosync);
 
+    struct binwrite_arg arg;
+
+    arg.fptr = fptr;
+    arg.ptr = ptr;
+    arg.length = len;
+
     if (io_binwrite_requires_flush_write(fptr, len, nosync)) {
-        struct binwrite_arg arg;
-
-        arg.fptr = fptr;
-        arg.ptr = ptr;
-        arg.length = len;
-
-        if (!NIL_P(fptr->write_lock)) {
-            return rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
-        }
-        else {
-            return io_binwrite_string((VALUE)&arg);
-        }
+        return rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
+    }
+    else if (rb_mutex_locked_p(fptr->write_lock) && !rb_mutex_owned_p(fptr->write_lock)) {
+        // io_flush_buffer_sync updates wbuf without the GVL while holding
+        // write_lock, so append to the buffer under the lock.
+        return rb_mutex_synchronize(fptr->write_lock, io_binwrite_buffered, (VALUE)&arg);
     }
     else {
-        if (fptr->wbuf.off) {
-            if (fptr->wbuf.len)
-                MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
-            fptr->wbuf.off = 0;
-        }
-
-        MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr, char, len);
-        fptr->wbuf.len += (int)len;
+        // No other thread can take write_lock while this thread keeps the GVL.
+        io_binwrite_append(fptr, ptr, len);
 
         return len;
     }
@@ -2189,18 +2211,15 @@ io_binwritev_internal(VALUE arg)
     return offset;
 }
 
-static rb_len_t
-io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
+static VALUE
+io_binwritev_buffered(VALUE arg)
 {
-    // Don't write anything if current thread has a pending interrupt:
-    rb_thread_check_ints();
+    struct binwritev_arg *p = (struct binwritev_arg *)arg;
 
-    if (iovcnt == 0) return 0;
-
-    size_t total = 0;
-    for (int i = 1; i < iovcnt; i++) total += iov[i].iov_len;
-
-    io_allocate_write_buffer(fptr, 1);
+    rb_io_t *fptr = p->fptr;
+    struct iovec *iov = p->iov;
+    int iovcnt = p->iovcnt;
+    size_t total = p->total;
 
     if (fptr->wbuf.ptr && fptr->wbuf.len) {
         // The end of the buffered data:
@@ -2220,7 +2239,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
              * immediately rather than left in the buffer until the next flush
              * or close. Otherwise a multi-argument write with many arguments
              * would not be observably atomic under sync. */
-            if (io_fflush(fptr) < 0) return -1;
+            if (io_fflush(fptr) < 0) return (VALUE)-1;
 
             return total;
         }
@@ -2239,17 +2258,44 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
         }
     }
 
+    p->iov = iov;
+    p->iovcnt = iovcnt;
+
+    if (rb_mutex_owned_p(fptr->write_lock)) {
+        return io_binwritev_internal(arg);
+    }
+    else {
+        return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, arg);
+    }
+}
+
+static rb_len_t
+io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
+{
+    // Don't write anything if current thread has a pending interrupt:
+    rb_thread_check_ints();
+
+    if (iovcnt == 0) return 0;
+
+    size_t total = 0;
+    for (int i = 1; i < iovcnt; i++) total += iov[i].iov_len;
+
+    io_allocate_write_buffer(fptr, 1);
+
     struct binwritev_arg arg;
     arg.fptr = fptr;
     arg.iov = iov;
     arg.iovcnt = iovcnt;
     arg.total = total;
 
-    if (!NIL_P(fptr->write_lock)) {
-        return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, (VALUE)&arg);
+    if (rb_mutex_locked_p(fptr->write_lock) && !rb_mutex_owned_p(fptr->write_lock)) {
+        // io_flush_buffer_sync updates wbuf without the GVL while holding
+        // write_lock, so read and append to the buffer under the lock.
+        return rb_mutex_synchronize(fptr->write_lock, io_binwritev_buffered, (VALUE)&arg);
     }
     else {
-        return io_binwritev_internal((VALUE)&arg);
+        // No other thread can take write_lock while this thread keeps the GVL.
+        return io_binwritev_buffered((VALUE)&arg);
     }
 }
 
