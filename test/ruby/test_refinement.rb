@@ -1051,6 +1051,35 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_bind_refined_module_method_to_class_not_including_module
+    bug22614 = '[Bug #22614]'
+    assert_separately([], <<-"end;")
+      bug22614 = #{bug22614.dump}
+      class C
+        def m = [:C]
+      end
+      class D
+        def m = [:D]
+      end
+      module M
+      end
+      class E < C
+        include M
+      end
+      module R
+        refine M do
+          def m = [:R, *super]
+        end
+      end
+      using R
+      [E.instance_method(:m), M.instance_method(:m)].each do |um|
+        assert_equal([:R, :D], um.bind_call(D.new), bug22614)
+        assert_raise(NoMethodError, bug22614) {um.bind_call(Object.new)}
+      end
+      assert_equal([:R, :C], E.instance_method(:m).bind_call(E.new), bug22614)
+    end;
+  end
+
   def test_bind_module_method_with_unused_refinement
     bug22614 = '[Bug #22614]'
     assert_separately([], <<-"end;")

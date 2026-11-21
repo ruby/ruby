@@ -2575,9 +2575,10 @@ find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
         }
 
         VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
-        if (refined_ancestor) {
-            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        if (!refined_ancestor) {
+            refined_ancestor = rb_include_class_new(refined_target, klass);
         }
+        iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
     }
 
     return iclass;
