@@ -41,6 +41,7 @@ enum ruby_basic_operators {
     BOP_PACK,
     BOP_INCLUDE_P,
     BOP_YIELD,
+    BOP_EQL,
 
     BOP_LAST_
 };
