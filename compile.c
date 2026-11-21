@@ -2790,19 +2790,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     unsigned int node_ids_size = 0;
     int prev_node_id = 0;
 #endif
-    if (ISEQ_IS_SIZE(body)) {
-        body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(body));
-    }
-    else {
-        body->is_entries = NULL;
-    }
-
-    if (body->ci_size) {
-        body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
-    }
-    else {
-        body->call_data = NULL;
-    }
+    rb_iseq_alloc_inline_storage(body);
     ISEQ_COMPILE_DATA(iseq)->ci_index = 0;
 
     // Calculate the bitmask buffer size.
@@ -13868,19 +13856,15 @@ static void
 ibf_load_ci_entries(const struct ibf_load *load,
                     ibf_offset_t ci_entries_offset,
                     unsigned int ci_size,
-                    struct rb_call_data **cd_ptr)
+                    struct rb_call_data *cds)
 {
     if (!ci_size) {
-        *cd_ptr = NULL;
         return;
     }
 
     ibf_offset_t reading_pos = ci_entries_offset;
 
     unsigned int i;
-
-    struct rb_call_data *cds = ZALLOC_N(struct rb_call_data, ci_size);
-    *cd_ptr = cds;
 
     for (i = 0; i < ci_size; i++) {
         VALUE mid_index = ibf_load_small_value(load, &reading_pos);
@@ -14266,13 +14250,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->ise_size             = ise_size;
     load_body->ic_size              = ic_size;
 
-    if (ISEQ_IS_SIZE(load_body)) {
-        load_body->is_entries       = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
-    }
-    else {
-        load_body->is_entries       = NULL;
-    }
-                                      ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
+    rb_iseq_alloc_inline_storage(load_body);
+                                      ibf_load_ci_entries(load, ci_entries_offset, ci_size, load_body->call_data);
     load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);

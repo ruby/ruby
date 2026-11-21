@@ -60,6 +60,8 @@ static struct succ_index_table *succ_index_table_create(int max_pos, int *data, 
 static unsigned int *succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size);
 static int succ_index_lookup(const struct succ_index_table *sd, int x);
 #endif
+static size_t iseq_inline_storage_bytes(const struct rb_iseq_constant_body *body);
+static void iseq_free_inline_storage(struct rb_iseq_constant_body *body);
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
@@ -212,8 +214,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #else
         SIZED_FREE_N(body->insns_info.positions_or_succ_index_table.positions, body->insns_info.size);
 #endif
-        SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
-        SIZED_FREE_N(body->call_data, body->ci_size);
+        iseq_free_inline_storage(body);
         if (body->catch_table) {
             ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
         }
@@ -613,8 +614,8 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
 
         if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
 
-        /* body->is_entries */
-        size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
+        /* body->is_entries and body->call_data */
+        size += iseq_inline_storage_bytes(body);
 
         if (ISEQ_BODY(iseq)->is_entries) {
             /* IC entries constant segments */
@@ -629,8 +630,6 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
             }
         }
 
-        /* body->call_data */
-        size += body->ci_size * sizeof(struct rb_call_data);
         // TODO: should we count imemo_callinfo?
     }
 
@@ -868,6 +867,39 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
     SIZED_FREE_N(positions, size);
     body->insns_info.positions_or_succ_index_table.succ_index_table = sd;
 #endif
+}
+
+/*
+ * is_entries and call_data share one block: both are sized once all
+ * instructions are known, both are written at run time by the inline
+ * caches, and the IC/IVC/ISE/ICVARC and call data pointers embedded as
+ * operands in iseq_encoded point into them.
+ */
+
+static size_t
+iseq_inline_storage_bytes(const struct rb_iseq_constant_body *body)
+{
+    return ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry) +
+        body->ci_size * sizeof(struct rb_call_data);
+}
+
+void
+rb_iseq_alloc_inline_storage(struct rb_iseq_constant_body *body)
+{
+    const size_t is_bytes = ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
+    const size_t bytes = iseq_inline_storage_bytes(body);
+    char *buf = bytes ? ZALLOC_N(char, bytes) : NULL;
+
+    body->is_entries = ISEQ_IS_SIZE(body) ? (union iseq_inline_storage_entry *)buf : NULL;
+    body->call_data = body->ci_size ? (struct rb_call_data *)(buf + is_bytes) : NULL;
+}
+
+static void
+iseq_free_inline_storage(struct rb_iseq_constant_body *body)
+{
+    /* is_entries may be missing after a compile error. */
+    void *buf = body->is_entries ? (void *)body->is_entries : (void *)body->call_data;
+    if (buf) ruby_xfree_sized(buf, iseq_inline_storage_bytes(body));
 }
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
