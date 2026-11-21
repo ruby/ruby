@@ -31,6 +31,7 @@
 #include "internal/complex.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
+#include "internal/float_conv.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
@@ -954,11 +955,12 @@ flo_to_s(VALUE flt)
 {
     enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
     enum {float_dig = DBL_DIG+1};
-    char buf[float_dig + roomof(decimal_mant, CHAR_BIT) + 10];
+    /* a sign, digits, a point, zeros or an exponent, and a terminator */
+    char buf[1 + (float_dig + roomof(decimal_mant, CHAR_BIT)) + 1 + 10];
+    char digits[float_dig + roomof(decimal_mant, CHAR_BIT) + 10];
     double value = RFLOAT_VALUE(flt);
-    VALUE s;
-    char *p, *e;
-    int sign, decpt, digs;
+    char *p = buf;
+    int decpt, digs;
 
     if (isinf(value)) {
         static const char minf[] = "-Infinity";
@@ -968,59 +970,83 @@ flo_to_s(VALUE flt)
     else if (isnan(value))
         return rb_usascii_str_new2("NaN");
 
-    p = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
-    s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
-    if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
-    memcpy(buf, p, digs);
-    free(p);
+    if (signbit(value)) {
+        *p++ = '-';
+        value = -value;
+    }
+    if (value == 0.0) {
+        digits[0] = '0';
+        digs = 1;
+        decpt = 1;
+    }
+    else if ((digs = rb_float_shortest_digits(value, digits, &decpt)) == 0) {
+        int sign;
+        char *e, *d = ruby_dtoa(value, 0, 0, &decpt, &sign, &e);
+        digs = (int)(e - d);
+        if (digs >= (int)sizeof(digits)) digs = (int)sizeof(digits) - 1;
+        memcpy(digits, d, digs);
+        free(d);
+    }
+
     if (decpt > 0) {
         if (decpt < digs) {
-            memmove(buf + decpt + 1, buf + decpt, digs - decpt);
-            buf[decpt] = '.';
-            rb_str_cat(s, buf, digs + 1);
+            memcpy(p, digits, decpt);
+            p += decpt;
+            *p++ = '.';
+            memcpy(p, digits + decpt, digs - decpt);
+            p += digs - decpt;
         }
         else if (decpt <= DBL_DIG) {
-            rb_len_t len;
-            char *ptr;
-            rb_str_cat(s, buf, digs);
-            rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
-            ptr = RSTRING_PTR(s) + len;
-            if (decpt > digs) {
-                memset(ptr, '0', decpt - digs);
-                ptr += decpt - digs;
-            }
-            memcpy(ptr, ".0", 2);
+            memcpy(p, digits, digs);
+            p += digs;
+            memset(p, '0', decpt - digs);
+            p += decpt - digs;
+            *p++ = '.';
+            *p++ = '0';
         }
         else {
             goto exp;
         }
     }
     else if (decpt > -4) {
-        rb_len_t len;
-        char *ptr;
-        rb_str_cat(s, "0.", 2);
-        rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
-        ptr = RSTRING_PTR(s);
-        memset(ptr += len, '0', -decpt);
-        memcpy(ptr -= decpt, buf, digs);
+        *p++ = '0';
+        *p++ = '.';
+        memset(p, '0', -decpt);
+        p -= decpt;
+        memcpy(p, digits, digs);
+        p += digs;
     }
     else {
         goto exp;
     }
-    return s;
+    return rb_usascii_str_new(buf, p - buf);
 
   exp:
+    *p++ = digits[0];
+    *p++ = '.';
     if (digs > 1) {
-        memmove(buf + 2, buf + 1, digs - 1);
+        memcpy(p, digits + 1, digs - 1);
+        p += digs - 1;
     }
     else {
-        buf[2] = '0';
-        digs++;
+        *p++ = '0';
     }
-    buf[1] = '.';
-    rb_str_cat(s, buf, digs + 1);
-    rb_str_catf(s, "e%+03d", decpt - 1);
-    return s;
+    *p++ = 'e';
+    decpt--;
+    if (decpt < 0) {
+        *p++ = '-';
+        decpt = -decpt;
+    }
+    else {
+        *p++ = '+';
+    }
+    if (decpt >= 100) {
+        *p++ = (char)('0' + decpt / 100);
+        decpt %= 100;
+    }
+    *p++ = (char)('0' + decpt / 10);
+    *p++ = (char)('0' + decpt % 10);
+    return rb_usascii_str_new(buf, p - buf);
 }
 
 /*
