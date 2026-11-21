@@ -4694,7 +4694,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
     rb_control_frame_t *top_cfp = cfp;
 
     if (CFP_ISEQ(cfp) && !VM_FRAME_BMETHOD_P(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
-        const rb_iseq_t *local_iseq = ISEQ_BODY(CFP_ISEQ(cfp))->local_iseq;
+        const rb_iseq_t *local_iseq = ISEQ_LOCAL_ISEQ(CFP_ISEQ(cfp));
 
         do {
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);

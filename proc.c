@@ -1020,7 +1020,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid, bool search_outer)
             const unsigned int local_table_size = ISEQ_BODY(iseq)->local_table_size;
             for (unsigned int i=0; i<local_table_size; i++) {
                 if (ISEQ_BODY(iseq)->local_table[i] == lid) {
-                    if (ISEQ_BODY(iseq)->local_iseq == iseq &&
+                    if (ISEQ_LOCAL_ISEQ(iseq) == iseq &&
                             ISEQ_BODY(iseq)->param.flags.has_block &&
                             (unsigned int)ISEQ_BODY(iseq)->param.block_start == i) {
                         const VALUE *ep = env->ep;

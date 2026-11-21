@@ -678,6 +678,7 @@ pub struct rb_iseq_variable {
     pub catch_table: *mut iseq_catch_table,
     pub outer_variables: *mut rb_id_table,
     pub mandatory_only_iseq: *const rb_iseq_t,
+    pub source_hash: u64,
     pub jit: *mut rb_iseq_jit_data,
 }
 #[repr(C)]
@@ -1314,6 +1315,12 @@ pub union rb_iseq_constant_body__bindgen_ty_1 {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub union rb_iseq_constant_body__bindgen_ty_2 {
+    pub iseq: *mut rb_iseq_struct,
+    pub source_hash: u64,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_iseq_constant_body__bindgen_ty_3 {
     pub list: *mut iseq_bits_t,
     pub single: iseq_bits_t,
 }

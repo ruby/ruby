@@ -401,6 +401,7 @@ enum rb_iseq_type {
 };
 
 // Attributes specified by Primitive.attr!
+// Must fit in rb_iseq_constant_body::builtin_attrs (8 bits).
 enum rb_builtin_attr {
     // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
@@ -461,6 +462,9 @@ struct rb_iseq_variable {
     struct iseq_catch_table *catch_table;
     struct rb_id_table *outer_variables;
     const rb_iseq_t *mandatory_only_iseq;
+    // Source hash of an ISeq that is not a local root and does not share
+    // its parent's; see rb_iseq_source_hash().
+    uint64_t source_hash;
 
 #if USE_YJIT || USE_ZJIT
     struct rb_iseq_jit_data *jit;
@@ -468,7 +472,13 @@ struct rb_iseq_variable {
 };
 
 struct rb_iseq_constant_body {
-    enum rb_iseq_type type;
+    BITFIELD(enum rb_iseq_type, type, 8);
+    unsigned int builtin_attrs : 8; // Union of rb_builtin_attr
+    unsigned int prism : 1; // ISEQ was generated from prism compiler
+    unsigned int no_realpath : 1; // location.pathobj names no real file (ex: during eval)
+    // The source hash equals the parent ISeq's, see rb_iseq_source_hash().
+    // Not used by local root ISeqs.
+    unsigned int source_hash_inherited : 1;
 
     unsigned int iseq_size;
     VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
@@ -579,7 +589,13 @@ struct rb_iseq_constant_body {
 
     /* for child iseq */
     const struct rb_iseq_struct *parent_iseq;
-    struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
+    /* TOP, METHOD, CLASS and MAIN ISeqs are their own local ISeq (see
+     * rb_iseq_local_root_type_p()) and keep their source hash here instead.
+     * Read it with ISEQ_LOCAL_ISEQ() and rb_iseq_source_hash(). */
+    union {
+        struct rb_iseq_struct *iseq; /* local_iseq->flip_cnt can be modified */
+        uint64_t source_hash;
+    } local_root;
 
     union iseq_inline_storage_entry *is_entries; /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
     struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
@@ -594,11 +610,6 @@ struct rb_iseq_constant_body {
     unsigned int ci_size;
     unsigned int stack_max; /* for stack overflow check */
 
-    unsigned int builtin_attrs; // Union of rb_builtin_attr
-
-    bool prism; // ISEQ was generated from prism compiler
-    bool no_realpath; // location.pathobj names no real file (ex: during eval)
-
     union {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;
@@ -610,11 +621,6 @@ struct rb_iseq_constant_body {
     // Function pointer for JIT code on jit_exec()
     rb_jit_func_t jit_entry;
 #endif
-
-    // Hash of the source this iseq was compiled from, or 0 if it is
-    // unavailable. A computed hash of 0 is remapped to another value, so
-    // 0 never denotes a real hash.
-    uint64_t source_hash;
 };
 
 /* T_IMEMO/iseq */
@@ -640,6 +646,24 @@ struct rb_iseq_struct {
 };
 
 #define ISEQ_BODY(iseq) ((iseq)->body)
+
+/* Whether ISeqs of this type are their own local ISeq. */
+static inline bool
+rb_iseq_local_root_type_p(enum rb_iseq_type type)
+{
+    return type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_METHOD ||
+        type == ISEQ_TYPE_CLASS || type == ISEQ_TYPE_MAIN;
+}
+
+/* The ISeq that owns the local variable table for this one (for a block,
+ * the method or top-level ISeq around it). */
+static inline rb_iseq_t *
+ISEQ_LOCAL_ISEQ(const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (rb_iseq_local_root_type_p((enum rb_iseq_type)body->type)) return (rb_iseq_t *)iseq;
+    return body->local_root.iseq;
+}
 
 #if !defined(USE_LAZY_LOAD) || !(USE_LAZY_LOAD+0)
 #define USE_LAZY_LOAD 0

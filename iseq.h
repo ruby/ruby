@@ -149,6 +149,15 @@ ISEQ_JIT_DATA(const rb_iseq_t *iseq)
 struct rb_iseq_jit_data *rb_iseq_jit_data_ensure(const rb_iseq_t *iseq);
 #endif
 
+/* Hash of the source the ISeq was compiled from, or 0 if it is unavailable.
+ * A computed hash of 0 is remapped to another value, so 0 never denotes a
+ * real hash. */
+uint64_t rb_iseq_source_hash(const rb_iseq_t *iseq);
+/* Must be called after the type and the parent ISeq are set. */
+void rb_iseq_set_source_hash(rb_iseq_t *iseq, uint64_t hash);
+/* No-op for local root ISeqs, which are their own local ISeq. */
+void rb_iseq_set_local_iseq(rb_iseq_t *iseq, const rb_iseq_t *local_iseq);
+
 /* Write accessors (lazily allocate variable as needed). */
 void rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov);
 void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);

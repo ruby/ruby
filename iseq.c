@@ -301,6 +301,62 @@ rb_iseq_jit_data_ensure(const rb_iseq_t *iseq)
 }
 #endif
 
+/* Local root ISeqs (TOP, METHOD, CLASS and MAIN) keep the source hash in
+ * the local_root slot of the body, since they are their own local ISeq.
+ * Other ISeqs nearly always share their parent's source hash and set
+ * source_hash_inherited; the rest (such as eval ISeqs) keep it in
+ * body->variable. */
+uint64_t
+rb_iseq_source_hash(const rb_iseq_t *iseq)
+{
+    for (;;) {
+        const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+        if (rb_iseq_local_root_type_p((enum rb_iseq_type)body->type)) {
+            return body->local_root.source_hash;
+        }
+        if (!body->source_hash_inherited) break;
+        iseq = rb_iseq_check(body->parent_iseq);
+    }
+    struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
+    return v ? v->source_hash : 0;
+}
+
+void
+rb_iseq_set_source_hash(rb_iseq_t *iseq, uint64_t hash)
+{
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    const rb_iseq_t *parent = body->parent_iseq;
+    struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
+
+    if (rb_iseq_local_root_type_p((enum rb_iseq_type)body->type)) {
+        body->local_root.source_hash = hash;
+    }
+    else if (hash && parent && rb_iseq_source_hash(rb_iseq_check(parent)) == hash) {
+        body->source_hash_inherited = 1;
+        if (v) v->source_hash = 0;
+    }
+    else {
+        body->source_hash_inherited = 0;
+        if (hash) {
+            rb_iseq_variable_ensure(iseq)->source_hash = hash;
+        }
+        else if (v) {
+            v->source_hash = 0;
+        }
+    }
+}
+
+void
+rb_iseq_set_local_iseq(rb_iseq_t *iseq, const rb_iseq_t *local_iseq)
+{
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (rb_iseq_local_root_type_p((enum rb_iseq_type)body->type)) {
+        RUBY_ASSERT(local_iseq == NULL || local_iseq == iseq);
+        return;
+    }
+    RB_OBJ_WRITE(iseq, &body->local_root.iseq, local_iseq);
+}
+
 void
 rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov)
 {
@@ -455,7 +511,9 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
         }
         rb_gc_mark_and_move_ctx(ctx, &body->location.label);
         rb_gc_mark_and_move_ctx(ctx, &body->location.pathobj);
-        if (body->local_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->local_iseq);
+        if (!rb_iseq_local_root_type_p((enum rb_iseq_type)body->type) && body->local_root.iseq) {
+            rb_gc_mark_and_move_ptr_ctx(ctx, &body->local_root.iseq);
+        }
         if (body->parent_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->parent_iseq);
 
         if (body->call_data) {
@@ -769,7 +827,7 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, int
     RB_OBJ_WRITE(iseq, &loc->label, name);
     loc->first_lineno = first_lineno;
 
-    if (ISEQ_BODY(iseq)->local_iseq == iseq && rb_streql_lit(name, "initialize")) {
+    if (ISEQ_LOCAL_ISEQ(iseq) == iseq && rb_streql_lit(name, "initialize")) {
         ISEQ_BODY(iseq)->param.flags.use_block = 1;
     }
 
@@ -794,22 +852,12 @@ set_relation(rb_iseq_t *iseq, const rb_iseq_t *piseq)
     const VALUE type = body->type;
 
     /* set class nest stack */
-    if (type == ISEQ_TYPE_TOP) {
-        body->local_iseq = iseq;
-    }
-    else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
-        body->local_iseq = iseq;
-    }
-    else if (piseq) {
-        RB_OBJ_WRITE(iseq, &body->local_iseq, ISEQ_BODY(piseq)->local_iseq);
+    if (!rb_iseq_local_root_type_p((enum rb_iseq_type)type) && piseq) {
+        rb_iseq_set_local_iseq(iseq, ISEQ_LOCAL_ISEQ(piseq));
     }
 
     if (piseq) {
         RB_OBJ_WRITE(iseq, &body->parent_iseq, piseq);
-    }
-
-    if (type == ISEQ_TYPE_MAIN) {
-        body->local_iseq = iseq;
     }
 }
 
@@ -1237,8 +1285,8 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
                        parent, isolated_depth, type, script_lines, option);
 
     if (body && body->has_source_hash) {
-        ISEQ_BODY(iseq)->source_hash = body->source_hash;
-        RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
+        RUBY_ASSERT(body->source_hash != 0);
+        rb_iseq_set_source_hash(iseq, body->source_hash);
     }
 
     rb_iseq_compile_node(iseq, node);
@@ -1261,9 +1309,6 @@ pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
 
-    ISEQ_BODY(iseq)->source_hash = node->source_hash;
-    RUBY_ASSERT(ISEQ_BODY(iseq)->source_hash != 0);
-
     rb_compile_option_t next_option;
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
@@ -1285,6 +1330,9 @@ pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
 
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, node->ast_node->node_id,
                        parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
+
+    RUBY_ASSERT(node->source_hash != 0);
+    rb_iseq_set_source_hash(iseq, node->source_hash);
 
     pm_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
@@ -1460,8 +1508,6 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     exception   = CHECK_ARRAY(rb_ary_entry(data, i++));
     body        = CHECK_ARRAY(rb_ary_entry(data, i++));
 
-    ISEQ_BODY(iseq)->local_iseq = iseq;
-
     iseq_type = iseq_type_from_sym(type);
     if (iseq_type == (enum rb_iseq_type)-1) {
         rb_raise(rb_eTypeError, "unsupported type: :%"PRIsVALUE, rb_sym2str(type));
@@ -1485,6 +1531,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &tmp_loc, NUM2INT(node_id),
                        parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
+    if (!ISEQ_LOCAL_ISEQ(iseq)) rb_iseq_set_local_iseq(iseq, iseq);
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
 
@@ -1672,7 +1719,7 @@ VALUE
 rb_iseq_base_label(const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    const rb_iseq_t *local_iseq = body->local_iseq;
+    const rb_iseq_t *local_iseq = ISEQ_LOCAL_ISEQ(iseq);
 
     if (local_iseq == NULL || local_iseq == iseq) {
         return body->location.label;
@@ -1691,7 +1738,7 @@ rb_iseq_first_lineno(const rb_iseq_t *iseq)
 VALUE
 rb_iseq_method_name(const rb_iseq_t *iseq)
 {
-    struct rb_iseq_constant_body *const body = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq);
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(ISEQ_LOCAL_ISEQ(iseq));
 
     if (body->type == ISEQ_TYPE_METHOD) {
         return body->location.label;
@@ -3903,7 +3950,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq_body->local_table_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq_body->stack_max));
     rb_hash_aset(misc, ID2SYM(rb_intern("node_id")), INT2FIX(iseq_body->location.node_id));
-    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), iseq_body->source_hash ? ULL2NUM(iseq_body->source_hash) : Qnil);
+    rb_hash_aset(misc, ID2SYM(rb_intern("source_hash")), rb_iseq_source_hash(iseq) ? ULL2NUM(rb_iseq_source_hash(iseq)) : Qnil);
     rb_hash_aset(misc, ID2SYM(rb_intern("code_location")),
             rb_ary_new_from_args(4,
                 INT2FIX(iseq_body->location.code_location.beg_pos.lineno),
@@ -4741,8 +4788,9 @@ static VALUE
 iseqw_source_hash(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    if (!ISEQ_BODY(iseq)->source_hash) return Qnil;
-    return ULL2NUM(ISEQ_BODY(iseq)->source_hash);
+    uint64_t source_hash = rb_iseq_source_hash(iseq);
+    if (!source_hash) return Qnil;
+    return ULL2NUM(source_hash);
 }
 
 /* Returns the node id of the AST node this iseq corresponds to. */

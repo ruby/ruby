@@ -281,7 +281,7 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
 const rb_iseq_t *
 rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {
-    return ISEQ_BODY(iseq)->local_iseq;
+    return ISEQ_LOCAL_ISEQ(iseq);
 }
 
 const rb_iseq_t *

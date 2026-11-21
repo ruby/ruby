@@ -244,7 +244,7 @@ retry:
         int level = 0;
         const rb_iseq_t *orig_iseq = iseq;
         if (ISEQ_BODY(orig_iseq)->parent_iseq != 0) {
-            while (ISEQ_BODY(orig_iseq)->local_iseq != iseq) {
+            while (ISEQ_LOCAL_ISEQ(orig_iseq) != iseq) {
                 if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
                     level++;
                 }
@@ -605,10 +605,10 @@ location_source_range_m(VALUE self)
     if (node_id == -1) {
         rb_raise(rb_eRuntimeError, "cannot get source range for location without a node ID");
     }
-    if (!ISEQ_BODY(iseq)->source_hash) {
+    uint64_t source_hash = rb_iseq_source_hash(iseq);
+    if (!source_hash) {
         rb_raise(rb_eRuntimeError, "cannot get source range because the source hash is unavailable");
     }
-    uint64_t source_hash = ISEQ_BODY(iseq)->source_hash;
 
     VALUE path = rb_iseq_path(iseq);
     VALUE absolute_path = rb_iseq_realpath(iseq);
