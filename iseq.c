@@ -3187,7 +3187,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
                     body->param.opt_num,
                     body->param.flags.has_rest ? body->param.rest_start : -1,
                     body->param.post_num,
-                    body->param.flags.has_block ? body->param.block_start : -1,
+                    body->param.flags.has_block ? (int)rb_iseq_param_block_start(&body->param) : -1,
                     body->param.flags.has_kw ? keyword->num : -1,
                     body->param.flags.has_kw ? keyword->required_num : -1,
                     body->param.flags.has_kwrest ? keyword->rest_start : -1);
@@ -3215,7 +3215,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
                      (body->param.flags.has_rest && body->param.rest_start == li) ? (body->param.flags.anon_rest ? "AnonRest" : "Rest") : "",
                      (body->param.flags.has_post && body->param.post_start <= li && li < body->param.post_start + body->param.post_num) ? "Post" : "",
                      (body->param.flags.has_kwrest && keyword->rest_start == li) ? (body->param.flags.anon_kwrest ? "AnonKwrest" : "Kwrest") : "",
-                     (body->param.flags.has_block && body->param.block_start == li) ? "Block" : "");
+                     (body->param.flags.has_block && rb_iseq_param_block_start(&body->param) == (unsigned int)li) ? "Block" : "");
 
             rb_str_cat(str, indent_str, indent_len);
             rb_str_catf(str, "[%2d] ", i + 1);
@@ -3709,7 +3709,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
         if (iseq_body->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern("post_num")), INT2FIX(iseq_body->param.post_num));
         if (iseq_body->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern("post_start")), INT2FIX(iseq_body->param.post_start));
         if (iseq_body->param.flags.has_rest) rb_hash_aset(params, ID2SYM(rb_intern("rest_start")), INT2FIX(iseq_body->param.rest_start));
-        if (iseq_body->param.flags.has_block) rb_hash_aset(params, ID2SYM(rb_intern("block_start")), INT2FIX(iseq_body->param.block_start));
+        if (iseq_body->param.flags.has_block) rb_hash_aset(params, ID2SYM(rb_intern("block_start")), INT2FIX(rb_iseq_param_block_start(&iseq_body->param)));
         if (iseq_body->param.flags.has_kw) {
             VALUE keywords = rb_ary_new();
             int i, j;
@@ -4094,7 +4094,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     }
     else if (body->param.flags.has_block) {
         CONST_ID(block, "block");
-        rb_ary_push(args, PARAM(body->param.block_start, block));
+        rb_ary_push(args, PARAM(rb_iseq_param_block_start(&body->param), block));
     }
     return args;
 }

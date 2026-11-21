@@ -2850,9 +2850,9 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
         return Ok(());
     }
 
-    let lead_num = params.lead_num;
-    let opt_num = params.opt_num;
-    let post_num = params.post_num;
+    let lead_num = i32::from(params.lead_num);
+    let opt_num = i32::from(params.opt_num);
+    let post_num = i32::from(params.post_num);
     let keyword = params.keyword;
     let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } };
     let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } };
@@ -6652,7 +6652,7 @@ impl Function {
             // When not escaped, only reload syntactically visible local modifications
             let params = unsafe { iseq.params() };
             let block_param_local_idx: Option<usize> = if params.flags.has_block() != 0 {
-                params.block_start.try_into().ok()
+                Some(params.block_start().to_usize())
             } else {
                 None
             };

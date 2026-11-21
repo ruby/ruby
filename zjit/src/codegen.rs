@@ -4196,8 +4196,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // TODO: Unify the argument order to avoid having to manually keep in sync
     let params = unsafe { iseq_call.iseq.get().params() };
     let block_spill = (params.flags.has_block() != 0).then(|| {
-        let block_local_idx: usize = params.block_start.try_into()
-            .expect("ISEQ block_start should be non-negative");
+        let block_local_idx = params.block_start().to_usize();
         (argc + 1, block_local_idx) // +1 for self
     });
 

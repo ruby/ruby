@@ -471,6 +471,11 @@ struct rb_iseq_variable {
 #endif
 };
 
+/* Upper bound of the number of leading, optional and post parameters of an
+ * ISeq, so that lead_num, opt_num, rest_start, post_start and post_num fit
+ * in 16 bits (post_start can be one more than lead_num + opt_num). */
+#define ISEQ_PARAM_POSITIONAL_MAX (UINT16_MAX - 1)
+
 struct rb_iseq_constant_body {
     BITFIELD(enum rb_iseq_type, type, 8);
     unsigned int builtin_attrs : 8; // Union of rb_builtin_attr
@@ -501,39 +506,45 @@ struct rb_iseq_constant_body {
      *  post_start   = M+N+(*1)
      *  post_num     = O
      *  keyword_num  = K
-     *  block_start  = M+N+(*1)+O+K
-     *  keyword_bits = M+N+(*1)+O+K+(&1)
-     *  size         = M+N+O+(*1)+K+(&1)+(**1) // parameter size.
+     *  keyword_bits = M+N+(*1)+O+K               // when K > 0
+     *  size         = M+N+O+(*1)+K+(K>0)+(**1)+(&1) // parameter size.
+     *  block_start  = size-1 (the block parameter comes last)
      */
 
     struct rb_iseq_parameters {
         struct {
-            unsigned int has_lead   : 1;
-            unsigned int has_opt    : 1;
-            unsigned int has_rest   : 1;
-            unsigned int has_post   : 1;
-            unsigned int has_kw     : 1;
-            unsigned int has_kwrest : 1;
-            unsigned int has_block  : 1;
+            /* 16 bits are available. */
+            uint16_t has_lead   : 1;
+            uint16_t has_opt    : 1;
+            uint16_t has_rest   : 1;
+            uint16_t has_post   : 1;
+            uint16_t has_kw     : 1;
+            uint16_t has_kwrest : 1;
+            uint16_t has_block  : 1;
 
-            unsigned int ambiguous_param0 : 1; /* {|a|} */
-            unsigned int accepts_no_kwarg : 1;
-            unsigned int ruby2_keywords: 1;
-            unsigned int anon_rest: 1;
-            unsigned int anon_kwrest: 1;
-            unsigned int use_block: 1;
-            unsigned int forwardable: 1;
-            unsigned int accepts_no_block: 1;
+            uint16_t ambiguous_param0 : 1; /* {|a|} */
+            uint16_t accepts_no_kwarg : 1;
+            uint16_t ruby2_keywords: 1;
+            uint16_t anon_rest: 1;
+            uint16_t anon_kwrest: 1;
+            uint16_t use_block: 1;
+            uint16_t forwardable: 1;
+            uint16_t accepts_no_block: 1;
         } flags;
+
+        uint16_t lead_num;
 
         unsigned int size;
 
-        int lead_num;
-        int opt_num;
-        int rest_start;
-        int post_start;
-        int post_num;
-        int block_start;
+        /* The positional parameter counts and indexes are 16-bit to keep the
+         * body small: compilers and loaders reject more than
+         * ISEQ_PARAM_POSITIONAL_MAX positional parameters. */
+        uint16_t opt_num;
+        uint16_t rest_start;
+        uint16_t post_start;
+        uint16_t post_num;
+        /* The block parameter, if any, is the last one, so its index
+         * (block_start) is size - 1. See rb_iseq_param_block_start(). */
 
         const VALUE *opt_table; /* (opt_num + 1) entries. */
         /* opt_num and opt_table:
@@ -673,6 +684,14 @@ ISEQ_LOCAL_ISEQ(const rb_iseq_t *iseq)
 static inline const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq) {return 0;}
 #endif
 const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
+
+/* Index of the block parameter. Only meaningful when param->flags.has_block. */
+static inline unsigned int
+rb_iseq_param_block_start(const struct rb_iseq_parameters *param)
+{
+    RUBY_ASSERT(param->flags.has_block);
+    return param->size - 1;
+}
 
 static inline const rb_iseq_t *
 rb_iseq_check(const rb_iseq_t *iseq)

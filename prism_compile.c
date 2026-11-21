@@ -444,6 +444,18 @@ pm_optimizable_range_item_p(const pm_node_t *node)
     return (!node || PM_NODE_TYPE_P(node, PM_INTEGER_NODE) || PM_NODE_TYPE_P(node, PM_NIL_NODE));
 }
 
+/** Raise a SyntaxError for an error found while compiling. */
+NORETURN(static void pm_raise_syntax_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...));
+static void
+pm_raise_syntax_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    VALUE error = rb_syntax_error_append(Qnil, rb_iseq_path(iseq), line_number, -1, NULL, fmt, args);
+    va_end(args);
+    rb_exc_raise(error);
+}
+
 /** Raise an error corresponding to the invalid regular expression. */
 static VALUE
 parse_regexp_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
@@ -6301,6 +6313,16 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.opt_num = 0;
     }
 
+    // Positional parameter counts and indexes are 16-bit in
+    // rb_iseq_constant_body. Raise before any of them is set.
+    if (parameters_node) {
+        long count = (long) requireds_list->size + optionals_list->size + posts_list->size;
+        if (count > ISEQ_PARAM_POSITIONAL_MAX) {
+            pm_raise_syntax_error(iseq, location.line, "too many positional parameters (%ld, maximum is %d)",
+                                  count, ISEQ_PARAM_POSITIONAL_MAX);
+        }
+    }
+
     //********STEP 1**********
     // Goal: calculate the table size for the locals, accounting for
     // hidden variables and multi target nodes
@@ -6455,6 +6477,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // This index helps us know which item we're dealing with and also give
     // those anonymous items temporary names (as below)
     int local_index = 0;
+    int block_index = -1;
 
     // Here we figure out local table indices and insert them in to the
     // index lookup table and local tables.
@@ -6757,7 +6780,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     pm_insert_local_special(PM_CONSTANT_POW, idPow, local_index++, &index_lookup_table, local_table_for_iseq);
 
                     // Add the anonymous &
-                    body->param.block_start = local_index;
+                    block_index = local_index;
                     body->param.flags.has_block = true;
                     pm_insert_local_special(PM_CONSTANT_AND, idAnd, local_index++, &index_lookup_table, local_table_for_iseq);
                 }
@@ -6776,7 +6799,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         if (parameters_node->block) {
             switch (PM_NODE_TYPE(parameters_node->block)) {
               case PM_BLOCK_PARAMETER_NODE: {
-                body->param.block_start = local_index;
+                block_index = local_index;
                 body->param.flags.has_block = true;
 
                 iseq_set_use_block(iseq);
@@ -6920,6 +6943,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // refer to the parameters correctly.
     scope_node->index_lookup_table = index_lookup_table;
     iseq_calc_param_size(iseq);
+    // The block parameter comes last; see rb_iseq_param_block_start().
+    RUBY_ASSERT(!body->param.flags.has_block || block_index == (int)body->param.size - 1);
+    (void)block_index;
 
     if (ISEQ_BODY(iseq)->param.flags.forwardable) {
         // We're treating `...` as a parameter so that frame

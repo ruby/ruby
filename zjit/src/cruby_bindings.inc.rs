@@ -685,50 +685,48 @@ pub struct rb_iseq_variable {
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_rb_iseq_parameters {
     pub flags: rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1,
+    pub lead_num: u16,
     pub size: ::std::os::raw::c_uint,
-    pub lead_num: ::std::os::raw::c_int,
-    pub opt_num: ::std::os::raw::c_int,
-    pub rest_start: ::std::os::raw::c_int,
-    pub post_start: ::std::os::raw::c_int,
-    pub post_num: ::std::os::raw::c_int,
-    pub block_start: ::std::os::raw::c_int,
+    pub opt_num: u16,
+    pub rest_start: u16,
+    pub post_start: u16,
+    pub post_num: u16,
     pub opt_table: *const VALUE,
     pub keyword: *const rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword,
 }
 #[repr(C)]
-#[repr(align(4))]
+#[repr(align(2))]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
     pub _bitfield_align_1: [u8; 0],
     pub _bitfield_1: __BindgenBitfieldUnit<[u8; 2usize]>,
-    pub __bindgen_padding_0: u16,
 }
 impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
     #[inline]
-    pub fn has_lead(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+    pub fn has_lead(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_lead(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_lead(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(0usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_lead_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_lead_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 0usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_lead_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_lead_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 0usize,
@@ -738,30 +736,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn has_opt(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+    pub fn has_opt(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_opt(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_opt(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(1usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_opt_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_opt_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 1usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_opt_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_opt_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 1usize,
@@ -771,30 +769,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn has_rest(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+    pub fn has_rest(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_rest(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_rest(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(2usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_rest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_rest_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 2usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_rest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_rest_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 2usize,
@@ -804,30 +802,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn has_post(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u32) }
+    pub fn has_post(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_post(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_post(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(3usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_post_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_post_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 3usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_post_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_post_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 3usize,
@@ -837,30 +835,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn has_kw(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 1u8) as u32) }
+    pub fn has_kw(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_kw(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_kw(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(4usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_kw_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_kw_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 4usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_kw_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_kw_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 4usize,
@@ -870,30 +868,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn has_kwrest(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u32) }
+    pub fn has_kwrest(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_kwrest(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_kwrest(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(5usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_kwrest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_kwrest_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 5usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_kwrest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_kwrest_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 5usize,
@@ -903,30 +901,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn has_block(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u32) }
+    pub fn has_block(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_has_block(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_has_block(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(6usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn has_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn has_block_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 6usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_has_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_has_block_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 6usize,
@@ -936,30 +934,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn ambiguous_param0(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(7usize, 1u8) as u32) }
+    pub fn ambiguous_param0(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(7usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_ambiguous_param0(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_ambiguous_param0(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(7usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn ambiguous_param0_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn ambiguous_param0_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 7usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_ambiguous_param0_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_ambiguous_param0_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 7usize,
@@ -969,30 +967,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn accepts_no_kwarg(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u32) }
+    pub fn accepts_no_kwarg(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_accepts_no_kwarg(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_accepts_no_kwarg(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(8usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn accepts_no_kwarg_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn accepts_no_kwarg_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 8usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_accepts_no_kwarg_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_accepts_no_kwarg_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 8usize,
@@ -1002,30 +1000,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn ruby2_keywords(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 1u8) as u32) }
+    pub fn ruby2_keywords(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_ruby2_keywords(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_ruby2_keywords(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(9usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn ruby2_keywords_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn ruby2_keywords_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 9usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_ruby2_keywords_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_ruby2_keywords_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 9usize,
@@ -1035,30 +1033,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn anon_rest(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(10usize, 1u8) as u32) }
+    pub fn anon_rest(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(10usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_anon_rest(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_anon_rest(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(10usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn anon_rest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn anon_rest_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 10usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_anon_rest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_anon_rest_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 10usize,
@@ -1068,30 +1066,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn anon_kwrest(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u32) }
+    pub fn anon_kwrest(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_anon_kwrest(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_anon_kwrest(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(11usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn anon_kwrest_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn anon_kwrest_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 11usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_anon_kwrest_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_anon_kwrest_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 11usize,
@@ -1101,30 +1099,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn use_block(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(12usize, 1u8) as u32) }
+    pub fn use_block(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(12usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_use_block(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_use_block(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(12usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn use_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn use_block_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 12usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_use_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_use_block_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 12usize,
@@ -1134,30 +1132,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn forwardable(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(13usize, 1u8) as u32) }
+    pub fn forwardable(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(13usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_forwardable(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_forwardable(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(13usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn forwardable_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn forwardable_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 13usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_forwardable_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_forwardable_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 13usize,
@@ -1167,30 +1165,30 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
         }
     }
     #[inline]
-    pub fn accepts_no_block(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(14usize, 1u8) as u32) }
+    pub fn accepts_no_block(&self) -> u16 {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(14usize, 1u8) as u16) }
     }
     #[inline]
-    pub fn set_accepts_no_block(&mut self, val: ::std::os::raw::c_uint) {
+    pub fn set_accepts_no_block(&mut self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             self._bitfield_1.set(14usize, 1u8, val as u64)
         }
     }
     #[inline]
-    pub unsafe fn accepts_no_block_raw(this: *const Self) -> ::std::os::raw::c_uint {
+    pub unsafe fn accepts_no_block_raw(this: *const Self) -> u16 {
         unsafe {
             ::std::mem::transmute(<__BindgenBitfieldUnit<[u8; 2usize]>>::raw_get(
                 ::std::ptr::addr_of!((*this)._bitfield_1),
                 14usize,
                 1u8,
-            ) as u32)
+            ) as u16)
         }
     }
     #[inline]
-    pub unsafe fn set_accepts_no_block_raw(this: *mut Self, val: ::std::os::raw::c_uint) {
+    pub unsafe fn set_accepts_no_block_raw(this: *mut Self, val: u16) {
         unsafe {
-            let val: u32 = ::std::mem::transmute(val);
+            let val: u16 = ::std::mem::transmute(val);
             <__BindgenBitfieldUnit<[u8; 2usize]>>::raw_set(
                 ::std::ptr::addr_of_mut!((*this)._bitfield_1),
                 14usize,
@@ -1201,81 +1199,81 @@ impl rb_iseq_constant_body_rb_iseq_parameters__bindgen_ty_1 {
     }
     #[inline]
     pub fn new_bitfield_1(
-        has_lead: ::std::os::raw::c_uint,
-        has_opt: ::std::os::raw::c_uint,
-        has_rest: ::std::os::raw::c_uint,
-        has_post: ::std::os::raw::c_uint,
-        has_kw: ::std::os::raw::c_uint,
-        has_kwrest: ::std::os::raw::c_uint,
-        has_block: ::std::os::raw::c_uint,
-        ambiguous_param0: ::std::os::raw::c_uint,
-        accepts_no_kwarg: ::std::os::raw::c_uint,
-        ruby2_keywords: ::std::os::raw::c_uint,
-        anon_rest: ::std::os::raw::c_uint,
-        anon_kwrest: ::std::os::raw::c_uint,
-        use_block: ::std::os::raw::c_uint,
-        forwardable: ::std::os::raw::c_uint,
-        accepts_no_block: ::std::os::raw::c_uint,
+        has_lead: u16,
+        has_opt: u16,
+        has_rest: u16,
+        has_post: u16,
+        has_kw: u16,
+        has_kwrest: u16,
+        has_block: u16,
+        ambiguous_param0: u16,
+        accepts_no_kwarg: u16,
+        ruby2_keywords: u16,
+        anon_rest: u16,
+        anon_kwrest: u16,
+        use_block: u16,
+        forwardable: u16,
+        accepts_no_block: u16,
     ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
         let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
         __bindgen_bitfield_unit.set(0usize, 1u8, {
-            let has_lead: u32 = unsafe { ::std::mem::transmute(has_lead) };
+            let has_lead: u16 = unsafe { ::std::mem::transmute(has_lead) };
             has_lead as u64
         });
         __bindgen_bitfield_unit.set(1usize, 1u8, {
-            let has_opt: u32 = unsafe { ::std::mem::transmute(has_opt) };
+            let has_opt: u16 = unsafe { ::std::mem::transmute(has_opt) };
             has_opt as u64
         });
         __bindgen_bitfield_unit.set(2usize, 1u8, {
-            let has_rest: u32 = unsafe { ::std::mem::transmute(has_rest) };
+            let has_rest: u16 = unsafe { ::std::mem::transmute(has_rest) };
             has_rest as u64
         });
         __bindgen_bitfield_unit.set(3usize, 1u8, {
-            let has_post: u32 = unsafe { ::std::mem::transmute(has_post) };
+            let has_post: u16 = unsafe { ::std::mem::transmute(has_post) };
             has_post as u64
         });
         __bindgen_bitfield_unit.set(4usize, 1u8, {
-            let has_kw: u32 = unsafe { ::std::mem::transmute(has_kw) };
+            let has_kw: u16 = unsafe { ::std::mem::transmute(has_kw) };
             has_kw as u64
         });
         __bindgen_bitfield_unit.set(5usize, 1u8, {
-            let has_kwrest: u32 = unsafe { ::std::mem::transmute(has_kwrest) };
+            let has_kwrest: u16 = unsafe { ::std::mem::transmute(has_kwrest) };
             has_kwrest as u64
         });
         __bindgen_bitfield_unit.set(6usize, 1u8, {
-            let has_block: u32 = unsafe { ::std::mem::transmute(has_block) };
+            let has_block: u16 = unsafe { ::std::mem::transmute(has_block) };
             has_block as u64
         });
         __bindgen_bitfield_unit.set(7usize, 1u8, {
-            let ambiguous_param0: u32 = unsafe { ::std::mem::transmute(ambiguous_param0) };
+            let ambiguous_param0: u16 = unsafe { ::std::mem::transmute(ambiguous_param0) };
             ambiguous_param0 as u64
         });
         __bindgen_bitfield_unit.set(8usize, 1u8, {
-            let accepts_no_kwarg: u32 = unsafe { ::std::mem::transmute(accepts_no_kwarg) };
+            let accepts_no_kwarg: u16 = unsafe { ::std::mem::transmute(accepts_no_kwarg) };
             accepts_no_kwarg as u64
         });
         __bindgen_bitfield_unit.set(9usize, 1u8, {
-            let ruby2_keywords: u32 = unsafe { ::std::mem::transmute(ruby2_keywords) };
+            let ruby2_keywords: u16 = unsafe { ::std::mem::transmute(ruby2_keywords) };
             ruby2_keywords as u64
         });
         __bindgen_bitfield_unit.set(10usize, 1u8, {
-            let anon_rest: u32 = unsafe { ::std::mem::transmute(anon_rest) };
+            let anon_rest: u16 = unsafe { ::std::mem::transmute(anon_rest) };
             anon_rest as u64
         });
         __bindgen_bitfield_unit.set(11usize, 1u8, {
-            let anon_kwrest: u32 = unsafe { ::std::mem::transmute(anon_kwrest) };
+            let anon_kwrest: u16 = unsafe { ::std::mem::transmute(anon_kwrest) };
             anon_kwrest as u64
         });
         __bindgen_bitfield_unit.set(12usize, 1u8, {
-            let use_block: u32 = unsafe { ::std::mem::transmute(use_block) };
+            let use_block: u16 = unsafe { ::std::mem::transmute(use_block) };
             use_block as u64
         });
         __bindgen_bitfield_unit.set(13usize, 1u8, {
-            let forwardable: u32 = unsafe { ::std::mem::transmute(forwardable) };
+            let forwardable: u16 = unsafe { ::std::mem::transmute(forwardable) };
             forwardable as u64
         });
         __bindgen_bitfield_unit.set(14usize, 1u8, {
-            let accepts_no_block: u32 = unsafe { ::std::mem::transmute(accepts_no_block) };
+            let accepts_no_block: u16 = unsafe { ::std::mem::transmute(accepts_no_block) };
             accepts_no_block as u64
         });
         __bindgen_bitfield_unit

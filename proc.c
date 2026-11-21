@@ -1022,7 +1022,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid, bool search_outer)
                 if (ISEQ_BODY(iseq)->local_table[i] == lid) {
                     if (ISEQ_LOCAL_ISEQ(iseq) == iseq &&
                             ISEQ_BODY(iseq)->param.flags.has_block &&
-                            (unsigned int)ISEQ_BODY(iseq)->param.block_start == i) {
+                            rb_iseq_param_block_start(&ISEQ_BODY(iseq)->param) == (unsigned int)i) {
                         const VALUE *ep = env->ep;
                         if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
                             RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));

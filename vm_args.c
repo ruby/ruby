@@ -999,7 +999,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             /* Do nothing */
         }
         else {
-            args_setup_block_parameter(ec, calling, locals + ISEQ_BODY(iseq)->param.block_start);
+            args_setup_block_parameter(ec, calling, locals + rb_iseq_param_block_start(&ISEQ_BODY(iseq)->param));
         }
     }
 

@@ -356,7 +356,7 @@ pub fn iseq_supports_jit_entry(iseq: IseqPtr) -> bool {
 pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
     // TODO(alan): replace with `params.rest_start`
     if params.flags.has_rest() != 0 {
-        Some(params.opt_num + params.lead_num)
+        Some(i32::from(params.opt_num) + i32::from(params.lead_num))
     } else {
         None
     }
@@ -849,6 +849,13 @@ impl IseqAccess for IseqPtr {
 }
 
 impl IseqParameters {
+    /// Local table index of the block parameter, which comes last.
+    /// Only meaningful when `flags.has_block()`. Analogous to `rb_iseq_param_block_start()`.
+    pub fn block_start(&self) -> u32 {
+        debug_assert!(self.flags.has_block() != 0);
+        self.size - 1
+    }
+
     /// The `opt_table` is a mapping where `opt_table[number_of_optional_parameters_filled]`
     /// gives the YARV entry point of ISeq as an index of the iseq_encoded array.
     /// This method gives over the table that additionally works when `opt_num==0`,

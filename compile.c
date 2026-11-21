@@ -1865,7 +1865,7 @@ iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int l
     body = ISEQ_BODY(iseq);
     if (ISEQ_LOCAL_ISEQ(iseq) == iseq && /* local variables */
         body->param.flags.has_block &&
-        body->local_table_size - body->param.block_start == idx) {
+        body->local_table_size - rb_iseq_param_block_start(&body->param) == idx) {
         return TRUE;
     }
     else {
@@ -2009,38 +2009,29 @@ static void
 iseq_calc_param_size(rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    if (body->param.flags.has_opt ||
-        body->param.flags.has_post ||
-        body->param.flags.has_rest ||
-        body->param.flags.has_block ||
-        body->param.flags.has_kw ||
-        body->param.flags.has_kwrest) {
+    unsigned int size;
 
-        if (body->param.flags.has_block) {
-            body->param.size = body->param.block_start + 1;
-        }
-        else if (body->param.flags.has_kwrest) {
-            body->param.size = body->param.keyword->rest_start + 1;
-        }
-        else if (body->param.flags.has_kw) {
-            body->param.size = body->param.keyword->bits_start + 1;
-        }
-        else if (body->param.flags.has_post) {
-            body->param.size = body->param.post_start + body->param.post_num;
-        }
-        else if (body->param.flags.has_rest) {
-            body->param.size = body->param.rest_start + 1;
-        }
-        else if (body->param.flags.has_opt) {
-            body->param.size = body->param.lead_num + body->param.opt_num;
-        }
-        else {
-            UNREACHABLE;
-        }
+    if (body->param.flags.has_kwrest) {
+        size = body->param.keyword->rest_start + 1;
+    }
+    else if (body->param.flags.has_kw) {
+        size = body->param.keyword->bits_start + 1;
+    }
+    else if (body->param.flags.has_post) {
+        size = body->param.post_start + body->param.post_num;
+    }
+    else if (body->param.flags.has_rest) {
+        size = body->param.rest_start + 1;
+    }
+    else if (body->param.flags.has_opt) {
+        size = body->param.lead_num + body->param.opt_num;
     }
     else {
-        body->param.size = body->param.lead_num;
+        size = body->param.lead_num;
     }
+    /* The block parameter follows all the others; see rb_iseq_param_block_start(). */
+    if (body->param.flags.has_block) size++;
+    body->param.size = size;
 }
 
 static int
@@ -2166,6 +2157,18 @@ iseq_set_use_block(rb_iseq_t *iseq)
     }
 }
 
+/* Positional parameter counts and indexes are 16-bit in rb_iseq_constant_body. */
+static int
+iseq_check_positional_param_count(rb_iseq_t *iseq, int line, long count)
+{
+    if (count > ISEQ_PARAM_POSITIONAL_MAX) {
+        COMPILE_ERROR(iseq, line, "too many positional parameters (%ld, maximum is %d)",
+                      count, ISEQ_PARAM_POSITIONAL_MAX);
+        return COMPILE_NG;
+    }
+    return COMPILE_OK;
+}
+
 static int
 iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *const node_args)
 {
@@ -2180,6 +2183,12 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         int arg_size;
 
         EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
+
+        {
+            long count = (long)args->pre_args_num + args->post_args_num;
+            for (const rb_node_opt_arg_t *opt = args->opt_args; opt; opt = opt->nd_next) count++;
+            if (!iseq_check_positional_param_count(iseq, nd_line(node_args), count)) return COMPILE_NG;
+        }
 
         body->param.lead_num = arg_size = (int)args->pre_args_num;
         if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
@@ -2274,7 +2283,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             body->param.flags.accepts_no_block = TRUE;
         }
         else if (block_id) {
-            body->param.block_start = arg_size++;
+            arg_size++; /* block parameter, see rb_iseq_param_block_start() */
             body->param.flags.has_block = TRUE;
             iseq_set_use_block(iseq);
         }
@@ -12542,6 +12551,24 @@ int_param(int *dst, VALUE param, VALUE sym)
     return FALSE;
 }
 
+static void
+check_uint16_param(long n, VALUE sym)
+{
+    if (n < 0 || n > UINT16_MAX) {
+        rb_raise(rb_eArgError, "%+"PRIsVALUE" out of range: %ld", sym, n);
+    }
+}
+
+static int
+uint16_param(uint16_t *dst, VALUE param, VALUE sym)
+{
+    int x;
+    if (!int_param(&x, param, sym)) return FALSE;
+    check_uint16_param(x, sym);
+    *dst = (uint16_t)x;
+    return TRUE;
+}
+
 static const struct rb_iseq_param_keyword *
 iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 {
@@ -12685,15 +12712,16 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
         }
     }
 
-#define INT_PARAM(F) int_param(&ISEQ_BODY(iseq)->param.F, params, SYM(F))
+#define INT_PARAM(F) uint16_param(&ISEQ_BODY(iseq)->param.F, params, SYM(F))
     if (INT_PARAM(lead_num)) {
         ISEQ_BODY(iseq)->param.flags.has_lead = TRUE;
     }
     if (INT_PARAM(post_num)) ISEQ_BODY(iseq)->param.flags.has_post = TRUE;
     if (INT_PARAM(post_start)) ISEQ_BODY(iseq)->param.flags.has_post = TRUE;
     if (INT_PARAM(rest_start)) ISEQ_BODY(iseq)->param.flags.has_rest = TRUE;
-    if (INT_PARAM(block_start)) ISEQ_BODY(iseq)->param.flags.has_block = TRUE;
 #undef INT_PARAM
+    int block_start = 0;
+    if (int_param(&block_start, params, SYM(block_start))) ISEQ_BODY(iseq)->param.flags.has_block = TRUE;
     {
 #define INT_PARAM(F) F = (int_param(&x, misc, SYM(F)) ? (unsigned int)x : 0)
         int x;
@@ -12718,6 +12746,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 
     if (RB_TYPE_P(arg_opt_labels, T_ARRAY)) {
         len = RARRAY_LENINT(arg_opt_labels);
+        if (len > 0) check_uint16_param(len - 1, SYM(opt));
         ISEQ_BODY(iseq)->param.flags.has_opt = !!(len - 1 >= 0);
 
         if (ISEQ_BODY(iseq)->param.flags.has_opt) {
@@ -12771,6 +12800,9 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     /* body */
     iseq_build_from_ary_body(iseq, anchor, body, node_ids, labels_wrapper);
 
+    if (ISEQ_BODY(iseq)->param.flags.has_block && (unsigned int)block_start + 1 != arg_size) {
+        rb_raise(rb_eArgError, "block_start (%d) must be the last parameter (arg_size: %u)", block_start, arg_size);
+    }
     ISEQ_BODY(iseq)->param.size = arg_size;
     ISEQ_BODY(iseq)->local_table_size = local_size;
     ISEQ_BODY(iseq)->stack_max = stack_max;
@@ -14032,7 +14064,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->param.rest_start);
     ibf_dump_write_small_value(dump, body->param.post_start);
     ibf_dump_write_small_value(dump, body->param.post_num);
-    ibf_dump_write_small_value(dump, body->param.block_start);
+    ibf_dump_write_small_value(dump, body->param.flags.has_block ? rb_iseq_param_block_start(&body->param) : 0);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(param_opt_table_offset));
     ibf_dump_write_small_value(dump, param_keyword_offset);
     ibf_dump_write_small_value(dump, location_pathobj_index);
@@ -14150,6 +14182,14 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const int param_post_start = (int)ibf_load_small_value(load, &reading_pos);
     const int param_post_num = (int)ibf_load_small_value(load, &reading_pos);
     const int param_block_start = (int)ibf_load_small_value(load, &reading_pos);
+    if ((unsigned int)param_lead_num > UINT16_MAX ||
+        (unsigned int)param_opt_num > UINT16_MAX ||
+        (unsigned int)param_rest_start > UINT16_MAX ||
+        (unsigned int)param_post_start > UINT16_MAX ||
+        (unsigned int)param_post_num > UINT16_MAX ||
+        (((param_flags >> 6) & 1) && (unsigned int)param_block_start + 1 != param_size)) {
+        rb_raise(rb_eRuntimeError, "broken binary format");
+    }
     const ibf_offset_t param_opt_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
@@ -14249,7 +14289,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.rest_start = param_rest_start;
     load_body->param.post_start = param_post_start;
     load_body->param.post_num = param_post_num;
-    load_body->param.block_start = param_block_start;
     load_body->local_table_size = local_table_size;
     load_body->ci_size = ci_size;
     load_body->insns_info.size = insns_info_size;
