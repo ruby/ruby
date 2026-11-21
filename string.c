@@ -14391,6 +14391,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     VALUE res;
     char *p;
     const char *f = " ";
+    char fbuf[ONIGENC_CODE_TO_MBC_MAXLEN];
     rb_len_t n, size, llen, rlen, llen2 = 0, rlen2 = 0;
     VALUE pad;
     int singlebyte = 1, cr;
@@ -14409,6 +14410,10 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
         if (flen == 0 || fclen == 0) {
             rb_raise(rb_eArgError, "zero width padding");
         }
+    }
+    else if (rb_enc_mbminlen(enc) > 1) {
+        flen = rb_enc_mbcput(' ', fbuf, enc);
+        f = fbuf;
     }
     termlen = rb_enc_mbminlen(enc);
     len = str_strlen(str, enc); /* rb_enc_check */
