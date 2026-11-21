@@ -1137,6 +1137,38 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_super_in_refined_method_of_module_included_twice
+    bug22616 = '[Bug #22616]'
+    assert_separately([], <<-"end;")
+      bug22616 = #{bug22616.dump}
+      class C0
+      end
+      class C1 < C0
+      end
+      module M
+      end
+      C1.include M
+      module R
+        refine M do
+          def m = [:R, *super]
+          def n = super
+        end
+      end
+      C0.include M
+      assert_equal([C1, M, C0, M], C1.ancestors.take(4))
+      class Object
+        def m = [:Object]
+      end
+      using R
+      2.times do
+        assert_equal([:R, :R, :Object], C1.new.m, bug22616)
+        assert_equal([:R, :Object], C0.new.m, bug22616)
+        assert_raise(NoMethodError, bug22616) {C1.new.n}
+        assert_raise(NoMethodError, bug22616) {C0.new.n}
+      end
+    end;
+  end
+
   def test_super_in_refined_module_method
     assert_separately([], <<-"end;")
       class BasicObject

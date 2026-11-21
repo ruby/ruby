@@ -4799,21 +4799,26 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     const struct rb_callinfo *ci = calling->cd->ci;
     ID mid = vm_ci_mid(ci);
     // The initialize call of opt_new must behave like Class#new, which does not see the caller's refinements. [Bug #22501]
-    const rb_cref_t *cref = (vm_ci_flag(ci) & VM_CALL_IGNORE_REFINEMENTS) ? NULL : vm_get_cref(cfp->ep);
+    const rb_cref_t *top_cref = (vm_ci_flag(ci) & VM_CALL_IGNORE_REFINEMENTS) ? NULL : vm_get_cref(cfp->ep);
     const struct rb_callcache * const cc = calling->cc;
-    const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+    const rb_callable_method_entry_t *refined_cme = vm_cc_cme(cc);
+    const rb_callable_method_entry_t *cme;
+    bool skip_current_method = vm_cc_call(cc) == vm_call_super_method;
 
-    for (; cref; cref = CREF_NEXT(cref)) {
-        VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
+  retry:
+    cme = refined_cme;
+
+    for (const rb_cref_t *cref = top_cref; cref; cref = CREF_NEXT(cref)) {
+        VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), refined_cme->owner);
         if (NIL_P(refinement)) continue;
 
-        refinement = refinement_iclass_for_cme(refinement, vm_cc_cme(cc));
+        refinement = refinement_iclass_for_cme(refinement, refined_cme);
 
         const rb_callable_method_entry_t *const ref_me =
             rb_callable_method_entry(refinement, mid);
 
         if (ref_me) {
-            if (vm_cc_call(cc) == vm_call_super_method) {
+            if (skip_current_method) {
                 const rb_control_frame_t *top_cfp = current_method_entry(ec, cfp);
                 const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
                 if (top_me && rb_method_definition_eq(ref_me->def, top_me->def)) {
@@ -4834,12 +4839,19 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
         }
     }
 
-    if (vm_cc_cme(cc)->def->body.refined.orig_me) {
-        return refined_method_callable_without_refinement(vm_cc_cme(cc));
+    if (refined_cme->def->body.refined.orig_me) {
+        return refined_method_callable_without_refinement(refined_cme);
     }
     else {
-        VALUE klass = RCLASS_SUPER(vm_cc_cme(cc)->defined_class);
-        const rb_callable_method_entry_t *cme = klass ? rb_callable_method_entry(klass, mid) : NULL;
+        VALUE klass = RCLASS_SUPER(refined_cme->defined_class);
+        cme = klass ? rb_callable_method_entry(klass, mid) : NULL;
+        if (cme && cme->def->type == VM_METHOD_TYPE_REFINED) {
+            // Resolve it here; a second pass of vm_call_refined would cache
+            // the result for this entry's iclass.
+            refined_cme = cme;
+            skip_current_method = false;
+            goto retry;
+        }
         return cme;
     }
 }
