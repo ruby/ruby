@@ -130,16 +130,6 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 #include "vm_opts.h"
 
 #include "ruby/thread_native.h"
-/*
- * implementation selector of get_insn_info algorithm
- *   0: linear search
- *   1: binary search
- *   2: succinct bitvector
- */
-#ifndef VM_INSN_INFO_TABLE_IMPL
-# define VM_INSN_INFO_TABLE_IMPL 2
-#endif
-
 #ifndef USE_ISEQ_NODE_ID
 #define USE_ISEQ_NODE_ID 1
 #endif
@@ -522,19 +512,14 @@ struct rb_iseq_constant_body {
 
     rb_iseq_location_t location;
 
-    /* insn info, must be freed */
+    /* insn info (line numbers, events and node ids), see iseq.c */
     struct iseq_insn_info {
-        const struct iseq_insn_info_entry *body;
-        union {
-            unsigned int *positions;
-#if VM_INSN_INFO_TABLE_IMPL == 2
-            struct succ_index_table *succ_index_table;
-#endif
-        } positions_or_succ_index_table;
-        unsigned int size;
+        uint8_t *data;              /* must be freed; data_size bytes */
+        unsigned int size;          /* number of entries */
+        unsigned int data_size;
+        unsigned int stream_offset; /* entry stream: data[stream_offset, node_ids_offset) */
 #ifdef USE_ISEQ_NODE_ID
-        const uint8_t *node_ids;
-        unsigned int node_ids_size;
+        unsigned int node_ids_offset; /* node id stream: data[node_ids_offset, data_size) */
 #endif
     } insns_info;
 

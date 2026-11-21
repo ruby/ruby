@@ -1758,11 +1758,6 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         ISEQ_BODY(iseq)->catch_table = NULL;
     }
 
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    debugs("[compile step 7 (rb_iseq_insns_info_encode_positions)] \n");
-    rb_iseq_insns_info_encode_positions(iseq);
-#endif
-
     if (compile_debug > 1) {
         VALUE str = rb_iseq_disasm(iseq);
         printf("%s\n", StringValueCStr(str));
@@ -3061,23 +3056,14 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         }
     }
 
-    /* get rid of memory leak when REALLOC failed */
-    body->insns_info.body = insns_info;
-    body->insns_info.positions_or_succ_index_table.positions = positions;
 #ifdef USE_ISEQ_NODE_ID
-    body->insns_info.node_ids = node_ids;
+    rb_iseq_insns_info_set(body, body->iseq_size, insns_info, positions, insns_info_index, node_ids, node_ids_size);
+    SIZED_FREE_N(node_ids, (size_t)insns_info_size * 5);
+#else
+    rb_iseq_insns_info_set(body, body->iseq_size, insns_info, positions, insns_info_index, NULL, 0);
 #endif
-
-    SIZED_REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index, insns_info_size);
-    body->insns_info.body = insns_info;
-    SIZED_REALLOC_N(positions, unsigned int, insns_info_index, positions_size);
-    body->insns_info.positions_or_succ_index_table.positions = positions;
-    body->insns_info.size = insns_info_index;
-#ifdef USE_ISEQ_NODE_ID
-    SIZED_REALLOC_N(node_ids, uint8_t, node_ids_size, (size_t)insns_info_size * 5);
-    body->insns_info.node_ids = node_ids;
-    body->insns_info.node_ids_size = node_ids_size;
-#endif
+    SIZED_FREE_N(insns_info, insns_info_size);
+    SIZED_FREE_N(positions, positions_size);
 
     return COMPILE_OK;
 }
@@ -12825,7 +12811,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 12
+#define IBF_DEVEL_VERSION 13
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13537,23 +13523,24 @@ ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_o
 }
 
 static ibf_offset_t
-ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
+ibf_dump_insns_info(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     ibf_offset_t offset = ibf_dump_pos(dump);
     const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    const struct iseq_insn_info_entry *entries = body->insns_info.body;
-
+    unsigned int stream_size, node_ids_size = 0;
+    const uint8_t *stream = rb_iseq_insns_info_stream(body, &stream_size);
 #ifdef USE_ISEQ_NODE_ID
-    ibf_dump_write_small_value(dump, body->insns_info.node_ids_size);
+    const uint8_t *node_ids = rb_iseq_insns_info_node_ids(body, &node_ids_size);
 #endif
-    unsigned int i;
-    for (i = 0; i < body->insns_info.size; i++) {
-        ibf_dump_write_small_value(dump, entries[i].line_no);
-        ibf_dump_write_small_value(dump, entries[i].events);
+
+    ibf_dump_write_small_value(dump, stream_size);
+    ibf_dump_write_small_value(dump, node_ids_size);
+    if (stream_size > 0) {
+        ibf_dump_write(dump, stream, stream_size);
     }
 #ifdef USE_ISEQ_NODE_ID
-    if (body->insns_info.node_ids_size > 0) {
-        ibf_dump_write(dump, body->insns_info.node_ids, body->insns_info.node_ids_size);
+    if (node_ids_size > 0) {
+        ibf_dump_write(dump, node_ids, node_ids_size);
     }
 #endif
 
@@ -13561,63 +13548,26 @@ ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
 }
 
 static void
-ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, unsigned int size,
-                         struct rb_iseq_constant_body *load_body)
+ibf_load_insns_info(const struct ibf_load *load, ibf_offset_t offset, unsigned int size,
+                    unsigned int iseq_size, struct rb_iseq_constant_body *load_body)
 {
-    ibf_offset_t reading_pos = body_offset;
-    struct iseq_insn_info_entry *entries = ALLOC_N(struct iseq_insn_info_entry, size);
+    ibf_offset_t reading_pos = offset;
+    const unsigned int stream_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    unsigned int node_ids_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const size_t buffer_size = load->current_buffer->size;
 
-#ifdef USE_ISEQ_NODE_ID
-    const unsigned int node_ids_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    if (reading_pos > buffer_size ||
+        stream_size > buffer_size - reading_pos ||
+        node_ids_size > buffer_size - reading_pos - stream_size) {
+        rb_raise(rb_eRuntimeError, "invalid byte sequence");
+    }
+    const uint8_t *stream = (const uint8_t *)load->current_buffer->buff + reading_pos;
+#ifndef USE_ISEQ_NODE_ID
+    node_ids_size = 0;
 #endif
-    unsigned int i;
-    for (i = 0; i < size; i++) {
-        entries[i].line_no = (int)ibf_load_small_value(load, &reading_pos);
-        entries[i].events = (rb_event_flag_t)ibf_load_small_value(load, &reading_pos);
+    if (!rb_iseq_insns_info_load(load_body, iseq_size, size, stream, stream_size, stream + stream_size, node_ids_size)) {
+        rb_raise(rb_eRuntimeError, "invalid byte sequence");
     }
-#ifdef USE_ISEQ_NODE_ID
-    if (node_ids_size > 0) {
-        if (node_ids_size > load->current_buffer->size - reading_pos) {
-            rb_raise(rb_eRuntimeError, "invalid byte sequence");
-        }
-        uint8_t *node_ids = ALLOC_N(uint8_t, node_ids_size);
-        memcpy(node_ids, load->current_buffer->buff + reading_pos, node_ids_size);
-        load_body->insns_info.node_ids = node_ids;
-        load_body->insns_info.node_ids_size = node_ids_size;
-    }
-#endif
-    load_body->insns_info.body = entries;
-}
-
-static ibf_offset_t
-ibf_dump_insns_info_positions(struct ibf_dump *dump, const unsigned int *positions, unsigned int size)
-{
-    ibf_offset_t offset = ibf_dump_pos(dump);
-
-    unsigned int last = 0;
-    unsigned int i;
-    for (i = 0; i < size; i++) {
-        ibf_dump_write_small_value(dump, positions[i] - last);
-        last = positions[i];
-    }
-
-    return offset;
-}
-
-static unsigned int *
-ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t positions_offset, unsigned int size)
-{
-    ibf_offset_t reading_pos = positions_offset;
-    unsigned int *positions = ALLOC_N(unsigned int, size);
-
-    unsigned int last = 0;
-    unsigned int i;
-    for (i = 0; i < size; i++) {
-        positions[i] = last + (unsigned int)ibf_load_small_value(load, &reading_pos);
-        last = positions[i];
-    }
-
-    return positions;
 }
 
 static ibf_offset_t
@@ -13941,8 +13891,6 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     RUBY_ASSERT(dump->current_buffer == &dump->global_buffer);
 
-    unsigned int *positions;
-
     const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
     const VALUE location_pathobj_index = ibf_dump_object(dump, body->location.pathobj); /* TODO: freeze */
@@ -13962,11 +13910,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const ibf_offset_t bytecode_size =          ibf_dump_pos(dump) - bytecode_offset;
     const ibf_offset_t param_opt_table_offset = ibf_dump_param_opt_table(dump, iseq);
     const ibf_offset_t param_keyword_offset =   ibf_dump_param_keyword(dump, iseq);
-    const ibf_offset_t insns_info_body_offset = ibf_dump_insns_info_body(dump, iseq);
-
-    positions = rb_iseq_insns_info_decode_positions(ISEQ_BODY(iseq));
-    const ibf_offset_t insns_info_positions_offset = ibf_dump_insns_info_positions(dump, positions, body->insns_info.size);
-    SIZED_FREE_N(positions, ISEQ_BODY(iseq)->insns_info.size);
+    const ibf_offset_t insns_info_offset = ibf_dump_insns_info(dump, iseq);
 
     const ibf_offset_t local_table_offset = ibf_dump_local_table(dump, iseq);
     const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
@@ -14039,8 +13983,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.column);
     ibf_dump_write_small_value(dump, body->location.code_location.end_pos.lineno);
     ibf_dump_write_small_value(dump, body->location.code_location.end_pos.column);
-    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(insns_info_body_offset));
-    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(insns_info_positions_offset));
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(insns_info_offset));
     ibf_dump_write_small_value(dump, body->insns_info.size);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(local_table_offset));
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(lvar_states_offset));
@@ -14154,8 +14097,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_end_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_end_pos_column = (int)ibf_load_small_value(load, &reading_pos);
-    const ibf_offset_t insns_info_body_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
-    const ibf_offset_t insns_info_positions_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t insns_info_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const unsigned int insns_info_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const ibf_offset_t local_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t lvar_states_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
@@ -14242,7 +14184,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.block_start = param_block_start;
     load_body->local_table_size = local_table_size;
     load_body->ci_size = ci_size;
-    load_body->insns_info.size = insns_info_size;
 
     // variable is NULL from ZALLOC; only allocate if flip_count is non-zero.
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
@@ -14277,8 +14218,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
-                                      ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size, load_body);
-    load_body->insns_info.positions_or_succ_index_table.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
+                                      ibf_load_insns_info(load, insns_info_offset, insns_info_size, iseq_size, load_body);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
     ibf_load_lvar_states(load, load_body, lvar_states_offset, local_table_size, load_body->local_table);
     ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
@@ -14299,9 +14239,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     }
 
     ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    rb_iseq_insns_info_encode_positions(iseq);
-#endif
 
     rb_iseq_translate_threaded_code(iseq);
 

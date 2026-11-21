@@ -1278,19 +1278,13 @@ pub struct rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword {
     pub default_values: *mut VALUE,
 }
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body_iseq_insn_info {
-    pub body: *const iseq_insn_info_entry,
-    pub positions_or_succ_index_table: rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1,
+    pub data: *mut u8,
     pub size: ::std::os::raw::c_uint,
-    pub node_ids: *const u8,
-    pub node_ids_size: ::std::os::raw::c_uint,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
-    pub positions: *mut ::std::os::raw::c_uint,
-    pub succ_index_table: *mut succ_index_table,
+    pub data_size: ::std::os::raw::c_uint,
+    pub stream_offset: ::std::os::raw::c_uint,
+    pub node_ids_offset: ::std::os::raw::c_uint,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -2056,12 +2050,6 @@ pub struct iseq_compile_data__bindgen_ty_3 {
     pub storage_head: *mut iseq_compile_data_storage,
     pub storage_current: *mut iseq_compile_data_storage,
 }
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct iseq_insn_info_entry {
-    pub line_no: ::std::os::raw::c_int,
-    pub events: rb_event_flag_t,
-}
 pub const CATCH_TYPE_RESCUE: rb_catch_type = 3;
 pub const CATCH_TYPE_ENSURE: rb_catch_type = 5;
 pub const CATCH_TYPE_RETRY: rb_catch_type = 7;
@@ -2122,7 +2110,7 @@ pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 256;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
@@ -2197,11 +2185,6 @@ pub struct rb_gc_zjit_mmtk_new_obj_fastpath {
     pub value_size_shift: usize,
     pub flags: VALUE,
     pub klass: VALUE,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct succ_index_table {
-    pub _address: u8,
 }
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
