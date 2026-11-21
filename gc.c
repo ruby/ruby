@@ -1574,6 +1574,11 @@ rb_gc_handle_weak_references(void *objspace, VALUE obj)
             }
             break;
           }
+          case imemo_iseq:
+            /* aux.exec.code: a dead code object detaches itself when it is
+             * freed (rb_iseq_code_free); nothing to do here. Declared so
+             * that a moving GC updates the reference. */
+            break;
           default:
             rb_bug("rb_gc_handle_weak_references: unexpected imemo type");
         }
@@ -1602,6 +1607,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
       case imemo_env:
       case imemo_ment:
       case imemo_iseq:
+      case imemo_iseq_code:
       case imemo_callinfo:
       case imemo_cdhash:
         return true;

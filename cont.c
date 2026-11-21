@@ -1283,6 +1283,12 @@ cont_mark_ctx(const struct rb_gc_mark_ctx *ctx, rb_context_t *cont)
 #ifdef CAPTURE_JUST_VALID_VM_STACK
         rb_gc_mark_locations_ctx(ctx, cont->saved_vm_stack.ptr,
                                  cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+        /* saved control frames can be resumed: keep their code */
+        const rb_control_frame_t *cfp = (const rb_control_frame_t *)(cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen);
+        const rb_control_frame_t *cfp_end = (const rb_control_frame_t *)(cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+        for (; cfp < cfp_end; cfp++) {
+            rb_iseq_mark_code_maybe_ctx(ctx, (VALUE)CFP_ISEQ(cfp));
+        }
 #else
         rb_gc_mark_locations_ctx(ctx, cont->saved_vm_stack.ptr,
                                  cont->saved_vm_stack.ptr, cont->saved_ec.stack_size);

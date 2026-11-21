@@ -953,6 +953,8 @@ vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_box
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   ISEQ_BODY(iseq)->iseq_encoded, ec->cfp->sp,
                   ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
+    /* the frame holds the code now */
+    rb_iseq_code_unroot(iseq);
 }
 
 static void
@@ -964,6 +966,8 @@ vm_set_eval_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_cr
                   ISEQ_BODY(iseq)->iseq_encoded,
                   ec->cfp->sp, ISEQ_BODY(iseq)->local_table_size,
                   ISEQ_BODY(iseq)->stack_max);
+    /* the frame holds the code now */
+    rb_iseq_code_unroot(iseq);
 }
 
 static void
@@ -4096,6 +4100,7 @@ rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_executi
             if (CFP_ZJIT_FRAME_P(cfp)) {
                 const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
                 rb_gc_mark_movable_ctx(ctx, (VALUE)jit_frame->iseq);
+                rb_iseq_mark_code_maybe_ctx(ctx, (VALUE)jit_frame->iseq);
                 // materialize_block_code means cfp->block_code is lazy and may
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by
@@ -4107,6 +4112,8 @@ rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_executi
             else {
                 rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->_iseq);
                 rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->block_code);
+                /* a frame runs (and decodes pc of) its iseq's code */
+                rb_iseq_mark_code_maybe_ctx(ctx, (VALUE)cfp->_iseq);
             }
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {

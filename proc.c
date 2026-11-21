@@ -279,6 +279,10 @@ proc_mark_and_move(void *ptr)
 {
     rb_proc_t *proc = ptr;
     block_mark_and_move((struct rb_block *)&proc->block);
+    /* a Proc can run its block (a Binding cannot, so it does not do this) */
+    if (proc->block.type == block_type_iseq) {
+        rb_iseq_mark_and_move_code(proc->block.as.captured.code.iseq);
+    }
 }
 
 enum refinement_recipe_index {
