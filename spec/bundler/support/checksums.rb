@@ -3,6 +3,8 @@
 module Spec
   module Checksums
     class ChecksumsBuilder
+      attr_reader :bundler_registered
+
       def initialize(enabled = true, &block)
         @enabled = enabled
         @checksums = {}
@@ -14,9 +16,11 @@ module Spec
         @checksums = @checksums.dup
       end
 
-      def checksum(repo, name, version, platform = Gem::Platform::RUBY)
+      def checksum(repo, name, version, platform = Gem::Platform::RUBY, folder = "gems")
+        @bundler_registered = true if name == "bundler"
+
         name_tuple = Gem::NameTuple.new(name, version, platform)
-        gem_file = File.join(repo, "gems", "#{name_tuple.full_name}.gem")
+        gem_file = File.join(repo, folder, "#{name_tuple.full_name}.gem")
         File.open(gem_file, "rb") do |f|
           register(name_tuple, Bundler::Checksum.from_gem(f, "#{gem_file} (via ChecksumsBuilder#checksum)"))
         end
@@ -50,8 +54,13 @@ module Spec
       end
     end
 
-    def checksums_section(enabled = true, &block)
-      ChecksumsBuilder.new(enabled, &block)
+    def checksums_section(enabled = true, bundler_checksum: true, &block)
+      ChecksumsBuilder.new(enabled, &block).tap do |builder|
+        next if builder.bundler_registered || !bundler_checksum
+
+        next if Bundler::VERSION.to_s.end_with?(".dev")
+        builder.checksum(system_gem_path, "bundler", Bundler::VERSION, Gem::Platform::RUBY, "cache")
+      end
     end
 
     def checksums_section_when_enabled(target_lockfile = nil, &block)
@@ -64,7 +73,7 @@ module Spec
     end
 
     def checksum_to_lock(*args)
-      checksums_section do |c|
+      checksums_section(true, bundler_checksum: false) do |c|
         c.checksum(*args)
       end.to_s.sub(/^CHECKSUMS\n/, "").strip
     end

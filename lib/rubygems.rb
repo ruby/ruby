@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "4.1.0.dev"
+  VERSION = "4.1.0"
 end
 
 require_relative "rubygems/defaults"
@@ -38,7 +38,7 @@ require_relative "rubygems/util/atomic_file_writer"
 # Further RubyGems documentation can be found at:
 #
 # * {RubyGems Guides}[https://guides.rubygems.org]
-# * {RubyGems API}[https://www.rubydoc.info/github/ruby/rubygems] (also available from
+# * {RubyGems API}[https://guides.rubygems.org/rubygems-org-api/] (also available from
 #   <tt>gem server</tt>)
 #
 # == RubyGems Plugins
@@ -193,11 +193,13 @@ module Gem
     begin
       spec.activate
     rescue Gem::LoadError => e # this could fail due to gem dep collisions, go lax
-      spec_by_name = Gem::Specification.find_by_name(spec.name)
-      if spec_by_name.nil?
+      name = spec.name
+      spec = Gem::Specification.find_unloaded_by_path(path)
+      spec ||= Gem::Specification.find_by_name(name)
+      if spec.nil?
         raise e
       else
-        spec_by_name.activate
+        spec.activate
       end
     end
 
@@ -350,6 +352,8 @@ module Gem
   def self.clear_paths
     @paths         = nil
     @user_home     = nil
+    @cache_home    = nil
+    @data_home     = nil
     Gem::Specification.reset
     Gem::Security.reset if defined?(Gem::Security)
   end
@@ -637,6 +641,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   @yaml_loaded = false
+  @use_psych = nil
+
+  ##
+  # Returns true if the Psych YAML parser is enabled via configuration.
+
+  def self.use_psych?
+    @use_psych || false
+  end
 
   ##
   # Loads YAML, preferring Psych
@@ -644,9 +656,15 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.load_yaml
     return if @yaml_loaded
 
-    require "psych"
-    require_relative "rubygems/psych_tree"
+    @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" ||
+                 (defined?(@configuration) && @configuration && !@configuration[:use_psych].nil?)
 
+    if @use_psych
+      require "psych"
+      require_relative "rubygems/psych_tree"
+    end
+
+    require_relative "rubygems/yaml_serializer"
     require_relative "rubygems/safe_yaml"
 
     @yaml_loaded = true
@@ -850,14 +868,30 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags, and protect access with a file lock
+  # Open a file with given flags, and protect access with a file lock.
+  #
+  # The lock file is removed once done, while still holding the lock. Since
+  # processes waiting for the lock may end up acquiring it on the removed file,
+  # after acquiring it we check that the locked file is still the one at the
+  # lock path, and start over otherwise.
 
-  def self.open_file_with_lock(path, &block)
+  def self.open_file_with_lock(path)
     file_lock = "#{path}.lock"
-    open_file_with_flock(file_lock, &block)
-  ensure
-    require "fileutils"
-    FileUtils.rm_f file_lock
+
+    loop do
+      open_file_with_flock(file_lock) do |io|
+        # The previous holder removed the file while we were waiting on it, so
+        # leave this block and try again on the file now at the lock path
+        next unless File.identical?(io, file_lock)
+
+        begin
+          return yield io
+        ensure
+          require "fileutils"
+          FileUtils.rm_f file_lock
+        end
+      end
+    end
   end
 
   ##
@@ -958,6 +992,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     end
 
     @ruby_version = Gem::Version.new version
+  end
+
+  ##
+  # The ABI scope for the currently running Ruby.
+
+  def self.ruby_abi
+    ruby_version.segments.first(2).join(".")
   end
 
   ##
@@ -1118,11 +1159,22 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Find rubygems plugin files in the standard location and load them
+  # Find rubygems plugin files in the standard location and load them.
+  # At most one stub is loaded per gem: a stub in the running Ruby's ABI
+  # directory wins over a root stub of the same name, since it was
+  # installed specifically for this Ruby.
 
   def self.load_plugins
     Gem.path.each do |gem_path|
-      load_plugin_files Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir(gem_path))
+      abi_plugin_dir = File.join(plugindir(gem_path), ruby_abi)
+      abi_plugins = Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", abi_plugin_dir)
+      abi_plugin_names = abi_plugins.map {|plugin| File.basename(plugin) }
+
+      root_plugins = Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir(gem_path))
+      root_plugins.reject! {|plugin| abi_plugin_names.include?(File.basename(plugin)) }
+
+      load_plugin_files root_plugins
+      load_plugin_files abi_plugins
     end
   end
 
@@ -1282,11 +1334,23 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         prefix_pattern = /^(#{prefix_group})/
       end
 
+      native_extension_suffixes = Gem.dynamic_library_suffixes.reject(&:empty?)
+
       spec.files.each do |file|
         if new_format
           file = file.sub(prefix_pattern, "")
-          next unless $~
+          unless $~
+            # Also register native extension files (e.g. date_core.bundle)
+            # that are listed without require path prefix in the gemspec
+            next if file.include?("/")
+            next unless file.end_with?(*native_extension_suffixes)
+          end
         end
+
+        # RubyGems owns this namespace. Bundler lists copies of some of these
+        # files, and mapping them here would make requiring RubyGems' own file
+        # activate the default Bundler.
+        next if file.start_with?("rubygems/")
 
         spec.activate if already_loaded?(file)
 
@@ -1385,23 +1449,27 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
-  autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
-  autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
-  autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
-  autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
-  autoload :Installer,          File.expand_path("rubygems/installer", __dir__)
-  autoload :Licenses,           File.expand_path("rubygems/util/licenses", __dir__)
-  autoload :NameTuple,          File.expand_path("rubygems/name_tuple", __dir__)
-  autoload :PathSupport,        File.expand_path("rubygems/path_support", __dir__)
-  autoload :RequestSet,         File.expand_path("rubygems/request_set", __dir__)
-  autoload :Requirement,        File.expand_path("rubygems/requirement", __dir__)
-  autoload :Resolver,           File.expand_path("rubygems/resolver", __dir__)
-  autoload :Source,             File.expand_path("rubygems/source", __dir__)
-  autoload :SourceList,         File.expand_path("rubygems/source_list", __dir__)
-  autoload :SpecFetcher,        File.expand_path("rubygems/spec_fetcher", __dir__)
-  autoload :SpecificationPolicy, File.expand_path("rubygems/specification_policy", __dir__)
-  autoload :Util,               File.expand_path("rubygems/util", __dir__)
-  autoload :Version,            File.expand_path("rubygems/version", __dir__)
+  # Autoload by feature name. An absolute path skips the $LOADED_FEATURES
+  # check, so a second RubyGems tree on the load path gets loaded on top of
+  # this one.
+  autoload :ConfigFile,         "rubygems/config_file"
+  autoload :ContentAddress,     "rubygems/content_address"
+  autoload :CIDetector,         "rubygems/ci_detector"
+  autoload :Dependency,         "rubygems/dependency"
+  autoload :DependencyList,     "rubygems/dependency_list"
+  autoload :Installer,          "rubygems/installer"
+  autoload :Licenses,           "rubygems/util/licenses"
+  autoload :NameTuple,          "rubygems/name_tuple"
+  autoload :PathSupport,        "rubygems/path_support"
+  autoload :RequestSet,         "rubygems/request_set"
+  autoload :Requirement,        "rubygems/requirement"
+  autoload :Resolver,           "rubygems/resolver"
+  autoload :Source,             "rubygems/source"
+  autoload :SourceList,         "rubygems/source_list"
+  autoload :SpecFetcher,        "rubygems/spec_fetcher"
+  autoload :SpecificationPolicy, "rubygems/specification_policy"
+  autoload :Util,               "rubygems/util"
+  autoload :Version,            "rubygems/version"
 end
 
 require_relative "rubygems/exceptions"
@@ -1409,9 +1477,7 @@ require_relative "rubygems/specification"
 
 # REFACTOR: This should be pulled out into some kind of hacks file.
 begin
-  ##
   # Defaults the operating system (or packager) wants to provide for RubyGems.
-
   require "rubygems/defaults/operating_system"
 rescue LoadError
   # Ignored
@@ -1426,9 +1492,7 @@ rescue StandardError => e
 end
 
 begin
-  ##
   # Defaults the Ruby implementation wants to provide for RubyGems
-
   require "rubygems/defaults/#{RUBY_ENGINE}"
 rescue LoadError
 end
@@ -1450,4 +1514,9 @@ else
 end
 eval File.read(path), nil, file
 
+# bundler/setup has to run before error_highlight, did_you_mean and
+# syntax_suggest are loaded, so that the Gemfile controls their versions
+# ([Bug #19089]). Ruby 4.1 autoloads them ([Feature #21951]) and deletes this
+# variable while loading RubyGems, so this can go once 4.1 is the oldest
+# supported version.
 require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)

@@ -196,7 +196,7 @@ class Gem::Platform
   # the runtime platform.
   #
   #--
-  # NOTE: Until it can be removed, changes to this method must also be reflected in `bundler/lib/bundler/rubygems_ext.rb`
+  # NOTE: Until it can be removed, changes to this method must also be reflected in `lib/bundler/rubygems_ext.rb`
 
   def ===(other)
     return nil unless Gem::Platform === other
@@ -221,7 +221,7 @@ class Gem::Platform
   end
 
   #--
-  # NOTE: Until it can be removed, changes to this method must also be reflected in `bundler/lib/bundler/rubygems_ext.rb`
+  # NOTE: Until it can be removed, changes to this method must also be reflected in `lib/bundler/rubygems_ext.rb`
 
   def normalized_linux_version
     return nil unless @version

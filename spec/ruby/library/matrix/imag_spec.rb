@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/imaginary'
+require 'matrix'
 
 describe "Matrix#imag" do
-  it_behaves_like :matrix_imaginary, :imag
+  it "is an alias of Matrix#imaginary" do
+    Matrix.instance_method(:imag).should == Matrix.instance_method(:imaginary)
+  end
 end

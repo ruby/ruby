@@ -19,7 +19,7 @@ describe "Thread#initialize" do
         @t.instance_eval do
           initialize {}
         end
-      }.should raise_error(ThreadError)
+      }.should.raise(ThreadError)
     end
 
   end

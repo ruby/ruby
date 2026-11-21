@@ -7,7 +7,7 @@ describe "Process::Status#signaled?" do
     end
 
     it "returns false" do
-      $?.signaled?.should be_false
+      $?.signaled?.should == false
     end
   end
 
@@ -18,13 +18,13 @@ describe "Process::Status#signaled?" do
 
     platform_is_not :windows do
       it "returns true" do
-        $?.signaled?.should be_true
+        $?.signaled?.should == true
       end
     end
 
     platform_is :windows do
       it "always returns false" do
-        $?.signaled?.should be_false
+        $?.signaled?.should == false
       end
     end
   end

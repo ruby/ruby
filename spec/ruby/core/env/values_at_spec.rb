@@ -33,6 +33,6 @@ describe "ENV.values_at" do
   end
 
   it "raises TypeError when a key is not coercible to String" do
-    -> { ENV.values_at("foo", Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV.values_at("foo", Object.new) }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 end

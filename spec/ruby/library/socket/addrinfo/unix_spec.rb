@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 
 describe 'Addrinfo.unix' do
   it 'returns an Addrinfo instance' do
-    Addrinfo.unix('socket').should be_an_instance_of(Addrinfo)
+    Addrinfo.unix('socket').should.instance_of?(Addrinfo)
   end
 
   it 'sets the IP address' do
@@ -40,7 +40,7 @@ describe "Addrinfo#unix?" do
     end
 
     it "returns false" do
-      @addrinfo.unix?.should be_false
+      @addrinfo.unix?.should == false
     end
 
   end
@@ -51,19 +51,17 @@ describe "Addrinfo#unix?" do
     end
 
     it "returns false" do
-      @addrinfo.unix?.should be_false
+      @addrinfo.unix?.should == false
     end
   end
 
-  platform_is_not :windows do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns true" do
-        @addrinfo.unix?.should be_true
-      end
+    it "returns true" do
+      @addrinfo.unix?.should == true
     end
   end
 end

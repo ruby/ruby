@@ -60,7 +60,7 @@ describe "Complex#==" do
       obj = mock("Object")
       obj.should_receive(:==).with(value).and_return(:expected)
 
-      (value == obj).should_not be_false
+      (value == obj).should_not == false
     end
   end
 
@@ -73,11 +73,11 @@ describe "Complex#==" do
     it "returns real == other when the imaginary part is zero" do
       real = mock_numeric('real')
       real.should_receive(:==).with(@other).and_return(true)
-      (Complex(real, 0) == @other).should be_true
+      (Complex(real, 0) == @other).should == true
     end
 
     it "returns false when the imaginary part is not zero" do
-      (Complex(3, 1) == @other).should be_false
+      (Complex(3, 1) == @other).should == false
     end
   end
 
@@ -87,7 +87,7 @@ describe "Complex#==" do
       other = mock_numeric('other')
       other.should_receive(:real?).any_number_of_times.and_return(false)
       other.should_receive(:==).with(complex).and_return(true)
-      (complex == other).should be_true
+      (complex == other).should == true
     end
   end
 end

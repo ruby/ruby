@@ -67,7 +67,6 @@ locale_charmap(VALUE (*conv)(const char *))
  *   Encoding.locale_charmap -> string
  *
  * Returns the locale charmap name.
- * It returns nil if no appropriate information.
  *
  *   Debian GNU/Linux
  *     LANG=C

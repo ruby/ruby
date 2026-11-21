@@ -6,7 +6,7 @@ platform_is_not :windows do
     it "returns a Etc::Passwd struct" do
       passwd = Etc.passwd
       begin
-        passwd.should be_an_instance_of(Etc::Passwd)
+        passwd.should.instance_of?(Etc::Passwd)
       ensure
         Etc.endpwent
       end

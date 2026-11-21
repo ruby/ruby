@@ -9,18 +9,18 @@ describe "Process.kill" do
   end
 
   it "raises an ArgumentError for unknown signals" do
-    -> { Process.kill("FOO", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("FOO", @pid) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if passed a lowercase signal name" do
-    -> { Process.kill("term", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("term", @pid) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if signal is not an Integer or String" do
     signal = mock("process kill signal")
     signal.should_not_receive(:to_int)
 
-    -> { Process.kill(signal, @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill(signal, @pid) }.should.raise(ArgumentError)
   end
 
   it "raises Errno::ESRCH if the process does not exist" do
@@ -29,7 +29,7 @@ describe "Process.kill" do
     Process.wait(pid)
     -> {
       Process.kill("SIGKILL", pid)
-    }.should raise_error(Errno::ESRCH)
+    }.should.raise(Errno::ESRCH)
   end
 
   it "checks for existence and permissions to signal a process, but does not actually signal it, when using signal 0" do
@@ -38,6 +38,43 @@ describe "Process.kill" do
 end
 
 platform_is_not :windows do
+  describe "Process.kill" do
+    it "runs a registered signal handler immediately if called with the current process PID on the main Thread" do
+      backtrace = nil
+      old = trap(:SIGTERM) { backtrace = caller(0) }
+      begin
+        Process.kill(:SIGTERM, Process.pid)
+        backtrace.should.is_a?(Array)
+        backtrace[0].should.include?(__FILE__)
+        backtrace.join.should =~ /in ('Process[.#]kill'|`kill')/
+      ensure
+        trap(:SIGTERM, old)
+      end
+    end
+
+    it "runs a registered signal handler later on the main Thread if called with the current process PID on a non-main Thread" do
+      backtrace = nil
+      old = trap(:SIGTERM) {
+        backtrace = caller(0)
+        Thread.current.should == Thread.main
+      }
+      begin
+        # a way to detect it's a backtrace of the main thread
+        caller(0).join.should.include?("<main>")
+
+        Thread.new do
+          caller(0).join.should_not.include?("<main>")
+          Process.kill(:SIGTERM, Process.pid)
+        end.join
+
+        Thread.pass until backtrace
+        backtrace.join.should.include?("<main>") # the signal handler was run on the main thread
+      ensure
+        trap(:SIGTERM, old)
+      end
+    end
+  end
+
   describe "Process.kill" do
     ProcessSpecs.use_system_ruby(self)
 

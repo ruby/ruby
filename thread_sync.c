@@ -39,9 +39,9 @@ struct queue_sleep_arg {
 #define MUTEX_ALLOW_TRAP FL_USER1
 
 static void
-sync_wakeup(struct ccan_list_head *head, long max)
+sync_wakeup(struct ccan_list_head *head, rb_len_t max)
 {
-    RUBY_DEBUG_LOG("max:%ld", max);
+    RUBY_DEBUG_LOG("max:%"PRIdLEN, max);
 
     struct sync_waiter *cur = 0, *next;
 
@@ -72,7 +72,7 @@ wakeup_one(struct ccan_list_head *head)
 static void
 wakeup_all(struct ccan_list_head *head)
 {
-    sync_wakeup(head, LONG_MAX);
+    sync_wakeup(head, RB_LEN_MAX);
 }
 
 #if defined(HAVE_WORKING_FORK)
@@ -103,13 +103,14 @@ mutex_locked_p(rb_mutex_t *mutex)
     return mutex->ec_serial != 0;
 }
 
+static void thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex);
+
 static void
 mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        const char *err = rb_mutex_unlock_th(mutex, mutex->th, 0);
-        if (err) rb_bug("%s", err);
+        thread_mutex_remove(mutex->th, mutex);
     }
     ruby_xfree(ptr);
 }
@@ -472,11 +473,9 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
                 rb_threadptr_interrupt(cur->th);
                 return NULL;
               case THREAD_STOPPED: /* probably impossible */
-                rb_bug("unexpected THREAD_STOPPED");
-              case THREAD_KILLED:
-                /* not sure about this, possible in exit GC? */
-                rb_bug("unexpected THREAD_KILLED");
-                continue;
+              case THREAD_KILLED: /* not sure about this, possible in exit GC? */
+                /* MSVC 14.52 for ARM64 crashes with /Os on two separate rb_bug calls here */
+                rb_bug("unexpected %s", cur->th->status == THREAD_STOPPED ? "THREAD_STOPPED" : "THREAD_KILLED");
             }
         }
     }
@@ -503,13 +502,6 @@ do_mutex_unlock_safe(VALUE args)
     return Qnil;
 }
 
-/*
- * call-seq:
- *    mutex.unlock    -> self
- *
- * Releases the lock.
- * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
- */
 VALUE
 rb_mutex_unlock(VALUE self)
 {
@@ -669,9 +661,9 @@ rb_mutex_allow_trap(VALUE self, int val)
 struct rb_queue {
     struct ccan_list_head waitq;
     rb_serial_t fork_gen;
-    long capa;
-    long len;
-    long offset;
+    rb_len_t capa;
+    rb_len_t len;
+    rb_len_t offset;
     VALUE *buffer;
     int num_waiting;
 };
@@ -683,7 +675,7 @@ struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
     struct ccan_list_head pushq;
-    long max;
+    rb_len_t max;
 };
 
 static void
@@ -691,8 +683,16 @@ queue_mark_and_move(void *ptr)
 {
     struct rb_queue *q = ptr;
     /* no need to mark threads in waitq, they are on stack */
-    for (long index = 0; index < q->len; index++) {
+    for (rb_len_t index = 0; index < q->len; index++) {
         rb_gc_mark_and_move(&q->buffer[((q->offset + index) % q->capa)]);
+    }
+}
+
+static inline void
+queue_free_buffer(struct rb_queue *q)
+{
+    if (q->buffer) {
+        SIZED_FREE_N(q->buffer, q->capa);
     }
 }
 
@@ -700,9 +700,8 @@ static void
 queue_free(void *ptr)
 {
     struct rb_queue *q = ptr;
-    if (q->buffer) {
-        ruby_sized_xfree(q->buffer, q->capa * sizeof(VALUE));
-    }
+    queue_free_buffer(q);
+    SIZED_FREE(q);
 }
 
 static size_t
@@ -720,7 +719,7 @@ static const rb_data_type_t queue_data_type = {
         .dsize = queue_memsize,
         .dcompact = queue_mark_and_move,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -806,7 +805,8 @@ static void
 szqueue_free(void *ptr)
 {
     struct rb_szqueue *sq = ptr;
-    queue_free(&sq->q);
+    queue_free_buffer(&sq->q);
+    SIZED_FREE(sq);
 }
 
 static size_t
@@ -825,7 +825,7 @@ static const rb_data_type_t szqueue_data_type = {
         .dcompact = szqueue_mark_and_move,
     },
     .parent = &queue_data_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -892,7 +892,7 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 #define QUEUE_INITIAL_CAPA 8
 
 static inline void
-ring_buffer_init(struct rb_queue *q, long initial_capa)
+ring_buffer_init(struct rb_queue *q, rb_len_t initial_capa)
 {
     q->buffer = ALLOC_N(VALUE, initial_capa);
     q->capa = initial_capa;
@@ -908,7 +908,7 @@ ring_buffer_expand(struct rb_queue *q)
     VALUE *old_buffer = q->buffer;
     q->buffer = new_buffer;
     q->offset = 0;
-    ruby_sized_xfree(old_buffer, q->capa * sizeof(VALUE));
+    ruby_xfree_sized(old_buffer, q->capa * sizeof(VALUE));
     q->capa *= 2;
 }
 
@@ -919,7 +919,7 @@ ring_buffer_push(VALUE self, struct rb_queue *q, VALUE obj)
         ring_buffer_expand(q);
     }
     RUBY_ASSERT(q->capa > q->len);
-    long index = (q->offset + q->len) % q->capa;
+    rb_len_t index = (q->offset + q->len) % q->capa;
     q->len++;
     RB_OBJ_WRITE(self, &q->buffer[index], obj);
 }
@@ -952,8 +952,8 @@ queue_initialize(rb_execution_context_t *ec, VALUE self, VALUE initial)
     }
     else {
         initial = rb_to_array(initial);
-        long len = RARRAY_LEN(initial);
-        long initial_capa = QUEUE_INITIAL_CAPA;
+        rb_len_t len = RARRAY_LEN(initial);
+        rb_len_t initial_capa = QUEUE_INITIAL_CAPA;
         while (initial_capa < len) {
             initial_capa *= 2;
         }
@@ -1077,7 +1077,7 @@ queue_clear(struct rb_queue *q)
 static VALUE
 szqueue_initialize(rb_execution_context_t *ec, VALUE self, VALUE vmax)
 {
-    long max = NUM2LONG(vmax);
+    rb_len_t max = NUM2LEN(vmax);
     struct rb_szqueue *sq = raw_szqueue_ptr(self);
 
     if (max <= 0) {
@@ -1165,7 +1165,7 @@ condvar_memsize(const void *ptr)
 static const rb_data_type_t cv_data_type = {
     "condvar",
     {0, RUBY_TYPED_DEFAULT_FREE, condvar_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE|RUBY_TYPED_WB_PROTECTED
 };
 
 static struct rb_condvar *
@@ -1253,6 +1253,265 @@ rb_condvar_broadcast(rb_execution_context_t *ec, VALUE self)
     return self;
 }
 
+/* Thread::Monitor */
+
+struct rb_monitor {
+    long count;
+    rb_serial_t ec_serial;
+    VALUE mutex;
+};
+
+static void
+monitor_mark(void *ptr)
+{
+    struct rb_monitor *mc = ptr;
+    rb_gc_mark_movable(mc->mutex);
+}
+
+static void
+monitor_compact(void *ptr)
+{
+    struct rb_monitor *mc = ptr;
+    rb_gc_update_moved(&mc->mutex);
+}
+
+static const rb_data_type_t monitor_data_type = {
+    .wrap_struct_name = "monitor",
+    .function = {
+        .dmark = monitor_mark,
+        .dfree = RUBY_TYPED_DEFAULT_FREE,
+        .dsize = NULL, // Fully embeded
+        .dcompact = monitor_compact,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+static VALUE
+monitor_alloc(VALUE klass)
+{
+    struct rb_monitor *mc;
+    VALUE obj;
+
+    obj = TypedData_Make_Struct(klass, struct rb_monitor, &monitor_data_type, mc);
+    RB_OBJ_WRITE(obj, &mc->mutex, rb_mutex_new());
+    mc->ec_serial = 0;
+    mc->count = 0;
+
+    return obj;
+}
+
+static struct rb_monitor *
+monitor_ptr(VALUE monitor)
+{
+    struct rb_monitor *mc;
+    TypedData_Get_Struct(monitor, struct rb_monitor, &monitor_data_type, mc);
+    return mc;
+}
+
+static bool
+mc_owner_p(struct rb_monitor *mc, rb_serial_t current_fiber_serial)
+{
+    return mc->ec_serial == current_fiber_serial;
+}
+
+static VALUE
+rb_monitor_try_enter(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct rb_monitor *mc = monitor_ptr(monitor);
+
+    rb_serial_t current_fiber_serial = rb_ec_serial(ec);
+    if (!mc_owner_p(mc, current_fiber_serial)) {
+        if (!rb_mut_trylock(ec, mc->mutex)) {
+            return Qfalse;
+        }
+        mc->ec_serial = current_fiber_serial;
+        mc->count = 0;
+    }
+    mc->count += 1;
+    return Qtrue;
+}
+
+struct monitor_args {
+    VALUE monitor;
+    struct rb_monitor *mc;
+    rb_serial_t current_fiber_serial;
+    rb_execution_context_t *ec;
+};
+
+static void
+monitor_enter0(struct monitor_args *args)
+{
+    if (!mc_owner_p(args->mc, args->current_fiber_serial)) {
+        struct mutex_args mut_args = {
+            .self = args->mc->mutex,
+            .mutex = mutex_ptr(args->mc->mutex),
+            .ec= args->ec,
+        };
+        do_mutex_lock(&mut_args, 1);
+        args->mc->ec_serial = args->current_fiber_serial;
+        args->mc->count = 0;
+    }
+    args->mc->count++;
+    /* mc is embedded in the monitor, which nothing else keeps on the stack while the lock blocks */
+    RB_GC_GUARD(args->monitor);
+}
+
+static VALUE
+rb_monitor_enter(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct monitor_args args = {
+        .monitor = monitor,
+        .mc = monitor_ptr(monitor),
+        .ec = ec,
+        .current_fiber_serial = rb_ec_serial(ec),
+    };
+    monitor_enter0(&args);
+    return Qnil;
+}
+
+static inline void
+monitor_check_owner0(struct monitor_args *args)
+{
+    if (!mc_owner_p(args->mc, args->current_fiber_serial)) {
+        rb_raise(rb_eThreadError, "current fiber not owner");
+    }
+}
+
+static VALUE
+rb_monitor_check_owner(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct monitor_args args = {
+        .monitor = monitor,
+        .mc = monitor_ptr(monitor),
+        .ec = ec,
+        .current_fiber_serial = rb_ec_serial(ec),
+    };
+    monitor_check_owner0(&args);
+    return Qnil;
+}
+
+static void
+monitor_exit0(struct monitor_args *args)
+{
+    monitor_check_owner0(args);
+
+    if (args->mc->count <= 0) rb_bug("monitor_exit: count:%d", (int)args->mc->count);
+    args->mc->count--;
+
+    if (args->mc->count == 0) {
+        args->mc->ec_serial = 0;
+
+        struct mutex_args mut_args = {
+            .self = args->mc->mutex,
+            .mutex = mutex_ptr(args->mc->mutex),
+            .ec= args->ec,
+        };
+        do_mutex_unlock(&mut_args);
+    }
+}
+
+static VALUE
+rb_monitor_exit(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct monitor_args args = {
+        .monitor = monitor,
+        .mc = monitor_ptr(monitor),
+        .ec = ec,
+        .current_fiber_serial = rb_ec_serial(ec),
+    };
+    monitor_exit0(&args);
+    return Qnil;
+}
+
+static VALUE
+rb_monitor_locked_p(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct rb_monitor *mc = monitor_ptr(monitor);
+    return rb_mutex_locked_p(mc->mutex);
+}
+
+static VALUE
+rb_monitor_owned_p(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct rb_monitor *mc = monitor_ptr(monitor);
+    return RBOOL(rb_mutex_locked_p(mc->mutex) && mc_owner_p(mc, rb_ec_serial(ec)));
+}
+
+static VALUE
+monitor_exit_for_cond(VALUE monitor)
+{
+    struct rb_monitor *mc = monitor_ptr(monitor);
+    long cnt = mc->count;
+    mc->ec_serial = 0;
+    mc->count = 0;
+    return LONG2NUM(cnt);
+}
+
+struct wait_for_cond_data {
+    VALUE monitor;
+    VALUE cond;
+    VALUE timeout;
+    VALUE count;
+};
+
+static VALUE
+monitor_wait_for_cond_body(VALUE v)
+{
+    struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
+    struct rb_monitor *mc = monitor_ptr(data->monitor);
+    // cond.wait(monitor.mutex, timeout)
+    VALUE signaled = rb_funcall(data->cond, rb_intern("wait"), 2, mc->mutex, data->timeout);
+    return RTEST(signaled) ? Qtrue : Qfalse;
+}
+
+static VALUE
+monitor_enter_for_cond(VALUE v)
+{
+    // assert(rb_mutex_owned_p(mc->mutex) == Qtrue)
+    // but rb_mutex_owned_p is not exported...
+
+    struct wait_for_cond_data *data = (struct wait_for_cond_data *)v;
+    struct rb_monitor *mc = monitor_ptr(data->monitor);
+    mc->ec_serial = rb_ec_serial(GET_EC());
+    mc->count = NUM2LONG(data->count);
+    return Qnil;
+}
+
+static VALUE
+rb_monitor_wait_for_cond(rb_execution_context_t *ec, VALUE monitor, VALUE cond, VALUE timeout)
+{
+    VALUE count = monitor_exit_for_cond(monitor);
+    struct wait_for_cond_data data = {
+        monitor,
+        cond,
+        timeout,
+        count,
+    };
+
+    return rb_ensure(monitor_wait_for_cond_body, (VALUE)&data,
+                     monitor_enter_for_cond, (VALUE)&data);
+}
+
+static VALUE
+monitor_sync_ensure(VALUE v_args)
+{
+    monitor_exit0((struct monitor_args *)v_args);
+    return Qnil;
+}
+
+static VALUE
+rb_monitor_synchronize(rb_execution_context_t *ec, VALUE monitor)
+{
+    struct monitor_args args = {
+        .monitor = monitor,
+        .mc = monitor_ptr(monitor),
+        .ec = ec,
+        .current_fiber_serial = rb_ec_serial(ec),
+    };
+    monitor_enter0(&args);
+    return rb_ec_ensure(ec, do_ec_yield, (VALUE)ec, monitor_sync_ensure, (VALUE)&args);
+}
+
 static void
 Init_thread_sync(void)
 {
@@ -1275,6 +1534,11 @@ Init_thread_sync(void)
 
     id_sleep = rb_intern("sleep");
 
+    /* Monitor */
+    VALUE rb_cMonitor = rb_define_class_id_under_no_pin(rb_cThread, rb_intern("Monitor"), rb_cObject);
+    rb_define_alloc_func(rb_cMonitor, monitor_alloc);
+
+    rb_provide("monitor.so");
     rb_provide("thread.rb");
 }
 

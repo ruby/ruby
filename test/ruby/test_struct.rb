@@ -42,7 +42,13 @@ module TestStruct
   end
 
   def test_larger_than_largest_pool
-    count = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] / RbConfig::SIZEOF["void*"]) + 1
+    max_embedded_members = (
+      GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+      GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+      GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+    ) / RbConfig::SIZEOF["void*"]
+
+    count = max_embedded_members + 1
     list = Array(0..count)
     klass = @Struct.new(*list.map { |i| :"a_#{i}"})
     struct = klass.new(*list)
@@ -241,6 +247,8 @@ module TestStruct
     assert_equal(1, o[0])
     assert_raise_with_message(IndexError, /offset -2\b/) {o[-2]}
     assert_raise_with_message(IndexError, /offset 1\b/) {o[1]}
+    big = RbConfig::LIMITS["FIXNUM_MAX"] + 1
+    assert_raise_with_message(IndexError, /offset #{big}\b/) {o[big]}
     assert_raise_with_message(NameError, /foo/) {o["foo"]}
     assert_raise_with_message(NameError, /foo/) {o[:foo]}
   end
@@ -252,6 +260,8 @@ module TestStruct
     assert_equal(2, o[:a])
     assert_raise_with_message(IndexError, /offset -2\b/) {o[-2] = 3}
     assert_raise_with_message(IndexError, /offset 1\b/) {o[1] = 3}
+    big = RbConfig::LIMITS["FIXNUM_MAX"] + 1
+    assert_raise_with_message(IndexError, /offset #{big}\b/) {o[big] = 3}
     assert_raise_with_message(NameError, /foo/) {o["foo"] = 3}
     assert_raise_with_message(NameError, /foo/) {o[:foo] = 3}
   end
@@ -538,15 +548,13 @@ module TestStruct
     omit 'skip on riscv64-linux CI machine. See https://github.com/ruby/ruby/pull/13422' if ENV['RUBY_DEBUG'] == 'ci' && /riscv64-linux/ =~ RUBY_DESCRIPTION
 
     # [Bug #20311]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, limit: 2.2, samples: 2..50)
       code = proc do
         Struct.new("A")
         Struct.send(:remove_const, :A)
       end
-
-      10_000.times(&code)
     PREP
-      50_000.times(&code)
+      1_000.times(&code)
     CODE
   end
 

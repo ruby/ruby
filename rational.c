@@ -27,11 +27,13 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/complex.h"
+#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/rational.h"
 #include "ruby_assert.h"
+#include "vm_core.h"            /* for GET_EC() */
 
 #if USE_GMP
 RBIMPL_WARNING_PUSH()
@@ -52,8 +54,7 @@ RBIMPL_WARNING_POP()
 
 VALUE rb_cRational;
 
-static ID id_abs, id_integer_p,
-    id_i_num, id_i_den;
+static ID id_abs, id_i_num, id_i_den;
 
 #define id_idiv idDiv
 #define id_to_i idTo_i
@@ -173,22 +174,6 @@ f_idiv(VALUE x, VALUE y)
 }
 
 #define f_expt10(x) rb_int_pow(INT2FIX(10), x)
-
-inline static int
-f_zero_p(VALUE x)
-{
-    if (RB_INTEGER_TYPE_P(x)) {
-        return FIXNUM_ZERO_P(x);
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-        VALUE num = RRATIONAL(x)->num;
-
-        return FIXNUM_ZERO_P(num);
-    }
-    return (int)rb_equal(x, ZERO);
-}
-
-#define f_nonzero_p(x) (!f_zero_p(x))
 
 inline static int
 f_one_p(VALUE x)
@@ -419,8 +404,7 @@ f_lcm(VALUE x, VALUE y)
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
-    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0),
-            sizeof(struct RRational), 0);
+    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL, sizeof(struct RRational));
 
     RATIONAL_SET_NUM((VALUE)obj, num);
     RATIONAL_SET_DEN((VALUE)obj, den);
@@ -969,8 +953,8 @@ rb_rational_div(VALUE self, VALUE other)
  *    Rational(2, 3).fdiv(0.5)     #=> 1.3333333333333333
  *    Rational(2).fdiv(3)          #=> 0.6666666666666666
  */
-static VALUE
-nurat_fdiv(VALUE self, VALUE other)
+VALUE
+rb_rational_fdiv(VALUE self, VALUE other)
 {
     VALUE div;
     if (f_zero_p(other))
@@ -1145,9 +1129,9 @@ rb_rational_cmp(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat == object  ->  true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if +rat+ equals +object+ numerically.
+ * Returns whether +self+ and +other+ are numerically equal:
  *
  *    Rational(2, 3)  == Rational(2, 3)   #=> true
  *    Rational(5)     == 5                #=> true
@@ -1390,10 +1374,12 @@ nurat_round_half_even(VALUE self)
     return num;
 }
 
+static VALUE f_round_n(VALUE self, VALUE n, VALUE (*func)(VALUE)) ;
+
 static VALUE
 f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 {
-    VALUE n, b, s;
+    VALUE n;
 
     if (rb_check_arity(argc, 0, 1) == 0)
         return (*func)(self);
@@ -1402,6 +1388,14 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     if (!k_integer_p(n))
         rb_raise(rb_eTypeError, "not an integer");
+
+    return f_round_n(self, n, func);
+}
+
+static VALUE
+f_round_n(VALUE self, VALUE n, VALUE (*func)(VALUE))
+{
+    VALUE b, s;
 
     b = f_expt10(n);
     s = rb_rational_mul(self, b);
@@ -1433,8 +1427,7 @@ rb_rational_floor(VALUE self, int ndigits)
         return nurat_floor(self);
     }
     else {
-        VALUE n = INT2NUM(ndigits);
-        return f_round_common(1, &n, self, nurat_floor);
+        return f_round_n(self, INT2NUM(ndigits), nurat_floor);
     }
 }
 
@@ -1577,9 +1570,22 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 }
 
 VALUE
-rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num)
+rb_flo_round_by_rational(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 {
-    return nurat_to_f(nurat_round_n(argc, argv, float_to_r(num)));
+    VALUE (*round_func)(VALUE) = ROUND_FUNC(mode, nurat_round);
+    return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), round_func));
+}
+
+VALUE
+rb_flo_ceil_by_rational(VALUE num, int ndigits)
+{
+    return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), nurat_ceil));
+}
+
+VALUE
+rb_flo_floor_by_rational(VALUE num, int ndigits)
+{
+    return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), nurat_floor));
 }
 
 static double
@@ -1905,7 +1911,7 @@ nurat_marshal_load(VALUE self, VALUE a)
 
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
-        rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
+        rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %"PRIdLEN, RARRAY_LEN(a));
 
     num = RARRAY_AREF(a, 0);
     den = RARRAY_AREF(a, 1);
@@ -2320,6 +2326,12 @@ islettere(int c)
     return (c == 'e' || c == 'E');
 }
 
+inline static int
+isletterr(int c)
+{
+    return (c == 'r' || c == 'R');
+}
+
 static VALUE
 negate_num(VALUE num)
 {
@@ -2369,7 +2381,13 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
         ok = 1;
     }
 
-    if (ok && *s + 1 < end && islettere(**s)) {
+    if (!ok || *s >= end) {
+        /* failed or finish */
+    }
+    else if (isletterr(**s)) {
+        (*s)++;
+    }
+    else if (*s + 1 < end && islettere(**s)) {
         (*s)++;
         expsign = read_sign(s, end);
         exp = rb_int_parse_cstr(*s, end-*s, &e, NULL,
@@ -2562,7 +2580,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
 
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
-        rb_raise(rb_eTypeError, "can't convert nil into Rational");
+        rb_cant_convert(Qnil, "Rational");
     }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
@@ -2751,7 +2769,6 @@ Init_Rational(void)
 {
     VALUE compat;
     id_abs = rb_intern_const("abs");
-    id_integer_p = rb_intern_const("integer?");
     id_i_num = rb_intern_const("@numerator");
     id_i_den = rb_intern_const("@denominator");
 
@@ -2773,7 +2790,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "*", rb_rational_mul, 1);
     rb_define_method(rb_cRational, "/", rb_rational_div, 1);
     rb_define_method(rb_cRational, "quo", rb_rational_div, 1);
-    rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
+    rb_define_method(rb_cRational, "fdiv", rb_rational_fdiv, 1);
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 
     rb_define_method(rb_cRational, "<=>", rb_rational_cmp, 1);

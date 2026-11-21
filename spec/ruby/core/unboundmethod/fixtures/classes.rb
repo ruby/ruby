@@ -1,19 +1,20 @@
 module UnboundMethodSpecs
-
-
   class SourceLocation
-    def self.location # This needs to be on this line
-      :location       # for the spec to pass
+    LOCATION_LINE = __LINE__ + 1
+    def self.location
+      :location
     end
 
     def self.redefined
       :first
     end
 
+    REDEFINED_LINE = __LINE__ + 1
     def self.redefined
       :last
     end
 
+    ORIGINAL_LINE = __LINE__ + 1
     def original
     end
 
@@ -36,6 +37,7 @@ module UnboundMethodSpecs
 
     alias bar foo
     alias baz bar
+    alias qux baz
     alias alias_1 foo
     alias alias_2 foo
 
@@ -79,6 +81,22 @@ module UnboundMethodSpecs
       alias_method :another_class_method, :class_method
     end
   end
+
+  module Mixin
+    def mixin_method; end
+  end
+
+  class IncluderBase
+    include Mixin
+  end
+
+  class IncluderChild < IncluderBase; end
+
+  class ExtenderBase
+    extend Mixin
+  end
+
+  class ExtenderChild < ExtenderBase; end
 
   class A
     def baz(a, b)

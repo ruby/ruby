@@ -12,7 +12,7 @@ describe "Enumerable#slice_before" do
       arg = mock "filter"
       arg.should_receive(:===).and_return(false, true, false, false, false, true, false)
       e = @enum.slice_before(arg)
-      e.should be_an_instance_of(Enumerator)
+      e.should.instance_of?(Enumerator)
       e.to_a.should == [[7], [6, 5, 4, 3], [2, 1]]
     end
 
@@ -35,7 +35,7 @@ describe "Enumerable#slice_before" do
     describe "and no argument" do
       it "calls the block to determine when to yield" do
         e = @enum.slice_before{|i| i == 6 || i == 2}
-        e.should be_an_instance_of(Enumerator)
+        e.should.instance_of?(Enumerator)
         e.to_a.should == [[7], [6, 5, 4, 3], [2, 1]]
       end
     end
@@ -43,13 +43,13 @@ describe "Enumerable#slice_before" do
     it "does not accept arguments" do
       -> {
         @enum.slice_before(1) {}
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
   it "raises an ArgumentError when given an incorrect number of arguments" do
-    -> { @enum.slice_before("one", "two") }.should raise_error(ArgumentError)
-    -> { @enum.slice_before }.should raise_error(ArgumentError)
+    -> { @enum.slice_before("one", "two") }.should.raise(ArgumentError)
+    -> { @enum.slice_before }.should.raise(ArgumentError)
   end
 
   describe "when an iterator method yields more than one value" do

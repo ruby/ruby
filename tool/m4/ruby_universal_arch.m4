@@ -60,12 +60,6 @@ AS_IF([test ${target_archs+set}], [
 #ifdef __i386__
 "processor-name=i386"
 #endif
-#ifdef __ppc__
-"processor-name=powerpc"
-#endif
-#ifdef __ppc64__
-"processor-name=powerpc64"
-#endif
 #ifdef __arm64__
 "processor-name=arm64"
 #endif

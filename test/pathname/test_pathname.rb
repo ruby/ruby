@@ -175,19 +175,19 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH_UNC
     defassert(:del_trailing_separator, "//", "//")
-    defassert(:del_trailing_separator, "//a", "//a")
-    defassert(:del_trailing_separator, "//a", "//a/")
-    defassert(:del_trailing_separator, "//a", "//a//")
-    defassert(:del_trailing_separator, "//a/b", "//a/b")
-    defassert(:del_trailing_separator, "//a/b", "//a/b/")
-    defassert(:del_trailing_separator, "//a/b", "//a/b//")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
   else
     defassert(:del_trailing_separator, "/", "///")
-    defassert(:del_trailing_separator, "///a", "///a/")
   end
+  defassert(:del_trailing_separator, "//a", "//a")
+  defassert(:del_trailing_separator, "//a", "//a/")
+  defassert(:del_trailing_separator, "//a", "//a//")
+  defassert(:del_trailing_separator, "//a/b", "//a/b")
+  defassert(:del_trailing_separator, "//a/b", "//a/b/")
+  defassert(:del_trailing_separator, "//a/b", "//a/b//")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
+  defassert(:del_trailing_separator, "///a", "///a/")
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
@@ -260,13 +260,12 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(Pathname("/foo/var"), r)
   end
 
-  def test_absolute
-    assert_equal(true, Pathname("/").absolute?)
-    assert_equal(false, Pathname("a").absolute?)
-  end
-
   def relative?(path)
-    Pathname.new(path).relative?
+    path = Pathname.new(path)
+    relative = path.relative?
+    absolute = path.absolute?
+    assert_equal(!relative, absolute)
+    relative
   end
 
   defassert(:relative?, true, '')
@@ -281,7 +280,7 @@ class TestPathname < Test::Unit::TestCase
   defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/')
   defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/a')
 
-  if File.dirname('//') == '//'
+  if DOSISH_UNC
     defassert(:relative?, false, '//')
     defassert(:relative?, false, '//a')
     defassert(:relative?, false, '//a/')
@@ -502,6 +501,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_initialize_encoding
+    omit "https://github.com/jruby/jruby/issues/9120" if RUBY_ENGINE == "jruby"
     assert_raise(Encoding::CompatibilityError) { Pathname.new("a".encode(Encoding::UTF_32BE)) }
   end
 
@@ -587,6 +587,15 @@ class TestPathname < Test::Unit::TestCase
   defassert(:pathsubext, 'd.e/aa.o', 'd.e/aa', '.o')
   defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embedded[ruby-core:31640]', '.bug-3664')
 
+  def test_sub_ext_separator_only
+    # sub_ext skips the length check File.extname does first, so it can hand
+    # the backward scan in strrdirsep an empty range.  See test_extname in
+    # test/ruby/test_file_exhaustive.rb for what that scan must not do.
+    assert_equal(".txt", Pathname.new("").sub_ext(".txt").to_s)
+    assert_equal("/.txt", Pathname.new("/").sub_ext(".txt").to_s)
+    assert_equal("#{"/" * 4096}.txt", Pathname.new("/" * 4096).sub_ext(".txt").to_s)
+  end
+
   def test_sub_matchdata
     result = Pathname("abc.gif").sub(/\..*/) {
       assert_not_nil($~)
@@ -623,6 +632,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_null_character
+    omit "https://github.com/truffleruby/truffleruby/issues/4047" if RUBY_ENGINE == "truffleruby"
     assert_raise(ArgumentError) { Pathname.new("\0") }
   end
 
@@ -648,14 +658,15 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_kernel_open
-    count = 0
-    result = Kernel.open(Pathname.new(__FILE__)) {|f|
-      assert_file.identical?(__FILE__, f)
-      count += 1
-      2
-    }
-    assert_equal(1, count)
-    assert_equal(2, result)
+    token = sprintf("%s\#%s|%d|%.8x", self.class.name, __method__, $$, rand(0x1_0000_0000))
+    Dir.mktmpdir("rubytest-pathname") do |dir|
+      path = Pathname.new(dir) + "file"
+      File.write(path, token)
+      assert_equal(token, File.read(path))
+      assert_equal(token, Kernel.open(path, &:read))
+    ensure
+      File.unlink(path)
+    end
   end
 
   def test_each_filename

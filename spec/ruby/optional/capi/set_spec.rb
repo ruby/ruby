@@ -64,7 +64,7 @@ ruby_version_is "4.0" do
     describe "rb_set_clear" do
       it "empties and returns self" do
         set = Set[1]
-        @s.rb_set_clear(set).should equal(set)
+        @s.rb_set_clear(set).should.equal?(set)
         set.should == Set[]
       end
     end

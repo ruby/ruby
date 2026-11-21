@@ -6,11 +6,11 @@ describe "Numeric#step" do
 
   describe 'with positional args' do
     it "raises an ArgumentError when step is 0" do
-      -> { 1.step(5, 0) {} }.should raise_error(ArgumentError)
+      -> { 1.step(5, 0) {} }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError when step is 0.0" do
-      -> { 1.step(2, 0.0) {} }.should raise_error(ArgumentError)
+      -> { 1.step(2, 0.0) {} }.should.raise(ArgumentError)
     end
 
     before :all do
@@ -81,19 +81,19 @@ describe "Numeric#step" do
 
   describe 'with mixed arguments' do
     it " raises an ArgumentError when step is 0" do
-      -> { 1.step(5, by: 0) { break } }.should raise_error(ArgumentError)
+      -> { 1.step(5, by: 0) { break } }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError when step is 0.0" do
-      -> { 1.step(2, by: 0.0) { break } }.should raise_error(ArgumentError)
+      -> { 1.step(2, by: 0.0) { break } }.should.raise(ArgumentError)
     end
 
     it "raises a ArgumentError when limit and to are defined" do
-      -> { 1.step(5, 1, to: 5) { break } }.should raise_error(ArgumentError)
+      -> { 1.step(5, 1, to: 5) { break } }.should.raise(ArgumentError)
     end
 
     it "raises a ArgumentError when step and by are defined" do
-      -> { 1.step(5, 1, by: 5) { break } }.should raise_error(ArgumentError)
+      -> { 1.step(5, 1, by: 5) { break } }.should.raise(ArgumentError)
     end
 
     describe "when no block is given" do

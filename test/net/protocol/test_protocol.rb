@@ -65,6 +65,115 @@ class TestProtocol < Test::Unit::TestCase
     end
   end
 
+  def test_readuntil_limit
+    io = Net::BufferedIO.new(StringIO.new("123\n45678\n".dup))
+    assert_equal "123\n", io.readuntil("\n", limit: 4)
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }
+  end
+
+  # The limit measures the result, not the position of the terminator in
+  # the buffer, so bytes consumed by an earlier read must not count
+  # against it.
+  def test_readuntil_limit_ignores_already_consumed_bytes
+    io = Net::BufferedIO.new(StringIO.new("123\n45678\n".dup))
+    assert_equal "123\n", io.readuntil("\n", limit: 4)
+    assert_equal "45678\n", io.readuntil("\n", limit: 6)
+  end
+
+  def test_readuntil_limit_is_a_protocol_error
+    assert_operator Net::ReadLimitExceeded, :<, Net::ProtocolError
+  end
+
+  # Which of the two checks fires is decided by how the peer split its
+  # writes, so both have to report the same thing.
+  def test_readuntil_limit_message_does_not_depend_on_chunking
+    whole = Net::BufferedIO.new(StringIO.new("45678\n".dup))
+    split = Net::BufferedIO.new(FakeReadPartialIO.new(["45678", "\n"]))
+    messages = [whole, split].map do |io|
+      assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }.message
+    end
+    assert_equal messages.first, messages.last
+    assert_match(/\b4\b/, messages.first)
+    assert_match(/limit/, messages.first)
+  end
+
+  def test_readuntil_limit_after_a_long_earlier_read
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["aaaaaaaaaa\nbc", "\n"]))
+    assert_equal "aaaaaaaaaa\n", io.readuntil("\n", limit: 11)
+    assert_equal "bc\n", io.readuntil("\n", limit: 3)
+  end
+
+  def test_readuntil_limit_rejects_values_that_are_not_a_positive_integer
+    { 0 => "0", -1 => "-1", false => "a non-Integer",
+      4.5 => "a non-Integer", "4" => "a non-Integer" }.each do |limit, expected|
+      io = Net::BufferedIO.new(StringIO.new("123\n".dup))
+      e = assert_raise(ArgumentError, "limit: #{limit.inspect}") do
+        io.readuntil("\n", limit: limit)
+      end
+      assert_equal "limit must be a positive Integer, got #{expected}", e.message
+    end
+
+    io = Net::BufferedIO.new(StringIO.new("123\n".dup))
+    assert_equal "123\n", io.readuntil("\n", limit: nil)
+  end
+
+  def test_readuntil_limit_counts_the_terminator
+    io = Net::BufferedIO.new(StringIO.new("1234\n".dup))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }
+
+    io = Net::BufferedIO.new(StringIO.new("1234\n".dup))
+    assert_equal "1234\n", io.readuntil("\n", limit: 5)
+  end
+
+  def test_readuntil_limit_consumes_nothing_when_it_raises
+    io = Net::BufferedIO.new(StringIO.new("45678\nrest\n".dup))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 4) }
+    assert_equal "45678\n", io.readuntil("\n", limit: 6)
+    assert_equal "rest\n", io.readuntil("\n")
+  end
+
+  def test_readuntil_limit_ignore_eof
+    io = Net::BufferedIO.new(StringIO.new("abc".dup))
+    assert_equal "abc", io.readuntil("\n", true, limit: 10)
+  end
+
+  # The EOF path returns the buffer without consulting the limit, so
+  # only the loop's earlier check keeps it inside.
+  def test_readuntil_limit_bounds_what_ignore_eof_returns_at_eof
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abcde"]))
+    assert_equal "abcde", io.readuntil("\n", true, limit: 5)
+
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abcdef"]))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", true, limit: 5) }
+  end
+
+  def test_readuntil_limit_applies_with_ignore_eof
+    io = Net::BufferedIO.new(StringIO.new("abcdefghij".dup))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", true, limit: 5) }
+  end
+
+  # Never yields the terminator. Capping the reads makes a regression in
+  # the limit check fail instead of running the CI host out of memory.
+  class EndlessIO
+    MAX_READS = 2
+
+    def initialize
+      @reads = 0
+    end
+
+    def read_nonblock(size, buf = nil, exception: false)
+      @reads += 1
+      raise "readuntil ignored its limit: #{@reads} reads" if @reads > MAX_READS
+      s = ("a" * size).b
+      buf ? buf.replace(s) : s
+    end
+  end
+
+  def test_readuntil_limit_endless_stream
+    io = Net::BufferedIO.new(EndlessIO.new)
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\n", limit: 1024) }
+  end
+
   def test_write0_multibyte
     mockio = create_mockio(max: 1)
     io = Net::BufferedIO.new(mockio)
@@ -130,15 +239,19 @@ class TestProtocol < Test::Unit::TestCase
 
   class FakeReadPartialIO
     def initialize(chunks)
-      @chunks = chunks.map(&:dup)
+      # Binary, like a real IO. String#b also copies, which matters
+      # because rbuf_fill clears a string it was not handed as the buffer.
+      @chunks = chunks.map(&:b)
     end
 
     def read_nonblock(size, buf = nil, exception: false)
+      chunk = @chunks.shift
+      return nil if chunk.nil?
       if buf
-        buf.replace(@chunks.shift)
+        buf.replace(chunk)
         buf
       else
-        @chunks.shift
+        chunk
       end
     end
   end
@@ -155,5 +268,162 @@ class TestProtocol < Test::Unit::TestCase
     io.read(5, reader)
     io.read(5, reader)
     assert_equal expected_chunks, actual_chunks
+  end
+
+  def test_readuntil_limit_with_a_terminator_spanning_chunks
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abc\r", "\ndef\r\n"]))
+    assert_equal "abc\r\n", io.readuntil("\r\n", limit: 5)
+
+    io = Net::BufferedIO.new(FakeReadPartialIO.new(["abc\r", "\ndef\r\n"]))
+    assert_raise(Net::ReadLimitExceeded) { io.readuntil("\r\n", limit: 4) }
+  end
+
+  def test_readuntil_terminator_spanning_chunks # https://github.com/ruby/net-protocol/pull/66
+    fake_io = FakeReadPartialIO.new(["abc\r", "\ndef\r\n"])
+    io = Net::BufferedIO.new(fake_io)
+    assert_equal "abc\r\n", io.readuntil("\r\n")
+    assert_equal "def\r\n", io.readuntil("\r\n")
+  end
+
+  def test_readuntil_terminator_spanning_more_than_two_chunks # https://github.com/ruby/net-protocol/pull/66
+    fake_io = FakeReadPartialIO.new(["a", "\r", "\n", "\r", "\n"])
+    io = Net::BufferedIO.new(fake_io)
+    assert_equal "a\r\n\r\n", io.readuntil("\r\n\r\n")
+  end
+
+  def test_readuntil_clamps_a_negative_rewind # https://github.com/ruby/net-protocol/pull/66
+    fake_io = FakeReadPartialIO.new(["ab\n"])
+    io = Net::BufferedIO.new(fake_io)
+    assert_equal "ab", io.readuntil("ab")
+  end
+
+  def test_readuntil_does_not_rewind_into_consumed_bytes # https://github.com/ruby/net-protocol/pull/66
+    fake_io = FakeReadPartialIO.new(["ab\r\n\r", "\nc"])
+    io = Net::BufferedIO.new(fake_io)
+    assert_equal "ab\r", io.readuntil("\r")
+    assert_raise(EOFError) { io.readuntil("\r\n\r\n") }
+  end
+
+  def test_readuntil_ignore_eof_returns_what_is_left # https://github.com/ruby/net-protocol/pull/66
+    fake_io = FakeReadPartialIO.new(["ab\r\n\r", "\nc"])
+    io = Net::BufferedIO.new(fake_io)
+    assert_equal "ab\r", io.readuntil("\r")
+    assert_equal "\n\r\nc", io.readuntil("\r\n\r\n", true)
+  end
+
+  # The length reaches rbuf_consume, which walks @rbuf_offset backwards by
+  # it, so a negative one has to be rejected before the buffer moves.
+  def test_read_rejects_a_negative_length # https://github.com/ruby/net-protocol/pull/69
+    io = Net::BufferedIO.new(StringIO.new("abcdef".dup))
+    assert_equal "a", io.read(1)
+    e = assert_raise(ArgumentError) { io.read(-1) }
+    assert_equal "negative length -1 given", e.message
+    assert_equal "bcdef", io.read_all
+  end
+
+  # OpenSSL::Buffering#write_nonblock documents :wait_readable, which a
+  # renegotiation produces. Takes the write only once the caller has
+  # waited, and caps the attempts so a regression fails instead of
+  # spinning until CI gives up.
+  class WaitReadableWriteIO
+    MAX_WRITES = 3
+
+    attr_reader :string, :waits
+
+    def initialize(becomes_readable: true)
+      @becomes_readable = becomes_readable
+      @string = "".b
+      @writes = 0
+      @waits = 0
+    end
+
+    def to_io; self; end
+
+    def wait_readable(_timeout)
+      @waits += 1
+      @becomes_readable
+    end
+
+    def write_nonblock(str, exception: true)
+      @writes += 1
+      raise "write0 ignored :wait_readable: #{@writes} attempts" if @writes > MAX_WRITES
+      return :wait_readable if @waits.zero?
+      @string << str
+      str.bytesize
+    end
+  end
+
+  def test_write0_waits_for_readability # https://github.com/ruby/net-protocol/pull/70
+    mockio = WaitReadableWriteIO.new
+    io = Net::BufferedIO.new(mockio)
+    io.write_timeout = 0.1
+    assert_equal 5, io.write("hello")
+    assert_equal "hello", mockio.string
+    assert_equal 1, mockio.waits
+  end
+
+  def test_write0_times_out_waiting_for_readability # https://github.com/ruby/net-protocol/pull/70
+    mockio = WaitReadableWriteIO.new(becomes_readable: false)
+    io = Net::BufferedIO.new(mockio)
+    io.write_timeout = 0.1
+    assert_raise(Net::WriteTimeout) { io.write("hello") }
+    assert_equal 1, mockio.waits
+  end
+
+  def test_write_message_by_block # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    assert_equal 10, imio.write_message_by_block { |dest| dest.write("hello\r\n") }
+    assert_equal "hello\r\n.\r\n", sio.string
+  end
+
+  # `break' leaves through write_message_by_block itself, so the message
+  # stays unterminated and the method answers nil.
+  def test_write_message_by_block_allows_break # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    assert_nil imio.write_message_by_block { |dest| dest.write("a\r\n"); break }
+    assert_equal "a\r\n", sio.string
+  end
+
+  def test_write_message_by_block_restores_logging_when_the_block_raises # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    debug = "".dup
+    imio.debug_output = debug
+
+    assert_raise(RuntimeError) do
+      imio.write_message_by_block { |dest| dest.write("partial"); raise "boom" }
+    end
+
+    assert_same debug, imio.debug_output
+    # Nothing outside reaches the half-written line or the byte count, so
+    # they have to be read back from the inside.
+    assert_nil imio.instance_variable_get(:@wbuf)
+    assert_nil imio.instance_variable_get(:@written_bytes)
+  end
+
+  def test_write_message_restores_logging_when_the_source_raises # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    debug = "".dup
+    imio.debug_output = debug
+
+    src = Object.new
+    def src.each; yield "partial"; raise "boom"; end
+
+    assert_raise(RuntimeError) { imio.write_message(src) }
+
+    assert_same debug, imio.debug_output
+  end
+
+  def test_each_message_chunk_restores_logging_when_the_block_raises # https://github.com/ruby/net-protocol/pull/71
+    imio = Net::InternetMessageIO.new(StringIO.new("line\r\n.\r\n".dup))
+    debug = "".dup
+    imio.debug_output = debug
+
+    assert_raise(RuntimeError) { imio.each_message_chunk { raise "boom" } }
+
+    assert_same debug, imio.debug_output
   end
 end

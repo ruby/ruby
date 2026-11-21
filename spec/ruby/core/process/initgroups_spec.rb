@@ -14,7 +14,7 @@ describe "Process.initgroups" do
           Process.groups.sort.should == augmented_groups.sort
           Process.groups = groups
         else
-          -> { Process.initgroups(name, gid) }.should raise_error(Errno::EPERM)
+          -> { Process.initgroups(name, gid) }.should.raise(Errno::EPERM)
         end
       end
     end

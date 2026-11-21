@@ -169,6 +169,19 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(Enumerable, Marshal.load(Marshal.dump(Enumerable)))
   end
 
+  class ModuleSubclass < Module
+  end
+
+  def test_uclass_module_not_relabeled
+    # TYPE_UCLASS ('C') wrapping a module must be rejected, not relabel it.
+    uclass = Marshal.dump(ModuleSubclass.name.to_sym)[2..-1]  # ":<name>"
+    wrapped = Marshal.dump(TestModule)[2..-1]                 # "m<name>"
+    payload = "\x04\x08C#{uclass}#{wrapped}"
+    assert_raise_with_message(ArgumentError, "dump format error (user class)") do
+      Marshal.load(payload)
+    end
+  end
+
   class C2
     def initialize(ary)
       @ary = ary
@@ -184,6 +197,24 @@ class TestMarshal < Test::Unit::TestCase
     o = C2.new(a)
     a << o << nil
     assert_raise(RuntimeError) { Marshal.dump(a) }
+  end
+
+  def test_modify_string_during_dump
+    str = "a" * 100
+    writer = Object.new
+    writer.define_singleton_method(:write) do |s|
+      str.replace("")
+      s.bytesize
+    end
+    # The padding tunes the dump buffer level so that the flush (which calls
+    # the write method above) happens while the length of str is being
+    # written, right before its payload is copied from its buffer.
+    assert_raise(RuntimeError) do
+      (0..10_000).each do |i|
+        str.replace("a" * 100)
+        Marshal.dump(["x" * i, str], writer)
+      end
+    end
   end
 
   def test_change_class_name
@@ -210,6 +241,19 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise(TypeError) { Marshal.load(m) }
   ensure
     self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
+  end
+
+  UserClassWideStruct = Struct.new(:a, :b, :c, :d, :e)
+  UserClassNarrowStruct = Struct.new(:a)
+
+  def test_user_class_struct_size
+    wide = Marshal.dump(UserClassWideStruct.new(1, 2, 3, 4, 5)).byteslice(2..)
+    narrow = Marshal.dump(UserClassNarrowStruct.new(6)).byteslice(2..)
+    # An array of both structs, then a user class marker relabelling the
+    # narrow struct (object link "@\a") as the wide class (symbol link ";\0").
+    data = "\x04\b[\b".b + wide + narrow + "C;\0@\a".b
+    message = /\Astruct #{UserClassWideStruct.name} not compatible \(struct size differs\)/
+    assert_raise_with_message(TypeError, message) {Marshal.load(data)}
   end
 
   class C4
@@ -314,7 +358,7 @@ class TestMarshal < Test::Unit::TestCase
   def test_regexp2
     assert_equal(/\\u/, Marshal.load("\004\b/\b\\\\u\000"))
     assert_equal(/u/, Marshal.load("\004\b/\a\\u\000"))
-    assert_equal(/u/, Marshal.load("\004\bI/\a\\u\000\006:\016@encoding\"\vEUC-JP"))
+    assert_raise(FrozenError) { Marshal.load("\x04\bI/\x06u\x00\a:\x06EF:\t@fooi/") }
 
     bug2109 = '[ruby-core:25625]'
     a = "\x82\xa0".force_encoding(Encoding::Windows_31J)
@@ -471,7 +515,7 @@ class TestMarshal < Test::Unit::TestCase
 
   class TooComplex
     def initialize
-      @marshal_too_complex = 1
+      @marshal_complex = 1
     end
   end
 
@@ -487,10 +531,10 @@ class TestMarshal < Test::Unit::TestCase
     obj.instance_variable_set(ivar, 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(obj), :complex?)
     end
     obj.object_id
-    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x19@marshal_too_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
+    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x15@marshal_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
   end
 
   def test_marshal_complex
@@ -649,7 +693,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_continuation
     EnvUtil.suppress_warning {require "continuation"}
-    omit 'requires callcc support' unless respond_to?(:callcc)
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
 
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
@@ -769,6 +813,14 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal object, Marshal.load(Marshal.dump(object), :freeze.to_proc)
   end
 
+  def test_marshal_false_proc
+    object = []
+    object << object
+
+    loaded = Marshal.load(Marshal.dump(object), false)
+    assert_same loaded, loaded.first
+  end
+
   def test_marshal_load_extended_class_crash
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
@@ -859,17 +911,15 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_marshal_dump_adding_instance_variable
     obj = Bug15968.new
-    assert_raise_with_message(RuntimeError, /instance variable added/) do
-      Marshal.dump(obj)
-    end
+    loaded = Marshal.load(Marshal.dump(obj))
+    assert_nil loaded.baz
   end
 
   def test_marshal_dump_removing_instance_variable
     obj = Bug15968.new
     obj.baz = :Bug15968
-    assert_raise_with_message(RuntimeError, /instance variable removed/) do
-      Marshal.dump(obj)
-    end
+    loaded = Marshal.load(Marshal.dump(obj))
+    assert_equal :Bug15968, loaded.baz
   end
 
   ruby2_keywords def ruby2_keywords_hash(*a)
@@ -935,6 +985,63 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
+  def test_load_overread
+    input = Struct.new(:bytes, :used) do
+      def initialize
+        super("\x04\x08[\x07".bytes, false)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        return nil if used
+        self.used = true
+        "0" * (1024 * 128)
+      end
+    end.new
+
+    assert_equal([nil, nil], Marshal.load(input))
+  end
+
+  def test_load_overread_string_body
+    input = Struct.new(:bytes, :count) do
+      def initialize
+        super("\x04\x08[\x07".bytes, 0)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        self.count += 1
+        case count
+        when 1 then "\"\x06" # TYPE_STRING, length 1
+        when 2 then "a" + "0" * (1024 * 128)
+        end
+      end
+    end.new
+
+    assert_equal(["a", nil], Marshal.load(input))
+  end
+
+  def test_bignum_len_overflow
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\x04\x00\x00\x00\x40")
+    end
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\xfc\x00\x00\x00\x80")
+    end
+  end
+
+  def test_bignum_invalid_sign
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\bl?")
+    end
+  end
+
   class TestMarshalFreezeProc < Test::Unit::TestCase
     include MarshalTestLib
 
@@ -988,7 +1095,7 @@ class TestMarshal < Test::Unit::TestCase
     end
 
     def test_proc_returned_object_are_not_frozen
-      source = ["foo", {}, /foo/, 1..2]
+      source = ["foo", {}, 1..2]
       objects = Marshal.load(encode(source), ->(o) { o.dup }, freeze: true)
       assert_equal source, objects
       refute_predicate objects, :frozen?
@@ -1001,6 +1108,40 @@ class TestMarshal < Test::Unit::TestCase
       _objects = Marshal.load(encode([Object, Kernel]), freeze: true)
       refute_predicate Object, :frozen?
       refute_predicate Kernel, :frozen?
+    end
+
+    def test_linked_strings_are_frozen
+      str = "test"
+      str.instance_variable_set(:@self, str)
+      source = [str, str]
+
+      objects = Marshal.load(encode(source), freeze: true)
+      assert_predicate objects[0], :frozen?
+      assert_predicate objects[1], :frozen?
+      assert_same objects[0], objects[1]
+      assert_same objects[0], objects[0].instance_variable_get(:@self)
+      assert_same objects[1], objects[1].instance_variable_get(:@self)
+      assert_same objects[0].instance_variable_get(:@self), objects[1].instance_variable_get(:@self)
+    end
+
+    class StringSubclass < String
+    end
+
+    def test_uclass_fstring
+      interned = -("fstring".b)
+      assert_instance_of(String, interned)
+
+      # TYPE_UCLASS ('C') wrapping a bare (binary, no ivar) String.
+      payload = "\x04\x08C".b +
+                Marshal.dump(StringSubclass.name.to_sym)[2..] +
+                Marshal.dump("fstring".b)[2..]
+      loaded = Marshal.load(payload, freeze: true)
+
+      assert_instance_of(StringSubclass, loaded)
+      assert_predicate(loaded, :frozen?)
+      assert_not_same(interned, loaded)
+      assert_instance_of(String, interned)
+      assert_instance_of(String, -("fstring".b))
     end
   end
 end

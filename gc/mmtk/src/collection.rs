@@ -1,16 +1,19 @@
 use crate::abi::GCThreadTLS;
 
+use crate::Ruby;
 use crate::api::RubyMutator;
+use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
+use crate::heap::CpuHeapTrigger;
 use crate::heap::RubyHeapTrigger;
 use crate::mmtk;
 use crate::upcalls;
-use crate::Ruby;
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
-use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::VMMutatorThread;
 use mmtk::util::VMThread;
 use mmtk::util::VMWorkerThread;
+use mmtk::util::alloc::AllocationError;
+use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::vm::Collection;
 use mmtk::vm::GCThreadContext;
 use std::sync::atomic::AtomicBool;
@@ -22,41 +25,55 @@ static CURRENT_GC_MAY_MOVE: AtomicBool = AtomicBool::new(false);
 pub struct VMCollection {}
 
 impl Collection<Ruby> for VMCollection {
-    fn is_collection_enabled() -> bool {
-        crate::CONFIGURATION.gc_enabled.load(Ordering::Relaxed)
-    }
-
     fn stop_all_mutators<F>(tls: VMWorkerThread, mut mutator_visitor: F)
     where
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
     {
-        (upcalls().stop_the_world)();
+        upcalls::stop_the_world();
+        crate::binding().gc_disable.on_pause_start();
 
         if crate::mmtk().get_plan().current_gc_may_move_object() {
             CURRENT_GC_MAY_MOVE.store(true, Ordering::Relaxed);
-            (upcalls().before_updating_jit_code)();
+            upcalls::before_updating_jit_code();
         } else {
             CURRENT_GC_MAY_MOVE.store(false, Ordering::Relaxed);
         }
 
         crate::binding().pinning_registry.pin_children(tls);
 
-        (upcalls().get_mutators)(
+        upcalls::get_mutators(
             Self::notify_mutator_ready::<F>,
             &mut mutator_visitor as *mut F as *mut _,
         );
     }
 
     fn resume_mutators(_tls: VMWorkerThread) {
-        if CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed) {
-            (upcalls().after_updating_jit_code)();
+        crate::binding().gc_disable.on_pause_end();
+
+        let current_gc_may_move = CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed);
+
+        if current_gc_may_move {
+            upcalls::after_updating_jit_code();
         }
 
-        (upcalls().resume_mutators)();
+        upcalls::resume_mutators(current_gc_may_move);
     }
 
     fn block_for_gc(tls: VMMutatorThread) {
-        (upcalls().block_for_gc)(tls);
+        upcalls::block_for_gc(tls);
+    }
+
+    fn out_of_memory(_tls: VMThread, err_kind: AllocationError) {
+        match err_kind {
+            // The heap is exhausted and could not be grown. Return normally
+            // without aborting.
+            AllocationError::HeapOutOfMemory => {}
+            // The OS refused an mmap. This is unrecoverable, so abort the
+            // process via the same panic handler used for GC-thread panics.
+            AllocationError::MmapOutOfMemory => {
+                upcalls::mutator_thread_panic_handler();
+            }
+        }
     }
 
     fn spawn_gc_thread(_tls: VMThread, ctx: GCThreadContext<Ruby>) {
@@ -70,7 +87,7 @@ impl Collection<Ruby> for VMCollection {
                     let ptr_worker = &mut *worker as *mut GCWorker<Ruby>;
                     let gc_thread_tls =
                         Box::into_raw(Box::new(GCThreadTLS::for_worker(ptr_worker)));
-                    (upcalls().init_gc_worker_thread)(gc_thread_tls);
+                    upcalls::init_gc_worker_thread(gc_thread_tls);
                     memory_manager::start_worker(
                         mmtk(),
                         GCThreadTLS::to_vwt(gc_thread_tls),
@@ -89,11 +106,20 @@ impl Collection<Ruby> for VMCollection {
     }
 
     fn vm_live_bytes() -> usize {
-        (upcalls().vm_live_bytes)()
+        upcalls::vm_live_bytes()
     }
 
     fn create_gc_trigger() -> Box<dyn GCTriggerPolicy<Ruby>> {
-        Box::new(RubyHeapTrigger::default())
+        // `GCTriggerSelector::Delegated` is currently used by two different
+        // heap modes: `ruby` (the Ruby-like free-slot ratio trigger) and `cpu`
+        // (the CPU-overhead trigger from Tavakolisomeh et al., MPLR '23).
+        // Which one is active is determined by which `OnceCell` config the
+        // `MMTK_HEAP_MODE` parser populated.
+        if CPU_HEAP_TRIGGER_CONFIG.get().is_some() {
+            Box::new(CpuHeapTrigger::default())
+        } else {
+            Box::new(RubyHeapTrigger::default())
+        }
     }
 }
 

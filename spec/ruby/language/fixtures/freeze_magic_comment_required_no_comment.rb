@@ -1,1 +1,1 @@
-$second_literal_id = "abc".object_id
+$second_literal = "abc"

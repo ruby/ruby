@@ -50,8 +50,6 @@ wmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* The key and value of the table each take sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * (2 * sizeof(VALUE));
     }
 
     return size;
@@ -93,7 +91,7 @@ wmap_compact_table_replace_i(st_data_t *k, st_data_t *v, st_data_t d, int existi
 {
     RUBY_ASSERT((VALUE)*k == rb_gc_location((VALUE)*k));
 
-    *v = (st_data_t)rb_gc_location((VALUE)*v);
+    rb_gc_update_moved((VALUE *)v);
 
     return ST_CONTINUE;
 }
@@ -115,8 +113,10 @@ wmap_compact(void *ptr)
 static int
 rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    if (rb_gc_handle_weak_references_alive_p(key) &&
-            rb_gc_handle_weak_references_alive_p(val)) {
+    void *objspace = (void *)arg;
+
+    if (rb_gc_handle_weak_references_alive_p(objspace, key) &&
+            rb_gc_handle_weak_references_alive_p(objspace, val)) {
         return ST_CONTINUE;
     }
     else {
@@ -125,14 +125,14 @@ rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 static void
-wmap_handle_weak_references(void *ptr)
+wmap_handle_weak_references(void *ptr, void *objspace)
 {
     struct weakmap *w = ptr;
 
-    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
+    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)objspace);
 }
 
-const rb_data_type_t rb_weakmap_type = {
+static const rb_data_type_t rb_weakmap_type = {
     "weakmap",
     {
         NULL,
@@ -141,7 +141,7 @@ const rb_data_type_t rb_weakmap_type = {
         wmap_compact,
         wmap_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static int
@@ -207,6 +207,17 @@ wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
     return ST_CONTINUE;
 }
 
+/* call-seq:
+ *   inspect -> new_string
+ *
+ * Returns a new string containing the \WeakMap entries:
+ *
+ *   m = ObjectSpace::WeakMap.new
+ *   m["one"] = 1
+ *   m["two"] = 2
+ *   m.inspect
+ *   # => "#<ObjectSpace::WeakMap:0x00007c457b2523e8: #<String:0x00007c457b2674f0> => 1, #<String:0x00007c457b27b8d8> => 2>"
+ */
 static VALUE
 wmap_inspect(VALUE self)
 {
@@ -383,7 +394,7 @@ wmap_aset(VALUE self, VALUE key, VALUE val)
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
 
-    return Qnil;
+    return val;
 }
 
 /* Retrieves a weakly referenced object with the given key */
@@ -495,6 +506,24 @@ wmap_size(VALUE self)
 #endif
 }
 
+VALUE
+rb_wmap_new_hidden(void)
+{
+    return wmap_allocate(0);
+}
+
+VALUE
+rb_wmap_lookup(VALUE self, VALUE key)
+{
+    return wmap_lookup(self, key);
+}
+
+void
+rb_wmap_aset(VALUE self, VALUE key, VALUE val)
+{
+    wmap_aset(self, key, val);
+}
+
 /* ===== WeakKeyMap =====
  *
  * WeakKeyMap contains one ST table which contains a pointer to the object as
@@ -550,8 +579,6 @@ wkmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* Each key of the table takes sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * sizeof(VALUE);
     }
 
     return size;
@@ -572,8 +599,8 @@ wkmap_compact_table_replace(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t _d
 {
     RUBY_ASSERT(existing);
 
-    *key_ptr = (st_data_t)rb_gc_location((VALUE)*key_ptr);
-    *val_ptr = (st_data_t)rb_gc_location((VALUE)*val_ptr);
+    rb_gc_update_moved((VALUE *)key_ptr);
+    rb_gc_update_moved((VALUE *)val_ptr);
 
     return ST_CONTINUE;
 }
@@ -591,7 +618,7 @@ wkmap_compact(void *ptr)
 static int
 rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    if (rb_gc_handle_weak_references_alive_p(key)) {
+    if (rb_gc_handle_weak_references_alive_p((void *)arg, key)) {
         return ST_CONTINUE;
     }
     else {
@@ -600,11 +627,11 @@ rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 static void
-wkmap_handle_weak_references(void *ptr)
+wkmap_handle_weak_references(void *ptr, void *objspace)
 {
     struct weakkeymap *w = ptr;
 
-    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
+    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)objspace);
 }
 
 static const rb_data_type_t rb_weakkeymap_type = {
@@ -616,7 +643,7 @@ static const rb_data_type_t rb_weakkeymap_type = {
         wkmap_compact,
         wkmap_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static int
@@ -831,7 +858,7 @@ wkmap_clear(VALUE self)
  *  call-seq:
  *    map.inspect -> new_string
  *
- *  Returns a new String containing informations about the map:
+ *  Returns a new String containing information about the map:
  *
  *    m = ObjectSpace::WeakKeyMap.new
  *    m[key] = value

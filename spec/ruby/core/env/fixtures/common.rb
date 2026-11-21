@@ -1,9 +1,7 @@
 module ENVSpecs
   def self.encoding
-    locale = Encoding.find('locale')
-    if ruby_version_is '3' and platform_is :windows
-      locale = Encoding::UTF_8
-    end
-    locale
+    return Encoding::UTF_8 if platform_is :windows
+
+    Encoding.find('locale')
   end
 end

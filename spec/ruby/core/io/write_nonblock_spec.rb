@@ -44,7 +44,7 @@ platform_is_not :windows do
     it "checks if the file is writable if writing zero bytes" do
       -> {
         @readonly_file.write_nonblock("")
-      }.should raise_error(IOError)
+      }.should.raise(IOError)
     end
   end
 
@@ -67,14 +67,20 @@ describe 'IO#write_nonblock' do
   it "raises an exception extending IO::WaitWritable when the write would block" do
     -> {
       loop { @write.write_nonblock('a' * 10_000) }
-    }.should raise_error(IO::WaitWritable) { |e|
+    }.should.raise(IO::WaitWritable) { |e|
       platform_is_not :windows do
-        e.should be_kind_of(Errno::EAGAIN)
+        e.should.is_a?(Errno::EAGAIN)
       end
       platform_is :windows do
-        e.should be_kind_of(Errno::EWOULDBLOCK)
+        e.should.is_a?(Errno::EWOULDBLOCK)
       end
     }
+  end
+
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { @write.write_nonblock("a", exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { @write.write_nonblock("a", exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { @write.write_nonblock("a", exception: 'false') }.should.raise ArgumentError, /expected true or false/
   end
 
   context "when exception option is set to false" do

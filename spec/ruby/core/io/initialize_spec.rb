@@ -35,26 +35,26 @@ describe "IO#initialize" do
 
     -> {
       @io.send(:initialize, fd, "w", {flags: File::CREAT})
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
   end
 
   it "raises a TypeError when passed an IO" do
-    -> { @io.send :initialize, STDOUT, 'w' }.should raise_error(TypeError)
+    -> { @io.send :initialize, STDOUT, 'w' }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { @io.send :initialize, nil, 'w' }.should raise_error(TypeError)
+    -> { @io.send :initialize, nil, 'w' }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    -> { @io.send :initialize, "4", 'w' }.should raise_error(TypeError)
+    -> { @io.send :initialize, "4", 'w' }.should.raise(TypeError)
   end
 
   it "raises IOError on closed stream" do
-    -> { @io.send :initialize, IOSpecs.closed_io.fileno }.should raise_error(IOError)
+    -> { @io.send :initialize, IOSpecs.closed_io.fileno }.should.raise(IOError)
   end
 
   it "raises an Errno::EBADF when given an invalid file descriptor" do
-    -> { @io.send :initialize, -1, 'w' }.should raise_error(Errno::EBADF)
+    -> { @io.send :initialize, -1, 'w' }.should.raise(Errno::EBADF)
   end
 end

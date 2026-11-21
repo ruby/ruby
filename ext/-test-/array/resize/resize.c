@@ -3,7 +3,7 @@
 static VALUE
 ary_resize(VALUE klass, VALUE ary, VALUE len)
 {
-    rb_ary_resize(ary, NUM2LONG(len));
+    rb_ary_resize(ary, NUM2LEN(len));
     return ary;
 }
 

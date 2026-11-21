@@ -5,8 +5,28 @@
 #include "ruby/encoding.h"
 #include <stdint.h>
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+#endif
+#ifndef FIX2LEN
+# define FIX2LEN FIX2LONG
+#endif
+#ifndef LEN2NUM
+# define LEN2NUM LONG2NUM
+#endif
+#ifndef PRIdLEN
+# define PRIdLEN "ld"
+#endif
+
+#ifndef RBIMPL_ASSERT_OR_ASSUME
+# define RBIMPL_ASSERT_OR_ASSUME(x)
+#endif
+
 #if defined(RUBY_DEBUG) && RUBY_DEBUG
 # define JSON_ASSERT RUBY_ASSERT
+# ifndef JSON_DEBUG
+#  define JSON_DEBUG 1
+# endif
 #else
 # ifdef JSON_DEBUG
 #  include <assert.h>
@@ -16,7 +36,21 @@
 # endif
 #endif
 
+#ifdef JSON_DEBUG
+# define JSON_UNREACHABLE_RETURN(val) rb_bug("Unreachable")
+#else
+# define JSON_UNREACHABLE_RETURN UNREACHABLE_RETURN
+#endif
+
 /* shims */
+
+#ifndef RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
+
+#ifndef UNDEF_P
+#define UNDEF_P(val) (val == Qundef)
+#endif
 
 #if SIZEOF_UINT64_T == SIZEOF_LONG_LONG
 # define INT64T2NUM(x) LL2NUM(x)
@@ -45,13 +79,46 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
+#ifndef HAVE_RUBY_XFREE_SIZED
+static inline void ruby_xfree_sized(void *ptr, size_t oldsize)
+{
+    ruby_xfree(ptr);
+}
+
+static inline void *ruby_xrealloc2_sized(void *ptr, size_t new_elems, size_t elem_size, size_t old_elems)
+{
+    return ruby_xrealloc2(ptr, new_elems, elem_size);
+}
+#endif
+
+# define JSON_SIZED_REALLOC_N(v, T, m, n) \
+    ((v) = (T *)ruby_xrealloc2_sized((void *)(v), (m), sizeof(T), (n)))
+
+# define JSON_SIZED_FREE(v) ruby_xfree_sized((void *)(v), sizeof(*(v)))
+# define JSON_SIZED_FREE_N(v, n) ruby_xfree_sized((void *)(v), sizeof(*(v)) * (n))
+
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
 #   undef RUBY_TYPED_FROZEN_SHAREABLE
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
+#ifdef RUBY_TYPED_EMBEDDABLE
+#  define HAVE_RUBY_TYPED_EMBEDDABLE 1
+#else
+# ifdef HAVE_CONST_RUBY_TYPED_EMBEDDABLE
+#  define RUBY_TYPED_EMBEDDABLE RUBY_TYPED_EMBEDDABLE
+#  define HAVE_RUBY_TYPED_EMBEDDABLE 1
+# else
+#  define RUBY_TYPED_EMBEDDABLE 0
+# endif
+#endif
+
 #ifndef NORETURN
+#if defined(__has_attribute) && __has_attribute(noreturn)
+#define NORETURN(x) __attribute__((noreturn)) x
+#else
 #define NORETURN(x) x
+#endif
 #endif
 
 #ifndef NOINLINE
@@ -93,5 +160,50 @@ typedef unsigned char _Bool;
 #else
 #define JSON_CPU_LITTLE_ENDIAN_64BITS 0
 #endif
+
+#ifdef JSON_TRUFFLERUBY_RB_CATCH_BUG
+
+#undef RB_BLOCK_CALL_FUNC_ARGLIST
+#define RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, func_args) VALUE func_args
+
+NORETURN(static inline) void json_rb_throw_obj(VALUE tag, VALUE obj)
+{
+    VALUE exc = rb_exc_new_str(rb_eException, rb_utf8_str_new_cstr("throw_workaround"));
+    rb_ivar_set(exc, rb_intern("@throw_tag"), tag);
+    rb_ivar_set(exc, rb_intern("@throw_obj"), obj);
+    rb_exc_raise(exc);
+}
+#define rb_throw_obj json_rb_throw_obj
+
+static inline VALUE json_rb_catch_obj(VALUE tag, VALUE (*func)(VALUE args), VALUE func_args)
+{
+    int status;
+    VALUE result = rb_protect(func, func_args, &status);
+    if (status) {
+        VALUE exc = rb_errinfo();
+        if (tag == rb_ivar_get(exc, rb_intern("@throw_tag"))) {
+            rb_set_errinfo(Qnil);
+            return rb_ivar_get(exc, rb_intern("@throw_obj"));
+        }
+        rb_jump_tag(status);
+    }
+    return result;
+}
+#define rb_catch_obj json_rb_catch_obj
+
+#endif // JSON_TRUFFLERUBY_RB_CATCH_BUG
+
+static inline void raise_argument_error_on_unknown_keywords(VALUE unknown_keywords)
+{
+    if (RB_UNLIKELY(unknown_keywords)) {
+        if (RARRAY_LEN(unknown_keywords) == 1) {
+            rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, RARRAY_AREF(unknown_keywords, 0));
+        }
+        else {
+            VALUE keywords = rb_ary_join(unknown_keywords, rb_utf8_str_new_cstr(", "));
+            rb_raise(rb_eArgError, "unknown keywords: %" PRIsVALUE, keywords);
+        }
+    }
+}
 
 #endif // _JSON_H_

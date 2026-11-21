@@ -7,7 +7,7 @@ describe "BasicObject#singleton_method_added" do
   end
 
   it "is a private method" do
-    BasicObject.should have_private_instance_method(:singleton_method_added)
+    BasicObject.private_instance_methods(false).should.include?(:singleton_method_added)
   end
 
   it "is called when a singleton method is defined on an object" do
@@ -35,7 +35,7 @@ describe "BasicObject#singleton_method_added" do
       end
     end
 
-    ScratchPad.recorded.should_not include(:new_instance_method)
+    ScratchPad.recorded.should_not.include?(:new_instance_method)
   end
 
   it "is called when a singleton method is defined on a module" do
@@ -94,7 +94,7 @@ describe "BasicObject#singleton_method_added" do
         -> {
           def self.foo
           end
-        }.should raise_error(NoMethodError, /undefined method [`']singleton_method_added' for/)
+        }.should.raise(NoMethodError, /undefined method [`']singleton_method_added' for/)
       end
     ensure
       BasicObjectSpecs.send(:remove_const, :NoSingletonMethodAdded)
@@ -108,16 +108,16 @@ describe "BasicObject#singleton_method_added" do
         -> {
           def foo
           end
-        }.should raise_error(NoMethodError, /undefined method [`']singleton_method_added' for #<Object:/)
+        }.should.raise(NoMethodError, /undefined method [`']singleton_method_added' for #<Object:/)
 
         -> {
           define_method(:bar) {}
-        }.should raise_error(NoMethodError, /undefined method [`']singleton_method_added' for #<Object:/)
+        }.should.raise(NoMethodError, /undefined method [`']singleton_method_added' for #<Object:/)
       end
 
       -> {
         object.define_singleton_method(:baz) {}
-      }.should raise_error(NoMethodError, /undefined method [`']singleton_method_added' for #<Object:/)
+      }.should.raise(NoMethodError, /undefined method [`']singleton_method_added' for #<Object:/)
     end
 
     it "calls #method_missing" do

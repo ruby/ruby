@@ -8,21 +8,27 @@
 #ifndef PRISM_AST_H
 #define PRISM_AST_H
 
-#include "prism/defines.h"
-#include "prism/util/pm_constant_pool.h"
-#include "prism/util/pm_integer.h"
-#include "prism/util/pm_string.h"
+#include "prism/compiler/align.h"
+#include "prism/compiler/exported.h"
 
-#include <assert.h>
+#include "prism/arena.h"
+#include "prism/constant_pool.h"
+#include "prism/integer.h"
+#include "prism/stringy.h"
+
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * This enum represents every type of token in the Ruby source.
  */
 typedef enum pm_token_type {
 <%- tokens.each do |token| -%>
-    /** <%= token.comment %> */
+    /** <%= Ruby::Prism::Template::Doxygen.verbatim(token.comment) %> */
     PM_TOKEN_<%= token.name %><%= " = #{token.value}" if token.value %>,
 
 <%- end -%>
@@ -46,15 +52,28 @@ typedef struct {
 } pm_token_t;
 
 /**
- * This represents a range of bytes in the source string to which a node or
- * token corresponds.
+ * Returns a string representation of the given token type.
+ *
+ * @param token_type The type of the token to get the string representation of.
+ * @returns A string representation of the given token type. This is meant for
+ *     debugging purposes and is not guaranteed to be stable across versions.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_token_type(pm_token_type_t token_type);
+
+/**
+ * This struct represents a slice in the source code, defined by an offset and
+ * a length. Note that we have confirmation that we can represent all locations
+ * within Ruby source files using 32-bit integers per:
+ *
+ *     https://bugs.ruby-lang.org/issues/20488#note-1
+ *
  */
 typedef struct {
-    /** A pointer to the start location of the range in the source. */
-    const uint8_t *start;
+    /** The offset of the location from the start of the source. */
+    uint32_t start;
 
-    /** A pointer to the end location of the range in the source. */
-    const uint8_t *end;
+    /** The length of the location. */
+    uint32_t length;
 } pm_location_t;
 
 struct pm_node;
@@ -63,11 +82,12 @@ struct pm_node;
  * A list of nodes in the source, most often used for lists of children.
  */
 typedef struct pm_node_list {
-    /** The number of nodes in the list. */
-    size_t size;
-
-    /** The capacity of the list that has been allocated. */
-    size_t capacity;
+    /**
+     * The number of nodes in the list. Source offsets are 32 bits, so the
+     * source is less than 4 GiB, and a list built from it stays far below what
+     * this can count.
+     */
+    uint32_t size;
 
     /** The nodes in the list. */
     struct pm_node **nodes;
@@ -112,7 +132,7 @@ static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = 0x2;
 typedef struct pm_node {
     /**
      * This represents the type of the node. It somewhat maps to the nodes that
-     * existed in the original grammar and ripper, but it's not a 1:1 mapping.
+     * existed in the original grammar and ripper, but it is not a 1:1 mapping.
      */
     pm_node_type_t type;
 
@@ -124,12 +144,14 @@ typedef struct pm_node {
 
     /**
      * The unique identifier for this node, which is deterministic based on the
-     * source. It is used to identify unique nodes across parses.
+     * source. It is used to identify unique nodes across parses. Nodes created
+     * outside of parsing have no position in the source and can use 0, which
+     * no parsed node uses.
      */
     uint32_t node_id;
 
     /**
-     * This is the location of the node in the source. It's a range of bytes
+     * This is the location of the node in the source. It is a range of bytes
      * containing a start and an end.
      */
     pm_location_t location;
@@ -160,6 +182,15 @@ typedef struct pm_node {
  * Return true if the given flag is set on the given node.
  */
 #define PM_NODE_FLAG_P(node_, flag_) ((PM_NODE_FLAGS(node_) & (flag_)) != 0)
+
+/**
+ * The alignment required for a child node within a parent node.
+ */
+#ifdef _MSC_VER
+#define PM_NODE_ALIGNAS __declspec(align(8))
+#else
+#define PM_NODE_ALIGNAS PRISM_ALIGNAS(PRISM_ALIGNOF(void *))
+#endif
 <%- nodes.each do |node| -%>
 
 /**
@@ -182,7 +213,6 @@ typedef struct pm_node {
 typedef struct pm_<%= node.human %> {
     /** The embedded base node. */
     pm_node_t base;
-
 <%- node.fields.each do |field| -%>
 
     /**
@@ -195,16 +225,16 @@ typedef struct pm_<%= node.human %> {
     <%- end -%>
      */
     <%= case field
-    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
-    when Prism::Template::NodeListField then "struct pm_node_list #{field.name}"
-    when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "pm_constant_id_t #{field.name}"
-    when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
-    when Prism::Template::StringField then "pm_string_t #{field.name}"
-    when Prism::Template::LocationField, Prism::Template::OptionalLocationField then "pm_location_t #{field.name}"
-    when Prism::Template::UInt8Field then "uint8_t #{field.name}"
-    when Prism::Template::UInt32Field then "uint32_t #{field.name}"
-    when Prism::Template::IntegerField then "pm_integer_t #{field.name}"
-    when Prism::Template::DoubleField then "double #{field.name}"
+    when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::OptionalNodeField then "PM_NODE_ALIGNAS struct #{field.c_type} *#{field.name}"
+    when Ruby::Prism::Template::NodeListField then "struct pm_node_list #{field.name}"
+    when Ruby::Prism::Template::ConstantField, Ruby::Prism::Template::OptionalConstantField then "pm_constant_id_t #{field.name}"
+    when Ruby::Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
+    when Ruby::Prism::Template::StringField then "pm_string_t #{field.name}"
+    when Ruby::Prism::Template::LocationField, Ruby::Prism::Template::OptionalLocationField then "pm_location_t #{field.name}"
+    when Ruby::Prism::Template::UInt8Field then "uint8_t #{field.name}"
+    when Ruby::Prism::Template::UInt32Field then "uint32_t #{field.name}"
+    when Ruby::Prism::Template::IntegerField then "pm_integer_t #{field.name}"
+    when Ruby::Prism::Template::DoubleField then "double #{field.name}"
     else raise field.class.name
     end
     %>;
@@ -220,11 +250,28 @@ typedef enum pm_<%= flag.human %> {
     <%- flag.values.each_with_index do |value, index| -%>
 <%= "\n" if index > 0 -%>
     /** <%= value.comment %> */
-    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Prism::Template::COMMON_FLAGS_COUNT) %>,
+    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Ruby::Prism::Template::COMMON_FLAGS_COUNT) %>,
     <%- end -%>
 
     PM_<%= flag.human.upcase %>_LAST,
 } pm_<%= flag.human %>_t;
+<%- end -%>
+<%- nodes.each do |node| -%>
+
+<%- params = node.fields.map(&:c_param) -%>
+/**
+ * Allocate and initialize a new <%= node.name %> node.
+ *
+ * @param arena The arena to allocate from.
+ * @param node_id The unique identifier for this node.
+ * @param flags The flags for this node.
+ * @param location The location of this node in the source.
+<%- node.fields.each do |field| -%>
+ * @param <%= field.name %> <%= field.comment ? Ruby::Prism::Template::Doxygen.verbatim(field.comment.lines.first.strip) : "The #{field.name} field." %>
+<%- end -%>
+ * @returns The newly allocated and initialized node.
+ */
+PRISM_EXPORTED_FUNCTION pm_<%= node.human %>_t * pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>);
 <%- end -%>
 
 /**
@@ -233,6 +280,10 @@ typedef enum pm_<%= flag.human %> {
  * to specify that through the environment. It will never be true except for in
  * those build systems.
  */
-#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0 %>
+#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Ruby::Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0 %>
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

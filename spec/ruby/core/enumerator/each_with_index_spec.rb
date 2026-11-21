@@ -9,14 +9,14 @@ describe "Enumerator#each_with_index" do
   it "returns a new Enumerator when no block is given" do
     enum1 = [1,2,3].select
     enum2 = enum1.each_with_index
-    enum2.should be_an_instance_of(Enumerator)
+    enum2.should.instance_of?(Enumerator)
     enum1.should_not == enum2
   end
 
   it "raises an ArgumentError if passed extra arguments" do
     -> do
       [1].to_enum.each_with_index(:glark)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "passes on the given block's return value" do

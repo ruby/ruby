@@ -21,11 +21,11 @@ describe "Struct#each_pair" do
   end
 
   it "returns self if passed a block" do
-    @car.each_pair {}.should equal(@car)
+    @car.each_pair {}.should.equal?(@car)
   end
 
   it "returns an Enumerator if not passed a block" do
-    @car.each_pair.should be_an_instance_of(Enumerator)
+    @car.each_pair.should.instance_of?(Enumerator)
   end
 
   it_behaves_like :struct_accessor, :each_pair

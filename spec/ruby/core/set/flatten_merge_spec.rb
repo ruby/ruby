@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Set#flatten_merge" do
   ruby_version_is ""..."4.0" do
     it "is protected" do
-      Set.should have_protected_instance_method("flatten_merge")
+      Set.protected_instance_methods(false).should.include?(:flatten_merge)
     end
 
     it "flattens the passed Set and merges it into self" do
@@ -18,7 +18,7 @@ describe "Set#flatten_merge" do
       set2 = Set[5, 6, 7]
       set2 << set2
 
-      -> { set1.send(:flatten_merge, set2) }.should raise_error(ArgumentError)
+      -> { set1.send(:flatten_merge, set2) }.should.raise(ArgumentError)
     end
   end
 end

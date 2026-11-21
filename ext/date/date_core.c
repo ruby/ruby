@@ -5,6 +5,11 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+#endif
+
 #include <math.h>
 #include <time.h>
 #if defined(HAVE_SYS_TIME_H)
@@ -21,13 +26,17 @@
 
 #define USE_PACK
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 static ID id_cmp, id_le_p, id_ge_p, id_eqeq_p;
 static VALUE cDate, cDateTime;
 static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
-// used by deconstruct_keys
+/* used by deconstruct_keys */
 static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
 static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
 
@@ -992,11 +1001,15 @@ c_valid_commercial_p(int y, int w, int d, double sg,
     if (w < 0) {
 	int rjd2;
 
+	if (w < -53) return 0;
 	c_commercial_to_jd(y + 1, 1, 1, sg, &rjd2, &ns2);
 	c_jd_to_commercial(rjd2 + w * 7, sg, &ry2, &rw2, &rd2);
 	if (ry2 != y)
 	    return 0;
 	w = rw2;
+    }
+    else {
+	if (w < 1 || 53 < w) return 0;
     }
     c_commercial_to_jd(y, w, d, sg, rjd, ns);
     c_jd_to_commercial(*rjd, sg, &ry2, rw, rd);
@@ -2557,7 +2570,12 @@ valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 }
 #endif
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 VALUE date_zone_to_diff(VALUE);
+VALUE date_zone_to_diff_frac(VALUE, int *, long *);
 
 static int
 offset_to_sec(VALUE vof, int *rof)
@@ -2621,21 +2639,28 @@ offset_to_sec(VALUE vof, int *rof)
 		if (!FIXNUM_P(vn))
 		    return 0;
 		n = FIX2LONG(vn);
-		if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-		    return 0;
 	    }
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
 	    *rof = (int)n;
 	    return 1;
 	}
       case T_STRING:
 	{
-	    VALUE vs = date_zone_to_diff(vof);
-	    long n;
+	    int frac, ok = 0;
+	    long whole, n = 0;
+	    VALUE vs = date_zone_to_diff_frac(vof, &frac, &whole);
 
-	    if (!FIXNUM_P(vs))
-		return 0;
-	    n = FIX2LONG(vs);
-	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+	    if (FIXNUM_P(vs)) {
+		n = FIX2LONG(vs);
+		if (n >= -DAY_IN_SECONDS && n <= DAY_IN_SECONDS)
+		    ok = 1;
+	    }
+	    /* an invalid offset already warns that it is ignored */
+	    if (frac && ok && n != whole)
+		rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "decimal hour in a zone offset is deprecated"
+				 " and will be ignored in a future version");
+	    if (!ok)
 		return 0;
 	    *rof = (int)n;
 	    return 1;
@@ -3195,34 +3220,66 @@ date_s_gregorian_leap_p(VALUE klass, VALUE y)
     return f_boolcast(c_gregorian_leap_p(ry));
 }
 
+#ifndef HAVE_RB_GC_MARK_MOVABLE
+#define rb_gc_mark_movable rb_gc_mark
+#else
+static void
+d_lite_gc_compact(void *ptr)
+{
+    union DateData *dat = ptr;
+    if (simple_dat_p(dat))
+        dat->s.nth = rb_gc_location(dat->s.nth);
+    else {
+        dat->c.nth = rb_gc_location(dat->c.nth);
+        dat->c.sf = rb_gc_location(dat->c.sf);
+    }
+}
+#endif
+
 static void
 d_lite_gc_mark(void *ptr)
 {
     union DateData *dat = ptr;
     if (simple_dat_p(dat))
-	rb_gc_mark(dat->s.nth);
+        rb_gc_mark_movable(dat->s.nth);
     else {
-	rb_gc_mark(dat->c.nth);
-	rb_gc_mark(dat->c.sf);
+        rb_gc_mark_movable(dat->c.nth);
+        rb_gc_mark_movable(dat->c.sf);
     }
-}
-
-static size_t
-d_lite_memsize(const void *ptr)
-{
-    const union DateData *dat = ptr;
-    return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
 }
 
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
+#if defined(RUBY_TYPED_EMBEDDABLE) || defined(HAVE_CONST_RUBY_TYPED_EMBEDDABLE)
+# define HAVE_RUBY_TYPED_EMBEDDABLE 1
+#else
+# define RUBY_TYPED_EMBEDDABLE 0
+#endif
+
+static size_t
+d_lite_memsize(const void *ptr)
+{
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+    return 0;
+#else
+    return sizeof(union DateData);
+#endif
+}
+
 static const rb_data_type_t d_lite_type = {
     "Date",
-    {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
+    {
+        d_lite_gc_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        d_lite_memsize,
+#ifdef HAVE_RB_GC_MARK_MOVABLE
+        d_lite_gc_compact,
+#endif
+    },
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_FROZEN_SHAREABLE,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_EMBEDDABLE|RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 inline static VALUE
@@ -3233,10 +3290,11 @@ d_simple_new_internal(VALUE klass,
 		      unsigned flags)
 {
     struct SimpleDateData *dat;
+    union DateData *u_dat;
     VALUE obj;
 
-    obj = TypedData_Make_Struct(klass, struct SimpleDateData,
-				&d_lite_type, dat);
+    obj = TypedData_Make_Struct(klass, union DateData, &d_lite_type, u_dat);
+    dat = &u_dat->s;
     set_to_simple(obj, dat, nth, jd, sg, y, m, d, flags);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
@@ -3254,10 +3312,11 @@ d_complex_new_internal(VALUE klass,
 		       unsigned flags)
 {
     struct ComplexDateData *dat;
+    union DateData *u_dat;
     VALUE obj;
 
-    obj = TypedData_Make_Struct(klass, struct ComplexDateData,
-				&d_lite_type, dat);
+    obj = TypedData_Make_Struct(klass, union DateData, &d_lite_type, u_dat);
+    dat = &u_dat->c;
     set_to_complex(obj, dat, nth, jd, df, sf, of, sg,
 		   y, m, d, h, min, s, flags);
 
@@ -3322,6 +3381,7 @@ old_to_new(VALUE ajd, VALUE of, VALUE sg,
 
     if (f_lt_p(*rsf, INT2FIX(0)) ||
 	f_ge_p(*rsf, INT2FIX(SECOND_IN_NANOSECONDS)))
+	rb_raise(eDateError, "invalid second fraction");
 
     if (*rof < -DAY_IN_SECONDS || *rof > DAY_IN_SECONDS) {
 	*rof = 0;
@@ -4071,7 +4131,7 @@ static VALUE
 rt_complete_frags(VALUE klass, VALUE hash)
 {
     static VALUE tab = Qnil;
-    long e;
+    rb_len_t e;
     VALUE k, a, d;
 
     if (NIL_P(tab)) {
@@ -4170,7 +4230,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
     k = a = Qnil;
 
     {
-	long i, eno = 0;
+	rb_len_t i, eno = 0;
 	VALUE t = Qnil;
 
 	e = 0;
@@ -4181,7 +4241,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    a = RARRAY_AREF(x, 1);
 
 	    {
-		long j, n = 0;
+		rb_len_t j, n = 0;
 
 		for (j = 0; j < RARRAY_LEN(a); j++)
 		    if (!NIL_P(ref_hash0(RARRAY_AREF(a, j))))
@@ -4212,7 +4272,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("yday", INT2FIX(1));
 	}
 	else if (k == sym("civil")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4229,7 +4289,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("mday", INT2FIX(1));
 	}
 	else if (k == sym("commercial")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4253,7 +4313,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 					   ref_hash("wday"))));
 	}
 	else if (k == sym("wnum0")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4270,7 +4330,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("wday", INT2FIX(0));
 	}
 	else if (k == sym("wnum1")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4515,7 +4575,8 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 }
 
 VALUE date__strptime(const char *str, size_t slen,
-		     const char *fmt, size_t flen, VALUE hash);
+		     const char *fmt, size_t flen,
+		     VALUE hash, rb_encoding *enc);
 
 static VALUE
 date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
@@ -4524,10 +4585,12 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     VALUE vstr, vfmt, hash;
     const char *str, *fmt;
     size_t slen, flen;
+    rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &vstr, &vfmt);
 
     StringValue(vstr);
+    if (argc > 1) StringValue(vfmt);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
 		 "string should have ASCII compatible encoding");
@@ -4536,34 +4599,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     if (argc < 2) {
 	fmt = default_fmt;
 	flen = strlen(default_fmt);
+	enc = rb_enc_get(vstr);
     }
     else {
-	StringValue(vfmt);
 	if (!rb_enc_str_asciicompat_p(vfmt))
 	    rb_raise(rb_eArgError,
 		     "format should have ASCII compatible encoding");
+	enc = rb_enc_check(vstr, vfmt);
 	fmt = RSTRING_PTR(vfmt);
 	flen = RSTRING_LEN(vfmt);
     }
     hash = rb_hash_new();
-    if (NIL_P(date__strptime(str, slen, fmt, flen, hash)))
-	return Qnil;
-
-    {
-	VALUE zone = ref_hash("zone");
-	VALUE left = ref_hash("leftover");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    set_hash("zone", zone);
-	}
-	if (!NIL_P(left)) {
-	    rb_enc_copy(left, vstr);
-	    set_hash("leftover", left);
-	}
-    }
-
-    return hash;
+    return date__strptime(str, slen, fmt, flen, hash, enc);
 }
 
 /*
@@ -4652,10 +4699,6 @@ get_limit(VALUE opt)
     }
     return 128;
 }
-
-#ifndef HAVE_RB_CATEGORY_WARN
-#define rb_category_warn(category, fmt) rb_warn(fmt)
-#endif
 
 static VALUE
 check_limit(VALUE str, VALUE opt)
@@ -6003,7 +6046,7 @@ dup_obj_with_new_start(VALUE obj, double sg)
 
 /*
  * call-seq:
- *   new_start(start = Date::ITALY]) -> new_date
+ *   new_start(start = Date::ITALY) -> new_date
  *
  * Returns a copy of +self+ with the given +start+ value:
  *
@@ -6125,6 +6168,15 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
     return dup_obj_with_new_offset(self, rof);
 }
 
+static void
+check_date_fraction(VALUE self)
+{
+    if (!f_kind_of_p(self, cDateTime))
+	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+			 "Date with fractional day is deprecated, "
+			 "use DateTime if you need a fractional day");
+}
+
 /*
  * call-seq:
  *    d + other  ->  date
@@ -6132,6 +6184,8 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
  * Returns a date object pointing +other+ days after self.  The other
  * should be a numeric value.  If the other is a fractional number,
  * assumes its precision is at most nanosecond.
+ * Passing a fractional number to Date#+ is deprecated; use DateTime
+ * if you need a fractional day.
  *
  *    Date.new(2001,2,3) + 1	#=> #<Date: 2001-02-04 ...>
  *    DateTime.new(2001,2,3) + Rational(1,2)
@@ -6261,6 +6315,9 @@ d_lite_plus(VALUE self, VALUE other)
 
 	    o = RFLOAT_VALUE(other);
 
+	    if (modf(o, &tmp) != 0.0)
+		check_date_fraction(self);
+
 	    if (o > 0)
 		s = +1;
 	    else {
@@ -6372,6 +6429,8 @@ d_lite_plus(VALUE self, VALUE other)
 		other = rb_rational_num(other);
 		goto again;
 	    }
+
+	    check_date_fraction(self);
 
 	    if (f_positive_p(other))
 		s = +1;
@@ -6523,6 +6582,8 @@ minus_dd(VALUE self, VALUE other)
  * pointing +other+ days before self.
  * If the other is a fractional number,
  * assumes its precision is at most nanosecond.
+ * Passing a fractional number to Date#- is deprecated; use DateTime
+ * if you need a fractional day.
  *
  *     Date.new(2001,2,3) - 1	#=> #<Date: 2001-02-02 ...>
  *     DateTime.new(2001,2,3) - Rational(1,2)
@@ -6824,7 +6885,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
     date = self;
     c = f_cmp(step, INT2FIX(0));
     if (c < 0) {
-	while (FIX2INT(d_lite_cmp(date, limit)) >= 0) {
+	while (rb_cmpint(d_lite_cmp(date, limit), date, limit) >= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
@@ -6834,7 +6895,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
 	    rb_yield(date);
     }
     else /* if (c > 0) */ {
-	while (FIX2INT(d_lite_cmp(date, limit)) <= 0) {
+	while (rb_cmpint(d_lite_cmp(date, limit), date, limit) <= 0) {
 	    rb_yield(date);
 	    date = d_lite_plus(date, step);
 	}
@@ -6856,7 +6917,7 @@ d_lite_upto(VALUE self, VALUE max)
     RETURN_ENUMERATOR(self, 1, &max);
 
     date = self;
-    while (FIX2INT(d_lite_cmp(date, max)) <= 0) {
+    while (rb_cmpint(d_lite_cmp(date, max), date, max) <= 0) {
 	rb_yield(date);
 	date = d_lite_plus(date, INT2FIX(1));
     }
@@ -6877,7 +6938,7 @@ d_lite_downto(VALUE self, VALUE min)
     RETURN_ENUMERATOR(self, 1, &min);
 
     date = self;
-    while (FIX2INT(d_lite_cmp(date, min)) >= 0) {
+    while (rb_cmpint(d_lite_cmp(date, min), date, min) >= 0) {
 	rb_yield(date);
 	date = d_lite_plus(date, INT2FIX(-1));
     }
@@ -6889,8 +6950,10 @@ cmp_gen(VALUE self, VALUE other)
 {
     get_d1(self);
 
-    if (k_numeric_p(other))
-	return INT2FIX(f_cmp(m_ajd(dat), other));
+    if (k_numeric_p(other)) {
+	VALUE c = rb_funcallv(m_ajd(dat), id_cmp, 1, &other);
+	return NIL_P(c) ? Qnil : INT2FIX(rb_cmpint(c, self, other));
+    }
     else if (k_date_p(other))
 	return INT2FIX(f_cmp(m_ajd(dat), f_ajd(other)));
     return rb_num_coerce_cmp(self, other, id_cmp);
@@ -7384,7 +7447,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 {
     VALUE vfmt;
     const char *fmt;
-    long len;
+    rb_len_t len;
     char buffer[SMALLBUF], *buf = buffer;
     struct tmx tmx;
     VALUE str;
@@ -7457,7 +7520,7 @@ strftimev(const char *fmt, VALUE self,
 {
     char buffer[SMALLBUF], *buf = buffer;
     struct tmx tmx;
-    long len;
+    rb_len_t len;
     VALUE str;
 
     (*func)(self, &tmx);
@@ -7478,7 +7541,7 @@ strftimev(const char *fmt, VALUE self,
  *
  *   Date.new(2001, 2, 3).asctime # => "Sat Feb  3 00:00:00 2001"
  *
- * See {asctime}[https://linux.die.net/man/3/asctime].
+ * See {asctime}[https://man7.org/linux/man-pages/man3/asctime.3p.html].
  *
  */
 static VALUE
@@ -7620,7 +7683,7 @@ static VALUE
 deconstruct_keys(VALUE self, VALUE keys, int is_datetime)
 {
     VALUE h = rb_hash_new();
-    long i;
+    rb_len_t i;
 
     get_d1(self);
 
@@ -7804,8 +7867,6 @@ d_lite_marshal_load(VALUE self, VALUE a)
     if (simple_dat_p(dat)) {
 	if (df || !f_zero_p(sf) || of) {
 	    /* loading a fractional date; promote to complex */
-	    dat = ruby_xrealloc(dat, sizeof(struct ComplexDateData));
-	    RTYPEDDATA(self)->data = dat;
 	    goto complex_data;
 	}
 	set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);

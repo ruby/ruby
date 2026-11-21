@@ -59,7 +59,7 @@ VALUE rb_reg_regcomp(VALUE str);
  * Distinction  between raising  ::rb_eArgError  and  ::rb_eRegexpError is  not
  * obvious, at least to @shyouhei.
  */
-long rb_reg_search(VALUE re, VALUE str, long pos, int dir);
+rb_len_t rb_reg_search(VALUE re, VALUE str, rb_len_t pos, int dir);
 
 /**
  * Substitution.  This  is basically the implementation  of `String#sub`.  Also
@@ -94,7 +94,7 @@ VALUE rb_reg_regsub(VALUE repl, VALUE src, struct re_registers *regs, VALUE rexp
  *             character boundary.
  *
  */
-long rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int dir);
+rb_len_t rb_reg_adjust_startpos(VALUE re, VALUE str, rb_len_t pos, int dir);
 
 /**
  * Escapes  any  characters  that  would  have special  meaning  in  a  regular
@@ -116,7 +116,10 @@ VALUE rb_reg_quote(VALUE str);
  * @exception  rb_eEncCompatError  `re` and `str` are incompatible.
  * @exception  rb_eRegexpError     `re` is malformed.
  * @return     A preprocessesed pattern buffer ready to be applied to `str`.
- * @note       The return value is manages by our GC.  Don't free.
+ * @warning    Do not use this function.  Use rb_reg_onig_match() instead.
+ *             It is kept only for old extensions.  Its ownership rules are
+ *             error prone: unless the return value is `RREGEXP_PTR(re)`, the
+ *             caller must free it with `onig_free()`.
  *
  * @internal
  *

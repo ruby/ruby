@@ -20,7 +20,7 @@ class TestProcess < Test::Unit::TestCase
     self.class.windows?
   end
   def self.windows?
-    return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    return /mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def with_tmpchdir
@@ -210,7 +210,8 @@ class TestProcess < Test::Unit::TestCase
     # the ASAN runtime library sets RLIMIT_CORE to 0, "to avoid dumping a 16T+ core file", and
     # that inteferes with this test.
     asan_options = ENV['ASAN_OPTIONS'] || ''
-    asan_options  << ':' unless asan_options.empty?
+    # NOTE: ENV['ASAN_OPTIONS'] returns a frozen String, so append non-destructively.
+    asan_options += ':' unless asan_options.empty?
     env = {
       'ASAN_OPTIONS' => "#{asan_options}disable_coredump=0"
     }
@@ -270,6 +271,17 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_rlimit_out_of_range
+    return unless rlimit_exist?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      ruby = EnvUtil.rubybin
+      assert_raise(RangeError) { system(ruby, "-e", "", rlimit_cpu: 2**65) }
+      assert_raise(RangeError) { system(ruby, "-e", "", rlimit_core: [0, 2**65]) }
+      assert_raise(RangeError) { system(ruby, "-e", "", rlimit_core: [-2**65]) }
+    end;
+  end
+
   def test_overwrite_ENV
     assert_separately([],"#{<<~"begin;"}\n#{<<~"end;"}")
     BUG = "[ruby-core:105223] [Bug #18164]"
@@ -291,7 +303,7 @@ class TestProcess < Test::Unit::TestCase
   end
   case RbConfig::CONFIG['target_os']
   when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE PROCESSOR_ARCHITEW6432])
   when /darwin/
     MANDATORY_ENVS.concat(%w[TMPDIR], ENV.keys.grep(/\A__CF_/))
     # IO.popen([ENV.keys.to_h {|e| [e, nil]},
@@ -303,8 +315,21 @@ class TestProcess < Test::Unit::TestCase
   ENVCOMMAND = [RUBY].concat(PREENVARG).concat(ENVARG)
 
   def test_execopts_env
+    assert_raise(TypeError) {
+      system({nil=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(TypeError) {
+      system({0=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(TypeError) {
+      system({"FOO"=>0}, *TRUECOMMAND)
+    }
+
     assert_raise(ArgumentError) {
       system({"F=O"=>"BAR"}, *TRUECOMMAND)
+    }
+    assert_raise(ArgumentError) {
+      system({"F\0O"=>"BAR"}, *TRUECOMMAND)
     }
 
     with_tmpchdir {|d|
@@ -495,6 +520,33 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("#{d}/テスト", File.read("open_chdir_テスト", encoding: "UTF-8").chomp)
     }
   end if windows? || Encoding.find('locale') == Encoding::UTF_8
+
+  def test_execopts_after_chdir_failure
+    name = "RUBY_EXECOPTS_TEST_CHDIR_ENV"
+    env, ENV[name] = ENV[name], nil
+    stdout = nil
+
+    with_tmpchdir do |d|
+      stdout = STDOUT.dup
+      STDOUT.reopen("parent.out", "w")
+      assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {
+        Process.wait Process.spawn({name => "[Bug #22540]"}, *PWD, out: "child.out", chdir: "d/notexist")
+      }
+      STDOUT.puts "[Bug #22540]"
+      STDOUT.reopen(stdout)
+      stdout.close
+      stdout = nil
+      assert_nil(ENV[name])
+      assert_empty(File.read("child.out"))
+      assert_equal("[Bug #22540]\n", File.read("parent.out"))
+    ensure
+      ENV[name] = env
+      if stdout
+        STDOUT.reopen(stdout)
+        stdout.close
+      end
+    end
+  end
 
   def test_execopts_open_failure
     with_tmpchdir {|d|
@@ -1165,6 +1217,40 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_exec_arguments_reject_null_bytes_in_wide_encodings
+    [Encoding::UTF_16LE, Encoding::UTF_16BE, Encoding::UTF_32LE, Encoding::UTF_32BE].each do |name|
+      arg = "10\0--inject=1\0z\0".b.force_encoding(Encoding.find(name))
+
+      assert_raise(ArgumentError, name) { system(*TRUECOMMAND, arg) }
+      assert_raise(ArgumentError, name) {
+        Process.wait Process.spawn(*TRUECOMMAND, arg)
+      }
+      assert_raise(ArgumentError, name) {
+        IO.popen([*TRUECOMMAND, arg]) { |io| io.read }
+      }
+    end
+
+    if windows?
+      arg = "\xFF".b.force_encoding(Encoding::UTF_8)
+      assert_raise(ArgumentError) { system(*TRUECOMMAND, arg) }
+    end
+  end
+
+  def test_exec_relative_path_after_multibyte_dir
+    return unless windows?
+    with_tmpchdir {|d|
+      dir = "\u{3042}"
+      Dir.mkdir(dir)
+      File.write("#{dir}/foo.cmd", "@echo cwd\n")
+      Dir.mkdir("path")
+      Dir.mkdir("path/#{dir}")
+      File.write("path/#{dir}/foo.cmd", "@echo path\n")
+      env = {"PATH"=>"#{d}/path;#{ENV["PATH"]}"}
+      r = IO.popen([env, RUBY, "-e", "exec(*ARGV)", "#{dir}\\foo", "x"], &:read)
+      assert_equal("cwd", r.chomp)
+    }
+  end
+
   def test_system_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
@@ -1236,11 +1322,40 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_spawn_trailing_backslash
+    return unless windows?
+    [
+      ["AA BB\\"],
+      ["AA BB\\", "CC"],
+      ["AA BB\\\\", "CC"],
+      ["C:\\Program Files\\Foo\\", "--verbose"],
+      ["AA BB", "CC"],          # control: no trailing backslash
+      ["AA\\", "CC"],           # control: no space, so it is not quoted
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22199] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
+  def test_argv_backslash_before_space
+    return unless windows?
+    [
+      ["AA\\ ", "BB"],
+      ["AA\\  ", "BB"],
+      ["AA\\\\ ", "BB"],
+      ["AA ", "BB"],           # control: no backslash
+      ["AA\\", "BB"],          # control: no space after the backslash
+    ].each do |args|
+      out = IO.popen([EnvUtil.rubybin, "-e", "STDOUT.binmode; print Marshal.dump(ARGV)", *args], "rb", &:read)
+      assert_equal(args, Marshal.load(out), "[Bug #22201] argv did not round-trip: #{args.inspect}")
+    end
+  end
+
   def test_exec_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
         File.open("result", "w") {|t|
-          if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+          if /mswin|mingw/ =~ RUBY_PLATFORM
             t << "hehe ppid=#{Process.ppid}"
           else
             t << "hehe pid=#{$$} ppid=#{Process.ppid}"
@@ -1483,6 +1598,14 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_status_frozen_shareable
+    with_tmpchdir do
+      s = run_in_child("exit 1")
+      assert_predicate(s, :frozen?)
+      assert(Ractor.shareable?(s), "a frozen Process::Status should be shareable")
+    end
+  end
+
   def test_status_kill
     return unless Process.respond_to?(:kill)
     return unless Signal.list.include?("KILL")
@@ -1568,7 +1691,7 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    sec = 3
+    sec = EnvUtil.apply_timeout_scale(3)
     code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
     IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid
@@ -1757,7 +1880,7 @@ class TestProcess < Test::Unit::TestCase
       end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    assert_equal [true], signal_received, "[ruby-core:19744]"
+    assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -1802,46 +1925,29 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_too_long_path
     bug4314 = '[ruby-core:34842]'
-    assert_fail_too_long_path(%w"echo", bug4314)
+    assert_fail_too_long_path(false, bug4314)
   end
 
   def test_aspawn_too_long_path
-    bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
-    assert_fail_too_long_path(%w"echo |", bug4315)
+    bug4315 = '[ruby-core:34833]'
+    assert_fail_too_long_path(true, bug4315)
   end
 
-  def assert_fail_too_long_path((cmd, sep), mesg)
-    sep ||= ""
-    min = 1_000 / (cmd.size + sep.size)
-    cmds = Array.new(min, cmd)
+  def assert_fail_too_long_path(use_shell, mesg)
+    cmd = "a" * 10_000_000
+    cmd.prepend("echo|") if use_shell
     exs = [Errno::ENOENT]
     exs << Errno::EINVAL if windows?
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
-    if defined?(Process::RLIMIT_NPROC)
-      opts[:rlimit_nproc] = /openbsd/i =~ RUBY_PLATFORM ? 64 : 128
-    end
-    EnvUtil.suppress_warning do
-      assert_raise(*exs, mesg) do
-        begin
-          loop do
-            Process.spawn(cmds.join(sep), opts)
-            min = [cmds.size, min].max
-            begin
-              cmds *= 100
-            rescue ArgumentError
-              raise NoMemoryError
-            end
-          end
-        rescue NoMemoryError
-          size = cmds.size
-          raise if min >= size - 1
-          min = [min, size /= 2].max
-          cmds[size..-1] = []
-          raise if size < 250
-          retry
-        end
+    begin
+      EnvUtil.suppress_warning do
+        Process.spawn(cmd, opts)
       end
+    rescue => e
+      assert_include(exs, e.class, mesg)
+    else
+      omit "system supports very long command line; skipping"
     end
   end
 
@@ -1909,6 +2015,32 @@ class TestProcess < Test::Unit::TestCase
         puts $$
       end
       assert_not_equal(cpid, dpid)
+    end
+
+    def test_daemon_after_getaddrinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.daemon(true, true)
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
+    end
+
+    def test_daemon_after_getnameinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.daemon(true, true)
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
     end
 
     def test_daemon_detached
@@ -1996,7 +2128,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_popen_reopen
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       io = File.open(IO::NULL)
       io2 = io.dup
@@ -2197,7 +2329,6 @@ EOS
   end
 
   def test_clock_gettime_unit
-    t0 = Time.now.to_f
     [
       [:nanosecond,  1_000_000_000],
       [:microsecond, 1_000_000],
@@ -2213,6 +2344,7 @@ EOS
         assert_raise(ArgumentError){ Process.clock_gettime(Process::CLOCK_REALTIME, unit) }
         next
       end
+      t0 = Time.now.to_f
       t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
       assert_kind_of num.integer? ? Integer : num.class, t1, [unit, num].inspect
       assert_in_delta t0, t1/num, 1, [unit, num].inspect
@@ -2387,7 +2519,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(- #{RUBY}), <<-INPUT, timeout: 100)
+    assert_ruby_status(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2549,7 +2681,7 @@ EOS
       bin = "#{EnvUtil.rubybin}"
       args = Array.new(256) {"x"}
       GC.stress = true
-      system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
+      system(bin, "--disable=gems", "-w", "-W:no-experimental", "-e", "puts ARGV", *args)
     end;
   end
 
@@ -2719,6 +2851,31 @@ EOS
     end;
   end if Process.respond_to?(:_fork)
 
+  def test__fork_raisig_after_fork
+    assert_in_out_err([], "#{<<~"{#"}\n#{<<~'};'}", [], [/.*: exception during fork in child/, :*])
+    {#
+      module BadForkTracker
+        def _fork
+          pid = super
+          if pid == 0
+            raise "exception during fork in child"
+          end
+          pid
+        end
+      end
+
+      Process.singleton_class.prepend(BadForkTracker)
+
+      begin
+        fork do
+          puts "I'm child #{Process.pid} and I'm exiting"
+        end
+      rescue StandardError
+        puts "#{Process.pid} Received Error, Ignoring"
+      end
+    };
+  end if Process.respond_to?(:_fork)
+
   def test_warmup_promote_all_objects_to_oldgen
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     require 'objspace'
@@ -2774,15 +2931,27 @@ EOS
       # Disable GC so we can make sure GC only runs in Process.warmup
       GC.disable
 
-      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots)
+      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_bytes) / GC.stat_heap(0, :slot_size)
 
       Process.warmup
 
       # TODO: flaky
-      # assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots))
+      # assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_bytes) / GC.stat_heap(0, :slot_size))
 
       assert_equal(0, GC.stat(:heap_empty_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
+    end;
+  end
+
+  def test_warmup_eager_loads_error_decoration_gems
+    assert_separately(["--enable=gems"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      features = ["error_highlight", "did_you_mean", "syntax_suggest"]
+      assert_empty($LOADED_FEATURES.grep(/\/(#{features.join("|")})\.rb\z/))
+      Process.warmup
+      features.each do |feature|
+        assert_include($LOADED_FEATURES.map { File.basename(it, ".rb") }, feature)
+      end
     end;
   end
 

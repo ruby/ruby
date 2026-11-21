@@ -19,6 +19,7 @@ end
 
 module MSpecMatchers
   private def have_public_instance_method(method, include_super = true)
+    MSpec.deprecate __method__, '.public_instance_methods(false).should.include?'
     HavePublicInstanceMethodMatcher.new method, include_super
   end
 end

@@ -111,7 +111,7 @@ class TestDateConv < Test::Unit::TestCase
   end
 
   def test_to_date__from_date
-    d = Date.new(2004, 9, 19) + 1.to_r/2
+    d = assert_deprecated_warn(/fractional day/) { Date.new(2004, 9, 19) + 1.to_r/2 }
     d2 = d.to_date
     assert_equal([2004, 9, 19, 1.to_r/2],
 		 [d2.year, d2.mon, d2.mday, d2.day_fraction])
@@ -159,7 +159,7 @@ class TestDateConv < Test::Unit::TestCase
   end
 
   def test_to_datetime__from_date
-    d = Date.new(2004, 9, 19) + 1.to_r/2
+    d = assert_deprecated_warn(/fractional day/) { Date.new(2004, 9, 19) + 1.to_r/2 }
     d2 = d.to_datetime
     assert_equal([2004, 9, 19, 0, 0, 0, 0, 0],
 		 [d2.year, d2.mon, d2.mday, d2.hour, d2.min, d2.sec,

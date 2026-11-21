@@ -13,27 +13,27 @@ ruby_version_is "4.0" do
     end
 
     it "raises an Math::DomainError if the argument is less than 1" do
-      -> { Math.log1p(-1-1e-15) }.should raise_error(Math::DomainError, "Numerical argument is out of domain - log1p")
+      -> { Math.log1p(-1-1e-15) }.should.raise(Math::DomainError, "Numerical argument is out of domain - log1p")
     end
 
     it "raises a TypeError if the argument cannot be coerced with Float()" do
-      -> { Math.log1p("test") }.should raise_error(TypeError, "can't convert String into Float")
+      -> { Math.log1p("test") }.should.raise(TypeError, "can't convert String into Float")
     end
 
     it "raises a TypeError for numerical values passed as string" do
-      -> { Math.log1p("10") }.should raise_error(TypeError, "can't convert String into Float")
+      -> { Math.log1p("10") }.should.raise(TypeError, "can't convert String into Float")
     end
 
     it "does not accept a second argument for the base" do
-      -> { Math.log1p(9, 3) }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")
+      -> { Math.log1p(9, 3) }.should.raise(ArgumentError, "wrong number of arguments (given 2, expected 1)")
     end
 
     it "returns NaN given NaN" do
-      Math.log1p(nan_value).nan?.should be_true
+      Math.log1p(nan_value).nan?.should == true
     end
 
     it "raises a TypeError if the argument is nil" do
-      -> { Math.log1p(nil) }.should raise_error(TypeError, "can't convert nil into Float")
+      -> { Math.log1p(nil) }.should.raise(TypeError, "can't convert nil into Float")
     end
 
     it "accepts any argument that can be coerced with Float()" do

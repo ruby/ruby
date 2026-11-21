@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/tty'
 
 describe "IO#isatty" do
-  it_behaves_like :io_tty, :isatty
+  it "is an alias of IO#tty?" do
+    IO.instance_method(:isatty).should == IO.instance_method(:tty?)
+  end
 end

@@ -62,9 +62,4 @@ def ensure_mspec_method(method)
   expect(file).to start_with(File.expand_path('../../lib/mspec', __FILE__ ))
 end
 
-PublicMSpecMatchers = Class.new {
-  include MSpecMatchers
-  public :raise_error
-}.new
-
 BACKTRACE_QUOTE = RUBY_VERSION >= "3.4" ? "'" : "`"

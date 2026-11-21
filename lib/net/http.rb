@@ -22,7 +22,6 @@
 
 require 'net/protocol'
 require 'uri'
-require 'resolv'
 autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
@@ -37,7 +36,7 @@ module Net   #:nodoc:
   # For information about \HTTP, see:
   #
   # - {Hypertext Transfer Protocol}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol].
-  # - {Technical overview}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview].
+  # - {Technology}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technology].
   #
   # == About the Examples
   #
@@ -72,7 +71,7 @@ module Net   #:nodoc:
   #
   # - If performance is important, consider using sessions, which lower request overhead.
   #   This {session}[rdoc-ref:Net::HTTP@Sessions] has multiple requests for
-  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]
+  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Method]
   #   and {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
   #     Net::HTTP.start(hostname) do |http|
@@ -82,6 +81,7 @@ module Net   #:nodoc:
   #       body = 'Some text'
   #       http.post(path, body)  # Can also have a block.
   #       http.put(path, body)
+  #       http.query(path, body) # Can also have a block.
   #       http.delete(path)
   #       http.options(path)
   #       http.trace(path)
@@ -198,7 +198,7 @@ module Net   #:nodoc:
   # In the block, you can use these instance methods,
   # each of which that sends a single request:
   #
-  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]:
+  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Method]:
   #
   #   - #get, #request_get: GET.
   #   - #head, #request_head: HEAD.
@@ -207,6 +207,7 @@ module Net   #:nodoc:
   #   - #options: OPTIONS.
   #   - #trace: TRACE.
   #   - #patch: PATCH.
+  #   - #query, #request_query: QUERY.
   #
   # - {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
@@ -447,7 +448,7 @@ module Net   #:nodoc:
   # if the response has header <tt>'Content-Range'</tt>.
   #
   # Otherwise decompression (or not) depends on the value of header
-  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-encoding-response-header]:
+  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Content-Encoding_2]:
   #
   # - <tt>'deflate'</tt>, <tt>'gzip'</tt>, or <tt>'x-gzip'</tt>:
   #   decompresses the body and deletes the header.
@@ -460,7 +461,7 @@ module Net   #:nodoc:
   #
   # First, what's elsewhere. Class Net::HTTP:
   #
-  # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+  # - Inherits from {class Object}[rdoc-ref:Object#class-object-whats-here].
   #
   # This is a categorized summary of methods and attributes.
   #
@@ -553,6 +554,8 @@ module Net   #:nodoc:
   #   Sends a PROPPATCH request and returns a response object.
   # - {#put}[rdoc-ref:Net::HTTP#put]:
   #   Sends a PUT request and returns a response object.
+  # - {#query}[rdoc-ref:Net::HTTP#query]:
+  #   Sends a QUERY request and returns a response object.
   # - {#request}[rdoc-ref:Net::HTTP#request]:
   #   Sends a request and returns a response object.
   # - {#request_get}[rdoc-ref:Net::HTTP#request_get]:
@@ -724,7 +727,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.9.1"
+    VERSION = "0.10.0"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -1304,7 +1307,7 @@ module Net   #:nodoc:
 
     # Sets whether to determine the proxy from environment variable
     # '<tt>ENV['http_proxy']</tt>';
-    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
+    # see {Proxy Using ENV}[rdoc-ref:Net::HTTP@Proxy+Using+ENVHTTPProxy].
     attr_writer :proxy_from_env
 
     # Sets the proxy address;
@@ -1535,6 +1538,29 @@ module Net   #:nodoc:
 
     SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
+    # Resolv::IPv4::Regex and Resolv::IPv6::Regex, copied from resolv 0.7.1 rather
+    # than required, so that net/http does not load a DNS resolver just to keep an
+    # IP address literal out of the Server Name Indication.
+    # https://github.com/ruby/resolv/blob/v0.7.1/lib/resolv.rb
+    ipv4_octet = /0|1(?:[0-9][0-9]?)?|2(?:[0-4][0-9]?|5[0-5]?|[6-9])?|[3-9][0-9]?/
+    hex16 = /[0-9A-Fa-f]{1,4}/
+    hex16_group = /(?:#{hex16}(?::#{hex16})*)?/
+    dotted_quad = /\d+\.\d+\.\d+\.\d+/
+    zone_id = /%[-0-9A-Za-z._~]+/
+
+    IPV4_ADDRESS = /\A(?:#{ipv4_octet})\.(?:#{ipv4_octet})\.(?:#{ipv4_octet})\.(?:#{ipv4_octet})\z/ # :nodoc:
+
+    IPV6_ADDRESS = /\A(?:
+        (?:#{hex16}:){7}#{hex16}                                            # a:b:c:d:e:f:g:h
+      | #{hex16_group}::#{hex16_group}                                      # a::b
+      | (?:#{hex16}:){6}#{dotted_quad}                                      # a:b:c:d:e:f:w.x.y.z
+      | #{hex16_group}::(?:#{hex16}:)*#{dotted_quad}                        # a::b:w.x.y.z
+      | [Ff][Ee]80(?::#{hex16}){7}#{zone_id}                                # fe80:b:c:d:e:f:g:h%em1
+      | [Ff][Ee]80:(?:#{hex16_group}::#{hex16_group}|:#{hex16_group})?:#{hex16}#{zone_id} # fe80::b%em1
+    )\z/x # :nodoc:
+
+    private_constant :IPV4_ADDRESS, :IPV6_ADDRESS
+
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
 
@@ -1550,11 +1576,11 @@ module Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets or returns the available SSL ciphers.
-    # See {OpenSSL::SSL::SSLContext#ciphers=}[OpenSSL::SSL::SSL::Context#ciphers=].
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers=].
     attr_accessor :ciphers
 
     # Sets or returns the extra X509 certificates to be added to the certificate chain.
-    # See {OpenSSL::SSL::SSLContext#add_certificate}[OpenSSL::SSL::SSL::Context#add_certificate].
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
     attr_accessor :extra_chain_cert
 
     # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
@@ -1564,15 +1590,15 @@ module Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets or returns the SSL version.
-    # See {OpenSSL::SSL::SSLContext#ssl_version=}[OpenSSL::SSL::SSL::Context#ssl_version=].
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version=].
     attr_accessor :ssl_version
 
     # Sets or returns the minimum SSL version.
-    # See {OpenSSL::SSL::SSLContext#min_version=}[OpenSSL::SSL::SSL::Context#min_version=].
+    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version=].
     attr_accessor :min_version
 
     # Sets or returns the maximum SSL version.
-    # See {OpenSSL::SSL::SSLContext#max_version=}[OpenSSL::SSL::SSL::Context#max_version=].
+    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version=].
     attr_accessor :max_version
 
     # Sets or returns the callback for the server certification verification.
@@ -1588,7 +1614,7 @@ module Net   #:nodoc:
 
     # Sets or returns whether to verify that the server certificate is valid
     # for the hostname.
-    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[OpenSSL::SSL::SSL::Context#verify_hostname=].
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#verify_hostname].
     attr_accessor :verify_hostname
 
     # Returns the X509 certificate chain (an array of strings)
@@ -1696,6 +1722,12 @@ module Net   #:nodoc:
                                       write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
+          if /[\r\n]/.match?("#{conn_address}:#{@port}")
+            raise ArgumentError, "address and port cannot include CR/LF"
+          end
+          if /[\r\n]/.match?(@address)
+            raise ArgumentError, "address cannot include CR/LF"
+          end
           buf = +"CONNECT #{conn_address}:#{@port} HTTP/#{HTTPVersion}\r\n" \
             "Host: #{@address}:#{@port}\r\n"
           if proxy_user
@@ -1734,7 +1766,7 @@ module Net   #:nodoc:
 
         # Server Name Indication (SNI) RFC 3546/6066
         case @address
-        when Resolv::IPv4::Regex, Resolv::IPv6::Regex
+        when IPV4_ADDRESS, IPV6_ADDRESS
           # don't set SNI, as IP addresses in SNI is not valid
           # per RFC 6066, section 3.
 
@@ -2101,6 +2133,25 @@ module Net   #:nodoc:
       send_entity(path, data, initheader, dest, Patch, &block)
     end
 
+    # Sends a QUERY request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Query object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
+    #   http.query('/todos/1', data) # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Query: request class for \HTTP method QUERY.
+    # - Net::HTTP.query: sends QUERY request, returns response body.
+    #
+    def query(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
+      send_entity(path, data, initheader, dest, Query, &block)
+    end
+
     # Sends a PUT request to the server;
     # returns an instance of a subclass of Net::HTTPResponse.
     #
@@ -2335,6 +2386,36 @@ module Net   #:nodoc:
       request Put.new(path, initheader), data, &block
     end
 
+    # Sends a QUERY request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Query object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.query('/todos/1', 'xyzzy')
+    #   # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # With no block given, returns the response object:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.request_query('/todos') # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # With a block given, calls the block with the response object
+    # and returns the response object:
+    #
+    #   http.request_query('/todos') do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Output:
+    #
+    #   #<Net::HTTPOK 200 OK readbody=false>
+    #
+    def request_query(path, data, initheader = nil, &block) # :yield: +response+
+      request Query.new(path, initheader), data, &block
+    end
+
     alias get2   request_get    #:nodoc: obsolete
     alias head2  request_head   #:nodoc: obsolete
     alias post2  request_post   #:nodoc: obsolete
@@ -2430,7 +2511,7 @@ module Net   #:nodoc:
 
     # :stopdoc:
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/.freeze # :nodoc:
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE QUERY/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0
@@ -2444,11 +2525,17 @@ module Net   #:nodoc:
             # still read the received response.
           end
 
+          informational_count = 0
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
             res.body_encoding = @response_body_encoding
             res.ignore_eof = @ignore_eof
+            if res.kind_of?(HTTPInformation)
+              informational_count += 1
+              raise HTTPBadResponse, 'too many informational responses' if
+                informational_count > HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+            end
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri

@@ -298,15 +298,13 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
 
   context "with a listening TCP Server" do
     def with_server_and_mirror
-      server = TCPServer.new("0.0.0.0", 0)
-      mirror = Bundler::Settings::Mirror.new("http://0.0.0.0:#{server.addr[1]}", 1)
+      server = TCPServer.new("127.0.0.1", 0)
+      mirror = Bundler::Settings::Mirror.new("http://127.0.0.1:#{server.addr[1]}", 1)
       yield server, mirror
       server.close unless server.closed?
     end
 
     it "probes the server correctly" do
-      skip "obscure error" if Gem.win_platform?
-
       with_server_and_mirror do |server, mirror|
         expect(server.closed?).to be_falsey
         expect(probe.replies?(mirror)).to be_truthy
@@ -327,5 +325,53 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
     it "fails with a timeout when there is nothing to tcp handshake" do
       expect(probe.replies?(mirror)).to be_falsey
     end
+  end
+
+  context "when connect fails immediately" do
+    let(:mirror) { Bundler::Settings::Mirror.new("http://127.0.0.1:9292", 1) }
+
+    it "probes falsey instead of raising" do
+      allow_any_instance_of(Socket).to receive(:connect_nonblock).and_raise(Errno::EHOSTUNREACH)
+      expect(probe.replies?(mirror)).to be_falsey
+    end
+  end
+
+  context "when the mirror host does not resolve" do
+    let(:mirror) { Bundler::Settings::Mirror.new("http://mirror.example:9292", 1) }
+
+    it "probes falsey instead of raising" do
+      allow(Socket).to receive(:getaddrinfo).and_raise(SocketError, "getaddrinfo: nodename nor servname provided, or not known")
+      expect(probe.replies?(mirror)).to be_falsey
+    end
+  end
+end
+
+RSpec.describe Bundler::MirrorSockets do
+  def probed_addresses(uri)
+    addresses = []
+    Bundler::MirrorSockets.new(Bundler::Settings::Mirror.new(uri, 1)).any? do |_socket, address, _timeout|
+      addresses << Addrinfo.new(address).ip_address
+      false
+    end
+    addresses
+  end
+
+  it "closes the socket when the block raises" do
+    yielded = nil
+    expect do
+      Bundler::MirrorSockets.new(Bundler::Settings::Mirror.new("http://127.0.0.1:9292", 1)).any? do |socket, _address, _timeout|
+        yielded = socket
+        raise "boom"
+      end
+    end.to raise_error(RuntimeError, "boom")
+    expect(yielded).to be_closed
+  end
+
+  it "opens one socket per address" do
+    expect(probed_addresses("http://127.0.0.1:9292")).to eq(["127.0.0.1"])
+  end
+
+  it "resolves an IPv6 literal host" do
+    expect(probed_addresses("http://[::1]:9292")).to eq(["::1"])
   end
 end

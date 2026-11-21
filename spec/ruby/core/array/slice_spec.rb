@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/slice'
 
 describe "Array#slice!" do
   it "removes and return the element at index" do
@@ -116,8 +115,8 @@ describe "Array#slice!" do
     a.slice!(from .. to).should == [2, 3, 4]
     a.should == [1, 5]
 
-    -> { a.slice!("a" .. "b")  }.should raise_error(TypeError)
-    -> { a.slice!(from .. "b") }.should raise_error(TypeError)
+    -> { a.slice!("a" .. "b")  }.should.raise(TypeError)
+    -> { a.slice!(from .. "b") }.should.raise(TypeError)
   end
 
   it "returns last element for consecutive calls at zero index" do
@@ -151,7 +150,7 @@ describe "Array#slice!" do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array.slice!(0, 0) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.slice!(0, 0) }.should.raise(FrozenError)
   end
 
   it "works with endless ranges" do
@@ -188,31 +187,33 @@ describe "Array#slice!" do
     end
 
     it "returns a Array instance with [n, m]" do
-      @array.slice!(0, 2).should be_an_instance_of(Array)
+      @array.slice!(0, 2).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [-n, m]" do
-      @array.slice!(-3, 2).should be_an_instance_of(Array)
+      @array.slice!(-3, 2).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [n..m]" do
-      @array.slice!(1..3).should be_an_instance_of(Array)
+      @array.slice!(1..3).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [n...m]" do
-      @array.slice!(1...3).should be_an_instance_of(Array)
+      @array.slice!(1...3).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [-n..-m]" do
-      @array.slice!(-3..-1).should be_an_instance_of(Array)
+      @array.slice!(-3..-1).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [-n...-m]" do
-      @array.slice!(-3...-1).should be_an_instance_of(Array)
+      @array.slice!(-3...-1).should.instance_of?(Array)
     end
   end
 end
 
 describe "Array#slice" do
-  it_behaves_like :array_slice, :slice
+  it "is an alias of Array#[]" do
+    Array.instance_method(:slice).should == Array.instance_method(:[])
+  end
 end

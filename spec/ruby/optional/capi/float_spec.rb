@@ -23,8 +23,8 @@ describe "CApiFloatSpecs" do
   describe "rb_Float" do
     it "creates a new Float from a String" do
       f = @f.rb_Float("101.99")
-      f.should be_kind_of(Float)
-      f.should eql(101.99)
+      f.should.is_a?(Float)
+      f.should.eql?(101.99)
     end
   end
 

@@ -9,7 +9,7 @@ describe "StringIO#inspect" do
 
   it "does not include the contents" do
     io = StringIO.new("contents")
-    io.inspect.should_not include("contents")
+    io.inspect.should_not.include?("contents")
   end
 
   it "uses the regular Object#inspect without any instance variable" do

@@ -15,17 +15,17 @@ describe "Kernel#<=>" do
   it "returns nil if self is eql? but not == to the argument" do
     obj = mock('has eql?')
     obj.should_not_receive(:eql?)
-    obj.<=>(Object.new).should be_nil
+    obj.<=>(Object.new).should == nil
   end
 
   it "returns nil if self.==(arg) returns nil" do
     obj = mock('wrong ==')
     obj.should_receive(:==).and_return(nil)
-    obj.<=>(Object.new).should be_nil
+    obj.<=>(Object.new).should == nil
   end
 
   it "returns nil if self is not == to the argument" do
     obj = Object.new
-    obj.<=>(3.14).should be_nil
+    obj.<=>(3.14).should == nil
   end
 end

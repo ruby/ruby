@@ -132,6 +132,21 @@ describe "Module#ruby2_keywords" do
     Hash.ruby2_keywords_hash?(marked).should == true
   end
 
+  it "does not copy or unmark the Hash when it is passed directly as a positional argument" do
+    obj = Object.new
+    def obj.single(arg)
+      arg
+    end
+
+    h = { a: 1 }
+    marked = mark(**h).last
+    Hash.ruby2_keywords_hash?(marked).should == true
+
+    after_usage = obj.single(marked)
+    after_usage.should.equal?(marked)
+    Hash.ruby2_keywords_hash?(after_usage).should == true
+  end
+
   it "applies to the underlying method and applies across aliasing" do
     obj = Object.new
 
@@ -175,7 +190,7 @@ describe "Module#ruby2_keywords" do
       obj.singleton_class.class_exec do
         ruby2_keywords :not_existing
       end
-    }.should raise_error(NameError, /undefined method [`']not_existing'/)
+    }.should.raise(NameError, /undefined method [`']not_existing'/)
   end
 
   it "accepts String as well" do
@@ -197,7 +212,7 @@ describe "Module#ruby2_keywords" do
       obj.singleton_class.class_exec do
         ruby2_keywords Object.new
       end
-    }.should raise_error(TypeError, /is not a symbol nor a string/)
+    }.should.raise(TypeError, /is not a symbol nor a string/)
   end
 
   it "prints warning when a method does not accept argument splat" do

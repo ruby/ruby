@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.tanh" do
   it "returns a float" do
-    Math.tanh(0.5).should be_kind_of(Float)
+    Math.tanh(0.5).should.is_a?(Float)
   end
 
   it "returns the hyperbolic tangent of the argument" do
@@ -16,15 +16,15 @@ describe "Math.tanh" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.tanh("test") }.should raise_error(TypeError)
+    -> { Math.tanh("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.tanh(nan_value).nan?.should be_true
+    Math.tanh(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.tanh(nil) }.should raise_error(TypeError)
+    -> { Math.tanh(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

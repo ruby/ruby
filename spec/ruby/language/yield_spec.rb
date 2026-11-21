@@ -13,7 +13,7 @@ describe "The yield call" do
 
   describe "taking no arguments" do
     it "raises a LocalJumpError when the method is not passed a block" do
-      -> { @y.z }.should raise_error(LocalJumpError)
+      -> { @y.z }.should.raise(LocalJumpError)
     end
 
     it "ignores assignment to the explicit block argument and calls the passed block" do
@@ -28,7 +28,7 @@ describe "The yield call" do
   describe "taking a single argument" do
     describe "when no block is given" do
       it "raises a LocalJumpError" do
-        -> { @y.s(1) }.should raise_error(LocalJumpError)
+        -> { @y.s(1) }.should.raise(LocalJumpError)
       end
     end
 
@@ -47,6 +47,12 @@ describe "The yield call" do
 
       it "passes a single, multi-value Array" do
         @y.s([1, 2, 3]) { |*a| a }.should == [[1, 2, 3]]
+      end
+
+      describe "with optional argument" do
+        it "does not destructure a single array argument" do
+          @y.s([1, 2, 3]) { |a = 99| a }.should == [1, 2, 3]
+        end
       end
     end
 
@@ -70,20 +76,20 @@ describe "The yield call" do
       it "raises an ArgumentError if too few arguments are passed" do
         -> {
           @y.s(1, &-> a, b { [a,b] })
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
       it "should not destructure an Array into multiple arguments" do
         -> {
           @y.s([1, 2], &-> a, b { [a,b] })
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
   end
 
   describe "taking multiple arguments" do
     it "raises a LocalJumpError when the method is not passed a block" do
-      -> { @y.m(1, 2, 3) }.should raise_error(LocalJumpError)
+      -> { @y.m(1, 2, 3) }.should.raise(LocalJumpError)
     end
 
     it "passes the arguments to the block" do
@@ -97,19 +103,19 @@ describe "The yield call" do
     it "raises an ArgumentError if too many arguments are passed to a lambda" do
       -> {
         @y.m(1, 2, 3, &-> a { })
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError if too few arguments are passed to a lambda" do
       -> {
         @y.m(1, 2, 3, &-> a, b, c, d { })
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
   describe "taking a single splatted argument" do
     it "raises a LocalJumpError when the method is not passed a block" do
-      -> { @y.r(0) }.should raise_error(LocalJumpError)
+      -> { @y.r(0) }.should.raise(LocalJumpError)
     end
 
     it "passes a single value" do
@@ -141,7 +147,7 @@ describe "The yield call" do
 
   describe "taking multiple arguments with a splat" do
     it "raises a LocalJumpError when the method is not passed a block" do
-      -> { @y.rs(1, 2, [3, 4]) }.should raise_error(LocalJumpError)
+      -> { @y.rs(1, 2, [3, 4]) }.should.raise(LocalJumpError)
     end
 
     it "passes the arguments to the block" do
@@ -166,7 +172,7 @@ describe "The yield call" do
 
   describe "taking matching arguments with splats and post args" do
     it "raises a LocalJumpError when the method is not passed a block" do
-      -> { @y.rs(1, 2, [3, 4]) }.should raise_error(LocalJumpError)
+      -> { @y.rs(1, 2, [3, 4]) }.should.raise(LocalJumpError)
     end
 
     it "passes the arguments to the block" do
@@ -193,7 +199,7 @@ describe "Using yield in a singleton class literal" do
       end
     RUBY
 
-    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
+    -> { eval(code) }.should.raise(SyntaxError, /Invalid yield/)
   end
 end
 
@@ -203,7 +209,7 @@ describe "Using yield in non-lambda block" do
         1.times { yield }
       RUBY
 
-    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
+    -> { eval(code) }.should.raise(SyntaxError, /Invalid yield/)
   end
 end
 
@@ -215,6 +221,6 @@ describe "Using yield in a module literal" do
       end
     RUBY
 
-    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
+    -> { eval(code) }.should.raise(SyntaxError, /Invalid yield/)
   end
 end

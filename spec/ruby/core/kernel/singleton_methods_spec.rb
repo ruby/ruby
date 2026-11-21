@@ -8,33 +8,33 @@ describe :kernel_singleton_methods, shared: true do
   end
 
   it "returns the names of module methods for a module" do
-    ReflectSpecs::M.singleton_methods(*@object).should include(:ms_pro, :ms_pub)
+    ReflectSpecs::M.singleton_methods(*@object).to_set.should >= Set[:ms_pro, :ms_pub]
   end
 
   it "does not return private module methods for a module" do
-    ReflectSpecs::M.singleton_methods(*@object).should_not include(:ms_pri)
+    ReflectSpecs::M.singleton_methods(*@object).should_not.include?(:ms_pri)
   end
 
   it "returns the names of class methods for a class" do
-    ReflectSpecs::A.singleton_methods(*@object).should include(:as_pro, :as_pub)
+    ReflectSpecs::A.singleton_methods(*@object).to_set.should >= Set[:as_pro, :as_pub]
   end
 
   it "does not return private class methods for a class" do
-    ReflectSpecs::A.singleton_methods(*@object).should_not include(:as_pri)
+    ReflectSpecs::A.singleton_methods(*@object).should_not.include?(:as_pri)
   end
 
   it "returns the names of singleton methods for an object" do
-    ReflectSpecs.os.singleton_methods(*@object).should include(:os_pro, :os_pub)
+    ReflectSpecs.os.singleton_methods(*@object).to_set.should >= Set[:os_pro, :os_pub]
   end
 end
 
 describe :kernel_singleton_methods_modules, shared: true do
   it "does not return any included methods for a module including a module" do
-    ReflectSpecs::N.singleton_methods(*@object).should include(:ns_pro, :ns_pub)
+    ReflectSpecs::N.singleton_methods(*@object).to_set.should >= Set[:ns_pro, :ns_pub]
   end
 
   it "does not return any included methods for a class including a module" do
-    ReflectSpecs::D.singleton_methods(*@object).should include(:ds_pro, :ds_pub)
+    ReflectSpecs::D.singleton_methods(*@object).to_set.should >= Set[:ds_pro, :ds_pub]
   end
 
   it "for a module does not return methods in a module prepended to Module itself" do
@@ -44,7 +44,7 @@ describe :kernel_singleton_methods_modules, shared: true do
 
     ancestors = mod.singleton_class.ancestors
     ancestors[0...2].should == [ mod.singleton_class, mod ]
-    ancestors.should include(SingletonMethodsSpecs::Prepended)
+    ancestors.should.include?(SingletonMethodsSpecs::Prepended)
 
     # Do not search prepended modules of `Module`, as that's a non-singleton class
     mod.singleton_methods.should == []
@@ -53,7 +53,7 @@ end
 
 describe :kernel_singleton_methods_supers, shared: true do
   it "returns the names of singleton methods for an object extended with a module" do
-    ReflectSpecs.oe.singleton_methods(*@object).should include(:m_pro, :m_pub)
+    ReflectSpecs.oe.singleton_methods(*@object).to_set.should >= Set[:m_pro, :m_pub]
   end
 
   it "returns a unique list for an object extended with a module" do
@@ -63,15 +63,15 @@ describe :kernel_singleton_methods_supers, shared: true do
   end
 
   it "returns the names of singleton methods for an object extended with two modules" do
-    ReflectSpecs.oee.singleton_methods(*@object).should include(:m_pro, :m_pub, :n_pro, :n_pub)
+    ReflectSpecs.oee.singleton_methods(*@object).to_set.should >= Set[:m_pro, :m_pub, :n_pro, :n_pub]
   end
 
   it "returns the names of singleton methods for an object extended with a module including a module" do
-    ReflectSpecs.oei.singleton_methods(*@object).should include(:n_pro, :n_pub, :m_pro, :m_pub)
+    ReflectSpecs.oei.singleton_methods(*@object).to_set.should >= Set[:n_pro, :n_pub, :m_pro, :m_pub]
   end
 
   it "returns the names of inherited singleton methods for a subclass" do
-    ReflectSpecs::B.singleton_methods(*@object).should include(:as_pro, :as_pub, :bs_pro, :bs_pub)
+    ReflectSpecs::B.singleton_methods(*@object).to_set.should >= Set[:as_pro, :as_pub, :bs_pro, :bs_pub]
   end
 
   it "returns a unique list for a subclass" do
@@ -81,7 +81,7 @@ describe :kernel_singleton_methods_supers, shared: true do
   end
 
   it "returns the names of inherited singleton methods for a subclass including a module" do
-    ReflectSpecs::C.singleton_methods(*@object).should include(:as_pro, :as_pub, :cs_pro, :cs_pub)
+    ReflectSpecs::C.singleton_methods(*@object).to_set.should >= Set[:as_pro, :as_pub, :cs_pro, :cs_pub]
   end
 
   it "returns a unique list for a subclass including a module" do
@@ -91,57 +91,62 @@ describe :kernel_singleton_methods_supers, shared: true do
   end
 
   it "returns the names of inherited singleton methods for a subclass of a class including a module" do
-    ReflectSpecs::E.singleton_methods(*@object).should include(:ds_pro, :ds_pub, :es_pro, :es_pub)
+    ReflectSpecs::E.singleton_methods(*@object).to_set.should >= Set[:ds_pro, :ds_pub, :es_pro, :es_pub]
   end
 
   it "returns the names of inherited singleton methods for a subclass of a class that includes a module, where the subclass also includes a module" do
-    ReflectSpecs::F.singleton_methods(*@object).should include(:ds_pro, :ds_pub, :fs_pro, :fs_pub)
+    ReflectSpecs::F.singleton_methods(*@object).to_set.should >= Set[:ds_pro, :ds_pub, :fs_pro, :fs_pub]
   end
 
   it "returns the names of inherited singleton methods for a class extended with a module" do
-    ReflectSpecs::P.singleton_methods(*@object).should include(:m_pro, :m_pub)
+    ReflectSpecs::P.singleton_methods(*@object).to_set.should >= Set[:m_pro, :m_pub]
   end
 end
 
 describe :kernel_singleton_methods_private_supers, shared: true do
   it "does not return private singleton methods for an object extended with a module" do
-    ReflectSpecs.oe.singleton_methods(*@object).should_not include(:m_pri)
+    ReflectSpecs.oe.singleton_methods(*@object).should_not.include?(:m_pri)
   end
 
   it "does not return private singleton methods for an object extended with two modules" do
-    ReflectSpecs.oee.singleton_methods(*@object).should_not include(:m_pri)
+    ReflectSpecs.oee.singleton_methods(*@object).should_not.include?(:m_pri)
   end
 
   it "does not return private singleton methods for an object extended with a module including a module" do
-    ReflectSpecs.oei.singleton_methods(*@object).should_not include(:n_pri, :m_pri)
+    ReflectSpecs.oei.singleton_methods(*@object).should_not.include?(:n_pri)
+    ReflectSpecs.oei.singleton_methods(*@object).should_not.include?(:m_pri)
   end
 
   it "does not return private singleton methods for a class extended with a module" do
-    ReflectSpecs::P.singleton_methods(*@object).should_not include(:m_pri)
+    ReflectSpecs::P.singleton_methods(*@object).should_not.include?(:m_pri)
   end
 
   it "does not return private inherited singleton methods for a module including a module" do
-    ReflectSpecs::N.singleton_methods(*@object).should_not include(:ns_pri)
+    ReflectSpecs::N.singleton_methods(*@object).should_not.include?(:ns_pri)
   end
 
   it "does not return private inherited singleton methods for a class including a module" do
-    ReflectSpecs::D.singleton_methods(*@object).should_not include(:ds_pri)
+    ReflectSpecs::D.singleton_methods(*@object).should_not.include?(:ds_pri)
   end
 
   it "does not return private inherited singleton methods for a subclass" do
-    ReflectSpecs::B.singleton_methods(*@object).should_not include(:as_pri, :bs_pri)
+    ReflectSpecs::B.singleton_methods(*@object).should_not.include?(:as_pri)
+    ReflectSpecs::B.singleton_methods(*@object).should_not.include?(:bs_pri)
   end
 
   it "does not return private inherited singleton methods for a subclass including a module" do
-    ReflectSpecs::C.singleton_methods(*@object).should_not include(:as_pri, :cs_pri)
+    ReflectSpecs::C.singleton_methods(*@object).should_not.include?(:as_pri)
+    ReflectSpecs::C.singleton_methods(*@object).should_not.include?(:cs_pri)
   end
 
   it "does not return private inherited singleton methods for a subclass of a class including a module" do
-    ReflectSpecs::E.singleton_methods(*@object).should_not include(:ds_pri, :es_pri)
+    ReflectSpecs::E.singleton_methods(*@object).should_not.include?(:ds_pri)
+    ReflectSpecs::E.singleton_methods(*@object).should_not.include?(:es_pri)
   end
 
   it "does not return private inherited singleton methods for a subclass of a class that includes a module, where the subclass also includes a module" do
-    ReflectSpecs::F.singleton_methods(*@object).should_not include(:ds_pri, :fs_pri)
+    ReflectSpecs::F.singleton_methods(*@object).should_not.include?(:ds_pri)
+    ReflectSpecs::F.singleton_methods(*@object).should_not.include?(:fs_pri)
   end
 end
 
@@ -178,15 +183,17 @@ describe "Kernel#singleton_methods" do
     end
 
     it "returns the names of singleton methods of the subclass" do
-      ReflectSpecs::B.singleton_methods(false).should include(:bs_pro, :bs_pub)
+      ReflectSpecs::B.singleton_methods(false).to_set.should >= Set[:bs_pro, :bs_pub]
     end
 
     it "does not return names of inherited singleton methods for a subclass" do
-      ReflectSpecs::B.singleton_methods(false).should_not include(:as_pro, :as_pub)
+      ReflectSpecs::B.singleton_methods(false).should_not.include?(:as_pro)
+      ReflectSpecs::B.singleton_methods(false).should_not.include?(:as_pub)
     end
 
     it "does not return the names of inherited singleton methods for a class extended with a module" do
-      ReflectSpecs::P.singleton_methods(false).should_not include(:m_pro, :m_pub)
+      ReflectSpecs::P.singleton_methods(false).should_not.include?(:m_pro)
+      ReflectSpecs::P.singleton_methods(false).should_not.include?(:m_pub)
     end
   end
 end

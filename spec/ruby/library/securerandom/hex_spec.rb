@@ -6,13 +6,13 @@ describe "SecureRandom.hex" do
   it "generates a random hex string of length twice the specified argument" do
     (1..64).each do |idx|
       hex = SecureRandom.hex(idx)
-      hex.should be_kind_of(String)
+      hex.should.is_a?(String)
       hex.length.should == 2 * idx
     end
 
     base64 = SecureRandom.hex(5.5)
-    base64.should be_kind_of(String)
-    base64.length.should eql(10)
+    base64.should.is_a?(String)
+    base64.length.should.eql?(10)
   end
 
   it "returns an empty string when argument is 0" do
@@ -31,24 +31,24 @@ describe "SecureRandom.hex" do
   end
 
   it "generates a random hex string of length 32 if no argument is provided" do
-    SecureRandom.hex.should be_kind_of(String)
+    SecureRandom.hex.should.is_a?(String)
     SecureRandom.hex.length.should == 32
   end
 
   it "treats nil argument as default one and generates a random hex string of length 32" do
-    SecureRandom.hex(nil).should be_kind_of(String)
+    SecureRandom.hex(nil).should.is_a?(String)
     SecureRandom.hex(nil).length.should == 32
   end
 
   it "raises ArgumentError on negative arguments" do
     -> {
       SecureRandom.hex(-1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "tries to convert the passed argument to an Integer using #to_int" do
     obj = mock("to_int")
     obj.should_receive(:to_int).and_return(5)
-    SecureRandom.hex(obj).size.should eql(10)
+    SecureRandom.hex(obj).size.should.eql?(10)
   end
 end

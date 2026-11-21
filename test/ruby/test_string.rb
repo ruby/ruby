@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require '-test-/string'
 
 class TestString < Test::Unit::TestCase
   WIDE_ENCODINGS = [
@@ -48,6 +49,8 @@ class TestString < Test::Unit::TestCase
 
     assert_equal("", S(capacity: 1000))
     assert_equal(Encoding::ASCII_8BIT, S(capacity: 1000).encoding)
+
+    assert(S(capacity: -1000).inspect)
 
     assert_equal("", S(capacity: 1000, encoding: "euc-jp"))
     assert_equal(Encoding::EUC_JP, S(capacity: 1000, encoding: "euc-jp").encoding)
@@ -103,24 +106,18 @@ class TestString < Test::Unit::TestCase
   def test_initialize_memory_leak
     return unless @cls == String
 
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {('x'*100_000).__send__(:initialize, '')}
-1_000.times(&code)
-PREP
-100_000.times(&code)
-CODE
+    assert_no_memory_leak([], '', <<-CODE, rss: true, samples: 2..100)
+    1_000.times {('x'*100_000).__send__(:initialize, '')}
+    CODE
   end
 
   # Bug #18154
   def test_initialize_nofree_memory_leak
     return unless @cls == String
 
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {0.to_s.__send__(:initialize, capacity: 100_000)}
-1_000.times(&code)
-PREP
-100_000.times(&code)
-CODE
+    assert_no_memory_leak([], '', <<-CODE, rss: true, samples: 2..100)
+    1_000.times {0.to_s.__send__(:initialize, capacity: 100_000)}
+    CODE
   end
 
   def test_AREF # '[]'
@@ -167,6 +164,38 @@ CODE
   def test_AREF_underflow
     require "rbconfig/sizeof"
     assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
+  end
+
+  def test_range_with_len_max_end
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+
+    assert_equal(S("ab"), S("ab")[0..max])
+    assert_equal(S("b"), S("ab")[1..max])
+    assert_equal(S("ab"), S("ab").byteslice(0..max))
+
+    s = S("ab")
+    assert_equal(S("ab"), s.slice!(0..max))
+    assert_equal(S(""), s)
+
+    s = S("ab")
+    s[0..max] = S("x")
+    assert_equal(S("x"), s)
+
+    s = S("ab")
+    s.bytesplice(0..max, S("x"))
+    assert_equal(S("x"), s)
+  end
+
+  def test_AREF_fixed_width_large_length
+    require "rbconfig/sizeof"
+    len = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    [Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      s = S("abcd".encode(enc))
+      assert_equal(S("bcd".encode(enc)), s[1, len], enc.name)
+      assert_equal(S("bcd".encode(enc)), s[1, len * 2], enc.name)
+      assert_equal(S("bcd".encode(enc)), s.dup.slice!(1, len), enc.name)
+    end
   end
 
   def test_AREF_invalid_encoding
@@ -222,6 +251,8 @@ CODE
     s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
     assert_equal(S("BarFoo"), s)
     assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, RbConfig::LIMITS["INT_MIN"]] = "None" }
+    assert_equal(S("BarFoo"), s)
 
     s = S("FooBar")
     s[S("Foo")] = S("Bar")
@@ -240,6 +271,16 @@ CODE
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
 
     assert_raise(IndexError) {"foo"[RbConfig::LIMITS["LONG_MIN"]] = "l"}
+  end
+
+  def test_ASET_string_modified_during_conversion
+    str = S("hello" * 100)
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace("")
+      "x"
+    end
+    assert_raise(RuntimeError) { str[/h.l/] = obj }
   end
 
   def test_CMP # '<=>'
@@ -405,6 +446,9 @@ CODE
     assert_equal(S("   hello   "), S("hello").center(11))
     assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
     assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_chomp
@@ -473,6 +517,19 @@ CODE
     assert_equal("foo", s.chomp("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp("\n"))
+
+    # capacity forces a heap buffer, so a read before the receiver leaves it
+    WIDE_ENCODINGS.each do |enc|
+      ["A", "AB", "ABC"].each do |bytes|
+        s = S(capacity: 4096)
+        s << bytes
+        s.force_encoding(enc)
+        label = "#{enc.name} #{bytes.bytesize}"
+        assert_equal(bytes.b, s.chomp.b, label)
+        assert_equal(bytes.b, s.chomp("").b, label)
+        assert_nil(s.chomp!, label)
+      end
+    end
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -675,7 +732,7 @@ CODE
     omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     require 'objspace'
-    base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    base_slot_size = 64
     small_obj_size = (base_slot_size / 2)
     large_obj_size = base_slot_size * 2
 
@@ -738,12 +795,14 @@ CODE
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
 
-    @cls == String and
-      assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
-
-    begin;
-      1000.times { s.crypt(-salt_proc.call).clear  }
-    end;
+    if @cls == String
+      assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", samples: 2..100)
+      s = ''
+      salt = -""#{(crypt_supports_des_crypt? ? '..' : good_salt).dump}
+      begin;
+        10.times { s.crypt(salt).clear  }
+      end;
+    end
   end
 
   def test_delete
@@ -851,7 +910,6 @@ CODE
     assert_equal(S("\u{AB}"), S('"\\u00AB"').undump)
     assert_equal(S("\u{ABC}"), S('"\\u0ABC"').undump)
     assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
-    assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
     assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
     assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
     assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
@@ -911,7 +969,6 @@ CODE
   end
 
   def test_undump_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
     EnvUtil.under_gc_compact_stress do
       assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
@@ -996,6 +1053,487 @@ CODE
     res = []
     assert_same s, s.bytes {|x| res << x }
     assert_equal [65, 66, 67], res
+  end
+
+  def test_getbyte
+    s = S('foo')
+    assert_equal(102, s.getbyte(0))
+    assert_equal(111, s.getbyte(2))
+    assert_equal(102, s.getbyte(-3))
+    assert_nil(s.getbyte(3))
+    assert_nil(s.getbyte(-4))
+    assert_nil(S('').getbyte(0))
+    assert_nil(S('').getbyte(-1))
+  end
+
+  def test_setbyte
+    s = S('xyzzy')
+    assert_equal(129, s.setbyte(2, 129))
+    assert_equal(S("xy\x81zy").force_encoding(s.encoding), s)
+
+    s = S('foo')
+    s.setbyte(-3, 98)
+    assert_equal(S('boo').force_encoding(s.encoding), s)
+
+    assert_raise(IndexError) { S('foo').setbyte(3, 0) }
+    assert_raise(IndexError) { S('foo').setbyte(-4, 0) }
+
+    assert_raise(FrozenError) { S('foo').freeze.setbyte(0, 0x61) }
+  end
+
+  def test_setbyte_shrink_during_conversion
+    s = S('a' * 10_000_000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      s.concat("x" * 50)
+      0
+    end
+    assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
+  end
+
+  def test_bit_get
+    s = S("\xAA\x80")
+    assert_equal(0, s.bit_get(0))
+    assert_equal(1, s.bit_get(1))
+    assert_equal(1, s.bit_get(7))
+    assert_equal(1, s.bit_get(0, lsb_first: false))
+    assert_equal(0, s.bit_get(1, lsb_first: false))
+    assert_equal(1, s.bit_get(8, lsb_first: false))
+    assert_nil(s.bit_get(16))
+    assert_raise(IndexError) { s.bit_get(-1) }
+    assert_raise(ArgumentError) { s.bit_get(2**100) }
+    assert_raise(ArgumentError) { s.bit_get(0, lsb_first: nil) }
+  end
+
+  def test_bit_set_p
+    s = S("\xAA\x80")
+    assert_equal(false, s.bit_set?(0))
+    assert_equal(true, s.bit_set?(1))
+    assert_equal(true, s.bit_set?(7))
+    assert_equal(true, s.bit_set?(0, lsb_first: false))
+    assert_equal(false, s.bit_set?(1, lsb_first: false))
+    assert_equal(true, s.bit_set?(8, lsb_first: false))
+    assert_nil(s.bit_set?(16))
+    assert_raise(IndexError) { s.bit_set?(-1) }
+    assert_raise(ArgumentError) { s.bit_set?(2**100) }
+    assert_raise(ArgumentError) { s.bit_set?(0, lsb_first: nil) }
+  end
+
+  def test_bit_set_clear_flip
+    s = S("\x00")
+    assert_same(s, s.bit_set(1))
+    assert_equal(S("\x02"), s)
+    assert_same(s, s.bit_clear(1))
+    assert_equal(S("\x00"), s)
+    assert_same(s, s.bit_flip(1))
+    assert_equal(S("\x02"), s)
+    assert_same(s, s.bit_flip(1))
+    assert_equal(S("\x00"), s)
+
+    s.bit_set(1, lsb_first: false)
+    assert_equal(S("\x40"), s)
+    s.bit_clear(1, lsb_first: false)
+    assert_equal(S("\x00"), s)
+
+    s = S("\x00\x00")
+    s.bit_set(8, lsb_first: false)
+    assert_equal(S("\x00\x80"), s)
+    s.bit_clear(8, lsb_first: false)
+    assert_equal(S("\x00\x00"), s)
+    s.bit_flip(8, lsb_first: false)
+    assert_equal(S("\x00\x80"), s)
+
+    assert_raise(IndexError) { S("\x00").bit_set(8) }
+    assert_raise(IndexError) { S("\x00").bit_set(-1) }
+    assert_raise(IndexError) { S("\x00").bit_clear(8) }
+    assert_raise(IndexError) { S("\x00").bit_clear(-1) }
+    assert_raise(IndexError) { S("\x00").bit_flip(8) }
+    assert_raise(IndexError) { S("\x00").bit_flip(-1) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0, lsb_first: nil) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(0) }
+
+    shared = S("fooXbar").split(S("X")).last
+    shared.bit_set(0)
+    assert_equal(S("car"), shared)
+  end
+
+  def test_bit_set_clear_flip_region
+    s = S("\x00\x00")
+    assert_same(s, s.bit_set(4, 8))
+    assert_equal(S("\xF0\x0F"), s)
+    s = S("\x00\x00")
+    s.bit_set(4..11)
+    assert_equal(S("\xF0\x0F"), s)
+    s = S("\xFF\xFF")
+    assert_same(s, s.bit_clear(4, 8))
+    assert_equal(S("\x0F\xF0"), s)
+    s = S("\xFF\xFF")
+    s.bit_clear(4..11)
+    assert_equal(S("\x0F\xF0"), s)
+    s = S("\x00\xFF")
+    assert_same(s, s.bit_flip(4, 8))
+    assert_equal(S("\xF0\xF0"), s)
+    s = S("\x00\xFF")
+    s.bit_flip(4..11)
+    assert_equal(S("\xF0\xF0"), s)
+
+    # Range variants
+    s = S("\x00")
+    s.bit_set(0...8)
+    assert_equal(S("\xFF"), s)
+    s = S("\x00\x00")
+    s.bit_set(8..)
+    assert_equal(S("\x00\xFF"), s)
+    s = S("\x00")
+    s.bit_set(..3)
+    assert_equal(S("\x0F"), s)
+    s = S("\x00")
+    s.bit_set(nil..nil)
+    assert_equal(S("\xFF"), s)
+
+    # A region spanning several bytes exercises the byte-fill path.
+    s = S("\x00" * 5)
+    s.bit_set(4, 32)
+    assert_equal(S("\xF0\xFF\xFF\xFF\x0F"), s)
+    s.bit_flip(0..)
+    assert_equal(S("\x0F\x00\x00\x00\xF0"), s)
+
+    # One-bit and zero-bit forms
+    s = S("\x00")
+    s.bit_set(3, 1)
+    assert_equal(S("\x08"), s)
+    s = S("\xAA")
+    assert_same(s, s.bit_set(0, 0))
+    s.bit_clear(0, 0)
+    s.bit_flip(0, 0)
+    assert_equal(S("\xAA"), s)
+    s = S("\x00")
+    assert_same(s, s.bit_set(8..))  # empty region at the very end
+    s.bit_set(8, 0)
+    s.bit_set(0...0)
+    assert_equal(S("\x00"), s)
+
+    # lsb_first: false interprets the same logical positions MSB-first.
+    s = S("\x00\x00")
+    s.bit_set(6..9, lsb_first: false)
+    assert_equal(S("\x03\xC0"), s)
+    s = S("\x00\x00")
+    s.bit_set(6, 4, lsb_first: false)
+    assert_equal(S("\x03\xC0"), s)
+
+    # Writes do not clamp: any part of the region outside self raises.
+    assert_raise(IndexError) { S("\x00").bit_set(0, 9) }
+    assert_raise(IndexError) { S("\x00").bit_set(8, 1) }
+    assert_raise(IndexError) { S("\x00").bit_set(0..8) }
+    assert_raise(IndexError) { S("\x00").bit_set(0...9) }
+    assert_raise(IndexError) { S("\x00").bit_set(8..8) }
+    assert_raise(IndexError) { S("\x00").bit_set(9..) }
+    # An empty region is no exception when it begins past the end.
+    assert_raise(IndexError) { S("\x00").bit_set(9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_set(9...9) }
+    assert_raise(IndexError) { S("\x00").bit_clear(9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_flip(9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_clear(0..100) }
+    assert_raise(IndexError) { S("\x00").bit_flip(0..100) }
+    assert_raise(IndexError) { S("").bit_set(0..7) }
+    assert_raise(IndexError) { S("\x00").bit_set(..-1) }
+    assert_raise(IndexError) { S("\x00").bit_set(-1..2) }
+    assert_raise(IndexError) { S("\x00").bit_set(2**62, 1) }
+    assert_raise(IndexError) { S("\x00").bit_set(2**62..2**62 + 4) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0, -1) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0, 2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..3, 4) }
+    # An explicit nil is an argument, not an omitted one.
+    assert_raise(TypeError) { S("\x00").bit_set(0, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..3, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_set(0..3, lsb_first: nil) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(0..3) }
+    # A zero-length write still requires a mutable receiver, but an
+    # out-of-range region is detected before the frozen check.
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(0, 0) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_clear(0...0) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_flip(8..) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(9, 0) }
+
+    # Copy-on-write: mutating must not affect a shared sibling.
+    shared = S("fooXbar").split(S("X")).last
+    shared.bit_set(0..7)
+    assert_equal(S("\xFFar").b, shared.b)
+  end
+
+  def test_bit_set_single_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_set, 7000 * 8)
+  end
+
+  def test_bit_clear_single_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_clear, 7000 * 8)
+  end
+
+  def test_bit_flip_single_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_flip, 7000 * 8)
+  end
+
+  def test_bit_set_region_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_set, 7000 * 8, 2)
+  end
+
+  def test_bit_clear_region_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_clear, 7000 * 8, 2)
+  end
+
+  def test_bit_flip_region_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_flip, 7000 * 8, 2)
+  end
+
+  def test_bit_set_range_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_set, (7000 * 8)..(7100 * 8))
+  end
+
+  def test_bit_clear_range_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_clear, (7000 * 8)..(7100 * 8))
+  end
+
+  def test_bit_flip_range_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_flip, (7000 * 8)..(7100 * 8))
+  end
+
+  def test_setbyte_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:setbyte, 7000, 0)
+    assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
+  end
+
+  def test_concat_chilled_string_warning
+    return unless @cls == String
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target << $target
+      assert_equal("\\xff\\xfe\\xfd\\xff\\xfe\\xfd".b, $target)
+    }
+    {#
+      module ReplaceReceiverWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("\xff\xfe\xfd".b)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ReplaceReceiverWarning)
+    };
+  end
+
+  def test_append_as_bytes_chilled_string_warning
+    return unless @cls == String
+    # The argument grows inside the chilled string warning: the capacity
+    # reserved for the append must match what is actually copied.
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"      # chilled string
+    $value = "x" * 200
+    END {
+      $target.append_as_bytes($value, 0x41, $value)
+      assert_equal("abcdefghij" + "w" * 100_000 + "A" + "w" * 100_000, $target)
+    }
+    {#
+      module GrowArgumentWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $value.replace("w" * 100_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(GrowArgumentWarning)
+    };
+  end
+
+  def assert_bit_op_chilled_string_warning(op, *args)
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = <<~STR            # chilled string
+    #{("A"*63+"\n")*128}        # 64*128 = 8192
+    STR
+    END {
+      assert_raise(IndexError) {$target.#{op}(#{args.map(&:inspect).join(", ")})}
+    }
+    {#
+      $reentered = false
+
+      module ReallocateWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated && !$reentered
+            $reentered = true
+            $target.clear
+            $target << ("B" * 1024)
+            return nil
+          end
+
+          super
+        end
+      end
+
+      Warning.extend(ReallocateWarning)
+    };
+  end
+
+  def test_modify_chilled_string_in_warning
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target[0, 2] = ""
+      assert_equal("B" * 998, $target)
+    }
+    {#
+      module ShrinkWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("B" * 1_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkWarning)
+    };
+  end
+
+  def test_bit_count
+    assert_equal(0, S("").bit_count)
+    assert_equal(0, S("\x00").bit_count)
+    assert_equal(8, S("\xFF").bit_count)
+    assert_equal(8, S("\xAA\xF0").bit_count)
+    # A full-string popcount is bit-order independent; the keyword is
+    # validated but has no effect.
+    assert_equal(8, S("\xFF").bit_count(lsb_first: false))
+    assert_raise(ArgumentError) { S("\x00").bit_count(0) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(lsb_first: nil) }
+  end
+
+  def test_bit_count_region
+    data = S("\xFF\x00\xF0")
+    assert_equal(8, data.bit_count(0, 8))
+    assert_equal(0, data.bit_count(8, 8))
+    assert_equal(0, data.bit_count(16, 4))
+    assert_equal(4, data.bit_count(20, 4))
+    assert_equal(4, data.bit_count(4, 8))
+    assert_equal(8, data.bit_count(0..7))
+    assert_equal(0, data.bit_count(8..15))
+    assert_equal(8, data.bit_count(0...8))
+    assert_equal(4, data.bit_count(16..))
+    assert_equal(8, data.bit_count(..7))
+    assert_equal(12, data.bit_count(nil..nil))
+    assert_equal(0, data.bit_count(0, 0))
+    assert_equal(0, data.bit_count(0...0))
+
+    # Reads clamp: only the part of the region that exists is counted.
+    assert_equal(4, data.bit_count(16, 100))
+    assert_equal(0, data.bit_count(24, 8))
+    assert_equal(0, data.bit_count(100, 8))
+    assert_equal(4, data.bit_count(16..100))
+    assert_equal(0, data.bit_count(100..200))
+    assert_equal(0, data.bit_count(2**62, 8))
+
+    # lsb_first: selects which physical bits a non-byte-aligned region means.
+    assert_equal(0, S("\xF0").bit_count(0, 4))
+    assert_equal(4, S("\xF0").bit_count(0, 4, lsb_first: false))
+    assert_equal(4, S("\xF0").bit_count(0..3, lsb_first: false))
+    assert_equal(4, S("\xF0").bit_count(4, 4))
+
+    assert_raise(IndexError) { S("\x00").bit_count(-1, 4) }
+    assert_raise(IndexError) { S("\x00").bit_count(-1..3) }
+    assert_raise(IndexError) { S("\x00").bit_count(..-1) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0, -1) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(2**100, 1) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0, 2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0..2**100) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0..3, 4) }
+    assert_raise_with_message(ArgumentError, "no bit length given") { S("\x00").bit_count(0) }
+    # An explicit nil is an argument, not an omitted one.
+    assert_raise(ArgumentError) { S("\x00").bit_count(nil) }
+    assert_raise(TypeError) { S("\x00").bit_count(nil, 3) }
+    assert_raise(TypeError) { S("\x00").bit_count(0, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0..3, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_count(0, 4, lsb_first: nil) }
+  end
+
+  def test_bit_region_argument_side_effect
+    # Coercing an argument (Integer#to_int, or a Range endpoint) may run user
+    # code that resizes the receiver.  The bounds check and the memory access
+    # must both see the post-coercion length, or a stale size lets the region
+    # method read or write out of bounds.
+    shrink = Class.new do
+      def initialize(str, value); @str, @value = str, value; end
+      def to_int; @str.replace("\xFF".b); @value; end
+    end
+
+    # Writes: the region no longer fits the shrunken string, so this must raise
+    # rather than write past the reallocated buffer.
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_set(0, shrink.new(s, 64)) }
+    assert_equal("\xFF".b, s.b)
+
+    # A Range endpoint is coerced the same way; a beginless range keeps the
+    # custom object out of Range's begin <=> end construction check.
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_set(..shrink.new(s, 63)) }
+    assert_equal("\xFF".b, s.b)
+
+    # Reads clamp to the post-coercion length instead of reading freed memory.
+    s = S("\xFF") * 8
+    assert_equal(8, s.bit_count(0, shrink.new(s, 64)))
+    assert_equal("\xFF".b, s.b)
+  end
+
+  def test_bitwise
+    s = S("\x00\xAA")
+    result = s.bitwise_not
+    assert_equal(S("\xFF\x55").b, result)
+    assert_not_same(s, result)
+    assert_equal(S("\x00\xAA"), s)
+    assert_equal(Encoding::BINARY, result.encoding)
+
+    assert_same(s, s.bitwise_not!)
+    assert_equal(S("\xFF\x55"), s)
+
+    assert_equal(S("\xC0").b, S("\xF0").bitwise_and(S("\xCC")))
+    assert_equal(S("\xFC").b, S("\xF0").bitwise_or(S("\x0C")))
+    assert_equal(S("\x3C").b, S("\xF0").bitwise_xor(S("\xCC")))
+    assert_equal(Encoding::BINARY, S("\xF0").force_encoding("UTF-8").bitwise_and(S("\xCC")).encoding)
+    assert_equal(Encoding::BINARY, S("\xF0").force_encoding("UTF-8").bitwise_or(S("\x0C")).encoding)
+    assert_equal(Encoding::BINARY, S("\xF0").force_encoding("UTF-8").bitwise_xor(S("\xCC")).encoding)
+
+    s = S("\xF0")
+    assert_same(s, s.bitwise_and!(S("\xCC")))
+    assert_equal(S("\xC0"), s)
+    assert_same(s, s.bitwise_or!(S("\x0C")))
+    assert_equal(S("\xCC"), s)
+    assert_same(s, s.bitwise_xor!(S("\xFF")))
+    assert_equal(S("\x33"), s)
+
+    other = Object.new
+    def other.to_str
+      "\xCC"
+    end
+    assert_equal(S("\xC0").b, S("\xF0").bitwise_and(other))
+
+    assert_raise(ArgumentError) { S("\x00").bitwise_and(S("\x00\x00")) }
+    assert_raise(TypeError) { S("\x00").bitwise_or(Object.new) }
+    assert_raise(FrozenError) { S("\x00").freeze.bitwise_not! }
+    assert_raise(FrozenError) { S("\x00").freeze.bitwise_xor!(S("\x00")) }
   end
 
   def test_each_codepoint
@@ -1189,6 +1727,15 @@ CODE
     $VERBOSE = verbose
   end
 
+  def test_each_line_modified_separator
+    sep = S("x" * 1_000_000)
+    assert_raise_with_message(RuntimeError, /string modified/) do
+      S("a#{sep}b#{sep}c").each_line(sep) do |x|
+        sep.clear
+      end
+    end
+  end
+
   def test_each_line_chomp
     res = []
     S("hello\nworld").each_line("\n", chomp: true) {|x| res << x}
@@ -1253,6 +1800,11 @@ CODE
     assert_equal s.object_id, s.lines {|x| res << x }.object_id
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),  res[1])
+
+    s = S("AB").force_encoding(Encoding::UTF_32LE)
+    sep = S("B").force_encoding(Encoding::UTF_32LE)
+
+    assert_empty(s.lines(sep).to_a)
   end
 
   def test_empty?
@@ -1292,7 +1844,6 @@ CODE
   end
 
   def test_gsub_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
   end
 
@@ -1340,7 +1891,6 @@ CODE
   end
 
   def test_gsub_bang_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       a = S("hello")
       a.gsub!(/([aeiou])/, S('<\1>'))
@@ -1454,6 +2004,16 @@ CODE
     assert_equal("abcdX", S("abcd").insert(4, 'X'))
     assert_equal("abXcd", S("abcd").insert(-3, 'X'))
     assert_equal("abcdX", S("abcd").insert(-1, 'X'))
+    assert_equal("Xabcd", S("abcd").insert(-5, 'X'))
+    assert_equal("こんbarにちは", S("こんにちは").insert(2, 'bar'))
+
+    str = S("abcd")
+    assert_same(str, str.insert(2, 'X'))
+
+    assert_raise(IndexError) { S("abcd").insert(5, 'X') }
+    assert_raise(IndexError) { S("abcd").insert(-6, 'X') }
+    assert_raise(TypeError) { S("abcd").insert(2, 42) }
+    assert_raise(FrozenError) { S("abcd").freeze.insert(2, 'X') }
   end
 
   def test_intern
@@ -1473,6 +2033,9 @@ CODE
     assert_equal(S("hello      "), S("hello").ljust(11))
     assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_next
@@ -1643,6 +2206,19 @@ CODE
     assert_rindex(nil, S("こんにち"), S("こんにちは"))
     assert_rindex(nil, S("こ"), S("こんにちは"))
     assert_rindex(nil, S(""), S("こんにちは"))
+
+    assert_rindex(nil, S("A" * 1024), S("\u{3042}"))
+
+    # exact-size allocations, so a comparison past the last byte leaves them
+    assert_rindex(nil, S("A" * 1020 + "\u{3042}A"), S("\u{3042}\u{3044}"))
+    assert_rindex(nil, S("\u{3042}" + "A" * 1021), S("\u{3042}" * 1022))
+
+    WIDE_ENCODINGS.each do |enc|
+      pattern = "A".encode(enc)
+      stray = pattern.b[0]
+      assert_nil(S(stray).force_encoding(enc).rindex(pattern), enc.name)
+      assert_nil(S("B".encode(enc).b * 2 + stray).force_encoding(enc).rindex(pattern), enc.name)
+    end
   end
 
   def test_rjust
@@ -1650,6 +2226,9 @@ CODE
     assert_equal(S("      hello"), S("hello").rjust(11))
     assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_scan
@@ -1682,7 +2261,6 @@ CODE
   end
 
   def test_scan_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
@@ -1805,6 +2383,16 @@ CODE
 
     a = S("foo")
     assert_raise(ArgumentError) { a.slice! }
+  end
+
+  def test_slice_bang_string_modified
+    obj = Object.new
+    s = S("x" + "l" * 3999)
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      0
+    end
+    assert_nil(s.slice!(/l+$/, obj))
   end
 
   def test_split
@@ -2007,18 +2595,14 @@ CODE
   end
 
   def test_start_with_timeout_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true, samples: 2..100)
       regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
       str = "a" * 1_000_000 + "x"
-
-      code = proc do
+    begin;
+      10.times do
         str.start_with?(regex)
       rescue
       end
-
-      10.times(&code)
-    begin;
-      1_000.times(&code)
     end;
   end
 
@@ -2164,6 +2748,23 @@ CODE
     assert_equal(S("abc"), a)
   end
 
+  def test_strip_selector_modifying_receiver
+    [:strip, :strip!, :lstrip, :lstrip!, :rstrip, :rstrip!].each do |m|
+      s = S("-" * 100 + "abc" + "-" * 100)
+      obj = Object.new
+      obj.define_singleton_method(:to_str) do
+        s.clear
+        "-"
+      end
+
+      if m.end_with?("!")
+        assert_nil(s.public_send(m, obj), "String##{m}")
+      else
+        assert_equal("", s.public_send(m, obj), "String##{m}")
+      end
+    end
+  end
+
   def test_sub
     assert_equal(S("h*llo"),    S("hello").sub(/[aeiou]/, S('*')))
     assert_equal(S("h<e>llo"),  S("hello").sub(/([aeiou])/, S('<\1>')))
@@ -2230,7 +2831,6 @@ CODE
   end
 
   def test_sub_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /&(?<foo>.*?);/.match(S("aaa &amp; yyy"))
       assert_equal("amp", m["foo"])
@@ -2498,6 +3098,69 @@ CODE
     assert_not_predicate(result, :ascii_only?, bug13950)
 
     assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
+
+    assert_equal(S("aああ"), S("abc").tr("^a", "あ"))
+    result = S("abc").tr("^a", "é")
+    assert_equal(S("aéé"), result)
+    assert_not_predicate(result, :ascii_only?)
+    result = S("abc").b.tr("^a".b, "\xB0".b)
+    assert_equal("a\xB0\xB0".b, result)
+    assert_not_predicate(result, :ascii_only?)
+  end
+
+  def test_tr_hash
+    assert_equal S(("A"*16 + "x" + "B"*3)), S(("A"*16  + "<" + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("x"+"A"*16 + "B"*3)), S(("<"+"A"*16 + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("."*15 + "<" * 17)), S(("."*15  + "x"*17)).tr({"x"=>"<"})
+
+    assert_equal(S("01@3456789abcdefgHij"), S("0123456789abcdefghij").tr("h" => "H", "2" => "@"))
+    assert_equal(S("UL" * 16 ), S("\u2028<" * 16).tr("\u2028" => "U", "<" => "L"))
+    assert_equal(S("U\u2029" * 16 ), S("\u2028\u2029" * 16).tr("\u2028" => "U"))
+
+    # Many keys
+    expected = S(("a".."z").to_a.join)
+    replacements = ("A".."Z").to_h { |k| [k, k.downcase] }
+    actual = S(("A".."Z").to_a.join.tr(replacements))
+    assert_equal(expected, actual)
+
+    cesu = "\xED\xA0\x80\xED\xB0\x80"
+    (8..40).each do |n|
+      expected = ("BB" * n + cesu).force_encoding("CESU-8")
+      assert_equal(expected, S(("A" * n + cesu).force_encoding("CESU-8")).tr("A" => "BB"))
+    end
+  end
+
+  def test_tr_hash_modify
+    replacements = {}
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      replacements.clear
+      "a"
+    end
+    replacements[obj] = "x"
+    ("b".."z").each { |c| replacements[c] = (c.ord + 1).chr }
+    assert_equal(S("xb"), S("ab").tr(replacements))
+  end
+
+  def test_tr_hash_modify_receiver
+    str = S("abc" * 1000)
+    other = "\x8F\xA1\xA1".force_encoding("EUC-JP") * 1000
+    key = Object.new
+    key.define_singleton_method(:to_str) do
+      str.replace(other)
+      "\xA4\xA2".force_encoding("EUC-JP")
+    end
+    assert_nil(str.tr!({key => "X"}))
+    assert_equal(other, str)
+  end
+
+  def test_tr_hash_no_match_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
+    begin;
+      str = ("a" * 10_000).encode("UTF-16LE")
+      replacements = {"b".encode("UTF-16LE") => "c".encode("UTF-16LE")}
+      1_000.times { str.tr!(replacements) }
+    end;
   end
 
   def test_tr!
@@ -2603,7 +3266,7 @@ CODE
   end
 
   def test_upcase
-    assert_equal(S("HELLO"), S("hello").upcase)
+    assert_equal(S("HELLO"), S("helLO").upcase)
     assert_equal(S("HELLO"), S("hello").upcase)
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)
@@ -2757,8 +3420,17 @@ CODE
   def test_match_method
     assert_equal("bar", S("foobarbaz").match(/bar/).to_s)
 
-    o = Regexp.new('foo')
-    def o.match(x, y, z); x + y + z; end
+    require "rbconfig/sizeof"
+    pos = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    s = S("abcd".encode(Encoding::UTF_32LE))
+    re = Regexp.new("c".encode(Encoding::UTF_32LE))
+    assert_nil(s.match(re, pos))
+    assert_nil(s.match(re, pos * 2))
+    assert_equal(false, s.match?(re, pos))
+
+    o = Class.new(Regexp) {
+      def match(x, y, z) = x + y + z
+    }.new('foo')
     assert_equal("foobarbaz", S("foo").match(o, "bar", "baz"))
     x = nil
     S("foo").match(o, "bar", "baz") {|y| x = y }
@@ -2863,6 +3535,10 @@ CODE
     assert_equal(["", "", "foo"], S("foo").partition(/^=*/))
 
     assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal([s, "", ""], s.partition(sep))
   end
 
   def test_rpartition
@@ -2889,6 +3565,21 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal(["", "", s], s.rpartition(sep))
+  end
+
+  def test_rpartition_string_modified
+    str = S("héllo" * 1000)
+    replacement = S("hé")
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace(replacement)
+      "-"
+    end
+    assert_equal([S(""), S(""), replacement], str.rpartition(obj))
   end
 
   def test_rs
@@ -3460,6 +4151,58 @@ CODE
     assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
   end
 
+  def test_shared_middle_string_terminator
+    ten = "0123456789"
+    hundred = ten * 10
+    str = "#{hundred}\0#{hundred}".freeze
+
+    require 'objspace'
+
+    substr = str.byteslice(0, hundred.bytesize)
+    assert_equal hundred, substr
+    assert_include ObjectSpace.dump(substr), ' "shared":true,'
+
+    # Larger terminator
+    substr.force_encoding(Encoding::UTF_16BE)
+    assert_equal hundred.dup.force_encoding(Encoding::UTF_16BE), substr
+    refute_includes ObjectSpace.dump(substr), ' "shared":true,'
+
+    substr = str.byteslice(0, hundred.bytesize + 1)
+    assert_equal hundred + "\0", substr
+    refute_includes ObjectSpace.dump(substr), ' "shared":true,'
+  end
+
+  # [Bug #22528]
+  def test_append_wide_to_empty_string
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      s = ("a" * 1000).encode(enc)
+      assert_equal(s, String.new(capacity: s.bytesize, encoding: "UTF-8") << s)
+      a = "".force_encoding("US-ASCII")
+      assert_equal(s, eval(%{# coding: us-ascii\n"\#{a}\#{s}"}))
+    end
+  end
+
+  def test_substring_embed
+    str = "a" * 448
+
+    require 'objspace'
+
+    # 128 and 320 sit either side of STR_COPY_MAX_EMBED_SIZE in string.c, which
+    # the copy has to fit in along with the header and the terminator
+    substr = str.byteslice(320, 128)
+    assert_equal "a" * 128, substr
+    assert_include ObjectSpace.dump(substr), ' "embedded":true,'
+
+    substr = str.byteslice(128, 320)
+    assert_equal "a" * 320, substr
+    assert_include ObjectSpace.dump(substr), ' "shared":true,'
+
+    # A frozen source is a shared root itself, so the same substring is shared
+    substr = str.freeze.byteslice(320, 128)
+    assert_equal "a" * 128, substr
+    assert_include ObjectSpace.dump(substr), ' "shared":true,'
+  end
+
   def test_unknown_string_option
     str = nil
     assert_nothing_raised(SyntaxError) do
@@ -3525,7 +4268,7 @@ CODE
     require 'objspace'
 
     str = "test_uplus_minus_str".freeze
-    assert_includes ObjectSpace.dump(str), '"fstring":true'
+    assert_include ObjectSpace.dump(str), '"fstring":true'
 
     assert_predicate(str, :frozen?)
     assert_not_predicate(+str, :frozen?)
@@ -3666,6 +4409,16 @@ CODE
     assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
+  def test_byteindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byteindex("l", obj))
+  end
+
   def test_byterindex
     assert_byterindex(3, S("hello"), ?l)
     assert_byterindex(6, S("ell, hello"), S("ell"))
@@ -3718,6 +4471,16 @@ CODE
     assert_byterindex(nil, S("こんにち"), S("こんにちは"))
     assert_byterindex(nil, S("こ"), S("こんにちは"))
     assert_byterindex(nil, S(""), S("こんにちは"))
+  end
+
+  def test_byterindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byterindex("l", obj))
   end
 
   def test_bytesplice
@@ -3912,12 +4675,11 @@ CODE
         def fallback.[](_str) = raise MyError
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue MyError
         end
@@ -3942,12 +4704,11 @@ CODE
         def fallback.[](_str) = "\\uffee"
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue ArgumentError
         end
@@ -3972,12 +4733,11 @@ CODE
         def fallback.[](_str) = Object.new
       RUBY
     }.each do |type, code|
-      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+      assert_no_memory_leak([], <<~PREPARE, <<~RUBY, "fallback type is #{type}", rss: true, samples: 2..100)
         class MyError < StandardError; end
-
         #{code}
-
-        100_000.times do |i|
+      PREPARE
+        1000.times do |i|
           "\\ufffd".encode(Encoding::US_ASCII, fallback:)
         rescue TypeError
         end
@@ -4041,5 +4801,86 @@ class TestString2 < TestString
   def initialize(*args)
     super
     @cls = S2
+  end
+
+  def assert_capacity(capa, str, msg)
+    assert_equal capa, Bug::String.capacity(str), msg
+  end
+
+  def test_capacity_inflation
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
+    orig = ("\u{30AF}" * 5)
+    all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
+      assert_capacity(1024, S2.new(orig.encode(enc), encoding: "UTF-8", capacity: 1024), enc.name)
+    end
+  end
+
+  def test_capacity_no_inflation
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
+    orig = "hello"
+    all_assertions_foreach(nil, Encoding::UTF_8, *WIDE_ENCODINGS) do |enc|
+      assert_capacity(1024, S2.new(orig, encoding: enc, capacity: 1024), enc.name)
+    end
+  end
+
+  def test_capacity_no_overflow_on_append
+    orig = ("\u{30AF}" * 5)
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      encoded = orig.encode(enc)
+      size = encoded.bytesize
+
+      s = S2.new(encoded, encoding: "UTF-8", capacity: 200)
+      s << "x" * 191
+      assert_equal(size + 191, s.bytesize, enc.name)
+
+      s = S2.new(encoded, encoding: "UTF-8", capacity: 207)
+      s << "y" * 207
+      assert_equal(size + 207, s.bytesize, enc.name)
+    end
+  end
+
+  def test_wide_encoding_terminator_without_capacity
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      [*1..32, 1000].each do |n|
+        orig = "a" * n
+        s = S2.new(orig, encoding: enc)
+        assert_operator(Bug::String.capacity(s), :>=, n, "#{enc.name} #{n}")
+        assert_nil(Bug::String.cstr_term_char(s), "#{enc.name} #{n}")
+        s[0, 0] = ""
+        assert_equal(n, s.bytesize, "#{enc.name} #{n}")
+        assert_equal("a" * n, orig, "#{enc.name} #{n}")
+
+        s = S2.new("a" * n)
+        s.__send__(:initialize, encoding: enc)
+        assert_operator(Bug::String.capacity(s), :>=, n, "#{enc.name} #{n}")
+        assert_nil(Bug::String.cstr_term_char(s), "#{enc.name} #{n}")
+        s[0, 0] = ""
+        assert_equal(n, s.bytesize, "#{enc.name} #{n}")
+      end
+    end
+  end
+
+  def test_wide_encoding_terminator_with_capacity
+    all_assertions_foreach(nil, *WIDE_ENCODINGS) do |enc|
+      orig = ("b" * 400).force_encoding(enc)
+
+      s = S2.new(orig, capacity: 1)
+      assert_equal(enc, s.encoding)
+      assert_nil(Bug::String.cstr_term_char(s))
+
+      s = S2.new(orig)
+      s.__send__(:initialize, capacity: 100)
+      assert_equal(enc, s.encoding)
+      assert_empty(s)
+      assert_nil(Bug::String.cstr_term_char(s))
+
+      s = S2.new(orig)
+      s.__send__(:initialize, s, capacity: 100)
+      assert_equal(enc, s.encoding)
+      assert_equal(orig, s)
+      assert_nil(Bug::String.cstr_term_char(s))
+    end
   end
 end

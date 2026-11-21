@@ -60,9 +60,9 @@ describe :array_binary_union, shared: true do
   end
 
   it "does not return subclass instances for Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].send(@method, []).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].send(@method, ArraySpecs::MyArray[1, 2, 3]).should be_an_instance_of(Array)
-    [].send(@method, ArraySpecs::MyArray[1, 2, 3]).should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].send(@method, []).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].send(@method, ArraySpecs::MyArray[1, 2, 3]).should.instance_of?(Array)
+    [].send(@method, ArraySpecs::MyArray[1, 2, 3]).should.instance_of?(Array)
   end
 
   it "does not call to_ary on array subclasses" do
@@ -75,5 +75,22 @@ describe :array_binary_union, shared: true do
     x.stub!(:eql?).and_return(false) # Stubbed for clarity and latitude in implementation; not actually sent by MRI.
 
     [x].send(@method, [x]).should == [x]
+  end
+
+  it "does not call #hash for small arrays" do
+    a = Object.new
+    b = Object.new
+    [a, b].each { |object| object.define_singleton_method(:hash) { raise "#hash called" } }
+
+    [a, b].send(@method, [b]).should == [a, b]
+  end
+
+  it "uses #hash when the combined size exceeds the small array limit" do
+    poison = Object.new
+    poison.define_singleton_method(:hash) { raise "#hash called" }
+    array = Array.new(15) { Object.new }
+
+    array.send(@method, [poison]).should == array + [poison]
+    -> { Array.new(16) { Object.new }.send(@method, [poison]) }.should.raise(RuntimeError, "#hash called")
   end
 end

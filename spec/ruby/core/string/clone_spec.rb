@@ -43,8 +43,8 @@ describe "String#clone" do
   end
 
   it "copies frozen state" do
-    @obj.freeze.clone.frozen?.should be_true
-    "".freeze.clone.frozen?.should be_true
+    @obj.freeze.clone.frozen?.should == true
+    "".freeze.clone.frozen?.should == true
   end
 
   it "does not modify the original string when changing cloned string" do

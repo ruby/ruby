@@ -19,7 +19,7 @@ describe "Net::HTTP#set_debug_output when passed io" do
 
     @http.set_debug_output(io)
     @http.start
-    io.string.should_not be_empty
+    io.string.should_not.empty?
     size = io.string.size
 
     @http.get("/")

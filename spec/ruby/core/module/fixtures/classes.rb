@@ -643,7 +643,12 @@ end
 module Kernel
   def module_specs_public_method_on_kernel; end
 
-  alias_method :module_specs_alias_on_kernel, :module_specs_public_method_on_object
+  ruby_version_is ""..."4.2" do
+    deprecated, Warning[:deprecated] = Warning[:deprecated], false
+    alias_method :module_specs_alias_on_kernel, :module_specs_public_method_on_object
+  ensure
+    Warning[:deprecated] = deprecated
+  end
 
   public :module_specs_private_method_on_object_for_kernel_public
   protected :module_specs_public_method_on_object_for_kernel_protected

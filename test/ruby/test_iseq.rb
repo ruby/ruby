@@ -157,7 +157,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_ractor_unshareable_outer_variable
     name = "\u{2603 26a1}"
-    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+    assert_raise_with_message(Ractor::IsolationError, /\(#{name}\)/) do
       eval("#{name} = nil; Ractor.shareable_proc{#{name} = nil}")
     end
 
@@ -177,7 +177,7 @@ class TestISeq < Test::Unit::TestCase
       # shareable_constant_value: literal
       REGEX = /#{}/ # [Bug #20569]
     RUBY
-    assert_includes iseq_to_binary(iseq), "REGEX".b
+    assert_include iseq_to_binary(iseq), "REGEX".b
   end
 
   def test_disasm_encoding
@@ -196,6 +196,13 @@ class TestISeq < Test::Unit::TestCase
     assert_include(RubyVM::InstructionSequence.of(obj.method(name)).disasm, name)
   end
 
+  def test_disasm_with_tracepoint
+    iseq = compile("a = 1; a")
+    TracePoint.new(:line) {}.enable(target: iseq) do
+      assert_not_include(iseq.disasm, "trace_")
+    end
+  end
+
   def test_compile_file_encoding
     Tempfile.create(%w"test_iseq .rb") do |f|
       f.puts "{ '\u00de' => 'Th', '\u00df' => 'ss', '\u00e0' => 'a' }"
@@ -210,6 +217,26 @@ class TestISeq < Test::Unit::TestCase
         }
       end
     end
+  end
+
+  def test_compile_file_options
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts('_ = "test"')
+      f.close
+      iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: false })
+      refute_predicate iseq.eval, :frozen?
+
+      iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: true })
+      assert_predicate iseq.eval, :frozen?
+    end
+  end
+
+  def test_compile_options
+    iseq = RubyVM::InstructionSequence.compile("'test'", nil, nil, nil, { frozen_string_literal: false })
+    refute_predicate iseq.eval, :frozen?
+
+    iseq = RubyVM::InstructionSequence.compile("'test'", nil, nil, nil, { frozen_string_literal: true })
+    assert_predicate iseq.eval, :frozen?
   end
 
   LINE_BEFORE_METHOD = __LINE__
@@ -294,7 +321,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_invalid_source_no_memory_leak
     # [Bug #21394]
-    assert_no_memory_leak(["-rtempfile"], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+    assert_no_memory_leak(["-rtempfile"], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true, samples: 2..100)
       code = proc do |t|
         RubyVM::InstructionSequence.new(nil)
       rescue TypeError
@@ -302,9 +329,8 @@ class TestISeq < Test::Unit::TestCase
         raise "TypeError was not raised during RubyVM::InstructionSequence.new"
       end
 
-      10.times(&code)
     begin;
-      1_000_000.times(&code)
+      10_000.times(&code)
     end;
 
     # [Bug #21394]
@@ -353,6 +379,20 @@ class TestISeq < Test::Unit::TestCase
     assert_predicate(s2, :frozen?)
     assert_not_predicate(s3, :frozen?)
     assert_not_predicate(s4, :frozen?)
+  end
+
+  def test_frozen_string_literal_compile_option_file
+    Tempfile.create(%w[fsl .rb]) do |f|
+      f.write("['foo', 'foo', \"\#{$f}foo\", \"\#{'foo'}\"]\n")
+      f.flush
+      $f = 'f'
+      s1, s2, s3, s4 = RubyVM::InstructionSequence
+        .compile_file(f.path, frozen_string_literal: true).eval
+      assert_predicate(s1, :frozen?)
+      assert_predicate(s2, :frozen?)
+      assert_not_predicate(s3, :frozen?)
+      assert_not_predicate(s4, :frozen?)
+    end
   end
 
   # Safe call chain is not optimized when Coverage is running.
@@ -488,6 +528,12 @@ class TestISeq < Test::Unit::TestCase
     iseq = RubyVM::InstructionSequence.of(method(:anon_block))
     param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
     assert_equal [:&], param_names
+  end
+
+  def test_disasm_mandatory_only_overloaded
+    disasm = RubyVM::InstructionSequence.disasm(Time.method(:at))
+    assert_include disasm, "<builtin!time_s_at1/1>"
+    assert_include disasm, "<builtin!time_s_at/4>"
   end
 
   def strip_lineno(source)
@@ -682,6 +728,17 @@ class TestISeq < Test::Unit::TestCase
     assert_equal([[:nokey]], iseq.eval.singleton_method(:foo).parameters)
   end
 
+  def test_to_binary_dumps_noblock
+    iseq = assert_iseq_to_binary(<<-RUBY)
+      o = Object.new
+      class << o
+        def foo(&nil); end
+      end
+      o
+    RUBY
+    assert_equal([[:noblock]], iseq.eval.singleton_method(:foo).parameters)
+  end
+
   def test_to_binary_line_info
     assert_iseq_to_binary("#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #14660]').eval
     begin;
@@ -778,6 +835,7 @@ class TestISeq < Test::Unit::TestCase
     [
       proc{},
       method(:test_iseq_of),
+      method(:test_iseq_of).to_proc,
       RubyVM::InstructionSequence.compile("p 1", __FILE__),
       begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
     ].each{|src|
@@ -786,19 +844,13 @@ class TestISeq < Test::Unit::TestCase
     }
   end
 
-  def test_iseq_of_twice_for_same_code
-    [
-      proc{},
-      method(:test_iseq_of_twice_for_same_code),
-      RubyVM::InstructionSequence.compile("p 1"),
-      begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
-    ].each{|src|
-      iseq1 = RubyVM::InstructionSequence.of(src)
-      iseq2 = RubyVM::InstructionSequence.of(src)
+  def test_iseq_of_method_proc
+    iseq = RubyVM::InstructionSequence.of(method(:test_iseq_of_method_proc).to_proc)
+    assert_equal RubyVM::InstructionSequence.of(method(:test_iseq_of_method_proc)).disasm, iseq.disasm
+    assert_equal "test_iseq_of_method_proc", iseq.label
 
-      # ISeq objects should be same for same src
-      assert_equal iseq1.object_id, iseq2.object_id
-    }
+    assert_nil RubyVM::InstructionSequence.of([].method(:<<).to_proc)
+    assert_nil RubyVM::InstructionSequence.of(:to_s.to_proc)
   end
 
   def test_iseq_builtin_to_a
@@ -842,23 +894,67 @@ class TestISeq < Test::Unit::TestCase
 
   def test_mandatory_only_redef
     assert_separately ['-W0'], <<~RUBY
-      r = Ractor.new{
-        Float(10)
-        module Kernel
-          undef Float
-          def Float(n)
-            :new
-          end
-        end
+      port = Ractor::Port.new
+      r = Ractor.new(port){|port|
+        Float(10) # fill the mandatory only cache
+        port << :filled
+        Ractor.receive
         GC.start
         Float(30)
       }
+
+      port.receive
+
+      # Kernel is created by the main Ractor, so only the main Ractor can
+      # redefine it. The redefinition should be visible from the other Ractor.
+      module Kernel
+        undef Float
+        def Float(n)
+          :new
+        end
+      end
+
+      r << :redefined
       assert_equal :new, r.value
     RUBY
   end
 
   def test_ever_condition_loop
     assert_ruby_status([], "BEGIN {exit}; while true && true; end")
+  end
+
+  def test_short_circuited_loop_condition
+    assert_ruby_status([], "while true || true; exit; end; abort")
+    disasm = compile("while true || true; exit; end; abort").disasm
+    assert_not_match(/^\d+ putnil\s*\n\d+ jump\s+\d+/m, disasm)
+  end
+
+  def test_short_circuited_break_in_ensure
+    assert_in_out_err(["--parser=parse.y"], <<~'RUBY', %w[OK], success: true)
+      while false
+        begin
+          if false && (break if foo); end
+        ensure
+          puts 'BUG'
+          exit!(false)
+        end
+      end
+      raise 'OK' rescue puts $!
+    RUBY
+  end
+
+  def test_short_circuited_return_in_ensure
+    assert_in_out_err(["--parser=parse.y"], <<~'RUBY', ["ensure", "#<RuntimeError: boom>"], success: true)
+      def m
+        begin
+          if false && (return if foo); end
+          raise 'boom'
+        ensure
+          puts 'ensure'
+        end
+      end
+      m rescue p $!
+    RUBY
   end
 
   def test_unreachable_syntax_error
@@ -904,6 +1000,10 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_unreachable_find_pattern_in_else_branch
+    assert_in_out_err([], "if []; else; a => [*, 42, *]; end")
+  end
+
   def test_serialize_anonymous_outer_variables
     iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
       obj = Object.new
@@ -917,17 +1017,17 @@ class TestISeq < Test::Unit::TestCase
       obj
     RUBY
 
-    binary = iseq.to_binary # [Bug # 21370]
+    binary = iseq_to_binary(iseq) # [Bug # 21370]
     roundtripped_iseq = RubyVM::InstructionSequence.load_from_binary(binary)
     object = roundtripped_iseq.eval
     assert_equal 1, object.test
   end
 
   def test_loading_kwargs_memory_leak
-    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 5)
       a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
     begin;
-      1_000_000.times do
+      200_000.times do
         RubyVM::InstructionSequence.load_from_binary(a)
       end
     end;

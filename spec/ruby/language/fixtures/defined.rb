@@ -299,6 +299,74 @@ module DefinedSpecs
       super
     end
   end
+
+  class ProtectedBase
+    def m; end
+    protected :m
+    def defined_on(o)
+      defined?(o.m)
+    end
+  end
+
+  class ProtectedSubclass < ProtectedBase
+  end
+
+  module ProtectedInModule
+    def m; end
+    protected :m
+    def defined_on(o)
+      defined?(o.m)
+    end
+  end
+
+  class ProtectedIncluderA
+    include ProtectedInModule
+  end
+
+  class ProtectedIncluderB
+    include ProtectedInModule
+  end
+
+  # #respond_to? is consulted before #respond_to_missing?, so returning false vetoes the
+  # #respond_to_missing? call entirely.
+  class RespondToFalse
+    def respond_to?(name, include_all = false)
+      false
+    end
+
+    def respond_to_missing?(name, include_all)
+      ScratchPad.record :defined_specs_respond_to_missing
+      true
+    end
+  end
+
+  # Returning true from #respond_to? lets the #respond_to_missing? call through.
+  class RespondToTrue
+    def respond_to?(name, include_all = false)
+      true
+    end
+
+    def respond_to_missing?(name, include_all)
+      ScratchPad.record :defined_specs_respond_to_missing
+      true
+    end
+  end
+
+  # A deprecated one-parameter #respond_to?, which warns when Warning[:deprecated] is set.
+  class RespondToOneParameter
+    def respond_to?(name)
+      false
+    end
+  end
+
+  # The warning names the receiver, so building it calls #to_s. Used to check that nothing is built
+  # when the warning is disabled.
+  class RespondToRecordingToS
+    def to_s
+      ScratchPad.record :defined_specs_to_s
+      super
+    end
+  end
 end
 
 class Object

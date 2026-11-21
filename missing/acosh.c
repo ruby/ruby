@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <float.h>
 #include <math.h>
-#include "ruby.h"
+#include "ruby/config.h"
 
 /* DBL_MANT_DIG must be less than 4 times of bits of int */
 #ifndef DBL_MANT_DIG

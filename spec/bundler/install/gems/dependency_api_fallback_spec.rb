@@ -3,7 +3,7 @@
 RSpec.describe "gemcutter's dependency API" do
   context "when Gemcutter API takes too long to respond" do
     before do
-      bundle "config set timeout 1"
+      bundle_config "timeout 1"
     end
 
     it "times out and falls back on the modern index" do

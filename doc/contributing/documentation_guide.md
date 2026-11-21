@@ -4,10 +4,10 @@ This guide discusses recommendations for documenting
 classes, modules, and methods
 in the Ruby core and in the Ruby standard library.
 
-## Generating documentation
+## Generating Documentation
 
-Most Ruby documentation lives in the source files and is written in
-[RDoc format](https://ruby.github.io/rdoc/RDoc/MarkupReference.html).
+Most Ruby documentation lives in the source files, and is written in RDoc format
+(described in the [RDoc Markup Reference]).
 
 Some pages live under the `doc` folder and can be written in either
 `.rdoc` or `.md` format, determined by the file extension.
@@ -20,11 +20,18 @@ build directory:
 make html
 ```
 
+Or, to start a live-reloading server that automatically refreshes
+the browser when you edit source files:
+
+```sh
+make html-server
+```
+
+Then visit `http://localhost:4000` in your browser.
+To use a different port: `make html-server RDOC_SERVER_PORT=8080`.
+
 If you don't have a build directory, follow the [quick start
 guide](building_ruby.md#label-Quick+start+guide) up to step 4.
-
-Then you can preview your changes by opening
-`{build folder}/.ext/html/index.html` file in your browser.
 
 ## Goal
 
@@ -43,106 +50,102 @@ Use your judgment about what the user needs to know.
 - Write short declarative or imperative sentences.
 - Group sentences into (ideally short) paragraphs,
   each covering a single topic.
-- Organize material with
-  [headings].
-- Refer to authoritative and relevant sources using
-  [links](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Links).
+- Organize material with [headings].
+- Refer to authoritative and relevant sources using [links].
 - Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
-    - Excessive comma-separated phrases; consider a [list].
+    - Excessive comma-separated phrases; consider a [list][lists].
     - Idioms and culture-specific references.
     - Overuse of headings.
-    - Using US-ASCII-incompatible characters in C source files;
-      see [Characters](#label-Characters) below.
 
-### Characters
+### Examples
 
-Use only US-ASCII-compatible characters in a C source file.
-(If you use other characters, the Ruby CI will gently let you know.)
-
-If you want to put ASCII-incompatible characters into the documentation
-for a C-coded class, module, or method, there are workarounds
-involving new files `doc/*.rdoc`:
-
-- For class `Foo` (defined in file `foo.c`),
-  create file `doc/foo.rdoc`, declare `class Foo; end`,
-  and place the class documentation above that declaration:
-
-    ```ruby
-    # Documentation for class Foo goes here.
-    class Foo; end
-    ```
-
-- Similarly, for module `Bar` (defined in file `bar.c`),
-  create file `doc/bar.rdoc`, declare `module Bar; end`,
-  and place the module documentation above that declaration:
-
-    ```ruby
-    # Documentation for module Bar goes here.
-    module Bar; end
-    ```
-
-- For a method, things are different.
-  Documenting a method as above disables the "click to toggle source" feature
-  in the rendered documentation.
-
-    Therefore it's best to use file inclusion:
-
-    - Retain the `call-seq` in the C code.
-    - Use file inclusion (`:include:`) to include text from an .rdoc file.
-
-    Example:
-
-    ```c
-    /*
-     *  call-seq:
-     *    each_byte {|byte| ... } -> self
-     *    each_byte               -> enumerator
-     *
-     *  :include: doc/string/each_byte.rdoc
-     *
-     */
-    ```
-
-### \RDoc
-
-Ruby is documented using RDoc.
-For information on \RDoc syntax and features, see the
-[RDoc Markup Reference](https://ruby.github.io/rdoc/RDoc/MarkupReference.html).
-
-### Output from `irb`
+#### Output from `irb`
 
 For code examples, consider using interactive Ruby,
-[irb](https://ruby-doc.org/stdlib/libdoc/irb/rdoc/IRB.html).
+[irb].
 
 For a code example that includes `irb` output,
 consider aligning `# => ...` in successive lines.
 Alignment may sometimes aid readability:
 
 ```ruby
-a = [1, 2, 3] #=> [1, 2, 3]
-a.shuffle!    #=> [2, 3, 1]
-a             #=> [2, 3, 1]
+a = [1, 2, 3] # => [1, 2, 3]
+a.shuffle!    # => [2, 3, 1]
+a             # => [2, 3, 1]
 ```
+
+#### Languages in Examples
+
+For symbols and strings in documentation examples:
+
+- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
+- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
+- If a second language is needed (as, for example, characters with different byte-sizes),
+  prefer Japanese in \English documentation and \English in Japanese documentation.
+- Use other languages examples only as necessary:  see String#capitalize.
+
+#### Cleaning Up
+
+An example that appropriates system resources should "clean up"
+by releasing those resources.
+Let's show good work habits.
+
+Resources that may need to be deleted/unlinked:
+
+- Files
+- Directories
+- Symbolic links
+- UNIX sockets
+- Block-special devices
+- Character-special devices
+- Named pipes
+
+Objects that may need to be closed:
+
+- Dir
+- IO
+- Tempfile
+
+### RDoc
+
+Ruby is documented using RDoc.
+For information on RDoc syntax and features,
+see the [RDoc Markup Reference].
 
 ### Headings
 
 Organize a long discussion for a class or module with [headings].
 
-Do not use formal headings in the documentation for a method or constant.
+Headings should not "jump" levels;
+for example, the next heading after a level-2 heading should not be level-4 or higher.
 
-In the rare case where heading-like structures are needed
-within the documentation for a method or constant, use
-[bold text](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Bold)
-as pseudo-headings.
+For a class or module:
+
+- RDoc automatically produces a level-1 heading at the top of the rendered page;
+  this serves as the title of the page.
+- Add more headings at level 2 or greater (but do not jump levels).
+
+For a method or constant:
+
+- Do not use formal headings.
+  In the rare case where heading-like structures are needed
+  within the documentation for a method or constant,
+  use [bold text] as pseudo-headings.
+
+For a free-standing file (such as this one):
+
+- If the file has headings, the first one should be a level-1 heading.
+- Consider including a level-1 heading at the top of the file;
+  it would serve as the title of the page.
 
 ### Blank Lines
 
 A blank line begins a new paragraph.
 
-A [code block](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Code+Blocks)
-or [list] should be preceded by and followed by a blank line.
+A [code block][code blocks]
+or [list][lists] should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
 ### \Method Names
@@ -161,7 +164,7 @@ For a method name in text:
 ### Embedded Code and Commands
 
 Code or commands embedded in running text (i.e., not in a code block)
-should marked up as
+should be marked up as
 [monofont].
 
 Code that is a simple string should include the quote marks.
@@ -185,7 +188,7 @@ renders as:
 > - File.new
 > - File#read.
 
-In general, \RDoc's auto-linking should not be suppressed.
+In general, RDoc's auto-linking should not be suppressed.
 For example, we should write just plain _Float_ (which is auto-linked):
 
 ```rdoc
@@ -265,16 +268,16 @@ and _never_ when referring to the class itself.
 
 When writing an explicit link, follow these guidelines.
 
-#### +rdoc-ref+ Scheme
+#### `rdoc-ref` Scheme
 
-Use the +rdoc-ref+ scheme for:
+Use the `rdoc-ref` scheme for:
 
 - A link in core documentation to other core documentation.
 - A link in core documentation to documentation in a standard library package.
 - A link in a standard library package to other documentation in that same
   standard library package.
 
-See section "+rdoc-ref+ Scheme" in [links].
+See section "`rdoc-ref` Scheme" in [links].
 
 #### URL-Based Link
 
@@ -291,13 +294,37 @@ The link should lead to a target in https://docs.ruby-lang.org/en/master/.
 
 Also use a full URL-based link for a link to an off-site document.
 
+#### Fragments
+
+In general, a link that includes a [fragment][fragment]
+must cite the exact identifier on the target page;
+otherwise, the browser finds no suitable identifier,
+and does not scroll to the desired part of the page.
+
+However, certain pages on `github.com` and `github.io`
+support "fuzzy" identifier matching, so that URL
+https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise,
+(whose fragment is `-why-are-rubys-floats-imprecise`)
+scrolls to heading "Why are ruby’s floats imprecise?"
+even though the identifier there actually is the longer
+`#user-content--why-are-rubys-floats-imprecise`.
+
+Ruby documentation should avoid using these shortened fragments, for two reasons:
+
+- The GitHub pages that do this implement it using Javascript;
+  if the user's browser has Javascript disabled
+  (which some employers actually require),
+  the shortened fragment is ineffective and the desired scrolling does not occur.
+- A program that checks links in Ruby documentation will find no suitable identifier,
+  and therefore will report the fragment as not found.
+
 ### Variable Names
 
 The name of a variable (as specified in its call-seq) should be marked up as
 [monofont].
 
 Also, use monofont text for the name of a transient variable
-(i.e., one defined and used only in the discussion, such as +n+).
+(i.e., one defined and used only in the discussion, such as `n`).
 
 ### HTML Tags
 
@@ -312,29 +339,18 @@ In particular, avoid building tables with HTML tags
 
 Alternatives:
 
-- A {verbatim text block}[https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Verbatim+Text+Blocks],
+- A [verbatim text block][verbatim text blocks],
   using spaces and punctuation to format the text;
-  note that {text markup}[https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Text+Markup]
-  will not be honored:
+  note that [text markup][text markup] will not be honored:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
-    - Corresponding {output}[rdoc-ref:File@Read-2FWrite+Mode].
+    - Corresponding {output}[rdoc-ref:File@ReadWrite+Mode].
 
-- (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
+- (Markdown format only): A {GitHub Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
   using special formatting for the text:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
     - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
-
-### Languages in Examples
-
-For symbols and strings in documentation examples:
-
-- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
-- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
-- If a second language is needed (as, for example, characters with different byte-sizes),
-  prefer Japanese in \English documentation and \English in Japanese documentation.
-- Use other languages examples only as necessary:  see String#capitalize.
 
 ## Documenting Classes and Modules
 
@@ -374,9 +390,9 @@ Guidelines:
       and a short description.
     - If the method has aliases, mention them in parentheses before the colon
       (and do not list the aliases separately).
-    - Check the rendered documentation to determine whether \RDoc has recognized
+    - Check the rendered documentation to determine whether RDoc has recognized
       the method and linked to it;  if not, manually insert a
-      [link](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Links).
+      [link][links].
 
 - If there are numerous entries, consider grouping them into subsections with headings.
 - If there are more than a few such subsections,
@@ -398,11 +414,11 @@ The general structure of the method documentation should be:
 
 ### Calling Sequence (for methods written in C)
 
-For methods written in Ruby, \RDoc documents the calling sequence automatically.
+For methods written in Ruby, RDoc documents the calling sequence automatically.
 
-For methods written in C, \RDoc cannot determine what arguments
-the method accepts, so those need to be documented using \RDoc directive
-[`call-seq:`](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Directives+for+Method+Documentation).
+For methods written in C, RDoc cannot determine what arguments
+the method accepts, so those need to be documented using RDoc directive
+[`call-seq:`][call-seq]
 
 For a singleton method, use the form:
 
@@ -491,10 +507,10 @@ Return types:
 
 - If the method can return multiple different types,
   separate the types with "or" and, if necessary, commas.
-- If the method can return multiple types, use +object+.
-- If the method returns the receiver, use +self+.
+- If the method can return multiple types, use `object`.
+- If the method returns the receiver, use `self`.
 - If the method returns an object of the same class,
-  prefix `new_` if and only if the object is not +self+;
+  prefix `new_` if and only if the object is not `self`;
   example: `new_array`.
 
 Aliases:
@@ -511,6 +527,19 @@ The synopsis comes next, and is a short description of what the
 method does and why you would want to use it.  Ideally, this
 is a single sentence, but for more complex methods it may require
 an entire paragraph.
+
+Consider mentioning the return value first,
+especially if there are associated conditionals:
+
+> Returns the integer permissions for the entry at the path in `self`
+> if the entry exists and is readable by others;
+> otherwise, returns `nil`:
+
+Not:
+
+> If the entry at the path in `self` exists and is readable by others,
+> returns the integer permissions for the entry;
+> otherwise, returns `nil`:
 
 For `Array#count`, the synopsis is:
 
@@ -577,7 +606,7 @@ argument passed if it is not obvious, not explicitly mentioned in the
 details, and not implicitly shown in the examples.
 
 If there is more than one argument or block argument, use a
-[labeled list](https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Labeled+Lists).
+[labeled list][lists].
 
 ### Corner Cases and Exceptions
 
@@ -585,7 +614,7 @@ For corner cases of methods, such as atypical usage, briefly mention
 the behavior, but do not provide any examples.
 
 Only document exceptions raised if they are not obvious.  For example,
-if you have stated earlier than an argument type must be an integer,
+if you have stated earlier that an argument type must be an integer,
 you do not need to document that a `TypeError` is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
 that is a common case, such as `Hash#fetch` raising a `KeyError`.
@@ -618,6 +647,15 @@ For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
 
-[headings]: https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Headings
-[list]: https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Lists
-[monofont]: https://ruby.github.io/rdoc/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Monofont
+[bold text]:             https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#bold
+[call-seq]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#directive-for-specifying-rdoc-source-format
+[code blocks]:           https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#code-blocks
+[fragment]:              https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment
+[headings]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#headings
+[irb]:                   https://ruby.github.io/irb/index.html
+[links]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#links
+[lists]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#lists
+[monofont]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#monofont
+[RDoc Markup Reference]: https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html
+[text markup]:           https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#text-markup
+[verbatim text blocks]:  https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#verbatim-text-blocks

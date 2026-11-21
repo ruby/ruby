@@ -47,6 +47,20 @@ module Gem::VersionOption
   end
 
   ##
+  # Add the --ruby-abi option to the option parser.
+
+  def add_ruby_abi_option(task = command, *wrap)
+    add_option("--ruby-abi RUBY_ABI",
+               "Specify the Ruby ABI of gem to #{task}", *wrap) do |value, options|
+      unless Gem::ContentAddress.valid_ruby_abi?(value)
+        raise Gem::OptionParser::InvalidArgument, "#{value}: Ruby ABI must be in X.Y format"
+      end
+
+      options[:ruby_abi] = value
+    end
+  end
+
+  ##
   # Add the --version option to the option parser.
 
   def add_version_option(task = command, *wrap)

@@ -22,10 +22,10 @@ describe "Integer#remainder" do
     end
 
     it "raises TypeError if passed non-numeric argument" do
-      -> { 5.remainder("3") }.should raise_error(TypeError)
-      -> { 5.remainder(:"3") }.should raise_error(TypeError)
-      -> { 5.remainder([]) }.should raise_error(TypeError)
-      -> { 5.remainder(nil) }.should raise_error(TypeError)
+      -> { 5.remainder("3") }.should.raise(TypeError)
+      -> { 5.remainder(:"3") }.should.raise(TypeError)
+      -> { 5.remainder([]) }.should.raise(TypeError)
+      -> { 5.remainder(nil) }.should.raise(TypeError)
     end
   end
 
@@ -38,14 +38,14 @@ describe "Integer#remainder" do
     end
 
     it "raises a ZeroDivisionError if other is zero and not a Float" do
-      -> { bignum_value(66).remainder(0) }.should raise_error(ZeroDivisionError)
+      -> { bignum_value(66).remainder(0) }.should.raise(ZeroDivisionError)
     end
 
     it "does raises ZeroDivisionError if other is zero and a Float" do
       a = bignum_value(7)
       b = bignum_value(32)
-      -> { a.remainder(0.0) }.should raise_error(ZeroDivisionError)
-      -> { b.remainder(-0.0) }.should raise_error(ZeroDivisionError)
+      -> { a.remainder(0.0) }.should.raise(ZeroDivisionError)
+      -> { b.remainder(-0.0) }.should.raise(ZeroDivisionError)
     end
   end
 end

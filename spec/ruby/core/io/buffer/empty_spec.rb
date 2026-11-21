@@ -11,19 +11,26 @@ describe "IO::Buffer#empty?" do
 
   it "is true for a 0-length String-backed buffer created with .for" do
     @buffer = IO::Buffer.for("")
-    @buffer.empty?.should be_true
+    @buffer.empty?.should == true
   end
 
-  ruby_version_is "3.3" do
-    it "is true for a 0-length String-backed buffer created with .string" do
-      IO::Buffer.string(0) do |buffer|
-        buffer.empty?.should be_true
-      end
+  it "is true for a 0-length String-backed buffer created with .string" do
+    IO::Buffer.string(0) do |buffer|
+      buffer.empty?.should == true
     end
   end
 
   it "is true for a 0-length slice of a buffer with size > 0" do
     @buffer = IO::Buffer.new(4)
-    @buffer.slice(3, 0).empty?.should be_true
+    @buffer.slice(3, 0).empty?.should == true
+  end
+
+  it "is false for an invalid slice with a non-zero size" do
+    @buffer = IO::Buffer.new(4)
+    slice = @buffer.slice(0, 2)
+    @buffer.free
+
+    slice.valid?.should == false
+    slice.empty?.should == false
   end
 end

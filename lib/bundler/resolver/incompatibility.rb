@@ -2,7 +2,7 @@
 
 module Bundler
   class Resolver
-    class Incompatibility < PubGrub::Incompatibility
+    class Incompatibility < Gem::PubGrub::Incompatibility
       attr_reader :extended_explanation
 
       def initialize(terms, cause:, custom_explanation: nil, extended_explanation: nil)

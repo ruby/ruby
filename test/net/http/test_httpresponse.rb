@@ -18,6 +18,65 @@ EOS
     assert_equal('close', res['connection'])
   end
 
+  def test_response_header_too_large
+    big_value = 'a' * (Net::HTTPHeader::MAX_FIELD_LENGTH - 100)
+    count = (Net::HTTPResponse::MAX_RESPONSE_HEADER_LENGTH / big_value.bytesize) + 2
+    headers = +"HTTP/1.1 200 OK\n"
+    count.times { |i| headers << "X-Pad-#{i}: #{big_value}\n" }
+    headers << "\nhello\n"
+    io = dummy_io(headers)
+    e = assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+    assert_equal 'response header too large', e.message
+  end
+
+  def test_response_header_within_limit
+    big_value = 'a' * (Net::HTTPHeader::MAX_FIELD_LENGTH - 100)
+    count = (Net::HTTPResponse::MAX_RESPONSE_HEADER_LENGTH / big_value.bytesize) - 1
+    headers = +"HTTP/1.1 200 OK\n"
+    count.times { |i| headers << "X-Pad-#{i}: #{big_value}\n" }
+    headers << "\nhello\n"
+    io = dummy_io(headers)
+    assert_nothing_raised do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_status_line_too_long
+    io = endless_io("HTTP/1.1 200 ")
+    assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_response_header_line_too_long
+    io = endless_io("HTTP/1.1 200 OK\nX-Foo: ")
+    assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_chunk_size_line_too_long
+    io = endless_io("HTTP/1.1 200 OK\nTransfer-Encoding: chunked\n\n")
+    res = Net::HTTPResponse.read_new(io)
+    assert_raise(Net::HTTPBadResponse) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
+  def test_chunk_trailer_line_too_long
+    io = endless_io("HTTP/1.1 200 OK\nTransfer-Encoding: chunked\n\n0\n")
+    res = Net::HTTPResponse.read_new(io)
+    assert_raise(Net::HTTPBadResponse) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
   def test_multiline_header
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
@@ -34,10 +93,169 @@ EOS
     assert_equal('XXX YYY', res['x-bar'])
   end
 
+  def test_multiline_header_whitespace_only
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Content-Length: 5
+#{" \t"}
+X-After: value
+
+hello
+EOS
+    res = Net::HTTPResponse.read_new(io)
+    # Whitespace only line is ignored
+    assert_equal('5', res['content-length'])
+    assert_equal('value', res['x-after'])
+    body = nil
+    res.reading_body io, true do
+      body = res.read_body
+    end
+    assert_equal('hello', body)
+  end
+
+  def test_multiline_header_no_preceding_header
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+#{" \t"}
+Content-Length: 5
+
+hello
+EOS
+    e = assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+    assert_equal 'wrong header line format', e.message
+  end
+
   def test_read_body
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
 Connection: close
+Content-Length: 5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_chunked_is_final_transfer_coding
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: gzip, chunked
+
+5
+hello
+0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_chunked_is_not_final_transfer_coding
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: chunked, gzip
+
+5
+hello
+0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "5\r\nhello\r\n0\r\n\r\n", body
+  end
+
+  def test_read_body_transfer_encoding_overrides_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: chunked, gzip
+Content-Length: 2
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\r\n", body
+  end
+
+  def test_read_body_invalid_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: abc5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    assert_raise(Net::HTTPHeaderSyntaxError) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
+  def test_read_body_multiple_different_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
+Content-Length: 100
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    assert_raise(Net::HTTPHeaderSyntaxError) do
+      res.reading_body io, true do
+        res.read_body
+      end
+    end
+  end
+
+  def test_read_body_multiple_same_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
 Content-Length: 5
 
 hello
@@ -750,5 +968,34 @@ private
     str = str.gsub(/\n/, "\r\n")
 
     Net::BufferedIO.new(StringIO.new(str))
+  end
+
+  # Yields the given prefix, then streams 'a' without EOF. Stops with an
+  # error well past the limit under test so that a regression fails the
+  # test instead of looping until the machine runs out of memory.
+  class EndlessDataIO
+    SAFETY_LIMIT = Net::HTTPResponse::MAX_RESPONSE_HEADER_LENGTH * 2
+
+    def initialize(prefix)
+      @buf = prefix.b
+      @served = 0
+    end
+
+    def read_nonblock(size, buf = nil, exception: false)
+      @served += size
+      raise "read #{@served} bytes without hitting the line limit" if
+        @served > SAFETY_LIMIT
+      @buf << 'a' * (size - @buf.bytesize) if @buf.bytesize < size
+      s = @buf.slice!(0, size)
+      buf ? buf.replace(s) : s
+    end
+
+    def closed?
+      false
+    end
+  end
+
+  def endless_io(prefix)
+    Net::BufferedIO.new(EndlessDataIO.new(prefix.gsub(/\n/, "\r\n")))
   end
 end

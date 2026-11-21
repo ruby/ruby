@@ -22,6 +22,9 @@
 #else
 #define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
+#if !defined(RUBY_TYPED_THREAD_SAFE_FREE)
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
 
 #include <openssl/opensslv.h>
 
@@ -59,12 +62,6 @@
       (LIBRESSL_VERSION_NUMBER >= ((maj << 28) | (min << 20) | (pat << 12)))
 #endif
 
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
-# define OSSL_3_const const
-#else
-# define OSSL_3_const /* const */
-#endif
-
 #if !defined(OPENSSL_NO_ENGINE) && !OSSL_OPENSSL_PREREQ(3, 0, 0)
 # define OSSL_USE_ENGINE
 #endif
@@ -98,14 +95,39 @@ extern VALUE eOSSLError;
     }\
 } while (0)
 
+void ossl_want_uninitialized(VALUE self, const rb_data_type_t *type);
+
 /*
  * Type conversions
  */
+#ifndef HAVE_RB_LEN_T /* Ruby 4.1 */
+typedef long rb_len_t;
+# define SIZEOF_RB_LEN_T SIZEOF_LONG
+# define RB_LEN_MAX LONG_MAX
+# define PRIdLEN "ld"
+# define NUM2LEN NUM2LONG
+# define LEN2NUM LONG2NUM
+static inline long
+rb_len2long(rb_len_t n)
+{
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    if (n > LONG_MAX || n < LONG_MIN) {
+        rb_raise(rb_eRangeError,
+                 "integer %"PRIdLEN" too %s to convert to 'long'",
+                 n, n < 0 ? "small" : "big");
+    }
+#endif
+    return (long)n;
+}
+#endif
+
 #if !defined(NUM2UINT64T) /* in case Ruby starts to provide */
 #  if SIZEOF_LONG == 8
 #    define NUM2UINT64T(x) ((uint64_t)NUM2ULONG(x))
+#    define UINT64T2NUM(x) ULONG2NUM(x)
 #  elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
 #    define NUM2UINT64T(x) ((uint64_t)NUM2ULL(x))
+#    define UINT64T2NUM(x) ULL2NUM(x)
 #  else
 #    error "unknown platform; no 64-bit width integer"
 #  endif
@@ -119,11 +141,11 @@ STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 VALUE ossl_x509_sk2ary(const STACK_OF(X509) *certs);
 VALUE ossl_x509crl_sk2ary(const STACK_OF(X509_CRL) *crl);
 VALUE ossl_x509name_sk2ary(const STACK_OF(X509_NAME) *names);
-VALUE ossl_buf2str(char *buf, int len);
-VALUE ossl_str_new(const char *, long, int *);
+VALUE ossl_str_new(const char *ptr, rb_len_t len, int *pstate);
+VALUE ossl_buf2str(char *buf);
 #define ossl_str_adjust(str, p) \
 do{\
-    long newlen = (long)((p) - (unsigned char*)RSTRING_PTR(str));\
+    rb_len_t newlen = (rb_len_t)((p) - (unsigned char*)RSTRING_PTR(str));\
     assert(newlen <= RSTRING_LEN(str));\
     rb_str_set_len((str), newlen);\
 }while(0)
@@ -192,6 +214,7 @@ extern VALUE dOSSL;
 #include "ossl_digest.h"
 #include "ossl_engine.h"
 #include "ossl_hmac.h"
+#include "ossl_hpke.h"
 #include "ossl_kdf.h"
 #include "ossl_ns_spki.h"
 #include "ossl_ocsp.h"

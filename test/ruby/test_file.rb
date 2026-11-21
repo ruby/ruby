@@ -16,7 +16,7 @@ class TestFile < Test::Unit::TestCase
       w.close
       r = File.open(filename, "r")
       begin
-        if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+        if /(mswin|mingw)/ =~ RUBY_PLATFORM
           assert_raise(Errno::EACCES) {File.unlink(filename)}
         else
           assert_nothing_raised {File.unlink(filename)}
@@ -145,6 +145,19 @@ class TestFile < Test::Unit::TestCase
       th.join
     end
   end
+
+  def test_size_over_2gb
+    Tempfile.create("test-size") do |f|
+      size = 0x8000_0000
+      begin
+        f.truncate(size)
+      rescue Errno::ENOSPC
+        omit "no space for #{size} bytes"
+      end
+      assert_equal(size, f.size)
+      assert_equal(size, f.stat.size)
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_read_all_extended_file
     [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
@@ -311,6 +324,24 @@ class TestFile < Test::Unit::TestCase
         assert_equal("//:/foo/bar", result)
       end
     end
+  end
+
+  def test_realdirpath_relative_symlink_under_gc_stress
+    Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      # A long link with several names, so GC can free the link string
+      # while its later names are still being read.
+      target = "store/#{"t" * 100}/node_modules/pkg"
+      FileUtils.mkdir_p(File.join(realdir, target, "sub"))
+      Dir.mkdir(File.join(realdir, "app"))
+      begin
+        File.symlink(File.join("..", target), File.join(realdir, "app", "link"))
+      rescue Errno::EACCES, Errno::EPERM
+        omit "need privilege"
+      end
+      result = EnvUtil.under_gc_stress {File.realdirpath(File.join(realdir, "app", "link", "sub"))}
+      assert_equal(File.join(realdir, target, "sub"), result)
+    }
   end
 
   def test_realdirpath_junction

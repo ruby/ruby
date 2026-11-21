@@ -7,14 +7,13 @@ describe "Kernel#local_variables" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:local_variables)
+    Kernel.private_instance_methods(false).should.include?(:local_variables)
   end
 
   it "contains locals as they are added" do
     a = 1
     b = 2
-    local_variables.should include(:a, :b)
-    local_variables.length.should == 2
+    local_variables.sort.should == [:a, :b]
   end
 
   it "is accessible from bindings" do
@@ -25,14 +24,26 @@ describe "Kernel#local_variables" do
     end
     foo_binding = local_var_foo()
     res = eval("local_variables",foo_binding)
-    res.should include(:a, :b)
-    res.length.should == 2
+    res.sort.should == [:a, :b]
   end
 
   it "is accessible in eval" do
     eval "a=1; b=2; ScratchPad.record local_variables"
-    ScratchPad.recorded.should include(:a, :b)
-    ScratchPad.recorded.length.should == 2
+    ScratchPad.recorded.sort.should == [:a, :b]
+  end
+
+  it "does not include locals from outside a method" do
+    a = 1
+    def local_var_outer_method
+      b = 2
+      local_variables
+    end
+
+    local_var_outer_method.should == [:b]
+  end
+
+  it "contains the locals of the main script" do
+    ruby_exe("a = 1; p local_variables").should == "[:a]\n"
   end
 
   it "includes only unique variable names" do
@@ -44,5 +55,11 @@ describe "Kernel#local_variables" do
     end
 
     local_var_method.should == [:a]
+  end
+end
+
+describe "Kernel.local_variables" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:local_variables)
   end
 end

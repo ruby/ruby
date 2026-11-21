@@ -12,6 +12,7 @@ class TestGemProjectSanity < Gem::TestCase
 
   def test_manifest_is_up_to_date
     pend unless File.exist?("#{root}/Rakefile")
+    omit "JRuby on Windows cannot exec the bin/rake shebang" if Gem.win_platform? && Gem.java_platform?
     rake = "#{root}/bin/rake"
 
     _, status = Open3.capture2e(rake, "check_manifest")
@@ -37,6 +38,8 @@ class TestGemProjectSanity < Gem::TestCase
   end
 
   def test_require_rubygems_package
+    omit "JRuby on Windows fails to spawn ruby --disable-gems here" if Gem.win_platform? && Gem.java_platform?
+
     err, status = Open3.capture2e(*ruby_with_rubygems_in_load_path, "--disable-gems", "-e", "require \"rubygems/package\"")
 
     assert status.success?, err

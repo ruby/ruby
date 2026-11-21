@@ -873,7 +873,8 @@ sock_gethostname(VALUE obj)
         rb_str_modify_expand(name, len);
         len += len;
     }
-    rb_str_resize(name, strlen(RSTRING_PTR(name)));
+    char *s = RSTRING_PTR(name), *p = memchr(s, 0, len);
+    if (p) rb_str_resize(name, (long)(p - s));
     return name;
 }
 #else
@@ -915,134 +916,6 @@ make_addrinfo(struct rb_addrinfo *res0, int norevlookup)
         rb_ary_push(base, ary);
     }
     return base;
-}
-
-static VALUE
-sock_sockaddr(struct sockaddr *addr, socklen_t len)
-{
-    char *ptr;
-
-    switch (addr->sa_family) {
-      case AF_INET:
-        ptr = (char*)&((struct sockaddr_in*)addr)->sin_addr.s_addr;
-        len = (socklen_t)sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
-        break;
-#ifdef AF_INET6
-      case AF_INET6:
-        ptr = (char*)&((struct sockaddr_in6*)addr)->sin6_addr.s6_addr;
-        len = (socklen_t)sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
-        break;
-#endif
-      default:
-        rb_raise(rb_eSocket, "unknown socket family:%d", addr->sa_family);
-        break;
-    }
-    return rb_str_new(ptr, len);
-}
-
-/*
- * call-seq:
- *   Socket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
- *
- * Use Addrinfo.getaddrinfo instead.
- * This method is deprecated for the following reasons:
- *
- * - The 3rd element of the result is the address family of the first address.
- *   The address families of the rest of the addresses are not returned.
- * - Uncommon address representation:
- *   4/16-bytes binary string to represent IPv4/IPv6 address.
- * - gethostbyname() may take a long time and it may block other threads.
- *   (GVL cannot be released since gethostbyname() is not thread safe.)
- * - This method uses gethostbyname() function already removed from POSIX.
- *
- * This method obtains the host information for _hostname_.
- *
- *   p Socket.gethostbyname("hal") #=> ["localhost", ["hal"], 2, "\x7F\x00\x00\x01"]
- *
- */
-static VALUE
-sock_s_gethostbyname(VALUE obj, VALUE host)
-{
-    rb_warn("Socket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
-    struct rb_addrinfo *res =
-        rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME, Qnil);
-    return rsock_make_hostent(host, res, sock_sockaddr);
-}
-
-/*
- * call-seq:
- *   Socket.gethostbyaddr(address_string [, address_family]) => hostent
- *
- * Use Addrinfo#getnameinfo instead.
- * This method is deprecated for the following reasons:
- *
- * - Uncommon address representation:
- *   4/16-bytes binary string to represent IPv4/IPv6 address.
- * - gethostbyaddr() may take a long time and it may block other threads.
- *   (GVL cannot be released since gethostbyname() is not thread safe.)
- * - This method uses gethostbyname() function already removed from POSIX.
- *
- * This method obtains the host information for _address_.
- *
- *   p Socket.gethostbyaddr([221,186,184,68].pack("CCCC"))
- *   #=> ["carbon.ruby-lang.org", [], 2, "\xDD\xBA\xB8D"]
- *
- *   p Socket.gethostbyaddr([127,0,0,1].pack("CCCC"))
- *   ["localhost", [], 2, "\x7F\x00\x00\x01"]
- *   p Socket.gethostbyaddr(([0]*15+[1]).pack("C"*16))
- *   #=> ["localhost", ["ip6-localhost", "ip6-loopback"], 10,
- *        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"]
- *
- */
-static VALUE
-sock_s_gethostbyaddr(int argc, VALUE *argv, VALUE _)
-{
-    VALUE addr, family;
-    struct hostent *h;
-    char **pch;
-    VALUE ary, names;
-    int t = AF_INET;
-
-    rb_warn("Socket.gethostbyaddr is deprecated; use Addrinfo#getnameinfo instead.");
-
-    rb_scan_args(argc, argv, "11", &addr, &family);
-    StringValue(addr);
-    if (!NIL_P(family)) {
-        t = rsock_family_arg(family);
-    }
-#ifdef AF_INET6
-    else if (RSTRING_LEN(addr) == 16) {
-        t = AF_INET6;
-    }
-#endif
-    h = gethostbyaddr(RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), t);
-    if (h == NULL) {
-#ifdef HAVE_HSTRERROR
-        extern int h_errno;
-        rb_raise(rb_eSocket, "%s", (char*)hstrerror(h_errno));
-#else
-        rb_raise(rb_eSocket, "host not found");
-#endif
-    }
-    ary = rb_ary_new();
-    rb_ary_push(ary, rb_str_new2(h->h_name));
-    names = rb_ary_new();
-    rb_ary_push(ary, names);
-    if (h->h_aliases != NULL) {
-        for (pch = h->h_aliases; *pch; pch++) {
-            rb_ary_push(names, rb_str_new2(*pch));
-        }
-    }
-    rb_ary_push(ary, INT2NUM(h->h_addrtype));
-#ifdef h_addr
-    for (pch = h->h_addr_list; *pch; pch++) {
-        rb_ary_push(ary, rb_str_new(*pch, h->h_length));
-    }
-#else
-    rb_ary_push(ary, rb_str_new(h->h_addr, h->h_length));
-#endif
-
-    return ary;
 }
 
 /*
@@ -1273,7 +1146,7 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
             }
         }
         else {
-            rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
+            rb_raise(rb_eArgError, "array size should be 3 or 4, %"PRIdLEN" given",
                      RARRAY_LEN(sa));
         }
         hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
@@ -1441,7 +1314,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_UNIX sockaddr");
     }
     if (sizeof(struct sockaddr_un) < (size_t)RSTRING_LEN(addr)) {
-        rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
+        rb_raise(rb_eTypeError, "too long sockaddr_un - %"PRIdLEN" longer than %d",
                  RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
     path = rsock_unixpath_str(sockaddr, RSTRING_SOCKLEN(addr));
@@ -1566,6 +1439,9 @@ socket_s_ip_address_list(VALUE self)
     list = rb_ary_new();
     for (p = ifp; p; p = p->ifa_next) {
         if (p->ifa_addr != NULL && IS_IP_FAMILY(p->ifa_addr->sa_family)) {
+#if !defined(INET6) && defined(AF_INET6)
+            if (p->ifa_addr->sa_family == AF_INET6) continue;
+#endif
             struct sockaddr *addr = p->ifa_addr;
 #if defined(AF_INET6) && defined(__sun)
             /*
@@ -1636,6 +1512,9 @@ socket_s_ip_address_list(VALUE self)
     for (i = 0; i < ln.lifn_count; i++) {
         struct lifreq *req = &lc.lifc_req[i];
         if (IS_IP_FAMILY(req->lifr_addr.ss_family)) {
+#if !defined(INET6) && defined(AF_INET6)
+            if (req->lifr_addr.ss_family == AF_INET6) continue;
+#endif
             if (req->lifr_addr.ss_family == AF_INET6 &&
                 IN6_IS_ADDR_LINKLOCAL(&((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_addr) &&
                 ((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_scope_id == 0) {
@@ -1718,7 +1597,11 @@ socket_s_ip_address_list(VALUE self)
     req = conf.ifc_req;
     while ((char*)req < (char*)conf.ifc_req + conf.ifc_len) {
         struct sockaddr *addr = &req->ifr_addr;
-        if (IS_IP_FAMILY(addr->sa_family)) {
+        if (IS_IP_FAMILY(addr->sa_family)
+#if !defined(INET6) && defined(AF_INET6)
+            && addr->sa_family != AF_INET6
+#endif
+            ) {
             rb_ary_push(list, sockaddr_obj(addr, sockaddr_len(addr)));
         }
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
@@ -1865,7 +1748,7 @@ socket_s_ip_address_list(VALUE self)
  * is enabled or disabled.
  *
  * If true, it is enabled for TCPSocket.new and Socket.tcp.
- * (Note: Happy Eyeballs Version 2 is not provided when using TCPSocket.new on Windows.)
+ * On Windows, it is provided starting from Ruby 4.1.
  *
  * If false, Happy Eyeballs Version 2 is disabled.
  *
@@ -1884,7 +1767,7 @@ VALUE socket_s_tcp_fast_fallback(VALUE self) {
  * globally, which is provided starting from Ruby 3.4 when using TCPSocket.new and Socket.tcp.
  *
  * When set to true, the feature is enabled for both `TCPSocket.new` and `Socket.tcp`.
- * (Note: This feature is not available when using TCPSocket.new on Windows.)
+ * On Windows, it is available starting from Ruby 4.1.
  *
  * When set to false, the behavior reverts to that of Ruby 3.3 or earlier.
  *
@@ -2081,8 +1964,6 @@ Init_socket(void)
     rb_define_singleton_method(rb_cSocket, "socketpair", rsock_sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "pair", rsock_sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "gethostname", sock_gethostname, 0);
-    rb_define_singleton_method(rb_cSocket, "gethostbyname", sock_s_gethostbyname, 1);
-    rb_define_singleton_method(rb_cSocket, "gethostbyaddr", sock_s_gethostbyaddr, -1);
     rb_define_singleton_method(rb_cSocket, "getservbyname", sock_s_getservbyname, -1);
     rb_define_singleton_method(rb_cSocket, "getservbyport", sock_s_getservbyport, -1);
     rb_define_singleton_method(rb_cSocket, "getaddrinfo", sock_s_getaddrinfo, -1);

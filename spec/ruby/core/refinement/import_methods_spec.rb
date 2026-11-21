@@ -23,7 +23,7 @@ describe "Refinement#import_methods" do
         refine String do
           -> {
             import_methods Integer
-          }.should raise_error(TypeError, "wrong argument type Class (expected Module)")
+          }.should.raise(TypeError, "wrong argument type Class (expected Module)")
         end
       end
     end
@@ -82,7 +82,7 @@ describe "Refinement#import_methods" do
         refine String do
           -> {
             import_methods str_utils, Kernel
-          }.should raise_error(ArgumentError)
+          }.should.raise(ArgumentError)
         end
       end
 
@@ -127,7 +127,7 @@ describe "Refinement#import_methods" do
       using self
       -> {
         "foo".indent(3)
-      }.should raise_error(NoMethodError, /undefined method [`']indent' for ("foo":String|an instance of String)/)
+      }.should.raise(NoMethodError, /undefined method [`']indent' for ("foo":String|an instance of String)/)
     end
   end
 
@@ -142,7 +142,7 @@ describe "Refinement#import_methods" do
       refine String do
         -> {
           import_methods str_utils, Integer
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
 
@@ -150,7 +150,7 @@ describe "Refinement#import_methods" do
       using string_refined
       -> {
         "foo".indent(3)
-      }.should raise_error(NoMethodError)
+      }.should.raise(NoMethodError)
     end
   end
 
@@ -213,7 +213,7 @@ describe "Refinement#import_methods" do
       using self
       -> {
         String.indent(3)
-      }.should raise_error(NoMethodError, /undefined method [`']indent' for (String:Class|class String)/)
+      }.should.raise(NoMethodError, /undefined method [`']indent' for (String:Class|class String)/)
     end
   end
 
@@ -242,13 +242,33 @@ describe "Refinement#import_methods" do
     end
   end
 
+  it "correctly sets owner as the refinement module" do
+    str_utils = Module.new do
+      def indent(level)
+        " " * level + self
+      end
+    end
+
+    refinement = Module.new do
+      refine String do
+        import_methods str_utils
+      end
+    end
+
+    Module.new do
+      using refinement
+
+      String.instance_method(:indent).owner.should == refinement.refinements.first
+    end
+  end
+
   context "when methods are not defined in Ruby code" do
     it "raises ArgumentError" do
       Module.new do
         refine String do
           -> {
             import_methods Kernel
-          }.should raise_error(ArgumentError)
+          }.should.raise(ArgumentError)
         end
       end
     end
@@ -259,7 +279,7 @@ describe "Refinement#import_methods" do
         refine String do
           -> {
             import_methods Zlib
-          }.should raise_error(ArgumentError, /Can't import method which is not defined with Ruby code: Zlib#*/)
+          }.should.raise(ArgumentError, /Can't import method which is not defined with Ruby code: Zlib#*/)
         end
       end
     end

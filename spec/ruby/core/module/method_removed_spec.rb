@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Module#method_removed" do
   it "is a private instance method" do
-    Module.should have_private_instance_method(:method_removed)
+    Module.private_instance_methods(false).should.include?(:method_removed)
   end
 
   it "returns nil in the default implementation" do

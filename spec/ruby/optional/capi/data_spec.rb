@@ -32,7 +32,7 @@ ruby_version_is ""..."3.4" do
       end
 
       it "raises a TypeError if the object does not wrap a struct" do
-        -> { @s.get_struct(Object.new) }.should raise_error(TypeError)
+        -> { @s.get_struct(Object.new) }.should.raise(TypeError)
       end
     end
 

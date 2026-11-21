@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/inspect'
 
 describe "Set#inspect" do
-  it_behaves_like :set_inspect, :inspect
+  it "is an alias of Set#to_s" do
+    Set.instance_method(:inspect).should == Set.instance_method(:to_s)
+  end
 end

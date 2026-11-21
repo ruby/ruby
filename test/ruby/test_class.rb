@@ -83,12 +83,6 @@ class TestClass < Test::Unit::TestCase
     assert_nil(Class.new <=> 1)
   end
 
-  def test_class_initialize
-    assert_raise(TypeError) do
-      Class.new.instance_eval { initialize }
-    end
-  end
-
   def test_instantiate_singleton_class
     c = class << Object.new; self; end
     assert_raise(TypeError) { c.new }
@@ -317,14 +311,18 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_uninitialized
-    assert_raise(TypeError) { Class.allocate.new }
-    assert_raise(TypeError) { Class.allocate.superclass }
-    bug6863 = '[ruby-core:47148]'
-    assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
+    assert_raise(TypeError) { Class.allocate }
 
     allocator = Class.instance_method(:allocate)
+    assert_raise(TypeError) { allocator.bind_call(Class) }
     assert_nothing_raised { allocator.bind(Rational).call }
     assert_nothing_raised { allocator.bind_call(Rational) }
+  end
+
+  def test_singleton_class_new
+    assert_raise_with_message(TypeError, /singleton class/) { Integer.singleton_class.new }
+    assert_raise_with_message(TypeError, /singleton class/) { Class.new.singleton_class.new }
+    assert_raise_with_message(TypeError, /singleton class/) { Class.singleton_class.new }
   end
 
   def test_nonascii_name
@@ -375,6 +373,33 @@ class TestClass < Test::Unit::TestCase
     copy = original.clone
     copy.send(:include, mod)
     assert_equal("mod#foo", copy.new.foo)
+  end
+
+  def test_dup_of_frozen_class_is_not_frozen
+    original = Class.new
+    original.instance_variable_set(:@a, 1)
+    original.freeze
+
+    copy = original.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+
+    copy = original.clone(freeze: false)
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_class_is_frozen
+    klass = Class.new.freeze
+    assert_predicate(klass.singleton_class, :frozen?)
+    assert_raise(FrozenError) {klass.singleton_class.instance_variable_set(:@a, 1)}
+
+    copy = Class.new.freeze.clone
+    assert_predicate(copy, :frozen?)
+    assert_predicate(copy.singleton_class, :frozen?)
+    assert_raise(FrozenError) {copy.instance_variable_set(:@a, 1)}
   end
 
   def test_nested_class_removal
@@ -435,21 +460,24 @@ class TestClass < Test::Unit::TestCase
   end
 
   class CloneTest
+    TEST = :C0
     def foo; TEST; end
   end
 
   CloneTest1 = CloneTest.clone
   CloneTest2 = CloneTest.clone
   class CloneTest1
+    remove_const :TEST
     TEST = :C1
   end
   class CloneTest2
+    remove_const :TEST
     TEST = :C2
   end
 
   def test_constant_access_from_method_in_cloned_class
-    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
-    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
+    assert_equal :C0, CloneTest1.new.foo, 'originally [Bug #15877], but behaviour changed'
+    assert_equal :C0, CloneTest2.new.foo, 'originally [Bug #15877], but behaviour changed'
   end
 
   def test_invalid_superclass
@@ -733,6 +761,29 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
+  def test_dynamic_module_cpath_constant_namespace # [Bug #20948]
+    assert_separately([], <<~'RUBY')
+      module M1
+        module Foo
+          X = 1
+        end
+      end
+
+      module M2
+        module Foo
+          X = 2
+        end
+      end
+
+      results = [M1, M2].map do
+        module it::Foo
+          X
+        end
+      end
+      assert_equal([1, 2], results)
+    RUBY
+  end
+
   def test_namescope_error_message
     m = Module.new
     o = m.module_eval "class A\u{3042}; self; end.new"
@@ -820,6 +871,20 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
+  def test_subclasses_includes_clone
+    c = Class.new
+    with_include = Class.new(c) { include Module.new }
+    with_prepend = Class.new(c) { prepend Module.new }
+    plain = Class.new(c)
+
+    bug22190 = '[ruby-core:126038] [Bug #22190]'
+    clones = [with_include, with_prepend, plain].flat_map {|k| [k.clone, k.dup]}
+    subclasses = c.subclasses
+    clones.each do |k|
+      assert_equal(1, subclasses.count(k), "#{bug22190} expected #{k.inspect} to appear in subclasses exactly once")
+    end
+  end
+
   def test_attached_object
     c = Class.new
     sc = c.singleton_class
@@ -863,12 +928,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_classext_memory_leak
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc { Class.new }
-1_000.times(&code)
-PREP
-3_000_000.times(&code)
-CODE
+    assert_no_memory_leak([], "", "30_000.times {Class.new}", rss: true, samples: 2..100)
   end
 
   def test_instance_freeze_dont_freeze_the_class_bug_19164
@@ -885,6 +945,16 @@ CODE
     begin;
       GC.stress = true
       class C; end
+    end;
+  end
+
+  def test_define_singleton_initialize
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class C
+        def self.initialize
+        end
+      end
     end;
   end
 
@@ -919,7 +989,7 @@ CODE
   end
 
   def test_safe_multi_ractor_subclasses_list_mutation
-    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}"
+    assert_ractor "#{<<~"begin;"}\n#{<<~'end;'}", signal: :SEGV
     begin;
       4.times.map do
         Ractor.new do

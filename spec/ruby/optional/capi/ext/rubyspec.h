@@ -7,6 +7,11 @@
 #include <ruby.h>
 #include <ruby/version.h>
 
+/* Before rb_len_t, lengths and indices were `long` */
+#ifndef RB_LEN2NUM
+typedef long rb_len_t;
+#endif
+
 /* copied from ext/-test-/cxxanyargs/cxxanyargs.cpp */
 #if 0 /* Ignore deprecation warnings */
 
@@ -35,16 +40,16 @@
    (RUBY_API_VERSION_MAJOR == (major) && RUBY_API_VERSION_MINOR < (minor)))
 #define RUBY_VERSION_SINCE(major,minor) (!RUBY_VERSION_BEFORE(major, minor))
 
+#if RUBY_VERSION_SINCE(4, 1)
+#define RUBY_VERSION_IS_4_1
+#endif
+
 #if RUBY_VERSION_SINCE(4, 0)
 #define RUBY_VERSION_IS_4_0
 #endif
 
 #if RUBY_VERSION_SINCE(3, 4)
 #define RUBY_VERSION_IS_3_4
-#endif
-
-#if RUBY_VERSION_SINCE(3, 3)
-#define RUBY_VERSION_IS_3_3
 #endif
 
 #endif

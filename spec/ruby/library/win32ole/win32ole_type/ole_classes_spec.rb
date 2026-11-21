@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns array of WIN32OLE_TYPEs" do
-      WIN32OLE::Type.ole_classes("Microsoft Shell Controls And Automation").all? {|e| e.kind_of? WIN32OLE::Type }.should be_true
+      WIN32OLE::Type.ole_classes("Microsoft Shell Controls And Automation").all? {|e| e.kind_of? WIN32OLE::Type }.should == true
     end
 
   end

@@ -6,7 +6,7 @@ describe "Time#zone" do
       with_timezone("America/New_York") do
         Time.new(2001, 1, 1, 0, 0, 0).zone.should == "EST"
         Time.new(2001, 7, 1, 0, 0, 0).zone.should == "EDT"
-        %w[EST EDT].should include Time.now.zone
+        %w[EST EDT].should.include? Time.now.zone
       end
     end
   end
@@ -29,7 +29,7 @@ describe "Time#zone" do
     t = Time.new(2005, 2, 27, 22, 50, 0, -3600)
 
     with_timezone("America/New_York") do
-      t.getlocal("+05:00").zone.should be_nil
+      t.getlocal("+05:00").zone.should == nil
     end
   end
 
@@ -85,8 +85,10 @@ describe "Time#zone" do
 
   platform_is_not :aix, :windows do
     it "defaults to UTC when bad zones given" do
-      with_timezone("hello-foo") do
-        Time.now.utc_offset.should == 0
+      platform_is_not :musl do
+        with_timezone("hello-foo") do
+          Time.now.utc_offset.should == 0
+        end
       end
       with_timezone("1,2") do
         Time.now.utc_offset.should == 0

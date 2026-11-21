@@ -73,8 +73,10 @@ class Gem::Security::Policy
   # the +digest+ algorithm.
 
   def check_data(public_key, digest, signature, data)
+    filtered_digest = digest if Gem::Security.digest_required?(public_key)
+
     raise Gem::Security::Exception, "invalid signature" unless
-      public_key.verify digest, signature, data.digest
+      public_key.verify filtered_digest, signature, data.digest
 
     true
   end
@@ -165,9 +167,9 @@ class Gem::Security::Policy
     end
 
     save_cert = OpenSSL::X509::Certificate.new File.read path
-    save_dgst = digester.digest save_cert.public_key.to_pem
+    save_dgst = digester.digest save_cert.public_key.public_to_pem
 
-    pkey_str = root.public_key.to_pem
+    pkey_str = root.public_key.public_to_pem
     cert_dgst = digester.digest pkey_str
 
     raise Gem::Security::Exception,
@@ -268,6 +270,12 @@ class Gem::Security::Policy
     end
 
     true
+  # NotImplementedError: JRuby's Ruby OpenSSL raises it for ML-DSA.
+  rescue OpenSSL::X509::CertificateError, NotImplementedError
+    raise Gem::Security::Exception,
+      "certificate verification failed: The certificate may use an algorithm "\
+      "such as ML-DSA that the installed OpenSSL does not support. ML-DSA "\
+      "requires OpenSSL >= 3.5 or an SSL library supporting ML-DSA."
   end
 
   ##

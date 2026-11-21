@@ -9,7 +9,7 @@
 # to test on the most recent versions.
 return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
-# If we're on Ruby 3.4.0 and the default parser is Prism, then there is no point
+# If we're on Ruby 3.4.0 and the default parser is Ruby::Prism, then there is no point
 # in comparing the locals because they will be the same.
 return if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
@@ -19,7 +19,7 @@ return if RUBY_PLATFORM =~ /i686/
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class LocalsTest < TestCase
     except = [
       # Skip this fixture because it has a different number of locals because
@@ -28,6 +28,17 @@ module Prism
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
+      "3.4/command_call_do_block_in_arguments.txt",
+      "3.4-4.0/command_call_do_block_in_index_arguments.txt",
+
+      # https://bugs.ruby-lang.org/issues/21669
+      "4.1/void_value.txt",
+
+      # https://bugs.ruby-lang.org/issues/19107
+      "4.1/trailing_comma_after_method_arguments.txt",
+
+      # https://bugs.ruby-lang.org/issues/22310
+      "pattern_alternation_non_captures.txt",
     ]
 
     Fixture.each_for_current_ruby(except: except) do |fixture|
@@ -71,6 +82,10 @@ module Prism
         parts[10]
       end
 
+      def catch_table
+        parts[12]
+      end
+
       def instructions
         parts[13]
       end
@@ -90,6 +105,20 @@ module Prism
 
             yield ISeq.new(opnd)
           end
+        end
+
+        # The handler for a rescue clause is compiled into its own iseq that is
+        # reachable only through the catch table. Its local table only ever
+        # holds the implicit `$!` error variable (rescue clauses do not
+        # introduce user locals of their own -- `rescue => e` puts `e` in the
+        # enclosing scope), and prism does not model it as a scope, so we treat
+        # it as transparent and descend straight into any iseqs nested within
+        # it (e.g. a block or an `END {}` inside a rescue clause). Only
+        # `:rescue` entries are followed: `:break`/`:next`/`:redo`/`:retry`
+        # entries either have no iseq or reference one already reachable through
+        # the instructions, and `:ensure` bodies are compiled inline.
+        catch_table.each do |entry|
+          ISeq.new(entry[1]).each_child { |child| yield child } if entry[0] == :rescue && entry[1].is_a?(Array)
         end
       end
     end
@@ -132,7 +161,7 @@ module Prism
     # sets of local variables that were encountered.
     def prism_locals(source)
       locals = [] #: Array[Array[Symbol | Integer]]
-      stack = [Prism.parse(source).value] #: Array[Prism::node]
+      stack = [Ruby::Prism.parse(source).value] #: Array[Ruby::Prism::node]
 
       while (node = stack.pop)
         case node
@@ -204,7 +233,7 @@ module Prism
               end
             end
 
-            if params.block
+            if params.block.is_a?(BlockParameterNode)
               sorted << (params.block.name || :&)
             end
 

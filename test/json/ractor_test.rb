@@ -19,10 +19,18 @@ class JSONInRactorTest < Test::Unit::TestCase
   end
 
   def test_generate
+    roundtrip_test(:generate, :parse)
+  end
+
+  def test_dump
+    roundtrip_test(:dump, :load)
+  end
+
+  def roundtrip_test(generator_method, parser_method)
     pid = fork do
       Warning[:experimental] = false
-      r = Ractor.new do
-        json = JSON.generate({
+      generator = Ractor.new(generator_method) do |generator_method|
+        json = JSON.public_send(generator_method, {
           'a' => 2,
           'b' => 3.141,
           'c' => 'c',
@@ -34,10 +42,14 @@ class JSONInRactorTest < Test::Unit::TestCase
         })
         JSON.parse(json)
       end
-      expected_json = JSON.parse('{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},' +
-                      '"g":"\\"\\u0000\\u001f","h":1000.0,"i":0.001}')
-      actual_json = r.value
 
+      parser = Ractor.new(parser_method) do |parser_method|
+        JSON.public_send(parser_method, '{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},' +
+                      '"g":"\\"\\u0000\\u001f","h":1000.0,"i":0.001}')
+      end
+
+      actual_json = generator.value
+      expected_json = parser.value
       if expected_json == actual_json
         exit 0
       else

@@ -138,7 +138,7 @@ class TestEncoding < Test::Unit::TestCase
   end
 
   def test_ractor_lazy_load_encoding_concurrently
-    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
       rs = []
       autoload_encodings = Encoding.list.select { |e| e.inspect.include?("(autoload)") }.freeze

@@ -6,8 +6,9 @@
 
 require 'win32/resolv.so'
 
+# Generic namespace for Windows platform-specific features.
 module Win32
-  module Resolv
+  module Resolv # :nodoc:
     # Error at Win32 API
     class Error < StandardError
       # +code+ Win32 Error code

@@ -15,6 +15,7 @@ prelude: |
   unonascii10 = unonascii1 * 10
   unonascii100 = unonascii10 * 10
   unonascii1000 = unonascii100 * 10
+  GC.disable # GC causes a lot of variance
 benchmark:
   casecmp_p-1: lstr1.casecmp?(ustr1)
   casecmp_p-10: lstr10.casecmp?(ustr10)

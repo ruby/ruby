@@ -15,7 +15,7 @@ describe "Digest::SHA256.file" do
     end
 
     it "returns a Digest::SHA256 object" do
-      Digest::SHA256.file(@file).should be_kind_of(Digest::SHA256)
+      Digest::SHA256.file(@file).should.is_a?(Digest::SHA256)
     end
 
     it "returns a Digest::SHA256 object with the correct digest" do
@@ -30,7 +30,7 @@ describe "Digest::SHA256.file" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(@file)
       result = Digest::SHA256.file(obj)
-      result.should be_kind_of(Digest::SHA256)
+      result.should.is_a?(Digest::SHA256)
       result.digest.should == SHA256Constants::Digest
     end
   end
@@ -38,10 +38,10 @@ describe "Digest::SHA256.file" do
   it_behaves_like :file_read_directory, :file, Digest::SHA256
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    -> { Digest::SHA256.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::SHA256.file("") }.should.raise(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { Digest::SHA256.file(nil) }.should raise_error(TypeError)
+    -> { Digest::SHA256.file(nil) }.should.raise(TypeError)
   end
 end

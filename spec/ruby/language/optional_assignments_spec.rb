@@ -603,7 +603,7 @@ describe 'Optional variable assignments' do
     end
 
     it 'with &&= assignments will fail with non-existent constants' do
-      -> { Object::A &&= 10 }.should raise_error(NameError)
+      -> { Object::A &&= 10 }.should.raise(NameError)
     end
 
     it 'with operator assignments' do
@@ -615,7 +615,7 @@ describe 'Optional variable assignments' do
     end
 
     it 'with operator assignments will fail with non-existent constants' do
-      -> { Object::A += 10 }.should raise_error(NameError)
+      -> { Object::A += 10 }.should.raise(NameError)
     end
   end
 end
@@ -623,7 +623,7 @@ end
 describe 'Optional constant assignment' do
   describe 'with ||=' do
     it "assigns a scoped constant if previously undefined" do
-      ConstantSpecs.should_not have_constant(:OpAssignUndefined)
+      ConstantSpecs.should_not.const_defined?(:OpAssignUndefined)
       module ConstantSpecs
         OpAssignUndefined ||= 42
       end
@@ -679,7 +679,7 @@ describe 'Optional constant assignment' do
 
       -> {
         (x += 1; raise Exception; ConstantSpecs::ClassA)::OR_ASSIGNED_CONSTANT3 ||= (y += 1; :assigned)
-      }.should raise_error(Exception)
+      }.should.raise(Exception)
 
       x.should == 1
       y.should == 0
@@ -693,7 +693,7 @@ describe 'Optional constant assignment' do
 
       -> {
         (x += 1; raise Exception; ConstantSpecs::ClassA)::NIL_OR_ASSIGNED_CONSTANT3 ||= (y += 1; :assigned)
-      }.should raise_error(Exception)
+      }.should.raise(Exception)
 
       x.should == 1
       y.should == 0

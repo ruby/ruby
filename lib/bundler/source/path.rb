@@ -161,7 +161,7 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          SharedHelpers.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
 
@@ -220,10 +220,11 @@ module Bundler
         # Some gem authors put absolute paths in their gemspec
         # and we have to save them from themselves
         spec.files = spec.files.filter_map do |path|
-          next path unless /\A#{Pathname::SEPARATOR_PAT}/o.match?(path)
+          pathname = Pathname.new(path)
+          next path unless pathname.absolute?
           next if File.directory?(path)
           begin
-            Pathname.new(path).relative_path_from(gem_dir).to_s
+            pathname.relative_path_from(gem_dir).to_s
           rescue ArgumentError
             path
           end

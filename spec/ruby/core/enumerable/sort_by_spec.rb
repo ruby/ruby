@@ -18,7 +18,7 @@ describe "Enumerable#sort_by" do
 
   it "returns an Enumerator when a block is not supplied" do
     a = EnumerableSpecs::Numerous.new("a","b")
-    a.sort_by.should be_an_instance_of(Enumerator)
+    a.sort_by.should.instance_of?(Enumerator)
     a.to_a.should == ["a", "b"]
   end
 

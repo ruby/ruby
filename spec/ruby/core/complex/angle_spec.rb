@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/arg'
 
 describe "Complex#angle" do
-  it_behaves_like :complex_arg, :angle
+  it "is an alias of Complex#arg" do
+    Complex.instance_method(:angle).should == Complex.instance_method(:arg)
+  end
 end

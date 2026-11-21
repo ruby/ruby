@@ -19,8 +19,8 @@ describe "String#=~" do
   end
 
   it "raises a TypeError if a obj is a string" do
-    -> { "some string" =~ "another string" }.should raise_error(TypeError)
-    -> { "a" =~ StringSpecs::MyString.new("b")          }.should raise_error(TypeError)
+    -> { "some string" =~ "another string" }.should.raise(TypeError)
+    -> { "a" =~ StringSpecs::MyString.new("b")          }.should.raise(TypeError)
   end
 
   it "invokes obj.=~ with self if obj is neither a string nor regexp" do
@@ -81,7 +81,7 @@ describe "String#match" do
   describe "when passed a block" do
     it "yields the MatchData" do
       "abc".match(/./) {|m| ScratchPad.record m }
-      ScratchPad.recorded.should be_kind_of(MatchData)
+      ScratchPad.recorded.should.is_a?(MatchData)
     end
 
     it "returns the block result" do
@@ -107,9 +107,9 @@ describe "String#match" do
   end
 
   it "raises a TypeError if pattern is not a regexp or a string" do
-    -> { 'hello'.match(10)   }.should raise_error(TypeError)
+    -> { 'hello'.match(10)   }.should.raise(TypeError)
     not_supported_on :opal do
-      -> { 'hello'.match(:ell) }.should raise_error(TypeError)
+      -> { 'hello'.match(:ell) }.should.raise(TypeError)
     end
   end
 
@@ -137,9 +137,17 @@ describe "String#match" do
   end
 
   it "calls match on the regular expression" do
-    regexp = /./.dup
-    regexp.should_receive(:match).and_return(:foo)
-    'hello'.match(regexp).should == :foo
+    # Can't use regexp.should_receive(:match).and_return(:foo) since regexps are frozen
+    ScratchPad.clear
+    regexp = Class.new(Regexp) {
+      def match(*args)
+        ScratchPad.record [:match, *args]
+        super(*args)
+      end
+    }.new('.')
+
+    'hello'.match(regexp)
+    ScratchPad.recorded.should == [:match, 'hello']
   end
 end
 
@@ -151,17 +159,17 @@ describe "String#match?" do
 
   context "when matches the given regex" do
     it "returns true but does not set Regexp.last_match" do
-      'string'.match?(/string/i).should be_true
-      Regexp.last_match.should be_nil
+      'string'.match?(/string/i).should == true
+      Regexp.last_match.should == nil
     end
   end
 
   it "returns false when does not match the given regex" do
-    'string'.match?(/STRING/).should be_false
+    'string'.match?(/STRING/).should == false
   end
 
   it "takes matching position as the 2nd argument" do
-    'string'.match?(/str/i, 0).should be_true
-    'string'.match?(/str/i, 1).should be_false
+    'string'.match?(/str/i, 0).should == true
+    'string'.match?(/str/i, 1).should == false
   end
 end

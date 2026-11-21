@@ -6,11 +6,11 @@ class TestABI < Test::Unit::TestCase
   def test_require_lib_with_incorrect_abi_on_dev_ruby
     omit "ABI is not checked" unless abi_checking_supported?
 
-    assert_separately [], <<~RUBY
+    assert_separately [], <<~'RUBY'
       err = assert_raise(LoadError) { require "-test-/abi" }
       assert_match(/incompatible ABI version/, err.message)
       if Ruby::Box.enabled?
-        assert_include err.message, "_-test-+abi."
+        assert_match(%r{/_ruby_box_[^/]+/\d+_\d+_abi\.}, err.message)
       else
         assert_include err.message, "/-test-/abi."
       end
@@ -20,7 +20,7 @@ class TestABI < Test::Unit::TestCase
   def test_disable_abi_check_using_environment_variable
     omit "ABI is not checked" unless abi_checking_supported?
 
-    assert_separately [{ "RUBY_ABI_CHECK" => "0" }], <<~RUBY
+    assert_separately [{ "RUBY_ABI_CHECK" => "0" }], <<~'RUBY'
       assert_nothing_raised { require "-test-/abi" }
     RUBY
   end
@@ -28,11 +28,11 @@ class TestABI < Test::Unit::TestCase
   def test_enable_abi_check_using_environment_variable
     omit "ABI is not checked" unless abi_checking_supported?
 
-    assert_separately [{ "RUBY_ABI_CHECK" => "1" }], <<~RUBY
+    assert_separately [{ "RUBY_ABI_CHECK" => "1" }], <<~'RUBY'
       err = assert_raise(LoadError) { require "-test-/abi" }
       assert_match(/incompatible ABI version/, err.message)
       if Ruby::Box.enabled?
-        assert_include err.message, "_-test-+abi."
+        assert_match(%r{/_ruby_box_[^/]+/\d+_\d+_abi\.}, err.message)
       else
         assert_include err.message, "/-test-/abi."
       end
@@ -42,7 +42,7 @@ class TestABI < Test::Unit::TestCase
   def test_require_lib_with_incorrect_abi_on_release_ruby
     omit "ABI is enforced" if abi_checking_supported?
 
-    assert_separately [], <<~RUBY
+    assert_separately [], <<~'RUBY'
       assert_nothing_raised { require "-test-/abi" }
     RUBY
   end

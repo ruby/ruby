@@ -1,0 +1,11 @@
+x = Foo::Bar() { }, q
+
+x = Foo.Bar { }, q
+
+x = Foo::bar { }, q
+
+foo(Foo::Bar() { }, q)
+
+foo(Foo.Bar { }, q)
+
+foo(Foo::bar { }, q)

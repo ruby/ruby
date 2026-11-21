@@ -60,7 +60,7 @@ describe "The redo statement" do
     it "is invalid and raises a SyntaxError" do
       -> {
         eval("def m; redo; end")
-      }.should raise_error(SyntaxError)
+      }.should.raise(SyntaxError)
     end
   end
 end

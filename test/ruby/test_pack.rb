@@ -247,6 +247,37 @@ class TestPack < Test::Unit::TestCase
     end
   end
 
+  def test_format_string_modified_by_to_str
+    fmt = "a" + " " * 1_000_000
+    o = Object.new
+    o.define_singleton_method(:to_str) do
+      fmt.clear
+      "A"
+    end
+    assert_raise_with_message(RuntimeError, /format string modified/) do
+      [o].pack(fmt)
+    end
+  end
+
+  def test_unpack_with_block_modifying_string
+    # [Bug #22315]
+    s = "C" * 4000
+    assert_raise_with_message(RuntimeError, /string modified/) {
+      s.unpack("L*") { s.clear }
+    }
+    s = "ABCD"
+    assert_raise_with_message(RuntimeError, /string modified/) {
+      s.unpack("C*") { s << "E" * 100 }
+    }
+  end
+
+  def test_unpack_with_block_modifying_format
+    fmt = "C" * 1_000_000
+    assert_raise_with_message(RuntimeError, /format string modified/) {
+      ("A" * 4000).unpack(fmt) { fmt.clear }
+    }
+  end
+
   def test_comment
     assert_equal("\0\1", [0,1].pack("  C  #foo \n  C  "))
     assert_equal([0,1], "\0\1".unpack("  C  #foo \n  C  "))
@@ -283,6 +314,15 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["foo "], "foo ".unpack("a4"))
     assert_equal(["foo"], "foo".unpack("A4"))
     assert_equal(["foo"], "foo".unpack("a4"))
+
+    assert_equal(["foo", 4], "foo\0  ".unpack("A4^"))
+    assert_equal(["foo\0", 4], "foo\0  ".unpack("a4^"))
+    assert_equal(["foo", 4], "foo   ".unpack("A4^"))
+    assert_equal(["foo ", 4], "foo   ".unpack("a4^"))
+    assert_equal(["foo", 3], "foo".unpack("A4^"))
+    assert_equal(["foo", 3], "foo".unpack("a4^"))
+    assert_equal(["foo", 6], "foo\0  ".unpack("A*^"))
+    assert_equal(["foo", 6], "foo   ".unpack("A*^"))
   end
 
   def test_pack_unpack_Z
@@ -298,6 +338,11 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["foo"], "foo".unpack("Z*"))
     assert_equal(["foo"], "foo\0".unpack("Z*"))
     assert_equal(["foo"], "foo".unpack("Z5"))
+
+    assert_equal(["foo", 3], "foo".unpack("Z*^"))
+    assert_equal(["foo", 4], "foo\0".unpack("Z*^"))
+    assert_equal(["foo", 3], "foo".unpack("Z5^"))
+    assert_equal(["foo", 5], "foo\0\0\0".unpack("Z5^"))
   end
 
   def test_pack_unpack_bB
@@ -549,6 +594,8 @@ class TestPack < Test::Unit::TestCase
 
     assert_equal([0, 2], "\x00\x00\x02".unpack("CxC"))
     assert_raise(ArgumentError) { "".unpack("x") }
+
+    assert_equal([0, 1, 2, 2, 3], "\x00\x00\x02".unpack("C^x^C^"))
   end
 
   def test_pack_unpack_X
@@ -558,6 +605,7 @@ class TestPack < Test::Unit::TestCase
 
     assert_equal([0, 2, 2], "\x00\x02".unpack("CCXC"))
     assert_raise(ArgumentError) { "".unpack("X") }
+    assert_equal([0, 1, 2, 2, 1, 2, 2], "\x00\x02".unpack("C^C^X^C^"))
   end
 
   def test_pack_unpack_atmark
@@ -571,6 +619,17 @@ class TestPack < Test::Unit::TestCase
 
     pos = RbConfig::LIMITS["UINTPTR_MAX"] - 99 # -100
     assert_raise(RangeError) {"0123456789".unpack("@#{pos}C10")}
+
+    assert_equal([1, 3, 4], "\x01\x00\x00\x02".unpack("x^@3^x^"))
+  end
+
+  def test_unpack_carret
+    assert_equal([0], "abc".unpack("^"))
+    assert_equal([2], "abc".unpack("^", offset: 2))
+    assert_equal([97, nil, 1], "a".unpack("CC^"))
+
+    assert_raise(ArgumentError) { "".unpack("^!") }
+    assert_raise(ArgumentError) { "".unpack("^_") }
   end
 
   def test_pack_unpack_percent
@@ -853,6 +912,19 @@ EXPECTED
     assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D\0\0\xBA\xAD\xFA\xCE", buf
 
     assert_equal addr, [buf].pack('p')
+
+    assert_packing_buffer_fail("b*")
+    assert_packing_buffer_fail("B*")
+    assert_packing_buffer_fail("h*")
+    assert_packing_buffer_fail("H*")
+    assert_packing_buffer_fail("u", 16384)
+    assert_packing_buffer_fail("m", 16384)
+    assert_packing_buffer_fail("M", 16384)
+  end
+
+  def assert_packing_buffer_fail(fmt, size = 8192)
+    s = "\x01".b * size
+    assert_raise(ArgumentError) {[s].pack(fmt, buffer: s)}
   end
 
   def test_unpack_with_block
@@ -872,28 +944,45 @@ EXPECTED
 
   def test_unpack1_offset
     assert_equal 65, "ZA".unpack1("C", offset: 1)
+    assert_equal 65, "ZA".unpack1("C", offset: -1)
     assert_equal "01000001", "YZA".unpack1("B*", offset: 2)
     assert_nil "abc".unpack1("C", offset: 3)
-    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
-      "a".unpack1("C", offset: -1)
-    }
     assert_raise_with_message(ArgumentError, /offset outside of string/) {
       "a".unpack1("C", offset: 2)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack1("C", offset: -2)
     }
     assert_nil "a".unpack1("C", offset: 1)
   end
 
   def test_unpack_offset
     assert_equal [65], "ZA".unpack("C", offset: 1)
+    assert_equal [65], "ZA".unpack("C", offset: -1)
     assert_equal ["01000001"], "YZA".unpack("B*", offset: 2)
     assert_equal [nil, nil, nil], "abc".unpack("CCC", offset: 3)
-    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
-      "a".unpack("C", offset: -1)
-    }
     assert_raise_with_message(ArgumentError, /offset outside of string/) {
       "a".unpack("C", offset: 2)
     }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack("C", offset: -2)
+    }
     assert_equal [nil], "a".unpack("C", offset: 1)
+  end
+
+  def test_pack_alignment
+    assert_equal "\x01\x00\x00\x00\x02".b, [1, 2].pack("C x!4 C")
+    assert_equal [1, 2], "\x01\x00\x00\x00\x02".b.unpack("C x!4 C")
+
+    buffer = +"z"
+    [1, 2].pack("C x!4 C", buffer: buffer)
+    assert_equal "z\x01\x00\x00\x00\x02".b, buffer
+    assert_equal [1, 2], buffer.unpack("C x!4 C", offset: 1)
+
+    buffer = +"z"
+    [1, 2].pack("C @!4 C", buffer: buffer)
+    assert_equal "z\x01\x00\x00\x02".b, buffer
+    assert_equal [1, 2], buffer.unpack("C @!4 C", offset: 1)
   end
 
   def test_monkey_pack
@@ -935,5 +1024,131 @@ EXPECTED
 
       assert_equal "oh no", v
     end;
+  end
+
+  def test_pack_modify_buffer_r_R
+    buf = "x" * 10_000
+    o = Object.new
+    o.define_singleton_method(:to_int) { buf.clear; 1 }
+    [o, 42].pack("R R", buffer: buf)
+    assert_equal "\x01\x2A".b, buf
+
+    buf = "x" * 10_000
+    o = Object.new
+    o.define_singleton_method(:to_int) { buf.clear; -2 }
+    [o].pack("r", buffer: buf)
+    assert_equal "\x7E".b, buf
+  end
+
+  def test_unpack_broken_R
+    assert_equal([nil], "\xFF".unpack("R"))
+    assert_nil("\xFF".unpack1("R"))
+    assert_equal([nil], "\xFF".unpack("r"))
+    assert_nil("\xFF".unpack1("r"))
+
+    bytes = [256].pack("r")
+    assert_equal([256, nil, nil, nil], (bytes + "\xFF").unpack("rrrr"))
+
+    bytes = [256].pack("R")
+    assert_equal([256, nil, nil, nil], (bytes + "\xFF").unpack("RRRR"))
+
+    assert_equal([], "\xFF".unpack("R*"))
+    assert_equal([], "\xFF".unpack("r*"))
+  end
+
+  def test_pack_unpack_R
+    # ULEB128 encoding (unsigned)
+    assert_equal("\x00", [0].pack("R"))
+    assert_equal("\x01", [1].pack("R"))
+    assert_equal("\x7f", [127].pack("R"))
+    assert_equal("\x80\x01", [128].pack("R"))
+    assert_equal("\xff\x7f", [0x3fff].pack("R"))
+    assert_equal("\x80\x80\x01", [0x4000].pack("R"))
+    assert_equal("\xff\xff\xff\xff\x0f", [0xffffffff].pack("R"))
+    assert_equal("\x80\x80\x80\x80\x10", [0x100000000].pack("R"))
+    assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", [0xffff_ffff_ffff_ffff].pack("R"))
+    assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("R"))
+
+    # Multiple values
+    assert_equal("\x01\x02", [1, 2].pack("R*"))
+    assert_equal("\x7f\x80\x01", [127, 128].pack("R*"))
+
+    # Negative numbers should raise an error
+    assert_raise(ArgumentError) { [-1].pack("R") }
+    assert_raise(ArgumentError) { [-100].pack("R") }
+
+    # Unpack tests
+    assert_equal([0], "\x00".unpack("R"))
+    assert_equal([1], "\x01".unpack("R"))
+    assert_equal([127], "\x7f".unpack("R"))
+    assert_equal([128], "\x80\x01".unpack("R"))
+    assert_equal([0x3fff], "\xff\x7f".unpack("R"))
+    assert_equal([0x4000], "\x80\x80\x01".unpack("R"))
+    assert_equal([0xffffffff], "\xff\xff\xff\xff\x0f".unpack("R"))
+    assert_equal([0x100000000], "\x80\x80\x80\x80\x10".unpack("R"))
+    assert_equal([0xffff_ffff_ffff_ffff], "\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01".unpack("R"))
+    assert_equal([0xffff_ffff_ffff_ffff_ffff_ffff].pack("R"), "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f")
+
+    # Multiple values
+    assert_equal([1, 2], "\x01\x02".unpack("R*"))
+    assert_equal([127, 128], "\x7f\x80\x01".unpack("R*"))
+
+    # Round-trip test
+    values = [0, 1, 127, 128, 0x3fff, 0x4000, 0xffffffff, 0x100000000]
+    assert_equal(values, values.pack("R*").unpack("R*"))
+  end
+
+  def test_pack_unpack_r
+    # SLEB128 encoding (signed)
+    assert_equal("\x00", [0].pack("r"))
+    assert_equal("\x01", [1].pack("r"))
+    assert_equal("\x7f", [-1].pack("r"))
+    assert_equal("\x7e", [-2].pack("r"))
+    assert_equal("\xff\x00", [127].pack("r"))
+    assert_equal("\x80\x01", [128].pack("r"))
+    assert_equal("\x81\x7f", [-127].pack("r"))
+    assert_equal("\x80\x7f", [-128].pack("r"))
+
+    # Larger positive numbers
+    assert_equal("\xff\xff\x00", [0x3fff].pack("r"))
+    assert_equal("\x80\x80\x01", [0x4000].pack("r"))
+
+    # Larger negative numbers
+    assert_equal("\x81\x80\x7f", [-0x3fff].pack("r"))
+    assert_equal("\x80\x80\x7f", [-0x4000].pack("r"))
+
+    # Very large numbers
+    assert_equal("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x1F", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+    assert_equal("\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80`", [-0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+
+    # Multiple values
+    assert_equal("\x00\x01\x7f", [0, 1, -1].pack("r*"))
+
+    # Unpack tests
+    assert_equal([0], "\x00".unpack("r"))
+    assert_equal([1], "\x01".unpack("r"))
+    assert_equal([-1], "\x7f".unpack("r"))
+    assert_equal([-2], "\x7e".unpack("r"))
+    assert_equal([127], "\xff\x00".unpack("r"))
+    assert_equal([128], "\x80\x01".unpack("r"))
+    assert_equal([-127], "\x81\x7f".unpack("r"))
+    assert_equal([-128], "\x80\x7f".unpack("r"))
+
+    # Larger numbers
+    assert_equal([0x3fff], "\xff\xff\x00".unpack("r"))
+    assert_equal([0x4000], "\x80\x80\x01".unpack("r"))
+    assert_equal([-0x3fff], "\x81\x80\x7f".unpack("r"))
+    assert_equal([-0x4000], "\x80\x80\x7f".unpack("r"))
+
+    # Very large numbers
+    assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+    assert_equal("\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80`", [-0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
+
+    # Multiple values
+    assert_equal([0, 1, -1], "\x00\x01\x7f".unpack("r*"))
+
+    # Round-trip test
+    values = [0, 1, -1, 127, -127, 128, -128, 0x3fff, -0x3fff, 0x4000, -0x4000]
+    assert_equal(values, values.pack("r*").unpack("r*"))
   end
 end

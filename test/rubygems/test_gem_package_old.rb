@@ -44,6 +44,37 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
       assert_equal mask, File.stat(extracted).mode unless Gem.win_platform?
     end
 
+    def test_extract_files_special_mode_bits
+      pend "chmod not supported" if Gem.win_platform?
+
+      File.open "old_format.gem", "wb" do |io|
+        io.write SIMPLE_GEM.sub("mode: 420\n  path: lib/foo.rb", format("mode: %d\n  path: lib/foo.rb", 0o7644))
+      end
+
+      @package.extract_files @destination
+
+      extracted = File.join @destination, "lib/foo.rb"
+      mode = 0o100644 & ~File.umask
+
+      assert_equal mode.to_s(8), File.stat(extracted).mode.to_s(8)
+    end
+
+    def test_extract_files_rejects_preexisting_symlink_escape
+      omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+      escape_dir = File.join @tempdir, "escape"
+      FileUtils.mkdir_p escape_dir
+
+      File.symlink escape_dir, File.join(@destination, "lib")
+
+      assert_raise Gem::Package::PathError do
+        @package.extract_files @destination
+      end
+
+      assert_path_not_exist File.join(escape_dir, "foo.rb"),
+                            "must not write outside extraction root via symlink"
+    end
+
     def test_extract_files_security_policy
       pend "openssl is missing" unless Gem::HAVE_OPENSSL
 

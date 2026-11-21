@@ -118,6 +118,10 @@ module Bundler
       !gemspec_dev_dep?
     end
 
+    def plugin?
+      @plugin ||= @options.fetch("plugin", false)
+    end
+
     def current_env?
       return true unless env
       if env.is_a?(Hash)

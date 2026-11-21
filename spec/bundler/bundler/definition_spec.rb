@@ -3,6 +3,63 @@
 require "bundler/definition"
 
 RSpec.describe Bundler::Definition do
+  describe "#overrides" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
+    end
+
+    subject { Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}) }
+
+    it "defaults to an empty array" do
+      expect(subject.overrides).to eq([])
+    end
+
+    it "is writable" do
+      override = Bundler::Override.new("rails", :version, ">= 8.0")
+      subject.overrides = [override]
+      expect(subject.overrides).to eq([override])
+    end
+  end
+
+  describe "#preload_git_sources" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
+      allow(Bundler.settings).to receive(:installation_parallelization).and_return(4)
+    end
+
+    subject { Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}) }
+
+    it "never preloads two sources sharing a git cache at the same time" do
+      skip "git sources are preloaded one by one before Ruby 3.3" if Gem.ruby_version < Gem::Version.new("3.3")
+
+      lock = Mutex.new
+      running = Hash.new(0)
+      max_running = Hash.new(0)
+      max_total = 0
+
+      sources = %w[monorepo monorepo monorepo other].map do |repo|
+        source = double("git source #{repo}", cache_path: Pathname.new("/cache/git/#{repo}"))
+        allow(source).to receive(:specs) do
+          lock.synchronize do
+            running[repo] += 1
+            max_running[repo] = [max_running[repo], running[repo]].max
+            max_total = [max_total, running.values.sum].max
+          end
+          sleep 0.1
+          lock.synchronize { running[repo] -= 1 }
+        end
+        source
+      end
+      allow(subject).to receive(:needed_git_sources).and_return(sources)
+
+      subject.send(:preload_git_sources)
+
+      sources.each {|source| expect(source).to have_received(:specs).once }
+      expect(max_running["monorepo"]).to eq(1)
+      expect(max_total).to eq(2)
+    end
+  end
+
   describe "#lock" do
     before do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
@@ -289,6 +346,57 @@ RSpec.describe Bundler::Definition do
     end
   end
 
+  describe "#precompute_source_requirements_for_indirect_dependencies?" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { Pathname.new("Gemfile") }
+    end
+
+    let(:sources) { Bundler::SourceList.new }
+    subject { Bundler::Definition.new(nil, [], sources, []) }
+
+    before do
+      allow(sources).to receive(:non_global_rubygems_sources).and_return(non_global_rubygems_sources)
+    end
+
+    context "when all the scoped sources implement a dependency API" do
+      let(:non_global_rubygems_sources) do
+        [
+          double("non-global-source-0", "dependency_api_available?":true, to_s:"a"),
+          double("non-global-source-1", "dependency_api_available?":true, to_s:"b"),
+        ]
+      end
+
+      it "returns true without warning" do
+        expect(subject).not_to receive(:non_dependency_api_warning)
+
+        expect(subject.send(:precompute_source_requirements_for_indirect_dependencies?)).to be_truthy
+      end
+    end
+
+    context "when some scoped sources do not implement a dependency API" do
+      let(:non_global_rubygems_sources) do
+        [
+          double("non-global-source-0", "dependency_api_available?":true, to_s:"a"),
+          double("non-global-source-1", "dependency_api_available?":false, to_s:"b"),
+          double("non-global-source-2", "dependency_api_available?":false, to_s:"c"),
+        ]
+      end
+
+      it "returns false and warns about the non-API sources" do
+        expect(Bundler.ui).to receive(:warn).with(<<-W.strip)
+Your Gemfile contains scoped sources that don't implement a dependency API, namely:
+
+  * b
+  * c
+
+Using the above gem servers may result in installing unexpected gems. To resolve this warning, make sure you use gem servers that implement dependency APIs, such as gemstash or geminabox gem servers.
+        W
+
+        expect(subject.send(:precompute_source_requirements_for_indirect_dependencies?)).to be_falsy
+      end
+    end
+  end
+
   def mock_source_list
     Class.new do
       def all_sources
@@ -303,5 +411,49 @@ RSpec.describe Bundler::Definition do
         nil
       end
     end.new
+  end
+
+  describe "#ruby_abis", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
+      lockfile_with_content_addresses({ "0a1b2c3d" => "3.3", "1b2c3d4e" => "3.4", "2c3d4e5f" => "4.0" }, ruby_abis: ["4.0", "3.3", "3.4"])
+    end
+
+    def ruby_abis_with(directive)
+      ruby_version = directive && Bundler::RubyVersion.new(directive, nil, nil, nil)
+      Bundler.settings.temporary(frozen: true) do
+        Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}, ruby_version).ruby_abis
+      end
+    end
+
+    it "sorts the locked Ruby ABIs by version" do
+      expect(ruby_abis_with(nil)).to eq(["3.3", "3.4", "4.0"])
+    end
+
+    {
+      ["3.4.2"] => ["3.4"],
+      ["~> 3.4.0"] => ["3.4"],
+      ["~> 3.3"] => ["3.3", "3.4"],
+      [">= 3.4.0", "< 4.0"] => ["3.4"],
+      [">= 3.4.0", "< 4.0.1"] => ["3.4", "4.0"],
+      [">= 3.4.0", "<= 4.0"] => ["3.4", "4.0"],
+      ["> 3.4"] => ["3.4", "4.0"],
+      ["> 3.4.99"] => ["3.4", "4.0"],
+      ["< 3.4.0"] => ["3.3"],
+      ["<= 3.4.0"] => ["3.3", "3.4"],
+      [">= 3.0"] => ["3.3", "3.4", "4.0"],
+      ["!= 3.4.0"] => ["3.3", "3.4", "4.0"],
+      ["!= 3.4.0", ">= 3.5"] => ["4.0"],
+      [">= 3.4.0", "<= 3.4.0"] => ["3.4"],
+      ["> 3.4.0", "<= 3.4.0"] => [],
+      [">= 3.5", "< 3.5"] => [],
+      ["4.1.0.preview1"] => [],
+      [">= 4.1.0.dev"] => [],
+    }.each do |directive, expected|
+      it "keeps #{expected.inspect} for `ruby #{directive.map(&:inspect).join(", ")}`" do
+        expect(ruby_abis_with(directive)).to eq(expected)
+      end
+    end
   end
 end

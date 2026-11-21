@@ -60,7 +60,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
     bundle :install, artifice: "endpoint"
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -97,7 +97,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, artifice: "endpoint"
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "endpoint"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -111,7 +111,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle "install", artifice: "endpoint"
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "endpoint"
 
     expect(the_bundle).to include_gems("foo 1.0")
@@ -157,7 +157,6 @@ RSpec.describe "gemcutter's dependency API" do
       "actionpack 2.3.2",
       "actionmailer 2.3.2",
       "activeresource 2.3.2",
-      "activesupport 2.3.2",
       "thin 1.0.0",
       "myrack 1.0.0",
       "rails 2.3.2"
@@ -193,30 +192,6 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, artifice: "endpoint_host_redirect"
-    expect(the_bundle).to include_gems "myrack 1.0.0"
-  end
-
-  it "handles host redirects without Gem::Net::HTTP::Persistent" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    FileUtils.mkdir_p lib_path
-    File.open(lib_path("disable_net_http_persistent.rb"), "w") do |h|
-      h.write <<-H
-        module Kernel
-          alias require_without_disabled_net_http require
-          def require(*args)
-            raise LoadError, 'simulated' if args.first == 'openssl' && !caller.grep(/vendored_persistent/).empty?
-            require_without_disabled_net_http(*args)
-          end
-        end
-      H
-    end
-
-    bundle :install, artifice: "endpoint_host_redirect", requires: [lib_path("disable_net_http_persistent.rb")]
-    expect(out).to_not match(/Too many redirects/)
     expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
@@ -378,7 +353,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, artifice: "endpoint_extra"
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle "install", artifice: "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end

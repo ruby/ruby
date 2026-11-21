@@ -34,6 +34,8 @@ RSpec.describe "bundle doctor" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [unwritable_file] }
       allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:writable?).and_call_original
+      allow(File).to receive(:readable?).and_call_original
       allow(File).to receive(:exist?).with(unwritable_file).and_return(true)
       allow(File).to receive(:stat).with(unwritable_file) { stat }
       allow(stat).to receive(:uid) { Process.uid }
@@ -108,6 +110,8 @@ RSpec.describe "bundle doctor" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       allow(Find).to receive(:find).with(Bundler.bundle_path.to_s) { [@unwritable_file] }
       allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:writable?).and_call_original
+      allow(File).to receive(:readable?).and_call_original
       allow(File).to receive(:exist?).with(@unwritable_file) { true }
       allow(File).to receive(:stat).with(@unwritable_file) { @stat }
     end

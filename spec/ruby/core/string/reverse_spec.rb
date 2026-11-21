@@ -12,9 +12,9 @@ describe "String#reverse" do
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(String)
-    StringSpecs::MyString.new("m").reverse.should be_an_instance_of(String)
-    StringSpecs::MyString.new("").reverse.should be_an_instance_of(String)
+    StringSpecs::MyString.new("stressed").reverse.should.instance_of?(String)
+    StringSpecs::MyString.new("m").reverse.should.instance_of?(String)
+    StringSpecs::MyString.new("").reverse.should.instance_of?(String)
   end
 
   it "reverses a string with multi byte characters" do
@@ -24,7 +24,7 @@ describe "String#reverse" do
   it "works with a broken string" do
     str = "微軟\xDF\xDE正黑體".force_encoding(Encoding::UTF_8)
 
-    str.valid_encoding?.should be_false
+    str.valid_encoding?.should == false
 
     str.reverse.should == "體黑正\xDE\xDF軟微"
   end
@@ -37,20 +37,20 @@ end
 describe "String#reverse!" do
   it "reverses self in place and always returns self" do
     a = "stressed"
-    a.reverse!.should equal(a)
+    a.reverse!.should.equal?(a)
     a.should == "desserts"
 
     "".reverse!.should == ""
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
-    -> { "anna".freeze.reverse!  }.should raise_error(FrozenError)
-    -> { "hello".freeze.reverse! }.should raise_error(FrozenError)
+    -> { "anna".freeze.reverse!  }.should.raise(FrozenError)
+    -> { "hello".freeze.reverse! }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError on a frozen instance that would not be modified" do
-    -> { "".freeze.reverse! }.should raise_error(FrozenError)
+    -> { "".freeze.reverse! }.should.raise(FrozenError)
   end
 
   it "reverses a string with multi byte characters" do
@@ -62,7 +62,7 @@ describe "String#reverse!" do
   it "works with a broken string" do
     str = "微軟\xDF\xDE正黑體".force_encoding(Encoding::UTF_8)
 
-    str.valid_encoding?.should be_false
+    str.valid_encoding?.should == false
     str.reverse!
 
     str.should == "體黑正\xDE\xDF軟微"

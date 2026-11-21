@@ -17,6 +17,7 @@
 #include "ruby/thread.h"
 
 // For `ruby_thread_has_gvl_p`:
+#include "internal/scheduler.h"
 #include "internal/thread.h"
 
 // For atomic operations:
@@ -30,7 +31,9 @@ static ID id_unblock;
 
 static ID id_yield;
 
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
 static ID id_timeout_after;
+#endif
 static ID id_kernel_sleep;
 static ID id_process_wait;
 
@@ -49,6 +52,118 @@ static ID id_fiber_schedule;
 
 // Our custom blocking operation class
 static VALUE rb_cFiberSchedulerBlockingOperation;
+static VALUE rb_cFiberSchedulerInterruptTarget;
+
+struct rb_fiber_scheduler_interrupt_target {
+    VALUE fiber;
+    VALUE exception;
+    bool active;
+};
+
+static void
+interrupt_target_mark(void *ptr)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = ptr;
+
+    rb_gc_mark(target->fiber);
+    rb_gc_mark(target->exception);
+}
+
+static size_t
+interrupt_target_memsize(const void *ptr)
+{
+    return sizeof(struct rb_fiber_scheduler_interrupt_target);
+}
+
+static const rb_data_type_t interrupt_target_data_type = {
+    "Fiber::Scheduler::InterruptTarget",
+    {
+        interrupt_target_mark,
+        RUBY_DEFAULT_FREE,
+        interrupt_target_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static struct rb_fiber_scheduler_interrupt_target *
+get_interrupt_target(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target;
+    TypedData_Get_Struct(self, struct rb_fiber_scheduler_interrupt_target, &interrupt_target_data_type, target);
+    return target;
+}
+
+static VALUE
+interrupt_target_alive_p(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active) {
+        return Qfalse;
+    }
+
+    return rb_fiber_alive_p(target->fiber);
+}
+
+static VALUE
+interrupt_target_raise(int argc, VALUE *argv, VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active) {
+        return Qnil;
+    }
+
+    return rb_fiber_raise(target->fiber, argc, argv);
+}
+
+static VALUE
+interrupt_target_transfer(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active || !RTEST(rb_fiber_alive_p(target->fiber))) {
+        return Qnil;
+    }
+
+    VALUE exception = target->exception;
+    return rb_fiber_raise(target->fiber, 1, &exception);
+}
+
+VALUE
+rb_fiber_scheduler_interrupt_target_new(VALUE fiber, VALUE exception)
+{
+    struct rb_fiber_scheduler_interrupt_target *target;
+    VALUE self = TypedData_Make_Struct(rb_cFiberSchedulerInterruptTarget, struct rb_fiber_scheduler_interrupt_target, &interrupt_target_data_type, target);
+
+    target->fiber = fiber;
+    target->exception = exception;
+    target->active = true;
+
+    return self;
+}
+
+VALUE
+rb_fiber_scheduler_interrupt_target_exception(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (target->active) {
+        return target->exception;
+    }
+
+    return Qnil;
+}
+
+void
+rb_fiber_scheduler_interrupt_target_invalidate(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    target->active = false;
+    target->fiber = Qnil;
+    target->exception = Qnil;
+}
 
 /*
  * Custom blocking operation structure for blocking operations
@@ -77,19 +192,6 @@ struct rb_fiber_scheduler_blocking_operation {
     volatile rb_atomic_t status;
 };
 
-static void
-blocking_operation_mark(void *ptr)
-{
-    // No Ruby objects to mark in our struct
-}
-
-static void
-blocking_operation_free(void *ptr)
-{
-    rb_fiber_scheduler_blocking_operation_t *blocking_operation = (rb_fiber_scheduler_blocking_operation_t *)ptr;
-    ruby_xfree(blocking_operation);
-}
-
 static size_t
 blocking_operation_memsize(const void *ptr)
 {
@@ -99,11 +201,11 @@ blocking_operation_memsize(const void *ptr)
 static const rb_data_type_t blocking_operation_data_type = {
     "Fiber::Scheduler::BlockingOperation",
     {
-        blocking_operation_mark,
-        blocking_operation_free,
+        NULL, // nothing to mark
+        RUBY_DEFAULT_FREE,
         blocking_operation_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /*
@@ -304,11 +406,8 @@ rb_fiber_scheduler_blocking_operation_new(void *(*function)(void *), void *data,
  *  * #yield
  *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
  *
- *  When not specified otherwise, the hook implementations are mandatory: if they are not
- *  implemented, the methods trying to call hook will fail. To provide backward compatibility,
- *  in the future hooks will be optional (if they are not implemented, due to the scheduler
- *  being created for the older Ruby version, the code which needs this hook will not fail,
- *  and will just behave in a blocking fashion).
+ *  The #block, #unblock, #kernel_sleep, #io_wait, and #fiber_interrupt hooks are mandatory.
+ *  Other hooks are optional unless specified otherwise.
  *
  *  It is also strongly recommended that the scheduler implements the #fiber method, which is
  *  delegated to by Fiber.schedule.
@@ -327,7 +426,9 @@ Init_Fiber_Scheduler(void)
     id_unblock = rb_intern_const("unblock");
     id_yield = rb_intern_const("yield");
 
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
     id_timeout_after = rb_intern_const("timeout_after");
+#endif
     id_kernel_sleep = rb_intern_const("kernel_sleep");
     id_process_wait = rb_intern_const("process_wait");
 
@@ -355,6 +456,15 @@ Init_Fiber_Scheduler(void)
 
     // Register the anonymous class as a GC root so it doesn't get collected
     rb_gc_register_mark_object(rb_cFiberSchedulerBlockingOperation);
+
+    // Define an anonymous interrupt target class. Instances are passed to
+    // fiber_interrupt and cannot be instantiated directly.
+    rb_cFiberSchedulerInterruptTarget = rb_class_new(rb_cObject);
+    rb_undef_alloc_func(rb_cFiberSchedulerInterruptTarget);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "alive?", interrupt_target_alive_p, 0);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "raise", interrupt_target_raise, -1);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "transfer", interrupt_target_transfer, 0);
+    rb_gc_register_mark_object(rb_cFiberSchedulerInterruptTarget);
 
 #if 0 /* for RDoc */
     rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "Scheduler", rb_cObject);
@@ -410,7 +520,7 @@ verify_interface(VALUE scheduler)
     }
 
     if (!rb_respond_to(scheduler, id_fiber_interrupt)) {
-        rb_warn("Scheduler should implement #fiber_interrupt");
+        rb_raise(rb_eArgError, "Scheduler must implement #fiber_interrupt");
     }
 }
 
@@ -568,7 +678,7 @@ rb_fiber_scheduler_yield(VALUE scheduler)
     return rb_fiber_scheduler_kernel_sleep(scheduler, RB_INT2NUM(0));
 }
 
-#if 0
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
 /*
  *  Document-method: Fiber::Scheduler#timeout_after
  *  call-seq: timeout_after(duration, exception_class, *exception_arguments, &block) -> result of block
@@ -689,13 +799,17 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
     int saved_errno = errno;
 
     // We must prevent interrupts while invoking the unblock method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_fiber_interrupt`.
-    rb_execution_context_t *ec = GET_EC();
-    int saved_interrupt_mask = ec->interrupt_mask;
+    rb_execution_context_t * volatile ec = GET_EC();
+    volatile int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
+    rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    }
+    else {
+        rb_vm_rewind_cfp(ec, cfp);
     }
     EC_POP_TAG();
 
@@ -745,11 +859,7 @@ rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeou
         scheduler, io, events, timeout
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_io_wait((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
 }
 
 VALUE
@@ -795,29 +905,24 @@ VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv)
 
 /*
  *  Document-method: Fiber::Scheduler#io_read
- *  call-seq: io_read(io, buffer, length, offset) -> read length or -errno
+ *  call-seq: io_read(io, buffer, offset, length) -> read length or -errno
  *
- *  Invoked by IO#read or IO#Buffer.read to read +length+ bytes from +io+ into a
- *  specified +buffer+ (see IO::Buffer) at the given +offset+.
+ *  Invoked by IO#read or IO::Buffer#read to perform one read of at most
+ *  +length+ bytes from +io+ into a specified +buffer+ (see IO::Buffer),
+ *  starting at the given +offset+.
  *
- *  The +length+ argument is the "minimum length to be read". If the IO buffer
- *  size is 8KiB, but the +length+ is +1024+ (1KiB), up to 8KiB might be read,
- *  but at least 1KiB will be. Generally, the only case where less data than
- *  +length+ will be read is if there is an error reading the data.
+ *  A short read is returned directly. Specifying a +length+ of 0 returns 0
+ *  without performing a read.
  *
- *  Specifying a +length+ of 0 is valid and means try reading at least once and
- *  return any available data.
- *
- *  Suggested implementation should try to read from +io+ in a non-blocking
- *  manner and call #io_wait if the +io+ is not ready (which will yield control
- *  to other fibers).
+ *  The implementation should perform one non-blocking read and return
+ *  <tt>-EAGAIN</tt> if +io+ is not ready. The caller can then wait and retry as
+ *  appropriate.
  *
  *  See IO::Buffer for an interface available to return data.
  *
  *  Expected to return number of bytes read, or, in case of an error,
  *  <tt>-errno</tt> (negated number corresponding to system's error code).
  *
- *  The method should be considered _experimental_.
  */
 static VALUE
 fiber_scheduler_io_read(VALUE _argument) {
@@ -827,36 +932,31 @@ fiber_scheduler_io_read(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset)
+rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
 {
     if (!rb_respond_to(scheduler, id_io_read)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_io_read((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
 }
 
 /*
  *  Document-method: Fiber::Scheduler#io_pread
- *  call-seq: io_pread(io, buffer, from, length, offset) -> read length or -errno
+ *  call-seq: io_pread(io, buffer, from, offset, length) -> read length or -errno
  *
- *  Invoked by IO#pread or IO::Buffer#pread to read +length+ bytes from +io+
- *  at offset +from+ into a specified +buffer+ (see IO::Buffer) at the given
- *  +offset+.
+ *  Invoked by IO#pread or IO::Buffer#pread to perform one read of at most
+ *  +length+ bytes from +io+ at offset +from+ into a specified +buffer+ (see
+ *  IO::Buffer), starting at the given +offset+.
  *
  *  This method is semantically the same as #io_read, but it allows to specify
  *  the offset to read from and is often better for asynchronous IO on the same
  *  file.
  *
- *  The method should be considered _experimental_.
  */
 static VALUE
 fiber_scheduler_io_pread(VALUE _argument) {
@@ -866,42 +966,33 @@ fiber_scheduler_io_pread(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
+rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t offset, size_t length)
 {
     if (!rb_respond_to(scheduler, id_io_pread)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_io_pread((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
 }
 
 /*
  *  Document-method: Fiber::Scheduler#io_write
- *  call-seq: io_write(io, buffer, length, offset) -> written length or -errno
+ *  call-seq: io_write(io, buffer, offset, length) -> written length or -errno
  *
- *  Invoked by IO#write or IO::Buffer#write to write +length+ bytes to +io+ from
- *  from a specified +buffer+ (see IO::Buffer) at the given +offset+.
+ *  Invoked by IO#write or IO::Buffer#write to perform one write of at most
+ *  +length+ bytes to +io+ from a specified +buffer+ (see IO::Buffer), starting
+ *  at the given +offset+.
  *
- *  The +length+ argument is the "minimum length to be written". If the IO
- *  buffer size is 8KiB, but the +length+ specified is 1024 (1KiB), at most 8KiB
- *  will be written, but at least 1KiB will be. Generally, the only case where
- *  less data than +length+ will be written is if there is an error writing the
- *  data.
+ *  A short write is returned directly. Specifying a +length+ of 0 returns 0
+ *  without performing a write.
  *
- *  Specifying a +length+ of 0 is valid and means try writing at least once, as
- *  much data as possible.
- *
- *  Suggested implementation should try to write to +io+ in a non-blocking
- *  manner and call #io_wait if the +io+ is not ready (which will yield control
- *  to other fibers).
+ *  The implementation should perform one non-blocking write and return
+ *  <tt>-EAGAIN</tt> if +io+ is not ready. The caller can then wait and retry as
+ *  appropriate.
  *
  *  See IO::Buffer for an interface available to get data from buffer
  *  efficiently.
@@ -909,7 +1000,6 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
  *  Expected to return number of bytes written, or, in case of an error,
  *  <tt>-errno</tt> (negated number corresponding to system's error code).
  *
- *  The method should be considered _experimental_.
  */
 static VALUE
 fiber_scheduler_io_write(VALUE _argument) {
@@ -919,36 +1009,30 @@ fiber_scheduler_io_write(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset)
+rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offset, size_t length)
 {
     if (!rb_respond_to(scheduler, id_io_write)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_io_write((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
 }
 
 /*
  *  Document-method: Fiber::Scheduler#io_pwrite
- *  call-seq: io_pwrite(io, buffer, from, length, offset) -> written length or -errno
+ *  call-seq: io_pwrite(io, buffer, from, offset, length) -> written length or -errno
  *
- *  Invoked by IO#pwrite or IO::Buffer#pwrite to write +length+ bytes to +io+
- *  at offset +from+ into a specified +buffer+ (see IO::Buffer) at the given
- *  +offset+.
+ *  Invoked by IO#pwrite or IO::Buffer#pwrite to perform one write of at most
+ *  +length+ bytes to +io+ at offset +from+ from a specified +buffer+ (see
+ *  IO::Buffer), starting at the given +offset+.
  *
  *  This method is semantically the same as #io_write, but it allows to specify
  *  the offset to write to and is often better for asynchronous IO on the same
  *  file.
- *
- *  The method should be considered _experimental_.
  *
  */
 static VALUE
@@ -959,7 +1043,7 @@ fiber_scheduler_io_pwrite(VALUE _argument) {
 }
 
 VALUE
-rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
+rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t offset, size_t length)
 {
 
 
@@ -968,62 +1052,117 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
     }
 
     VALUE arguments[] = {
-        scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
-        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
-    } else {
-        return fiber_scheduler_io_pwrite((VALUE)&arguments);
-    }
+    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
+}
+
+struct fiber_scheduler_io_memory_arguments {
+    VALUE scheduler;
+    VALUE io;
+    VALUE buffer;
+    rb_off_t from;
+    size_t offset;
+    size_t length;
+};
+
+static VALUE
+fiber_scheduler_io_read_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_read(arguments->scheduler, arguments->io, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
-rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size, size_t length)
+rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size)
 {
-    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+    VALUE buffer = rb_io_buffer_new_locked(base, size, 0);
 
-    VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length, 0);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
+    return rb_ensure(fiber_scheduler_io_read_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
+}
 
-    return result;
+static VALUE
+fiber_scheduler_io_write_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_write(arguments->scheduler, arguments->io, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
-rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, size_t size, size_t length)
+rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, size_t size)
 {
-    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+    VALUE buffer = rb_io_buffer_new_locked((void*)base, size, RB_IO_BUFFER_READONLY);
 
-    VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length, 0);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
+    return rb_ensure(fiber_scheduler_io_write_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
+}
 
-    return result;
+static VALUE
+fiber_scheduler_io_pread_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_pread(arguments->scheduler, arguments->io, arguments->from, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
-rb_fiber_scheduler_io_pread_memory(VALUE scheduler, VALUE io, rb_off_t from, void *base, size_t size, size_t length)
+rb_fiber_scheduler_io_pread_memory(VALUE scheduler, VALUE io, rb_off_t from, void *base, size_t size)
 {
-    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
+    VALUE buffer = rb_io_buffer_new_locked(base, size, 0);
 
-    VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, buffer, length, 0);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .from = from,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
+    return rb_ensure(fiber_scheduler_io_pread_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
+}
 
-    return result;
+static VALUE
+fiber_scheduler_io_pwrite_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_pwrite(arguments->scheduler, arguments->io, arguments->from, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
-rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, const void *base, size_t size, size_t length)
+rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, const void *base, size_t size)
 {
-    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+    VALUE buffer = rb_io_buffer_new_locked((void*)base, size, RB_IO_BUFFER_READONLY);
 
-    VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, buffer, length, 0);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .from = from,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
-
-    return result;
+    return rb_ensure(fiber_scheduler_io_pwrite_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
 }
 
 /*
@@ -1124,6 +1263,9 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
     operation->data2 = NULL;
     operation->unblock_function = NULL;
 
+    // Ensure that the blocking operation remains visible until this point:
+    RB_GC_GUARD(blocking_operation);
+
     // If the blocking operation was never executed, return Qundef to signal the caller to use rb_nogvl instead
     if (current_status == RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_QUEUED) {
         return Qundef;
@@ -1134,30 +1276,38 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
 
 /*
  * Document-method: Fiber::Scheduler#fiber_interrupt
- * call-seq: fiber_interrupt(fiber, exception)
+ * call-seq: fiber_interrupt(target, exception)
  *
- * Invoked by Ruby's core methods to notify the scheduler that the blocked fiber should be interrupted
- * with an exception. For example, IO#close uses this method to interrupt fibers that are performing
- * blocking IO operations.
+ * Invoked by Ruby's core methods to notify the scheduler that a blocked fiber
+ * should be interrupted with an exception. For IO operations, +target+ is an
+ * operation-scoped proxy which responds to #alive?, #raise, and #transfer. The
+ * scheduler should enqueue the target on its owning thread and use only those
+ * methods. #transfer raises the interruption's stored exception in the target.
+ * Once the operation completes, #alive? returns false and #raise has no effect,
+ * preventing a delayed exception from escaping into a later operation.
  *
  */
-VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception)
+VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE target, VALUE exception)
 {
     VALUE arguments[] = {
-        fiber, exception
+        target, exception
     };
 
     VALUE result;
     enum ruby_tag_type state;
 
     // We must prevent interrupts while invoking the fiber_interrupt method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_unblock`.
-    rb_execution_context_t *ec = GET_EC();
-    int saved_interrupt_mask = ec->interrupt_mask;
+    rb_execution_context_t * volatile ec = GET_EC();
+    volatile int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
+    rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        result = rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
+        result = rb_funcallv(scheduler, id_fiber_interrupt, 2, arguments);
+    }
+    else {
+        rb_vm_rewind_cfp(ec, cfp);
     }
     EC_POP_TAG();
 

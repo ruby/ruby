@@ -55,14 +55,20 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -98,19 +104,10 @@ jobs:
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
 
-      - uses: ruby/setup-ruby@ae195bbe749a7cef685ac729197124a48305c1cb # v1.276.0
+      - uses: ./.github/actions/setup/baseruby
+        id: baseruby
         with:
-          ruby-version: '3.1'
-          bundler: none
-
-      - name: Build baseruby
-        run: |
-          set -ex
-          mkdir ../baseruby
-          pushd ../baseruby
-          ../src/configure --prefix=$PWD/install
-          make
-          make install
+          srcdir: src
 
       - name: Download config.guess with wasi version
         run: |
@@ -119,19 +116,38 @@ jobs:
         working-directory: src
 
       - name: Run configure
-        run: |
-          ../src/configure \
-            --host wasm32-unknown-wasi \
-            --with-baseruby=$PWD/../baseruby/install/bin/ruby \
-            --with-static-linked-ext \
-            --with-ext=cgi/escape,continuation,coverage,date,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,json,json/generator,json/parser,objspace,pathname,rbconfig/sizeof,ripper,stringio,strscan,monitor \
-            LDFLAGS=" \
-              -Xlinker --stack-first \
-              -Xlinker -z -Xlinker stack-size=16777216 \
-            " \
-            optflags="${{ matrix.entry.optflags }}" \
-            debugflags="${{ matrix.entry.debugflags }}" \
-            wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
+        run: >-
+          ../src/configure
+          --host wasm32-unknown-wasi
+          --with-baseruby="${{ steps.baseruby.outputs.ruby }}"
+          --with-dump-ast="${{ steps.baseruby.outputs.dump_ast }}"
+          --with-static-linked-ext
+          --with-ext=${EXTS// /,}
+          LDFLAGS="
+          -Xlinker --stack-first
+          -Xlinker -z -Xlinker stack-size=16777216
+          "
+          optflags="${{ matrix.entry.optflags }}"
+          debugflags="${{ matrix.entry.debugflags }}"
+          wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
+        env:
+          EXTS:
+            cgi/escape
+            continuation
+            coverage
+            date
+            digest
+            digest/*
+            erb/escape
+            etc
+            fcntl
+            json
+            json/*
+            objspace
+            rbconfig/sizeof
+            ripper
+            stringio
+            strscan
 
       # miniruby may not be built when cross-compling
       - run: make mini ruby
@@ -140,7 +156,7 @@ jobs:
       - run: tar cfz ../install.tar.gz -C ../install .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ruby-wasm-install
           path: ${{ github.workspace }}/install.tar.gz
@@ -168,7 +184,7 @@ jobs:
       - name: Save Pull Request number
         if: ${{ github.event_name == 'pull_request' }}
         run: echo "${{ github.event.pull_request.number }}" >> ${{ github.workspace }}/github-pr-info.txt
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ github.event_name == 'pull_request' }}
         with:
           name: github-pr-info

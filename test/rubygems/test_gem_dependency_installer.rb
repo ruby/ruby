@@ -373,7 +373,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
     e1_gem = e1.cache_file
 
-    _, f1_gem = util_gem "f", "1", "e" => nil
+    _, f1_gem = util_gem "f", "1", { "e" => nil }
 
     Gem::Installer.at(e1_gem).install
     FileUtils.rm_r e1.extension_dir
@@ -394,7 +394,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   def test_install_dependency_old
     _, e1_gem = util_gem "e", "1"
-    _, f1_gem = util_gem "f", "1", "e" => nil
+    _, f1_gem = util_gem "f", "1", { "e" => nil }
     _, f2_gem = util_gem "f", "2"
 
     FileUtils.mv e1_gem, @tempdir
@@ -422,6 +422,29 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     assert_equal %w[a-1], inst.installed_gems.map(&:full_name)
+  end
+
+  def test_install_local_by_name_preserves_content_address
+    ruby_abi = Gem.ruby_abi
+    util_pin_ruby_to_abi ruby_abi
+    _spec, ca_gem = util_gem("ca", "1.0.0", ruby_abi: ruby_abi) do |spec|
+      spec.platform = Gem::Platform.local
+    end
+    FileUtils.mv ca_gem, @tempdir
+    moved_gem = File.join(@tempdir, File.basename(ca_gem))
+    address = Gem::Package.new(moved_gem).content_address
+    inst = nil
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new(domain: :local)
+      source = Gem::Source::Local.new
+      local_spec = source.find_all_gems("ca", Gem::Requirement.default).first
+
+      assert_equal(address, local_spec.content_address)
+      inst.install("ca")
+    end
+    assert_equal(address, inst.installed_gems.first.content_address)
+  ensure
+    util_restore_RUBY_VERSION
   end
 
   def test_install_local_prerelease
@@ -504,6 +527,29 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     assert_equal %w[a-1 b-1], inst.installed_gems.map(&:full_name)
+  end
+
+  def test_install_compact_index_api
+    a1, a1_gem = util_gem "a", 1, { "b" => ">= 1" }
+    b1, b1_gem = util_gem "b", 1
+
+    util_setup_compact_index a1, b1
+
+    add_to_fetcher a1, a1_gem
+    add_to_fetcher b1, b1_gem
+
+    # the compact index probe succeeds, so resolution goes through APISet
+    response = Gem::HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+    response.uri = Gem::URI("#{@gem_repo}versions")
+    @fetcher.data["#{@gem_repo}versions"] = response
+
+    inst = Gem::DependencyInstaller.new
+    inst.install "a"
+
+    assert_equal %w[a-1 b-1], inst.installed_gems.map(&:full_name)
+
+    quick_gemspec_fetches = @fetcher.paths.grep(/gemspec\.rz/)
+    assert_empty quick_gemspec_fetches
   end
 
   def test_install_local_subdir
@@ -677,8 +723,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     FileUtils.mv @b1_gem, @tempdir
-    si = util_setup_spec_fetcher @b1
-    @fetcher.data["http://gems.example.com/gems/yaml"] = si.to_yaml
+    util_setup_spec_fetcher @b1
     inst = nil
 
     Dir.chdir @tempdir do
@@ -687,6 +732,25 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     assert_equal %w[b-1], inst.installed_gems.map(&:full_name)
+  end
+
+  def test_install_force_with_unsatisfiable_dep
+    # foo depends on bar >= 2.0, but only bar-1.0 exists.
+    # With --force, the unsatisfiable dep should be skipped.
+    _, foo_gem = util_gem "foo", "1" do |s|
+      s.add_dependency "bar", ">= 2.0"
+    end
+
+    util_setup_spec_fetcher(util_spec("bar", "1.0"))
+    FileUtils.mv foo_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new force: true
+      inst.install "foo"
+    end
+
+    assert_equal %w[foo-1], inst.installed_gems.map(&:full_name)
   end
 
   def test_install_build_args
@@ -794,13 +858,12 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      e = assert_raise Gem::UnsatisfiableDependencyError do
+      e = assert_raise Gem::DependencyResolutionError do
         inst = Gem::DependencyInstaller.new domain: :local
         inst.install "b"
       end
 
-      expected = "Unable to resolve dependency: 'b (>= 0)' requires 'a (>= 0)'"
-      assert_equal expected, e.message
+      assert_match(/depends on a >= 0 which could not be found in any repository/, e.message)
     end
 
     assert_equal [], inst.installed_gems.map(&:full_name)
@@ -955,9 +1018,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 
-    si = util_setup_spec_fetcher @a1, a2_o
-
-    @fetcher.data["http://gems.example.com/gems/yaml"] = si.to_yaml
+    util_setup_spec_fetcher @a1, a2_o
 
     a1_data = nil
     a2_o_data = nil

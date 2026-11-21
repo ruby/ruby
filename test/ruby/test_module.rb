@@ -221,6 +221,83 @@ class TestModule < Test::Unit::TestCase
     assert_equal([String, Comparable, Object, Kernel, BasicObject], String.ancestors - mixins)
   end
 
+  def test_descendants
+    a = Module.new
+    b = Module.new { include a }
+    c = Class.new { include b }
+    d = Class.new(c)
+
+    order = [a, b, c, d]
+    assert_equal([b, c, d], a.descendants.sort_by {|m| order.index(m)})
+    assert_equal([c, d], b.descendants.sort_by {|m| order.index(m)})
+    assert_equal([d], c.descendants)
+    assert_equal([], d.descendants)
+
+    # prepend
+    pre = Module.new
+    e = Class.new { prepend pre }
+    assert_include(pre.descendants, e)
+
+    # diamond inclusion does not produce duplicates
+    f = Class.new { include a; include b }
+    descendants = a.descendants
+    assert_equal(descendants.uniq, descendants)
+    assert_include(descendants, f)
+
+    # include into a module propagates to existing includers
+    g = Module.new
+    h = Module.new
+    i = Class.new { include h }
+    h.include(g)
+    assert_include(g.descendants, h)
+    assert_include(g.descendants, i)
+
+    # singleton classes are excluded, even via Object#extend
+    obj = Object.new
+    obj.extend(a)
+    assert_not_include(a.descendants, obj.singleton_class)
+
+    # duality with Module#ancestors, except that the receiver is excluded
+    all = [a, b, c, d, pre, e, f, g, h, i]
+    all.each do |x|
+      dx = x.descendants
+      assert_not_include(dx, x)
+      all.each do |y|
+        next if x == y
+        assert_equal(y.ancestors.include?(x), dx.include?(y),
+                     "#{x.inspect} vs #{y.inspect}")
+      end
+    end
+  end
+
+  def test_descendants_gc
+    a = Module.new
+    Class.new { include a }
+    Module.new { include a }
+    GC.start
+    descendants = a.descendants
+    assert_not_include(descendants, a)
+    # the anonymous descendants above may or may not have been collected
+    # already; what must hold is that no dead object is returned
+    descendants.each {|m| assert_kind_of(Module, m)}
+  end
+
+  def test_descendants_refinement
+    assert_separately([], <<-"end;")
+      class Target; def t; end; end
+      module M; end
+      refinement = nil
+      Module.new do
+        refinement = refine(Target) do
+          def t2; end
+        end
+      end
+      assert_equal([], Target.descendants)
+      assert_not_include(M.descendants, Target)
+      assert_not_include(Target.descendants, refinement)
+    end;
+  end
+
   CLASS_EVAL = 2
   @@class_eval = 'b'
 
@@ -583,7 +660,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_gc_prepend_chain
-    assert_separately([], <<-EOS)
+    assert_ruby_status([], <<-EOS)
       10000.times { |i|
         m1 = Module.new do
           def foo; end
@@ -1507,6 +1584,30 @@ class TestModule < Test::Unit::TestCase
       end
       c.class_eval { alias foo bar }
       p c.new.foo
+    INPUT
+  end
+
+  def test_alias_prepended_module_warning
+    assert_in_out_err([], <<-INPUT, [], /aliasing C#foo defined in a prepended module M is deprecated/)
+      Warning[:deprecated] = true
+      module M
+        def foo = :foo
+      end
+      class C
+        prepend M
+        alias bar foo
+      end
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, [], /aliasing C#foo defined in a prepended module M is deprecated/)
+      Warning[:deprecated] = true
+      module M
+        def foo = :foo
+      end
+      class C
+        prepend M
+        alias_method :bar, :foo
+      end
     INPUT
   end
 
@@ -2704,7 +2805,9 @@ class TestModule < Test::Unit::TestCase
       def m; "B"+super; end
       alias m2 m
       prepend p
-      alias m3 m
+    end
+    assert_deprecated_warning(/aliasing .*#m defined in a prepended module .* is deprecated/) do
+      b.class_eval { alias m3 m }
     end
     assert_equal("BA", b.new.m2, bug7842)
     assert_equal("PBA", b.new.m3, bug7842)
@@ -2753,6 +2856,27 @@ class TestModule < Test::Unit::TestCase
     m = labeled_module("M")
     c = labeled_class("C") {prepend m; prepend m}
     assert_equal([m, c], c.ancestors[0, 2], "should never duplicate")
+  end
+
+  def test_prepend_to_included_module_multiple_times
+    m = labeled_module("M")
+    c = labeled_class("C") {include m}
+    m0 = labeled_module("M0")
+    m1 = labeled_module("M1")
+    m2 = labeled_module("M2")
+    m.prepend m0
+    m.prepend m1
+    m.prepend m2
+    assert_equal([c, m2, m1, m0, m, Object], c.ancestors[0, 6], "should never duplicate")
+
+    base = Module.new {def m; [:base] end}
+    h = Module.new {include base}
+    view = Class.new {include h}
+    p1 = Module.new {def m; [:p1] + super end}
+    p2 = Module.new {def m; [:p2] + super end}
+    h.prepend p1
+    h.prepend p2
+    assert_equal([:p2, :p1, :base], view.new.m)
   end
 
   def test_prepend_in_superclass
@@ -2822,7 +2946,7 @@ class TestModule < Test::Unit::TestCase
 
     b = a.dup
     b.new.a = 'B'
-    assert_equal 'A', a.new.a, '[ruby-core:17019]'
+    assert_equal 'B', a.new.a, '[ruby-core:17019] behaviour changed: cvar resolves through original CREF'
   end
 
   Bug6891 = '[ruby-core:47241]'
@@ -3073,7 +3197,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_prepend_gc
-    assert_separately [], %{
+    assert_ruby_status [], %{
       module Foo
       end
       class Object
@@ -3265,15 +3389,18 @@ class TestModule < Test::Unit::TestCase
   end
 
   module CloneTestM0
+    TEST = :M0
     def foo; TEST; end
   end
 
   CloneTestM1 = CloneTestM0.clone
   CloneTestM2 = CloneTestM0.clone
   module CloneTestM1
+    remove_const :TEST
     TEST = :M1
   end
   module CloneTestM2
+    remove_const :TEST
     TEST = :M2
   end
   class CloneTestC1
@@ -3288,14 +3415,31 @@ class TestModule < Test::Unit::TestCase
     assert_equal 1, m::C, '[ruby-core:47834]'
     assert_equal 1, m.m, '[ruby-core:47834]'
 
-    assert_equal :M1, CloneTestC1.new.foo, '[Bug #15877]'
-    assert_equal :M2, CloneTestC2.new.foo, '[Bug #15877]'
+    assert_equal :M0, CloneTestC1.new.foo, 'originally [Bug #15877], but behaviour changed'
+    assert_equal :M0, CloneTestC2.new.foo, 'originally [Bug #15877], but behaviour changed'
   end
 
   def test_clone_freeze
     m = Module.new.freeze
     assert_predicate m.clone, :frozen?
     assert_not_predicate m.clone(freeze: false), :frozen?
+  end
+
+  def test_dup_of_frozen_module_is_not_frozen
+    m = Module.new
+    m.instance_variable_set(:@a, 1)
+    m.freeze
+
+    copy = m.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_module_is_frozen
+    m = Module.new.freeze
+    assert_predicate(m.singleton_class, :frozen?)
+    assert_raise(FrozenError) {m.singleton_class.instance_variable_set(:@a, 1)}
   end
 
   def test_module_name_in_singleton_method
@@ -3306,23 +3450,20 @@ class TestModule < Test::Unit::TestCase
 
   def test_iclass_memory_leak
     # [Bug #19550]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      100_000.times do
         mod = Module.new
         Class.new do
           include mod
         end
       end
-      1_000.times(&code)
-    PREP
-      3_000_000.times(&code)
     CODE
   end
 
   def test_complemented_method_entry_memory_leak
     # [Bug #19894] [Bug #19896]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..30)
+      10_000.times do
         $c = Class.new do
           def foo; end
         end
@@ -3342,21 +3483,15 @@ class TestModule < Test::Unit::TestCase
           end
         end.new
       end
-      1_000.times(&code)
-    PREP
-      300_000.times(&code)
     CODE
   end
 
   def test_module_clone_memory_leak
     # [Bug #19901]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
-      code = proc do
+    assert_no_memory_leak([], "", <<~CODE, rss: true, samples: 2..100)
+      10_000.times do
         Module.new.clone
       end
-      1_000.times(&code)
-    PREP
-      1_000_000.times(&code)
     CODE
   end
 

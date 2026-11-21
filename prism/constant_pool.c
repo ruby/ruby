@@ -1,0 +1,410 @@
+#include "prism/internal/constant_pool.h"
+
+#include "prism/compiler/align.h"
+#include "prism/compiler/inline.h"
+#include "prism/internal/arena.h"
+#include "prism/internal/assert.h"
+
+#include <stdbool.h>
+
+/**
+ * Initialize a list of constant ids.
+ */
+void
+pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_t size) {
+    if (size) {
+        list->ids = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_id_t, size);
+    } else {
+        list->ids = NULL;
+    }
+
+    list->size = size;
+}
+
+/**
+ * Append a constant id to a list of constant ids. A list's array is always
+ * exactly its size, so it grows to exactly one more id, in place when it is the
+ * most recent allocation in the arena and by copying it otherwise.
+ */
+void
+pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) {
+    if (list->size == 0) {
+        list->ids = PM_ARENA_ALLOC(arena, pm_constant_id_t);
+        list->ids[list->size++] = id;
+    } else {
+        list->ids = PM_ARENA_REALLOC(arena, list->ids, sizeof(pm_constant_id_t) * (list->size + 1), sizeof(pm_constant_id_t) * list->size, pm_constant_id_t);
+        list->ids[list->size++] = id;
+    }
+}
+
+/**
+ * Set the constant id at the specified index of a list of constant ids. The
+ * slot must still be unset.
+ */
+void
+pm_constant_id_list_insert(pm_constant_id_list_t *list, uint32_t index, pm_constant_id_t id) {
+    PRISM_ASSERT(index < list->size);
+    PRISM_ASSERT(list->ids[index] == PM_CONSTANT_ID_UNSET);
+
+    list->ids[index] = id;
+}
+
+/**
+ * The slot that holds the given id, or the empty slot it would occupy. The
+ * table is never full, so this terminates.
+ */
+static PRISM_INLINE size_t
+pm_constant_id_set_slot(const pm_constant_id_set_t *set, pm_constant_id_t id) {
+    PRISM_ASSERT(set->capacity != 0);
+
+    size_t mask = set->capacity - 1;
+    size_t index = ((size_t) pm_constant_id_hash(id)) & mask;
+
+    while (set->ids[index] != PM_CONSTANT_ID_UNSET && set->ids[index] != id) {
+        index = (index + 1) & mask;
+    }
+
+    return index;
+}
+
+/**
+ * Add a constant id to the set, reporting whether it was not already there.
+ */
+bool
+pm_constant_id_set_insert(pm_arena_t *arena, pm_constant_id_set_t *set, pm_constant_id_t id) {
+    /* PM_CONSTANT_ID_UNSET marks an empty slot, so it cannot also be a member. */
+    PRISM_ASSERT(id != PM_CONSTANT_ID_UNSET);
+
+    /*
+     * Grow at the same load factor the constant pool uses.
+     * An empty set has no slots at all, so this also builds the first table.
+     */
+    if (set->size >= (set->capacity / 4 * 3)) {
+        size_t capacity = set->capacity == 0 ? 8 : set->capacity * 2;
+        pm_constant_id_set_t grown = {
+            .size = set->size,
+            .capacity = capacity,
+            .ids = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_id_t, capacity)
+        };
+
+        for (size_t index = 0; index < set->capacity; index++) {
+            pm_constant_id_t moved = set->ids[index];
+            if (moved != PM_CONSTANT_ID_UNSET) grown.ids[pm_constant_id_set_slot(&grown, moved)] = moved;
+        }
+
+        *set = grown;
+    }
+
+    size_t index = pm_constant_id_set_slot(set, id);
+    if (set->ids[index] == id) return false;
+
+    set->ids[index] = id;
+    set->size++;
+    return true;
+}
+
+/**
+ * A multiply-xorshift hash that processes input a word at a time. This is
+ * significantly faster than the byte-at-a-time djb2 hash for the short strings
+ * typical in Ruby source (~15 bytes average). Each word is mixed into the hash
+ * by XOR followed by multiplication by a large odd constant, which spreads
+ * entropy across all bits. A final xorshift fold produces the 32-bit result.
+ */
+static PRISM_INLINE uint32_t
+pm_constant_pool_hash(const uint8_t *start, size_t length) {
+    // This constant is borrowed from wyhash. It is a 64-bit odd integer with
+    // roughly equal 0/1 bits, chosen for good avalanche behavior when used in
+    // multiply-xorshift sequences.
+    static const uint64_t secret = 0x517cc1b727220a95ULL;
+    uint64_t hash = (uint64_t) length;
+
+    if (length <= 8) {
+        // Short strings: read first and last 4 bytes (overlapping for len < 8).
+        // This covers the majority of Ruby identifiers with a single multiply.
+        if (length >= 4) {
+            uint32_t a, b;
+            memcpy(&a, start, 4);
+            memcpy(&b, start + length - 4, 4);
+            hash ^= (uint64_t) a | ((uint64_t) b << 32);
+        } else if (length > 0) {
+            hash ^= (uint64_t) start[0] | ((uint64_t) start[length >> 1] << 8) | ((uint64_t) start[length - 1] << 16);
+        }
+        hash *= secret;
+    } else if (length <= 16) {
+        // Medium strings: read first and last 8 bytes (overlapping).
+        // Two multiplies instead of the three the loop-based approach needs.
+        uint64_t word;
+        memcpy(&word, start, 8);
+        hash ^= word;
+        hash *= secret;
+        memcpy(&word, start + length - 8, 8);
+        hash ^= word;
+        hash *= secret;
+    } else {
+        const uint8_t *ptr = start;
+        size_t remaining = length;
+
+        while (remaining >= 8) {
+            uint64_t word;
+            memcpy(&word, ptr, 8);
+            hash ^= word;
+            hash *= secret;
+            ptr += 8;
+            remaining -= 8;
+        }
+
+        if (remaining > 0) {
+            // Read the last 8 bytes (overlapping with already-processed data).
+            uint64_t word;
+            memcpy(&word, start + length - 8, 8);
+            hash ^= word;
+            hash *= secret;
+        }
+    }
+
+    hash ^= hash >> 32;
+    return (uint32_t) hash;
+}
+
+/**
+ * https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+ */
+static uint32_t
+next_power_of_two(uint32_t v) {
+    // Avoid underflow in subtraction on next line.
+    if (v == 0) {
+        // 1 is the nearest power of 2 to 0 (2^0)
+        return 1;
+    }
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    return v;
+}
+
+/**
+ * Return the number of constants that a pool with the given capacity has room
+ * for. The pool grows before an insert once it is three quarters full, so at
+ * most three quarters of its capacity, rounded up, ever holds a constant.
+ */
+static PRISM_INLINE size_t
+pm_constant_pool_constants_capacity(uint32_t capacity) {
+    return (size_t) (capacity - capacity / 4);
+}
+
+/**
+ * Return whether the given bucket holds the given string. The stored hash is
+ * compared first, so that probe collisions are rejected without reading the
+ * constant or calling memcmp.
+ */
+static PRISM_INLINE bool
+pm_constant_pool_bucket_match(const pm_constant_pool_t *pool, const pm_constant_pool_bucket_t *bucket, uint32_t hash, const uint8_t *start, size_t length) {
+    if (bucket->hash != hash) return false;
+
+    const pm_constant_t *constant = &pool->constants[bucket->id - 1];
+    return constant->length == length && memcmp(constant->start, start, length) == 0;
+}
+
+/**
+ * Resize a constant pool to a given capacity.
+ */
+static PRISM_INLINE void
+pm_constant_pool_resize(pm_arena_t *arena, pm_constant_pool_t *pool) {
+    uint32_t next_capacity = pool->capacity * 2;
+    const uint32_t mask = next_capacity - 1;
+
+    /* The constants are indexed by id, which a resize does not change, so
+     * they only need more room. They grow before the buckets are allocated,
+     * which lets them grow in place when they are the most recent allocation
+     * in the arena. */
+    size_t constants_size = pm_constant_pool_constants_capacity(pool->capacity) * sizeof(pm_constant_t);
+    size_t next_constants_size = pm_constant_pool_constants_capacity(next_capacity) * sizeof(pm_constant_t);
+    pool->constants = PM_ARENA_REALLOC(arena, pool->constants, next_constants_size, constants_size, pm_constant_t);
+
+    pm_constant_pool_bucket_t *next_buckets = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_pool_bucket_t, next_capacity);
+
+    // For each bucket in the current constant pool, find the index in the
+    // next constant pool, and insert it.
+    for (uint32_t index = 0; index < pool->capacity; index++) {
+        pm_constant_pool_bucket_t *bucket = &pool->buckets[index];
+
+        // If an id is set on this constant, then we know we have content here.
+        // In this case we need to insert it into the next constant pool.
+        if (bucket->id != PM_CONSTANT_ID_UNSET) {
+            uint32_t next_index = bucket->hash & mask;
+
+            // This implements linear scanning to find the next available slot
+            // in case this index is already taken. We don't need to bother
+            // comparing the values since we know that the hash is unique.
+            while (next_buckets[next_index].id != PM_CONSTANT_ID_UNSET) {
+                next_index = (next_index + 1) & mask;
+            }
+
+            // Here we copy over the entire bucket, which includes the id so
+            // that they are consistent between resizes.
+            next_buckets[next_index] = *bucket;
+        }
+    }
+
+    pool->buckets = next_buckets;
+    pool->capacity = next_capacity;
+}
+
+/**
+ * Initialize a new constant pool with a given capacity.
+ */
+void
+pm_constant_pool_init(pm_arena_t *arena, pm_constant_pool_t *pool, uint32_t capacity) {
+    capacity = next_power_of_two(capacity);
+
+    pool->buckets = PM_ARENA_ZALLOC_ARRAY(arena, pm_constant_pool_bucket_t, capacity);
+    pool->constants = PM_ARENA_ALLOC_ARRAY(arena, pm_constant_t, pm_constant_pool_constants_capacity(capacity));
+    pool->size = 0;
+    pool->capacity = capacity;
+}
+
+/**
+ * Return the number of bytes that pm_constant_pool_init allocates for the given
+ * capacity.
+ */
+size_t
+pm_constant_pool_init_size(uint32_t capacity) {
+    capacity = next_power_of_two(capacity);
+    return capacity * sizeof(pm_constant_pool_bucket_t) + pm_constant_pool_constants_capacity(capacity) * sizeof(pm_constant_t);
+}
+
+/**
+ * Return a pointer to the constant indicated by the given constant id.
+ */
+pm_constant_t *
+pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t constant_id) {
+    PRISM_ASSERT(constant_id != PM_CONSTANT_ID_UNSET && constant_id <= pool->size);
+    return &pool->constants[constant_id - 1];
+}
+
+/**
+ * Find a constant in a constant pool. Returns the id of the constant, or 0 if
+ * the constant is not found.
+ */
+pm_constant_id_t
+pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    const uint32_t mask = pool->capacity - 1;
+
+    uint32_t hash = pm_constant_pool_hash(start, length);
+    uint32_t index = hash & mask;
+    pm_constant_pool_bucket_t *bucket;
+
+    while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
+        if (pm_constant_pool_bucket_match(pool, bucket, hash, start, length)) {
+            return bucket->id;
+        }
+
+        index = (index + 1) & mask;
+    }
+
+    return PM_CONSTANT_ID_UNSET;
+}
+
+/**
+ * Insert a constant into a constant pool and return its index in the pool.
+ */
+static PRISM_INLINE pm_constant_id_t
+pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length, pm_constant_pool_bucket_type_t type) {
+    if (pool->size >= (pool->capacity / 4 * 3)) {
+        pm_constant_pool_resize(arena, pool);
+    }
+
+    const uint32_t mask = pool->capacity - 1;
+
+    uint32_t hash = pm_constant_pool_hash(start, length);
+    uint32_t index = hash & mask;
+    pm_constant_pool_bucket_t *bucket;
+
+    while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
+        // If there is a collision, then we need to check if the content is the
+        // same as the content we are trying to insert. If it is, then we can
+        // return the id of the existing constant.
+        if (pm_constant_pool_bucket_match(pool, bucket, hash, start, length)) {
+            // Since we have found a match, we need to check if this is
+            // attempting to insert a shared or an owned constant. We want to
+            // prefer shared constants since they don't require allocations.
+            if (type != PM_CONSTANT_POOL_BUCKET_OWNED && bucket->type == PM_CONSTANT_POOL_BUCKET_OWNED) {
+                // If we're attempting to insert a shared constant and the
+                // existing constant is owned, then we can replace it with the
+                // shared constant to prefer non-owned references.
+                bucket->type = (unsigned int) (type & 0x3);
+                pool->constants[bucket->id - 1].start = start;
+            }
+
+            return bucket->id;
+        }
+
+        index = (index + 1) & mask;
+    }
+
+    // IDs are allocated starting at 1, since the value 0 denotes a non-existent
+    // constant.
+    uint32_t id = ++pool->size;
+    PRISM_ASSERT(pool->size < ((uint32_t) (1 << 30)));
+
+    *bucket = (pm_constant_pool_bucket_t) {
+        .id = (unsigned int) (id & 0x3fffffff),
+        .type = (unsigned int) (type & 0x3),
+        .hash = hash
+    };
+
+    pool->constants[id - 1] = (pm_constant_t) {
+        .start = start,
+        .length = length,
+    };
+
+    return id;
+}
+
+/**
+ * Insert a constant into a constant pool. Returns the id of the constant, or
+ * PM_CONSTANT_ID_UNSET if any potential calls to resize fail.
+ */
+pm_constant_id_t
+pm_constant_pool_insert_shared(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_DEFAULT);
+}
+
+/**
+ * Insert a constant into a constant pool from memory that is now owned by the
+ * constant pool. Returns the id of the constant, or PM_CONSTANT_ID_UNSET if any
+ * potential calls to resize fail.
+ */
+pm_constant_id_t
+pm_constant_pool_insert_owned(pm_arena_t *arena, pm_constant_pool_t *pool, uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_OWNED);
+}
+
+/**
+ * Insert a constant into a constant pool from memory that is constant. Returns
+ * the id of the constant, or PM_CONSTANT_ID_UNSET if any potential calls to
+ * resize fail.
+ */
+pm_constant_id_t
+pm_constant_pool_insert_constant(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    return pm_constant_pool_insert(arena, pool, start, length, PM_CONSTANT_POOL_BUCKET_CONSTANT);
+}
+
+/**
+ * Return a raw pointer to the start of a constant.
+ */
+const uint8_t *
+pm_constant_start(const pm_constant_t *constant) {
+    return constant->start;
+}
+
+/**
+ * Return the length of a constant.
+ */
+size_t pm_constant_length(const pm_constant_t *constant) {
+    return constant->length;
+}

@@ -39,7 +39,7 @@ typedef struct rb_strterm_literal_struct {
 
 typedef struct rb_strterm_heredoc_struct {
     rb_parser_string_t *lastline;	/* the string of line that contains `<<"END"` */
-    long offset;	/* the column of END in `<<"END"` */
+    rb_len_t offset;	/* the column of END in `<<"END"` */
     int sourceline;	/* lineno of the line that contains `<<"END"` */
     unsigned length;	/* the length of END in `<<"END"` */
     uint8_t quote;

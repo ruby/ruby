@@ -21,7 +21,7 @@ describe "Addrinfo#ipv4_multicast?" do
     end
 
     it "returns false" do
-      @addrinfo.ipv4_multicast?.should be_false
+      @addrinfo.ipv4_multicast?.should == false
     end
   end
 end

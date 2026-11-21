@@ -55,7 +55,7 @@ static int
 utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e,
 		    OnigEncoding enc ARG_UNUSED)
 {
-  int len = (int)(e - p);
+  ptrdiff_t len = e - p;
   UChar byte;
   if (len < 2)
     return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(1);
@@ -65,7 +65,7 @@ utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e,
   }
   if (UTF16_IS_SURROGATE_FIRST(byte)) {
     if (len < 4)
-      return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(4-len);
+      return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(4-(int)len);
     if (UTF16_IS_SURROGATE_SECOND(p[3]))
       return ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(4);
   }
@@ -242,7 +242,11 @@ OnigEncodingDefine(utf_16le, UTF_16LE) = {
   onigenc_utf16_32_get_ctype_code_range,
   utf16le_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_unicode_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_UNICODE,
 };

@@ -241,4 +241,26 @@ class TestProfileFrames < Test::Unit::TestCase
   def test_start
     assert_equal Bug::Debug.profile_frames(0, 10).tap(&:shift), Bug::Debug.profile_frames(1, 9)
   end
+
+  def test_profile_frames_in_signal_handler_while_making_env
+    omit "no SIGPROF sampler on this platform" unless Bug::Debug.respond_to?(:start_profile_frames_sampler)
+
+    assert_separately([], <<~'end;')
+      require '-test-/debug'
+      Bug::Debug.start_profile_frames_sampler
+      begin
+        100_000.times do
+          # proc {} moves the block frame and the class body frame to the heap.
+          # A sample taken in between must not follow a stale on-stack ep, as
+          # the class body frame has a cref (no method entry) and no block.
+          class Foo
+            1.times { proc {} }
+          end
+        end
+      ensure
+        samples = Bug::Debug.stop_profile_frames_sampler
+      end
+      assert_operator samples, :>, 0, '[Bug #22476]'
+    end;
+  end
 end

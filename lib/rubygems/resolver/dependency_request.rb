@@ -80,14 +80,6 @@ class Gem::Resolver::DependencyRequest
   end
 
   ##
-  # Indicate that the request is for a gem requested as a dependency of
-  # another gem
-
-  def implicit?
-    !explicit?
-  end
-
-  ##
   # Return a String indicating who caused this request to be added (only
   # valid for implicit requests)
 

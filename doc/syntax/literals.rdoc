@@ -547,6 +547,13 @@ with <tt>%w</tt> (non-interpolable) or <tt>%W</tt> (interpolable):
   # (not nested array).
   %w[foo[bar baz]qux]   # => ["foo[bar", "baz]qux"]
 
+The interpolated string is treated as a single word even if it contains
+whitespace.
+
+  s = "bar baz"
+  %W[foo #{s} zot] #=> ["foo", "bar baz", "zot"]
+  %W[foo #{"bar baz  zot"} qux] # => ["foo", "bar baz  zot", "qux"]
+
 The following characters are considered as white spaces to separate words:
 
 * space, ASCII 20h (SPC)

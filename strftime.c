@@ -173,11 +173,15 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 	size_t len = s - *start;
 	size_t need = len + n * 2;
 	size_t nlen = rb_str_capacity(ftime);
-	while (nlen < need) nlen <<= 1;
 
-	if (nlen < len || nlen > maxsize) {
-		return 0;
+	if (nlen > maxsize) return 0;
+	while (nlen < need) {
+		nlen <<= 1;
+		if (nlen < len || nlen > maxsize) {
+			return 0;
+		}
 	}
+
 	rb_str_set_len(ftime, len);
 	rb_str_modify_expand(ftime, nlen-len);
 	s = RSTRING_PTR(ftime);
@@ -228,9 +232,9 @@ format_value(VALUE val, int base)
 }
 
 /*
- * enc is the encoding of the format. It is used as the encoding of resulted
- * string, but the name of the month and weekday are always US-ASCII. So it
- * is only used for the timezone name on Windows.
+ * enc is the encoding of the format and the initial result string. It is also
+ * used as the target encoding when a timezone name is incompatible with the
+ * result string.
  */
 static VALUE
 rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
@@ -272,13 +276,6 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                 goto err;
 	}
 
-	if (enc &&
-	    (rb_is_usascii_enc(enc) ||
-	     rb_is_ascii8bit_enc(enc) ||
-	     rb_is_locale_enc(enc))) {
-		enc = NULL;
-	}
-
 	s += len;
 	for (; format < format_end; format++) {
 #define FLAG_FOUND() do { \
@@ -291,6 +288,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				buffer_size_check(s, format_end, format_len, enc); \
 			} \
 		} while (0)
+#define REINIT() (endp = (start = s = RSTRING_PTR(ftime)) + rb_str_capacity(ftime), \
+		 s += len = RSTRING_LEN(ftime))
 #define FILL_PADDING(i) do { \
 	if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
 		NEEDS(precision); \
@@ -316,9 +315,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			rb_str_set_len(ftime, len); \
 			rb_str_catf(ftime, FMT_PADDING(fmt, def_pad), \
 				    precision, (val)); \
-			RSTRING_GETMEM(ftime, s, len); \
-			endp = (start = s) + rb_str_capacity(ftime); \
-			s += len; \
+			REINIT(); \
 		} while (0)
 #define STRFTIME(fmt) \
 		do { \
@@ -359,9 +356,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				FILL_PADDING(i); \
 				rb_str_set_len(ftime, s-start); \
 				rb_str_append(ftime, tmp); \
-				RSTRING_GETMEM(ftime, s, len); \
-				endp = (start = s) + rb_str_capacity(ftime); \
-				s += len; \
+				REINIT(); \
                         } \
                 } while (0)
 
@@ -557,34 +552,35 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			else {
 				sign = +1;
 			}
-                        switch (colons) {
+#define NEEDS_FOR_ZONE(fmt) do { \
+				const int zone_size = rb_strlen_lit(fmt); \
+				if (precision < zone_size) precision = zone_size; \
+				NEEDS(precision); \
+				precision -= zone_size - rb_strlen_lit("hh"); \
+			} while (0)
+
+                       switch (colons) {
 			case 0: /* %z -> +hhmm */
-				precision = precision <= 5 ? 2 : precision-3;
-				NEEDS(precision + 3);
+				NEEDS_FOR_ZONE("+hhmm");
 				break;
 
 			case 1: /* %:z -> +hh:mm */
-				precision = precision <= 6 ? 2 : precision-4;
-				NEEDS(precision + 4);
+				NEEDS_FOR_ZONE("+hh:mm");
 				break;
 
 			case 2: /* %::z -> +hh:mm:ss */
-				precision = precision <= 9 ? 2 : precision-7;
-				NEEDS(precision + 7);
+				NEEDS_FOR_ZONE("+hh:mm:ss");
 				break;
 
 			case 3: /* %:::z -> +hh[:mm[:ss]] */
 				if (off % 3600 == 0) {
-					precision = precision <= 3 ? 2 : precision-1;
-					NEEDS(precision + 3);
+					NEEDS_FOR_ZONE("+hh");
 				}
 				else if (off % 60 == 0) {
-					precision = precision <= 6 ? 2 : precision-4;
-					NEEDS(precision + 4);
+					NEEDS_FOR_ZONE("+hh:mm");
 				}
 				else {
-					precision = precision <= 9 ? 2 : precision-7;
-					NEEDS(precision + 9);
+					NEEDS_FOR_ZONE("+hh:mm:ss");
 				}
 				break;
 
@@ -630,25 +626,27 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				break;
 			}
 			if (NIL_P(vtm->zone)) {
-			    i = 0;
+				i = 0;
 			}
 			else {
-			    if (NIL_P(zone)) {
-				zone = rb_time_zone_abbreviation(vtm->zone, time);
-			    }
-			    tp = RSTRING_PTR(zone);
-			    if (enc) {
-				for (i = 0; i < TBUFSIZE && tp[i]; i++) {
-				    if ((unsigned char)tp[i] > 0x7F) {
-					VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(tp), rb_locale_encoding(), enc, ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
-					i = strlcpy(tbuf, RSTRING_PTR(str), TBUFSIZE);
-					tp = tbuf;
-					break;
-				    }
+				rb_str_set_len(ftime, s - start); /* before rb_enc_compatible */
+
+				if (NIL_P(zone)) {
+					zone = rb_time_zone_abbreviation(vtm->zone, time);
+					REINIT();
 				}
-			    }
-			    else
-				i = strlen(tp);
+
+				if (enc) {
+					rb_encoding *compat = rb_enc_compatible(ftime, zone);
+					if (compat && rb_enc_asciicompat(compat)) {
+						rb_enc_associate(ftime, compat);
+					}
+					else {
+						zone = rb_str_conv_enc_opts(zone, NULL, enc, ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
+					}
+				}
+				tp = RSTRING_PTR(zone);
+				i = RSTRING_LEN(zone);
 			}
 			break;
 
@@ -915,6 +913,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	return ftime;
 
 err:
+	RB_GC_GUARD(zone);
         return 0;
 }
 
@@ -927,26 +926,34 @@ strftime_size_limit(size_t format_len)
 	return limit;
 }
 
+static VALUE
+create_buffer(rb_encoding *enc)
+{
+	VALUE result = rb_obj_hide(rb_enc_str_new(0, 0, enc));
+	ENC_CODERANGE_CLEAR(result);
+	return result;
+}
+
 VALUE
 rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
-	VALUE result = rb_enc_str_new(0, 0, enc);
-	ENC_CODERANGE_CLEAR(result);
-	return rb_strftime_with_timespec(result, format, format_len, enc,
+	VALUE buff = create_buffer(enc);
+	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, timev, NULL, gmt,
 					 strftime_size_limit(format_len));
+	return rb_obj_reveal(buff, rb_cString);
 }
 
 VALUE
 rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
 		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
 {
-	VALUE result = rb_enc_str_new(0, 0, enc);
-	ENC_CODERANGE_CLEAR(result);
-	return rb_strftime_with_timespec(result, format, format_len, enc,
+	VALUE buff = create_buffer(enc);
+	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt,
 					 strftime_size_limit(format_len));
+	return rb_obj_reveal(buff, rb_cString);
 }
 
 #if 0
@@ -955,9 +962,10 @@ rb_strftime_limit(const char *format, size_t format_len, rb_encoding *enc,
 		  VALUE time, const struct vtm *vtm, struct timespec *ts,
 		  int gmt, size_t maxsize)
 {
-	VALUE result = rb_enc_str_new(0, 0, enc);
-	return rb_strftime_with_timespec(result, format, format_len, enc,
+	VALUE buff = create_buffer(enc);
+	buff = rb_strftime_with_timespec(buff, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt, maxsize);
+	return rb_obj_reveal(buff, rb_cString);
 }
 #endif
 

@@ -3,9 +3,9 @@ require 'ipaddr'
 
 describe "IPAddr#new" do
   it "initializes IPAddr" do
-    ->{ IPAddr.new("3FFE:505:ffff::/48") }.should_not raise_error
-    ->{ IPAddr.new("0:0:0:1::")          }.should_not raise_error
-    ->{ IPAddr.new("2001:200:300::/48")  }.should_not raise_error
+    ->{ IPAddr.new("3FFE:505:ffff::/48") }.should_not.raise
+    ->{ IPAddr.new("0:0:0:1::")          }.should_not.raise
+    ->{ IPAddr.new("2001:200:300::/48")  }.should_not.raise
   end
 
   it "initializes IPAddr ipv6 address with short notation" do
@@ -86,7 +86,23 @@ describe "IPAddr#new" do
     ].each { |args|
       ->{
         IPAddr.new(*args)
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     }
+  end
+
+  describe("bracketed IPv6 address with a prefix length") do
+    version_is(IPAddr::VERSION, "1.3"..."1.4") do # ruby_version_is "4.1"..."4.2"
+      it "is warned" do
+        -> {
+          a = IPAddr.new("[2001:200:300::]/48")
+        }.should output(nil, /is an invalid address/)
+      end
+    end
+
+    version_is(IPAddr::VERSION, "1.4") do # ruby_version_is "4.2"
+      it "is an invalid address" do
+        -> { IPAddr.new("[2001:200:300::]/48") }.should.raise(IPAddr::InvalidAddressError)
+      end
+    end
   end
 end

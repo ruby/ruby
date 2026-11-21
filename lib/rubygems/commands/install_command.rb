@@ -93,7 +93,7 @@ options and the extension's build options:
   [build fails]
   Gem files will remain installed in \\
   /path/to/gems/some_extension_gem-1.0 for inspection.
-  Results logged to /path/to/gems/some_extension_gem-1.0/gem_make.out
+  Results logged to /path/to/build_info/some_extension_gem-1.0.gem_make.out
   $ gem install some_extension_gem -- --with-extension-lib=/path/to/lib
   [build succeeds]
   $ gem list some_extension_gem
@@ -110,7 +110,7 @@ to write the specification by hand.  For example:
   [build fails]
   Gem files will remain installed in \\
   /path/to/gems/some_extension_gem-1.0 for inspection.
-  Results logged to /path/to/gems/some_extension_gem-1.0/gem_make.out
+  Results logged to /path/to/build_info/some_extension_gem-1.0.gem_make.out
   $ [cd /path/to/gems/some_extension_gem-1.0]
   $ [edit files or what-have-you and run make]
   $ gem spec ../../cache/some_extension_gem-1.0.gem --ruby > \\
@@ -140,7 +140,7 @@ You can use `i` command instead of `install`.
     if options[:version] != Gem::Requirement.default &&
        get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
-                  " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+                  " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:>=2'`"
       terminate_interaction 1
     end
   end
@@ -152,6 +152,7 @@ You can use `i` command instead of `install`.
     end
 
     @installed_specs = []
+    @cooldown_skipped = []
 
     ENV.delete "GEM_PATH" if options[:install_dir].nil?
 
@@ -162,6 +163,8 @@ You can use `i` command instead of `install`.
     exit_code = install_gems
 
     show_installed
+
+    Gem::Cooldown.output_skipped_summary @cooldown_skipped
 
     say update_suggestion if eligible_for_update?
 
@@ -183,6 +186,8 @@ You can use `i` command instead of `install`.
     end
 
     @installed_specs = specs
+
+    Gem::Cooldown.output_skipped_summary rs.resolver&.cooldown_skipped
 
     terminate_interaction
   end
@@ -207,6 +212,8 @@ You can use `i` command instead of `install`.
       @installed_specs.concat request_set.install options
     end
 
+    (@cooldown_skipped ||= []).concat dinst.cooldown_skipped
+
     show_install_errors dinst.errors
   end
 
@@ -224,6 +231,9 @@ You can use `i` command instead of `install`.
       rescue Gem::InstallError => e
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
+      rescue Gem::DependencyResolutionError => e
+        alert_error "Error installing #{gem_name}:\n\t#{e.message}"
+        exit_code |= 2
       rescue Gem::UnsatisfiableDependencyError => e
         show_lookup_failure e.name, e.version, e.errors, suppress_suggestions,
                             "'#{gem_name}' (#{gem_version})"

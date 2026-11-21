@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 # TODO: put these in the right files.
 describe "Process.setpgrp and Process.getpgrp" do
-  platform_is_not :windows do
+  guard -> { Process.respond_to?(:fork) } do
     it "sets and gets the process group ID of the calling process" do
       # there are two synchronization points here:
       # One for the child to let the parent know that it has finished

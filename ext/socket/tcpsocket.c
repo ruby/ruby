@@ -20,7 +20,7 @@
  *
  * Starting from Ruby 3.4, this method operates according to the
  * Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305])
- * algorithm by default, except on Windows.
+ * algorithm by default. On Windows, it does so starting from Ruby 4.1.
  *
  * For details on Happy Eyeballs Version 2,
  * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
@@ -29,9 +29,6 @@
  * explicitly specify the option fast_fallback:false.
  * Or, setting Socket.tcp_fast_fallback=false will disable
  * Happy Eyeballs Version 2 not only for this method but for all Socket globally.
- *
- * When using TCPSocket.new on Windows, Happy Eyeballs Version 2 is not provided,
- * and it behaves the same as in Ruby 3.3 and earlier.
  *
  * [:resolv_timeout] Specifies the timeout in seconds from when the hostname resolution starts.
  * [:connect_timeout] This method sequentially attempts connecting to all candidate destination addresses.<br>The +connect_timeout+ specifies the timeout in seconds from the start of the connection attempt to the last candidate.<br>By default, all connection attempts continue until the timeout occurs.<br>When +fast_fallback:false+ is explicitly specified,<br>a timeout is set for each connection attempt and any connection attempt that exceeds its timeout will be canceled.
@@ -83,40 +80,6 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
                                fast_fallback, test_mode_settings);
 }
 
-static VALUE
-tcp_sockaddr(struct sockaddr *addr, socklen_t len)
-{
-    return rsock_make_ipaddr(addr, len);
-}
-
-/*
- * call-seq:
- *   TCPSocket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
- *
- * Use Addrinfo.getaddrinfo instead.
- * This method is deprecated for the following reasons:
- *
- * - The 3rd element of the result is the address family of the first address.
- *   The address families of the rest of the addresses are not returned.
- * - gethostbyname() may take a long time and it may block other threads.
- *   (GVL cannot be released since gethostbyname() is not thread safe.)
- * - This method uses gethostbyname() function already removed from POSIX.
- *
- * This method lookups host information by _hostname_.
- *
- *   TCPSocket.gethostbyname("localhost")
- *   #=> ["localhost", ["hal"], 2, "127.0.0.1"]
- *
- */
-static VALUE
-tcp_s_gethostbyname(VALUE obj, VALUE host)
-{
-    rb_warn("TCPSocket.gethostbyname is deprecated; use Addrinfo.getaddrinfo instead.");
-    struct rb_addrinfo *res =
-        rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, AI_CANONNAME, Qnil);
-    return rsock_make_hostent(host, res, tcp_sockaddr);
-}
-
 void
 rsock_init_tcpsocket(void)
 {
@@ -139,6 +102,5 @@ rsock_init_tcpsocket(void)
      *
      */
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
-    rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
     rb_define_method(rb_cTCPSocket, "initialize", tcp_init, -1);
 }

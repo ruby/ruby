@@ -12,6 +12,7 @@ module Bundler
       @dep = dep
       @platform = platform
       @candidates = candidates
+      @locked_platforms = candidates&.map(&:platform)
     end
 
     def complete?
@@ -24,12 +25,14 @@ module Bundler
       elsif platform
         MatchPlatform.select_best_platform_match(@candidates, platform, force_ruby: dep.force_ruby_platform)
       else
-        MatchPlatform.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
+        MatchPlatform.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform, locked_platforms: @locked_platforms)
       end
     end
 
     def dependencies
-      (materialized_spec || specs.first).runtime_dependencies.map {|d| [d, platform] }
+      spec = materialized_spec || specs.first
+      overrides = specs.first.overrides if specs.first.is_a?(LazySpecification)
+      Override.rewrite_dependencies(overrides, spec.name, spec.runtime_dependencies).map {|d| [d, platform] }
     end
 
     def materialized_spec

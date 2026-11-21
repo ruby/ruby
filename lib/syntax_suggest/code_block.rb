@@ -16,7 +16,7 @@ module SyntaxSuggest
   #   code_block.in_valid? # => false
   #
   #
-  class CodeBlock
+  class CodeBlock # :nodoc:
     UNSET = Object.new.freeze
     attr_reader :lines, :starts_at, :ends_at
 

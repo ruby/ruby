@@ -50,6 +50,6 @@ describe "Float constant" do
   end
 
   it "NAN is 'not a number'" do
-    Float::NAN.nan?.should be_true
+    Float::NAN.nan?.should == true
   end
 end

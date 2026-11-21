@@ -7,7 +7,7 @@ describe "Module#method_added" do
   end
 
   it "is a private instance method" do
-    Module.should have_private_instance_method(:method_added)
+    Module.private_instance_methods(false).should.include?(:method_added)
   end
 
   it "returns nil in the default implementation" do
@@ -57,7 +57,7 @@ describe "Module#method_added" do
 
       undef_method :method_to_undef
     end
-    m.should_not have_method(:method_to_undef)
+    m.should_not.respond_to?(:method_to_undef)
   end
 
   it "is not called when a method changes visibility" do

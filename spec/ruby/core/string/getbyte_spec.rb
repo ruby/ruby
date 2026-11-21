@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 
 describe "String#getbyte" do
   it "returns an Integer if given a valid index" do
-    "a".getbyte(0).should be_kind_of(Integer)
+    "a".getbyte(0).should.is_a?(Integer)
   end
 
   it "starts indexing at 0" do
@@ -51,19 +51,19 @@ describe "String#getbyte" do
   end
 
   it "returns nil for out-of-bound indexes" do
-    "g".getbyte(1).should be_nil
+    "g".getbyte(1).should == nil
   end
 
   it "regards the empty String as containing no bytes" do
-    "".getbyte(0).should be_nil
+    "".getbyte(0).should == nil
   end
 
   it "raises an ArgumentError unless given one argument" do
-    -> { "glark".getbyte     }.should raise_error(ArgumentError)
-    -> { "food".getbyte(0,0) }.should raise_error(ArgumentError)
+    -> { "glark".getbyte     }.should.raise(ArgumentError)
+    -> { "food".getbyte(0,0) }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError unless its argument can be coerced into an Integer" do
-    -> { "a".getbyte('a') }.should raise_error(TypeError)
+    -> { "a".getbyte('a') }.should.raise(TypeError)
   end
 end

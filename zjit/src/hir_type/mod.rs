@@ -1,13 +1,14 @@
 //! High-level intermediate representation types.
 
 #![allow(non_upper_case_globals)]
-use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_CLASS, RUBY_T_HASH, RUBY_T_MODULE, RUBY_T_STRING, VALUE};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_cModule, rb_zjit_singleton_class_p};
+use crate::cruby;
+use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_HASH, RUBY_T_STRING, VALUE};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
+use crate::cruby::get_module_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
-use crate::cruby::rb_obj_class;
 use crate::hir::{Const, PtrPrintMap};
 use crate::profile::ProfiledType;
 
@@ -42,6 +43,33 @@ pub enum Specialization {
     Empty,
 }
 
+/// The integer type backing `Type::bits`. The masks and shift below derive their
+/// width from this, so changing it updates everything.
+type Bits = u64;
+
+/// Number of high bits of `Type::bits` stolen for the specialization tag.
+const NUM_SPEC_BITS: u32 = 3;
+const SPEC_SHIFT: u32 = Bits::BITS - NUM_SPEC_BITS;
+/// Mask that isolates the spec tag (the top `NUM_SPEC_BITS` bits).
+const SPEC_MASK: Bits = (((1 as Bits) << NUM_SPEC_BITS) - 1) << SPEC_SHIFT;
+/// Mask that isolates the type-lattice bits (everything below the spec tag).
+const BITS_MASK: Bits = !SPEC_MASK;
+
+/// Tag stored in the top `NUM_SPEC_BITS` of `Type::bits`, identifying which
+/// [`Specialization`] variant the `spec_val` payload belongs to. `repr(u64)` pins
+/// the discriminants to `Bits`-wide values for the `as Bits` casts in
+/// `Type::new`/`Type::spec`.
+#[repr(u64)]
+enum SpecTag {
+    Any = 0,
+    Type,
+    TypeExact,
+    Object,
+    Int,
+    Double,
+    Empty,
+}
+
 // NOTE: Type very intentionally does not support Eq or PartialEq; we almost never want to check
 // bit equality of types in the compiler but instead check subtyping, intersection, union, etc.
 #[derive(Copy, Clone, Debug)]
@@ -52,6 +80,10 @@ pub enum Specialization {
 /// * union/meet type A and type B
 ///
 /// Most questions can be rewritten in terms of these operations.
+///
+/// Packed layout (16 bytes total):
+/// - `bits`: low `NumTypeBits` bits are the type lattice bitset, bits 61-63 encode the [`Specialization`] tag
+/// - `spec_val`: raw 8-byte payload for the specialization (VALUE bits, u64, or f64 bits)
 pub struct Type {
     /// A bitset representing type information about the object. Specific bits are assigned for
     /// leaf types (for example, static symbols) and union-ing bitsets together represents
@@ -61,24 +93,38 @@ pub struct Type {
     /// Capable of also representing cvalue types (bool, i32, etc).
     ///
     /// This field should not be directly read or written except by internal `Type` APIs.
-    bits: u64,
-    /// Specialization of the type. See [`Specialization`].
+    ///
+    /// The top `NUM_SPEC_BITS` are stolen for encoding the specialization tag.
+    bits: Bits,
+    /// Payload for `Specialization`.
     ///
     /// This field should not be directly read or written except by internal `Type` APIs.
-    spec: Specialization
+    spec_val: u64,
 }
 
 include!("hir_type.inc.rs");
 
+// Compile-time check that type lattice bits don't overlap with the spec tag.
+const _: () = assert!(bits::NumTypeBits <= SPEC_SHIFT as u64,
+    "type lattice bits overlap with spec tag bits");
+
 fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::Result {
     let ty = printer.inner;
-    match ty.spec {
+    match ty.spec() {
         Specialization::Any | Specialization::Empty => { Ok(()) },
         Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
         Specialization::Object(val) if val == unsafe { rb_block_param_proxy } => write!(f, "[BlockParamProxy]"),
         Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) if ty.is_subtype(types::Class) =>
             write!(f, "[{}@{:p}]", get_class_name(val), printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void)),
+        Specialization::Object(val) if ty.is_subtype(types::Module) => {
+            if let Some(name) = get_module_name(val) {
+                write!(f, "[{}@{:p}]", name, printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void))
+            } else {
+                // Same as generic Specialization::Object
+                write!(f, "[{}]", val.print(printer.ptr_map))
+            }
+        }
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         // TODO(max): Ensure singleton classes never have Type specialization
         Specialization::Type(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
@@ -98,7 +144,14 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val & u32::MAX as u64),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{val}]"),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => {
+            // Print in hex if signed bit is set
+            if 0 != val & (1 << (u64::BITS - 1)) {
+                write!(f, "[0x{val:x}]")
+            } else {
+                write!(f, "[{val}]")
+            }
+        }
         Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
@@ -115,13 +168,13 @@ impl<'a> std::fmt::Display for TypePrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let ty = self.inner;
         for (name, pattern) in bits::AllBitPatterns {
-            if ty.bits == pattern {
+            if ty.type_bits() == pattern {
                 write!(f, "{name}")?;
                 return write_spec(f, self);
             }
         }
         assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
-        let mut bits = ty.bits;
+        let mut bits = ty.type_bits();
         let mut sep = "";
         for (name, pattern) in bits::AllBitPatterns {
             if bits == 0 { break; }
@@ -161,27 +214,54 @@ fn is_range_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cRange }
 }
 
-fn is_module_exact(val: VALUE) -> bool {
-    if val.builtin_type() != RUBY_T_MODULE {
-        return false;
-    }
-
-    // For Class and Module instances, `class_of` will return the singleton class of the object.
-    // Using `rb_obj_class` will give us the actual class of the module so we can check if the
-    // object is an instance of Module, or an instance of Module subclass.
-    let klass = unsafe { rb_obj_class(val) };
-    klass == unsafe { rb_cModule }
-}
-
 impl Type {
     /// Create a `Type` from the given integer.
-    pub const fn fixnum(val: i64) -> Type {
-        Type {
-            bits: bits::Fixnum,
-            spec: Specialization::Object(VALUE::fixnum_from_usize(val as usize)),
+    /// Construct a Type from raw lattice bits and a Specialization.
+    const fn new(bits: u64, spec: Specialization) -> Type {
+        let (tag, val) = match spec {
+            Specialization::Any => (SpecTag::Any, 0u64),
+            Specialization::Type(v) => (SpecTag::Type, v.as_usize() as u64),
+            Specialization::TypeExact(v) => (SpecTag::TypeExact, v.as_usize() as u64),
+            Specialization::Object(v) => (SpecTag::Object, v.as_usize() as u64),
+            Specialization::Int(v) => (SpecTag::Int, v),
+            Specialization::Double(v) => (SpecTag::Double, v.to_bits()),
+            Specialization::Empty => (SpecTag::Empty, 0u64),
+        };
+        debug_assert!(bits & SPEC_MASK == 0, "type lattice bits overlap with spec tag");
+        Type { bits: ((tag as Bits) << SPEC_SHIFT) | bits, spec_val: val }
+    }
+
+    /// Return the type-lattice bits (low 61 bits, excluding the spec tag).
+    const fn type_bits(&self) -> u64 {
+        self.bits & BITS_MASK
+    }
+
+    const fn spec_bits(&self) -> u64 {
+        self.bits >> SPEC_SHIFT
+    }
+
+    /// Reconstruct the Specialization enum from the packed representation.
+    pub fn spec(&self) -> Specialization {
+        match self.spec_bits() {
+            t if t == SpecTag::Any as Bits => Specialization::Any,
+            t if t == SpecTag::Type as Bits => Specialization::Type(VALUE(self.spec_val as usize)),
+            t if t == SpecTag::TypeExact as Bits => Specialization::TypeExact(VALUE(self.spec_val as usize)),
+            t if t == SpecTag::Object as Bits => Specialization::Object(VALUE(self.spec_val as usize)),
+            t if t == SpecTag::Int as Bits => Specialization::Int(self.spec_val),
+            t if t == SpecTag::Double as Bits => Specialization::Double(f64::from_bits(self.spec_val)),
+            t if t == SpecTag::Empty as Bits => Specialization::Empty,
+            _ => unreachable!(),
         }
     }
 
+    /// Create a `Type` from the given integer.
+    pub const fn fixnum(val: i64) -> Type {
+        Type::new(bits::Fixnum, Specialization::Object(VALUE::fixnum_from_usize(val as usize)))
+    }
+
+    /// Find the type bits corresponding to exactly the given Ruby class. If we already have
+    /// pre-defined bit patterns for it (say, `NilClass` or `String`), then return those bits
+    /// (`NilClass`, `StringExact`). Otherwise return None.
     fn bits_from_exact_class(class: VALUE) -> Option<u64> {
         types::ExactBitsAndClass
             .iter()
@@ -189,8 +269,21 @@ impl Type {
             .map(|&(bits, _)| bits)
     }
 
-    fn bits_from_subclass(class: VALUE) -> Option<u64> {
+    /// Find the type bits corresponding to the given Ruby class and all of its subclasses. If we
+    /// already have pre-defined bit patterns for it (say, `Array` or `Hash`), then return those
+    /// bits (`Array`, `Hash`). Otherwise return None.
+    fn bits_from_inexact_class(class: VALUE) -> Option<u64> {
         types::InexactBitsAndClass
+            .iter()
+            .find(|&&(_, class_object)| unsafe { *class_object } == class)
+            .map(|&(bits, _)| bits)
+    }
+
+    /// Find the type bits corresponding to the given Ruby class's subclasses, excluding the class
+    /// itself. If we already have pre-defined bit patterns for it (say, `Array` or `Hash`), then
+    /// return those bits (`ArraySubclass`, `HashSubclass`). Otherwise return None.
+    fn bits_from_subclass(class: VALUE) -> Option<u64> {
+        types::SubclassBitsAndClass
             .iter()
             .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
             // Can't be an immediate if it's a subclass.
@@ -204,9 +297,6 @@ impl Type {
             if is_array_exact(val) { bits::ArrayExact }
             else if is_hash_exact(val) { bits::HashExact }
             else if is_string_exact(val) { bits::StringExact }
-            // Singleton classes
-            else if is_module_exact(val) { bits::ModuleExact }
-            else if val.builtin_type() == RUBY_T_CLASS { bits::Class }
             // Classes that have an immediate/heap split
             else if val.class_of() == unsafe { rb_cInteger } { bits::Bignum }
             else if val.class_of() == unsafe { rb_cFloat } { bits::HeapFloat }
@@ -217,8 +307,7 @@ impl Type {
                 unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                              get_class_name(val.class_of()))
             };
-        let spec = Specialization::Object(val);
-        Type { bits, spec }
+        Type::new(bits, Specialization::Object(val))
     }
 
     /// Create a `Type` from a Ruby `VALUE`. The type is not guaranteed to have object
@@ -227,13 +316,13 @@ impl Type {
     pub fn from_value(val: VALUE) -> Type {
         // Immediates
         if val.fixnum_p() {
-            Type { bits: bits::Fixnum, spec: Specialization::Object(val) }
+            Type::new(bits::Fixnum, Specialization::Object(val))
         }
         else if val.flonum_p() {
-            Type { bits: bits::Flonum, spec: Specialization::Object(val) }
+            Type::new(bits::Flonum, Specialization::Object(val))
         }
         else if val.static_sym_p() {
-            Type { bits: bits::StaticSymbol, spec: Specialization::Object(val) }
+            Type::new(bits::StaticSymbol, Specialization::Object(val))
         }
         // Singleton objects; don't specialize
         else if val == Qnil { types::NilClass }
@@ -242,7 +331,11 @@ impl Type {
         else if val.cme_p() {
             // NB: Checking for CME has to happen before looking at class_of because that's not
             // valid on imemo.
-            Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
+            Type::new(bits::CallableMethodEntry, Specialization::Object(val))
+        }
+        else if val.iseq_p() {
+            // Same as CME: an ISEQ is an imemo, so class_of is not valid on it.
+            Type::new(bits::Iseq, Specialization::Object(val))
         }
         else {
             Self::from_heap_object(val)
@@ -260,6 +353,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::CAttrIndex(v) => Self::from_cint(types::CAttrIndex, v as i64),
             Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
@@ -274,15 +368,37 @@ impl Type {
         else if val.is_nil() { types::NilClass }
         else if val.is_true() { types::TrueClass }
         else if val.is_false() { types::FalseClass }
-        else { Self::from_class(val.class()) }
+        // TODO(max): Revisit and maybe specialize to *not* an immediate
+        else { Self::from_class(val.class()).intersection(types::HeapBasicObject) }
     }
 
+    /// Try to represent the class using only bits, falling back to the nearest builtin subclass
+    /// and a TypeExact specialization.
+    ///
+    /// Useful for getting specific type information: if we know that we're allocating from a
+    /// specific class, we know the results will be exactly that class and not a subclass.
     pub fn from_class(class: VALUE) -> Type {
         if let Some(bits) = Self::bits_from_exact_class(class) {
             return Type::from_bits(bits);
         }
         if let Some(bits) = Self::bits_from_subclass(class) {
-            return Type { bits, spec: Specialization::TypeExact(class) }
+            return Type::new(bits, Specialization::TypeExact(class))
+        }
+        unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
+                     get_class_name(class))
+    }
+
+    /// Try to represent the class or its subclasses using only bits, falling back to the nearest
+    /// builtin subclass and a Type specialization.
+    ///
+    /// Useful for querying subclassing. For example, if we want to query if some `t: Type` is a
+    /// subclass of `class`, we can use `t.is_subtype(Type::from_class_inexact(class))`.
+    pub fn from_class_inexact(class: VALUE) -> Type {
+        if let Some(bits) = Self::bits_from_inexact_class(class) {
+            return Type::from_bits(bits);
+        }
+        if let Some(bits) = Self::bits_from_subclass(class) {
+            return Type::new(bits, Specialization::Type(class));
         }
         unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                      get_class_name(class))
@@ -290,39 +406,36 @@ impl Type {
 
     /// Private. Only for creating type globals.
     const fn from_bits(bits: u64) -> Type {
-        Type {
-            bits,
-            spec: if bits == bits::Empty {
-                Specialization::Empty
-            } else {
-                Specialization::Any
-            },
-        }
+        Type::new(bits, if bits == bits::Empty {
+            Specialization::Empty
+        } else {
+            Specialization::Any
+        })
     }
 
     /// Create a `Type` from a cvalue integer. Use the `ty` given to specify what size the
     /// `specialization` represents. For example, `Type::from_cint(types::CBool, 1)` or
     /// `Type::from_cint(types::CUInt16, 12)`.
     pub fn from_cint(ty: Type, val: i64) -> Type {
-        assert_eq!(ty.spec, Specialization::Any);
+        assert_eq!(ty.spec(), Specialization::Any);
         assert!((ty.is_subtype(types::CUnsigned) || ty.is_subtype(types::CSigned)) &&
-                ty.bits != types::CUnsigned.bits && ty.bits != types::CSigned.bits,
+                ty.type_bits() != types::CUnsigned.type_bits() && ty.type_bits() != types::CSigned.type_bits(),
                 "ty must be a specific int size");
-        Type { bits: ty.bits, spec: Specialization::Int(val as u64) }
+        Type::new(ty.type_bits(), Specialization::Int(val as u64))
     }
 
     pub fn from_cptr(val: *const u8) -> Type {
-        Type { bits: bits::CPtr, spec: Specialization::Int(val as u64) }
+        Type::new(bits::CPtr, Specialization::Int(val as u64))
     }
 
     /// Create a `Type` (a `CDouble` with double specialization) from a f64.
     pub fn from_double(val: f64) -> Type {
-        Type { bits: bits::CDouble, spec: Specialization::Double(val) }
+        Type::new(bits::CDouble, Specialization::Double(val))
     }
 
     /// Create a `Type` from a cvalue boolean.
     pub fn from_cbool(val: bool) -> Type {
-        Type { bits: bits::CBool, spec: Specialization::Int(val as u64) }
+        Type::new(bits::CBool, Specialization::Int(val as u64))
     }
 
     /// Return true if the value with this type is definitely truthy.
@@ -335,37 +448,42 @@ impl Type {
         self.is_subtype(types::NilClass) || self.is_subtype(types::FalseClass)
     }
 
+    pub fn has_value(&self, val: Const) -> bool {
+        match (self.spec(), val) {
+            (Specialization::Object(v1), Const::Value(v2)) => v1 == v2,
+            (Specialization::Int(v1), Const::CBool(v2)) if self.is_subtype(types::CBool) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt8(v2)) if self.is_subtype(types::CInt8) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt16(v2)) if self.is_subtype(types::CInt16) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt32(v2)) if self.is_subtype(types::CInt32) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CInt64(v2)) if self.is_subtype(types::CInt64) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CUInt8(v2)) if self.is_subtype(types::CUInt8) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CUInt16(v2)) if self.is_subtype(types::CUInt16) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CUInt32(v2)) if self.is_subtype(types::CUInt32) => v1 == (v2 as u64),
+            (Specialization::Int(v1), Const::CShape(v2)) if self.is_subtype(types::CShape) => v1 == (v2.0 as u64),
+            (Specialization::Int(v1), Const::CUInt64(v2)) if self.is_subtype(types::CUInt64) => v1 == v2,
+            (Specialization::Int(v1), Const::CPtr(v2)) if self.is_subtype(types::CPtr) => v1 == (v2 as u64),
+            (Specialization::Double(v1), Const::CDouble(v2)) => v1.to_bits() == v2.to_bits(),
+            _ => false,
+        }
+    }
+
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
-        match self.spec {
-            Specialization::Object(val) => Some(val),
-            _ => None,
-        }
-    }
-
-    /// Return a Ruby object that needs to be marked on GC.
-    /// This covers Type and TypeExact unlike ruby_object().
-    pub fn gc_object(&self) -> Option<VALUE> {
-        match self.spec {
-            Specialization::Type(val) |
-            Specialization::TypeExact(val) |
-            Specialization::Object(val) => Some(val),
-            _ => None,
-        }
-    }
-
-    /// Mutable version of gc_object().
-    pub fn gc_object_mut(&mut self) -> Option<&mut VALUE> {
-        match &mut self.spec {
-            Specialization::Type(val) |
-            Specialization::TypeExact(val) |
+        // We ask not for the type, but for a specific value associated with this Type. If the Type
+        // is Empty, it will be a subtype of every other Type, but it will never have any value.
+        // Therefore, special-case Empty.
+        if self.is_subtype(types::Empty) { return None; }
+        if self.is_subtype(types::NilClass) { return Some(Qnil); }
+        if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
+        if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
+        match self.spec() {
             Specialization::Object(val) => Some(val),
             _ => None,
         }
     }
 
     pub fn unspecialized(&self) -> Self {
-        Type { spec: Specialization::Any, ..*self }
+        Type::new(self.type_bits(), Specialization::Any)
     }
 
     pub fn fixnum_value(&self) -> Option<i64> {
@@ -376,9 +494,46 @@ impl Type {
         }
     }
 
+    pub fn cint64_value(&self) -> Option<i64> {
+        match (self.is_subtype(types::CInt64), self.spec()) {
+            (true, Specialization::Int(val)) => Some(val as i64),
+            _ => None,
+        }
+    }
+
+    fn int_spec_signed(&self) -> Option<i64> {
+        assert!(self.is_subtype(types::CSigned), "int_spec_signed() only makes sense for signed integer types");
+        match self.spec() {
+            Specialization::Int(val) => Some(val as i64),
+            _ => None,
+        }
+    }
+
+    pub fn known_nonnegative(&self) -> bool {
+        assert!(self.is_subtype(types::CSigned), "nonnegative() only makes sense for signed integer types");
+        self.int_spec_signed().map_or(false, |val| val >= 0)
+    }
+
     /// Return true if the Type has object specialization and false otherwise.
     pub fn ruby_object_known(&self) -> bool {
-        matches!(self.spec, Specialization::Object(_))
+        matches!(self.spec(), Specialization::Object(_))
+    }
+
+    /// Find a `T_*` type that is exactly as wide as `self`.
+    pub fn builtin_type_equivalent(&self) -> Option<cruby::ruby_value_type> {
+        if self.bit_equal(types::Array) {
+            Some(cruby::RUBY_T_ARRAY)
+        } else if self.bit_equal(types::Class) {
+            Some(cruby::RUBY_T_CLASS)
+        } else if self.bit_equal(types::Module) {
+            Some(cruby::RUBY_T_MODULE)
+        } else if self.bit_equal(types::String) {
+            Some(cruby::RUBY_T_STRING)
+        } else if self.bit_equal(types::Hash) {
+            Some(cruby::RUBY_T_HASH)
+        } else {
+            None
+        }
     }
 
     fn is_builtin(class: VALUE) -> bool {
@@ -392,7 +547,7 @@ impl Type {
         // Easy cases first
         if self.is_subtype(other) { return other; }
         if other.is_subtype(*self) { return *self; }
-        let bits = self.bits | other.bits;
+        let bits = self.type_bits() | other.type_bits();
         let result = Type::from_bits(bits);
         // If one type isn't type specialized, we can't return a specialized Type
         if !self.type_known() || !other.type_known() { return result; }
@@ -411,19 +566,19 @@ impl Type {
         if let Some(self_class) = self.exact_ruby_class() {
             if let Some(other_class) = other.exact_ruby_class() {
                 if self_class == other_class {
-                    return Type { bits, spec: Specialization::TypeExact(self_class) };
+                    return Type::new(bits, Specialization::TypeExact(self_class));
                 }
             }
         }
-        Type { bits, spec: Specialization::Type(super_class) }
+        Type::new(bits, Specialization::Type(super_class))
     }
 
     /// Intersect both types, preserving specialization if possible.
     pub fn intersection(&self, other: Type) -> Type {
-        let bits = self.bits & other.bits;
+        let bits = self.type_bits() & other.type_bits();
         if bits == bits::Empty { return types::Empty; }
-        if self.spec_is_subtype_of(other) { return Type { bits, spec: self.spec }; }
-        if other.spec_is_subtype_of(*self) { return Type { bits, spec: other.spec }; }
+        if self.spec_is_subtype_of(other) { return Type::new(bits, self.spec()); }
+        if other.spec_is_subtype_of(*self) { return Type::new(bits, other.spec()); }
         types::Empty
     }
 
@@ -434,27 +589,27 @@ impl Type {
     /// Check if the type field of `self` is a subtype of the type field of `other` and also check
     /// if the specialization of `self` is a subtype of the specialization of `other`.
     pub fn is_subtype(&self, other: Type) -> bool {
-        (self.bits & other.bits) == self.bits && self.spec_is_subtype_of(other)
+        (self.type_bits() & other.type_bits()) == self.type_bits() && self.spec_is_subtype_of(other)
     }
 
     /// Return the type specialization, if any. Type specialization asks if we know the Ruby type
     /// (including potentially its subclasses) corresponding to a `Type`, including knowing exactly
     /// what object is is.
     pub fn type_known(&self) -> bool {
-        matches!(self.spec, Specialization::TypeExact(_) | Specialization::Type(_) | Specialization::Object(_))
+        matches!(self.spec(), Specialization::TypeExact(_) | Specialization::Type(_) | Specialization::Object(_))
     }
 
     /// Return the exact type specialization, if any. Type specialization asks if we know the
     /// *exact* Ruby type corresponding to a `Type`, including knowing exactly what object is is.
     pub fn exact_class_known(&self) -> bool {
-        matches!(self.spec, Specialization::TypeExact(_) | Specialization::Object(_))
+        matches!(self.spec(), Specialization::TypeExact(_) | Specialization::Object(_))
     }
 
     /// Return the exact type specialization, if any. Type specialization asks if we know the exact
     /// Ruby type corresponding to a `Type` (no subclasses), including knowing exactly what object
     /// it is.
     pub fn exact_ruby_class(&self) -> Option<VALUE> {
-        match self.spec {
+        match self.spec() {
             // If we're looking at a precise object, we can pull out its class.
             Specialization::Object(val) => Some(val.class_of()),
             Specialization::TypeExact(val) => Some(val),
@@ -465,7 +620,7 @@ impl Type {
     /// Return the type specialization, if any. Type specialization asks if we know the inexact
     /// Ruby type corresponding to a `Type`, including knowing exactly what object is is.
     pub fn inexact_ruby_class(&self) -> Option<VALUE> {
-        match self.spec {
+        match self.spec() {
             // If we're looking at a precise object, we can pull out its class.
             Specialization::Object(val) => Some(val.class_of()),
             Specialization::TypeExact(val) | Specialization::Type(val) => Some(val),
@@ -480,6 +635,10 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
+        // As in `ruby_object`, we ask not for the type but for a property of the values it
+        // describes. Empty is a subtype of every Type, so the scan below would report the first
+        // entry's class, but Empty describes no value and therefore no run-time class.
+        if self.is_subtype(types::Empty) { return None; }
         types::ExactBitsAndClass
             .iter()
             .find(|&(bits, _)| self.is_subtype(Type::from_bits(*bits)))
@@ -488,13 +647,13 @@ impl Type {
 
     /// Check bit equality of two `Type`s. Do not use! You are probably looking for [`Type::is_subtype`].
     pub fn bit_equal(&self, other: Type) -> bool {
-        self.bits == other.bits && self.spec == other.spec
+        self.bits == other.bits && self.spec_val == other.spec_val
     }
 
     /// Check *only* if `self`'s specialization is a subtype of `other`'s specialization. Private.
     /// You probably want [`Type::is_subtype`] instead.
     fn spec_is_subtype_of(&self, other: Type) -> bool {
-        match (self.spec, other.spec) {
+        match (self.spec(), other.spec()) {
             // Empty is a subtype of everything; Any is a supertype of everything
             (Specialization::Empty, _) | (_, Specialization::Any) => true,
             // Other is not Any from the previous case, so Any is definitely not a subtype
@@ -502,7 +661,7 @@ impl Type {
             // Int and double specialization requires exact equality
             (Specialization::Int(_), _) | (_, Specialization::Int(_)) |
             (Specialization::Double(_), _) | (_, Specialization::Double(_)) =>
-                self.bits == other.bits && self.spec == other.spec,
+                self.bits == other.bits && self.spec_val == other.spec_val,
             // Check other's specialization type in decreasing order of specificity
             (_, Specialization::Object(_)) =>
                 self.ruby_object_known() && self.ruby_object() == other.ruby_object(),
@@ -555,8 +714,8 @@ mod tests {
 
     #[track_caller]
     fn assert_bit_equal(left: Type, right: Type) {
-        assert_eq!(left.bits, right.bits, "{left} bits are not equal to {right} bits");
-        assert_eq!(left.spec, right.spec, "{left} spec is not equal to {right} spec");
+        assert_eq!(left.type_bits(), right.type_bits(), "{left} bits are not equal to {right} bits");
+        assert_eq!(left.spec(), right.spec(), "{left} spec is not equal to {right} spec");
     }
 
     #[track_caller]
@@ -597,26 +756,26 @@ mod tests {
     fn from_const() {
         let cint32 = Type::from_const(Const::CInt32(12));
         assert_subtype(cint32, types::CInt32);
-        assert_eq!(cint32.spec, Specialization::Int(12));
+        assert_eq!(cint32.spec(), Specialization::Int(12));
         assert_eq!(format!("{}", cint32), "CInt32[12]");
 
         let cint32 = Type::from_const(Const::CInt32(-12));
         assert_subtype(cint32, types::CInt32);
-        assert_eq!(cint32.spec, Specialization::Int((-12i64) as u64));
+        assert_eq!(cint32.spec(), Specialization::Int((-12i64) as u64));
         assert_eq!(format!("{}", cint32), "CInt32[-12]");
 
         let cuint32 = Type::from_const(Const::CInt32(12));
         assert_subtype(cuint32, types::CInt32);
-        assert_eq!(cuint32.spec, Specialization::Int(12));
+        assert_eq!(cuint32.spec(), Specialization::Int(12));
 
         let cuint32 = Type::from_const(Const::CUInt32(0xffffffff));
         assert_subtype(cuint32, types::CUInt32);
-        assert_eq!(cuint32.spec, Specialization::Int(0xffffffff));
+        assert_eq!(cuint32.spec(), Specialization::Int(0xffffffff));
         assert_eq!(format!("{}", cuint32), "CUInt32[4294967295]");
 
         let cuint32 = Type::from_const(Const::CUInt32(0xc00087));
         assert_subtype(cuint32, types::CUInt32);
-        assert_eq!(cuint32.spec, Specialization::Int(0xc00087));
+        assert_eq!(cuint32.spec(), Specialization::Int(0xc00087));
         assert_eq!(format!("{}", cuint32), "CUInt32[12583047]");
     }
 
@@ -728,13 +887,25 @@ mod tests {
     }
 
     #[test]
-    fn singletons_do_not_have_ruby_object() {
-        assert_eq!(Type::from_value(Qnil).ruby_object(), None);
-        assert_eq!(types::NilClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qtrue).ruby_object(), None);
-        assert_eq!(types::TrueClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qfalse).ruby_object(), None);
-        assert_eq!(types::FalseClass.ruby_object(), None);
+    fn singletons_have_ruby_object() {
+        assert_eq!(Type::from_value(Qnil).ruby_object(), Some(Qnil));
+        assert_eq!(types::NilClass.ruby_object(), Some(Qnil));
+        assert_eq!(Type::from_value(Qtrue).ruby_object(), Some(Qtrue));
+        assert_eq!(types::TrueClass.ruby_object(), Some(Qtrue));
+        assert_eq!(Type::from_value(Qfalse).ruby_object(), Some(Qfalse));
+        assert_eq!(types::FalseClass.ruby_object(), Some(Qfalse));
+    }
+
+    #[test]
+    fn empty_has_no_ruby_object() {
+        // Empty is a subtype of every type, but has no value.
+        assert_eq!(types::Empty.ruby_object(), None);
+        assert_eq!(types::Empty.fixnum_value(), None);
+        assert_eq!(types::Empty.runtime_exact_ruby_class(), None);
+        assert_eq!(types::Empty.cint64_value(), None);
+        assert_eq!(types::Empty.exact_ruby_class(), None);
+        assert_eq!(types::Empty.inexact_ruby_class(), None);
+        assert_eq!(types::Empty.builtin_type_equivalent(), None);
     }
 
     #[test]
@@ -775,7 +946,33 @@ mod tests {
             assert_bit_equal(Type::from_class(unsafe { rb_cTrueClass }), types::TrueClass);
             assert_bit_equal(Type::from_class(unsafe { rb_cFalseClass }), types::FalseClass);
             let c_class = define_class("C", unsafe { rb_cObject });
-            assert_bit_equal(Type::from_class(c_class), Type { bits: bits::HeapObject, spec: Specialization::TypeExact(c_class) });
+            assert_bit_equal(Type::from_class(c_class), Type::new(bits::ObjectSubclass, Specialization::TypeExact(c_class)));
+        });
+    }
+
+    #[test]
+    fn from_class_inexact() {
+        crate::cruby::with_rubyvm(|| {
+            assert_bit_equal(Type::from_class_inexact(unsafe { rb_cArray }), types::Array);
+            assert_bit_equal(Type::from_class_inexact(unsafe { rb_cNilClass }), types::NilClass);
+            assert_bit_equal(Type::from_class_inexact(unsafe { rb_cString }), types::String);
+            let c_class = define_class("C", unsafe { rb_cObject });
+            assert_bit_equal(Type::from_class_inexact(c_class),
+                             Type::new(bits::ObjectSubclass, Specialization::Type(c_class)));
+        });
+    }
+
+    #[test]
+    fn intersection_of_builtin_and_user_class_inexact_is_empty() {
+        crate::cruby::with_rubyvm(|| {
+            let c_class = define_class("C", unsafe { rb_cObject });
+            let c_inexact = Type::from_class_inexact(c_class);
+            // A Fixnum can never be an instance of C or any subclass of C; the
+            // bits are disjoint, so no specialization comparison is needed.
+            assert_bit_equal(Type::fixnum(123).intersection(c_inexact), types::Empty);
+            assert_bit_equal(c_inexact.intersection(Type::fixnum(123)), types::Empty);
+            assert_bit_equal(types::Fixnum.intersection(c_inexact), types::Empty);
+            assert_bit_equal(c_inexact.intersection(types::Fixnum), types::Empty);
         });
     }
 
@@ -813,7 +1010,7 @@ mod tests {
         assert_eq!(format!("{}", Type::from_cint(types::CInt32, -1)), "CInt32[-1]");
         assert_eq!(format!("{}", Type::from_cint(types::CUInt32, -1)), "CUInt32[4294967295]");
         assert_eq!(format!("{}", Type::from_cint(types::CInt64, -1)), "CInt64[-1]");
-        assert_eq!(format!("{}", Type::from_cint(types::CUInt64, -1)), "CUInt64[18446744073709551615]");
+        assert_eq!(format!("{}", Type::from_cint(types::CUInt64, -1)), "CUInt64[0xffffffffffffffff]");
         assert_eq!(format!("{}", Type::from_cbool(true)), "CBool[true]");
         assert_eq!(format!("{}", Type::from_cbool(false)), "CBool[false]");
         assert_eq!(format!("{}", types::Fixnum), "Fixnum");
@@ -846,7 +1043,7 @@ mod tests {
 
     #[test]
     fn union_bits_unions_bits() {
-        assert_bit_equal(types::Fixnum.union(types::StaticSymbol), Type { bits: bits::Fixnum | bits::StaticSymbol, spec: Specialization::Any });
+        assert_bit_equal(types::Fixnum.union(types::StaticSymbol), Type::new(bits::Fixnum | bits::StaticSymbol, Specialization::Any));
     }
 
     #[test]
@@ -864,8 +1061,8 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let specialized = Type::from_value(unsafe { rb_ary_new_capa(0) });
             let unspecialized = types::StringExact;
-            assert_bit_equal(specialized.union(unspecialized), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Any });
-            assert_bit_equal(unspecialized.union(specialized), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Any });
+            assert_bit_equal(specialized.union(unspecialized), Type::new(bits::ArrayExact | bits::StringExact, Specialization::Any));
+            assert_bit_equal(unspecialized.union(specialized), Type::new(bits::ArrayExact | bits::StringExact, Specialization::Any));
         });
     }
 
@@ -927,6 +1124,18 @@ mod tests {
     }
 
     #[test]
+    fn iseq() {
+        crate::cruby::with_rubyvm(|| {
+            let iseq = crate::cruby::test_utils::get_proc_iseq("proc { 1 }");
+            assert!(!iseq.is_null());
+            let iseq_value: VALUE = iseq.into();
+            let ty = Type::from_value(iseq_value);
+            assert_subtype(ty, types::Iseq);
+            assert!(ty.ruby_object_known());
+        });
+    }
+
+    #[test]
     fn string_subclass_is_string_subtype() {
         crate::cruby::with_rubyvm(|| {
             assert_subtype(types::StringExact, types::String);
@@ -942,7 +1151,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let string = Type::from_value(rust_str_to_ruby("hello"));
             let array = Type::from_value(unsafe { rb_ary_new_capa(0) });
-            assert_bit_equal(string.union(array), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Any });
+            assert_bit_equal(string.union(array), Type::new(bits::ArrayExact | bits::StringExact, Specialization::Any));
         });
     }
 
@@ -951,11 +1160,87 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let c_class = define_class("C", unsafe { rb_cObject });
             let d_class = define_class("D", c_class);
-            let c_instance = Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(c_class) };
-            let d_instance = Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(d_class) };
-            assert_bit_equal(c_instance.union(c_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(c_class)});
-            assert_bit_equal(c_instance.union(d_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::Type(c_class)});
-            assert_bit_equal(d_instance.union(c_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::Type(c_class)});
+            let c_instance = Type::new(bits::ObjectSubclass, Specialization::TypeExact(c_class));
+            let d_instance = Type::new(bits::ObjectSubclass, Specialization::TypeExact(d_class));
+            assert_bit_equal(c_instance.union(c_instance), Type::new(bits::ObjectSubclass, Specialization::TypeExact(c_class)));
+            assert_bit_equal(c_instance.union(d_instance), Type::new(bits::ObjectSubclass, Specialization::Type(c_class)));
+            assert_bit_equal(d_instance.union(c_instance), Type::new(bits::ObjectSubclass, Specialization::Type(c_class)));
         });
+    }
+
+    #[test]
+    fn has_value() {
+        // With known values
+        crate::cruby::with_rubyvm(|| {
+            let a = rust_str_to_sym("a");
+            let b = rust_str_to_sym("b");
+            let ty = Type::from_value(a);
+            assert!(ty.has_value(Const::Value(a)));
+            assert!(!ty.has_value(Const::Value(b)));
+        });
+
+        let true_ty = Type::from_cbool(true);
+        assert!(true_ty.has_value(Const::CBool(true)));
+        assert!(!true_ty.has_value(Const::CBool(false)));
+
+        let int8_ty = Type::from_cint(types::CInt8, 42);
+        assert!(int8_ty.has_value(Const::CInt8(42)));
+        assert!(!int8_ty.has_value(Const::CInt8(-1)));
+        let neg_int8_ty = Type::from_cint(types::CInt8, -1);
+        assert!(neg_int8_ty.has_value(Const::CInt8(-1)));
+
+        let int16_ty = Type::from_cint(types::CInt16, 1000);
+        assert!(int16_ty.has_value(Const::CInt16(1000)));
+        assert!(!int16_ty.has_value(Const::CInt16(2000)));
+
+        let int32_ty = Type::from_cint(types::CInt32, 100000);
+        assert!(int32_ty.has_value(Const::CInt32(100000)));
+        assert!(!int32_ty.has_value(Const::CInt32(-100000)));
+
+        let int64_ty = Type::from_cint(types::CInt64, i64::MAX);
+        assert!(int64_ty.has_value(Const::CInt64(i64::MAX)));
+        assert!(!int64_ty.has_value(Const::CInt64(0)));
+
+        let uint8_ty = Type::from_cint(types::CUInt8, u8::MAX as i64);
+        assert!(uint8_ty.has_value(Const::CUInt8(u8::MAX)));
+        assert!(!uint8_ty.has_value(Const::CUInt8(0)));
+
+        let uint16_ty = Type::from_cint(types::CUInt16, u16::MAX as i64);
+        assert!(uint16_ty.has_value(Const::CUInt16(u16::MAX)));
+        assert!(!uint16_ty.has_value(Const::CUInt16(1)));
+
+        let uint32_ty = Type::from_cint(types::CUInt32, u32::MAX as i64);
+        assert!(uint32_ty.has_value(Const::CUInt32(u32::MAX)));
+        assert!(!uint32_ty.has_value(Const::CUInt32(42)));
+
+        let uint64_ty = Type::from_cint(types::CUInt64, i64::MAX);
+        assert!(uint64_ty.has_value(Const::CUInt64(i64::MAX as u64)));
+        assert!(!uint64_ty.has_value(Const::CUInt64(123)));
+
+        let shape_ty = Type::from_cint(types::CShape, 0x1234);
+        assert!(shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
+        assert!(!shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x5678))));
+
+        let ptr = 0x1000 as *const u8;
+        let ptr_ty = Type::from_cptr(ptr);
+        assert!(ptr_ty.has_value(Const::CPtr(ptr)));
+        assert!(!ptr_ty.has_value(Const::CPtr(0x2000 as *const u8)));
+
+        let double_ty = Type::from_double(std::f64::consts::PI);
+        assert!(double_ty.has_value(Const::CDouble(std::f64::consts::PI)));
+        assert!(!double_ty.has_value(Const::CDouble(3.123)));
+
+        let nan_ty = Type::from_double(f64::NAN);
+        assert!(nan_ty.has_value(Const::CDouble(f64::NAN)));
+
+        // Mismatched types
+        assert!(!int8_ty.has_value(Const::CInt16(42)));
+        assert!(!int16_ty.has_value(Const::CInt32(1000)));
+        assert!(!uint8_ty.has_value(Const::CInt8(-1i8)));
+
+        // Wrong specialization (unknown value)
+        assert!(!types::CInt8.has_value(Const::CInt8(42)));
+        assert!(!types::CBool.has_value(Const::CBool(true)));
+        assert!(!types::CShape.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
     }
 }

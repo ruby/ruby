@@ -3,7 +3,7 @@
 module Gem
   module CIDetector
     # NOTE: Any changes made here will need to be made to both lib/rubygems/ci_detector.rb and
-    # bundler/lib/bundler/ci_detector.rb (which are enforced duplicates).
+    # lib/bundler/ci_detector.rb (which are enforced duplicates).
     # TODO: Drop that duplication once bundler drops support for RubyGems 3.4
     #
     # ## Recognized CI providers, their signifiers, and the relevant docs ##

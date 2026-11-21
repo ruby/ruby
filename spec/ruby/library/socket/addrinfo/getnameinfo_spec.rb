@@ -21,7 +21,7 @@ describe 'Addrinfo#getnameinfo' do
   end
 
   platform_is :linux do
-    platform_is_not :android do
+    platform_is_not :android, :musl do
       describe 'using a UNIX Addrinfo' do
         before do
           @addr = Addrinfo.unix('cats')

@@ -7,10 +7,10 @@ describe "Set#clear" do
 
   it "removes all elements from self" do
     @set.clear
-    @set.should be_empty
+    @set.should.empty?
   end
 
   it "returns self" do
-    @set.clear.should equal(@set)
+    @set.clear.should.equal?(@set)
   end
 end

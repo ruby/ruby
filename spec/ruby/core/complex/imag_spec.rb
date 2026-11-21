@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/image'
 
 describe "Complex#imag" do
-  it_behaves_like :complex_image, :imag
+  it "is an alias of Complex#imaginary" do
+    Complex.instance_method(:imag).should == Complex.instance_method(:imaginary)
+  end
 end

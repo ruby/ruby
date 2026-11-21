@@ -14,8 +14,8 @@ describe "StopIteration#result" do
   it "returns the method-returned-object from an Enumerator" do
     @enum.next
     @enum.next
-    -> { @enum.next }.should raise_error(StopIteration) { |error|
-      error.result.should equal(:method_returned)
+    -> { @enum.next }.should.raise(StopIteration) { |error|
+      error.result.should.equal?(:method_returned)
     }
   end
 end

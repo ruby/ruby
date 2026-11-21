@@ -2,16 +2,16 @@ require_relative "../../spec_helper"
 
 describe "Rational#div" do
   it "returns an Integer" do
-    Rational(229, 21).div(82).should be_kind_of(Integer)
+    Rational(229, 21).div(82).should.is_a?(Integer)
   end
 
   it "raises an ArgumentError if passed more than one argument" do
-    -> { Rational(3, 4).div(2,3) }.should raise_error(ArgumentError)
+    -> { Rational(3, 4).div(2,3) }.should.raise(ArgumentError)
   end
 
   # See http://redmine.ruby-lang.org/issues/show/1648
   it "raises a TypeError if passed a non-numeric argument" do
-    -> { Rational(3, 4).div([]) }.should raise_error(TypeError)
+    -> { Rational(3, 4).div([]) }.should.raise(TypeError)
   end
 end
 
@@ -22,11 +22,11 @@ describe "Rational#div passed a Rational" do
   end
 
   it "raises a ZeroDivisionError when the argument has a numerator of 0" do
-    -> { Rational(3, 4).div(Rational(0, 3)) }.should raise_error(ZeroDivisionError)
+    -> { Rational(3, 4).div(Rational(0, 3)) }.should.raise(ZeroDivisionError)
   end
 
   it "raises a ZeroDivisionError when the argument has a numerator of 0.0" do
-    -> { Rational(3, 4).div(Rational(0.0, 3)) }.should raise_error(ZeroDivisionError)
+    -> { Rational(3, 4).div(Rational(0.0, 3)) }.should.raise(ZeroDivisionError)
   end
 end
 
@@ -37,7 +37,7 @@ describe "Rational#div passed an Integer" do
   end
 
   it "raises a ZeroDivisionError when the argument is 0" do
-    -> { Rational(3, 4).div(0) }.should raise_error(ZeroDivisionError)
+    -> { Rational(3, 4).div(0) }.should.raise(ZeroDivisionError)
   end
 end
 
@@ -49,6 +49,6 @@ describe "Rational#div passed a Float" do
   end
 
   it "raises a ZeroDivisionError when the argument is 0.0" do
-    -> { Rational(3, 4).div(0.0) }.should raise_error(ZeroDivisionError)
+    -> { Rational(3, 4).div(0.0) }.should.raise(ZeroDivisionError)
   end
 end

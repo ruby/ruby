@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Numeric#i" do
   it "returns a Complex object" do
-    34.i.should be_an_instance_of(Complex)
+    34.i.should.instance_of?(Complex)
   end
 
   it "sets the real part to 0" do

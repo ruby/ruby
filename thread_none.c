@@ -26,11 +26,11 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
 }
 
-#define thread_sched_to_dead thread_sched_to_waiting
+#define thread_sched_to_dead(a,b) thread_sched_to_waiting(a,b,true)
 
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -42,12 +42,10 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
-#if 0
-static void
+void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
-#endif
 
 // Do nothing for mutex guard
 void
@@ -294,6 +292,12 @@ rb_del_running_thread(rb_thread_t *th)
 }
 
 void
+rb_ractor_sched_wait_terminate(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
+{
+    // do nothing: with no threads there is no other Ractor to wait for
+}
+
+void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
     // do nothing
@@ -312,16 +316,26 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
 }
 
 void
-rb_threadptr_remove(rb_thread_t *th)
+rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr)
 {
     // do nothing
 }
 
+NORETURN(void rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr));
 void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
+rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
+{
+    // nothing can wake this: with no threads there is nobody to send
+    rb_bug("unreachable");
+}
+
+void
+rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 {
     // do nothing
 }
+
+
 
 bool
 rb_thread_lock_native_thread(void)
@@ -336,9 +350,42 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
 }
 
 void
-rb_thread_malloc_stack_set(rb_thread_t *th, void *stack)
+rb_thread_register_exiting(void)
+{
+    // do nothing
+}
+
+void
+rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 {
     // no-op
 }
 
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    return false; // hooks are not implemented on this platform
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
+
+void
+rb_thread_sched_winding_begin(rb_vm_t *vm)
+{
+    // nothing to count: rb_thread_sched_wait_winding below never waits
+    (void)vm;
+}
+
+void
+rb_thread_sched_winding_end(rb_vm_t *vm)
+{
+    (void)vm;
+}
+
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    // no coroutine (M:N) threads on this implementation: nothing winds down
+    // after leaving the living set (see thread_pthread.c)
+    (void)vm;
+}

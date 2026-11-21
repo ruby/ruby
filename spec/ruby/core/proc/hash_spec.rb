@@ -2,12 +2,12 @@ require_relative '../../spec_helper'
 
 describe "Proc#hash" do
   it "is provided" do
-    proc {}.respond_to?(:hash).should be_true
-    -> {}.respond_to?(:hash).should be_true
+    proc {}.respond_to?(:hash).should == true
+    -> {}.respond_to?(:hash).should == true
   end
 
   it "returns an Integer" do
-    proc { 1 + 489 }.hash.should be_kind_of(Integer)
+    proc { 1 + 489 }.hash.should.is_a?(Integer)
   end
 
   it "is stable" do

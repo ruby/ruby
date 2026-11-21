@@ -59,13 +59,13 @@ describe "Integer#[]" do
     end
 
     it "raises a TypeError when passed a String" do
-      -> { 3["3"] }.should raise_error(TypeError)
+      -> { 3["3"] }.should.raise(TypeError)
     end
 
     it "raises a TypeError when #to_int does not return an Integer" do
       obj = mock('asdf')
       obj.should_receive(:to_int).and_return("asdf")
-      -> { 3[obj] }.should raise_error(TypeError)
+      -> { 3[obj] }.should.raise(TypeError)
     end
 
     it "calls #to_int to coerce a String to a Bignum and returns 0" do
@@ -137,8 +137,8 @@ describe "Integer#[]" do
       end
 
       it "raises FloatDomainError if any boundary is infinity" do
-        -> { 0x0001[3..Float::INFINITY] }.should raise_error(FloatDomainError, /Infinity/)
-        -> { 0x0001[-Float::INFINITY..3] }.should raise_error(FloatDomainError, /-Infinity/)
+        -> { 0x0001[3..Float::INFINITY] }.should.raise(FloatDomainError, /Infinity/)
+        -> { 0x0001[-Float::INFINITY..3] }.should.raise(FloatDomainError, /-Infinity/)
       end
 
       context "when passed (..i)" do
@@ -151,7 +151,7 @@ describe "Integer#[]" do
         it "raises ArgumentError if any of i bit equals 1" do
           -> {
             eval("0b111110[..3]")
-          }.should raise_error(ArgumentError, /The beginless range for Integer#\[\] results in infinity/)
+          }.should.raise(ArgumentError, /The beginless range for Integer#\[\] results in infinity/)
         end
       end
     end
@@ -179,10 +179,10 @@ describe "Integer#[]" do
 
     it "raises a TypeError when the given argument can't be converted to Integer" do
       obj = mock('asdf')
-      -> { @bignum[obj] }.should raise_error(TypeError)
+      -> { @bignum[obj] }.should.raise(TypeError)
 
       obj.should_receive(:to_int).and_return("asdf")
-      -> { @bignum[obj] }.should raise_error(TypeError)
+      -> { @bignum[obj] }.should.raise(TypeError)
     end
   end
 end

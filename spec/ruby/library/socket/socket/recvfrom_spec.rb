@@ -39,7 +39,7 @@ describe 'Socket#recvfrom' do
         it 'returns an Array containing the data and an Addrinfo' do
           ret = @server.recvfrom(1)
 
-          ret.should be_an_instance_of(Array)
+          ret.should.instance_of?(Array)
           ret.length.should == 2
         end
 
@@ -53,7 +53,7 @@ describe 'Socket#recvfrom' do
           end
 
           it 'contains an Addrinfo at index 1' do
-            @array[1].should be_an_instance_of(Addrinfo)
+            @array[1].should.instance_of?(Addrinfo)
           end
         end
 
@@ -111,43 +111,21 @@ describe 'Socket#recvfrom' do
         @client.close unless @client.closed?
       end
 
-      ruby_version_is ""..."3.3" do
-        it "returns an empty String as received data on a closed stream socket" do
-          t = Thread.new do
-            client, _ = @server.accept
-            client.recvfrom(10)
-          ensure
-            client.close if client
-          end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          @client.connect(@server_addr)
-          @client.close
-
-          t.value.should.is_a? Array
-          t.value[0].should == ""
+      it "returns nil on a closed stream socket" do
+        t = Thread.new do
+          client, _ = @server.accept
+          client.recvfrom(10)
+        ensure
+          client.close if client
         end
-      end
 
-      ruby_version_is "3.3" do
-        it "returns nil on a closed stream socket" do
-          t = Thread.new do
-            client, _ = @server.accept
-            client.recvfrom(10)
-          ensure
-            client.close if client
-          end
+        Thread.pass while t.status and t.status != "sleep"
+        t.status.should_not == nil
 
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
+        @client.connect(@server_addr)
+        @client.close
 
-          @client.connect(@server_addr)
-          @client.close
-
-          t.value.should be_nil
-        end
+        t.value.should == nil
       end
     end
 

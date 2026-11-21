@@ -1,0 +1,7 @@
+prelude: |
+  utf8 = "héllo wörld 晦"
+  broken = "\xff\xfe".dup.force_encoding("UTF-8")
+benchmark:
+  valid_enc_true: utf8.valid_encoding?
+  valid_enc_false: broken.valid_encoding?
+loop_count: 20000000

@@ -1,8 +1,9 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.egid" do
   it "returns the effective group ID for this process" do
-    Process.egid.should be_kind_of(Integer)
+    Process.egid.should.is_a?(Integer)
   end
 
   it "also goes by Process::GID.eid" do
@@ -18,7 +19,7 @@ describe "Process.egid=" do
 
   platform_is_not :windows do
     it "raises TypeError if not passed an Integer or String" do
-      -> { Process.egid = Object.new }.should raise_error(TypeError)
+      -> { Process.egid = Object.new }.should.raise(TypeError)
     end
 
     it "sets the effective group id to its own gid if given the username corresponding to its own gid" do
@@ -33,12 +34,14 @@ describe "Process.egid=" do
 
     as_user do
       it "raises Errno::ERPERM if run by a non superuser trying to set the root group id" do
-        -> { Process.egid = 0 }.should raise_error(Errno::EPERM)
+        skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
+        -> { Process.egid = 0 }.should.raise(Errno::EPERM)
       end
 
       platform_is :linux do
         it "raises Errno::ERPERM if run by a non superuser trying to set the group id from group name" do
-          -> { Process.egid = "root" }.should raise_error(Errno::EPERM)
+          skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
+          -> { Process.egid = "root" }.should.raise(Errno::EPERM)
         end
       end
     end

@@ -278,6 +278,43 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(u0, u1)
   end
 
+  def test_merge_path_dot_dot_removal
+    # Base-path ".." removal (RFC2396 5.2 6a) is handled by a single
+    # left-to-right pass. These lock in the exact, historically observed
+    # semantics, which differ from the relative-path stack: a leading ".."
+    # (or a ".." exposed as leading after earlier cancellations) discards
+    # the remaining base path rather than being kept.
+    {
+      'http://h/a/../../b'      => { 'x' => 'http://h/x' },
+      'http://h/../a'           => { 'x' => 'http://h/x' },
+      'http://h/a/..'           => { 'x' => 'http://h/x' },
+      'http://h/../x'           => { 'y' => 'http://h/y' },
+      'http://h/foo/bar/..'     => { './' => 'http://h/foo/' },
+      'http://h/foo/bar/../..'  => { './' => 'http://h/' },
+      'http://h/a/b/c'          => {
+        '../../g'       => 'http://h/g',
+        '../../../g'    => 'http://h/g',
+        '../../../../g' => 'http://h/g',
+      },
+      'http://h/p//q/..'        => { 'r' => 'http://h/p//r' },
+      'http://h/a/../..//y'     => { 'z' => 'http://h/z' },
+    }.each { |base, map|
+      map.each { |rel, expected|
+        assert_equal(expected, URI.parse(base).merge(rel).to_s,
+                     "<#{base}> + #{rel.inspect}")
+      }
+    }
+  end
+
+  def test_merge_path_dot_dot_removal_is_linear
+    # Regression guard for the previous O(n^2) base-path ".." removal:
+    # merging a base full of "a/../" segments must scale linearly.
+    pre = ->(n) {URI.parse('http://example.com/' + 'a/../' * n)}
+    assert_linear_performance((1..5).map {|i| 10 ** i}, pre: pre) do |base|
+      assert_equal('http://example.com/x', base.merge('x').to_s)
+    end
+  end
+
   def test_merge_authority
     u = URI.parse('http://user:pass@example.com:8080')
     u0 = URI.parse('http://new.example.org/path')

@@ -85,6 +85,30 @@ class TestMemoryView < Test::Unit::TestCase
                  members)
   end
 
+  def test_rb_memory_view_parse_item_format_with_spaces
+    # Spaces between components are ignored, as in item_size_from_format. A
+    # repeat count still binds to the type char immediately preceding it, so the
+    # spaces only separate whole "cNN" tokens. The member list must be identical
+    # to the same format without spaces; a space must not produce an extra
+    # member. (Formerly the fill pass did not skip spaces, so each space wrote
+    # one rb_memory_view_item_component_t past the allocation.)
+    spaced, spaced_members, spaced_err = MemoryViewTestUtils.parse_item_format("c c2 f3 x2 d")
+    plain,  plain_members,  plain_err  = MemoryViewTestUtils.parse_item_format("cc2f3x2d")
+
+    assert_nil(spaced_err)
+    assert_nil(plain_err)
+    assert_equal(plain, spaced)
+    assert_equal(plain_members, spaced_members)
+
+    # A lone trailing space must not add a member either.
+    total_size, members, err = MemoryViewTestUtils.parse_item_format("c ")
+    assert_nil(err)
+    assert_equal(1, total_size)
+    assert_equal(
+      [{format: 'c', native_size_p: false, endianness: NATIVE_ENDIAN, offset: 0, size: 1, repeat: 1}],
+      members)
+  end
+
   def test_rb_memory_view_parse_item_format_with_alignment_signle
     [
       ["c",  false, NATIVE_ENDIAN,  1,               1,              1],
@@ -285,6 +309,56 @@ class TestMemoryView < Test::Unit::TestCase
     es = MemoryViewTestUtils::ExportableString.new(nil)
     memory_view_info = MemoryViewTestUtils.get_memory_view_info(es)
     assert_nil(memory_view_info)
+  end
+
+  def test_rb_memory_view_is_row_major_contiguous
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    assert_true(MemoryViewTestUtils.is_row_major_contiguous(es))
+
+    item_size = sizeof(:long)
+    buf1 = [ 1, 2 ].pack("l!*")
+    shape1 = [1, 1, 2]
+    strides1 = [2*item_size, 2*item_size, item_size]
+    mv1 = MemoryViewTestUtils::MultiDimensionalView.new(buf1, "l!", shape1, strides1)
+    assert_true(MemoryViewTestUtils.is_row_major_contiguous(mv1))
+
+    buf2 = [ 1, 2, 3, 4,
+             5, 6, 7, 8,
+             9, 10, 11, 12 ].pack("l!*")
+    shape2 = [3, 4]
+    mv2 = MemoryViewTestUtils::MultiDimensionalView.new(buf2, "l!", shape2, nil)
+    assert_true(MemoryViewTestUtils.is_row_major_contiguous(mv2))
+  end
+
+  def test_rb_memory_view_is_column_major_contiguous
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    assert_true(MemoryViewTestUtils.is_column_major_contiguous(es))
+
+    item_size = sizeof(:long)
+    buf1 = [ 1, 2 ].pack("l!*")
+    shape1 = [1, 1, 2]
+    strides1 = [item_size, item_size, item_size]
+    mv1 = MemoryViewTestUtils::MultiDimensionalView.new(buf1, "l!", shape1, strides1)
+    assert_true(MemoryViewTestUtils.is_column_major_contiguous(mv1))
+
+    buf2 = [ 1, 2, 3, 4,
+             5, 6, 7, 8,
+             9, 10, 11, 12 ].pack("l!*")
+    shape2 = [3, 4]
+    mv2 = MemoryViewTestUtils::MultiDimensionalView.new(buf2, "l!", shape2, nil)
+    assert_false(MemoryViewTestUtils.is_column_major_contiguous(mv2))
+
+    buf3 = buf2
+    shape3 = shape2
+    strides3 = [item_size, 3*item_size]
+    mv3 = MemoryViewTestUtils::MultiDimensionalView.new(buf3, "l!", shape3, strides3)
+    assert_true(MemoryViewTestUtils.is_column_major_contiguous(mv3))
+
+    buf4 = [ 1, 2, 3 ].pack("l!*")
+    shape4 = shape1
+    strides4 = [item_size, item_size, 2*item_size]
+    mv4 = MemoryViewTestUtils::MultiDimensionalView.new(buf4, "l!", shape4, strides4)
+    assert_false(MemoryViewTestUtils.is_column_major_contiguous(mv4))
   end
 
   def test_rb_memory_view_fill_contiguous_strides

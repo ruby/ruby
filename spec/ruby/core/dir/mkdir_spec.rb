@@ -67,19 +67,33 @@ describe "Dir.mkdir" do
     path = DirSpecs.mock_dir('nonexisting')
     permissions = Object.new
 
-    -> { Dir.mkdir(path, permissions) }.should raise_error(TypeError, 'no implicit conversion of Object into Integer')
+    -> { Dir.mkdir(path, permissions) }.should.raise(TypeError, 'no implicit conversion of Object into Integer')
   end
 
   it "raises a SystemCallError if any of the directories in the path before the last does not exist" do
-    -> { Dir.mkdir "#{DirSpecs.nonexistent}/subdir" }.should raise_error(SystemCallError)
+    -> { Dir.mkdir "#{DirSpecs.nonexistent}/subdir" }.should.raise(SystemCallError)
   end
 
   it "raises Errno::EEXIST if the specified directory already exists" do
-    -> { Dir.mkdir("#{DirSpecs.mock_dir}/dir") }.should raise_error(Errno::EEXIST)
+    -> { Dir.mkdir("#{DirSpecs.mock_dir}/dir") }.should.raise(Errno::EEXIST)
   end
 
   it "raises Errno::EEXIST if the argument points to the existing file" do
-    -> { Dir.mkdir("#{DirSpecs.mock_dir}/file_one.ext") }.should raise_error(Errno::EEXIST)
+    -> { Dir.mkdir("#{DirSpecs.mock_dir}/file_one.ext") }.should.raise(Errno::EEXIST)
+  end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_mkdir_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        Dir.mkdir(non_utf8_dir).should == 0
+        File.directory?(dir).should == true
+      ensure
+        rm_r dir
+      end
+    end
   end
 end
 
@@ -100,7 +114,7 @@ platform_is_not :windows do
       it "raises a SystemCallError when lacking adequate permissions in the parent dir" do
         Dir.mkdir @dir, 0000
 
-        -> { Dir.mkdir "#{@dir}/subdir" }.should raise_error(SystemCallError)
+        -> { Dir.mkdir "#{@dir}/subdir" }.should.raise(SystemCallError)
       end
     end
   end

@@ -8,8 +8,6 @@ module Gem
     RbConfig::CONFIG
   end
 end
-# only needs Gem::Platform
-require 'rubygems/platform'
 
 # :stopdoc:
 $extension = nil
@@ -36,10 +34,12 @@ DUMMY_SIGNATURE = "***DUMMY MAKEFILE***"
 
 srcdir = File.dirname(File.dirname(__FILE__))
 unless defined?(CROSS_COMPILING) and CROSS_COMPILING
-  $:.replace([File.expand_path("lib", srcdir), Dir.pwd])
+  $:.replace([Dir.pwd, File.expand_path("lib", srcdir)])
 end
-$:.unshift(srcdir)
 require 'rbconfig'
+
+# only needs Gem::Platform
+require 'rubygems/platform'
 
 $topdir = "."
 $top_srcdir = srcdir
@@ -123,6 +123,10 @@ def extract_makefile(makefile, keep = true)
     /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = false
   end
   $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
+  if ldflags = m[/^ldflags[ \t]*=[ \t]*(.*)/, 1] and !$LDFLAGS.include?(ldflags)
+    # extconf.rb may have added library paths here, e.g. via pkg_config.
+    $LDFLAGS += " " + ldflags
+  end
   if dldflags = m[/^dldflags[ \t]*=[ \t]*(.*)/, 1] and !$DLDFLAGS.include?(dldflags)
     $DLDFLAGS += " " + dldflags
   end
@@ -592,6 +596,7 @@ gem = #{@gemname}
 build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
 clean-so:: clean-build_complete
+$(build_complete) $(OBJS): $(TARGET_SO_DIR_TIMESTAMP)
 
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)
@@ -776,6 +781,7 @@ begin
     end
     submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
     submakeopts << 'EXTINITS="$(EXTINITS)"'
+    submakeopts << 'PROGRAM_EXTS='
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
     mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
@@ -783,6 +789,9 @@ begin
     %w[RM RMDIRS RMDIR RMALL].each {|w| mf.macro w, [RbConfig::CONFIG[w]]}
     if $nmake
       message = ['@(for %I in (', ') do @echo.%~I)']
+    elsif $mswin
+      # See MESSAGE_BEGIN in win32/GNUmakefile.sub.
+      message = ['@if 1==1 (for %%I in (', ') do @echo.%%~I)']
     else
       message = ['@for line in', '; do echo "$$line"; done']
     end

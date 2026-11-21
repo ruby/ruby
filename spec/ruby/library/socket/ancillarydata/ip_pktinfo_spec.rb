@@ -8,7 +8,7 @@ with_feature :ancillary_data, :pktinfo do
       end
 
       it 'returns a Socket::AncillaryData' do
-        @data.should be_an_instance_of(Socket::AncillaryData)
+        @data.should.instance_of?(Socket::AncillaryData)
       end
 
       it 'sets the family to AF_INET' do
@@ -32,7 +32,7 @@ with_feature :ancillary_data, :pktinfo do
       end
 
       it 'returns a Socket::AncillaryData' do
-        @data.should be_an_instance_of(Socket::AncillaryData)
+        @data.should.instance_of?(Socket::AncillaryData)
       end
 
       it 'sets the family to AF_INET' do
@@ -58,7 +58,7 @@ with_feature :ancillary_data, :pktinfo do
       end
 
       it 'returns an Array' do
-        @data.ip_pktinfo.should be_an_instance_of(Array)
+        @data.ip_pktinfo.should.instance_of?(Array)
       end
 
       describe 'the returned Array' do
@@ -67,15 +67,15 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'stores an Addrinfo at index 0' do
-          @info[0].should be_an_instance_of(Addrinfo)
+          @info[0].should.instance_of?(Addrinfo)
         end
 
         it 'stores the ifindex at index 1' do
-          @info[1].should be_kind_of(Integer)
+          @info[1].should.is_a?(Integer)
         end
 
         it 'stores an Addrinfo at index 2' do
-          @info[2].should be_an_instance_of(Addrinfo)
+          @info[2].should.instance_of?(Addrinfo)
         end
       end
 
@@ -89,7 +89,7 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not equal @source
+          @addr.should_not.equal? @source
         end
       end
 
@@ -109,7 +109,7 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not equal @dest
+          @addr.should_not.equal? @dest
         end
       end
     end

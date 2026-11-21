@@ -30,7 +30,7 @@ describe "Zlib::GzipReader#read" do
     gz = Zlib::GzipReader.new @io
     -> {
       gz.read(-1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "returns an empty string if a 0 length is given" do
@@ -59,8 +59,8 @@ describe "Zlib::GzipReader#read" do
     it "returns nil if length parameter is positive" do
       gz = Zlib::GzipReader.new @io
       gz.read # read till the end
-      gz.read(1).should be_nil
-      gz.read(2**16).should be_nil
+      gz.read(1).should == nil
+      gz.read(2**16).should == nil
     end
   end
 end

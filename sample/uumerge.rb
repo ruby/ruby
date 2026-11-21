@@ -22,7 +22,7 @@ while line = gets()
   end
 end
 
-raise "missing begin" unless $sawbegin
+raise "missing begin" unless $sawbegin > 0
 
 out.binmode
 while line = gets()

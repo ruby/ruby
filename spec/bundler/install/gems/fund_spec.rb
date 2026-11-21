@@ -54,7 +54,7 @@ RSpec.describe "bundle install" do
 
     context "when gems include a fund URI but `ignore_funding_requests` is configured" do
       before do
-        bundle "config set ignore_funding_requests true"
+        bundle_config "ignore_funding_requests true"
       end
 
       it "does not display the plural fund message after installing" do

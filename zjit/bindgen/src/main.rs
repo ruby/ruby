@@ -42,6 +42,7 @@ fn main() {
         .clang_args(filtered_clang_args)
         .header("encindex.h")
         .header("internal.h")
+        .header("internal/io_buffer.h")
         .header("internal/object.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
@@ -52,6 +53,10 @@ fn main() {
         // Our C file for glue code
         .header(src_root.join(c_file).to_str().unwrap())
         .header(src_root.join("jit.c").to_str().unwrap())
+
+        .header(src_root.join("gc/gc_impl.h").to_str().unwrap())
+        .header(src_root.join("gc/default/zjit_fastpath.h").to_str().unwrap())
+        .header(src_root.join("gc/mmtk/zjit_fastpath.h").to_str().unwrap())
 
         // Don't want to copy over C comment
         .generate_comments(false)
@@ -69,18 +74,36 @@ fn main() {
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
+        // JITFrame struct defined in zjit.h, imported into Rust via bindgen
+        .allowlist_type("zjit_jit_frame")
+
         .allowlist_type("ruby_special_consts")
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
+        .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_str_dup")
         .allowlist_function("rb_str_getbyte")
+        .allowlist_function("rb_jit_io_buffer_readable_ptr")
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
+
+        // Coderange constants (ENC_CODERANGE_*) and the scan routine for inlining String predicates
+        .allowlist_type("ruby_coderange_type")
+        .allowlist_function("rbimpl_enc_str_coderange_scan")
 
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
 
+        .allowlist_type("RArray")
+        .allowlist_type("rb_gc_zjit_fastpath_kind")
+        .allowlist_type("rb_gc_zjit_fastpath")
+        .allowlist_type("rb_gc_zjit_fastpath_data")
+        .allowlist_type("rb_gc_zjit_default_new_obj_fastpath")
+        .allowlist_type("rb_gc_zjit_mmtk_new_obj_fastpath")
+        .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
+
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("ruby_rstruct_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -91,7 +114,19 @@ fn main() {
         .allowlist_function("ruby_executable_node")
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
+        .allowlist_function("rb_zjit_iseq_has_profiled_enough")
+        .allowlist_function("rb_zjit_iseq_set_jit_entry")
         .allowlist_function("rb_zjit_profile_disable")
+        .allowlist_function("rb_zjit_profile_enable")
+        .allowlist_function("rb_zjit_insn_to_bare_insn")
+        .allowlist_function("rb_zjit_hash_new_size")
+        .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
+        .allowlist_function("rb_zjit_str_resurrect_fastpath")
+        .allowlist_function("rb_zjit_array_dup_can_fastpath")
+        .allowlist_function("rb_zjit_array_new_can_fastpath")
+        .allowlist_function("rb_zjit_hash_dup_can_fastpath")
+        .allowlist_function("rb_zjit_range_new_fastpath")
+        .allowlist_function("rb_zjit_array_aref_with_adjusted_index")
 
         // For crashing
         .allowlist_function("rb_bug")
@@ -111,7 +146,7 @@ fn main() {
         .allowlist_function("rb_class_real")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
-        .allowlist_function("rb_hash_new_with_size")
+        .allowlist_function("rb_hash_new_capa")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")
@@ -119,6 +154,7 @@ fn main() {
         .allowlist_function("rb_hash_aset")
         .allowlist_function("rb_hash_aref")
         .allowlist_function("rb_hash_bulk_insert")
+        .allowlist_function("rb_hash_new_with_bulk_insert")
         .allowlist_function("rb_hash_stlike_lookup")
         .allowlist_function("rb_ary_new_capa")
         .allowlist_function("rb_ary_store")
@@ -137,6 +173,7 @@ fn main() {
         .allowlist_function("rb_singleton_class")
         .allowlist_function("rb_define_class")
         .allowlist_function("rb_class_get_superclass")
+        .allowlist_function("rb_class_superclass")
         .allowlist_function("rb_gc_disable")
         .allowlist_function("rb_gc_enable")
         .allowlist_function("rb_gc_mark")
@@ -144,7 +181,8 @@ fn main() {
         .allowlist_function("rb_gc_location")
         .allowlist_function("rb_gc_writebarrier")
         .allowlist_function("rb_gc_writebarrier_remember")
-        .allowlist_function("rb_zjit_writebarrier_check_immediate")
+        .allowlist_function("rb_gc_register_mark_object")
+        .allowlist_function("rb_zjit_new_obj_shape")
 
         // VALUE variables for Ruby class objects
         .allowlist_var("rb_cBasicObject")
@@ -155,18 +193,23 @@ fn main() {
         .allowlist_var("rb_cFalseClass")
         .allowlist_var("rb_cInteger")
         .allowlist_var("rb_cIO")
+        .allowlist_var("rb_cIOBuffer")
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
         .allowlist_var("rb_cNumeric")
         .allowlist_var("rb_cRange")
         .allowlist_var("rb_cString")
+        .allowlist_var("rb_cProc")
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
         .allowlist_var("rb_cSet")
+        .allowlist_var("rb_cStruct")
         .allowlist_var("rb_cClass")
         .allowlist_var("rb_cRegexp")
         .allowlist_var("rb_cISeq")
+        .allowlist_var("rb_cRubyVM")
+        .allowlist_function("rb_const_get")
 
         .allowlist_type("ruby_fl_type")
         .allowlist_type("ruby_fl_ushift")
@@ -195,10 +238,11 @@ fn main() {
         .allowlist_function("rb_float_minus")
         .allowlist_function("rb_float_mul")
         .allowlist_function("rb_float_div")
+        .allowlist_function("rb_flo_to_i")
         .allowlist_type("ruby_rstring_private_flags")
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
-        .allowlist_function("rb_obj_as_string_result")
+        .allowlist_function("rb_any_to_s")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
         .allowlist_function("rb_backref_get")
@@ -207,12 +251,19 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
+        .allowlist_function("rb_reg_new_from_values")
         .allowlist_var("ARG_ENCODING_FIXED")
         .allowlist_var("ARG_ENCODING_NONE")
         .allowlist_var("ONIG_OPTION_IGNORECASE")
         .allowlist_var("ONIG_OPTION_EXTEND")
         .allowlist_var("ONIG_OPTION_MULTILINE")
+
+        .allowlist_function("rb_nil_to_s")
+        .allowlist_function("rb_true_to_s")
+        .allowlist_function("rb_false_to_s")
+        .allowlist_function("rb_int_to_s")
+        .allowlist_function("rb_fix_to_s")
+        .allowlist_function("rb_mod_to_s")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
@@ -226,6 +277,7 @@ fn main() {
         .allowlist_type("method_optimized_type")
         .allowlist_type("rb_callable_method_entry_t")
         .allowlist_type("rb_callable_method_entry_struct")
+        .allowlist_function("rb_zjit_callable_method_entry_is_undefined")
         .allowlist_function("rb_method_entry_at")
         .allowlist_type("rb_method_entry_t")
         .blocklist_type("rb_method_cfunc_t")
@@ -243,6 +295,7 @@ fn main() {
         .allowlist_function("rb_callable_method_entry")
         .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
+        .allowlist_function("rb_vm_once_done_value")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
         .allowlist_type("iseq_inline_constant_cache_entry")
@@ -253,8 +306,7 @@ fn main() {
         .allowlist_type("iseq_inline_cvar_cache_entry")
         .blocklist_type("rb_execution_context_.*") // Large struct with various-type fields and an ifdef, so we don't import
         .opaque_type("rb_execution_context_.*")
-        .blocklist_type("rb_control_frame_struct")
-        .opaque_type("rb_control_frame_struct")
+        .allowlist_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
         .allowlist_function("rb_vm_env_write")
         .allowlist_function("rb_vm_ep_local_ep")
@@ -271,31 +323,38 @@ fn main() {
         .allowlist_type("rb_iseq_type")
         .allowlist_type("rb_event_flag_t")
         .allowlist_function("rb_object_shape_count")
-        .allowlist_function("rb_iseq_(get|set)_zjit_payload")
+        .allowlist_function("rb_iseq_(get|set|clear)_jit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
+        .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
+        .allowlist_function("rb_zjit_reserve_low_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
         .allowlist_function("rb_jit_mark_unused")
         .allowlist_function("rb_jit_get_page_size")
         .allowlist_function("rb_jit_array_len")
+        .allowlist_function("rb_jit_ruby2_keywords_splat_p")
         .allowlist_function("rb_jit_fix_div_fix")
         .allowlist_function("rb_jit_iseq_builtin_attrs")
         .allowlist_function("rb_jit_str_concat_codepoint")
         .allowlist_function("rb_zjit_iseq_inspect")
         .allowlist_function("rb_zjit_iseq_insn_set")
         .allowlist_function("rb_zjit_local_id")
+        .allowlist_function("rb_id_table_lookup")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_zjit_method_tracing_currently_enabled")
+        .allowlist_function("rb_zjit_iseq_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
-        .allowlist_function("rb_zjit_exit_locations_dict")
+        .allowlist_function("rb_profile_frame_full_label")
+        .allowlist_function("rb_profile_frame_absolute_path")
+        .allowlist_function("rb_profile_frame_path")
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
@@ -304,9 +363,13 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_var("rb_zjit_runtime_offsets")
+        .allowlist_var("ZJIT_STACK_MAP_.*")
+        .allowlist_var("ZJIT_JIT_RETURN_C_FRAME")
         .allowlist_function("rb_assert_holding_vm_lock")
-        .allowlist_function("rb_jit_shape_too_complex_p")
+        .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
+        .allowlist_function("rb_jit_constcache_shareable")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
@@ -351,8 +414,12 @@ fn main() {
         .allowlist_function("rb_insn_name")
         .allowlist_function("rb_insn_len")
         .allowlist_function("rb_yarv_class_of")
-        .allowlist_function("rb_zjit_class_initialized_p")
         .allowlist_function("rb_zjit_class_has_default_allocator")
+        .allowlist_function("rb_zjit_class_has_struct_allocator")
+        .allowlist_function("rb_zjit_struct_num_members")
+        .allowlist_function("rb_zjit_struct_member_id")
+        .allowlist_function("rb_zjit_struct_embedded_p")
+        .allowlist_function("rb_struct_s_keyword_init")
         .allowlist_function("rb_zjit_class_get_alloc_func")
         .allowlist_function("rb_get_ec_cfp")
         .allowlist_function("rb_get_cfp_iseq")
@@ -360,9 +427,7 @@ fn main() {
         .allowlist_function("rb_get_cfp_sp")
         .allowlist_function("rb_get_cfp_self")
         .allowlist_function("rb_get_cfp_ep")
-        .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
-        .allowlist_function("rb_zjit_constcache_shareable")
         .allowlist_function("rb_zjit_vm_search_method")
         .allowlist_function("rb_zjit_cme_is_cfunc")
         .allowlist_function("rb_get_cme_def_body_attr_id")
@@ -377,6 +442,7 @@ fn main() {
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_jit_get_proc_ptr")
+        .allowlist_type("rb_block_type")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")
@@ -404,7 +470,6 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_param_opt_table")
         .allowlist_function("rb_get_cikw_keyword_len")
         .allowlist_function("rb_get_cikw_keywords_idx")
-        .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
@@ -413,8 +478,6 @@ fn main() {
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")
         .allowlist_function("rb_BASIC_OP_UNREDEFINED_P")
-        .allowlist_function("rb_RSTRUCT_LEN")
-        .allowlist_function("rb_RSTRUCT_SET")
         .allowlist_function("rb_vm_ci_argc")
         .allowlist_function("rb_vm_ci_mid")
         .allowlist_function("rb_vm_ci_flag")
@@ -427,11 +490,15 @@ fn main() {
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")
+        .allowlist_function("rb_const_lookup")
 
         // We define these manually, don't import them
         .blocklist_type("VALUE")
         .blocklist_type("ID")
         .blocklist_type("rb_iseq_constant_body")
+
+        // We only need id_table as an opaque pointer to pass to its APIs
+        .opaque_type("rb_id_table")
 
         // Avoid binding to stuff we don't use
         .blocklist_item("rb_thread_struct.*")
@@ -445,12 +512,30 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    // Write to a Vec for post-processing
+    let mut bindings_string = Vec::new();
+    bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+    let mut bindings_string = String::from_utf8(bindings_string).expect("bindings should be UTF-8");
+
+    // Give some generated type aliases an integer type that is nicer to use from
+    // Rust than the one bindgen derives from C.
+    const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
+        // i32 is what the assembler APIs expect
+        ("pub type jit_bindgen_constants = u32;", "pub type jit_bindgen_constants = i32;"),
+        // usize is what VALUE() takes, so flag masks need no cast at their use sites
+        ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+    ];
+    // Each needle is a whole line of the output, so plain replacement is unambiguous.
+    // Yes, this search-and-replace could be faster, but it's a small file.
+    for (needle, replacement) in TYPE_REPLACEMENTS {
+        assert!(bindings_string.contains(needle), "no line to replace: {needle}");
+        bindings_string = bindings_string.replace(needle, replacement);
+    }
+
+    // Write out to file
     let mut out_path: PathBuf = src_root;
     out_path.push(jit_name);
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
-
-    bindings
-        .write_to_file(out_path)
-        .expect("Couldn't write bindings!");
+    std::fs::write(out_path, bindings_string).expect("file output failed");
 }

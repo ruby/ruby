@@ -8,6 +8,11 @@ class TestGemRemoteFetchError < Gem::TestCase
     refute_match(/secret/, error.to_s)
   end
 
+  def test_token_with_empty_password_redacted
+    error = Gem::RemoteFetcher::FetchError.new("There was an error fetching", "https://token:@gemsource.org")
+    assert_equal "There was an error fetching (https://REDACTED@gemsource.org)", error.to_s
+  end
+
   def test_invalid_url
     error = Gem::RemoteFetcher::FetchError.new("There was an error fetching", "https://::gemsource.org")
     assert_equal error.to_s, "There was an error fetching (https://::gemsource.org)"

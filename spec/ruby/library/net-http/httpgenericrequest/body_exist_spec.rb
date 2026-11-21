@@ -4,10 +4,10 @@ require 'net/http'
 describe "Net::HTTPGenericRequest#body_exist?" do
   it "returns true when the response is expected to have a body" do
     request = Net::HTTPGenericRequest.new("POST", true, true, "/some/path")
-    request.body_exist?.should be_true
+    request.body_exist?.should == true
 
     request = Net::HTTPGenericRequest.new("POST", true, false, "/some/path")
-    request.body_exist?.should be_false
+    request.body_exist?.should == false
   end
 
   describe "when $VERBOSE is true" do

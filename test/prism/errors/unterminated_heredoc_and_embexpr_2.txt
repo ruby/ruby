@@ -1,0 +1,9 @@
+<<A+B
+  ^ unterminated heredoc; can't find string "A" anywhere before EOF
+#{C + "#{"}
+           ^ unterminated string meets end of file
+           ^ unexpected end-of-input, assuming it is closing the parent top level context
+           ^ expected a `}` to close the embedded expression
+      ^ unterminated string; expected a closing delimiter for the interpolated string
+           ^ expected a `}` to close the embedded expression
+

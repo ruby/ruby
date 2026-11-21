@@ -50,20 +50,20 @@ describe "Module#const_set" do
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    -> { ConstantSpecs.const_set "name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "name", 1 }.should.raise(NameError)
   end
 
   it "raises a NameError if the name starts with a non-alphabetic character" do
-    -> { ConstantSpecs.const_set "__CONSTX__", 1 }.should raise_error(NameError)
-    -> { ConstantSpecs.const_set "@Name", 1 }.should raise_error(NameError)
-    -> { ConstantSpecs.const_set "!Name", 1 }.should raise_error(NameError)
-    -> { ConstantSpecs.const_set "::Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "__CONSTX__", 1 }.should.raise(NameError)
+    -> { ConstantSpecs.const_set "@Name", 1 }.should.raise(NameError)
+    -> { ConstantSpecs.const_set "!Name", 1 }.should.raise(NameError)
+    -> { ConstantSpecs.const_set "::Name", 1 }.should.raise(NameError)
   end
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     ConstantSpecs.const_set("CS_CONST404", :const404).should == :const404
-    -> { ConstantSpecs.const_set "Name=", 1 }.should raise_error(NameError)
-    -> { ConstantSpecs.const_set "Name?", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "Name=", 1 }.should.raise(NameError)
+    -> { ConstantSpecs.const_set "Name?", 1 }.should.raise(NameError)
   ensure
     ConstantSpecs.send(:remove_const, :CS_CONST404)
   end
@@ -79,10 +79,10 @@ describe "Module#const_set" do
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    -> { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_set name, 1 }.should.raise(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    -> { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_set name, 1 }.should.raise(TypeError)
   end
 
   describe "when overwriting an existing constant" do
@@ -110,7 +110,7 @@ describe "Module#const_set" do
       mod = Module.new
 
       mod.autoload :Foo, path
-      -> { mod::Foo }.should raise_error(NameError)
+      -> { mod::Foo }.should.raise(NameError)
 
       mod.const_defined?(:Foo).should == false
       mod.autoload?(:Foo).should == nil
@@ -138,8 +138,8 @@ describe "Module#const_set" do
     end
 
     it "raises a FrozenError before setting the name" do
-      -> { @frozen.const_set @name, nil }.should raise_error(FrozenError)
-      @frozen.should_not have_constant(@name)
+      -> { @frozen.const_set @name, nil }.should.raise(FrozenError)
+      @frozen.should_not.const_defined?(@name)
     end
   end
 end

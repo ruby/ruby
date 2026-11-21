@@ -28,6 +28,39 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  # Once a second Ractor exists, methods are defined under the VM lock, and the
+  # warning has to wait until it is released: Warning.warn can run Ruby code.
+  def assert_performance_warning_after_ractor(line, code)
+    assert_in_out_err([], "#{<<-"begin;"}\n#{<<~"end;"}", [], ["-:#{line}: warning: Redefining 'Integer#+' disables interpreter and JIT optimizations"])
+    begin;
+      Warning[:experimental] = false
+      Warning[:performance] = true
+      Ractor.new {}.join
+      #{code}
+    end;
+  end
+
+  def test_performance_warning_after_ractor_created
+    assert_performance_warning_after_ractor(6, <<~'RUBY')
+      class Integer
+        undef +
+        def +(other) = other
+      end
+    RUBY
+  end
+
+  def test_performance_warning_after_ractor_created_refinement
+    assert_performance_warning_after_ractor(5, <<~'RUBY')
+      Module.new { refine(Integer) { def +(other) = other } }
+    RUBY
+  end
+
+  def test_performance_warning_after_ractor_created_prepend
+    assert_performance_warning_after_ractor(5, <<~'RUBY')
+      Integer.prepend(Module.new { def +(other) = other })
+    RUBY
+  end
+
   def disasm(name)
     RubyVM::InstructionSequence.of(method(name)).disasm
   end
@@ -60,6 +93,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal 1, 8 % 7
     assert_redefine_method('Integer', '%', 'assert_equal 7, 8 % 7')
     assert_performance_warning('Integer', '%')
+  end
+
+  def test_fixnum_eq
+    assert_equal true, 1 == 1
+    assert_equal true, 1 == 1.0
+    assert_redefine_method('Integer', '==', 'assert_equal 2, 1 == 2')
+    assert_performance_warning('Integer', '==')
   end
 
   def test_fixnum_lt
@@ -110,6 +150,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Float', '/')
   end
 
+  def test_float_eq
+    assert_equal true, 1 == 1.0
+    assert_equal true, 1.0 == 1
+    assert_equal false, Float::NAN == Float::NAN
+    assert_redefine_method('Float', '==', 'assert_equal 2.2, 1.1 == 2.2')
+    assert_performance_warning('Float', '==')
+  end
+
   def test_float_lt
     assert_equal true, 1.1 < 2.2
     assert_redefine_method('Float', '<', 'assert_equal 2.2, 1.1 < 2.2')
@@ -132,6 +180,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal false, 1.1 >= 2.2
     assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
     assert_performance_warning('Float', '>=')
+  end
+
+  def test_string_eq
+    assert_equal true, "a" == "a"
+    assert_equal true, "a".freeze == "a".freeze
+    assert_redefine_method('String', '==', 'assert_equal "b", "a".freeze == "b".freeze')
+    assert_performance_warning('String', '==')
   end
 
   def test_string_length
@@ -187,6 +242,12 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('String', '-@')
   end
 
+  def test_sym_eq
+    assert_equal true, :a == :a
+    assert_redefine_method('Symbol', '==', 'assert_equal :b, :a == :b')
+    assert_performance_warning('Symbol', '==')
+  end
+
   def test_array_min
     assert_equal 1, [1, 2, 4].min
     assert_redefine_method('Array', 'min', 'assert_nil([1, 2, 4].min)')
@@ -205,13 +266,31 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Array', 'hash')
   end
 
+  def test_nil_eq
+    assert_equal true, nil == nil
+    assert_redefine_method('NilClass', '==', 'assert_equal 1, nil == 1')
+    assert_performance_warning('NilClass', '==')
+  end
+
+  def test_true_eq
+    assert_equal true, true == true
+    assert_redefine_method('TrueClass', '==', 'assert_equal 1, true == 1')
+    assert_performance_warning('TrueClass', '==')
+  end
+
+  def test_false_eq
+    assert_equal true, false == false
+    assert_redefine_method('FalseClass', '==', 'assert_equal 1, false == 1')
+    assert_performance_warning('FalseClass', '==')
+  end
+
   def test_trace_optimized_methods
     bug14870 = "[ruby-core:87638]"
     expected = [:-@, :max, :min, :+, :-, :*, :/, :%, :==, :<, :<=, :>, :>=, :<<,
                 :&, :|, :[], :[]=, :length, :empty?, :nil?, :succ, :!, :=~]
     [:c_call, :c_return].each do |type|
       methods = []
-      tp = TracePoint.new(type) { |tp| methods << tp.method_id }
+      tp = TracePoint.new(type) { |tp| methods << tp.method_id if tp.path == __FILE__ }
       tp.enable do
         x = "a"; x = -x
         [1].max
@@ -242,13 +321,32 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal(expected, methods, bug14870)
     end
 
-    methods = []
-    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id }
+    # ZJIT replaces != with a Ruby definition that has a source location;
+    # the C definition has none.
+    method_path = BasicObject.instance_method(:!=).source_location&.first
+    events = []
+    tp = TracePoint.new(:call, :return, :c_call, :c_return) do |tp|
+      if [:!=, :==].include?(tp.method_id) && [__FILE__, method_path].include?(tp.path)
+        events << [tp.event, tp.method_id, tp.path]
+      end
+    end
     tp.enable do
       x = 1
       x != 42
     end
-    assert_equal([:!=, :==, :==, :!=], methods, bug14870)
+
+    if method_path
+      # With ZJIT enabled, != is defined in Ruby. Its call/return events and
+      # the C events from == use the built-in Ruby source location.
+      expected = [[:call, :!=, method_path], [:c_call, :==, method_path],
+                  [:c_return, :==, method_path], [:return, :!=, method_path]]
+    else
+      # The C definition of != calls the C == method, so all events use the
+      # Ruby caller's source location.
+      expected = [[:c_call, :!=, __FILE__], [:c_call, :==, __FILE__],
+                  [:c_return, :==, __FILE__], [:c_return, :!=, __FILE__]]
+    end
+    assert_equal(expected, events, bug14870)
   end
 
   def test_string_freeze_saves_memory
@@ -366,6 +464,24 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_performance_warning('Hash', '[]=')
   end
 
+  def test_hash_new
+    assert_equal({}, Hash.new)
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      class << Hash
+        undef new
+        def new(*) = :redefined
+      end
+      assert_equal(:redefined, Hash.new)
+      assert_equal(:redefined, Hash.new(capacity: 3))
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      Hash.singleton_class.prepend(Module.new { def new(*) = :prepended })
+      assert_equal(:prepended, Hash.new)
+    end;
+  end
+
   class MyObj
     def ==(other)
       true
@@ -380,6 +496,64 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal false, nil == MyObj.new
     assert_equal true, MyObj.new == 1
     assert_equal true, MyObj.new == nil
+  end
+
+  def test_newhash_eq_and_hash_redefinition
+    assert_separately([], <<~'RUBY')
+      $VERBOSE = false
+
+      [Symbol, String].each do |klass|
+        klass.class_eval do
+          def hash
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#hash"
+          end
+
+          def eql?(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#eql?"
+          end
+
+          def ==(_other)
+            raise NotImplementedError, "Unexpected call to #{self.class.name}#=="
+          end
+        end
+      end
+
+      base = 0
+      hash = { # newhash insns
+        "a" => base + 1,
+        "b" => base + 2,
+        "c" => base + 3,
+        "d" => base + 4,
+        "e" => base + 5,
+        "f" => base + 6,
+        "g" => base + 7,
+        "h" => base + 8,
+      }
+      assert_equal 8, hash.size
+
+      1000.times do |i|
+        # hash being an ar_table with 1-byte hints, we have a high chance to run into a collision
+        assert_equal false, hash.key?(i.to_s)
+      end
+
+      hash = { # newhash insns
+      :a => base + 1,
+      "b".to_sym => base + 2,
+      :c => base + 3,
+      "d".to_sym => base + 4,
+      :e => base + 5,
+      "f".to_sym => base + 6,
+      :g => base + 7,
+      "h".to_sym => base + 8,
+    }
+    assert_equal 8, hash.size
+
+    1000.times do |i|
+      # hash being an ar_table with 1-byte hints, we have a high chance to run into a collision
+      assert_equal false, hash.key?(i.to_s.to_sym)
+    end
+
+    RUBY
   end
 
   def self.tailcall(klass, src, file = nil, path = nil, line = nil, tailcall: true)
@@ -516,6 +690,18 @@ class TestRubyOptimization < Test::Unit::TestCase
 
     # YJIT probably uses a fallback on the call to post_arg
     assert_equal(:ok, post_arg(0))
+  end
+
+  def test_tailcall_into_forwarding_method
+    tailcall(<<~RUBY)
+      def forwarded_to(*args, **kw) = [args, kw]
+
+      def forwarding(...) = forwarded_to(...)
+
+      def call_forwarding(a, b) = forwarding(a, b, k: 3)
+    RUBY
+
+    assert_equal([[100, 1], {k: 3}], call_forwarding(100, 1))
   end
 
   def test_tailcall_interrupted_by_sigint
@@ -728,7 +914,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       insn = iseq.disasm
       assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
       assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
-      assert_no_match(/putstring/, insn)
+      assert_no_match(/dupstring/, insn)
       assert_no_match(/newrange/, insn)
     end
   end
@@ -840,6 +1026,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     RUBY
   end
 
+  def test_peephole_static_swap
+    code = <<~'RUBY'
+      outer = nil
+      m = Module.new
+      outer::M = m
+    RUBY
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_no_match(/ getlocal\s/, insn, '[Bug #22377]') # unoptimized getlocal
+  end
+
   def test_branch_condition_backquote
     bug = '[ruby-core:80740] [Bug #13444] redefined backquote should be called'
     class << self
@@ -945,15 +1142,91 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
-  def test_peephole_optimization_without_trace
+  def bptest_call(&b) = b.call(1, 2)
+  def bptest_aref(&b) = b[1, 2]
+  def bptest_dot_yield(&b) = b.yield(1, 2)
+  def bptest_eqq(&b) = b === 2
+
+  def test_block_param_proxy_aref_yield_and_eqq
+    %i[bptest_call bptest_aref bptest_dot_yield bptest_eqq].each do |name|
+      assert_include(RubyVM::InstructionSequence.of(method(name)).disasm,
+                     "getblockparamproxy", "#{name} should use the block param proxy")
+    end
+    assert_equal(3, bptest_call {|a, b| a + b})
+    assert_equal(3, bptest_aref {|a, b| a + b})
+    assert_equal(3, bptest_dot_yield {|a, b| a + b})
+    assert_equal(3, bptest_eqq {|a| a + 1})
+  end
+
+  def test_block_param_proxy_should_not_create_objects
     assert_separately [], <<-END
+      def viacall(&b) = b.call
+      def viaaref(&b) = b[]
+      def viayield(&b) = b.yield
+      def viaeqq(&b) = b === 1
+      viacall{}; viaaref{}; viayield{}; viaeqq{} # warm up caches
+      h1 = {}; h2 = {}
+      ObjectSpace.count_objects(h1)
+      GC.start; GC.disable
+      ObjectSpace.count_objects(h1)
+      1000.times { viacall{}; viaaref{}; viayield{}; viaeqq{} }
+      ObjectSpace.count_objects(h2)
+
+      # The proxy avoids materializing a Proc (T_DATA), so allocations must
+      # not scale with the number of calls.
+      assert_operator(h2[:T_DATA] - h1[:T_DATA], :<, 1000)
+    END
+  end
+
+  def test_block_param_proxy_honors_redefinition
+    assert_separately [], <<-END
+      $VERBOSE = nil # silence "method redefined" warnings
+      def viacall(&b) = b.call
+      def viaaref(&b) = b[]
+      def viayield(&b) = b.yield
+      def viaeqq(&b) = b === 1
+
+      assert_equal(:orig, viacall { :orig })
+      assert_equal(:orig, viaaref { :orig })
+      assert_equal(:orig, viayield { :orig })
+      assert_equal(:orig, viaeqq { :orig })
+
+      class Proc
+        def [](*) = :redef_aref
+      end
+      assert_equal(:redef_aref, viaaref { :orig }, "redefining Proc#[] must deopt blk[]")
+      assert_equal(:orig, viacall { :orig }, "Proc#[] redefinition must not affect blk.call")
+      assert_equal(:orig, viayield { :orig }, "Proc#[] redefinition must not affect blk.yield")
+      assert_equal(:orig, viaeqq { :orig }, "Proc#[] redefinition must not affect blk === x")
+
+      class Proc
+        def yield(*) = :redef_yield
+      end
+      assert_equal(:redef_yield, viayield { :orig }, "redefining Proc#yield must deopt blk.yield")
+      assert_equal(:orig, viacall { :orig }, "Proc#yield redefinition must not affect blk.call")
+
+      class Proc
+        def ===(*) = :redef_eqq
+      end
+      assert_equal(:redef_eqq, viaeqq { :orig }, "redefining Proc#=== must deopt blk === x")
+      assert_equal(:orig, viacall { :orig }, "Proc#=== redefinition must not affect blk.call")
+
+      class Proc
+        def call(*) = :redef_call
+      end
+      assert_equal(:redef_call, viacall { :orig }, "redefining Proc#call must deopt blk.call")
+    END
+  end
+
+  def test_peephole_optimization_without_trace
+    assert_ruby_status [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
       eval "def foo; 1.times{|(a), &b| nil && a}; end"
     END
   end
 
   def test_clear_unreachable_keyword_args
-    assert_separately [], <<-END, timeout: 60
+    assert_ruby_status [], <<-END, timeout: 60
       script =  <<-EOS
         if true
         else
@@ -1047,6 +1320,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(:ok, x.bug)
   end
 
+  def test_peephole_branch_dup_with_label_after_dup
+    assert_ruby_status [], <<-END
+      src = <<~'SRC'
+        $g&.call&.to_s
+        [*d, [__dir__].each(&:each), C1.value(/ab/o, &b)].each {}
+        begin
+          ((-243 != qux) ? (1..2) : 8i&.value) => ^([1].select(&:to_s))
+        rescue
+          ((-243 != qux) ? (1..2) : 8i&.value) => ^([1].select(&:to_s))
+        end
+      SRC
+      RubyVM::InstructionSequence.compile(src)
+    END
+  end
+
   def test_peephole_jump_after_newarray
     i = 0
     %w(1) || 2 while (i += 1) < 100
@@ -1080,7 +1368,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   class Objtostring
   end
 
-  def test_objtostring
+  def test_objtostring_immediate
     assert_raise(NoMethodError){"#{BasicObject.new}"}
     assert_redefine_method('Symbol', 'to_s', <<-'end')
       assert_match %r{\A#<Symbol:0x[0-9a-f]+>\z}, "#{:foo}"
@@ -1094,11 +1382,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('FalseClass', 'to_s', <<-'end')
       assert_match %r{\A#<FalseClass:0x[0-9a-f]+>\z}, "#{false}"
     end
+  end
+
+  def test_objtostring_fixnum
     assert_redefine_method('Integer', 'to_s', <<-'end')
       (-1..10).each { |i|
         assert_match %r{\A#<Integer:0x[0-9a-f]+>\z}, "#{i}"
       }
     end
+  end
+
+  def test_objtostring
     assert_equal "TestRubyOptimization::Objtostring", "#{Objtostring}"
     assert_match %r{\A#<Class:0x[0-9a-f]+>\z}, "#{Class.new}"
     assert_match %r{\A#<Module:0x[0-9a-f]+>\z}, "#{Module.new}"
@@ -1113,6 +1407,13 @@ class TestRubyOptimization < Test::Unit::TestCase
       '@c = :b; [:a, :b].include?(@c)',
       '@c = "b"; %i[a b].include?(@c.to_sym)',
       '[:a, :b].include?(self) == false',
+      "[:a, :b].include?(:a)",
+      "[true, false].include?(false)",
+      "[1, nil].include?(nil)",
+      "# frozen_string_literal: true\n['a', 'b'].include?('a')",
+      "# frozen_string_literal: true\n['a', 'b'].include?('c') == false",
+      "# frozen_string_literal: true\n['a', 'b'].include?(2) == false",
+      "# frozen_string_literal: true\n['a', 'b'].include?(/a/) == false",
     ].each do |code|
       iseq = RubyVM::InstructionSequence.compile(code)
       insn = iseq.disasm
@@ -1216,6 +1517,34 @@ class TestRubyOptimization < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_new_string_initialize
+    assert_in_out_err([], <<~RUBY, ["OK"])
+      $VERBOSE = false
+      class String
+        def initialize foo:
+          super()
+          self << foo
+        end
+      end
+
+      puts String.new(foo: "OK")
+    RUBY
+  end
+
+  def test_opt_new_hash_initialize
+    assert_in_out_err([], <<~RUBY, ["OK"])
+      $VERBOSE = false
+      class Hash
+        def initialize
+          super()
+          self[:redefined] = "OK"
+        end
+      end
+
+      puts Hash.new[:redefined]
+    RUBY
+  end
+
   def test_opt_new_with_safe_navigation
     payload = nil
     assert_nil payload&.new
@@ -1268,5 +1597,76 @@ class TestRubyOptimization < Test::Unit::TestCase
       insn = iseq.disasm
       assert_no_match(/opt_new/, insn)
     end
+  end
+
+  class SimpleObj
+    attr_reader :called_method
+
+    def initialize
+      @called_method = :original
+    end
+  end
+
+  module SimpleObjRefinement
+    refine SimpleObj do
+      def initialize
+        @called_method = :refined
+      end
+    end
+  end
+
+  module RefineInitialize
+    using SimpleObjRefinement
+
+    def self.call_new
+      SimpleObj.new
+    end
+
+    def self.call_allocate_send_initialize
+      obj = SimpleObj.allocate
+      obj.send(:initialize)
+      obj
+    end
+  end
+
+  class ReverseSimpleObj
+    attr_reader :called_method
+
+    def initialize
+      @called_method = :original
+    end
+  end
+
+  module ReverseSimpleObjRefinement
+    refine ReverseSimpleObj do
+      def initialize
+        @called_method = :refined
+      end
+    end
+  end
+
+  module ReverseRefineInitialize
+    using ReverseSimpleObjRefinement
+
+    def self.call_new
+      ReverseSimpleObj.new
+    end
+
+    def self.call_allocate_send_initialize
+      obj = ReverseSimpleObj.allocate
+      obj.send(:initialize)
+      obj
+    end
+  end
+
+  def test_opt_new_with_refinement
+    assert_equal :original, SimpleObj.new.called_method
+    assert_equal :original, RefineInitialize.call_new.called_method
+    assert_equal :refined, RefineInitialize.call_allocate_send_initialize.called_method
+
+    # Same test in reverse to ensure neither call cache can be poisoned
+    assert_equal :refined, ReverseRefineInitialize.call_allocate_send_initialize.called_method
+    assert_equal :original, ReverseSimpleObj.new.called_method
+    assert_equal :original, ReverseRefineInitialize.call_new.called_method
   end
 end

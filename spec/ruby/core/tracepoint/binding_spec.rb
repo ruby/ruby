@@ -15,7 +15,7 @@ describe 'TracePoint#binding' do
       test
     }
     bindings.size.should == 1
-    bindings[0].should be_kind_of(Binding)
+    bindings[0].should.is_a?(Binding)
     bindings[0].local_variables.should == [:secret]
   end
 end

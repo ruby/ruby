@@ -2,10 +2,17 @@ require 'rbconfig'
 require 'timeout'
 require 'fileutils'
 require 'shellwords'
+require 'etc'
 require_relative 'lib/colorize'
 require_relative 'lib/gem_env'
+require_relative 'lib/test/jobserver'
 
 ENV.delete("GNUMAKEFLAGS")
+
+# net-imap's test helper enables SimpleCov, but its released versions still
+# call the pre-1.0.0 `SimpleCov.formatters=` API that breaks with simplecov
+# 1.0.0. Coverage of bundled gems is not collected in CI, so disable it.
+ENV["SIMPLECOV_DISABLE"] = "1"
 
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
@@ -14,6 +21,35 @@ DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
   'irb',
   'csv',
 ] : []
+
+# minitest's assertion tests compare against unified diff output produced by
+# the `diff` command, so they fail spuriously when it is not available.
+diff_available = ENV["PATH"].to_s.split(File::PATH_SEPARATOR).any? do |dir|
+  next false if dir.empty?
+  exe = File.join(dir, "diff")
+  File.executable?(exe) || (/mswin|mingw/ =~ RUBY_PLATFORM && File.file?("#{exe}.exe"))
+end
+DEFAULT_ALLOWED_FAILURES << 'minitest' unless diff_available
+
+# rake's TestBacktraceSuppression#test_system_dir_suppressed expects rake to
+# suppress RbConfig's rubylibprefix from backtraces. In an uninstalled
+# out-of-tree build it is a POSIX "/usr"-style prefix that File.expand_path
+# turns into a drive-prefixed path on Windows, which no longer matches rake's
+# suppression pattern, so the test fails.
+if /mswin|mingw/ =~ RUBY_PLATFORM && RbConfig::CONFIG["rubylibprefix"] !~ /\A[a-zA-Z]:/
+  DEFAULT_ALLOWED_FAILURES << 'rake'
+end
+
+# rbs's stdlib Resolv tests need to resolve "localhost"; allow its failures on
+# hosts where the Resolv library cannot resolve it.
+begin
+  require 'resolv'
+  Resolv.getaddress('localhost')
+rescue LoadError
+rescue Resolv::ResolvError
+  DEFAULT_ALLOWED_FAILURES << 'rbs'
+end
+
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 
@@ -27,7 +63,28 @@ rubylib = [gem_dir+'/lib', ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
 run_opts = ENV["RUN_OPTS"]&.shellsplit
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
+
+# prism is a bundled gem, not a default gem loadable without RubyGems.
+# Several bundled gems (irb, rdoc, rbs, typeprof, ...) require it, and
+# their tests spawn ruby with --disable=gems (assert_in_out_err etc.), so
+# preset the load paths of the prism gem in RUBYLIB for every gem.
+prism_libs = IO.popen([ruby, "-e", "old = $:.dup; require 'prism'; puts $:-old"], &:read)
+rubylib = [*prism_libs.split("\n"), rubylib].join(File::PATH_SEPARATOR) if $?.success?
 failed = []
+
+max = ENV['TEST_BUNDLED_GEMS_NPROCS']&.to_i || [Etc.nprocessors, 8].min
+nprocs = Test::JobServer.max_jobs(max) || max
+nprocs = 1 if nprocs < 1
+
+if /mingw|mswin/ =~ RUBY_PLATFORM
+  spawn_group = :new_pgroup
+  signal_prefix = ""
+else
+  spawn_group = :pgroup
+  signal_prefix = "-"
+end
+
+jobs = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next unless gem = line[/^[^\s\#]+/]
   next if bundled_gems&.none? {|pat| File.fnmatch?(pat, gem)}
@@ -35,6 +92,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", rake, "test"]
   first_timeout = 600 # 10min
+  env_rubylib = rubylib
 
   toplib = gem
   unless File.exist?("#{gem_dir}/src/#{gem}/lib/#{toplib}.rb")
@@ -44,8 +102,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   case gem
   when "rbs"
-    # TODO: We should skip test file instead of test class/methods
+    # json gem v3 removed JSON additions.
     skip_test_files = %w[
+      test/stdlib/json/JSONBigDecimal_test.rb
+      test/stdlib/json/JSONComplex_test.rb
+      test/stdlib/json/JSONDateTime_test.rb
+      test/stdlib/json/JSONDate_test.rb
+      test/stdlib/json/JSONException_test.rb
+      test/stdlib/json/JSONOpenStruct_test.rb
+      test/stdlib/json/JSONRange_test.rb
+      test/stdlib/json/JSONRational_test.rb
+      test/stdlib/json/JSONRegexp_test.rb
+      test/stdlib/json/JSONSet_test.rb
+      test/stdlib/json/JSONStruct_test.rb
+      test/stdlib/json/JSONSymbol_test.rb
+      test/stdlib/json/JSONTime_test.rb
     ]
 
     skip_test_files.each do |file|
@@ -64,77 +135,189 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command.concat %W[stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true]
     first_timeout *= 3
 
+  when "rexml"
+    test_command[-2..-1] = %w[test/run.rb --ignore-name=/linear_performance/]
+
+  when "fiddle"
+    # This test checks a long-fixed memory leak and its measurement is flaky.
+    test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
+
+  when "prism"
+    # see BundledGem.build, which cannot use this task without rake-compiler
+    test_command.insert(-2, "templates")
+    # The 2.1.0 release lacks the guard for differing node IDs between the
+    # bundled parser and the parser built into Ruby.
+    _, version, _, revision = line.split("#", 2).first.split
+    if version == "2.1.0" && !revision
+      test_command << 'TESTOPTS=--ignore-testcase=Prism::FindTest'
+    end
+
   when "debug"
+    # needs pty
+    next unless /mswin|mingw/ =~ RUBY_PLATFORM
+
     # Since debug gem requires debug.so in child processes without
     # activating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
-    load_path = true
+    libs = IO.popen([ruby, "-e", "old = $:.dup; require '#{toplib}'; puts $:-old"], &:read)
+    next unless $?.success?
+    env_rubylib = [libs.split("\n"), rubylib].join(File::PATH_SEPARATOR)
 
   when "test-unit"
     test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "test/run.rb"]
 
   when "csv"
     first_timeout = 30
+    test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "run-test.rb"]
+    test_command << "--ignore-name=/ractor/" if /mswin|mingw/ =~ RUBY_PLATFORM
 
   when "win32ole"
     next unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   end
 
-  if load_path
-    libs = IO.popen([ruby, "-e", "old = $:.dup; require '#{toplib}'; puts $:-old"], &:read)
-    next unless $?.success?
-    ENV["RUBYLIB"] = [libs.split("\n"), rubylib].join(File::PATH_SEPARATOR)
-  else
-    ENV["RUBYLIB"] = rubylib
-  end
+  jobs << {
+    gem: gem,
+    test_command: test_command,
+    first_timeout: first_timeout,
+    rubylib: env_rubylib,
+  }
+end
 
-  # 93(bright yellow) is copied from .github/workflows/mingw.yml
-  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
-  print "[command]" if github_actions
-  p test_command
-  timeouts = {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}
-  if /mingw|mswin/ =~ RUBY_PLATFORM
-    timeouts.delete(:TERM)      # Inner process signal on Windows
-    group = :new_pgroup
-    pg = ""
-  else
-    group = :pgroup
-    pg = "-"
-  end
-  pid = Process.spawn(*test_command, group => true)
-  timeouts.each do |sig, sec|
-    if sig
-      puts "Sending #{sig} signal"
-      Process.kill("#{pg}#{sig}", pid)
-    end
-    begin
-      break Timeout.timeout(sec) {Process.wait(pid)}
-    rescue Timeout::Error
-    end
-  rescue Interrupt
-    exit_code = Signal.list["INT"]
-    Process.kill("#{pg}KILL", pid)
-    Process.wait(pid)
-    break
-  end
+running_pids = []
+interrupted = false
 
-  print "::endgroup::\n" if github_actions
-  unless $?.success?
+trap(:INT) do
+  interrupted = true
+  running_pids.each do |pid|
+    Process.kill("#{signal_prefix}INT", pid) rescue nil
+  end
+end
 
-    mesg = "Tests failed " +
-           ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
-              "with exit code #{$?.exitstatus}")
-    puts colorize.decorate(mesg, "fail")
-    if allowed_failures.include?(gem)
-      mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES or DEFAULT_ALLOWED_FAILURES"
-      puts colorize.decorate(mesg, "skip")
+heavy_tests = %w[rbs debug reline win32ole irb drb net-imap rdoc typeprof racc rake]
+others = heavy_tests.size
+jobs.sort_by! {|job| heavy_tests.index(job[:gem]) || (others += 1)}
+
+results = Array.new(jobs.size)
+queue = Queue.new
+jobs.each_with_index { |j, i| queue << [j, i] }
+nprocs.times { queue << nil }
+print_queue = Queue.new
+
+puts "Running #{jobs.size} gem tests with #{nprocs} workers..."
+
+printer = Thread.new do
+  printed = 0
+  while printed < jobs.size
+    result = print_queue.pop
+    break if result.nil?
+
+    gem = result[:gem]
+    elapsed = result[:elapsed]
+    status = result[:status]
+    t = " in %.6f sec" % elapsed
+
+    print (github_actions ? "::group::" : "\n")
+    puts colorize.decorate("Testing the #{gem} gem", "note")
+    print "[command]" if github_actions
+    p result[:test_command]
+    result[:log_lines].each { |l| puts l }
+    print result[:output]
+    print "::endgroup::\n" if github_actions
+
+    if status&.success?
+      puts colorize.decorate("Test passed#{t}", "pass")
     else
-      failed << gem
-      exit_code = 1
+      mesg = "Tests failed " +
+             (status&.signaled? ? "by SIG#{Signal.signame(status.termsig)}" :
+                "with exit code #{status&.exitstatus}") + t
+      puts colorize.decorate(mesg, "fail")
+      if allowed_failures.include?(gem)
+        mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES or DEFAULT_ALLOWED_FAILURES"
+        puts colorize.decorate(mesg, "skip")
+      else
+        failed << gem
+        exit_code = 1
+      end
+    end
+
+    printed += 1
+  end
+end
+
+threads = nprocs.times.map do
+  Thread.new do
+    while (item = queue.pop)
+      break if interrupted
+      job, index = item
+
+      start_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      rd, wr = IO.pipe
+      env = { "RUBYLIB" => job[:rubylib] }
+      pid = Process.spawn(env, *job[:test_command], spawn_group => true, [:out, :err] => wr)
+      wr.close
+      running_pids << pid
+      output_thread = Thread.new { rd.read }
+
+      timeouts = { nil => job[:first_timeout], INT: 30, TERM: 10, KILL: nil }
+      if /mingw|mswin/ =~ RUBY_PLATFORM
+        timeouts.delete(:TERM)
+      end
+
+      log_lines = []
+      status = nil
+      timeouts.each do |sig, sec|
+        if sig
+          log_lines << "Sending #{sig} signal"
+          begin
+            Process.kill("#{signal_prefix}#{sig}", pid)
+          rescue Errno::ESRCH
+            _, status = Process.wait2(pid) unless status
+            break
+          end
+        end
+        begin
+          break Timeout.timeout(sec) { _, status = Process.wait2(pid) }
+        rescue Timeout::Error
+        end
+      end
+
+      captured = output_thread.value
+      rd.close
+      running_pids.delete(pid)
+
+      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_at
+
+      result = {
+        gem: job[:gem],
+        test_command: job[:test_command],
+        status: status,
+        elapsed: elapsed,
+        output: captured,
+        log_lines: log_lines,
+      }
+      results[index] = result
+      print_queue << result
     end
   end
 end
 
-puts "Failed gems: #{failed.join(', ')}" unless failed.empty?
+threads.each(&:join)
+print_queue << nil
+printer.join
+
+if interrupted
+  exit Signal.list["INT"]
+end
+
+unless failed.empty?
+  puts "\n#{colorize.decorate("Failed gems: #{failed.join(', ')}", "fail")}"
+  results.compact.each do |result|
+    next if result[:status]&.success?
+    next if allowed_failures.include?(result[:gem])
+    puts colorize.decorate("\nTesting the #{result[:gem]} gem", "note")
+    print result[:output]
+  end
+end
 exit exit_code

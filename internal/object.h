@@ -8,11 +8,15 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Object.
  */
+#include "internal/basic_operators.h"
+#include "internal/string.h"
+#include "internal/vm.h"
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* object.c */
-size_t rb_obj_embedded_size(uint32_t fields_count);
+
 VALUE rb_class_allocate_instance(VALUE klass);
+VALUE rb_class_allocate_instance_capa(VALUE klass, uint8_t /* attr_index_t */ max_iv_count);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));
 double rb_num_to_dbl(VALUE val);
@@ -20,8 +24,15 @@ VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze);
 VALUE rb_obj_dup_setup(VALUE obj, VALUE dup);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
-VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+VALUE rb_check_convert_type_with_id_slow(VALUE,int,const char*,ID);
 int rb_bool_expected(VALUE, const char *, int raise);
+
+static inline VALUE
+rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
+{
+    if (RB_TYPE_P(val, type) && type != T_DATA) return val;
+    return rb_check_convert_type_with_id_slow(val, type, tname, method);
+}
 static inline void RBASIC_CLEAR_CLASS(VALUE obj);
 static inline void RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass);
 static inline void RBASIC_SET_CLASS(VALUE obj, VALUE klass);
@@ -60,4 +71,81 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     RBASIC_SET_CLASS_RAW(obj, klass);
     RB_OBJ_WRITTEN(obj, oldv, klass);
 }
+
+static inline void
+ROBJECT_SET_EXTENDED(VALUE obj, VALUE fields_obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    RUBY_ASSERT(RB_TYPE_P(fields_obj, T_IMEMO));
+    RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.extended, fields_obj);
+}
+
+static inline size_t
+rb_obj_embedded_size(uint32_t fields_count)
+{
+    size_t size = offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    // Ensure enough room for the heap pointer if this expands
+    if (size < sizeof(struct RObject)) size = sizeof(struct RObject);
+    return size;
+}
+
+static inline VALUE
+opt_equality_specialized_miss(VALUE recv, VALUE obj)
+{
+    RBIMPL_ASSERT_OR_ASSUME(recv != obj);
+    if (BASIC_OP_UNREDEFINED_P(BOP_EQ, ANY_REDEFINED_OP_FLAG)) {
+        if (recv == Qfalse) return Qfalse;
+        if (IMMEDIATE_P(recv)) {
+            // Numeric immediates can be equal to different VALUE via coercion.
+            if (FIXNUM_P(recv)) {
+                if (!SPECIAL_CONST_P(obj) || FLONUM_P(obj)) return Qundef;
+            }
+            else if (FLONUM_P(recv)) {
+                if (!SPECIAL_CONST_P(obj) || FIXNUM_P(obj)) return Qundef;
+
+            }
+            return Qfalse;
+        }
+
+        VALUE klass = RBASIC_CLASS(recv);
+        if (klass == rb_cString) {
+            if (RB_TYPE_P(obj, T_STRING)) {
+                return rb_str_eql_internal(recv, obj);
+            }
+        }
+        else if (klass == rb_cSymbol) {
+            return Qfalse;
+        }
+    }
+    return Qundef;
+}
+
+static inline VALUE
+rb_equal_inline(VALUE obj1, VALUE obj2)
+{
+    if (obj1 == obj2) return Qtrue;
+
+    VALUE result = opt_equality_specialized_miss(obj1, obj2);
+    if (UNDEF_P(result)) {
+        result = rb_equal_opt(obj1, obj2);
+    }
+    return result;
+}
+
+#define rb_equal rb_equal_inline
+
+static inline int
+rb_eql_inline(VALUE obj1, VALUE obj2)
+{
+    if (obj1 == obj2) return TRUE;
+
+    VALUE result = opt_equality_specialized_miss(obj1, obj2);
+    if (UNDEF_P(result)) {
+        result = rb_eql_opt(obj1, obj2);
+    }
+    return RTEST(result);
+}
+
+#define rb_eql rb_eql_inline
+
 #endif /* INTERNAL_OBJECT_H */

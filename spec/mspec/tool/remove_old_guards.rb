@@ -31,6 +31,12 @@ def each_spec_file(&block)
   Dir["*/**/*.rb"].each(&block)
 end
 
+def each_file(&block)
+  Dir["**/*"].each { |path|
+    yield path if File.file?(path)
+  }
+end
+
 def remove_guards(guard, keep)
   each_spec_file do |file|
     contents = File.binread(file)
@@ -109,7 +115,7 @@ def remove_unused_shared_specs
 end
 
 def search(regexp)
-  each_spec_file do |file|
+  each_file do |file|
     contents = File.binread(file)
     if contents =~ regexp
       puts file
@@ -136,3 +142,4 @@ remove_unused_shared_specs
 puts "Search:"
 search(/(["'])#{version}\1/)
 search(/^\s*#.+#{version}/)
+search(/RUBY_VERSION_IS_#{version.tr('.', '_')}/)

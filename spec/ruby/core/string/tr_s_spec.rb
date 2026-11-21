@@ -16,19 +16,40 @@ describe "String#tr_s" do
     "123456789".tr_s("2-5", "abcdefg").should == "1abcd6789"
     "hello ^--^".tr_s("e-", "__").should == "h_llo ^_^"
     "hello ^--^".tr_s("---", "_").should == "hello ^_^"
+    "hello ^--^".tr_s("-e", "_a").should == "hallo ^_^"
+    "hel-001122".tr_s("--2", "a-f").should == "heladef"
+    "hel-(())".tr_s("(--", "a-f").should == "helfab"
   end
 
-  ruby_bug "#19769", ""..."3.3" do
-    it "accepts c1-c1 notation to denote range of one character" do
-      "hello".tr_s('e-e', 'x').should == "hxllo"
-      "123456789".tr_s("2-23","xy").should == "1xy456789"
-      "hello ^-^".tr_s("e-", "a-a_").should == "hallo ^_^"
-      "hello ^-^".tr_s("---o", "_a").should == "hella ^_^"
-    end
+  it "accepts c1-c1 notation to denote range of one character" do
+    "hello".tr_s('e-e', 'x').should == "hxllo"
+    "123456789".tr_s("2-23","xy").should == "1xy456789"
+    "hello ^-^".tr_s("e-", "a-a_").should == "hallo ^_^"
+    "hello ^-^".tr_s("---o", "_a").should == "hella ^_^"
   end
 
   it "pads to_str with its last char if it is shorter than from_string" do
     "this".tr_s("this", "x").should == "x"
+  end
+
+  it "raises an ArgumentError when given wrong number of arguments" do
+    -> { "hello".tr_s }.should.raise(ArgumentError)
+    -> { "hello".tr_s("a") }.should.raise(ArgumentError)
+    -> { "hello".tr_s("a", "b", "c") }.should.raise(ArgumentError)
+  end
+
+  it "raises an ArgumentError when the replacement contains a descending range" do
+    -> { "hello".tr_s("a-y", "z-b") }.should.raise(ArgumentError)
+  end
+
+  it "raises an ArgumentError when the source contains a descending range" do
+    -> { "hello".tr_s("l-a", "z") }.should.raise(ArgumentError)
+  end
+
+  it "returns self (or a copy) when from_string or to_string is empty" do
+    "hello".tr_s("", "a").should == "hello"
+    "hello".tr_s("a", "").should == "hello"
+    "hello".tr_s("", "").should == "hello"
   end
 
   it "translates chars not in from_string when it starts with a ^" do
@@ -45,7 +66,7 @@ describe "String#tr_s" do
     "hello ^-^".tr_s("^---l-o", "x").should == "xllox-x"
   end
 
-  it "tries to convert from_str and to_str to strings using to_str" do
+  it "tries to convert each argument to a string using to_str" do
     from_str = mock('ab')
     from_str.should_receive(:to_str).and_return("ab")
 
@@ -56,7 +77,7 @@ describe "String#tr_s" do
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr_s("e", "a").should be_an_instance_of(String)
+    StringSpecs::MyString.new("hello").tr_s("e", "a").should.instance_of?(String)
   end
 
   # http://redmine.ruby-lang.org/issues/show/1839
@@ -99,7 +120,30 @@ describe "String#tr_s" do
     str.tr_s(a, b).should == "椎名深夏"
   end
 
+  it "respects backslash for escaping" do
+    "aa--bb".tr_s("a\\-b", "123").should == "123"
+    "^^".tr_s("\\^", "1").should == "1"
+    "\\\\".tr_s("\\\\", "1").should == "1"
+  end
 
+  it "raises a TypeError when an argument can't be converted to a string" do
+    -> { "hello".tr_s(100, "a") }.should.raise(TypeError)
+    -> { "hello".tr_s("a", [])  }.should.raise(TypeError)
+  end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").tr_s("l", "r").encoding.should == Encoding::US_ASCII
+  end
+
+  it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+    -> { "hello".tr_s("e".encode("UTF-16LE"), "a") }.should.raise(Encoding::CompatibilityError)
+    -> { "hello".encode("UTF-16LE").tr_s("e", "a") }.should.raise(Encoding::CompatibilityError)
+  end
+
+  it "deletes the characters in from_str and does not squeeze the result if to_str is empty" do
+    "hello".tr_s("el", "").should == "ho"
+    "hellooo".tr_s("el", "").should == "hooo"
+  end
 end
 
 describe "String#tr_s!" do
@@ -126,8 +170,8 @@ describe "String#tr_s!" do
 
   it "raises a FrozenError if self is frozen" do
     s = "hello".freeze
-    -> { s.tr_s!("el", "ar") }.should raise_error(FrozenError)
-    -> { s.tr_s!("l", "r")   }.should raise_error(FrozenError)
-    -> { s.tr_s!("", "")     }.should raise_error(FrozenError)
+    -> { s.tr_s!("el", "ar") }.should.raise(FrozenError)
+    -> { s.tr_s!("l", "r")   }.should.raise(FrozenError)
+    -> { s.tr_s!("", "")     }.should.raise(FrozenError)
   end
 end

@@ -13,30 +13,38 @@ describe "Kernel#require" do
 
   # if this fails, update your rubygems
   it "is a private method" do
-    Kernel.should have_private_instance_method(:require)
+    Kernel.private_instance_methods(false).should.include?(:require)
   end
 
-  provided = %w[complex enumerator fiber rational thread ruby2_keywords]
-  ruby_version_is "4.0" do
-    provided << "set"
-    provided << "pathname"
-  end
-
-  it "#{provided.join(', ')} are already required" do
-    out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
-    features = out.lines.map { |line| File.basename(line.chomp, '.*') }
-
-    # Ignore CRuby internals
-    features -= %w[encdb transdb windows_1252 windows_31j]
-    features.reject! { |feature| feature.end_with?('-fake') }
-
-    features.sort.should == provided.sort
-
-    requires = provided
+  it "provided features are already required" do
+    provided = %w[complex enumerator fiber rational thread ruby2_keywords]
     ruby_version_is "4.0" do
-      requires = requires.map { |f| f == "pathname" ? "pathname.so" : f }
+      provided += %w[set pathname]
+    end
+    ruby_version_is "4.1" do
+      provided += %w[monitor io/wait]
     end
 
+    out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
+    features = out.lines.map(&:chomp)
+
+    # Ignore engine-specific internals
+    case RUBY_ENGINE
+    when "jruby"
+      features -= %w[java.rb jruby/util.rb]
+    when "ruby"
+      # remove all external libraries first
+      features.reject! { |feature| File.absolute_path?(feature) }
+
+      # for statically-linked ruby
+      features -= [ "encdb.so", "trans/transdb.so" ] # the suffixes are always ".so"
+      features.reject! { |feature| feature.start_with?("enc/") } # and "enc/trans/"
+    end
+
+    features_no_ext = features.map { |path| path.sub(/\.(?:rb|so)\z/, '') }
+    features_no_ext.sort.uniq.should == provided.sort
+
+    requires = features
     code = requires.map { |f| "puts require #{f.inspect}\n" }.join
     required = ruby_exe(code, options: '--disable-gems')
     required.should == "false\n" * requires.size
@@ -47,14 +55,7 @@ describe "Kernel#require" do
 end
 
 describe "Kernel.require" do
-  before :each do
-    CodeLoadingSpecs.spec_setup
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:require)
   end
-
-  after :each do
-    CodeLoadingSpecs.spec_cleanup
-  end
-
-  it_behaves_like :kernel_require_basic, :require, Kernel
-  it_behaves_like :kernel_require, :require, Kernel
 end

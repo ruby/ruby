@@ -40,6 +40,7 @@ enum ruby_basic_operators {
     BOP_DEFAULT,
     BOP_PACK,
     BOP_INCLUDE_P,
+    BOP_YIELD,
 
     BOP_LAST_
 };
@@ -60,6 +61,7 @@ RUBY_EXTERN short ruby_vm_redefined_flag[BOP_LAST_];
 #define TRUE_REDEFINED_OP_FLAG   (1 << 10)
 #define FALSE_REDEFINED_OP_FLAG  (1 << 11)
 #define PROC_REDEFINED_OP_FLAG   (1 << 12)
+#define ANY_REDEFINED_OP_FLAG    (1 << 13)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 

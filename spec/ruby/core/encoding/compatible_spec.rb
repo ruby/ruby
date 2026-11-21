@@ -55,7 +55,7 @@ describe "Encoding.compatible? String, String" do
     it "returns nil if the second's Encoding is not ASCII compatible" do
       a = "abc".dup.force_encoding("UTF-8")
       b = "1234".dup.force_encoding("UTF-16LE")
-      Encoding.compatible?(a, b).should be_nil
+      Encoding.compatible?(a, b).should == nil
     end
   end
 
@@ -69,7 +69,7 @@ describe "Encoding.compatible? String, String" do
     end
 
     it "returns nil if the second encoding is ASCII compatible but neither String's encoding is ASCII only" do
-      Encoding.compatible?("\xff", "\u3042".encode("utf-8")).should be_nil
+      Encoding.compatible?("\xff", "\u3042".encode("utf-8")).should == nil
     end
   end
 
@@ -79,15 +79,15 @@ describe "Encoding.compatible? String, String" do
     end
 
     it "returns nil when the second String is US-ASCII" do
-      Encoding.compatible?(@str, "def".encode("us-ascii")).should be_nil
+      Encoding.compatible?(@str, "def".encode("us-ascii")).should == nil
     end
 
     it "returns nil when the second String is BINARY and ASCII only" do
-      Encoding.compatible?(@str, "\x7f").should be_nil
+      Encoding.compatible?(@str, "\x7f").should == nil
     end
 
     it "returns nil when the second String is BINARY but not ASCII only" do
-      Encoding.compatible?(@str, "\xff").should be_nil
+      Encoding.compatible?(@str, "\xff").should == nil
     end
 
     it "returns the Encoding when the second's Encoding is not ASCII compatible but the same as the first's Encoding" do
@@ -110,15 +110,15 @@ describe "Encoding.compatible? String, String" do
     end
 
     it "returns nil when the second's Encoding is BINARY but not ASCII only" do
-      Encoding.compatible?(@str, "\xff").should be_nil
+      Encoding.compatible?(@str, "\xff").should == nil
     end
 
     it "returns nil when the second's Encoding is invalid and ASCII only" do
-      Encoding.compatible?(@str, "\x7f\x7f".dup.force_encoding("utf-16be")).should be_nil
+      Encoding.compatible?(@str, "\x7f\x7f".dup.force_encoding("utf-16be")).should == nil
     end
 
     it "returns nil when the second's Encoding is invalid and not ASCII only" do
-      Encoding.compatible?(@str, "\xff\xff".dup.force_encoding("utf-16be")).should be_nil
+      Encoding.compatible?(@str, "\xff\xff".dup.force_encoding("utf-16be")).should == nil
     end
 
     it "returns the Encoding when the second's Encoding is invalid but the same as the first" do
@@ -557,6 +557,11 @@ describe "Encoding.compatible? String, Regexp" do
       [Encoding, "\x82\xa0".dup.force_encoding("shift_jis"),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, /abc/)
   end
+
+  it "returns the Regexp's Encoding if the String is ASCII only and the Regexp is not" do
+    r = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    Encoding.compatible?("hello".dup.force_encoding("utf-8"), r).should == Encoding::EUC_JP
+  end
 end
 
 describe "Encoding.compatible? String, Symbol" do
@@ -584,11 +589,11 @@ end
 
 describe "Encoding.compatible? String, Encoding" do
   it "returns nil if the String's encoding is not ASCII compatible" do
-    Encoding.compatible?("abc".encode("utf-32le"), Encoding::US_ASCII).should be_nil
+    Encoding.compatible?("abc".encode("utf-32le"), Encoding::US_ASCII).should == nil
   end
 
   it "returns nil if the Encoding is not ASCII compatible" do
-    Encoding.compatible?("abc".encode("us-ascii"), Encoding::UTF_32LE).should be_nil
+    Encoding.compatible?("abc".encode("us-ascii"), Encoding::UTF_32LE).should == nil
   end
 
   it "returns the String's encoding if the Encoding is US-ASCII" do
@@ -609,7 +614,7 @@ describe "Encoding.compatible? String, Encoding" do
   end
 
   it "returns nil if the String's encoding is ASCII compatible but the string is not ASCII only" do
-    Encoding.compatible?("\u3042".encode("utf-8"), Encoding::BINARY).should be_nil
+    Encoding.compatible?("\u3042".encode("utf-8"), Encoding::BINARY).should == nil
   end
 end
 
@@ -619,6 +624,15 @@ describe "Encoding.compatible? Regexp, String" do
     Encoding.compatible?(/abc/, str).should == Encoding::US_ASCII
   end
 
+  it "returns the String's Encoding when the String is ASCII only with a different encoding" do
+    r = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    Encoding.compatible?(r, "hello".dup.force_encoding("utf-8")).should == Encoding::UTF_8
+  end
+
+  it "returns the Regexp's Encoding if the String has the same non-ASCII encoding" do
+    r = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    Encoding.compatible?(r, "hello".dup.force_encoding("euc-jp")).should == Encoding::EUC_JP
+  end
 end
 
 describe "Encoding.compatible? Regexp, Regexp" do
@@ -727,32 +741,32 @@ end
 
 describe "Encoding.compatible? Object, Object" do
   it "returns nil for Object, String" do
-    Encoding.compatible?(Object.new, "abc").should be_nil
+    Encoding.compatible?(Object.new, "abc").should == nil
   end
 
   it "returns nil for Object, Regexp" do
-    Encoding.compatible?(Object.new, /./).should be_nil
+    Encoding.compatible?(Object.new, /./).should == nil
   end
 
   it "returns nil for Object, Symbol" do
-    Encoding.compatible?(Object.new, :sym).should be_nil
+    Encoding.compatible?(Object.new, :sym).should == nil
   end
 
   it "returns nil for String, Object" do
-    Encoding.compatible?("abc", Object.new).should be_nil
+    Encoding.compatible?("abc", Object.new).should == nil
   end
 
   it "returns nil for Regexp, Object" do
-    Encoding.compatible?(/./, Object.new).should be_nil
+    Encoding.compatible?(/./, Object.new).should == nil
   end
 
   it "returns nil for Symbol, Object" do
-    Encoding.compatible?(:sym, Object.new).should be_nil
+    Encoding.compatible?(:sym, Object.new).should == nil
   end
 end
 
 describe "Encoding.compatible? nil, nil" do
   it "returns nil" do
-    Encoding.compatible?(nil, nil).should be_nil
+    Encoding.compatible?(nil, nil).should == nil
   end
 end

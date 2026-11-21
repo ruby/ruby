@@ -3,6 +3,7 @@
 begin
   require "socket"
   require "test/unit"
+  require "io/nonblock"
 rescue LoadError
 end
 
@@ -73,14 +74,34 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
-  def test_tcp_initialize_open_timeout
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
+  def test_tcp_initialize_resolv_timeout
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
     server.close
 
-    assert_raise(IO::TimeoutError) do
+    # Without IPv6, only IPv4 is resolved and test_mode_settings are not
+    # applied, so the connection to the closed port is refused immediately.
+    expected = defined?(Socket::AF_INET6) ? IO::TimeoutError : Errno::ECONNREFUSED
+    assert_raise(expected) do
+      TCPSocket.new(
+        "localhost",
+        port,
+        resolv_timeout: 0.01,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv6: 1000, ipv4: 1000 } }
+      )
+    end
+  end
+
+  def test_tcp_initialize_open_timeout
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+    server.close
+
+    # Without IPv6, only IPv4 is resolved and test_mode_settings are not
+    # applied, so the connection to the closed port is refused immediately.
+    expected = defined?(Socket::AF_INET6) ? IO::TimeoutError : Errno::ECONNREFUSED
+    assert_raise(expected) do
       TCPSocket.new(
         "localhost",
         port,
@@ -95,6 +116,15 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       TCPSocket.new("localhost", 12345, open_timeout: 0.01, resolv_timeout: 0.01)
     end
+  end
+
+  def test_initialize_invalid_open_timeout_keeps_stdin_open
+    assert_separately %w[-rsocket -W1], <<~RUBY
+    assert_raise(ArgumentError) do
+      TCPSocket.new("localhost", 12345, open_timeout: -1, fast_fallback: true)
+    end
+    assert_nothing_raised { STDIN.stat }
+    RUBY
   end
 
   def test_initialize_connect_timeout
@@ -170,7 +200,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_ipv6
 
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
@@ -180,7 +210,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       return
     end
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     port = server.addr[1]
 
     socket = TCPSocket.new(
@@ -191,18 +222,18 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_true(socket.remote_address.ipv6?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_v4_hostname_resolved_earlier
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
@@ -211,13 +242,36 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
+    server&.close
+    socket&.close
+  end
+
+  def test_initialize_fast_fallback_returns_nonblocking_socket
+    omit "IO#nonblock? is not available on Windows" if RUBY_PLATFORM =~ /mswin|mingw/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
+    socket = TCPSocket.new(
+      "localhost",
+      port,
+      fast_fallback: true,
+      test_mode_settings: { delay: { ipv6: 1000 } }
+    )
+    assert_predicate(socket, :nonblock?)
+  ensure
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_ipv6
 
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
@@ -230,72 +284,83 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     port = server.addr[1]
     delay_time = 25 # Socket::RESOLUTION_DELAY (private) is 50ms
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
       fast_fallback: true,
       test_mode_settings: { delay: { ipv6: delay_time } }
     )
-    assert_true(socket.remote_address.ipv6?)
+    # Another process may be listening on the same port on 127.0.0.1.
+    omit "connected to an unrelated process on the same port" unless socket.remote_address.ipv6?
+    server_thread.join(3)
+    assert_not_nil(accepted, "server did not accept the connection")
+    assert_equal(socket.local_address.to_sockaddr, accepted.remote_address.to_sockaddr)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     ipv4_address = "127.0.0.1"
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, ipv4_address))
     port = server.connect_address.ip_port
 
-    server_thread = Thread.new { server.listen(1); server.accept }
+    accepted = nil
+    server_thread = Thread.new { server.listen(1); accepted, _ = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
       fast_fallback: true,
       test_mode_settings: { delay: { ipv4: 10 } }
     )
-    assert_equal(ipv4_address, socket.remote_address.ip_address)
+    # Another process may be listening on the same port on ::1.
+    omit "connected to an unrelated process on the same port" if socket.remote_address.ipv6?
+    server_thread.join(3)
+    assert_not_nil(accepted, "server did not accept the connection")
+    assert_equal(socket.local_address.to_sockaddr, accepted.remote_address.to_sockaddr)
   ensure
-    accepted, _ = server_thread&.value
+    stop_accept_thread(server_thread, socket)
     accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
     port = server.connect_address.ip_port
 
-    server_thread = Thread.new { server.listen(1); server.accept }
+    accepted = nil
+    server_thread = Thread.new { server.listen(1); accepted, _ = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
       fast_fallback: true,
       test_mode_settings: { delay: { ipv6: 25 } }
     )
-    assert_true(socket.remote_address.ipv4?)
+    # Another process may be listening on the same port on ::1.
+    omit "connected to an unrelated process on the same port" if socket.remote_address.ipv6?
+    server_thread.join(3)
+    assert_not_nil(accepted, "server did not accept the connection")
+    assert_equal(socket.local_address.to_sockaddr, accepted.remote_address.to_sockaddr)
   ensure
-    accepted, _ = server_thread&.value
+    stop_accept_thread(server_thread, socket)
     accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
@@ -304,13 +369,41 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
+    server&.close
+    socket&.close
+  end
+
+  def test_initialize_ignores_malformed_test_mode_settings
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
+    socket = TCPSocket.new(
+      "localhost",
+      port,
+      fast_fallback: true,
+      test_mode_settings: { delay: 1, error: 1 }
+    )
+    assert_equal(port, socket.remote_address.ip_port)
+  ensure
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_ipv6
+    if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+      omit "Windows reports a refused loopback connection two seconds after " \
+           "connect(2), so the IPv6 attempt is still in flight when " \
+           "resolv_timeout expires"
+    end
 
     begin
       server = TCPServer.new("::1", 0)
@@ -333,7 +426,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_ipv6
 
     begin
       server = TCPServer.new("::1", 0)
@@ -355,8 +448,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_connection_failure_after_hostname_resolution_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
     server.close
@@ -371,53 +462,85 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
-  def test_initialize_v6_connected_socket_with_v6_address
+  def test_initialize_v4_hostname_resolution_failure_after_v6_address_family_error
+    omit_unless_ipv6 "test_mode_settings only take effect when resolving both IPv6 and IPv4"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit "EAI_ADDRFAMILY is not defined" unless defined?(Socket::EAI_ADDRFAMILY)
 
+    e = assert_raise(Socket::ResolutionError) do
+      TCPSocket.new(
+        "localhost",
+        12345,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_ADDRFAMILY, ipv4: Socket::EAI_FAIL } }
+      )
+    end
+    assert_equal(Socket::EAI_FAIL, e.error_code)
+  end
+
+  def test_initialize_v6_connected_socket_with_v6_address
+    omit_unless_ipv6
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
       return
     end
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     port = server.addr[1]
 
     socket = TCPSocket.new("::1", port)
     assert_true(socket.remote_address.ipv6?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_v4_connected_socket_with_v4_address
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     port = server.addr[1]
 
     socket = TCPSocket.new("127.0.0.1", port)
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
 
   def test_initialize_fast_fallback_is_false
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     _, port, = server.addr
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
 
     socket = TCPSocket.new("127.0.0.1", port, fast_fallback: false)
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
+  end
+
+  private
+
+  def omit_unless_ipv6(reason = "IPv6 is not supported")
+    omit reason unless defined?(Socket::AF_INET6)
+  end
+
+  # On success, wait for the accept thread to finish. If the test failed
+  # before the client connected, `server.accept` never returns, so kill
+  # the thread instead of waiting for it.
+  def stop_accept_thread(server_thread, socket)
+    return unless server_thread
+    server_thread.join(1) if socket
+    server_thread.kill.join
   end
 end if defined?(TCPSocket)

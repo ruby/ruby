@@ -76,6 +76,7 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("ruby_rstruct_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")
@@ -87,7 +88,8 @@ fn main() {
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
-        .allowlist_function("rb_yjit_shape_obj_too_complex_p")
+        .allowlist_function("rb_yjit_shape_obj_complex_p")
+        .allowlist_function("rb_yjit_shape_obj_embedded_p")
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
@@ -97,9 +99,8 @@ fn main() {
         .allowlist_function("rb_obj_frozen_p")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
-        .allowlist_function("rb_hash_new_with_size")
+        .allowlist_function("rb_hash_new_capa")
         .allowlist_function("rb_hash_resurrect")
-        .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")
         .allowlist_type("st_retval")
         .allowlist_function("rb_hash_aset")
@@ -117,7 +118,6 @@ fn main() {
         .allowlist_function("rb_yjit_rb_ary_subseq_length")
         .allowlist_function("rb_ec_ary_new_from_values")
         .allowlist_function("rb_ary_tmp_new_from_values")
-        .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
         .allowlist_function("rb_class_get_superclass")
         .allowlist_function("rb_gc_mark")
@@ -181,7 +181,7 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
+        .allowlist_function("rb_reg_new_from_values")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
@@ -242,7 +242,7 @@ fn main() {
         .allowlist_function("rb_object_shape_count")
         .allowlist_function("rb_ivar_get_at")
         .allowlist_function("rb_ivar_get_at_no_ractor_check")
-        .allowlist_function("rb_iseq_(get|set)_yjit_payload")
+        .allowlist_function("rb_iseq_(get|set)_jit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
@@ -258,32 +258,37 @@ fn main() {
         .allowlist_function("rb_full_cfunc_return")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
-        .allowlist_function("rb_yjit_constcache_shareable")
         .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_yjit_dump_iseq_loc")
         .allowlist_function("rb_yjit_obj_written")
-        .allowlist_function("rb_yjit_str_simple_append")
+        .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
         .allowlist_function("rb_jit_get_proc_ptr")
+        .allowlist_type("rb_block_type")
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_cme_ractor_serial")
+        .allowlist_function("rb_yjit_attached_object_is")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_jit_str_concat_codepoint")
         .allowlist_type("rstring_offsets")
         .allowlist_function("rb_assert_holding_vm_lock")
-        .allowlist_function("rb_jit_shape_too_complex_p")
+        .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
+        .allowlist_function("rb_jit_constcache_shareable")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_type("jit_bindgen_constants")
+        .allowlist_type("yjit_bindgen_constants")
         .allowlist_function("rb_vm_barrier")
+        .allowlist_function("rb_yjit_cdhash_all_fixnum_p")
+        .allowlist_function("rb_yjit_cdhash_lookup")
 
         // Not sure why it's picking these up, but don't.
         .blocklist_type("FILE")
@@ -368,7 +373,7 @@ fn main() {
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
-        .allowlist_function("rb_yjit_ruby2_keywords_splat_p")
+        .allowlist_function("rb_jit_ruby2_keywords_splat_p")
         .allowlist_function("rb_jit_fix_div_fix")
         .allowlist_function("rb_jit_fix_mod_fix")
         .allowlist_function("rb_FL_TEST")
@@ -404,12 +409,34 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    // Write to a Vec for post-processing
+    let mut bindings_string = Vec::new();
+    bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+    let mut bindings_string = String::from_utf8(bindings_string).expect("bindings should be UTF-8");
+
+    // Give some generated type aliases an integer type that is nicer to use from
+    // Rust than the one bindgen derives from C.
+    const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
+        // usize is what VALUE() takes, so flag masks need no cast at their use sites
+        ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+        // These are unsigned long on LP64 but unsigned long long on LLP64 (Windows)
+        ("pub type ID = ::std::os::raw::c_ulong;", "pub type ID = u64;"),
+        ("pub type st_data_t = ::std::os::raw::c_ulong;", "pub type st_data_t = u64;"),
+        // long on LP64 but int64_t on mswin
+        ("pub type rb_len_t = ::std::os::raw::c_long;", "pub type rb_len_t = i64;"),
+    ];
+    // Each needle is a whole line of the output, so plain replacement is unambiguous.
+    // Yes, this search-and-replace could be faster, but it's a small file.
+    for (needle, replacement) in TYPE_REPLACEMENTS {
+        assert!(bindings_string.contains(needle), "no line to replace: {needle}");
+        bindings_string = bindings_string.replace(needle, replacement);
+    }
+
+    // Write out to file
     let mut out_path: PathBuf = src_root;
     out_path.push("yjit");
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
 
-    bindings
-        .write_to_file(out_path)
-        .expect("Couldn't write bindings!");
+    std::fs::write(out_path, bindings_string).expect("file output failed");
 }

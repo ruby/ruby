@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class IntegerBaseFlagsTest < TestCase
     # Through some bit hackery, we want to allow consumers to use the integer
     # base flags as the base itself. It has a nice property that the current
@@ -25,7 +25,7 @@ module Prism
     private
 
     def base(source)
-      node = Prism.parse_statement(source)
+      node = Ruby::Prism.parse_statement(source)
       value = (node.send(:flags) & (0b111100 - IntegerBaseFlags::DECIMAL)) >> 1
       value == 0 ? 10 : value
     end

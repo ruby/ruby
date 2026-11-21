@@ -57,23 +57,23 @@ describe "StringIO#readpartial" do
 
   it "raises EOFError on EOF" do
     @string.readpartial(18).should == 'Stop, look, listen'
-    -> { @string.readpartial(10) }.should raise_error(EOFError)
+    -> { @string.readpartial(10) }.should.raise(EOFError)
   end
 
   it "discards the existing buffer content upon error" do
     buffer = +'hello'
     @string.readpartial(100)
-    -> { @string.readpartial(1, buffer) }.should raise_error(EOFError)
-    buffer.should be_empty
+    -> { @string.readpartial(1, buffer) }.should.raise(EOFError)
+    buffer.should.empty?
   end
 
   it "raises IOError if the stream is closed" do
     @string.close
-    -> { @string.readpartial(1) }.should raise_error(IOError, "not opened for reading")
+    -> { @string.readpartial(1) }.should.raise(IOError, "not opened for reading")
   end
 
   it "raises ArgumentError if the negative argument is provided" do
-    -> { @string.readpartial(-1) }.should raise_error(ArgumentError, "negative length -1 given")
+    -> { @string.readpartial(-1) }.should.raise(ArgumentError, "negative length -1 given")
   end
 
   it "immediately returns an empty string if the length argument is 0" do
@@ -82,7 +82,7 @@ describe "StringIO#readpartial" do
 
   it "raises IOError if the stream is closed and the length argument is 0" do
     @string.close
-    -> { @string.readpartial(0) }.should raise_error(IOError, "not opened for reading")
+    -> { @string.readpartial(0) }.should.raise(IOError, "not opened for reading")
   end
 
   it "clears and returns the given buffer if the length argument is 0" do

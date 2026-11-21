@@ -8,7 +8,7 @@ describe "Encoding::Converter#putback" do
   end
 
   it "returns a String" do
-    @ec.putback.should be_an_instance_of(String)
+    @ec.putback.should.instance_of?(String)
   end
 
   it "returns a String in the source encoding" do

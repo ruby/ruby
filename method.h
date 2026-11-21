@@ -189,6 +189,7 @@ struct rb_method_definition_struct {
     unsigned int iseq_overload: 1;
     unsigned int no_redef_warning: 1;
     unsigned int aliased : 1;
+    unsigned int uncached : 1;
 
     rb_atomic_t reference_count;
 
@@ -203,6 +204,7 @@ struct rb_method_definition_struct {
     } body;
 
     ID original_id;
+    VALUE original_module; /* module in which the method definition is; see location_original_module() */
     uintptr_t method_serial;
     const rb_box_t *box;
 };
@@ -213,6 +215,22 @@ struct rb_hook_list_struct;
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
 STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body) <= 8);
+
+/* Resolving an alias (aliased_callable_method_entry) republishes me->def or
+ * def->body.alias.original_me while other ractors read them without the VM lock.
+ * Both are written with release stores, so unlocked readers on the alias paths
+ * load them with acquire to see a fully built definition or entry. */
+static inline rb_method_definition_t *
+rb_method_entry_def_acquire(const rb_method_entry_t *me)
+{
+    return (rb_method_definition_t *)rbimpl_atomic_ptr_load((void **)&me->def, RBIMPL_ATOMIC_ACQUIRE);
+}
+
+static inline const rb_method_entry_t *
+rb_method_alias_original_me(const rb_method_definition_t *def)
+{
+    return (const rb_method_entry_t *)rbimpl_atomic_ptr_load((void **)&def->body.alias.original_me, RBIMPL_ATOMIC_ACQUIRE);
+}
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
@@ -238,6 +256,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
 RUBY_SYMBOL_EXPORT_END
 
+void rb_vm_coverage_record_me(const rb_method_entry_t *me);
+
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
@@ -260,11 +280,11 @@ void rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id
 void rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, bool iclass_shared_mtbl);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
+void rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t visi);
 
 VALUE rb_unnamed_parameters(int arity);
 
 void rb_vm_insert_cc_refinement(const struct rb_callcache *cc);
-void rb_vm_delete_cc_refinement(const struct rb_callcache *cc);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
 void rb_clear_all_refinement_method_cache(void);

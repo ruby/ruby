@@ -19,6 +19,6 @@ describe "Net::HTTP#trace" do
   end
 
   it "returns a Net::HTTPResponse" do
-    @http.trace("/request").should be_kind_of(Net::HTTPResponse)
+    @http.trace("/request").should.is_a?(Net::HTTPResponse)
   end
 end

@@ -29,7 +29,7 @@ describe "IO.read" do
 
     -> {
       IO.read(@fname, 3, 0, {mode: "r+"})
-    }.should raise_error(ArgumentError, /wrong number of arguments/)
+    }.should.raise(ArgumentError, /wrong number of arguments/)
   end
 
   it "accepts an empty options Hash" do
@@ -45,11 +45,11 @@ describe "IO.read" do
   end
 
   it "raises an IOError if the options Hash specifies write mode" do
-    -> { IO.read(@fname, 3, 0, mode: "w") }.should raise_error(IOError)
+    -> { IO.read(@fname, 3, 0, mode: "w") }.should.raise(IOError, "not opened for reading")
   end
 
   it "raises an IOError if the options Hash specifies append only mode" do
-    -> { IO.read(@fname, mode: "a") }.should raise_error(IOError)
+    -> { IO.read(@fname, mode: "a") }.should.raise(IOError, "not opened for reading")
   end
 
   it "reads the file if the options Hash includes read mode" do
@@ -62,18 +62,6 @@ describe "IO.read" do
 
   it "reads the file if the options Hash includes read/write append mode" do
     IO.read(@fname, mode: "a+").should == @contents
-  end
-
-  platform_is_not :windows do
-    ruby_version_is ""..."3.3" do
-      it "uses an :open_args option" do
-        string = IO.read(@fname, nil, 0, open_args: ["r", nil, {encoding: Encoding::US_ASCII}])
-        string.encoding.should == Encoding::US_ASCII
-
-        string = IO.read(@fname, nil, 0, open_args: ["r", nil, {}])
-        string.encoding.should == Encoding::UTF_8
-      end
-    end
   end
 
   it "disregards other options if :open_args is given" do
@@ -124,29 +112,20 @@ describe "IO.read" do
 
   it "raises an Errno::ENOENT when the requested file does not exist" do
     rm_r @fname
-    -> { IO.read @fname }.should raise_error(Errno::ENOENT)
+    -> { IO.read @fname }.should.raise(Errno::ENOENT)
   end
 
   it "raises a TypeError when not passed a String type" do
-    -> { IO.read nil }.should raise_error(TypeError)
+    -> { IO.read nil }.should raise_consistent_error(TypeError, "no implicit conversion of nil into String")
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    -> { IO.read @fname, -1 }.should raise_error(ArgumentError)
+    -> { IO.read @fname, -1 }.should.raise(ArgumentError, "negative length -1 given")
   end
 
-  ruby_version_is ''...'3.3' do
-    it "raises an Errno::EINVAL when not passed a valid offset" do
-      -> { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
-      -> { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
-    end
-  end
-
-  ruby_version_is '3.3' do
-    it "raises an ArgumentError when not passed a valid offset" do
-      -> { IO.read @fname, 0, -1  }.should raise_error(ArgumentError)
-      -> { IO.read @fname, -1, -1 }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when not passed a valid offset" do
+    -> { IO.read @fname, 0, -1  }.should.raise(ArgumentError, "negative offset -1 given")
+    -> { IO.read @fname, -1, -1 }.should.raise(ArgumentError, "negative offset -1 given")
   end
 
   it "uses the external encoding specified via the :external_encoding option" do
@@ -166,10 +145,26 @@ describe "IO.read" do
       IO.read(@fname).should.empty?
     end
   end
+
+  platform_is :darwin do
+    it "reads a file when given a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("io_read_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        File.write(utf8_path, "ok")
+        IO.read(non_utf8_path).should == "ok"
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+  end
 end
 
-ruby_version_is ""..."4.0" do
-  describe "IO.read from a pipe" do
+describe "IO.read from a pipe" do
+  ruby_version_is ""..."4.0" do
     it "runs the rest as a subprocess and returns the standard output" do
       cmd = "|sh -c 'echo hello'"
       platform_is :windows do
@@ -181,7 +176,7 @@ ruby_version_is ""..."4.0" do
       end
     end
 
-    platform_is_not :windows do
+    guard -> { Process.respond_to?(:fork) } do
       it "opens a pipe to a fork if the rest is -" do
         str = nil
         suppress_warning do # https://bugs.ruby-lang.org/issues/19630
@@ -214,7 +209,7 @@ ruby_version_is ""..."4.0" do
           suppress_warning do # https://bugs.ruby-lang.org/issues/19630
             IO.read("|sh -c 'echo hello'", 1, 1)
           end
-        }.should raise_error(Errno::ESPIPE)
+        }.should.raise(Errno::ESPIPE)
       end
     end
 
@@ -227,18 +222,29 @@ ruby_version_is ""..."4.0" do
             suppress_warning do # https://bugs.ruby-lang.org/issues/19630
               IO.read("|cmd.exe /C echo hello", 1, 1)
             end
-          }.should raise_error(Errno::EINVAL)
+          }.should.raise(Errno::EINVAL)
         end
       end
     end
 
-    ruby_version_is "3.3" do
-      # https://bugs.ruby-lang.org/issues/19630
-      it "warns about deprecation" do
-        cmd = "|echo ok"
-        -> {
-          IO.read(cmd)
-        }.should complain(/IO process creation with a leading '\|'/)
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation" do
+      -> {
+        IO.read("|echo ok")
+      }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.read("|echo ok") }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.read("|echo ok") }.should.raise(Errno::EINVAL)
       end
     end
   end
@@ -289,44 +295,68 @@ describe "IO#read" do
     @io.read(nil).should == @contents
   end
 
-  it "raises an ArgumentError when not passed a valid length" do
-    -> { @io.read(-1) }.should raise_error(ArgumentError)
+  it "raises an ArgumentError when given negative length" do
+    -> { @io.read(-1) }.should.raise(ArgumentError, "negative length -1 given")
+  end
+
+  it "coerces the length argument to an Integer using #to_int" do
+    length = mock('5')
+    length.should_receive(:to_int).and_return(5)
+    @io.read(length).should == "12345"
+  end
+
+  it "raises a TypeError if length cannot be coerced to an Integer" do
+    -> { @io.read(Object.new) }.should.raise(TypeError, "no implicit conversion of Object into Integer")
+    -> { @io.read("2") }.should.raise(TypeError, "no implicit conversion of String into Integer")
+  end
+
+  it "raises a TypeError when #to_int does not return an Integer" do
+    length = mock('to_int')
+    length.should_receive(:to_int).and_return("not an integer")
+    -> { @io.read(length) }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives String)")
   end
 
   it "clears the output buffer if there is nothing to read" do
-    @io.pos = 10
-
     buf = +'non-empty string'
-
+    @io.pos = 10
     @io.read(10, buf).should == nil
 
     buf.should == ''
 
     buf = +'non-empty string'
-
+    @io.pos = 10
     @io.read(nil, buf).should == ""
 
     buf.should == ''
 
     buf = +'non-empty string'
-
+    @io.pos = 10
     @io.read(0, buf).should == ""
 
     buf.should == ''
   end
 
-  it "raise FrozenError if the output buffer is frozen" do
-    @io.read
-    -> { @io.read(0, 'frozen-string'.freeze) }.should raise_error(FrozenError)
-    -> { @io.read(1, 'frozen-string'.freeze) }.should raise_error(FrozenError)
-    -> { @io.read(nil, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+  it "does not modify the buffer if a read error occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.read(1, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
   end
 
-  ruby_bug "", ""..."3.3" do
-    it "raise FrozenError if the output buffer is frozen (2)" do
-      @io.read
-      -> { @io.read(1, ''.freeze) }.should raise_error(FrozenError)
-    end
+  it "returns the empty string when there is nothing to read and lenght=0 is given" do
+    @io.read(11)
+    @io.read(0).should == ""
+  end
+
+  it "raise FrozenError if the output buffer is frozen" do
+    @io.read
+    -> { @io.read(0, 'frozen-string'.freeze) }.should.raise(FrozenError)
+    -> { @io.read(1, 'frozen-string'.freeze) }.should.raise(FrozenError)
+    -> { @io.read(nil, 'frozen-string'.freeze) }.should.raise(FrozenError)
+  end
+
+  it "raise FrozenError if the output buffer is frozen (2)" do
+    @io.read
+    -> { @io.read(1, ''.freeze) }.should.raise(FrozenError)
   end
 
   it "consumes zero bytes when reading zero bytes" do
@@ -396,14 +426,14 @@ describe "IO#read" do
   it "returns the given buffer" do
     buf = +""
 
-    @io.read(nil, buf).should equal buf
+    @io.read(nil, buf).should.equal? buf
   end
 
   it "returns the given buffer when there is nothing to read" do
     buf = +""
 
     @io.read
-    @io.read(nil, buf).should equal buf
+    @io.read(nil, buf).should.equal? buf
   end
 
   it "coerces the second argument to string and uses it as a buffer" do
@@ -411,7 +441,7 @@ describe "IO#read" do
     obj = mock("buff")
     obj.should_receive(:to_str).any_number_of_times.and_return(buf)
 
-    @io.read(15, obj).should_not equal obj
+    @io.read(15, obj).should_not.equal? obj
     buf.should == @contents
   end
 
@@ -445,11 +475,11 @@ describe "IO#read" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.read }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.read }.should.raise(IOError, "closed stream")
   end
 
   it "raises ArgumentError when length is less than 0" do
-    -> { @io.read(-1) }.should raise_error(ArgumentError)
+    -> { @io.read(-1) }.should.raise(ArgumentError, "negative length -1 given")
   end
 
   platform_is_not :windows do
@@ -466,7 +496,7 @@ describe "IO#read" do
       Thread.pass until t.stop?
       r.close
       t.join
-      t.value.should be_kind_of(IOError)
+      t.value.should.is_a?(IOError)
       w.close
     end
   end
@@ -600,20 +630,20 @@ describe :io_read_internal_encoding, shared: true do
   end
 
   it "sets the String encoding to the internal encoding" do
-    @io.read.encoding.should equal(Encoding::UTF_8)
+    @io.read.encoding.should.equal?(Encoding::UTF_8)
   end
 
   describe "when passed nil for limit" do
     it "sets the buffer to a transcoded String" do
       result = @io.read(nil, buf = +"")
-      buf.should equal(result)
+      buf.should.equal?(result)
       buf.should == "ありがとう\n"
     end
 
     it "sets the buffer's encoding to the internal encoding" do
       buf = "".dup.force_encoding Encoding::ISO_8859_1
       @io.read(nil, buf)
-      buf.encoding.should equal(Encoding::UTF_8)
+      buf.encoding.should.equal?(Encoding::UTF_8)
     end
   end
 end
@@ -624,24 +654,24 @@ describe :io_read_size_internal_encoding, shared: true do
   end
 
   it "returns a String in BINARY when passed a size" do
-    @io.read(4).encoding.should equal(Encoding::BINARY)
-    @io.read(0).encoding.should equal(Encoding::BINARY)
+    @io.read(4).encoding.should.equal?(Encoding::BINARY)
+    @io.read(0).encoding.should.equal?(Encoding::BINARY)
   end
 
   it "does not change the buffer's encoding when passed a limit" do
     buf = "".dup.force_encoding Encoding::ISO_8859_1
     @io.read(4, buf)
     buf.should == [164, 162, 164, 234].pack('C*').force_encoding(Encoding::ISO_8859_1)
-    buf.encoding.should equal(Encoding::ISO_8859_1)
+    buf.encoding.should.equal?(Encoding::ISO_8859_1)
   end
 
   it "truncates the buffer but does not change the buffer's encoding when no data remains" do
     buf = "abc".dup.force_encoding Encoding::ISO_8859_1
     @io.read
 
-    @io.read(1, buf).should be_nil
+    @io.read(1, buf).should == nil
     buf.size.should == 0
-    buf.encoding.should equal(Encoding::ISO_8859_1)
+    buf.encoding.should.equal?(Encoding::ISO_8859_1)
   end
 end
 
@@ -659,7 +689,7 @@ describe "IO#read" do
     end
 
     it "sets the String encoding to Encoding.default_external" do
-      @io.read.encoding.should equal(Encoding.default_external)
+      @io.read.encoding.should.equal?(Encoding.default_external)
     end
   end
 
@@ -678,7 +708,13 @@ describe "IO#read" do
       end
 
       it "sets the String encoding to the external encoding" do
-        @io.read.encoding.should equal(Encoding::EUC_JP)
+        @io.read.encoding.should.equal?(Encoding::EUC_JP)
+      end
+
+      it "reads after ungetc" do
+        c = @io.getc
+        @io.ungetc(c)
+        @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::BINARY)
       end
 
       it_behaves_like :io_read_size_internal_encoding, nil
@@ -753,5 +789,35 @@ describe "IO#read with large data" do
 
     ScratchPad.recorded.size.should == read_size
     ScratchPad.recorded.should == @data[0, read_size]
+  end
+end
+
+describe "IO#read with a Fiber scheduler that implements io_read" do
+  require_relative '../fiber/fixtures/scheduler'
+
+  before :each do
+    @name = tmp("io_read_scheduler.txt")
+    File.write(@name, "Hello World!")
+
+    scheduler = Class.new(FiberSpecs::LoggingScheduler) do
+      def io_read(io, buffer, length, offset)
+        @events << { event: :io_read }
+        Fiber.blocking { buffer.read(io, length, offset) }
+      end
+    end.new
+    Fiber.set_scheduler(scheduler)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+    rm_r @name
+  end
+
+  it "reads the whole file through the scheduler" do
+    result = nil
+    Fiber.schedule { result = File.read(@name) }
+
+    result.should == "Hello World!"
+    Fiber.scheduler.events.map { |e| e[:event] }.should.include?(:io_read)
   end
 end

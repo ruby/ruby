@@ -22,13 +22,13 @@ describe "Net::HTTP.start" do
     end
 
     it "returns a new Net::HTTP object for the passed address and port" do
-      @http.should be_kind_of(Net::HTTP)
+      @http.should.is_a?(Net::HTTP)
       @http.address.should == "localhost"
       @http.port.should == @port
     end
 
     it "opens the tcp connection" do
-      @http.started?.should be_true
+      @http.started?.should == true
     end
   end
 
@@ -41,19 +41,19 @@ describe "Net::HTTP.start" do
       yielded = false
       Net::HTTP.start("localhost", @port) do |net|
         yielded = true
-        net.should be_kind_of(Net::HTTP)
+        net.should.is_a?(Net::HTTP)
       end
-      yielded.should be_true
+      yielded.should == true
     end
 
     it "opens the tcp connection before yielding" do
-      Net::HTTP.start("localhost", @port) { |http| http.started?.should be_true }
+      Net::HTTP.start("localhost", @port) { |http| http.started?.should == true }
     end
 
     it "closes the tcp connection after yielding" do
       net = nil
       Net::HTTP.start("localhost", @port) { |x| net = x }
-      net.started?.should be_false
+      net.started?.should == false
     end
   end
 end
@@ -70,18 +70,18 @@ describe "Net::HTTP#start" do
   end
 
   it "returns self" do
-    @http.start.should equal(@http)
+    @http.start.should.equal?(@http)
   end
 
   it "opens the tcp connection" do
     @http.start
-    @http.started?.should be_true
+    @http.started?.should == true
   end
 
   describe "when self has already been started" do
     it "raises an IOError" do
       @http.start
-      -> { @http.start }.should raise_error(IOError)
+      -> { @http.start }.should.raise(IOError)
     end
   end
 
@@ -94,18 +94,18 @@ describe "Net::HTTP#start" do
       yielded = false
       @http.start do |http|
         yielded = true
-        http.should equal(@http)
+        http.should.equal?(@http)
       end
-      yielded.should be_true
+      yielded.should == true
     end
 
     it "opens the tcp connection before yielding" do
-      @http.start { |http| http.started?.should be_true }
+      @http.start { |http| http.started?.should == true }
     end
 
     it "closes the tcp connection after yielding" do
       @http.start { }
-      @http.started?.should be_false
+      @http.started?.should == false
     end
   end
 end

@@ -22,14 +22,14 @@ describe "Array#+" do
     end
 
     it "raises a TypeError if the given argument can't be converted to an array" do
-      -> { [1, 2, 3] + nil }.should raise_error(TypeError)
-      -> { [1, 2, 3] + "abc" }.should raise_error(TypeError)
+      -> { [1, 2, 3] + nil }.should.raise(TypeError)
+      -> { [1, 2, 3] + "abc" }.should.raise(TypeError)
     end
 
     it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to an Array" do
       obj = mock("hello")
       obj.should_receive(:to_ary).and_raise(NoMethodError)
-      -> { [1, 2, 3] + obj }.should raise_error(NoMethodError)
+      -> { [1, 2, 3] + obj }.should.raise(NoMethodError)
     end
   end
 
@@ -45,9 +45,9 @@ describe "Array#+" do
   end
 
   it "does return subclass instances with Array subclasses" do
-    (ArraySpecs::MyArray[1, 2, 3] + []).should be_an_instance_of(Array)
-    (ArraySpecs::MyArray[1, 2, 3] + ArraySpecs::MyArray[]).should be_an_instance_of(Array)
-    ([1, 2, 3] + ArraySpecs::MyArray[]).should be_an_instance_of(Array)
+    (ArraySpecs::MyArray[1, 2, 3] + []).should.instance_of?(Array)
+    (ArraySpecs::MyArray[1, 2, 3] + ArraySpecs::MyArray[]).should.instance_of?(Array)
+    ([1, 2, 3] + ArraySpecs::MyArray[]).should.instance_of?(Array)
   end
 
   it "does not call to_ary on array subclasses" do

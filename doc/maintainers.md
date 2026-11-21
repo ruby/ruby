@@ -50,6 +50,10 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 
+#### pathname_builtin.rb, lib/pathname.rb
+
+* Tanaka Akira ([akr])
+
 #### lib/rubygems.rb, lib/rubygems/*
 
 * Hiroshi SHIBATA ([hsbt])
@@ -59,7 +63,19 @@ consensus on ruby-core/ruby-dev.
 
 * Martin J. Dürst ([duerst])
 
+#### lib/ruby/prism.rb, lib/ruby/prism/*, prism/*
+
+* Kevin Newton ([kddnewton])
+* Eileen Uchitelle ([eileencodes])
+* Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
+* https://github.com/ruby/prism
+
 ### Standard Library(Extensions) Maintainers
+
+#### set.c
+
+* Akinori MUSHA ([knu])
 
 #### ext/continuation
 
@@ -80,6 +96,10 @@ consensus on ruby-core/ruby-dev.
 #### ext/objspace
 
 * *No maintainer*
+
+#### ext/pathname
+
+* Tanaka Akira ([akr])
 
 #### ext/pty
 
@@ -114,7 +134,7 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 * https://github.com/ruby/English
-* https://rubygems.org/gems/English
+* https://rubygems.org/gems/english
 
 #### lib/delegate.rb
 
@@ -136,8 +156,8 @@ consensus on ruby-core/ruby-dev.
 
 #### lib/erb.rb
 
-* Masatoshi SEKI ([seki])
 * Takashi Kokubun ([k0kubun])
+* Jean Boussier ([byroot])
 * https://github.com/ruby/erb
 * https://rubygems.org/gems/erb
 
@@ -168,6 +188,7 @@ consensus on ruby-core/ruby-dev.
 #### lib/ipaddr.rb
 
 * Akinori MUSHA ([knu])
+* Taketo Takashima ([taketo1113])
 * https://github.com/ruby/ipaddr
 * https://rubygems.org/gems/ipaddr
 
@@ -212,14 +233,6 @@ consensus on ruby-core/ruby-dev.
 * Tanaka Akira ([akr])
 * https://github.com/ruby/prettyprint
 * https://rubygems.org/gems/prettyprint
-
-#### lib/prism.rb
-
-* Kevin Newton ([kddnewton])
-* Eileen Uchitelle ([eileencodes])
-* Aaron Patterson ([tenderlove])
-* https://github.com/ruby/prism
-* https://rubygems.org/gems/prism
 
 #### lib/resolv.rb
 
@@ -268,12 +281,6 @@ consensus on ruby-core/ruby-dev.
 * *No maintainer*
 * https://github.com/ruby/tmpdir
 * https://rubygems.org/gems/tmpdir
-
-#### lib/tsort.rb
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/tsort
-* https://rubygems.org/gems/tsort
 
 #### lib/un.rb
 
@@ -356,12 +363,6 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/openssl
 * https://rubygems.org/gems/openssl
 
-#### ext/pathname
-
-* Tanaka Akira ([akr])
-* https://github.com/ruby/pathname
-* https://rubygems.org/gems/pathname
-
 #### ext/psych
 
 * Aaron Patterson ([tenderlove])
@@ -389,7 +390,7 @@ consensus on ruby-core/ruby-dev.
 
 ## Bundled gems upstream repositories and maintainers
 
-The maintanance policy of bundled gems is different from Module Maintainers above.
+The maintenance policy of bundled gems is different from Module Maintainers above.
 Please check the policies for each repository.
 
 The ruby core team tries to maintain the repositories with no maintainers.
@@ -431,22 +432,11 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/rss
 * https://rubygems.org/gems/rss
 
-### net-ftp
-
-* Shugo Maeda ([shugo])
-* https://github.com/ruby/net-ftp
-* https://rubygems.org/gems/net-ftp
-
 ### net-imap
 
 * Nicholas A. Evans ([nevans])
 * https://github.com/ruby/net-imap
 * https://rubygems.org/gems/net-imap
-
-### net-pop
-
-* https://github.com/ruby/net-pop
-* https://rubygems.org/gems/net-pop
 
 ### net-smtp
 
@@ -571,6 +561,7 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 
 #### benchmark
 
+* Benoit Daloze ([eregon])
 * https://github.com/ruby/benchmark
 * https://rubygems.org/gems/benchmark
 
@@ -628,6 +619,27 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/repl_type_completor
 * https://rubygems.org/gems/repl_type_completor
 
+#### tsort
+
+* Tanaka Akira ([akr])
+* https://github.com/ruby/tsort
+* https://rubygems.org/gems/tsort
+
+#### win32-registry
+
+* Nakamura Usaku ([unak])
+* https://github.com/ruby/win32-registry
+* https://rubygems.org/gems/win32-registry
+
+#### prism
+
+* Kevin Newton ([kddnewton])
+* Eileen Uchitelle ([eileencodes])
+* Aaron Patterson ([tenderlove])
+* Earlopain ([earlopain])
+* https://github.com/ruby/prism
+* https://rubygems.org/gems/prism
+
 ## Platform Maintainers
 
 ### mswin64 (Microsoft Windows)
@@ -675,8 +687,10 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [colby-swandale]: https://github.com/colby-swandale
 [drbrain]: https://github.com/drbrain
 [duerst]: https://github.com/duerst
+[earlopain]: https://github.com/earlopain
 [eban]: https://github.com/eban
 [eileencodes]: https://github.com/eileencodes
+[eregon]: https://github.com/eregon
 [hasumikin]: https://github.com/hasumikin
 [hsbt]: https://github.com/hsbt
 [ima1zumi]: https://github.com/ima1zumi
@@ -711,7 +725,6 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 [k-tsj]: https://github.com/k-tsj
 [nevans]: https://github.com/nevans
 [tmtm]: https://github.com/tmtm
-[shugo]: https://github.com/shugo
 [soutaro]: https://github.com/soutaro
 [yui-knk]: https://github.com/yui-knk
 [hasumikin]: https://github.com/hasumikin

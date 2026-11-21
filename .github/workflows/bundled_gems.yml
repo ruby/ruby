@@ -34,9 +34,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: 4.0
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -52,7 +56,7 @@ jobs:
           mkdir -p .downloaded-cache
           for data in bundled_gems.json default_gems.json; do
             ln -s .downloaded-cache/$data .
-            curl -O -R -z ./$data https://stdgems.org/$data
+            curl --retry 5 --retry-connrefused --retry-delay 2 --retry-max-time 60 -O -R -z ./$data https://stdgems.org/$data
           done
 
       - name: Update bundled gems list
@@ -61,17 +65,10 @@ jobs:
           ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems >> $GITHUB_OUTPUT
         if: ${{ env.UPDATE_ENABLED == 'true' }}
 
-      - name: Update spec/bundler/support/builders.rb
-        run: |
-          #!ruby
-          rake_version = File.read("gems/bundled_gems")[/^rake\s+(\S+)/, 1]
-          print ARGF.read.sub(/^ *def rake_version\s*\K".*?"/) {rake_version.dump}
-        shell: ruby -i~ {0} spec/bundler/support/builders.rb
-        if: ${{ env.UPDATE_ENABLED == 'true' }}
-
       - name: Maintain updated gems list in NEWS
         run: |
           ruby tool/update-NEWS-gemlist.rb bundled
+          ruby tool/update-NEWS-github-release.rb --update
         if: ${{ env.UPDATE_ENABLED == 'true' }}
 
       - name: Check diffs
@@ -83,7 +80,6 @@ jobs:
           git diff --color --no-ext-diff --ignore-submodules --exit-code -- gems/bundled_gems ||
           gems=true
           git add -- NEWS.md gems/bundled_gems
-          git add -- spec/bundler/support/builders.rb
           echo news=$news >> $GITHUB_OUTPUT
           echo gems=$gems >> $GITHUB_OUTPUT
           echo update=${news:-$gems} >> $GITHUB_OUTPUT
@@ -140,7 +136,7 @@ jobs:
               line = head[/\A\h+ \d+ \K\d+/].to_i
               level = if d < days; 'warning'; else old += 1; 'error'; end
               d += days
-              puts "::#{level} file=#{file},line=#{line},title=Older than #{d} days::#{gem[0]} #{gem[3]}"
+              puts "::#{level} file=#{file},line=#{line},title=Older than #{d} days::#{gem[0]} #{gem[3]} #{gem[2]}/commit/#{gem[3]}"
             end
           end
           abort "::error title=Too long-standing gems::The release comes soon." if december and old.nonzero?

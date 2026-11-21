@@ -42,7 +42,7 @@ describe 'Thread::Backtrace::Location#absolute_path' do
       locations = ScratchPad.recorded
       locations[0].absolute_path.should == path
       # Make sure it's from the class body, not from the file top-level
-      locations[0].label.should include 'MethodAddedAbsolutePath'
+      locations[0].label.should.include? 'MethodAddedAbsolutePath'
     end
   end
 

@@ -42,6 +42,9 @@
 # include <intrin.h>
 # if defined(_M_AMD64)
 # pragma intrinsic(_umul128)
+# if !defined(__clang__) /* clang-cl defines it as an inline function */
+# pragma intrinsic(_addcarry_u64)
+# endif
 # endif
 # if defined(_M_ARM64)
 # pragma intrinsic(__umulh)
@@ -304,7 +307,7 @@ typedef uint128_t DSIZE_T;
 #define RB_ALLOCV(v, n)        \
     ((n) < RUBY_ALLOCV_LIMIT ? \
      ((v) = 0, alloca(n)) :    \
-     rb_alloc_tmp_buffer(&(v), (n)))
+     rb_alloc_tmp_buffer(&(v), (n), true))
 
 /**
  * Allocates a  memory region, possibly  on stack.   If the given  size exceeds
@@ -438,30 +441,7 @@ RBIMPL_ATTR_NONNULL(())
  * @return      Allocated `len` bytes array.
  * @post        `store` holds the corresponding tmp buffer object.
  */
-void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
-
-RBIMPL_ATTR_RESTRICT()
-RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((2,3))
-RBIMPL_ATTR_NONNULL(())
-/**
- * @private
- *
- * This is an  implementation detail of #RB_ALLOCV_N().  People  don't use this
- * directly.
- *
- * @param[out]  store  Pointer to a variable.
- * @param[in]   len    Requested number of bytes to allocate.
- * @param[in]   count  Number of elements in an array.
- * @return      Allocated `len` bytes array.
- * @post        `store` holds the corresponding tmp buffer object.
- *
- * @internal
- *
- * Although  the  meaning  of  `count` variable  is  clear,  @shyouhei  doesn't
- * understand its needs.
- */
-void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count);
+void *rb_alloc_tmp_buffer(volatile VALUE *store, rb_len_t len, bool mark);
 
 /**
  * @private
@@ -526,36 +506,6 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 
 # pragma optimize("", on)
 #endif
-
-/**
- * @deprecated  This   function   was   an   implementation   detail   of   old
- *              #RB_ALLOCV_N().  We no longer  use it.  @shyouhei suspects that
- *              there are  no actual usage now.   However it was not  marked as
- *              private before.  We cannot delete it any longer.
- * @param[in]   a    Arbitrary value.
- * @param[in]   b    Arbitrary value.
- * @param[in]   max  Possible maximum value.
- * @param[out]  c    A pointer to return the computation result.
- * @retval      1    `c` is insane.
- * @retval      0    `c` is sane.
- * @post        `c` holds `a` * `b`, but could be overflowed.
- */
-static inline int
-rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
-{
-#ifdef DSIZE_T
-    RB_GNUC_EXTENSION DSIZE_T da, db, c2;
-    da = a;
-    db = b;
-    c2 = da * db;
-    if (c2 > max) return 1;
-    *c = RBIMPL_CAST((size_t)c2);
-#else
-    if (b != 0 && a > max / b) return 1;
-    *c = a * b;
-#endif
-    return 0;
-}
 
 #if defined(__DOXYGEN__)
 RBIMPL_ATTR_CONSTEXPR(CXX14)
@@ -687,6 +637,12 @@ rbimpl_size_add_overflow(size_t x, size_t y)
     ret.overflowed = dz > SIZE_MAX;
     ret.result = (size_t)dz;
 
+#elif defined(_MSC_VER) && defined(_M_AMD64)
+    unsigned __int64 dz = 0;
+    unsigned char carry = _addcarry_u64(0, x, y, &dz);
+    ret.overflowed = RBIMPL_CAST((bool)carry);
+    ret.result = RBIMPL_CAST((size_t)dz);
+
 #else
     ret.result = x + y;
     ret.overflowed = ret.result < y;
@@ -738,11 +694,10 @@ rbimpl_size_add_or_raise(size_t x, size_t y)
  * We might want to deprecate this function and make a `rbimpl_` counterpart.
  */
 static inline void *
-rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
+rb_alloc_tmp_buffer2(volatile VALUE *store, rb_len_t count, size_t elsize)
 {
     const size_t total_size = rbimpl_size_mul_or_raise(RBIMPL_CAST((size_t)count), elsize);
-    const size_t cnt = (total_size + sizeof(VALUE) - 1) / sizeof(VALUE);
-    return rb_alloc_tmp_buffer_with_count(store, total_size, cnt);
+    return rb_alloc_tmp_buffer(store, (rb_len_t)total_size, elsize >= sizeof(VALUE));
 }
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

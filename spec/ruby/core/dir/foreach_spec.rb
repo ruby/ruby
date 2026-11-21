@@ -31,11 +31,11 @@ describe "Dir.foreach" do
   end
 
   it "raises a SystemCallError if passed a nonexistent directory" do
-    -> { Dir.foreach(DirSpecs.nonexistent) {} }.should raise_error(SystemCallError)
+    -> { Dir.foreach(DirSpecs.nonexistent) {} }.should.raise(SystemCallError)
   end
 
   it "returns an Enumerator if no block given" do
-    Dir.foreach(DirSpecs.mock_dir).should be_an_instance_of(Enumerator)
+    Dir.foreach(DirSpecs.mock_dir).should.instance_of?(Enumerator)
     Dir.foreach(DirSpecs.mock_dir).to_a.sort.should == DirSpecs.expected_paths
   end
 
@@ -53,7 +53,7 @@ describe "Dir.foreach" do
 
   describe "when no block is given" do
     it "returns an Enumerator" do
-      Dir.foreach(DirSpecs.mock_dir).should be_an_instance_of(Enumerator)
+      Dir.foreach(DirSpecs.mock_dir).should.instance_of?(Enumerator)
       Dir.foreach(DirSpecs.mock_dir).to_a.sort.should == DirSpecs.expected_paths
     end
 
@@ -62,6 +62,20 @@ describe "Dir.foreach" do
         it "should return nil" do
           Dir.foreach(DirSpecs.mock_dir).size.should == nil
         end
+      end
+    end
+  end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_foreach_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        Dir.foreach(non_utf8_dir).to_a.should.include?(".".encode(Encoding::Windows_31J))
+      ensure
+        rm_r dir
       end
     end
   end

@@ -5,7 +5,7 @@ require "stringio"
 describe "Net::HTTPGenericRequest#body" do
   it "returns self's request body" do
     request = Net::HTTPGenericRequest.new("POST", true, true, "/some/path")
-    request.body.should be_nil
+    request.body.should == nil
 
     request.body = "Some Content"
     request.body.should == "Some Content"
@@ -25,6 +25,6 @@ describe "Net::HTTPGenericRequest#body=" do
   it "sets self's body stream to nil" do
     @request.body_stream = StringIO.new("")
     @request.body = "Some Content"
-    @request.body_stream.should be_nil
+    @request.body_stream.should == nil
   end
 end

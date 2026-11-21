@@ -16,11 +16,8 @@ describe "Complex#to_s" do
     Complex(1, -5).to_s.should == "1-5i"
     Complex(-2.5, -1.5).to_s.should == "-2.5-1.5i"
 
-    # Guard against the Mathn library
-    guard -> { !defined?(Math.rsqrt) } do
-      Complex(1, 0).to_s.should == "1+0i"
-      Complex(1, -0).to_s.should == "1+0i"
-    end
+    Complex(1, 0).to_s.should == "1+0i"
+    Complex(1, -0).to_s.should == "1+0i"
   end
 
   it "returns 1+0.0i for Complex(1, 0.0)" do

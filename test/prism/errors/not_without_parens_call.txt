@@ -1,0 +1,7 @@
+foo(not y)
+        ^ expected a `(` after `not`
+        ^ unexpected local variable or method; expected a `)` to close the arguments
+        ^ unexpected local variable or method, expecting end-of-input
+         ^ unexpected ')', expecting end-of-input
+         ^ unexpected ')', ignoring it
+

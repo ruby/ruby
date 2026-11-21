@@ -14,24 +14,24 @@ describe "Delegator#methods" do
   end
 
   it "returns singleton methods when passed false" do
-    @delegate.methods(false).should include(:singleton_method)
+    @delegate.methods(false).should.include?(:singleton_method)
   end
 
   it "includes all public methods of the delegate object" do
-    @methods.should include :pub
+    @methods.should.include? :pub
   end
 
   it "includes all protected methods of the delegate object" do
-    @methods.should include :prot
+    @methods.should.include? :prot
   end
 
   it "includes instance methods of the Delegator class" do
-    @methods.should include :extra
-    @methods.should include :extra_protected
+    @methods.should.include? :extra
+    @methods.should.include? :extra_protected
   end
 
   it "does not include private methods" do
-    @methods.should_not include :priv
-    @methods.should_not include :extra_private
+    @methods.should_not.include? :priv
+    @methods.should_not.include? :extra_private
   end
 end

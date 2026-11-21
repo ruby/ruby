@@ -1,16 +1,38 @@
 prelude: |
-  has_hash_with_capa = Hash.instance_method(:initialize).parameters.include?([:key, :capacity])
+  sym_8 = 1_000.times.map { |i| i.to_s.to_sym }
   strings_1k = 1_000.times.map { |i| -i.to_s.freeze }
   strings_100k = 100_000.times.map { |i| -i.to_s.freeze }
+
 benchmark:
-  new: Hash.new
+  new: |
+    Hash.new
+
+  new_8: |
+    Hash.new(capacity: 8)
+
+  new_index_8: |
+    h = {}
+    sym_8.each do |x|
+      h[x] = true
+    end
+
+  new_capa_index_8: |
+    h = Hash.new(capacity: 8)
+    sym_8.each do |x|
+      h[x] = true
+    end
+
+  to_h_8: |
+    sym_8.to_h { |k| [k, true] }
+
   new_with_capa_1k: |
-    h = has_hash_with_capa ? Hash.new(capacity: strings_1k.size) : {}
+    h = Hash.new(capacity: strings_1k.size)
     strings_1k.each do |x|
       h[x] = true
     end
+
   new_with_capa_100k: |
-    h = has_hash_with_capa ? Hash.new(capacity: strings_100k.size) : {}
+    h = Hash.new(capacity: strings_100k.size)
     strings_100k.each do |x|
       h[x] = true
     end

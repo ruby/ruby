@@ -40,6 +40,12 @@ class ErrorHighlightTest < Test::Unit::TestCase
     end
   end
 
+  # A moving GC can relocate the receiver between the expected message baking
+  # `#inspect` and the error being raised, so the two addresses need not agree.
+  def mask_addresses(msg)
+    msg.gsub(/0x\h+/, "0xXXXX")
+  end
+
   if Exception.method_defined?(:detailed_message)
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
@@ -55,13 +61,14 @@ class ErrorHighlightTest < Test::Unit::TestCase
           assert_kind_of(Array, spot[:script_lines])
         end
       end
-      assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
+      actual_msg = err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, "")
+      assert_equal(mask_addresses(preprocess(expected_msg).chomp), mask_addresses(actual_msg))
     end
   else
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      assert_equal(preprocess(expected_msg).chomp, err.message)
+      assert_equal(mask_addresses(preprocess(expected_msg).chomp), mask_addresses(err.message))
     end
   end
 
@@ -1085,10 +1092,11 @@ nil can't be coerced into Integer (TypeError)
     end
   end
 
+  OF_NIL_INTO_INTEGER = RUBY_VERSION < "4.1." ? "from nil to integer" : "of nil into Integer"
   def test_args_CALL_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer (TypeError)
+no implicit conversion #{OF_NIL_INTO_INTEGER} (TypeError)
 
       v[nil]
         ^^^
@@ -1115,7 +1123,7 @@ undefined method `[]=' for #{ recv }
   def test_args_ATTRASGN_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer (TypeError)
+no implicit conversion #{OF_NIL_INTO_INTEGER} (TypeError)
 
       v [nil] = 1
          ^^^^^^^^
@@ -1177,7 +1185,7 @@ no implicit conversion of Symbol into String (TypeError)
     v = []
 
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer (TypeError)
+no implicit conversion #{OF_NIL_INTO_INTEGER} (TypeError)
 
       v [nil] += 42
          ^^^^^^^^^^
@@ -1748,6 +1756,93 @@ missing keywords: :shop_id, :param1 (ArgumentError)
     END
 
       SingletonMethodMultipleKwargs.run
+    end
+  end
+
+  def def_with_required_keyword(x:)
+    x
+  end
+
+  def test_spot_with_args_point_type_on_def_node_returns_nil
+    # A method with a required keyword argument called without it raises an
+    # ArgumentError whose first backtrace location maps to the `def` node.
+    # ErrorHighlight.spot defaults point_type to :args for ArgumentError, and
+    # there is no way to highlight "the arguments" of a definition, so spot
+    # must return nil instead of raising NotImplementedError.
+    begin
+      def_with_required_keyword
+    rescue ArgumentError => exc
+    end
+
+    assert_nil(ErrorHighlight.spot(exc))
+  end
+
+  def test_spot_with_args_point_type_on_lambda_node_returns_nil
+    l = lambda { |x:| x }
+    begin
+      l.call
+    rescue ArgumentError => exc
+    end
+
+    assert_nil(ErrorHighlight.spot(exc))
+  end
+
+  define_method(:block_with_required_keyword) { |x:| x }
+
+  def test_spot_with_args_point_type_on_block_node_returns_nil
+    begin
+      block_with_required_keyword
+    rescue ArgumentError => exc
+    end
+
+    assert_nil(ErrorHighlight.spot(exc))
+  end
+
+  def test_detailed_message_does_not_raise_when_argument_error_is_rewrapped
+    # This reproduces a real-world crash: an ArgumentError originating from a
+    # missing required keyword (which maps to the `def` node) is re-raised with
+    # a custom message. The custom message no longer matches the keyword regex
+    # in CoreExt#generate_snippet, so the :args branch is taken. The spotter
+    # must not raise NotImplementedError (which is not a StandardError and would
+    # escape detailed_message / full_message).
+    begin
+      def_with_required_keyword
+    rescue ArgumentError => original
+      exc = original.exception("a custom message that is not a keyword error")
+    end
+
+    msg = nil
+    assert_nothing_raised do
+      msg = exc.detailed_message(highlight: false)
+    end
+    assert_match("a custom message that is not a keyword error", msg)
+
+    assert_nothing_raised do
+      exc.full_message(highlight: false)
+    end
+  end
+
+  def test_detailed_message_does_not_raise_when_backtrace_locations_is_nil
+    # This reproduces a real-world crash: when an exception crosses a process
+    # boundary via Marshal, `backtrace` survives as strings but
+    # `backtrace_locations` becomes nil. A keyword ArgumentError then crashed
+    # CoreExt#generate_snippet with `undefined method 'size' for nil`.
+    begin
+      def_with_required_keyword
+    rescue ArgumentError => original
+      exc = Marshal.load(Marshal.dump(original))
+    end
+
+    assert_nil exc.backtrace_locations
+
+    msg = nil
+    assert_nothing_raised do
+      msg = exc.detailed_message(highlight: false)
+    end
+    assert_match("missing keyword", msg)
+
+    assert_nothing_raised do
+      exc.full_message(highlight: false)
     end
   end
 

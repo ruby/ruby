@@ -30,7 +30,7 @@ describe "Random::Formatter#alphanumeric" do
   it "raises an ArgumentError if the size is not numeric" do
     -> {
       @object.alphanumeric("10")
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "does not coerce the size argument with #to_int" do
@@ -38,19 +38,17 @@ describe "Random::Formatter#alphanumeric" do
     size.should_not_receive(:to_int)
     -> {
       @object.alphanumeric(size)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
-  ruby_version_is "3.3" do
-    it "accepts a 'chars' argument with the output alphabet" do
-      @object.alphanumeric(chars: ['a', 'b']).should =~ /\A[ab]+\z/
-    end
+  it "accepts a 'chars' argument with the output alphabet" do
+    @object.alphanumeric(chars: ['a', 'b']).should =~ /\A[ab]+\z/
+  end
 
-    it "converts the elements of chars using #to_s" do
-      to_s = mock("to_s")
-      to_s.should_receive(:to_s).and_return("[mock to_s]")
-      # Using 1 value in chars results in an infinite loop
-      @object.alphanumeric(1, chars: [to_s, to_s]).should == "[mock to_s]"
-    end
+  it "converts the elements of chars using #to_s" do
+    to_s = mock("to_s")
+    to_s.should_receive(:to_s).and_return("[mock to_s]")
+    # Using 1 value in chars results in an infinite loop
+    @object.alphanumeric(1, chars: [to_s, to_s]).should == "[mock to_s]"
   end
 end

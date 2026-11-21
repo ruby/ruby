@@ -11,23 +11,23 @@ class Thread
   #
   #  Example:
   #
-  #    	queue = Thread::Queue.new
+  #     queue = Thread::Queue.new
   #
-  #	    producer = Thread.new do
-  #	      5.times do |i|
-  #	        sleep rand(i) # simulate expense
-  #	        queue << i
-  #	        puts "#{i} produced"
-  #	      end
-  #	    end
+  #     producer = Thread.new do
+  #       5.times do |i|
+  #         sleep rand(i) # simulate expense
+  #         queue << i
+  #         puts "#{i} produced"
+  #       end
+  #     end
   #
-  #	    consumer = Thread.new do
-  #	      5.times do |i|
-  #	        value = queue.pop
-  #	        sleep rand(i/2) # simulate expense
-  #	        puts "consumed #{value}"
-  #	      end
-  #	    end
+  #     consumer = Thread.new do
+  #       5.times do |i|
+  #         value = queue.pop
+  #         sleep rand(i/2) # simulate expense
+  #         puts "consumed #{value}"
+  #       end
+  #     end
   #
   #     consumer.join
   class Queue
@@ -42,13 +42,13 @@ class Thread
     #
     # Example:
     #
-    #    	q = Thread::Queue.new
+    #     q = Thread::Queue.new
     #     #=> #<Thread::Queue:0x00007ff7501110d0>
     #     q.empty?
     #     #=> true
     #
-    #    	q = Thread::Queue.new([1, 2, 3])
-    #    	#=> #<Thread::Queue:0x00007ff7500ec500>
+    #     q = Thread::Queue.new([1, 2, 3])
+    #     #=> #<Thread::Queue:0x00007ff7500ec500>
     #     q.empty?
     #     #=> false
     #     q.pop
@@ -113,7 +113,7 @@ class Thread
     #
     # Example:
     #
-    #    	q = Thread::Queue.new
+    #      q = Thread::Queue.new
     #      Thread.new{
     #        while e = q.deq # wait for nil to break loop
     #          # ...
@@ -145,7 +145,7 @@ class Thread
     #
     # Returns the length of the queue.
     def length
-      Primitive.cexpr!('LONG2NUM(queue_ptr(self)->len)')
+      Primitive.cexpr!('LEN2NUM(queue_ptr(self)->len)')
     end
     alias_method :size, :length
 
@@ -284,7 +284,7 @@ class Thread
 
     # Returns the maximum size of the queue.
     def max
-      Primitive.cexpr!('LONG2NUM(szqueue_ptr(self)->max)')
+      Primitive.cexpr!('LEN2NUM(szqueue_ptr(self)->max)')
     end
 
     # call-seq: max=(number)
@@ -292,12 +292,12 @@ class Thread
     # Sets the maximum size of the queue to the given +number+.
     def max=(vmax)
       Primitive.cstmt! %{
-        long max = NUM2LONG(vmax);
+        rb_len_t max = NUM2LEN(vmax);
         if (max <= 0) {
             rb_raise(rb_eArgError, "queue size must be positive");
         }
 
-        long diff = 0;
+        rb_len_t diff = 0;
         struct rb_szqueue *sq = szqueue_ptr(self);
 
         if (max > sq->max) {
@@ -371,10 +371,10 @@ class Thread
     end
 
     # call-seq:
-    #    mutex.lock  -> self
+    #    mutex.unlock  -> self
     #
-    # Attempts to grab the lock and waits if it isn't available.
-    # Raises +ThreadError+ if +mutex+ was locked by the current thread.
+    # Releases the lock.
+    # Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
     def unlock
       Primitive.rb_mut_unlock
     end
@@ -529,9 +529,187 @@ class Thread
       Primitive.rb_condvar_wait(mutex, timeout)
     end
   end
+
+  # Use the Monitor class when you want to have a lock object for blocks with
+  # mutual exclusion.
+  #
+  #   lock = Monitor.new
+  #   lock.synchronize do
+  #     # exclusive access
+  #   end
+  #
+  # Contrary to Mutex, Monitor is reentrant:
+  #
+  #   lock = Monitor.new
+  #   lock.synchronize do
+  #     lock.synchronize do
+  #       # exclusive access
+  #     end
+  #   end
+  class Monitor
+    # call-seq:
+    #   synchronize { } -> result of the block
+    #
+    # Enters exclusive section and executes the block.  Leaves the exclusive
+    # section automatically when the block exits.  See example under
+    # +MonitorMixin+.
+    def synchronize(&)
+      Primitive.rb_monitor_synchronize
+    end
+
+    # call-seq:
+    #   try_enter -> true or false
+    #
+    # Attempts to enter exclusive section.  Returns +false+ if lock fails.
+    def try_enter
+      Primitive.rb_monitor_try_enter
+    end
+
+    # call-seq:
+    #   enter -> nil
+    #
+    # Enters exclusive section.
+    def enter
+      Primitive.rb_monitor_enter
+    end
+
+    # call-seq:
+    #   exit -> nil
+    #
+    # Leaves exclusive section.
+    def exit
+      Primitive.rb_monitor_exit
+    end
+
+    # internal methods for MonitorMixin
+    def mon_check_owner # :nodoc:
+      Primitive.rb_monitor_check_owner
+    end
+
+    def mon_locked? # :nodoc:
+      Primitive.rb_monitor_locked_p
+    end
+
+    def mon_owned? # :nodoc:
+      Primitive.rb_monitor_owned_p
+    end
+
+    # internal methods for MonitorMixin::ConditionVariable
+    def wait_for_cond(cond, timeout) # :nodoc:
+      Primitive.rb_monitor_wait_for_cond(cond, timeout)
+    end
+
+    # Creates a new Monitor::ConditionVariable associated with the
+    # Monitor object.
+    #
+    def new_cond
+      ConditionVariable.new(self)
+    end
+
+    # Condition variables, allow to suspend the current thread while in
+    # the middle of a critical section until a condition is met, such as
+    # a resource being available.
+    #
+    #  Example:
+    #
+    #    monitor = Thread::Monitor.new
+    #
+    #    resource_available = false
+    #    condvar = monitor.new_cond
+    #
+    #    a1 = Thread.new {
+    #      # Thread 'a1' waits for the resource to become available and consumes
+    #      # the resource.
+    #      monitor.synchronize {
+    #        condvar.wait_until { resource_available }
+    #        # After the loop, 'resource_available' is guaranteed to be true.
+    #
+    #        resource_available = false
+    #        puts "a1 consumed the resource"
+    #      }
+    #    }
+    #
+    #    a2 = Thread.new {
+    #      # Thread 'a2' behaves like 'a1'.
+    #      monitor.synchronize {
+    #        condvar.wait_until { resource_available }
+    #        resource_available = false
+    #        puts "a2 consumed the resource"
+    #      }
+    #    }
+    #
+    #    b = Thread.new {
+    #      # Thread 'b' periodically makes the resource available.
+    #      loop {
+    #        monitor.synchronize {
+    #          resource_available = true
+    #
+    #          # Notify one waiting thread if any.  It is possible that neither
+    #          # 'a1' nor 'a2 is waiting on 'condvar' at this moment.  That's OK.
+    #          condvar.signal
+    #        }
+    #        sleep 1
+    #      }
+    #    }
+    #
+    #    # Eventually both 'a1' and 'a2' will have their resources, albeit in an
+    #    # unspecified order.
+    #    [a1, a2].each {|th| th.join}
+    class ConditionVariable
+      def initialize(monitor) # :nodoc:
+        @monitor = monitor
+        @cond = Thread::ConditionVariable.new
+      end
+
+      # Releases the lock held in the associated monitor and waits; reacquires the lock on wakeup.
+      #
+      # If +timeout+ is given, this method returns after +timeout+ seconds passed,
+      # even if no other thread doesn't signal.
+      #
+      def wait(timeout = nil)
+        @monitor.mon_check_owner
+        @monitor.wait_for_cond(@cond, timeout)
+      end
+
+      #
+      # Calls wait repeatedly while the given block yields a truthy value.
+      #
+      def wait_while
+        while yield
+          wait
+        end
+      end
+
+      #
+      # Calls wait repeatedly until the given block yields a truthy value.
+      #
+      def wait_until
+        until yield
+          wait
+        end
+      end
+
+      #
+      # Wakes up the first thread in line waiting for this lock.
+      #
+      def signal
+        @monitor.mon_check_owner
+        @cond.signal
+      end
+
+      #
+      # Wakes up all threads waiting for this lock.
+      #
+      def broadcast
+        @monitor.mon_check_owner
+        @cond.broadcast
+      end
+    end
+  end
 end
 
-Mutex = Thread::Mutex
-ConditionVariable = Thread::ConditionVariable
-Queue = Thread::Queue
-SizedQueue = Thread::SizedQueue
+Mutex = Thread::Mutex # :nodoc:
+Monitor = Thread::Monitor # :nodoc:
+ConditionVariable = Thread::ConditionVariable # :nodoc:
+Queue = Thread::Queue # :nodoc:
+SizedQueue = Thread::SizedQueue # :nodoc:

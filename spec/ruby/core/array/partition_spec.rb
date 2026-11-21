@@ -36,8 +36,8 @@ describe "Array#partition" do
 
   it "does not return subclass instances on Array subclasses" do
     result = ArraySpecs::MyArray[1, 2, 3].partition { |x| x % 2 == 0 }
-    result.should be_an_instance_of(Array)
-    result[0].should be_an_instance_of(Array)
-    result[1].should be_an_instance_of(Array)
+    result.should.instance_of?(Array)
+    result[0].should.instance_of?(Array)
+    result[1].should.instance_of?(Array)
   end
 end

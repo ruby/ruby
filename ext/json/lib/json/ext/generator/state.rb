@@ -9,7 +9,7 @@ module JSON
         # Instantiates a new State object, configured by _opts_.
         #
         # Argument +opts+, if given, contains a \Hash of options for the generation.
-        # See {Generating Options}[#module-JSON-label-Generating+Options].
+        # See {Generating Options}[rdoc-ref:JSON@Generating+Options].
         def initialize(opts = nil)
           if opts && !opts.empty?
             configure(opts)
@@ -54,6 +54,8 @@ module JSON
             strict: strict?,
             depth: depth,
             buffer_initial_length: buffer_initial_length,
+            sort_keys: sort_keys,
+            rfc8785: rfc8785?,
           }
 
           allow_duplicate_key = allow_duplicate_key?
@@ -61,42 +63,10 @@ module JSON
             result[:allow_duplicate_key] = allow_duplicate_key
           end
 
-          instance_variables.each do |iv|
-            iv = iv.to_s[1..-1]
-            result[iv.to_sym] = self[iv]
-          end
-
           result
         end
 
         alias_method :to_hash, :to_h
-
-        # call-seq: [](name)
-        #
-        # Returns the value returned by method +name+.
-        def [](name)
-          ::JSON.deprecation_warning("JSON::State#[] is deprecated and will be removed in json 3.0.0")
-
-          if respond_to?(name)
-            __send__(name)
-          else
-            instance_variable_get("@#{name}") if
-              instance_variables.include?("@#{name}".to_sym) # avoid warning
-          end
-        end
-
-        # call-seq: []=(name, value)
-        #
-        # Sets the attribute name to value.
-        def []=(name, value)
-          ::JSON.deprecation_warning("JSON::State#[]= is deprecated and will be removed in json 3.0.0")
-
-          if respond_to?(name_writer = "#{name}=")
-            __send__ name_writer, value
-          else
-            instance_variable_set "@#{name}", value
-          end
-        end
       end
     end
   end

@@ -6,13 +6,13 @@ require_relative 'fixtures/classes'
 ruby_version_is ""..."1.9" do
   describe "Kernel#sub" do
     it "is a private method" do
-      Kernel.should have_private_instance_method(:sub)
+      Kernel.private_instance_methods(false).should.include?(:sub)
     end
   end
 
   describe "Kernel#sub!" do
     it "is a private method" do
-      Kernel.should have_private_instance_method(:sub!)
+      Kernel.private_instance_methods(false).should.include?(:sub!)
     end
   end
 

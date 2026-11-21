@@ -19,10 +19,12 @@ module Bundler
     # @param size [Integer] Size of pool
     # @param name [String] name the name of the worker
     # @param func [Proc] job to run in inside the worker pool
-    def initialize(size, name, func)
+    # @param response_queue [Thread::Queue] queue that receives completed jobs
+    def initialize(size, name, func, response_queue: Thread::Queue.new)
       @name = name
       @request_queue = Thread::Queue.new
-      @response_queue = Thread::Queue.new
+      @request_queue_with_priority = Thread::Queue.new
+      @response_queue = response_queue
       @func = func
       @size = size
       @threads = nil
@@ -32,9 +34,10 @@ module Bundler
     # Enqueue a request to be executed in the worker pool
     #
     # @param obj [String] mostly it is name of spec that should be downloaded
-    def enq(obj)
+    def enq(obj, priority: false)
+      queue = priority ? @request_queue_with_priority : @request_queue
       create_threads unless @threads
-      @request_queue.enq obj
+      queue.enq obj
     end
 
     # Retrieves results of job function being executed in worker pool
@@ -52,7 +55,13 @@ module Bundler
 
     def process_queue(i)
       loop do
-        obj = @request_queue.deq
+        obj = begin
+          @request_queue_with_priority.deq(true)
+        rescue ThreadError
+          @request_queue.deq(false, timeout: 0.05)
+        end
+
+        next if obj.nil?
         break if obj.equal? POISON
         @response_queue.enq apply_func(obj, i)
       end
@@ -84,6 +93,10 @@ module Bundler
     end
 
     def create_threads
+      # Jobs use FileUtils, and TruffleRuby shows other threads an autoloaded
+      # constant while its file is still loading.
+      require_relative "vendored_fileutils"
+
       creation_errors = []
 
       @threads = Array.new(@size) do |i|

@@ -1,0 +1,1170 @@
+#ifndef PRISM_INTERNAL_PARSER_H
+#define PRISM_INTERNAL_PARSER_H
+
+#include "prism/compiler/accel.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/stack.h"
+
+#include "prism/internal/arena.h"
+#include "prism/internal/buffer.h"
+#include "prism/internal/comments.h"
+#include "prism/internal/constant_pool.h"
+#include "prism/internal/encoding.h"
+#include "prism/internal/list.h"
+#include "prism/internal/node.h"
+#include "prism/internal/options.h"
+#include "prism/internal/static_literals.h"
+#include "prism/internal/strpbrk.h"
+
+#include "prism/ast.h"
+#include "prism/line_offset_list.h"
+#include "prism/parser.h"
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+/*
+ * A place in the unescaped content of a regular expression where it stops
+ * lining up with the source, because the lexer dropped or rewrote an escape
+ * just before it. From here up to the next such place, each byte of the content
+ * is the byte at the same distance into the source.
+ */
+typedef struct {
+    /* The offset of the place in the unescaped content. */
+    uint32_t content;
+
+    /* The offset in the source of the byte at that place. */
+    uint32_t source;
+} pm_regexp_offset_t;
+
+/*
+ * The places where the unescaped content of a regular expression stops lining
+ * up with the source, in order. Before the first one, each byte of the content
+ * is the byte at the same distance from the start of the content in the source.
+ * The values are allocated in the scratch arena, since they are only read while
+ * the regular expression is validated.
+ */
+typedef struct {
+    /* The places, in order of their offsets in the content. */
+    pm_regexp_offset_t *values;
+
+    /* The number of places. */
+    size_t size;
+
+    /* The number of places that fit in the values before they must grow. */
+    size_t capacity;
+} pm_regexp_offsets_t;
+
+/*
+ * This enum provides various bits that represent different kinds of states that
+ * the lexer can track. This is used to determine which kind of token to return
+ * based on the context of the parser.
+ */
+typedef enum {
+    PM_LEX_STATE_BIT_BEG,
+    PM_LEX_STATE_BIT_END,
+    PM_LEX_STATE_BIT_ENDARG,
+    PM_LEX_STATE_BIT_ENDFN,
+    PM_LEX_STATE_BIT_ARG,
+    PM_LEX_STATE_BIT_CMDARG,
+    PM_LEX_STATE_BIT_MID,
+    PM_LEX_STATE_BIT_FNAME,
+    PM_LEX_STATE_BIT_DOT,
+    PM_LEX_STATE_BIT_CLASS,
+    PM_LEX_STATE_BIT_LABEL,
+    PM_LEX_STATE_BIT_LABELED,
+    PM_LEX_STATE_BIT_FITEM
+} pm_lex_state_bit_t;
+
+/*
+ * This enum combines the various bits from the above enum into individual
+ * values that represent the various states of the lexer.
+ */
+typedef enum {
+    PM_LEX_STATE_NONE = 0,
+    PM_LEX_STATE_BEG = (1 << PM_LEX_STATE_BIT_BEG),
+    PM_LEX_STATE_END = (1 << PM_LEX_STATE_BIT_END),
+    PM_LEX_STATE_ENDARG = (1 << PM_LEX_STATE_BIT_ENDARG),
+    PM_LEX_STATE_ENDFN = (1 << PM_LEX_STATE_BIT_ENDFN),
+    PM_LEX_STATE_ARG = (1 << PM_LEX_STATE_BIT_ARG),
+    PM_LEX_STATE_CMDARG = (1 << PM_LEX_STATE_BIT_CMDARG),
+    PM_LEX_STATE_MID = (1 << PM_LEX_STATE_BIT_MID),
+    PM_LEX_STATE_FNAME = (1 << PM_LEX_STATE_BIT_FNAME),
+    PM_LEX_STATE_DOT = (1 << PM_LEX_STATE_BIT_DOT),
+    PM_LEX_STATE_CLASS = (1 << PM_LEX_STATE_BIT_CLASS),
+    PM_LEX_STATE_LABEL = (1 << PM_LEX_STATE_BIT_LABEL),
+    PM_LEX_STATE_LABELED = (1 << PM_LEX_STATE_BIT_LABELED),
+    PM_LEX_STATE_FITEM = (1 << PM_LEX_STATE_BIT_FITEM),
+    PM_LEX_STATE_BEG_ANY = PM_LEX_STATE_BEG | PM_LEX_STATE_MID | PM_LEX_STATE_CLASS,
+    PM_LEX_STATE_ARG_ANY = PM_LEX_STATE_ARG | PM_LEX_STATE_CMDARG,
+    PM_LEX_STATE_END_ANY = PM_LEX_STATE_END | PM_LEX_STATE_ENDARG | PM_LEX_STATE_ENDFN
+} pm_lex_state_t;
+
+/*
+ * The type of quote that a heredoc uses.
+ */
+typedef enum {
+    PM_HEREDOC_QUOTE_NONE,
+    PM_HEREDOC_QUOTE_SINGLE = '\'',
+    PM_HEREDOC_QUOTE_DOUBLE = '"',
+    PM_HEREDOC_QUOTE_BACKTICK = '`',
+} pm_heredoc_quote_t;
+
+/*
+ * The type of indentation that a heredoc uses.
+ */
+typedef enum {
+    PM_HEREDOC_INDENT_NONE,
+    PM_HEREDOC_INDENT_DASH,
+    PM_HEREDOC_INDENT_TILDE,
+} pm_heredoc_indent_t;
+
+/*
+ * All of the information necessary to store to lexing a heredoc.
+ */
+typedef struct {
+    /* A pointer to the start of the heredoc identifier. */
+    const uint8_t *ident_start;
+
+    /* The length of the heredoc identifier. */
+    size_t ident_length;
+
+    /* The type of quote that the heredoc uses. */
+    pm_heredoc_quote_t quote;
+
+    /* The type of indentation that the heredoc uses. */
+    pm_heredoc_indent_t indent;
+} pm_heredoc_lex_mode_t;
+
+/*
+ * When lexing Ruby source, the lexer has a small amount of state to tell which
+ * kind of token it is currently lexing. For example, when we find the start of
+ * a string, the first token that we return is a TOKEN_STRING_BEGIN token. After
+ * that the lexer is now in the PM_LEX_STRING mode, and will return tokens that
+ * are found as part of a string.
+ */
+typedef struct pm_lex_mode {
+    /* The type of this lex mode. */
+    enum {
+        /* This state is used when any given token is being lexed. */
+        PM_LEX_DEFAULT,
+
+        /*
+         * This state is used when we're lexing as normal but inside an embedded
+         * expression of a string.
+         */
+        PM_LEX_EMBEXPR,
+
+        /*
+         * This state is used when we're lexing a variable that is embedded
+         * directly inside of a string with the # shorthand.
+         */
+        PM_LEX_EMBVAR,
+
+        /* This state is used when you are inside the content of a heredoc. */
+        PM_LEX_HEREDOC,
+
+        /*
+         * This state is used when we are lexing a list of tokens, as in a %w
+         * word list literal or a %i symbol list literal.
+         */
+        PM_LEX_LIST,
+
+        /*
+         * This state is used when a regular expression has been begun and we
+         * are looking for the terminator.
+         */
+        PM_LEX_REGEXP,
+
+        /*
+         * This state is used when we are lexing a string or a string-like
+         * token, as in string content with either quote or an xstring.
+         */
+        PM_LEX_STRING
+    } mode;
+
+    /* The data associated with this type of lex mode. */
+    union {
+        struct {
+            /* This keeps track of the nesting level of the list. */
+            size_t nesting;
+
+            /* Whether or not interpolation is allowed in this list. */
+            bool interpolation;
+
+            /*
+             * Whether any token has been emitted from this list. A word
+             * separator delimits the opener from the first word, so one
+             * without source characters is emitted when the list does not
+             * start with whitespace.
+             */
+            bool started;
+
+            /*
+             * Whether the previously emitted token was a word separator. A
+             * word separator delimits the last word from the terminator, so
+             * one without source characters is emitted when the list does
+             * not end with whitespace.
+             */
+            bool separated;
+
+            /*
+             * When lexing a list, it takes into account balancing the
+             * terminator if the terminator is one of (), [], {}, or <>.
+             */
+            uint8_t incrementor;
+
+            /* This is the terminator of the list literal. */
+            uint8_t terminator;
+
+            /*
+             * This is the character set that should be used to delimit the
+             * tokens within the list.
+             */
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
+        } list;
+
+        struct {
+            /*
+             * This keeps track of the nesting level of the regular expression.
+             */
+            size_t nesting;
+
+            /*
+             * When lexing a regular expression, it takes into account balancing
+             * the terminator if the terminator is one of (), [], {}, or <>.
+             */
+            uint8_t incrementor;
+
+            /* This is the terminator of the regular expression. */
+            uint8_t terminator;
+
+            /*
+             * This is the character set that should be used to delimit the
+             * tokens within the regular expression.
+             */
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
+        } regexp;
+
+        struct {
+            /* This keeps track of the nesting level of the string. */
+            size_t nesting;
+
+            /* Whether or not interpolation is allowed in this string. */
+            bool interpolation;
+
+            /*
+             * Whether or not at the end of the string we should allow a :,
+             * which would indicate this was a dynamic symbol instead of a
+             * string.
+             */
+            bool label_allowed;
+
+            /* Whether the final content token joined text after the last
+             * breakpoint, where this string used to split at EOF. */
+            bool joined_at_eof;
+
+            /*
+             * When lexing a string, it takes into account balancing the
+             * terminator if the terminator is one of (), [], {}, or <>.
+             */
+            uint8_t incrementor;
+
+            /*
+             * This is the terminator of the string. It is typically either a
+             * single or double quote.
+             */
+            uint8_t terminator;
+
+            /*
+             * This is the character set that should be used to delimit the
+             * tokens within the string.
+             */
+            uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE];
+        } string;
+
+        struct {
+            /*
+             * All of the data necessary to lex a heredoc.
+             */
+            pm_heredoc_lex_mode_t base;
+
+            /*
+             * This is the pointer to the character where lexing should resume
+             * once the heredoc has been completely processed.
+             */
+            const uint8_t *next_start;
+
+            /*
+             * This is used to track the amount of common whitespace on each
+             * line so that we know how much to dedent each line in the case of
+             * a tilde heredoc.
+             */
+            size_t *common_whitespace;
+
+            /* True if the previous token ended with a line continuation. */
+            bool line_continuation;
+        } heredoc;
+    } as;
+
+    /* The previous lex state so that it knows how to pop. */
+    struct pm_lex_mode *prev;
+} pm_lex_mode_t;
+
+/*
+ * While parsing, we keep track of a stack of contexts. This is helpful for
+ * error recovery so that we can pop back to a previous context when we hit a
+ * token that is understood by a parent context but not by the current context.
+ */
+typedef enum {
+    /* a null context, used for returning a value from a function */
+    PM_CONTEXT_NONE = 0,
+
+    /* a begin statement */
+    PM_CONTEXT_BEGIN,
+
+    /* an ensure statement with an explicit begin */
+    PM_CONTEXT_BEGIN_ENSURE,
+
+    /* a rescue else statement with an explicit begin */
+    PM_CONTEXT_BEGIN_ELSE,
+
+    /* a rescue statement with an explicit begin */
+    PM_CONTEXT_BEGIN_RESCUE,
+
+    /* expressions in block arguments using braces */
+    PM_CONTEXT_BLOCK_BRACES,
+
+    /* expressions in block arguments using do..end */
+    PM_CONTEXT_BLOCK_KEYWORDS,
+
+    /* an ensure statement within a do..end block */
+    PM_CONTEXT_BLOCK_ENSURE,
+
+    /* a rescue else statement within a do..end block */
+    PM_CONTEXT_BLOCK_ELSE,
+
+    /* expressions in block parameters `foo do |...| end ` */
+    PM_CONTEXT_BLOCK_PARAMETERS,
+
+    /* a rescue statement within a do..end block */
+    PM_CONTEXT_BLOCK_RESCUE,
+
+    /* a case when statements */
+    PM_CONTEXT_CASE_WHEN,
+
+    /* a case in statements */
+    PM_CONTEXT_CASE_IN,
+
+    /* a class declaration */
+    PM_CONTEXT_CLASS,
+
+    /* an ensure statement within a class statement */
+    PM_CONTEXT_CLASS_ENSURE,
+
+    /* a rescue else statement within a class statement */
+    PM_CONTEXT_CLASS_ELSE,
+
+    /* a rescue statement within a class statement */
+    PM_CONTEXT_CLASS_RESCUE,
+
+    /* a method definition */
+    PM_CONTEXT_DEF,
+
+    /* an ensure statement within a method definition */
+    PM_CONTEXT_DEF_ENSURE,
+
+    /* a rescue else statement within a method definition */
+    PM_CONTEXT_DEF_ELSE,
+
+    /* a rescue statement within a method definition */
+    PM_CONTEXT_DEF_RESCUE,
+
+    /* a method definition's parameters */
+    PM_CONTEXT_DEF_PARAMS,
+
+    /* a defined? expression */
+    PM_CONTEXT_DEFINED,
+
+    /* a method definition's default parameter */
+    PM_CONTEXT_DEFAULT_PARAMS,
+
+    /* an else clause */
+    PM_CONTEXT_ELSE,
+
+    /* an elsif clause */
+    PM_CONTEXT_ELSIF,
+
+    /* an interpolated expression */
+    PM_CONTEXT_EMBEXPR,
+
+    /* a for loop */
+    PM_CONTEXT_FOR,
+
+    /* a for loop's index */
+    PM_CONTEXT_FOR_INDEX,
+
+    /* an if statement */
+    PM_CONTEXT_IF,
+
+    /* a lambda expression with braces */
+    PM_CONTEXT_LAMBDA_BRACES,
+
+    /* a lambda expression with do..end */
+    PM_CONTEXT_LAMBDA_DO_END,
+
+    /* an ensure statement within a lambda expression */
+    PM_CONTEXT_LAMBDA_ENSURE,
+
+    /* a rescue else statement within a lambda expression */
+    PM_CONTEXT_LAMBDA_ELSE,
+
+    /* a rescue statement within a lambda expression */
+    PM_CONTEXT_LAMBDA_RESCUE,
+
+    /* the predicate clause of a loop statement */
+    PM_CONTEXT_LOOP_PREDICATE,
+
+    /* the top level context */
+    PM_CONTEXT_MAIN,
+
+    /* a module declaration */
+    PM_CONTEXT_MODULE,
+
+    /* an ensure statement within a module statement */
+    PM_CONTEXT_MODULE_ENSURE,
+
+    /* a rescue else statement within a module statement */
+    PM_CONTEXT_MODULE_ELSE,
+
+    /* a rescue statement within a module statement */
+    PM_CONTEXT_MODULE_RESCUE,
+
+    /* a multiple target expression */
+    PM_CONTEXT_MULTI_TARGET,
+
+    /* a parenthesized expression */
+    PM_CONTEXT_PARENS,
+
+    /* an END block */
+    PM_CONTEXT_POSTEXE,
+
+    /* a predicate inside an if/elsif/unless statement */
+    PM_CONTEXT_PREDICATE,
+
+    /* a BEGIN block */
+    PM_CONTEXT_PREEXE,
+
+    /* a modifier rescue clause */
+    PM_CONTEXT_RESCUE_MODIFIER,
+
+    /* a singleton class definition */
+    PM_CONTEXT_SCLASS,
+
+    /* an ensure statement with a singleton class */
+    PM_CONTEXT_SCLASS_ENSURE,
+
+    /* a rescue else statement with a singleton class */
+    PM_CONTEXT_SCLASS_ELSE,
+
+    /* a rescue statement with a singleton class */
+    PM_CONTEXT_SCLASS_RESCUE,
+
+    /* a ternary expression */
+    PM_CONTEXT_TERNARY,
+
+    /* an unless statement */
+    PM_CONTEXT_UNLESS,
+
+    /* an until statement */
+    PM_CONTEXT_UNTIL,
+
+    /* a while statement */
+    PM_CONTEXT_WHILE,
+
+    /* the number of contexts, which is not itself a context */
+    PM_CONTEXT_MAXIMUM,
+} pm_context_t;
+
+/* This is a node in a linked list of contexts. */
+typedef struct pm_context_node {
+    /* The context that this node represents. */
+    pm_context_t context;
+
+    /* A pointer to the previous context in the linked list. */
+    struct pm_context_node *prev;
+
+    /* One bit set per context in this list, including one for this node. */
+    uint64_t mask;
+} pm_context_node_t;
+
+/* The type of shareable constant value that can be set. */
+typedef uint8_t pm_shareable_constant_value_t;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_NONE = 0x0;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_LITERAL = PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING = PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY;
+
+/*
+ * This tracks an individual local variable in a certain lexical context, as
+ * well as the number of times is it read. The locals of every live scope are
+ * kept on a single stack on the parser, since a local is only ever declared in
+ * the innermost scope and is discarded when that scope is popped.
+ */
+typedef struct {
+    /* The name of the local variable. */
+    pm_constant_id_t name;
+
+    /* The location of the local variable in the source. */
+    pm_location_t location;
+
+    /* The number of times the local variable is read. */
+    uint32_t reads;
+
+    /* The level of the scope that declares the local variable. */
+    uint32_t level;
+
+    /*
+     * The index in the locals stack of the local with the same name that this
+     * local hides while its scope is live, or 0 if it hides nothing. It is
+     * restored as the binding of the name when the scope is popped.
+     */
+    uint32_t shadowed;
+} pm_local_t;
+
+/* The flags about scope parameters that can be set. */
+typedef uint8_t pm_scope_parameters_t;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_NONE = 0x0;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS = 0x1;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS = 0x2;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_BLOCK = 0x4;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_ALL = 0x8;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED = 0x10;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_NUMBERED_INNER = 0x20;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_NUMBERED_FOUND = 0x40;
+
+/*
+ * This struct represents a node in a linked list of scopes. Some scopes can see
+ * into their parent scopes, while others cannot.
+ */
+typedef struct pm_scope {
+    /* A pointer to the previous scope in the linked list. */
+    struct pm_scope *previous;
+
+    /*
+     * The index in the locals stack of the first local of this scope. The
+     * locals of this scope run from here to the top of the stack.
+     */
+    uint32_t locals_start;
+
+    /*
+     * The position of this scope in the scope stack, where the outermost scope
+     * is at level 1.
+     */
+    uint32_t level;
+
+    /*
+     * The locals_start of the nearest closed scope at or above this one. Every
+     * local below this index in the locals stack belongs to a scope that this
+     * scope cannot see into.
+     */
+    uint32_t floor;
+
+    /*
+     * This is a list of the implicit parameters contained within the block.
+     * These will be processed after the block is parsed to determine the kind
+     * of parameters node that should be used and to check if any errors need to
+     * be added.
+     */
+    pm_scratch_node_list_t implicit_parameters;
+
+    /*
+     * This is a bitfield that indicates the parameters that are being used in
+     * this scope. It is a combination of the PM_SCOPE_PARAMETERS_* constants.
+     * There are three different kinds of parameters that can be used in a
+     * scope:
+     *
+     * - Ordinary parameters (e.g., def foo(bar); end)
+     * - Numbered parameters (e.g., def foo; _1; end)
+     * - The it parameter (e.g., def foo; it; end)
+     *
+     * If ordinary parameters are being used, then certain parameters can be
+     * forwarded to another method/structure. Those are indicated by four
+     * additional bits in the params field. For example, some combinations of:
+     *
+     * - def foo(*); end
+     * - def foo(**); end
+     * - def foo(&); end
+     * - def foo(...); end
+     */
+    pm_scope_parameters_t parameters;
+
+    /*
+     * The current state of constant shareability for this scope. This is
+     * changed by magic shareable_constant_value comments.
+     */
+    pm_shareable_constant_value_t shareable_constant;
+
+    /*
+     * A boolean indicating whether or not this scope can see into its parent.
+     * If closed is true, then the scope cannot see into its parent.
+     */
+    bool closed;
+} pm_scope_t;
+
+/*
+ * A stack of boolean values with no fixed depth limit. The newest frames live
+ * in an inline word, so pushing and popping are usually a shift and a compare.
+ * When that word fills, it moves to the spill array and the inline word starts
+ * over empty. The spill array is only allocated once the nesting is more than
+ * 64 frames deep.
+ */
+typedef struct {
+    /*
+     * The newest frames, with the top of the stack in bit 0. It holds between
+     * 1 and 64 frames while the stack is not empty, and is 0 when it is.
+     */
+    uint64_t top;
+
+    /*
+     * The number of frames on the whole stack. The inline word holds the
+     * frames above the last multiple of 64, so the spill array holds
+     * (depth - 1) / 64 words.
+     */
+    uint32_t depth;
+
+    /* The number of words the spill array has room for. */
+    uint32_t capacity;
+
+    /*
+     * Full words of 64 older frames each, oldest first, allocated from the
+     * scratch arena.
+     */
+    uint64_t *spill;
+} pm_state_stack_t;
+
+/*
+ * This struct represents the overall parser. It contains a reference to the
+ * source file, as well as pointers that indicate where in the source it's
+ * currently parsing. It also contains the most recent and current token that
+ * it's considering.
+ */
+struct pm_parser_t {
+    /* The arena used for all AST-lifetime allocations. Caller-owned. */
+    pm_arena_t *arena;
+
+    /*
+     * The arena used for parser metadata (comments, diagnostics, etc.), which
+     * lives as long as the parser.
+     */
+    pm_arena_t metadata_arena;
+
+    /*
+     * The arena used for state that is only needed while parsing, such as
+     * scopes, locals, and contexts. It is released when pm_parse returns, so
+     * nothing allocated in it can be reachable from the tree or from the
+     * parser's metadata.
+     */
+    pm_arena_t scratch_arena;
+
+    /*
+     * The next node identifier that will be assigned. This is a unique
+     * identifier used to track nodes such that the syntax tree can be dropped
+     * but the node can be found through another parse.
+     */
+    uint32_t node_id;
+
+    /*
+     * A single-entry cache for pm_parser_constant_id_raw. Avoids redundant
+     * constant pool lookups when the same token is resolved multiple times
+     * (e.g., once during lexing for local variable detection, and again
+     * during parsing for node creation).
+     */
+    struct {
+        const uint8_t *start;
+        const uint8_t *end;
+        pm_constant_id_t id;
+    } constant_cache;
+
+    /* The current state of the lexer. */
+    pm_lex_state_t lex_state;
+
+    /* Tracks the current nesting of (), [], and {}. */
+    int enclosure_nesting;
+
+    /*
+     * Used to temporarily track the nesting of enclosures to determine if a {
+     * is the beginning of a lambda following the parameters of a lambda.
+     */
+    int lambda_enclosure_nesting;
+
+    /*
+     * Used to track the nesting of braces to ensure we get the correct value
+     * when we are interpolating blocks with braces.
+     */
+    int brace_nesting;
+
+    /*
+     * The stack used to determine if a do keyword belongs to the predicate of a
+     * while, until, or for loop.
+     */
+    pm_state_stack_t do_loop_stack;
+
+    /*
+     * The stack used to determine if a do keyword belongs to the beginning of a
+     * block.
+     */
+    pm_state_stack_t accepts_block_stack;
+
+    /* A stack of lex modes, linked through their prev pointers. */
+    struct {
+        /* The current mode of the lexer. */
+        pm_lex_mode_t *current;
+
+        /*
+         * The mode at the bottom of the stack, which is never popped. Every
+         * other mode is allocated from the scratch arena.
+         */
+        pm_lex_mode_t base;
+
+        /*
+         * Lex modes that have been popped, kept for reuse by the next push.
+         * They are allocated from the scratch arena, so they are never freed
+         * individually.
+         */
+        pm_lex_mode_t *free;
+    } lex_modes;
+
+    /*
+     * The chunks that open node lists are built in. They are carved from the
+     * scratch arena, so they are never freed individually.
+     */
+    pm_node_chunks_t node_chunks;
+
+    /* The pointer to the start of the source. */
+    const uint8_t *start;
+
+    /* The pointer to the end of the source. */
+    const uint8_t *end;
+
+    /* The previous token we were considering. */
+    pm_token_t previous;
+
+    /* The current token we're considering. */
+    pm_token_t current;
+
+    /*
+     * This is a special field set on the parser when we need the parser to jump
+     * to a specific location when lexing the next token, as opposed to just
+     * using the end of the previous token. Normally this is NULL.
+     */
+    const uint8_t *next_start;
+
+    /*
+     * This field indicates the end of a heredoc whose identifier was found on
+     * the current line. If another heredoc is found on the same line, then this
+     * will be moved forward to the end of that heredoc. If no heredocs are
+     * found on a line then this is NULL.
+     */
+    const uint8_t *heredoc_end;
+
+    /* The list of comments that have been found while parsing. */
+    pm_list_t comment_list;
+
+    /*
+     * The attachments of comments to the nodes that own them, populated after
+     * parsing when the attach_comments option is set.
+     */
+    pm_comment_attachments_t comment_attachments;
+
+    /* The list of magic comments that have been found while parsing. */
+    pm_list_t magic_comment_list;
+
+    /*
+     * An optional location that represents the location of the __END__ marker
+     * and the rest of the content of the file. This content is loaded into the
+     * DATA constant when the file being parsed is the main file being executed.
+     */
+    pm_location_t data_loc;
+
+    /* The list of warnings that have been found while parsing. */
+    pm_list_t warning_list;
+
+    /* The list of errors that have been found while parsing. */
+    pm_list_t error_list;
+
+    /* The current local scope. */
+    pm_scope_t *current_scope;
+
+    /*
+     * The locals of every live scope, in the order they were declared. Index 0
+     * is never used, so that 0 can mean the absence of a local.
+     */
+    pm_local_t *locals;
+
+    /* The number of slots in use in locals, including the unused slot 0. */
+    uint32_t locals_size;
+
+    /* The number of slots allocated in locals. */
+    uint32_t locals_capacity;
+
+    /*
+     * The index in the locals stack of the innermost live local with each
+     * constant id as its name, or 0 if there is none. A local that is declared
+     * in a scope replaces the binding of its name, and the binding it replaced
+     * is restored when the scope is popped. Constant ids at or beyond the
+     * capacity have never been declared as locals, so they are unbound.
+     */
+    uint32_t *bindings;
+
+    /* The number of slots allocated in bindings. */
+    uint32_t bindings_capacity;
+
+    /*
+     * Scopes that have been popped, kept for reuse by the next push. Scopes
+     * are allocated from the scratch arena, so they are never freed
+     * individually.
+     */
+    pm_scope_t *free_scopes;
+
+    /* The current parsing context. */
+    pm_context_node_t *current_context;
+
+    /*
+     * Context nodes that have been popped, kept for reuse by the next push.
+     * Context nodes are allocated from the scratch arena, so they are never
+     * freed individually.
+     */
+    pm_context_node_t *free_contexts;
+
+    /*
+     * The encoding functions for the current file is attached to the parser as
+     * it's parsing so that it can change with a magic comment.
+     */
+    const pm_encoding_t *encoding;
+
+    /*
+     * When the encoding that is being used to parse the source is changed by
+     * prism, we provide the ability here to call out to a user-defined
+     * function.
+     */
+    pm_encoding_changed_callback_t encoding_changed_callback;
+
+    /*
+     * This pointer indicates where a comment must start if it is to be
+     * considered an encoding comment.
+     */
+    const uint8_t *encoding_comment_start;
+
+    /*
+     * When you are lexing through a file, the lexer needs all of the information
+     * that the parser additionally provides (for example, the local table). So if
+     * you want to properly lex Ruby, you need to actually lex it in the context of
+     * the parser. In order to provide this functionality, we optionally allow a
+     * struct to be attached to the parser that calls back out to a user-provided
+     * callback when each token is lexed.
+     */
+    struct {
+        /*
+         * This is the callback that is called when a token is lexed. It is
+         * passed the opaque data pointer, the parser, and the token that was
+         * lexed.
+         */
+        pm_lex_callback_t callback;
+
+        /*
+         * This opaque pointer is used to provide whatever information the user
+         * deemed necessary to the callback. In our case we use it to pass the
+         * array that the tokens get appended into.
+         */
+        void *data;
+    } lex_callback;
+
+    /*
+     * This is the path of the file being parsed. We use the filepath when
+     * constructing SourceFileNodes.
+     */
+    pm_string_t filepath;
+
+    /*
+     * This constant pool keeps all of the constants defined throughout the file
+     * so that we can reference them later.
+     */
+    pm_constant_pool_t constant_pool;
+
+    /* This is the list of line offsets in the source file. */
+    pm_line_offset_list_t line_offsets;
+
+    /*
+     * State communicated from the lexer to the parser for integer tokens.
+     */
+    struct {
+        /*
+         * A flag indicating the base of the integer (binary, octal, decimal,
+         * hexadecimal). Set during lexing and read during node creation.
+         */
+        pm_node_flags_t base;
+
+        /*
+         * When lexing a decimal integer of at most 19 digits, which always
+         * fits in a uint64_t, or a plain 0, we compute the value during
+         * lexing to avoid re-scanning the digits during parsing. If start is
+         * set, this holds the result for the token that begins there and
+         * pm_integer_parse can be skipped.
+         */
+        uint64_t value;
+
+        /*
+         * The start of the token whose value is held in value, or NULL before
+         * any has been. The parser creates the node for a token only after
+         * lexing the next one, which may be another integer that replaces the
+         * value, so node creation checks that it belongs to the token at hand.
+         */
+        const uint8_t *start;
+    } integer;
+
+    /*
+     * This string is used to pass information from the lexer to the parser. It
+     * is particularly necessary because of escape sequences.
+     */
+    pm_string_t current_string;
+
+    /* Reusable workspace for rewriting escaped token content. */
+    pm_buffer_t lex_buffer;
+
+    /*
+     * Where current_string stops lining up with the source, when it is the
+     * content of a regular expression.
+     */
+    pm_regexp_offsets_t current_regexp_offsets;
+
+    /* Named captures from the regexp immediately before a pending =~. */
+    const struct pm_regexp_match *regexp_match;
+
+    /*
+     * The line number at the start of the parse. This will be used to offset
+     * the line numbers of all of the locations.
+     */
+    int32_t start_line;
+
+    /*
+     * When a string-like expression is being lexed, any byte or escape sequence
+     * that resolves to a value whose top bit is set (i.e., >= 0x80) will
+     * explicitly set the encoding to the same encoding as the source.
+     * Alternatively, if a unicode escape sequence is used (e.g., \\u{80}) that
+     * resolves to a value whose top bit is set, then the encoding will be
+     * explicitly set to UTF-8.
+     *
+     * The _next_ time this happens, if the encoding that is about to become the
+     * explicitly set encoding does not match the previously set explicit
+     * encoding, a mixed encoding error will be emitted.
+     *
+     * When the expression is finished being lexed, the explicit encoding
+     * controls the encoding of the expression. For the most part this means
+     * that the expression will either be encoded in the source encoding or
+     * UTF-8. This holds for all encodings except US-ASCII. If the source is
+     * US-ASCII and an explicit encoding was set that was _not_ UTF-8, then the
+     * expression will be encoded as ASCII-8BIT.
+     *
+     * Note that if the expression is a list, different elements within the same
+     * list can have different encodings, so this will get reset between each
+     * element. Furthermore all of this only applies to lists that support
+     * interpolation, because otherwise escapes that could change the encoding
+     * are ignored.
+     *
+     * At first glance, it may make more sense for this to live on the lexer
+     * mode, but we need it here to communicate back to the parser for character
+     * literals that do not push a new lexer mode.
+     */
+    const pm_encoding_t *explicit_encoding;
+
+    /*
+     * When parsing block exits (e.g., break, next, redo), we need to validate
+     * that they are in correct contexts. For the most part we can do this by
+     * looking at our parent contexts. However, modifier while and until
+     * expressions can change that context to make block exits valid. In these
+     * cases, we need to keep track of the block exits and then validate them
+     * after the expression has been parsed.
+     *
+     * We use a pointer here because we don't want to keep a whole list attached
+     * since this will only be used in the context of begin/end expressions.
+     */
+    pm_scratch_node_list_t *current_block_exits;
+
+    /*
+     * The address of the C stack when pm_parse was entered. The stack budget
+     * is measured as the distance from this address.
+     */
+    uintptr_t stack_base;
+
+    /*
+     * The number of bytes of C stack below stack_base that the recursive
+     * descent may use before it reports that the stack is exhausted. SIZE_MAX
+     * when no budget was given, so the check never fires.
+     */
+    size_t stack_budget;
+
+    /* The version of prism that we should use to parse. */
+    pm_options_version_t version;
+
+    /* The command line flags given from the options. */
+    uint8_t command_line;
+
+    /*
+     * Whether or not we have found a frozen_string_literal magic comment with
+     * a true or false value.
+     * May be:
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED
+     *  - PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET
+     */
+    int8_t frozen_string_literal;
+
+    /*
+     * Whether or not we are parsing an eval string. This impacts whether or not
+     * we should evaluate if block exits/yields are valid.
+     */
+    bool parsing_eval;
+
+    /*
+     * Whether or not we are parsing a "partial" script, which is a script that
+     * will be evaluated in the context of another script, so we should not
+     * check jumps (next/break/etc.) for validity.
+     */
+    bool partial_script;
+
+    /*
+     * Whether or not comments should be attached to their owning nodes once
+     * parsing has finished.
+     */
+    bool attach_comments;
+
+    /* Whether or not we're at the beginning of a command. */
+    bool command_start;
+
+    /*
+     * Whether or not we're currently parsing the body of an endless method
+     * definition. In this context, PM_TOKEN_KEYWORD_DO_BLOCK should not be
+     * consumed by commands (it should bubble up to the outer context).
+     */
+    bool in_endless_def_body;
+
+    /* Whether or not we're currently recovering from a syntax error. */
+    bool recovering;
+
+    /*
+     * Whether or not the source being parsed could become valid if more input
+     * were appended. This is set to false when the parser encounters a token
+     * that is definitively wrong (e.g., a stray `end` or `]`) as opposed to
+     * merely incomplete.
+     */
+    bool continuable;
+
+    /*
+     * This is very specialized behavior for when you want to parse in a context
+     * that does not respect encoding comments. Its main use case is translating
+     * into the whitequark/parser AST which re-encodes source files in UTF-8
+     * before they are parsed and ignores encoding comments.
+     */
+    bool encoding_locked;
+
+    /*
+     * Whether or not the encoding has been changed by a magic comment. We use
+     * this to provide a fast path for the lexer instead of going through the
+     * function pointer.
+     */
+    bool encoding_changed;
+
+    /*
+     * This flag indicates that we are currently parsing a pattern matching
+     * expression and impacts that calculation of newlines.
+     */
+    bool pattern_matching_newlines;
+
+    /* This flag indicates that we are currently parsing a keyword argument. */
+    bool in_keyword_arg;
+
+    /*
+     * Whether or not the parser has seen a token that has semantic meaning
+     * (i.e., a token that is not a comment or whitespace).
+     */
+    bool semantic_token_seen;
+
+    /*
+     * By default, Ruby always warns about mismatched indentation. This can be
+     * toggled with a magic comment.
+     */
+    bool warn_mismatched_indentation;
+
+    /*
+     * Whether the stack exhausted error has been reported. Once the budget is
+     * used up, every recursion that unwinds past it would report the error
+     * again, so it is only reported the first time.
+     */
+    bool stack_exhausted_reported;
+
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
+    /*
+     * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
+     * the nibble-based tables on every call when the charset hasn't changed
+     * (which is the common case during string/regex/list lexing).
+     */
+    struct {
+        /* The cached charset (null-terminated, max 11 chars + NUL). */
+        uint8_t charset[12];
+
+        /* Nibble-based low lookup table for SIMD matching. */
+        uint8_t low_lut[16];
+
+        /* Nibble-based high lookup table for SIMD matching. */
+        uint8_t high_lut[16];
+
+        /* Scalar fallback table (4 x 64-bit bitmasks covering all ASCII). */
+        uint64_t table[4];
+    } strpbrk_cache;
+#endif
+};
+
+/*
+ * Initialize a parser with the given start and end pointers.
+ */
+void pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
+
+/*
+ * Free the memory held by the given parser.
+ *
+ * This does not free the `pm_options_t` object that was used to initialize the
+ * parser.
+ */
+void pm_parser_cleanup(pm_parser_t *parser);
+
+/*
+ * Returns true if the bytes between start and end spell a keyword, using the
+ * same lookup that the lexer does.
+ */
+bool pm_keyword_p(const uint8_t *start, const uint8_t *end);
+
+/*
+ * Returns true if parsing has used more C stack since pm_parse was entered than
+ * the stack budget allows. Every recursion that runs inside pm_parse checks
+ * this alongside its own depth limit, so that the budget bounds all of them.
+ * The distance is taken without assuming which direction the stack grows. With
+ * no budget the limit is SIZE_MAX, so this never fires.
+ */
+static PRISM_INLINE bool
+pm_parser_stack_exhausted(const pm_parser_t *parser) {
+    uintptr_t current = pm_stack_address();
+    uintptr_t used = current < parser->stack_base ? parser->stack_base - current : current - parser->stack_base;
+    return used > parser->stack_budget;
+}
+
+/*
+ * Reports that the stack budget has been used up, at the given location. This
+ * is a separate error from the nesting depth limit, with its own error level,
+ * because the source may be valid and parse with more stack. It is reported
+ * once per parse.
+ */
+void pm_parser_err_stack_exhausted(pm_parser_t *parser, uint32_t start, uint32_t length);
+
+#endif

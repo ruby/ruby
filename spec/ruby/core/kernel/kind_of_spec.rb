@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/kind_of'
 
 describe "Kernel#kind_of?" do
-  it_behaves_like :kernel_kind_of, :kind_of?
+  it "is an alias of Kernel#is_a?" do
+    Kernel.instance_method(:kind_of?).should == Kernel.instance_method(:is_a?)
+  end
 end

@@ -3,10 +3,12 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#set_trace_func" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:set_trace_func)
+    Kernel.private_instance_methods(false).should.include?(:set_trace_func)
   end
 end
 
 describe "Kernel.set_trace_func" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:set_trace_func)
+  end
 end

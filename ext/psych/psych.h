@@ -4,7 +4,15 @@
 #include <ruby.h>
 #include <ruby/encoding.h>
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+#endif
+
+#ifdef PSYCH_USE_LIBFYAML
+#include <libfyaml.h>
+#else
 #include <yaml.h>
+#endif
 
 #include <psych_parser.h>
 #include <psych_emitter.h>

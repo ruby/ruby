@@ -6,7 +6,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   include ThreadInstrumentation::TestHelper
 
   def setup
-    pend("No windows support") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    pend("No windows support") if /mswin|mingw/ =~ RUBY_PLATFORM
 
     require '-test-/thread/instrumentation'
 
@@ -14,7 +14,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def teardown
-    return if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
     Bug::ThreadInstrumentation.unregister_callback
     cleanup_threads
   end
@@ -161,8 +161,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def test_sleeping_inside_ractor
-    omit "This test is flaky and intermittently failing now on ModGC workflow" if ENV['GITHUB_WORKFLOW'] == 'ModGC'
-
     assert_ractor(<<-"RUBY", require_relative: "helper", require: "-test-/thread/instrumentation")
       include ThreadInstrumentation::TestHelper
 

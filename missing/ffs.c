@@ -1,7 +1,8 @@
 /* ffs.c - find first set bit */
 /* ffs() is defined by Single Unix Specification. */
 
-#include "ruby.h"
+#include <limits.h>
+#include "ruby/config.h"
 
 int ffs(int arg)
 {

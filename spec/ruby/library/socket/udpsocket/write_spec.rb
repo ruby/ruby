@@ -12,7 +12,7 @@ describe "UDPSocket#write" do
 
       -> do
         s2.write('1' * 100_000)
-      end.should raise_error(Errno::EMSGSIZE)
+      end.should.raise(Errno::EMSGSIZE)
     ensure
       s1.close if s1 && !s1.closed?
       s2.close if s2 && !s2.closed?

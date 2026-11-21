@@ -133,6 +133,12 @@ describe "Ruby character strings" do
     "#{obj}".should == '42'
   end
 
+  it "raise NoMethodError when #to_s is not defined for the object" do
+    obj = BasicObject.new
+
+    -> { "#{obj}" }.should.raise(NoMethodError)
+  end
+
   it "uses an internal representation when #to_s doesn't return a String" do
     obj = mock('to_s')
     obj.stub!(:to_s).and_return(42)
@@ -143,7 +149,7 @@ describe "Ruby character strings" do
     # is that if you interpolate an object that fails to return
     # a String, you will still get a String and not raise an
     # exception.
-    "#{obj}".should be_an_instance_of(String)
+    "#{obj}".should.instance_of?(String)
   end
 
   it "allows a dynamic string to parse a nested do...end block as an argument to a call without parens, interpolated" do
@@ -281,7 +287,7 @@ describe "Ruby String interpolation" do
     a = "\u3042"
     b = "\xff".dup.force_encoding "binary"
 
-    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+    -> { "#{a} #{b}" }.should.raise(Encoding::CompatibilityError)
   end
 
   it "creates a non-frozen String" do

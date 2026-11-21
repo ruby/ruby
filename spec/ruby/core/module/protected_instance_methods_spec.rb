@@ -6,16 +6,16 @@ require_relative '../../fixtures/reflection'
 describe "Module#protected_instance_methods" do
   it "returns a list of protected methods in module and its ancestors" do
     methods = ModuleSpecs::CountsMixin.protected_instance_methods
-    methods.should include(:protected_3)
+    methods.should.include?(:protected_3)
 
     methods = ModuleSpecs::CountsParent.protected_instance_methods
-    methods.should include(:protected_3)
-    methods.should include(:protected_2)
+    methods.should.include?(:protected_3)
+    methods.should.include?(:protected_2)
 
     methods = ModuleSpecs::CountsChild.protected_instance_methods
-    methods.should include(:protected_3)
-    methods.should include(:protected_2)
-    methods.should include(:protected_1)
+    methods.should.include?(:protected_3)
+    methods.should.include?(:protected_2)
+    methods.should.include?(:protected_1)
   end
 
   it "when passed false as a parameter, should return only methods defined in that module" do

@@ -39,8 +39,8 @@ describe "BigDecimal#remainder" do
 
   version_is BigDecimal::VERSION, "3.3.0" do
     it "raises ZeroDivisionError used with zero" do
-      -> { @mixed.remainder(@zero) }.should raise_error(ZeroDivisionError)
-      -> { @zero.remainder(@zero) }.should raise_error(ZeroDivisionError)
+      -> { @mixed.remainder(@zero) }.should.raise(ZeroDivisionError)
+      -> { @zero.remainder(@zero) }.should.raise(ZeroDivisionError)
     end
   end
 
@@ -54,25 +54,6 @@ describe "BigDecimal#remainder" do
     @one.remainder(@nan).should.nan?
     @infinity.remainder(@nan).should.nan?
     @nan.remainder(@infinity).should.nan?
-  end
-
-  version_is BigDecimal::VERSION, ""..."3.1.4" do #ruby_version_is ""..."3.3" do
-    it "returns NaN if Infinity is involved" do
-      @infinity.remainder(@infinity).should.nan?
-      @infinity.remainder(@one).should.nan?
-      @infinity.remainder(@mixed).should.nan?
-      @infinity.remainder(@one_minus).should.nan?
-      @infinity.remainder(@frac_1).should.nan?
-      @one.remainder(@infinity).should.nan?
-
-      @infinity_minus.remainder(@infinity_minus).should.nan?
-      @infinity_minus.remainder(@one).should.nan?
-      @one.remainder(@infinity_minus).should.nan?
-      @frac_2.remainder(@infinity_minus).should.nan?
-
-      @infinity.remainder(@infinity_minus).should.nan?
-      @infinity_minus.remainder(@infinity).should.nan?
-    end
   end
 
   it "coerces arguments to BigDecimal if possible" do
@@ -90,7 +71,7 @@ describe "BigDecimal#remainder" do
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
     -> {
       @one.remainder('2')
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
 end

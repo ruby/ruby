@@ -92,13 +92,13 @@ class Array
   #   a.sample(4, random: Random.new(1))  # => [6, 10, 9, 2]
   #
   # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
-  def sample(n = (ary = false), random: Random)
+  def sample(n = (single = true), random: Random)
     if Primitive.mandatory_only?
-      # Primitive.cexpr! %{ rb_ary_sample(self, rb_cRandom, Qfalse, Qfalse) }
       Primitive.ary_sample0
+    elsif single
+      Primitive.ary_sample1(random)
     else
-      # Primitive.cexpr! %{ rb_ary_sample(self, random, n, ary) }
-      Primitive.ary_sample(random, n, ary)
+      Primitive.ary_sample(random, n)
     end
   end
 
@@ -129,12 +129,12 @@ class Array
   def first n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
-      Primitive.cexpr! %q{ ary_first(self) }
+      Primitive.rb_builtin_ary_first
     else
       if unspecified
-        Primitive.cexpr! %q{ ary_first(self) }
+        Primitive.rb_builtin_ary_first
       else
-        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST) }
+        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_FIRST) }
       end
     end
   end
@@ -171,7 +171,7 @@ class Array
       if unspecified
         Primitive.cexpr! %q{ ary_last(self) }
       else
-        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
+        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_LAST) }
       end
     end
   end
@@ -212,20 +212,64 @@ class Array
     indexes
   end
 
+  # call-seq:
+  #   each_index {|index| ... } -> self
+  #   each_index -> new_enumerator
+  #
+  # With a block given, iterates over the elements of +self+,
+  # passing each <i>array index</i> to the block;
+  # returns +self+:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.each_index {|index|  puts "#{index} #{a[index]}" }
+  #
+  # Output:
+  #
+  #   0 foo
+  #   1 bar
+  #   2 2
+  #
+  # Allows the array to be modified during iteration:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.each_index {|index| puts index; a.clear if index > 0 }
+  #   a # => []
+  #
+  # Output:
+  #
+  #   0
+  #   1
+  #
+  # With no block given, returns a new Enumerator.
+  #
+  # Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
+  def each_index
+    Primitive.attr! :inline_block, :always_inline, :without_interrupts
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    end
+    i = 0
+    until Primitive.rb_builtin_ary_at_end(i)
+      yield i
+      i = Primitive.rb_builtin_fixnum_inc(i)
+    end
+    self
+  end
+
   with_jit do
     if Primitive.rb_builtin_basic_definition_p(:each)
       undef :each
 
       def each # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
-        _i = 0
-        value = nil
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          yield value
+        i = 0
+        until Primitive.rb_builtin_ary_at_end(i)
+          yield Primitive.rb_builtin_ary_at(i)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         self
       end
@@ -235,17 +279,18 @@ class Array
       undef :map
 
       def map # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
 
-        _i = 0
-        value = nil
+        i = 0
         result = Primitive.ary_sized_alloc
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << yield(value)
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = yield(Primitive.rb_builtin_ary_at(i))
+          Primitive.rb_jit_ary_push(result, value)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         result
       end
@@ -260,17 +305,20 @@ class Array
       undef :select
 
       def select # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
 
-        _i = 0
-        value = nil
+        i = 0
         result = Primitive.ary_sized_alloc
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << value if yield value
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = Primitive.rb_builtin_ary_at(i)
+          if yield value
+            Primitive.rb_jit_ary_push(result, value)
+          end
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         result
       end
@@ -278,6 +326,34 @@ class Array
       if Primitive.rb_builtin_basic_definition_p(:filter)
         undef :filter
         alias filter select
+      end
+    end
+
+    if Primitive.rb_builtin_basic_definition_p(:find)
+      undef :find
+
+      def find(if_none_proc = (if_none_proc_omitted = true; nil)) # :nodoc:
+        Primitive.attr! :inline_block, :always_inline, :c_trace, :without_interrupts
+
+        unless defined?(yield)
+          if if_none_proc_omitted
+            return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, 0)'
+          else
+            return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &if_none_proc, 0)'
+          end
+        end
+        i = 0
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = Primitive.rb_builtin_ary_at(i)
+          return value if yield(value)
+          i = Primitive.rb_builtin_fixnum_inc(i)
+        end
+        if_none_proc&.__send__(:call)
+      end
+
+      if Primitive.rb_builtin_basic_definition_p(:detect)
+        undef :detect
+        alias detect find
       end
     end
   end

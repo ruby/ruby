@@ -40,7 +40,7 @@ describe :kernel_dup_clone, shared: true do
     o.obj = array
 
     o2 = o.send(@method)
-    o2.obj.should equal(o.obj)
+    o2.obj.should.equal?(o.obj)
   end
 
   it "calls #initialize_copy on the NEW object if available, passing in original object" do
@@ -49,7 +49,7 @@ describe :kernel_dup_clone, shared: true do
 
     o.obj.should == :original
     o2.obj.should == :init_copy
-    o2.original.should equal(o)
+    o2.original.should.equal?(o)
   end
 
   it "does not preserve the object_id" do
@@ -81,11 +81,11 @@ describe :kernel_dup_clone, shared: true do
 
   it "returns self for Complex" do
     c = Complex(1.3, 3.1)
-    c.send(@method).should equal c
+    c.send(@method).should.equal? c
   end
 
   it "returns self for Rational" do
     r = Rational(1, 3)
-    r.send(@method).should equal r
+    r.send(@method).should.equal? r
   end
 end

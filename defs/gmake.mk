@@ -198,6 +198,9 @@ $(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
 $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
+encdb.h: $(wildcard $(srcdir)/enc/*.[ch])
+transdb.h: $(wildcard $(srcdir)/enc/trans/*.trans)
+
 .PHONY: commit
 COMMIT_PREPARE := $(subst :,\:,$(filter-out commit do-commit,$(MAKECMDGOALS))) up
 
@@ -276,7 +279,7 @@ pull-github: fetch-github
 	$(call pull-github,$(PR))
 
 define pull-github
-	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_LOG_FORMAT)%H -1)
+	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_IN_SRC) rev-parse HEAD)
 	$(eval GITHUB_MERGE_BRANCH := $(shell $(GIT_IN_SRC) symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
 	$(GIT_IN_SRC) worktree prune
@@ -411,6 +414,7 @@ $(srcdir)/.bundle/gems:
 
 ifneq ($(DOT_WAIT),)
 up:: $(DOT_WAIT) after-update
+after-update:: MINIRUBY = $(BASERUBY)
 endif
 
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
@@ -434,16 +438,16 @@ ifneq ($(DOT_WAIT),)
 endif
 
 ifeq ($(HAVE_GIT),yes)
-REVISION_LATEST := $(shell $(GIT_LOG_FORMAT)%H -1 2>/dev/null)
-else
-REVISION_LATEST := update
-endif
+REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD 2>/dev/null)
+ifneq ($(REVISION_LATEST),)
 REVISION_IN_HEADER := $(shell sed '/^\#define RUBY_FULL_REVISION "\(.*\)"/!d;s//\1/;q' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
 ifeq ($(REVISION_IN_HEADER),)
 REVISION_IN_HEADER := none
 endif
 ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 $(REVISION_H): PHONY
+endif
+endif
 endif
 
 include $(top_srcdir)/yjit/yjit.mk
@@ -453,8 +457,10 @@ include $(top_srcdir)/defs/jit.mk
 # Query on the generated rdoc
 #
 #   $ make rdoc:Integer#+
-rdoc\:%: PHONY
-	$(Q)$(RUNRUBY) $(srcdir)/libexec/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
+rdoc\:%: PHONY programs $(RDOCOUT) update-default-gemspecs
+	$(Q)$(RUNRUBY) $(RUNOPT0) -I$(tooldir)/lib -rbundled_gem \
+	    -e "load BundledGem.command('rdoc', 'ri')" -- \
+	    --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
 
 test_%.rb test/%: programs PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
@@ -498,11 +504,7 @@ update-deps:
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
 	$(eval GIT_DIR := $(shell $(GIT_IN_SRC) rev-parse --absolute-git-dir))
 	$(GIT) --git-dir=$(GIT_DIR) worktree add $(deps_dir)
-	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
-	[ -f config.status ] && cp config.status $(deps_dir)
-	cd $(deps_dir) && autoconf && \
-	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
-	$(RUNRUBY) -C $(deps_dir) tool/update-deps --fix
+	$(BASERUBY) -C $(deps_dir) tool/mkdepend.rb --scope=all --sources --inplace
 	$(GIT) -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
 	    $(GIT) -C $(deps_dir) commit --all --message='Update dependencies'
 	$(GIT) --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
@@ -510,14 +512,11 @@ update-deps:
 	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
 
-fix-depends check-depends: all hello
-	$(BASERUBY) -C $(srcdir) tool/update-deps $(if $(filter fix-%,$@),--fix)
-
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(RUBYSPEC_CAPIEXT_DEPS) \
-	| build-ext
-	$(ECHO) building $@
+	| build-ext yes-rubyspec-capiext
+	$(no_silence:no=$(ECHO) building $@)
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
 ifneq ($(POSTLINK),)
@@ -525,9 +524,8 @@ ifneq ($(POSTLINK),)
 endif
 	$(Q) $(RMALL) $@.*
 
-RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
-rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
-	@ $(NULLCMD)
+RUBYSPEC_CAPIEXT_EXTS := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
+rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 
 spec/%/ spec/%_spec.rb: programs exts $(RUBYSPEC_CAPIEXT_BUILD) PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
@@ -541,24 +539,25 @@ ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 #    Just update the version in the title of NEWS.md.
 
 matz: up
-matz: OLD := $(MAJOR).$(MINOR).0
+matz-commit: OLD := $(MAJOR).$(MINOR).0
 ifdef NEW
-matz: MAJOR := $(word 1,$(subst ., ,$(NEW)))
-matz: MINOR := $(word 2,$(subst ., ,$(NEW)))
-matz: $(DOT_WAIT) bump_news
+matz-commit: MAJOR := $(word 1,$(subst ., ,$(NEW)))
+matz-commit: MINOR := $(word 2,$(subst ., ,$(NEW)))
+matz-commit: $(DOT_WAIT) bump_news
 bump_news$(DOT_WAIT): up
 bump_headers$(DOT_WAIT): bump_news
 else
-matz: MINOR := $(shell expr $(MINOR) + 1)
-matz: $(DOT_WAIT) reset_news
+matz-commit: MINOR := $(shell expr $(MINOR) + 1)
+matz-commit: $(DOT_WAIT) reset_news
 flush_news$(DOT_WAIT): up
 bump_headers$(DOT_WAIT): reset_news
 endif
 
-matz: $(DOT_WAIT) bump_headers
-matz: override NEW := $(MAJOR).$(MINOR).0
-matz: files := include/ruby/version.h include/ruby/internal/abi.h
-matz: message := Development of $(NEW) started.
+matz: $(DOT_WAIT) matz-commit
+matz-commit: bump_headers
+matz-commit: override NEW := $(MAJOR).$(MINOR).0
+matz-commit: files := include/ruby/version.h include/ruby/internal/abi.h
+matz-commit: message := Development of $(NEW) started.
 
 flush_news:
 	$(GIT_IN_SRC) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
@@ -589,9 +588,22 @@ bump_news:
 	-e 'BEGIN {new = ARGV.shift; print gets("").sub(/Ruby \K[0-9.]+/, new)}' \
 	$(NEW) NEWS.md
 
-matz:
+matz: matz-commit matz-push
+
+matz-commit:
 	$(GIT_IN_SRC) add NEWS.md $(files)
 	$(GIT_IN_SRC) commit -m "$(message)"
+
+GIT_REMOTE_ORIGIN = origin
+
+matz-push: matz-commit
+	$(eval origin_url := $(shell $(GIT_IN_SRC) remote get-url $(GIT_REMOTE_ORIGIN)))
+	$(if $(origin_url),,@false)
+	$(eval last_commit := $(shell $(GIT_IN_SRC) log -n1 --format=%H --author=matz HEAD~..HEAD))
+	$(if $(last_commit),,$(ECHO) No matz commits 1>&2; false)
+	$(if $(filter 12-25 12-26,$(shell date +%m-%d)),,$(ECHO) Not the release date 1>&2; false)
+	$(ECHO) $$'\e[31m'Pushing to $$'\e[7m'$(GIT_REMOTE_ORIGIN)$$'\e[27m'" ($(origin_url))"$$'\e[m'
+	$(GIT_IN_SRC) push $(GIT_REMOTE_ORIGIN)
 
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk

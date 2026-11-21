@@ -37,7 +37,7 @@ static const rb_data_type_t ossl_bn_type = {
     {
         0, ossl_bn_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 /*
@@ -352,11 +352,11 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
         break;
       case 10:
         if (!(buf = BN_bn2dec(bn))) ossl_raise(eBNError, NULL);
-        str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
+        str = ossl_buf2str(buf);
         break;
       case 16:
         if (!(buf = BN_bn2hex(bn))) ossl_raise(eBNError, NULL);
-        str = ossl_buf2str(buf, rb_long2int(strlen(buf)));
+        str = ossl_buf2str(buf);
         break;
       default:
         ossl_raise(rb_eArgError, "invalid radix %d", base);
@@ -818,7 +818,7 @@ ossl_bn_s_rand(int argc, VALUE *argv, VALUE klass)
 
     switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {
       case 3:
-        bottom = (odd == Qtrue) ? 1 : 0;
+        bottom = RTEST(odd) ? 1 : 0;
         /* FALLTHROUGH */
       case 2:
         top = NUM2INT(fill);

@@ -15,7 +15,7 @@ describe "Enumerable#to_set" do
     it "instantiates an object of provided as the first argument set class" do
       set = nil
       proc{set = [1, 2, 3].to_set(EnumerableSpecs::SetSubclass)}.should complain(/Enumerable#to_set/)
-      set.should be_kind_of(EnumerableSpecs::SetSubclass)
+      set.should.is_a?(EnumerableSpecs::SetSubclass)
       set.to_a.sort.should == [1, 2, 3]
     end
   end
@@ -23,7 +23,7 @@ describe "Enumerable#to_set" do
   ruby_version_is ""..."4.0" do
     it "instantiates an object of provided as the first argument set class" do
       set = [1, 2, 3].to_set(EnumerableSpecs::SetSubclass)
-      set.should be_kind_of(EnumerableSpecs::SetSubclass)
+      set.should.is_a?(EnumerableSpecs::SetSubclass)
       set.to_a.sort.should == [1, 2, 3]
     end
   end

@@ -20,7 +20,7 @@ describe "Time.at" do
     it "returns a subclass instance on a Time subclass" do
       c = Class.new(Time)
       t = c.at(0)
-      t.should be_an_instance_of(c)
+      t.should.instance_of?(c)
     end
 
     it "roundtrips a Rational produced by #to_r" do
@@ -56,7 +56,7 @@ describe "Time.at" do
     it "creates a dup time object with the value given by time" do
       t1 = Time.new
       t2 = Time.at(t1)
-      t1.should_not equal t2
+      t1.should_not.equal? t2
     end
 
     it "returns a UTC time if the argument is UTC" do
@@ -72,17 +72,17 @@ describe "Time.at" do
     it "returns a subclass instance" do
       c = Class.new(Time)
       t = c.at(Time.now)
-      t.should be_an_instance_of(c)
+      t.should.instance_of?(c)
     end
   end
 
   describe "passed non-Time, non-Numeric" do
     it "raises a TypeError with a String argument" do
-      -> { Time.at("0") }.should raise_error(TypeError)
+      -> { Time.at("0") }.should.raise(TypeError)
     end
 
     it "raises a TypeError with a nil argument" do
-      -> { Time.at(nil) }.should raise_error(TypeError)
+      -> { Time.at(nil) }.should.raise(TypeError)
     end
 
     describe "with an argument that responds to #to_int" do
@@ -103,7 +103,7 @@ describe "Time.at" do
       it "needs for the argument to respond to #to_int too" do
         o = mock('rational-but-no-to_int')
         def o.to_r; Rational(5, 2) end
-        -> { Time.at(o) }.should raise_error(TypeError, "can't convert MockObject into an exact number")
+        -> { Time.at(o) }.should.raise(TypeError, "can't convert MockObject into an exact number")
       end
     end
   end
@@ -140,20 +140,20 @@ describe "Time.at" do
 
   describe "passed [Integer, nil]" do
     it "raises a TypeError" do
-      -> { Time.at(0, nil) }.should raise_error(TypeError)
+      -> { Time.at(0, nil) }.should.raise(TypeError)
     end
   end
 
   describe "passed [Integer, String]" do
     it "raises a TypeError" do
-      -> { Time.at(0, "0") }.should raise_error(TypeError)
+      -> { Time.at(0, "0") }.should.raise(TypeError)
     end
   end
 
   describe "passed [Time, Integer]" do
     # #8173
     it "raises a TypeError" do
-      -> { Time.at(Time.now, 500000) }.should raise_error(TypeError)
+      -> { Time.at(Time.now, 500000) }.should.raise(TypeError)
     end
   end
 
@@ -190,15 +190,15 @@ describe "Time.at" do
 
     context "not supported format" do
       it "raises ArgumentError" do
-        -> { Time.at(0, 123456, 2) }.should raise_error(ArgumentError)
-        -> { Time.at(0, 123456, nil) }.should raise_error(ArgumentError)
-        -> { Time.at(0, 123456, :invalid) }.should raise_error(ArgumentError)
+        -> { Time.at(0, 123456, 2) }.should.raise(ArgumentError)
+        -> { Time.at(0, 123456, nil) }.should.raise(ArgumentError)
+        -> { Time.at(0, 123456, :invalid) }.should.raise(ArgumentError)
       end
 
       it "does not try to convert format to Symbol with #to_sym" do
         format = +"usec"
         format.should_not_receive(:to_sym)
-        -> { Time.at(0, 123456, format) }.should raise_error(ArgumentError)
+        -> { Time.at(0, 123456, format) }.should.raise(ArgumentError)
       end
     end
 
@@ -283,33 +283,33 @@ describe "Time.at" do
     end
 
     it "raises ArgumentError if format is invalid" do
-      -> { Time.at(@epoch_time, in: "+09:99") }.should raise_error(ArgumentError)
-      -> { Time.at(@epoch_time, in: "ABC") }.should raise_error(ArgumentError)
+      -> { Time.at(@epoch_time, in: "+09:99") }.should.raise(ArgumentError)
+      -> { Time.at(@epoch_time, in: "ABC") }.should.raise(ArgumentError)
     end
 
     it "raises ArgumentError if hours greater than 23" do # TODO
-      -> { Time.at(@epoch_time, in: "+24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
-      -> { Time.at(@epoch_time, in: "+2400") }.should raise_error(ArgumentError, "utc_offset out of range")
+      -> { Time.at(@epoch_time, in: "+24:00") }.should.raise(ArgumentError, "utc_offset out of range")
+      -> { Time.at(@epoch_time, in: "+2400") }.should.raise(ArgumentError, "utc_offset out of range")
 
-      -> { Time.at(@epoch_time, in: "+99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
-      -> { Time.at(@epoch_time, in: "+9900") }.should raise_error(ArgumentError, "utc_offset out of range")
+      -> { Time.at(@epoch_time, in: "+99:00") }.should.raise(ArgumentError, "utc_offset out of range")
+      -> { Time.at(@epoch_time, in: "+9900") }.should.raise(ArgumentError, "utc_offset out of range")
     end
 
     it "raises ArgumentError if minutes greater than 59" do # TODO
-      -> { Time.at(@epoch_time, in: "+00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
-      -> { Time.at(@epoch_time, in: "+0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
+      -> { Time.at(@epoch_time, in: "+00:60") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
+      -> { Time.at(@epoch_time, in: "+0060") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
 
-      -> { Time.at(@epoch_time, in: "+00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
-      -> { Time.at(@epoch_time, in: "+0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
+      -> { Time.at(@epoch_time, in: "+00:99") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
+      -> { Time.at(@epoch_time, in: "+0099") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
     end
 
     ruby_bug '#20797', ''...'3.4' do
       it "raises ArgumentError if seconds greater than 59" do
-        -> { Time.at(@epoch_time, in: "+00:00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:60')
-        -> { Time.at(@epoch_time, in: "+000060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000060')
+        -> { Time.at(@epoch_time, in: "+00:00:60") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:60')
+        -> { Time.at(@epoch_time, in: "+000060") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000060')
 
-        -> { Time.at(@epoch_time, in: "+00:00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:99')
-        -> { Time.at(@epoch_time, in: "+000099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000099')
+        -> { Time.at(@epoch_time, in: "+00:00:99") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:99')
+        -> { Time.at(@epoch_time, in: "+000099") }.should.raise(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000099')
       end
     end
   end

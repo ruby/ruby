@@ -69,6 +69,7 @@ dnl 93(bright yellow) is copied from .github/workflows/mingw.yml
 AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])dnl
 AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])dnl
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])dnl
+AC_ARG_VAR([rustc_flags], [additional RUSTC_FLAGS])dnl
 
 [begin]_group "environment section" && {
 HAVE_BASERUBY=yes
@@ -82,9 +83,17 @@ AC_ARG_WITH(baseruby,
 	],
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
+		HAVE_BASERUBY=
 	])
-AS_IF([test "$HAVE_BASERUBY" != no], [
-    RUBYOPT=- $BASERUBY --disable=gems -rerb -rfileutils -rtempfile "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
+AS_IF([test "$HAVE_BASERUBY" = no], [
+    # --without-baseruby
+], [error=`RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" --verbose 2>&1`], [
+    HAVE_BASERUBY=yes
+], [test "$HAVE_BASERUBY" = ""], [ # no --with-baseruby option
+    AC_MSG_WARN($error)            # just warn and continue
+    HAVE_BASERUBY=no
+], [                               # the ruby given by --with-baseruby is too old
+    AC_MSG_ERROR($error)           # bail out
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [
@@ -101,6 +110,30 @@ AS_IF([test "$HAVE_BASERUBY" = no], [
 ])
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
+AS_IF([test "$cross_compiling" = yes],
+    [X_BUILD_EXEEXT=`$BASERUBY -rrbconfig -e ['puts RbConfig::CONFIG["EXEEXT"]']`],
+    [X_BUILD_EXEEXT='$(EXEEXT)']
+)
+AC_SUBST(X_BUILD_EXEEXT)
+
+AC_ARG_WITH(dump-ast,
+	AS_HELP_STRING([--with-dump-ast=DUMP_AST], [use DUMP_AST as dump_ast; for cross-compiling with a host-built dump_ast]),
+	[DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'],
+	[AS_IF([test ${RUBY_DUMP_AST+set}], [
+	    DUMP_AST="${RUBY_DUMP_AST}"
+	    DUMP_AST_TARGET='$(empty)'
+	], [test "$cross_compiling" = yes], [
+	    DUMP_AST='build-tool/dump_ast$(BUILD_EXEEXT)'
+	    DUMP_AST_TARGET='$(DUMP_AST)'
+	], [
+	    DUMP_AST='./dump_ast$(BUILD_EXEEXT)'
+	    DUMP_AST_TARGET='$(DUMP_AST)'
+	])])
+dnl Without baseruby, .rbinc files cannot be regenerated, so clear the
+dnl dependency on dump_ast to avoid rebuilding pre-generated .rbinc files.
+AS_IF([test "$HAVE_BASERUBY" = no], [DUMP_AST_TARGET='$(empty)'])
+AC_SUBST(X_DUMP_AST, "${DUMP_AST}")
+AC_SUBST(X_DUMP_AST_TARGET, "${DUMP_AST_TARGET}")
 
 : ${GIT=git}
 HAVE_GIT=yes
@@ -259,6 +292,11 @@ AS_CASE(["/${rb_CC} "],
     RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [clang], [${llvm_prefix}objdump])
     RUBY_CHECK_PROG_FOR_CC([RANLIB],  [clang], [${llvm_prefix}ranlib])
     RUBY_CHECK_PROG_FOR_CC([STRIP],   [clang], [${llvm_prefix}strip])
+
+    # These -Wno-* flags silence clang-specific diagnostics that don't exist
+    # in GCC.  GCC silently accepts unknown -Wno-* flags but later emits noisy
+    # "unrecognized command-line option" notes whenever another warning fires.
+    clang_warnflags="-Wno-constant-logical-operand -Wno-parentheses-equality -Wno-self-assign"
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
@@ -402,9 +440,9 @@ AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
     AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
-	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
-	@%:@error pre OS X 10.5
-	[!<===== pre OS X 10.5 =====>]
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_6
+	@%:@error pre OS X 10.6
+	[!<===== pre OS X 10.6 =====>]
 	@%:@endif
 	]])],
 	[AC_MSG_RESULT(yes)],
@@ -537,9 +575,7 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
-    ],
-[hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+    ])
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -661,7 +697,18 @@ RUBY_WERROR_FLAG([
 	[
 	cd .. && rm -fr tmp.$$.try_link
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
+	rb_ldflags_nodir= rb_ldflags_Lopt=
+	for rb_ldflags_arg in $LDFLAGS; do
+	    AS_IF([test "$rb_ldflags_Lopt"], [rb_ldflags_Lopt=],
+		  [AS_CASE(["$rb_ldflags_arg"],
+			   [-L?*], [rb_ldflags_arg="${rb_ldflags_arg@%:@-L}" rb_ldflags_Lopt=],
+			   [-L], [rb_ldflags_Lopt=yes; continue],
+			   [continue])])
+	    AS_IF([test -d "${rb_ldflags_arg}"], [],
+		  [rb_ldflags_nodir="$rb_ldflags_nodir ${rb_ldflags_arg}"])
+	done
+	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"]dnl
+[${rb_ldflags_nodir:+; no such directory:$rb_ldflags_nodir}])
 	]
     )
     cd .. && rm -fr tmp.$$.try_link
@@ -707,7 +754,7 @@ AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(cflags, -fdeclspec)
     RUBY_APPEND_OPTIONS(orig_cflags, -fdeclspec)
 ])
-RUBY_TRY_CXXFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
+RUBY_TRY_CXXFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no], [@%:@include <cstdio>])
 AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CXXFLAGS, -fdeclspec)
 ])
@@ -735,6 +782,12 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_CASE([ $CFLAGS ], [*" -save-temps="*|*" -save-temps "*], [], [
 	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
     ])
+    AS_CASE([$target_os], [mingw*], [
+	# 64bit Windows is IL32P64; shorten-64-to-32 causes tons of warnigs
+	extra_warnflags="$extra_warnflags -Wno-shorten-64-to-32"
+    ], [
+	extra_warnflags="$extra_warnflags -Werror=shorten-64-to-32"
+    ])
 
     # ICC doesn't support -Werror=
     AS_IF([test $icc_version -gt 0], [
@@ -748,19 +801,15 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
 		 -Werror=pointer-arith \
-		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
 		 -Werror=old-style-definition \
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
-		 -Wno-constant-logical-operand \
 		 -Wno-long-long \
 		 -Wno-missing-field-initializers \
 		 -Wno-overlength-strings \
 		 -Wno-packed-bitfield-compat \
-		 -Wno-parentheses-equality \
-		 -Wno-self-assign \
 		 -Wno-tautological-compare \
 		 -Wno-unused-parameter \
 		 -Wno-unused-value \
@@ -768,6 +817,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
 		 -diag-disable=175,188,1684,2259,2312 \
+		 $clang_warnflags \
 		 $extra_warnflags \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [
@@ -1098,9 +1148,6 @@ AC_SUBST(POSTLINK)
 cleanlibs=
 AC_SUBST(cleanlibs)
 AS_CASE(["$target_os"],
-[nextstep*], [	],
-[openstep*], [	],
-[rhapsody*], [	],
 [darwin*], [
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
@@ -1186,6 +1233,7 @@ main()
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
+		: ${POSTLINK:=:}
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
@@ -1308,10 +1356,6 @@ main()
 		AC_CHECK_FUNCS(_wfreopen_s)
 		AC_LIBOBJ([langinfo])
 		],
-[bsdi*], [	LIBS="-lm $LIBS"
-		AC_DEFINE(BROKEN_SETREUID, 1)
-		AC_DEFINE(BROKEN_SETREGID, 1)
-                ac_cv_sizeof_rlim_t=8],
 [freebsd*], [	LIBS="-lm $LIBS"
 		ac_cv_func_getpeername=no
 		ac_cv_func_getsockname=no
@@ -1377,7 +1421,7 @@ AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"
     ])
 ])
 
-AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
+AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
@@ -1587,8 +1631,8 @@ AS_IF([test "$cross_compiling" = yes],
     X_BUILTIN_BINARY=no
 ],
 [
-    AS_CASE([ac_cv_sizeof_voidp],
-    [[1-9]*], [dnl fixed value
+    AS_CASE(["$ac_cv_sizeof_voidp"],
+    [@<:@1-9@:>@*], [dnl fixed value
     ],
     [
         AC_CACHE_CHECK([word size], [rb_cv_word_size],
@@ -1647,8 +1691,9 @@ RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
 @%:@endif])
 
 # __VA_ARGS__ is also tested in AC_PROG_CC_C99 since autoconf 2.60a (around
-# 2006). The check below is redundant and should always success.  Remain not
-# deleted for backward compat.
+# 2006). The check below is  redundant and should always success.  However,
+# when using the script generated by autoconf 2.71 cannot detect any of the
+# C89/C99/C11 features in clang-20.
 AC_CACHE_CHECK(for variable length macro, rb_cv_va_args_macro,
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 int foo(const char*);
@@ -1658,6 +1703,8 @@ int foo(const char*);
   rb_cv_va_args_macro=no)])
 AS_IF([test "$rb_cv_va_args_macro" = yes], [
   AC_DEFINE(HAVE_VA_ARGS_MACRO)
+], [
+  AC_MSG_ERROR([C99 compiler is needed])
 ])
 
 # We want C11's  `_Alignof`.  GCC (and alike) have  `__alignof__`, which behave
@@ -1907,8 +1954,6 @@ AS_CASE(["$target_cpu"],
 [alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
 		[*::yes],  # gcc
 			[CFLAGS="-mieee $CFLAGS"],
-		[osf*],    # ccc
-			[CFLAGS="-ieee $CFLAGS"],
 		)],
 [sparc*], [AC_LIBOBJ([sparc])])
 
@@ -2034,22 +2079,7 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
-AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
-[powerpc*-darwin*], [
-  AC_LIBSOURCES(alloca.c)
-  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  AC_DEFINE(C_ALLOCA)
-  AC_DEFINE_UNQUOTED(alloca, alloca)
-  ],
-[universal-darwin*:*ppc*], [
-  AC_LIBSOURCES(alloca.c)
-  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  RUBY_DEFINE_IF([defined __POWERPC__], C_ALLOCA, 1) # Darwin defines __POWERPC__ for ppc and ppc64 both
-  RUBY_DEFINE_IF([defined __POWERPC__], alloca, alloca)
-  ],
-[
-  AC_FUNC_ALLOCA
-  ])
+AC_FUNC_ALLOCA
 AS_IF([test "x$ALLOCA" = "x"], [
     AC_CACHE_CHECK([for dynamic size alloca], rb_cv_dynamic_alloca, [
     for chk in ok __chkstk; do
@@ -2096,6 +2126,7 @@ AC_REPLACE_FUNCS(flock)
 AC_REPLACE_FUNCS(hypot)
 AC_REPLACE_FUNCS(lgamma_r)
 AC_REPLACE_FUNCS(memmove)
+AC_REPLACE_FUNCS(memrchr)
 AC_REPLACE_FUNCS(nan)
 AC_REPLACE_FUNCS(nextafter)
 AC_REPLACE_FUNCS(setproctitle)
@@ -2110,7 +2141,7 @@ AC_DEFINE(HAVE_ISFINITE)        # C99; backward compatibility
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
-[aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
+[aix* | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [])
 AC_CHECK_HEADERS(sys/pstat.h)
 
@@ -2211,7 +2242,6 @@ AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(memset_s)
 AC_CHECK_FUNCS(writev)
-AC_CHECK_FUNCS(memrchr)
 AC_CHECK_FUNCS(memmem)
 AC_CHECK_FUNCS(mkfifo)
 AC_CHECK_FUNCS(mknod)
@@ -2327,6 +2357,7 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_assume_aligned, [__builtin_assume_aligned((voi
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
+test "$ac_cv_sizeof___int128" = 0 || RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap128, [__builtin_bswap128(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_popcount, [__builtin_popcount(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_popcountll, [__builtin_popcountll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])
@@ -2430,16 +2461,6 @@ AS_IF([test x"$ac_cv_lib_rt_timer_settime" = xyes], [
     AC_DEFINE(HAVE_TIMER_SETTIME, 1)
 ])
 
-AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdlib.h>
-]], [[int v = unsetenv("foo");]])],
-	rb_cv_unsetenv_return_value=yes,
-	rb_cv_unsetenv_return_value=no)])
-AS_IF([test "$rb_cv_unsetenv_return_value" = no], [
-  AC_DEFINE(VOID_UNSETENV)
-])
-
 # End of setjmp check.
 
 AC_ARG_ENABLE(setreuid,
@@ -2478,9 +2499,7 @@ AC_CACHE_CHECK(for negative time_t for gmtime(3), rb_cv_negative_time_t,
 #include <time.h>
 
 void
-check(tm, y, m, d, h, s)
-    struct tm *tm;
-    int y, m, d, h, s;
+check(struct tm *tm, int y, int m, int d, int h, int s)
 {
     if (!tm ||
 	tm->tm_year != y ||
@@ -2564,8 +2583,7 @@ AS_IF([test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = ye
 #include <signal.h>
 
 void
-sig_handler(dummy)
-     int dummy;
+sig_handler(int dummy)
 {
 }
 
@@ -2715,15 +2733,6 @@ AS_CASE([$coroutine_type], [yes|''], [
         [arm64-darwin*], [
             coroutine_type=arm64
         ],
-        # Correct target name is powerpc*-, but Ruby seems to prefer ppc*-.
-        # Notice that Darwin PPC ABI differs from AIX and ELF.
-        # Adding PPC targets for AIX, *BSD and *Linux will require separate implementations.
-        [powerpc-darwin*|ppc-darwin*], [
-            coroutine_type=ppc
-        ],
-        [powerpc64-darwin*|ppc64-darwin*], [
-            coroutine_type=ppc64
-        ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ coroutine_type=amd64 ],
@@ -2772,6 +2781,12 @@ AS_CASE([$coroutine_type], [yes|''], [
         ],
         [powerpc64le-freebsd*], [
             coroutine_type=ppc64le
+        ],
+        [riscv64-freebsd*], [
+            coroutine_type=riscv64
+        ],
+        [arm*-freebsd*], [
+            coroutine_type=arm32
         ],
         [x86_64-netbsd*], [
             coroutine_type=amd64
@@ -3076,7 +3091,7 @@ AS_IF([test "$ac_cv_header_mach_o_loader_h" = yes], [
 ])
 
 AS_CASE(["$target_os"],
-[linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu], [
+[linux* | gnu*], [
     AS_IF([test "$rb_cv_binary_elf" = no], [
 	AC_MSG_ERROR(Not ELF)
     ], [
@@ -3111,15 +3126,13 @@ STATIC=
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [bsdi*|cygwin*|msys*|mingw*|aix*|interix*], [ ],
+    [cygwin*|msys*|mingw*|aix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
     AS_CASE(["$target_os"],
-	[solaris*|irix*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	[sunos*],         [CCDLFLAGS="$CCDLFLAGS -PIC"],
-	[esix*|uxpds*],   [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	                  [: ${CCDLFLAGS=""}])
+	[solaris*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
+	            [: ${CCDLFLAGS=""}])
   ])
 }
 
@@ -3130,15 +3143,15 @@ AC_ARG_WITH(static-linked-ext,
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
 AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
   AC_SUBST(ENCSTATIC, static)
 ], [
   ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
 ])
+EXTOBJS='dmyext.$(OBJEXT)'
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
+AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 
 : "rpath" && {
     AS_CASE(["$target_os"],
@@ -3158,43 +3171,19 @@ AC_SUBST(EXTOBJS)
 			    : ${PRELOADENV=LD_PRELOAD_32}
 			])
 			rb_cv_dlopen=yes],
-	[sunos*], [	: ${LDSHARED='$(LD) -assert nodefinitions'}
-			rb_cv_dlopen=yes],
-	[irix*], [	: ${LDSHARED='$(LD) -shared'}
-			rb_cv_dlopen=yes],
-	[sysv4*], [	: ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes],
-	[nto-qnx*], [	: ${LDSHARED='$(CC) -shared'}
-			rb_cv_dlopen=yes],
-	[esix*|uxpds*], [ : ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes],
-	[osf*], [	: ${LDSHARED='$(LD) -shared -expect_unresolved "*"'}
-			rb_cv_dlopen=yes],
-	[bsdi3*], [	AS_CASE(["$CC"],
-			[*shlicc*], [	: ${LDSHARED='$(CC) -r'}
-					rb_cv_dlopen=yes])],
-	[linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu | haiku*], [
+	[linux* | gnu* | netbsd* | haiku*], [
 			: ${LDSHARED='$(CC) -shared'}
 			AS_IF([test "$rb_cv_binary_elf" = yes], [
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
 			])
 			rb_cv_dlopen=yes],
-	[interix*], [	: ${LDSHARED='$(CC) -shared'}
-			XLDFLAGS="$XLDFLAGS -Wl,-E"
-			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
-			AS_IF([test "$rb_cv_binary_elf" = yes], [
-			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
-			], [
-			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
-			])
+			LDFLAGS="$LDFLAGS -rdynamic"
+			DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			rb_cv_dlopen=yes],
-	[openbsd*|mirbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
-			AS_IF([test "$rb_cv_binary_elf" = yes], [
-			    LDFLAGS="$LDFLAGS -Wl,-E"
-			])
+	[openbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
+			LDFLAGS="$LDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
@@ -3224,19 +3213,12 @@ AC_SUBST(EXTOBJS)
 			: ${LIBPATHENV=LIBPATH}
 			: ${PRELOADENV=LDR_PRELOAD}
 			rb_cv_dlopen=yes],
-	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			: ${LDSHARED='$(LD) -Bshareable -x'}
-			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			rb_cv_dlopen=yes],
 	[cygwin*|msys*|mingw*], [
 			: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x00200000,--enable-auto-import"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=PATH}
 			: ${PRELOADENV=""}
-			rb_cv_dlopen=yes],
-	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
-	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
 	[wasi*], [	: ${LDSHARED='$(LD) -shared -Xlinker --export-dynamic'}],
 	[	: ${LDSHARED='$(LD)'}])
@@ -3298,7 +3280,10 @@ AS_CASE(["$target_os"],
     AS_IF([test "x$ac_cv_lib_procstat_procstat_open_sysctl" = xyes], [
 	AC_CHECK_FUNCS(procstat_getvmmap)
     ])
-    ])
+],
+[openbsd*], [
+    AC_CHECK_FUNCS([getexecpath])
+])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
     AC_CHECK_HEADERS([libproc.h])
@@ -3395,7 +3380,7 @@ AS_IF([test x$with_valgrind != xno],
     [darwin*], [
 	SOEXT=dylib
 	DLEXT=bundle],
-    [cygwin*|msys*|mingw*|*djgpp*], [
+    [cygwin*|msys*|mingw*], [
 	LOAD_RELATIVE=1
 	SOEXT=dll
 	DLEXT=so],
@@ -3508,7 +3493,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
     # darwin target requires miniruby for linking ext bundles
     PREP="$PREP"' miniruby$(EXEEXT)'
   ])
-  RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY_COMMAND='$(MINIRUBY) -I`$(CHDIR) $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
@@ -3550,7 +3535,8 @@ AS_CASE(["$target_os"],
 
 AC_ARG_ENABLE(multiarch,
 	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
-	      [multiarch=], [unset multiarch])
+	      [AS_CASE([$enableval], [no], [unset multiarch], [multiarch=])],
+	      [unset multiarch])
 AS_IF([test ${multiarch+set}], [
    AC_DEFINE(ENABLE_MULTIARCH)
 ])
@@ -3632,10 +3618,7 @@ AS_CASE("$enable_shared", [yes], [
 
   relative_libprefix="/../${multiarch+../}${libdir_basename}"
   AS_CASE(["$target_os"],
-    [sunos4*], [
-	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	],
-    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
+    [linux* | gnu* | haiku*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
@@ -3647,10 +3630,7 @@ AS_CASE("$enable_shared", [yes], [
     [freebsd*|dragonfly*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SONAME='$(LIBRUBY_SO)'
-	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
-	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
-	    LIBRUBY_ALIASES=''
-	], [test "$load_relative" = yes], [
+	AS_IF([test "$load_relative" = yes], [
 	    libprefix="'\$\$ORIGIN${relative_libprefix}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
 	    LIBRUBY_RELATIVE=yes
@@ -3660,13 +3640,9 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SO="${LIBRUBY_SONAME}"'.$(TEENY)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
-	AS_IF([test "$rb_cv_binary_elf" = yes], [ # ELF platforms
-	   LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	], [	# a.out platforms
-	   LIBRUBY_ALIASES=""
-	])
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	],
-    [openbsd*|mirbsd*], [
+    [openbsd*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
@@ -3706,9 +3682,6 @@ AS_CASE("$enable_shared", [yes], [
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
 	],
-    [interix*], [
-	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
-	],
     [cygwin*|msys*|mingw*|mswin*], [
 	LIBRUBY_RELATIVE=yes
 	])
@@ -3719,6 +3692,12 @@ AS_CASE("$enable_shared", [yes], [
   AC_ARG_ENABLE(pie,
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
+  AS_CASE(["$target_os:$pie"], [haiku*:], [
+    # Haiku links every executable as a shared object, which rejects
+    # the local-exec TLS relocations in -fPIE objects.  The compiler
+    # generates PIC there by default.
+    pie=no
+  ])
   AS_IF([test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno], [
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     AS_IF([test "$pie" = yes], [
@@ -3786,9 +3765,13 @@ AS_CASE(["${enable_dtrace}"],
 ], [
     rb_cv_dtrace_available=no
 ])
-AS_CASE(["$target_os"],[freebsd*],[
-         rb_cv_dtrace_available=no
-	 ])
+AS_CASE(["$target_cpu-$target_os"], [aarch64-freebsd* | arm64-freebsd*], [dnl
+    # FreeBSD's libdtrace mishandles is-enabled probes on aarch64: dt_modtext()
+    # rewrites the call site to a bare nop without clearing the return register,
+    # so RUBY_DTRACE_*_ENABLED() returns a garbage value and fires probes even
+    # when no consumer is attached. See dt_link.c dt_modtext() for __aarch64__.
+    rb_cv_dtrace_available=no
+])
 AS_IF([test "${enable_dtrace}" = yes], [dnl
     AS_IF([test -z "$DTRACE"], [dnl
 	AC_MSG_ERROR([dtrace(1) is missing])
@@ -3978,6 +3961,9 @@ YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
+    AS_CASE(["$target_os"], [mingw*], [
+        AC_MSG_ERROR([YJIT is not supported on mingw. Use win32\configure.bat --enable-yjit on mswin instead])
+    ])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -4049,6 +4035,11 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     AC_DEFINE(USE_ZJIT, 0)
 ])
 
+RUSTC_FLAGS='-g -C lto=thin -C opt-level=3 -C overflow-checks=on'
+AS_IF([test -n "${rustc_flags}"], [
+    RUSTC_FLAGS="${RUSTC_FLAGS} ${rustc_flags}"
+])
+
 JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
 RLIB_DIR=
 AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
@@ -4100,30 +4091,31 @@ AS_IF([test -n "$RUST_LIB"], [
     ])
 
     # absolute path to stop the "target" dir in src dir from interfering through VPATH
-    RUST_LIB="$(pwd)/${RUST_LIB}"
+    RUST_LIB='$(TOP_BUILD_DIR)'/"${RUST_LIB}"
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(RUSTC)dnl Rust compiler command
 AC_SUBST(JIT_RUST_FLAGS)dnl the common rustc flags for JIT crates such as zjit
+AC_SUBST(RUSTC_FLAGS)dnl user-configurable rustc compiler flags
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
-AC_SUBST(YJIT_LIBS)dnl the .a library of YJIT
-AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
+AC_SUBST(X_YJIT_LIBS, [$YJIT_LIBS])dnl the .a library of YJIT
+AC_SUBST(X_YJIT_OBJ, [$YJIT_OBJ])dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
-AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
-AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
-AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
-AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
-AC_SUBST(RLIB_DIR)dnl subpath of build directory for .rlib files
+AC_SUBST(X_ZJIT_LIBS, [$ZJIT_LIBS])dnl path to the .a library of ZJIT
+AC_SUBST(X_ZJIT_OBJ, [$ZJIT_OBJ])dnl for optionally building the C parts of ZJIT
+AC_SUBST(X_JIT_OBJ, [$JIT_OBJ])dnl for optionally building C glue code for Rust FFI
+AC_SUBST(X_RUST_LIB, [$RUST_LIB])dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(X_RLIB_DIR, [$RLIB_DIR])dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
 [begin]_group "build section" && {
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
-	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
+	rb_cv_symbol_prefix=`$NM conftest.$ac_objext 2>/dev/null |
 			     sed -n ['/.*T[ 	]\([^ 	]*\)conftest_external.*/!d;s//\1/p;q']`
 	],
 	[rb_cv_symbol_prefix=''])
@@ -4150,11 +4142,11 @@ AS_IF([test x"$SOEXT" = xdll], [
 ])
 AC_SUBST(XSYMBOLS_IN_EMPTYLIB, "${rb_cv_symbols_in_emptylib}")
 
-DLNOBJ=dln.o
+DLNOBJS=dln.o
 AC_ARG_ENABLE(dln,
 	      AS_HELP_STRING([--disable-dln], [disable dynamic link feature]),
-	      [test "$enableval" = yes || DLNOBJ=dmydln.o])
-AC_SUBST(DLNOBJ)
+	      [test "$enableval" = yes || DLNOBJS=dmydln.o])
+AC_SUBST(DLNOBJS)
 MINIDLNOBJ=dmydln.o
 
 AS_CASE(["$target_os"],
@@ -4190,21 +4182,6 @@ enum {
 	)
 	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])
 	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework CoreFoundation])
-	],
-    [osf*], [
-	AS_IF([test "$GCC" != "yes" ], [
-	  # compile something small: taint.c is fine for this.
-	  # the main point is the '-v' flag of 'cc'.
-	  AS_CASE(["`cc -v -I. -c main.c -o /tmp/main.o 2>&1`"],
-	  [*/gemc_cc*], [   # we have the new DEC GEM CC
-                        CFLAGS="$CFLAGS -oldc"
-                        ],
-          [            # we have the old MIPS CC
-                        ])
-	  # cleanup
-	  rm -f /tmp/main.o
-	  CFLAGS="$CFLAGS -std"
-	])
 	],
     [cygwin*|msys*|mingw*], [
 	LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
@@ -4323,8 +4300,8 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
-CPPFLAGS="$CPPFLAGS "'$(DEFS)'
-test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
+AS_CASE(["$LIBRUBYARG"], ['$(LIBRUBYARG_STATIC)'], [PROGRAM_LIBS=], [PROGRAM_LIBS='$(MAINLIBS)'])
+CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
 AS_IF([test -n "${cflags+set}"], [
     cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
     CFLAGS=`echo " $CFLAGS " | sed "s|$cflagspat"'|${cflags}|;s/^ *//;s/ *$//'`
@@ -4390,6 +4367,7 @@ AC_SUBST(DLDLIBS)
 AC_SUBST(DLDSHARED)
 AC_SUBST(ENABLE_SHARED)
 AC_SUBST(MAINLIBS)
+AC_SUBST(PROGRAM_LIBS)
 AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
@@ -4399,7 +4377,6 @@ AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 AC_SUBST(COROUTINE_TYPE, ${coroutine_type})
 AC_SUBST(PLATFORM_DIR)
-AC_SUBST(USE_LLVM_WINDRES)
 
 firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
 firsttmpl=`echo $FIRSTMAKEFILE | sed 's/.*://'`
@@ -4663,6 +4640,9 @@ m4_foreach(parser, [available_parsers],
     [AC_MSG_ERROR([Unknown parser: $with_parser])]
 )
 
+# Use the ruby allocator for prism. See prism/defines.h
+RUBY_APPEND_OPTIONS(XCFLAGS, -DPRISM_XALLOCATOR)
+
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 AS_MKDIR_P("${arch_hdrdir}")
 config_h="${arch_hdrdir}/config.h"
@@ -4713,13 +4693,22 @@ AC_SUBST(XCC_WRAPPER)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
-AS_IF([test ! -f "$srcdir/revision.h"], [
+# Generate revision.h in the build directory, as make does; one in
+# $srcdir would shadow it, since version.h includes "revision.h".
+AS_IF([test ! -f "$srcdir/revision.h" -a ! -f revision.h], [
     AS_IF([test "x$HAVE_BASERUBY" = xyes], [
-	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > "$srcdir/revision.h"
+	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > revision.h
     ], [
-	touch "$srcdir/revision.h"
+	touch revision.h
     ])
 ])
+
+AS_IF([test "x$HAVE_BASERUBY" = xyes], [
+    X_DEPENDENCIES_DIR=.deps
+], [
+    X_DEPENDENCIES_DIR='$(srcdir)'
+])
+AC_SUBST(X_DEPENDENCIES_DIR)
 
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
@@ -4737,7 +4726,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	AS_CASE("$VCS",
 		['$(GIT)'|git], [VCSUP='$(VCS) pull --rebase $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
-	for f in "$srcdir/version.h" "$srcdir/revision.h"; do
+	for f in "$srcdir/version.h" "$srcdir/revision.h" revision.h; do
             test -f "$f" || continue
 	    sed -n \
 	        -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
@@ -4748,12 +4737,23 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
         done
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
+	AS_IF([test "x$X_DEPENDENCIES_DIR" = x.deps -a "x$HAVE_BASERUBY" = xyes], [
+	    AC_MSG_NOTICE([generating build dependencies])
+	    ${MAKE-make} -f "$srcdir/depend" BASERUBY="$BASERUBY" \
+		srcdir="$srcdir" update-dependencies >&AS_MESSAGE_FD ||
+		AC_MSG_ERROR([failed to generate build dependencies])
+	    dependency_dir="$ac_pwd/.deps"
+	], [
+	    dependency_dir=.
+	])
 	AS_IF([test "$gnumake" != yes], [
 	    # extract NMake-style include list
 	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
 	    echo common_mk_includes "@S|@*" # generate the macro assignment
 	    shift
-	    common_mk_includes="`echo \"@S|@*\" | sed 's|\$(srcdir)|.|g'`"
+	    common_mk_includes="`echo \"@S|@*\" | sed \
+	        -e "s|\\\$(DEPENDENCIES_DIR)|$dependency_dir|g" \
+	        -e 's|\$(srcdir)|.|g'`"
 	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
@@ -4766,7 +4766,8 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
 	$(empty)'
     } > $tmpmk && mv -f $tmpmk Makefile],
-[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])
+[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'
+ X_DEPENDENCIES_DIR='$X_DEPENDENCIES_DIR' BASERUBY='$BASERUBY' HAVE_BASERUBY='$HAVE_BASERUBY'])
 
 AC_ARG_WITH([ruby-pc],
 	    AS_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),
@@ -4838,6 +4839,7 @@ config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "ZJIT support"        "$ZJIT_SUPPORT"
+config_summary "RUSTC_FLAGS"         "$RUSTC_FLAGS"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

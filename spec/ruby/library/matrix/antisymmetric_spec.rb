@@ -4,11 +4,11 @@ require 'matrix'
 
 describe "Matrix#antisymmetric?" do
   it "returns true for an antisymmetric Matrix" do
-    Matrix[[0, -2, Complex(1, 3)], [2, 0, 5], [-Complex(1, 3), -5, 0]].antisymmetric?.should be_true
+    Matrix[[0, -2, Complex(1, 3)], [2, 0, 5], [-Complex(1, 3), -5, 0]].antisymmetric?.should == true
   end
 
   it "returns true for a 0x0 empty matrix" do
-    Matrix.empty.antisymmetric?.should be_true
+    Matrix.empty.antisymmetric?.should == true
   end
 
   it "returns false for non-antisymmetric matrices" do
@@ -17,7 +17,7 @@ describe "Matrix#antisymmetric?" do
       Matrix[[1, -2, 3], [2, 0, 6], [-3, -6, 0]],  # wrong diagonal element
       Matrix[[0, 2, -3], [2, 0, 6], [-3, 6, 0]]    # only signs wrong
     ].each do |matrix|
-      matrix.antisymmetric?.should be_false
+      matrix.antisymmetric?.should == false
     end
   end
 
@@ -30,7 +30,7 @@ describe "Matrix#antisymmetric?" do
     ].each do |rectangular_matrix|
       -> {
         rectangular_matrix.antisymmetric?
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+      }.should.raise(Matrix::ErrDimensionMismatch)
     end
   end
 end

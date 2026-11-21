@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.asinh" do
   it "returns a float" do
-    Math.asinh(1.5).should be_kind_of(Float)
+    Math.asinh(1.5).should.is_a?(Float)
   end
 
   it "returns the inverse hyperbolic sin of the argument" do
@@ -19,15 +19,15 @@ describe "Math.asinh" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.asinh("test") }.should raise_error(TypeError)
+    -> { Math.asinh("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.asinh(nan_value).nan?.should be_true
+    Math.asinh(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.asinh(nil) }.should raise_error(TypeError)
+    -> { Math.asinh(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

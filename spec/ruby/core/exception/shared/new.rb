@@ -1,6 +1,6 @@
 describe :exception_new, shared: true do
   it "creates a new instance of Exception" do
-    Exception.should be_ancestor_of(Exception.send(@method).class)
+    Exception.send(@method).class.ancestors.should.include?(Exception)
   end
 
   it "sets the message of the Exception when passes a message" do
@@ -12,7 +12,7 @@ describe :exception_new, shared: true do
   end
 
   it "returns the exception when it has a custom constructor" do
-    ExceptionSpecs::ConstructorException.send(@method).should be_kind_of(ExceptionSpecs::ConstructorException)
+    ExceptionSpecs::ConstructorException.send(@method).should.is_a?(ExceptionSpecs::ConstructorException)
   end
 
 end

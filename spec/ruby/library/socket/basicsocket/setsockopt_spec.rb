@@ -40,7 +40,7 @@ describe "BasicSocket#setsockopt" do
     it "raises EINVAL if passed wrong linger value" do
       -> do
         @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, 0)
-      end.should raise_error(Errno::EINVAL)
+      end.should.raise(Errno::EINVAL)
     end
   end
 
@@ -72,7 +72,7 @@ describe "BasicSocket#setsockopt" do
       platform_is_not :windows do
         -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "")
-        }.should raise_error(SystemCallError)
+        }.should.raise(SystemCallError)
       end
 
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "blah").should == 0
@@ -82,7 +82,7 @@ describe "BasicSocket#setsockopt" do
       platform_is_not :windows do
         -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "0")
-        }.should raise_error(SystemCallError)
+        }.should.raise(SystemCallError)
       end
 
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "\x00\x00\x00\x00").should == 0
@@ -92,13 +92,13 @@ describe "BasicSocket#setsockopt" do
       platform_is_not :windows do
         -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "1")
-        }.should raise_error(SystemCallError)
+        }.should.raise(SystemCallError)
       end
 
       platform_is_not :windows do
         -> {
           @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, "\x00\x00\x00")
-        }.should raise_error(SystemCallError)
+        }.should.raise(SystemCallError)
       end
 
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, [1].pack('i')).should == 0
@@ -127,7 +127,7 @@ describe "BasicSocket#setsockopt" do
 
     -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, nil).should == 0
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
 
     @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, 1).should == 0
     n = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF).to_s
@@ -139,23 +139,23 @@ describe "BasicSocket#setsockopt" do
 
     -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "")
-    }.should raise_error(SystemCallError)
+    }.should.raise(SystemCallError)
 
     -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "bla")
-    }.should raise_error(SystemCallError)
+    }.should.raise(SystemCallError)
 
     -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "0")
-    }.should raise_error(SystemCallError)
+    }.should.raise(SystemCallError)
 
     -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "1")
-    }.should raise_error(SystemCallError)
+    }.should.raise(SystemCallError)
 
     -> {
       @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "\x00\x00\x00")
-    }.should raise_error(SystemCallError)
+    }.should.raise(SystemCallError)
 
     @sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF, "\x00\x00\x01\x00").should == 0
     n = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_SNDBUF).to_s
@@ -207,7 +207,7 @@ describe "BasicSocket#setsockopt" do
       onoff, seconds = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER).linger
       seconds.should == 10
       # Both results can be produced depending on the OS and value of Socket::SO_LINGER
-      [true, Socket::SO_LINGER].should include(onoff)
+      [true, Socket::SO_LINGER].should.include?(onoff)
     end
   end
 end
@@ -224,7 +224,7 @@ describe 'BasicSocket#setsockopt' do
 
     describe 'using separate arguments with Symbols' do
       it 'raises TypeError when the first argument is nil' do
-        -> { @socket.setsockopt(nil, :REUSEADDR, true) }.should raise_error(TypeError)
+        -> { @socket.setsockopt(nil, :REUSEADDR, true) }.should.raise(TypeError)
       end
 
       it 'sets a boolean option' do
@@ -251,7 +251,7 @@ describe 'BasicSocket#setsockopt' do
 
       platform_is_not :windows do
         it 'raises Errno::EINVAL when setting an invalid option value' do
-          -> { @socket.setsockopt(:SOCKET, :OOBINLINE, 'bla') }.should raise_error(Errno::EINVAL)
+          -> { @socket.setsockopt(:SOCKET, :OOBINLINE, 'bla') }.should.raise(Errno::EINVAL)
         end
       end
     end
@@ -305,12 +305,12 @@ describe 'BasicSocket#setsockopt' do
 
       it 'raises ArgumentError when passing 2 arguments' do
         option = Socket::Option.bool(:INET, :SOCKET, :REUSEADDR, true)
-        -> { @socket.setsockopt(option, :REUSEADDR) }.should raise_error(ArgumentError)
+        -> { @socket.setsockopt(option, :REUSEADDR) }.should.raise(ArgumentError)
       end
 
       it 'raises TypeError when passing 3 arguments' do
         option = Socket::Option.bool(:INET, :SOCKET, :REUSEADDR, true)
-        -> { @socket.setsockopt(option, :REUSEADDR, true) }.should raise_error(TypeError)
+        -> { @socket.setsockopt(option, :REUSEADDR, true) }.should.raise(TypeError)
       end
     end
   end

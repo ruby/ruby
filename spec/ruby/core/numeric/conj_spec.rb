@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/conj'
 
 describe "Numeric#conj" do
-  it_behaves_like :numeric_conj, :conj
+  it "is an alias of Numeric#conjugate" do
+    Numeric.instance_method(:conj).should == Numeric.instance_method(:conjugate)
+  end
 end

@@ -5,17 +5,31 @@ require "erb"
 require "fileutils"
 require "yaml"
 
-module Prism
-  module Template
-    SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
-    REMOVE_ON_ERROR_TYPES = SERIALIZE_ONLY_SEMANTICS_FIELDS
-    CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
+module Ruby::Prism
+  module Template # :nodoc: all
+    # The environment variables that change the generated files. The Rakefile
+    # records their values in a stamp file that every generated file depends
+    # on, so any variable read by a template must be listed here.
+    ENVIRONMENT = %w[
+      CHECK_FIELD_KIND
+      PRISM_JAVA_BACKEND
+      PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS
+    ].to_h { |name| [name, ENV[name]] }.freeze
 
-    JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
-    JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
+    SERIALIZE_ONLY_SEMANTICS_FIELDS = ENVIRONMENT["PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS"] || false
+    CHECK_FIELD_KIND = ENVIRONMENT["CHECK_FIELD_KIND"] || false
+
+    JAVA_BACKEND = ENVIRONMENT["PRISM_JAVA_BACKEND"] || "default"
+    JAVA_IDENTIFIER_TYPE = JAVA_BACKEND == "truffleruby" ? "String" : "byte[]"
     INCLUDE_NODE_ID = !SERIALIZE_ONLY_SEMANTICS_FIELDS || JAVA_BACKEND == "jruby"
 
     COMMON_FLAGS_COUNT = 2
+
+    # The byte that precedes the child subtrees of a node with a lazy field in
+    # the serialized output (see NodeType#lazy_field). Node types are serialized
+    # as 1 through the number of node types and 0 marks an absent optional node,
+    # so this must be greater than the number of node types.
+    LAZY_MARKER = 0xFF
 
     class Error
       attr_reader :name
@@ -49,6 +63,14 @@ module Prism
       end
     end
 
+    # This module contains methods for escaping characters in Doxygen comments.
+    module Doxygen
+      # Similar to /verbatim ... /endverbatim but doesn't wrap the result in a code block.
+      def self.verbatim(value)
+        value.gsub(/[*%!`#<>_+@-]/, '\\\\\0')
+      end
+    end
+
     # A comment attached to a field or node.
     class ConfigComment
       attr_reader :value
@@ -59,6 +81,41 @@ module Prism
 
       def each_line(&block)
         value.each_line { |line| yield line.prepend(" ").rstrip }
+      end
+
+      def each_rdoc_line(&block)
+        code_block = false
+        code = +""
+        value.each_line do |line|
+          # Wrap code in explicit language fences so there is syntax highlighting
+          if line.start_with?("    ") && !code_block
+            code_block = true
+            yield " ```rb"
+          elsif !line.strip.empty? && !line.start_with?("    ") && code_block
+            code_block = false
+            rdoc_close_codeblock(code, &block)
+            code = +""
+          end
+
+          if code_block
+            line = line.delete_prefix("    ")
+            code << line
+          end
+          yield line.prepend(" ").rstrip
+        end
+
+        # Close trailing blocks
+        rdoc_close_codeblock(code, &block) if code_block
+      end
+
+      def rdoc_close_codeblock(code, &block)
+        yield " ```"
+        return if code.strip.empty?
+
+        code.gsub!(/^[\s^]*$/, "") # clear marker lines
+        encoded = [code].pack("m0").tr("+/", "-_").delete("=") # base64 urlsafe
+        yield ""
+        yield " [Explore code sample](https://ruby.github.io/prism/playground.html##{encoded})"
       end
 
       def each_java_line(&block)
@@ -81,6 +138,10 @@ module Prism
         ConfigComment.new(comment).each_line(&block) if comment
       end
 
+      def each_comment_rdoc_line(&block)
+        ConfigComment.new(comment).each_rdoc_line(&block) if comment
+      end
+
       def each_comment_java_line(&block)
         ConfigComment.new(comment).each_java_line(&block) if comment
       end
@@ -97,6 +158,11 @@ module Prism
     # Some node fields can be specialized if they point to a specific kind of
     # node and not just a generic node.
     class NodeKindField < Field
+      # The C type to use for this field as a function parameter.
+      def c_param
+        "struct #{c_type} *#{name}"
+      end
+
       def initialize(kind:, **options)
         @kind = kind
         super(**options)
@@ -142,27 +208,27 @@ module Prism
         if specific_kind
           specific_kind
         elsif union_kind
-          union_kind.join(" | ")
+          "(#{union_kind.join(" | ")})"
         else
-          "Prism::node"
+          "Ruby::Prism::node"
         end
       end
 
-      def rbi_class
+      def call_seq_type
         if specific_kind
-          "Prism::#{specific_kind}"
+          specific_kind
         elsif union_kind
-          "T.any(#{union_kind.map { |kind| "Prism::#{kind}" }.join(", ")})"
+          union_kind.join(" | ")
         else
-          "Prism::Node"
+          "Node"
         end
       end
 
       def check_field_kind
         if union_kind
-          "[#{union_kind.join(', ')}].include?(#{name}.class)"
+          "[#{union_kind.join(', ')}, ErrorRecoveryNode].include?(#{name}.class)"
         else
-          "#{name}.is_a?(#{ruby_type})"
+          "#{name}.is_a?(#{ruby_type}) || #{name}.is_a?(ErrorRecoveryNode)"
         end
       end
     end
@@ -174,27 +240,27 @@ module Prism
         if specific_kind
           "#{specific_kind}?"
         elsif union_kind
-          [*union_kind, "nil"].join(" | ")
+          "(#{union_kind.join(" | ")})?"
         else
-          "Prism::node?"
+          "Ruby::Prism::node?"
         end
       end
 
-      def rbi_class
+      def call_seq_type
         if specific_kind
-          "T.nilable(Prism::#{specific_kind})"
+          "#{specific_kind} | nil"
         elsif union_kind
-          "T.nilable(T.any(#{union_kind.map { |kind| "Prism::#{kind}" }.join(", ")}))"
+          [*union_kind, "nil"].join(" | ")
         else
-          "T.nilable(Prism::Node)"
+          "Node | nil"
         end
       end
 
       def check_field_kind
         if union_kind
-          "[#{union_kind.join(', ')}, NilClass].include?(#{name}.class)"
+          "[#{union_kind.join(', ')}, ErrorRecoveryNode, NilClass].include?(#{name}.class)"
         else
-          "#{name}.nil? || #{name}.is_a?(#{ruby_type})"
+          "#{name}.nil? || #{name}.is_a?(#{ruby_type}) || #{name}.is_a?(ErrorRecoveryNode)"
         end
       end
     end
@@ -202,23 +268,31 @@ module Prism
     # This represents a field on a node that is a list of nodes. We pass them as
     # references and store them directly on the struct.
     class NodeListField < NodeKindField
+      def c_param
+        "pm_node_list_t #{name}"
+      end
+
+      def element_rbs_class
+        if specific_kind
+          "#{specific_kind}"
+        elsif union_kind
+          "#{union_kind.join(" | ")}"
+        else
+          "Ruby::Prism::node"
+        end
+      end
+
       def rbs_class
+        "Array[#{element_rbs_class}]"
+      end
+
+      def call_seq_type
         if specific_kind
           "Array[#{specific_kind}]"
         elsif union_kind
           "Array[#{union_kind.join(" | ")}]"
         else
-          "Array[Prism::node]"
-        end
-      end
-
-      def rbi_class
-        if specific_kind
-          "T::Array[Prism::#{specific_kind}]"
-        elsif union_kind
-          "T::Array[T.any(#{union_kind.map { |kind| "Prism::#{kind}" }.join(", ")})]"
-        else
-          "T::Array[Prism::Node]"
+          "Array[Node]"
         end
       end
 
@@ -228,9 +302,9 @@ module Prism
 
       def check_field_kind
         if union_kind
-          "#{name}.all? { |n| [#{union_kind.join(', ')}].include?(n.class) }"
+          "#{name}.all? { |n| [#{union_kind.join(', ')}, ErrorRecoveryNode].include?(n.class) }"
         else
-          "#{name}.all? { |n| n.is_a?(#{ruby_type}) }"
+          "#{name}.all? { |n| n.is_a?(#{ruby_type}) || n.is_a?(ErrorRecoveryNode) }"
         end
       end
     end
@@ -238,58 +312,74 @@ module Prism
     # This represents a field on a node that is the ID of a string interned
     # through the parser's constant pool.
     class ConstantField < Field
+      def c_param
+        "pm_constant_id_t #{name}"
+      end
+
       def rbs_class
         "Symbol"
       end
 
-      def rbi_class
+      def call_seq_type
         "Symbol"
       end
 
       def java_type
-        JAVA_STRING_TYPE
+        JAVA_IDENTIFIER_TYPE
       end
     end
 
     # This represents a field on a node that is the ID of a string interned
     # through the parser's constant pool and can be optionally null.
     class OptionalConstantField < Field
+      def c_param
+        "pm_constant_id_t #{name}"
+      end
+
       def rbs_class
         "Symbol?"
       end
 
-      def rbi_class
-        "T.nilable(Symbol)"
+      def call_seq_type
+        "Symbol | nil"
       end
 
       def java_type
-        JAVA_STRING_TYPE
+        JAVA_IDENTIFIER_TYPE
       end
     end
 
     # This represents a field on a node that is a list of IDs that are associated
     # with strings interned through the parser's constant pool.
     class ConstantListField < Field
+      def c_param
+        "pm_constant_id_list_t #{name}"
+      end
+
       def rbs_class
         "Array[Symbol]"
       end
 
-      def rbi_class
-        "T::Array[Symbol]"
+      def call_seq_type
+        "Array[Symbol]"
       end
 
       def java_type
-        "#{JAVA_STRING_TYPE}[]"
+        "#{JAVA_IDENTIFIER_TYPE}[]"
       end
     end
 
     # This represents a field on a node that is a string.
     class StringField < Field
+      def c_param
+        "pm_string_t #{name}"
+      end
+
       def rbs_class
         "String"
       end
 
-      def rbi_class
+      def call_seq_type
         "String"
       end
 
@@ -300,6 +390,10 @@ module Prism
 
     # This represents a field on a node that is a location.
     class LocationField < Field
+      def c_param
+        "pm_location_t #{name}"
+      end
+
       def semantic_field?
         false
       end
@@ -308,8 +402,8 @@ module Prism
         "Location"
       end
 
-      def rbi_class
-        "Prism::Location"
+      def call_seq_type
+        "Location"
       end
 
       def java_type
@@ -319,6 +413,10 @@ module Prism
 
     # This represents a field on a node that is a location that is optional.
     class OptionalLocationField < Field
+      def c_param
+        "pm_location_t #{name}"
+      end
+
       def semantic_field?
         false
       end
@@ -327,8 +425,8 @@ module Prism
         "Location?"
       end
 
-      def rbi_class
-        "T.nilable(Prism::Location)"
+      def call_seq_type
+        "Location | nil"
       end
 
       def java_type
@@ -338,11 +436,15 @@ module Prism
 
     # This represents an integer field.
     class UInt8Field < Field
+      def c_param
+        "uint8_t #{name}"
+      end
+
       def rbs_class
         "Integer"
       end
 
-      def rbi_class
+      def call_seq_type
         "Integer"
       end
 
@@ -353,11 +455,15 @@ module Prism
 
     # This represents an integer field.
     class UInt32Field < Field
+      def c_param
+        "uint32_t #{name}"
+      end
+
       def rbs_class
         "Integer"
       end
 
-      def rbi_class
+      def call_seq_type
         "Integer"
       end
 
@@ -369,11 +475,15 @@ module Prism
     # This represents an arbitrarily-sized integer. When it gets to Ruby it will
     # be an Integer.
     class IntegerField < Field
+      def c_param
+        "pm_integer_t #{name}"
+      end
+
       def rbs_class
         "Integer"
       end
 
-      def rbi_class
+      def call_seq_type
         "Integer"
       end
 
@@ -385,11 +495,15 @@ module Prism
     # This represents a double-precision floating point number. When it gets to
     # Ruby it will be a Float.
     class DoubleField < Field
+      def c_param
+        "double #{name}"
+      end
+
       def rbs_class
         "Float"
       end
 
-      def rbi_class
+      def call_seq_type
         "Float"
       end
 
@@ -432,9 +546,6 @@ module Prism
                 when "pattern expression"
                   # the list of all possible types is too long with 37+ different classes
                   "Node"
-                when Hash
-                  kind = kind.fetch("on error")
-                  REMOVE_ON_ERROR_TYPES ? nil : kind
                 else
                   kind
                 end
@@ -462,6 +573,10 @@ module Prism
         ConfigComment.new(comment).each_line(&block)
       end
 
+      def each_comment_rdoc_line(&block)
+        ConfigComment.new(comment).each_rdoc_line(&block)
+      end
+
       def each_comment_java_line(&block)
         ConfigComment.new(comment).each_java_line(&block)
       end
@@ -470,10 +585,19 @@ module Prism
         @semantic_fields ||= @fields.select(&:semantic_field?)
       end
 
-      # Should emit serialized length of node so implementations can skip
-      # the node to enable lazy parsing.
-      def needs_serialized_length?
-        name == "DefNode"
+      # The fields that hold child nodes. In the serialized output, their
+      # subtrees are written in field order ahead of this node's own record.
+      def child_fields
+        @child_fields ||= fields.grep(NodeKindField)
+      end
+
+      # The field whose subtree loaders can skip and deserialize on demand. In
+      # the serialized output, the node's child subtrees are preceded by
+      # LAZY_MARKER and two uint32 values: the byte length of the subtrees
+      # before this field's subtree, and the byte length of this field's
+      # subtree.
+      def lazy_field
+        fields.find { |field| field.name == "body" } if name == "DefNode"
       end
 
       private
@@ -547,8 +671,7 @@ module Prism
         extension = File.extname(filepath.gsub(".erb", ""))
 
         heading =
-          case extension
-          when ".rb"
+          if extension == ".rb"
             <<~HEADING
             # frozen_string_literal: true
             # :markup: markdown
@@ -562,28 +685,8 @@ module Prism
             =end
 
             HEADING
-          when ".rbs"
-            <<~HEADING
-            # This file is generated by the templates/template.rb script and should not be
-            # modified manually. See #{filepath}
-            # if you are looking to modify the template
-
-            HEADING
-          when ".rbi"
-            <<~HEADING
-            # typed: strict
-
-            =begin
-            This file is generated by the templates/template.rb script and should not be
-            modified manually. See #{filepath}
-            if you are looking to modify the template
-            =end
-
-            HEADING
           else
             <<~HEADING
-            /* :markup: markdown */
-
             /*----------------------------------------------------------------------------*/
             /* This file is generated by the templates/template.rb script and should not  */
             /* be modified manually. See                                                  */
@@ -607,8 +710,14 @@ module Prism
           end
         end
 
-        FileUtils.mkdir_p(File.dirname(write_to))
-        File.write(write_to, contents)
+        begin
+          FileUtils.mkdir_p(File.dirname(write_to))
+          File.write(write_to, contents)
+        rescue SystemCallError # EACCES, EPERM, EROFS, etc.
+          # Fall back to the current directory
+          FileUtils.mkdir_p(File.dirname(name))
+          File.write(name, contents)
+        end
       end
 
       private
@@ -630,10 +739,19 @@ module Prism
             config = YAML.load_file(File.expand_path("../config.yml", __dir__))
             flags = config.fetch("flags").to_h { |flags| [flags["name"], Flags.new(flags)] }
 
+            nodes = config.fetch("nodes").map { |node| NodeType.new(node, flags) }.sort_by(&:name)
+            raise "Too many node types to reserve LAZY_MARKER" if nodes.length >= LAZY_MARKER
+
+            nodes.each do |node|
+              if (field = node.lazy_field) && !field.is_a?(OptionalNodeField)
+                raise "Lazy field #{node.name}##{field.name} must be an optional node field"
+              end
+            end
+
             {
               errors: config.fetch("errors").map { |name| Error.new(name) },
               warnings: config.fetch("warnings").map { |name| Warning.new(name) },
-              nodes: config.fetch("nodes").map { |node| NodeType.new(node, flags) }.sort_by(&:name),
+              nodes: nodes,
               tokens: config.fetch("tokens").map { |token| Token.new(token) },
               flags: flags.values
             }
@@ -644,13 +762,14 @@ module Prism
     TEMPLATES = [
       "ext/prism/api_node.c",
       "include/prism/ast.h",
-      "include/prism/diagnostic.h",
+      "include/prism/ast.hpp",
+      "include/prism/internal/diagnostic.h",
       "javascript/src/deserialize.js",
       "javascript/src/nodes.js",
       "javascript/src/visitor.js",
-      "java/org/prism/Loader.java",
-      "java/org/prism/Nodes.java",
-      "java/org/prism/AbstractNodeVisitor.java",
+      "java/api/src/main/java-templates/org/ruby_lang/prism/Loader.java",
+      "java/api/src/main/java-templates/org/ruby_lang/prism/Nodes.java",
+      "java/api/src/main/java-templates/org/ruby_lang/prism/AbstractNodeVisitor.java",
       "lib/prism/compiler.rb",
       "lib/prism/dispatcher.rb",
       "lib/prism/dot_visitor.rb",
@@ -662,28 +781,20 @@ module Prism
       "lib/prism/serialize.rb",
       "lib/prism/visitor.rb",
       "src/diagnostic.c",
+      "src/json.c",
       "src/node.c",
       "src/prettyprint.c",
       "src/serialize.c",
-      "src/token_type.c",
-      "rbi/prism/dsl.rbi",
-      "rbi/prism/node.rbi",
-      "rbi/prism/visitor.rbi",
-      "sig/prism.rbs",
-      "sig/prism/dsl.rbs",
-      "sig/prism/mutation_compiler.rbs",
-      "sig/prism/node.rbs",
-      "sig/prism/visitor.rbs",
-      "sig/prism/_private/dot_visitor.rbs"
+      "src/tokens.c"
     ]
   end
 end
 
 if __FILE__ == $0
   if ARGV.empty?
-    Prism::Template::TEMPLATES.each { |filepath| Prism::Template.render(filepath) }
+    Ruby::Prism::Template::TEMPLATES.each { |filepath| Ruby::Prism::Template.render(filepath) }
   else # ruby/ruby
     name, write_to = ARGV
-    Prism::Template.render(name, write_to: write_to)
+    Ruby::Prism::Template.render(name, write_to: write_to)
   end
 end

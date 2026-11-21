@@ -4,12 +4,12 @@ require_relative '../shared/iterable_and_tolerating_size_increasing'
 describe :keep_if, shared: true do
   it "deletes elements for which the block returns a false value" do
     array = [1, 2, 3, 4, 5]
-    array.send(@method) {|item| item > 3 }.should equal(array)
+    array.send(@method) {|item| item > 3 }.should.equal?(array)
     array.should == [4, 5]
   end
 
   it "returns an enumerator if no block is given" do
-    [1, 2, 3].send(@method).should be_an_instance_of(Enumerator)
+    [1, 2, 3].send(@method).should.instance_of?(Enumerator)
   end
 
   it "updates the receiver after all blocks" do
@@ -33,34 +33,34 @@ describe :keep_if, shared: true do
     end
 
     it "returns an Enumerator if no block is given" do
-      @frozen.send(@method).should be_an_instance_of(Enumerator)
+      @frozen.send(@method).should.instance_of?(Enumerator)
     end
 
     describe "with truthy block" do
       it "keeps elements after any exception" do
-        -> { @frozen.send(@method) { true } }.should raise_error(Exception)
+        -> { @frozen.send(@method) { true } }.should.raise(Exception)
         @frozen.should == @origin
       end
 
       it "raises a FrozenError" do
-        -> { @frozen.send(@method) { true } }.should raise_error(FrozenError)
+        -> { @frozen.send(@method) { true } }.should.raise(FrozenError)
       end
     end
 
     describe "with falsy block" do
       it "keeps elements after any exception" do
-        -> { @frozen.send(@method) { false } }.should raise_error(Exception)
+        -> { @frozen.send(@method) { false } }.should.raise(Exception)
         @frozen.should == @origin
       end
 
       it "raises a FrozenError" do
-        -> { @frozen.send(@method) { false } }.should raise_error(FrozenError)
+        -> { @frozen.send(@method) { false } }.should.raise(FrozenError)
       end
     end
 
     it "raises a FrozenError on a frozen array only during iteration if called without a block" do
       enum = @frozen.send(@method)
-      -> { enum.each {} }.should raise_error(FrozenError)
+      -> { enum.each {} }.should.raise(FrozenError)
     end
   end
 

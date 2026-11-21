@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class SourceLocationTest < TestCase
     def test_AliasGlobalVariableNode
       assert_location(AliasGlobalVariableNode, "alias $foo $bar")
@@ -47,6 +47,29 @@ module Prism
       assert_location(AssocNode, "{ foo: :bar }", 2...11) { |node| node.elements.first }
       assert_location(AssocNode, "{ :foo => :bar }", 2...14) { |node| node.elements.first }
       assert_location(AssocNode, "foo(bar: :baz)", 4...13) { |node| node.arguments.arguments.first.elements.first }
+    end
+
+    def test_unconsumed_error_recovery_locations
+      ["{not %", "{not   ", "{not \x01", "alias   ", "undef   ", "case x; in [   ", "case x; in a |   "].each do |source|
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :failure?
+
+        nodes = [result.value]
+        until nodes.empty?
+          node = nodes.pop
+          location = node.location
+          assert_operator location.start_offset, :>=, 0, source.inspect
+          assert_operator location.end_offset, :<=, source.bytesize, source.inspect
+          assert_operator location.length, :>=, 0, source.inspect
+          nodes.concat(node.compact_child_nodes)
+        end
+      end
+
+      assoc = Ruby::Prism.parse_statement("{not %").receiver.elements.first
+      assert_equal 4, assoc.location.start_offset
+      assert_equal 0, assoc.location.length
+      assert_equal 4, assoc.key.location.start_offset
+      assert_equal 0, assoc.key.location.length
     end
 
     def test_AssocSplatNode
@@ -531,30 +554,43 @@ module Prism
       assert_location(InterpolatedSymbolNode, ':"#{foo}bar"')
     end
 
+    def test_interpolated_symbol_array_locations
+      ['#{1}#{2}', '#@a#@b', '#{1}#@a', '#@a#{1}', 'a#{1}#{2}', '#{1}a#{2}'].each do |element|
+        source = "%I[#{element} second]"
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :success?
+
+        array = result.value.statements.body.first
+        symbol, second = array.elements
+        assert_kind_of InterpolatedSymbolNode, symbol
+        assert_equal 3, symbol.location.start_offset
+        assert_equal 3 + element.bytesize, symbol.location.end_offset
+        assert_equal element, symbol.location.slice
+        assert_equal "second", second.location.slice
+        assert_equal source, array.location.slice
+      end
+    end
+
     def test_InterpolatedXStringNode
       assert_location(InterpolatedXStringNode, '`foo #{bar} baz`')
     end
 
     def test_ItLocalVariableReadNode
-      assert_location(ItLocalVariableReadNode, "-> { it }", 5...7) do |node|
+      assert_location(ItLocalVariableReadNode, "-> { it }", 5...7, version: "3.4.0") do |node|
         node.body.body.first
       end
 
-      assert_location(ItLocalVariableReadNode, "foo { it }", 6...8) do |node|
+      assert_location(ItLocalVariableReadNode, "foo { it }", 6...8, version: "3.4.0") do |node|
         node.block.body.body.first
       end
 
       assert_location(CallNode, "-> { it }", 5...7, version: "3.3.0") do |node|
         node.body.body.first
       end
-
-      assert_location(ItLocalVariableReadNode, "-> { it }", 5...7, version: "3.4.0") do |node|
-        node.body.body.first
-      end
     end
 
     def test_ItParametersNode
-      assert_location(ItParametersNode, "-> { it }", &:parameters)
+      assert_location(ItParametersNode, "-> { it }", version: "3.4.0", &:parameters)
     end
 
     def test_KeywordHashNode
@@ -650,6 +686,10 @@ module Prism
       assert_location(NilNode, "nil")
     end
 
+    def test_NoBlockParameterNode
+      assert_location(NoBlockParameterNode, "def foo(&nil); end", 8...12, version: "4.1") { |node| node.parameters.block }
+    end
+
     def test_NoKeywordsParameterNode
       assert_location(NoKeywordsParameterNode, "def foo(**nil); end", 8...13) { |node| node.parameters.keyword_rest }
     end
@@ -697,7 +737,7 @@ module Prism
 
     def test_PinnedVariableNode
       assert_location(PinnedVariableNode, "bar = 1; foo in ^bar", 16...20, &:pattern)
-      assert_location(PinnedVariableNode, "proc { 1 in ^it }.call(1)", 12...15) do |node|
+      assert_location(PinnedVariableNode, "proc { 1 in ^it }.call(1)", 12...15, version: "3.4.0") do |node|
         node.receiver.block.body.body.first.pattern
       end
     end
@@ -920,7 +960,7 @@ module Prism
     end
 
     def test_all_tested
-      expected = Prism.constants.grep(/.Node$/).sort - %i[MissingNode ProgramNode]
+      expected = Ruby::Prism.constants.grep(/.Node$/).sort - %i[ErrorRecoveryNode ProgramNode]
       actual = SourceLocationTest.instance_methods(false).grep(/.Node$/).map { |name| name[5..].to_sym }.sort
       assert_equal expected, actual
     end
@@ -928,23 +968,23 @@ module Prism
     private
 
     def assert_location(kind, source, expected = 0...source.length, **options)
-      result = Prism.parse(source, **options)
+      result = Ruby::Prism.parse(source, **options)
       assert result.success?
 
       node = result.value.statements.body.last
       node = yield node if block_given?
 
       if expected.begin == 0
-        assert_equal 0, node.location.start_column
+        assert_equal 0, node.location.start_column, "#{kind} start_column"
       end
 
       if expected.end == source.length
-        assert_equal source.split("\n").last.length, node.location.end_column
+        assert_equal source.split("\n").last.length, node.location.end_column, "#{kind} end_column"
       end
 
       assert_kind_of kind, node
-      assert_equal expected.begin, node.location.start_offset
-      assert_equal expected.end, node.location.end_offset
+      assert_equal expected.begin, node.location.start_offset, "#{kind} start_offset"
+      assert_equal expected.end, node.location.end_offset, "#{kind} end_offset"
     end
   end
 end

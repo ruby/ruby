@@ -1,4 +1,4 @@
 # frozen_string_literal: true
 
-ids = Array.new(2) { "abc".object_id }
-p ids.first == ids.last
+objs = Array.new(2) { "abc" }
+p objs.first.equal?(objs.last)

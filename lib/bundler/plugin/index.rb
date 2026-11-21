@@ -119,6 +119,12 @@ module Bundler
         @plugin_paths[name]
       end
 
+      def up_to_date?(spec)
+        path = installed?(spec.name)
+
+        path == spec.full_gem_path
+      end
+
       def installed_plugins
         @plugin_paths.keys
       end
@@ -157,20 +163,28 @@ module Bundler
       # @param [Pathname] index file path
       # @param [Boolean] is the index file global index
       def load_index(index_file, global = false)
+        base = base_for_index(global)
+
         SharedHelpers.filesystem_access(index_file, :read) do |index_f|
           valid_file = index_f&.exist? && !index_f.size.zero?
           break unless valid_file
 
           data = index_f.read
 
-          require_relative "../yaml_serializer"
-          index = YAMLSerializer.load(data)
+          require "rubygems/yaml_serializer"
+          # Empty sections load as nil, e.g. from index files written by
+          # older Bundler versions, which dumped empty hashes as a bare key.
+          index = Gem::YAMLSerializer.load(data) || {}
 
-          @commands.merge!(index["commands"])
-          @hooks.merge!(index["hooks"])
-          @load_paths.merge!(index["load_paths"])
-          @plugin_paths.merge!(index["plugin_paths"])
-          @sources.merge!(index["sources"]) unless global
+          escaping = escaping_plugins(index, base)
+          hooks = (index["hooks"] || {}).transform_values {|names| Array(names) - escaping }
+
+          @commands.merge!(owned_by(index["commands"] || {}, escaping))
+          # An event whose plugins all escaped is left out rather than merged in empty.
+          @hooks.merge!(hooks.reject {|_, names| names.empty? })
+          @load_paths.merge!(named(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) }, escaping))
+          @plugin_paths.merge!(named(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) }, escaping))
+          @sources.merge!(owned_by(index["sources"] || {}, escaping)) unless global
         end
       end
 
@@ -178,19 +192,87 @@ module Bundler
       # instance variables in YAML format. (The instance variables are supposed
       # to be only String key value pairs)
       def save_index
+        base = base_for_index(false)
+
         index = {
           "commands" => @commands,
           "hooks" => @hooks,
-          "load_paths" => @load_paths,
-          "plugin_paths" => @plugin_paths,
+          "load_paths" => transform_index_paths(@load_paths) {|p| relativize_path(p, base) },
+          "plugin_paths" => transform_index_paths(@plugin_paths) {|p| relativize_path(p, base) },
           "sources" => @sources,
         }
 
-        require_relative "../yaml_serializer"
+        require "rubygems/yaml_serializer"
         SharedHelpers.filesystem_access(index_file) do |index_f|
           FileUtils.mkdir_p(index_f.dirname)
-          File.open(index_f, "w") {|f| f.puts YAMLSerializer.dump(index) }
+          File.open(index_f, "w") {|f| f.puts Gem::YAMLSerializer.dump(index) }
         end
+      end
+
+      def base_for_index(global)
+        global ? Plugin.global_root : Plugin.root
+      end
+
+      # A relative path only means anything inside the root, so an entry that escapes is not one Bundler installed.
+      def escaping_plugins(index, base)
+        names = []
+
+        %w[load_paths plugin_paths].each do |key|
+          (index[key] || {}).each do |name, value|
+            escapes = Array(value).any? do |path|
+              !Pathname.new(path).absolute? && !contained_in?(absolutize_path(path, base), base)
+            end
+
+            names << name if escapes
+          end
+        end
+
+        names.uniq
+      end
+
+      # Expanded here, not by the caller: what gets stored stays joined, because
+      # #installed_in_plugin_root? matches it against Plugin.root as written.
+      def contained_in?(path, base)
+        path = File.expand_path(path)
+        base = File.expand_path(base)
+
+        path == base || path.start_with?("#{base}#{File::SEPARATOR}")
+      end
+
+      # commands and sources are keyed by what they provide, load_paths and plugin_paths by the plugin.
+      def owned_by(mapping, names)
+        mapping.reject {|_, plugin| names.include?(plugin) }
+      end
+
+      def named(mapping, names)
+        mapping.reject {|plugin, _| names.include?(plugin) }
+      end
+
+      def transform_index_paths(paths)
+        return {} unless paths
+
+        paths.transform_values do |value|
+          if value.is_a?(Array)
+            value.map {|path| yield path }
+          else
+            yield value
+          end
+        end
+      end
+
+      def relativize_path(path, base)
+        pathname = Pathname.new(path)
+        return path unless pathname.absolute?
+
+        return path unless contained_in?(pathname.to_s, base)
+
+        pathname.relative_path_from(Pathname.new(base)).to_s
+      end
+
+      def absolutize_path(path, base)
+        pathname = Pathname.new(path)
+        pathname = Pathname.new(base).join(pathname) unless pathname.absolute?
+        pathname.to_s
       end
     end
   end

@@ -1,7 +1,12 @@
 require_relative '../../spec_helper'
-require_relative 'shared/trace'
 require 'matrix'
 
 describe "Matrix#trace" do
-  it_behaves_like :trace, :trace
+  it "returns the sum of diagonal elements in a square Matrix" do
+    Matrix[[7,6], [3,9]].trace.should == 16
+  end
+
+  it "returns the sum of diagonal elements in a rectangular Matrix" do
+    ->{ Matrix[[1,2,3], [4,5,6]].trace}.should.raise(Matrix::ErrDimensionMismatch)
+  end
 end

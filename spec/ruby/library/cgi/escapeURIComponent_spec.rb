@@ -64,7 +64,7 @@ describe "CGI.escapeURIComponent" do
   it "raises a TypeError with nil" do
     -> {
       CGI.escapeURIComponent(nil)
-    }.should raise_error(TypeError, "no implicit conversion of nil into String")
+    }.should.raise(TypeError, "no implicit conversion of nil into String")
   end
 
   it "uses implicit type conversion to String" do

@@ -190,30 +190,20 @@ def test_new_specs
   Dir.chdir(SOURCE_REPO) do
     workflow = YAML.load_file(".github/workflows/ci.yml")
     job_name = MSPEC ? "test" : "specs"
-    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby")
+    versions = workflow.dig("jobs", job_name, "strategy", "matrix", "ruby").map(&:to_s)
     versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
     test_command = MSPEC ? "bundle install && bundle exec rspec" : "../mspec/bin/mspec -j"
 
     run_test = -> version {
-      command = "chruby #{version} && #{test_command}"
+      command = "chruby ruby-#{version} && #{test_command}"
       sh ENV["SHELL"], "-c", command
     }
 
     run_test[min_version]
     run_test[max_version]
-    run_test["ruby-master"] if TEST_MASTER
-  end
-end
-
-def verify_commits(impl)
-  puts
-  Dir.chdir(SOURCE_REPO) do
-    puts "Manually check commit messages:"
-    print "Press enter >"
-    STDIN.gets
-    system "git", "log", "master..."
+    run_test["master"] if TEST_MASTER
   end
 end
 
@@ -243,7 +233,6 @@ def main(impls)
       rebase_commits(impl)
       if new_commits?(impl)
         test_new_specs
-        verify_commits(impl)
         fast_forward_master(impl)
         check_ci
       else

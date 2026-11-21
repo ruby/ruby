@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class StaticInspectTest < TestCase
     def test_false
       assert_equal "false", static_inspect("false")
@@ -30,6 +30,12 @@ module Prism
     def test_integer
       assert_equal "1000", static_inspect("1_0_0_0")
       assert_equal "10000000000000000000000000000", static_inspect("1_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0")
+
+      num = 7 ** 30_000
+      assert_equal num.to_s, static_inspect("0x#{num.to_s(16)}")
+
+      num = 10 ** 5_000 - 1
+      assert_equal num.to_s, static_inspect("0x#{num.to_s(16)}")
     end
 
     def test_nil
@@ -41,6 +47,17 @@ module Prism
       assert_equal "(1/1)", static_inspect("1r")
       assert_equal "(1/1)", static_inspect("1.0r")
       assert_equal "(77777/1000)", static_inspect("77.777r")
+
+      assert_equal "(1/2)", static_inspect("0.5r")
+      assert_equal "(1/16)", static_inspect("0.0625r")
+      assert_equal "(21/2)", static_inspect("1_0.5_0r")
+      assert_equal "(1/1048576)", static_inspect("0.00000095367431640625r")
+
+      assert_rational_inspect("0.#{(5 ** 60).to_s.rjust(60, "0")}r")
+      assert_rational_inspect("0.#{(3 * 2 ** 100).to_s.rjust(100, "0")}r")
+      assert_rational_inspect("#{7 ** 40}.0000025r")
+      assert_rational_inspect("1.#{"0" * 40}1r")
+      assert_rational_inspect("#{"9" * 300}.#{"5" * 300}r")
     end
 
     def test_regular_expression
@@ -82,8 +99,12 @@ module Prism
     private
 
     def static_inspect(source, **options)
-      warnings = Prism.parse("{ #{source} => 1, #{source} => 1 }", **options).warnings
+      warnings = Ruby::Prism.parse("{ #{source} => 1, #{source} => 1 }", **options).warnings
       warnings.last.message[/^key (.+) is duplicated and overwritten on line \d/, 1]
+    end
+
+    def assert_rational_inspect(source)
+      assert_equal eval(source).inspect, static_inspect(source)
     end
   end
 end

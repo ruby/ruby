@@ -40,4 +40,25 @@ class TestGemCommandsStaleCommand < Gem::TestCase
     assert_equal("#{foo_bar.name}-#{foo_bar.version}", lines[0].split.first)
     assert_equal("#{bar_baz.name}-#{bar_baz.version}", lines[1].split.first)
   end
+
+  def test_execute_with_glob_metacharacters_in_gem_path
+    gemhome2 = File.join(@tempdir, "gemhome[2]")
+    Gem.use_paths gemhome2
+
+    foo = util_spec "foo" do |gem|
+      gem.files = %w[lib/foo.rb]
+    end
+    install_specs foo
+
+    filename = File.join(gemhome2, "gems", foo.full_name, "lib", "foo.rb")
+    FileUtils.mkdir_p File.dirname filename
+    FileUtils.touch filename
+
+    use_ui @stub_ui do
+      @cmd.execute
+    end
+
+    listed_gems = @stub_ui.output.split("\n").map {|line| line.split.first }
+    assert_includes listed_gems, "#{foo.name}-#{foo.version}"
+  end
 end

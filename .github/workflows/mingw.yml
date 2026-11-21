@@ -37,26 +37,29 @@ jobs:
     env:
       MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: >-
-        ${{
-        contains(matrix.msystem, 'arm64') && 'aarch64' ||
-        contains(matrix.msystem, '64') && 'x86_64' || 'i686'
-        }}
+        ${{ case(
+        contains(matrix.msystem, 'arm64'), 'aarch64',
+        contains(matrix.msystem, '64'), 'x86_64',
+        'i686'
+        ) }}
       MINGW_PACKAGE_PREFIX: >-
         mingw-w${{
-        endsWith(matrix.msystem, '64') && '64' || '32'
-        }}-${{
-        startsWith(matrix.msystem, 'clang') && 'clang' ||
-        startsWith(matrix.msystem, 'ucrt') && 'ucrt' ||
+        case(endsWith(matrix.msystem, '64'), '64', '32')
+        }}-${{ case(
+        startsWith(matrix.msystem, 'clang'), 'clang',
+        startsWith(matrix.msystem, 'ucrt'), 'ucrt',
         'mingw'
-        }}-${{
-        contains(matrix.msystem, 'arm64') && 'aarch64' ||
-        endsWith(matrix.msystem, '64') && 'x86_64' || 'i686'
-        }}
+        ) }}-${{ case(
+        contains(matrix.msystem, 'arm64'), 'aarch64',
+        endsWith(matrix.msystem, '64'), 'x86_64',
+        'i686'
+        ) }}
       CFLAGS: '-mtune=generic -O3 -pipe'
       CXXFLAGS: '-mtune=generic -O3 -pipe'
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
       LDFLAGS: '-pipe'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      NoDefaultCurrentDirectoryInExePath: 1
 
     strategy:
       matrix:
@@ -77,11 +80,11 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda # v2.30.0
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         id: msys2
         with:
           msystem: ${{ matrix.msystem }}
@@ -166,10 +169,11 @@ jobs:
           [ ${#failed[@]} -eq 0 ]
         shell: sh
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - uses: ./.github/actions/setup/directories
         with:

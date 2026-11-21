@@ -29,15 +29,15 @@ describe "Float#rationalize" do
   end
 
   it "raises a FloatDomainError for Infinity" do
-    -> {infinity_value.rationalize}.should raise_error(FloatDomainError)
+    -> {infinity_value.rationalize}.should.raise(FloatDomainError)
   end
 
   it "raises a FloatDomainError for NaN" do
-    -> { nan_value.rationalize }.should raise_error(FloatDomainError)
+    -> { nan_value.rationalize }.should.raise(FloatDomainError)
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    -> { 0.3.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    -> { 0.3.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { 0.3.rationalize(0.1, 0.1) }.should.raise(ArgumentError)
+    -> { 0.3.rationalize(0.1, 0.1, 2) }.should.raise(ArgumentError)
   end
 end

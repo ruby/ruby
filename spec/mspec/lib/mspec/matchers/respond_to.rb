@@ -19,6 +19,7 @@ end
 
 module MSpecMatchers
   private def respond_to(expected)
+    MSpec.deprecate __method__, '.should.respond_to?'
     RespondToMatcher.new(expected)
   end
 end

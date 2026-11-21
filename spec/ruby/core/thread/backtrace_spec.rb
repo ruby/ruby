@@ -12,7 +12,7 @@ describe "Thread#backtrace" do
     Thread.pass while t.status && t.status != 'sleep'
 
     backtrace = t.backtrace
-    backtrace.should be_kind_of(Array)
+    backtrace.should.is_a?(Array)
     backtrace.first.should =~ /[`'](?:Kernel#)?sleep'/
 
     t.raise 'finish the thread'
@@ -30,7 +30,7 @@ describe "Thread#backtrace" do
     backtrace = t.backtrace
     t.kill
     t.join
-    backtrace.should be_kind_of(Array)
+    backtrace.should.is_a?(Array)
   end
 
   it "can be called with a number of locations to omit" do
@@ -44,6 +44,19 @@ describe "Thread#backtrace" do
     locations1 = Thread.current.backtrace
     locations2 = Thread.current.backtrace(2, 3)
     locations1[2..4].map(&:to_s).should == locations2.map(&:to_s)
+  end
+
+  it "raises for negative start" do
+    -> { Thread.current.backtrace(-1) }.should.raise(ArgumentError, "negative level (-1)")
+  end
+
+  it "raises for negative length" do
+    -> { Thread.current.backtrace(0, -1) }.should.raise(ArgumentError, "negative size (-1)")
+  end
+
+
+  it "can be called with `nil` length" do
+    Thread.current.backtrace(0, nil).should == Thread.current.backtrace(0)
   end
 
   it "can be called with a range" do
@@ -65,5 +78,10 @@ describe "Thread#backtrace" do
   it "returns [] if omitting exactly the number of locations available" do
     omit = Thread.current.backtrace.length
     Thread.current.backtrace(omit).should == []
+  end
+
+  it "coerces the arguments to integers" do
+    Thread.current.backtrace(1.1, 1.1).should == Thread.current.backtrace(1, 1)
+    Thread.current.backtrace(1.1..1.1).should == Thread.current.backtrace(1..1)
   end
 end

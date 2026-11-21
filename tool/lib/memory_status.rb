@@ -146,7 +146,7 @@ if defined?(Memory::Status)
   # malloc library is needed to detect memory leaks.
   #
   case RUBY_PLATFORM
-  when /solaris2\.(?:9|[1-9][0-9])/i # Solaris 9, 10, 11,...
+  when /solaris/i
     bits = [nil].pack('p').size == 8 ? 64 : 32
     if ENV['LD_PRELOAD'].to_s.empty? &&
         ENV["LD_PRELOAD_#{bits}"].to_s.empty? &&

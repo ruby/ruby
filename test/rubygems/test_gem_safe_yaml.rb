@@ -5,6 +5,33 @@ require_relative "helper"
 Gem.load_yaml
 
 class TestGemSafeYAML < Gem::TestCase
+  unless method_defined?(:assert_linear_performance)
+    require "core_assertions"
+    include Test::Unit::CoreAssertions
+  end
+
+  def yaml_load(input, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES,
+    permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS,
+    aliases: true)
+    if Gem.use_psych?
+      Psych.safe_load(input, permitted_classes: permitted_classes,
+                             permitted_symbols: permitted_symbols,
+                             aliases: aliases)
+    else
+      Gem::YAMLSerializer.load(input, permitted_classes: permitted_classes,
+                                      permitted_symbols: permitted_symbols,
+                                      aliases: aliases)
+    end
+  end
+
+  def yaml_dump(obj)
+    if Gem.use_psych?
+      obj.to_yaml
+    else
+      Gem::YAMLSerializer.dump(obj)
+    end
+  end
+
   def test_aliases_enabled_by_default
     assert_predicate Gem::SafeYAML, :aliases_enabled?
     assert_equal({ "a" => "a", "b" => "a" }, Gem::SafeYAML.safe_load("a: &a a\nb: *a\n"))
@@ -20,5 +47,1907 @@ class TestGemSafeYAML < Gem::TestCase
     end
   ensure
     Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_specification_version_is_integer
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      specification_version: 4
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Integer, spec.specification_version
+    assert_equal 4, spec.specification_version
+  end
+
+  def test_disallowed_class_rejected
+    yaml = <<~YAML
+      --- !ruby/object:SomeDisallowedClass
+      foo: bar
+    YAML
+
+    exception = assert_raise(Psych::DisallowedClass) do
+      Gem::SafeYAML.safe_load(yaml)
+    end
+    assert_match(/unspecified class/, exception.message)
+  end
+
+  def test_plain_tag_key_does_not_construct_specification
+    yaml = <<~YAML
+      tag: "!ruby/object:Gem::Specification"
+      name: pwned
+      arbitrary_ivar: hello
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Hash, result
+    assert_equal "!ruby/object:Gem::Specification", result["tag"]
+    assert_equal "pwned", result["name"]
+  end
+
+  def test_disallowed_symbol_rejected
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Dependency
+      name: test
+      requirement: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 0
+      type: :invalid_type
+      prerelease: false
+      version_requirements: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 0
+    YAML
+
+    exception = assert_raise(Psych::DisallowedClass) do
+      Gem::SafeYAML.safe_load(yaml)
+    end
+    assert_match(/unspecified class/, exception.message)
+  end
+
+  def test_disallowed_symbol_not_interned
+    unique = "rejected_symbol_#{rand(1 << 30)}"
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Dependency
+      name: test
+      requirement: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 0
+      type: :#{unique}
+      prerelease: false
+      version_requirements: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 0
+    YAML
+
+    assert_raise(Psych::DisallowedClass) do
+      Gem::YAMLSerializer.load(yaml,
+                               permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES,
+                               permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS)
+    end
+    refute_includes Symbol.all_symbols.map(&:to_s), unique
+  end
+
+  def test_inline_array_nesting_capped
+    depth = Gem::YAMLSerializer::Parser::MAX_NESTING_DEPTH + 1
+    yaml = "x: " + ("[" * depth) + "a" + ("]" * depth) + "\n"
+
+    expected = [Psych::SyntaxError]
+    # JRuby's JVM stack overflows before the Ruby-level nesting cap fires.
+    expected << ::Java::JavaLang::StackOverflowError if RUBY_ENGINE == "jruby"
+
+    assert_raise(*expected) do
+      Gem::YAMLSerializer.load(yaml, permitted_classes: [])
+    end
+  end
+
+  def test_unknown_alias_raises
+    yaml = <<~YAML
+      foo: 1
+      bar: *missing
+    YAML
+
+    expected_error = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+    assert_raise(expected_error) { Gem::SafeYAML.safe_load(yaml) }
+  end
+
+  def test_unknown_alias_message
+    expected_error = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+    error = assert_raise(expected_error) do
+      Gem::YAMLSerializer.load("foo: 1\nbar: *missing\n")
+    end
+    assert_equal "An alias referenced an unknown anchor: missing", error.message
+  end
+
+  def test_alias_expansion_limit
+    # Each anchor aliases the previous one twice, doubling the expanded size.
+    yaml = +"seq:\n- &a0\n  - x\n  - y\n"
+    1.upto(20) {|i| yaml << "- &a#{i}\n  - *a#{i - 1}\n  - *a#{i - 1}\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
+  def test_alias_expansion_limit_with_mappings
+    yaml = +"seq:\n- &a0\n  k: x\n"
+    1.upto(20) {|i| yaml << "- &a#{i}\n  a: *a#{i - 1}\n  b: *a#{i - 1}\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
+  def test_alias_expansion_limit_with_long_scalar
+    yaml = +"s: &s #{"x" * 1_000}\nrefs:\n"
+    200.times { yaml << "- *s\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
+  def test_later_documents_are_ignored
+    assert_equal "a", Gem::SafeYAML.safe_load("--- a\n--- [unclosed\n")
+  end
+
+  def test_unused_anchor_with_aliases_disabled_is_allowed
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = false
+
+    result = Gem::SafeYAML.safe_load("foo: &unused 1\nbar: 2\n")
+    assert_equal({ "foo" => 1, "bar" => 2 }, result)
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_yaml_serializer_aliases_disabled
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = false
+    refute_predicate Gem::SafeYAML, :aliases_enabled?
+
+    yaml = "a: &anchor value\nb: *anchor\n"
+
+    assert_raise(Psych::AliasesNotEnabled) do
+      Gem::SafeYAML.safe_load(yaml)
+    end
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_real_gemspec_fileutils
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: fileutils
+      version: !ruby/object:Gem::Version
+        version: 1.8.0
+      platform: ruby
+      authors:
+      - Minero Aoki
+      bindir: bin
+      cert_chain: []
+      date: 1980-01-02 00:00:00.000000000 Z
+      dependencies: []
+      description: Several file utility methods for copying, moving, removing, etc.
+      email:
+      -
+      executables: []
+      extensions: []
+      extra_rdoc_files: []
+      files:
+      - BSDL
+      - COPYING
+      - README.md
+      - Rakefile
+      - fileutils.gemspec
+      - lib/fileutils.rb
+      homepage: https://github.com/ruby/fileutils
+      licenses:
+      - Ruby
+      - BSD-2-Clause
+      metadata:
+        source_code_uri: https://github.com/ruby/fileutils
+      rdoc_options: []
+      require_paths:
+      - lib
+      required_ruby_version: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 2.5.0
+      required_rubygems_version: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+      requirements: []
+      rubygems_version: 3.6.9
+      specification_version: 4
+      summary: Several file utility methods for copying, moving, removing, etc.
+      test_files: []
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "fileutils", spec.name
+    assert_equal Gem::Version.new("1.8.0"), spec.version
+    assert_kind_of Integer, spec.specification_version
+    assert_equal 4, spec.specification_version
+  end
+
+  def test_yaml_anchor_and_alias_enabled
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    yaml = <<~YAML
+      dependencies:
+      - &req !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+      - *req
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Hash, result
+    assert_kind_of Array, result["dependencies"]
+    assert_equal 2, result["dependencies"].size
+    assert_kind_of Gem::Requirement, result["dependencies"][0]
+    assert_kind_of Gem::Requirement, result["dependencies"][1]
+    assert_equal result["dependencies"][0].requirements, result["dependencies"][1].requirements
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_real_gemspec_rubygems_bundler
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: rubygems-bundler
+      version: !ruby/object:Gem::Version
+        version: 1.4.5
+      platform: ruby
+      authors:
+      - Josh Hull
+      - Michal Papis
+      autorequire:
+      bindir: bin
+      cert_chain: []
+      date: 2018-06-24 00:00:00.000000000 Z
+      dependencies:
+      - !ruby/object:Gem::Dependency
+        name: bundler-unload
+        requirement: !ruby/object:Gem::Requirement
+          requirements:
+          - - ">="
+            - !ruby/object:Gem::Version
+              version: 1.0.2
+        type: :runtime
+        prerelease: false
+        version_requirements: !ruby/object:Gem::Requirement
+          requirements:
+          - - ">="
+            - !ruby/object:Gem::Version
+              version: 1.0.2
+      description: Stop using bundle exec.
+      email:
+      - joshbuddy@gmail.com
+      - mpapis@gmail.com
+      executables: []
+      extensions: []
+      extra_rdoc_files: []
+      files:
+      - ".gem.config"
+      homepage: http://mpapis.github.com/rubygems-bundler
+      licenses:
+      - Apache-2.0
+      metadata: {}
+      post_install_message:
+      rdoc_options: []
+      require_paths:
+      - lib
+      required_ruby_version: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+      rubyforge_project:
+      rubygems_version: 2.7.6
+      signing_key:
+      specification_version: 4
+      summary: Stop using bundle exec
+      test_files: []
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "rubygems-bundler", spec.name
+    assert_equal Gem::Version.new("1.4.5"), spec.version
+    assert_equal 1, spec.dependencies.size
+
+    dep = spec.dependencies.first
+    assert_equal "bundler-unload", dep.name
+    assert_kind_of Gem::Requirement, dep.requirement
+    assert_kind_of Gem::Requirement, dep.instance_variable_get(:@version_requirements)
+    assert_equal dep.requirement.requirements, [[">=", Gem::Version.new("1.0.2")]]
+
+    # Empty fields should be nil
+    assert_nil spec.autorequire
+    assert_nil spec.post_install_message
+
+    # Metadata should be empty hash
+    assert_equal({}, spec.metadata)
+
+    # specification_version should be Integer
+    assert_kind_of Integer, spec.specification_version
+    assert_equal 4, spec.specification_version
+  end
+
+  def test_empty_requirements_array
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      dependencies:
+      - !ruby/object:Gem::Dependency
+        name: foo
+        requirement: !ruby/object:Gem::Requirement
+          requirements:
+        type: :runtime
+        version_requirements: !ruby/object:Gem::Requirement
+          requirements:
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "test", spec.name
+    assert_equal 1, spec.dependencies.size
+
+    dep = spec.dependencies.first
+    assert_equal "foo", dep.name
+    assert_kind_of Gem::Requirement, dep.requirement
+
+    reqs = dep.requirement.instance_variable_get(:@requirements)
+    assert_nil reqs
+  end
+
+  def test_requirements_hash_converted_to_array
+    # Malformed YAML where requirements is a Hash instead of Array
+    yaml = <<~YAML
+      !ruby/object:Gem::Requirement
+      requirements:
+        foo: bar
+    YAML
+
+    req = yaml_load(yaml, permitted_classes: ["Gem::Requirement"])
+    assert_kind_of Gem::Requirement, req
+
+    reqs = req.instance_variable_get(:@requirements)
+    assert_kind_of Hash, reqs
+  end
+
+  def test_requirement_quote
+    yaml = <<~YAML
+      requirements:
+        - "system: arrow-glib>=25.0.0: amazon_linux: arrow-glib-devel"
+        - 'system: arrow-glib>=25.0.0: fedora: libarrow-glib-devel'
+    YAML
+
+    expected = [
+      "system: arrow-glib>=25.0.0: amazon_linux: arrow-glib-devel",
+      "system: arrow-glib>=25.0.0: fedora: libarrow-glib-devel",
+    ]
+    assert_equal expected, yaml_load(yaml)["requirements"]
+  end
+
+  def test_rdoc_options_hash_converted_to_array
+    # Some gemspecs incorrectly have rdoc_options: {} instead of rdoc_options: []
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test-gem
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      rdoc_options: {}
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "test-gem", spec.name
+
+    assert_equal [], spec.rdoc_options
+  end
+
+  def test_yaml_serializer_load_returns_empty_hash_for_empty_document
+    assert_equal({}, Gem::YAMLSerializer.load(""))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n# BUNDLE_FOO: \"bar\"\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("---\n...\n"))
+    assert_equal({}, Gem::YAMLSerializer.load("--- ~\n"))
+    assert_raise(TypeError) { Gem::YAMLSerializer.load(nil) }
+  end
+
+  def test_safe_load_returns_nil_for_empty_document
+    assert_nil Gem::SafeYAML.safe_load("")
+    assert_nil Gem::SafeYAML.safe_load("---\n")
+    assert_nil Gem::SafeYAML.safe_load("---\n# BUNDLE_FOO: \"bar\"\n")
+    assert_nil Gem::SafeYAML.safe_load("---\n...\n")
+    assert_nil Gem::SafeYAML.safe_load("--- ~\n")
+    assert_raise(TypeError) { Gem::SafeYAML.safe_load(nil) }
+  end
+
+  def test_load_stops_at_document_end_marker
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n...\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n... # end\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\n...\t\nb: 2\n"))
+    assert_equal({ "a" => 1 }, yaml_load("a: 1\r\n...\r\nb: 2\r\n"))
+    assert_equal({ "a" => 1 }, Gem::SafeYAML.safe_load("a: 1\n...\nb: 2\n"))
+    assert_equal({ "a" => "..." }, yaml_load("a: ...\n"))
+  end
+
+  def test_load_ignores_leading_utf8_bom
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("\uFEFFBUNDLE_PATH: vendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, Gem::YAMLSerializer.load("\uFEFF---\nBUNDLE_PATH: vendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, Gem::YAMLSerializer.load("\uFEFFBUNDLE_PATH: vendor\n".b))
+    assert_equal({}, Gem::YAMLSerializer.load("\uFEFF"))
+  end
+
+  def test_load_returns_hash_for_flow_empty_hash
+    # yaml_dump({}) produces "--- {}\n"
+    result = yaml_load("--- {}\n")
+    assert_kind_of Hash, result
+    assert_empty result
+  end
+
+  def test_load_parses_flow_empty_hash_as_value
+    result = yaml_load("metadata: {}\n")
+    assert_kind_of Hash, result
+    assert_kind_of Hash, result["metadata"]
+    assert_empty result["metadata"]
+  end
+
+  def test_yaml_non_specific_tag_stripped
+    # Legacy RubyGems (1.x) generated YAML with ! non-specific tags like:
+    #   - ! '>='
+    # The ! prefix should be ignored.
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: legacy-gem
+      version: !ruby/object:Gem::Version
+        version: 0.1.0
+      required_ruby_version: !ruby/object:Gem::Requirement
+        none: false
+        requirements:
+        - - ! '>='
+          - !ruby/object:Gem::Version
+            version: '0'
+      required_rubygems_version: !ruby/object:Gem::Requirement
+        none: false
+        requirements:
+        - - ! '>='
+          - !ruby/object:Gem::Version
+            version: 1.3.5
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "legacy-gem", spec.name
+    assert_equal Gem::Requirement.new(">= 0"), spec.required_ruby_version
+    assert_equal Gem::Requirement.new(">= 1.3.5"), spec.required_rubygems_version
+  end
+
+  def test_legacy_gemspec_with_anchors_and_non_specific_tags
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    # Real-world pattern from gems like vegas-0.1.11 that combine
+    # YAML anchors/aliases with ! non-specific tags
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: legacy-gem
+      version: !ruby/object:Gem::Version
+        version: 0.1.11
+      dependencies:
+      - !ruby/object:Gem::Dependency
+        name: rack
+        requirement: &id001 !ruby/object:Gem::Requirement
+          none: false
+          requirements:
+          - - ! '>='
+            - !ruby/object:Gem::Version
+              version: 1.0.0
+        type: :runtime
+        prerelease: false
+        version_requirements: *id001
+      - !ruby/object:Gem::Dependency
+        name: mocha
+        requirement: &id002 !ruby/object:Gem::Requirement
+          none: false
+          requirements:
+          - - ~>
+            - !ruby/object:Gem::Version
+              version: 0.9.8
+        type: :development
+        prerelease: false
+        version_requirements: *id002
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "legacy-gem", spec.name
+
+    assert_equal 2, spec.dependencies.size
+
+    rack_dep = spec.dependencies.find {|d| d.name == "rack" }
+    assert_kind_of Gem::Dependency, rack_dep
+    assert_equal :runtime, rack_dep.type
+    assert_equal Gem::Requirement.new(">= 1.0.0"), rack_dep.requirement
+
+    mocha_dep = spec.dependencies.find {|d| d.name == "mocha" }
+    assert_kind_of Gem::Dependency, mocha_dep
+    assert_equal :development, mocha_dep.type
+    assert_equal Gem::Requirement.new("~> 0.9.8"), mocha_dep.requirement
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_non_specific_tag_on_plain_value
+    # ! tag on a bracketed value like rubyforge_project: ! '[none]'
+    result = yaml_load("key: ! '[none]'\n")
+    assert_equal({ "key" => "[none]" }, result)
+  end
+
+  def test_dump_quotes_dollar_sign_values
+    # Values starting with $ should be quoted to preserve them as strings
+    yaml = yaml_dump({ "BUNDLE_FOO" => "$BUILD_DIR", "BUNDLE_BAR" => "baz" })
+    assert_include yaml, 'BUNDLE_FOO: "$BUILD_DIR"'
+    assert_include yaml, "BUNDLE_BAR: baz"
+
+    # Round-trip: ensure the quoted value is parsed back correctly
+    result = yaml_load(yaml)
+    assert_equal "$BUILD_DIR", result["BUNDLE_FOO"]
+    assert_equal "baz", result["BUNDLE_BAR"]
+  end
+
+  def test_dump_quotes_special_characters
+    # Various special characters that should trigger quoting
+    special_values = {
+      "dollar" => "$HOME",
+      "exclamation" => "!important",
+      "ampersand" => "&anchor",
+      "asterisk" => "*ref",
+      "colon_prefix" => ":symbol",
+      "at_sign" => "@mention",
+      "percent" => "%encoded",
+    }
+
+    yaml = yaml_dump(special_values)
+    special_values.each do |key, value|
+      assert_include yaml, "#{key}: #{value.inspect}", "Value #{value.inspect} for key #{key} should be quoted"
+    end
+
+    # Round-trip
+    result = yaml_load(yaml)
+    special_values.each do |key, value|
+      assert_equal value, result[key], "Round-trip failed for key #{key}"
+    end
+  end
+
+  def test_load_ambiguous_value_with_colon
+    # "invalid: yaml: hah" is ambiguous YAML - our parser treats it as
+    # {"invalid" => "yaml: hah"}, but the value looks like a nested mapping.
+    # config_file.rb's load_file should detect this and reject it.
+    if Gem.use_psych?
+      # Psych raises a syntax error for this ambiguous YAML
+      assert_raise(Psych::SyntaxError) do
+        yaml_load("invalid: yaml: hah")
+      end
+    else
+      result = yaml_load("invalid: yaml: hah")
+      assert_kind_of Hash, result
+      assert_equal "yaml: hah", result["invalid"]
+    end
+  end
+
+  def test_nested_anchor_in_array_item
+    # Ensure aliases are enabled for this test
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test-gem
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      dependencies:
+      - !ruby/object:Gem::Dependency
+        name: foo
+        requirement: !ruby/object:Gem::Requirement
+          requirements:
+          - &id002
+            - ">="
+            - !ruby/object:Gem::Version
+              version: "0"
+        type: :runtime
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    assert_equal "test-gem", spec.name
+
+    dep = spec.dependencies.first
+    assert_kind_of Gem::Dependency, dep
+
+    # Requirements should be parsed as nested arrays, not strings
+    assert_kind_of Array, dep.requirement.requirements
+    assert_equal 1, dep.requirement.requirements.size
+
+    req_item = dep.requirement.requirements.first
+    assert_kind_of Array, req_item
+    assert_equal ">=", req_item[0]
+    assert_kind_of Gem::Version, req_item[1]
+    assert_equal "0", req_item[1].version
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_roundtrip_specification
+    spec = Gem::Specification.new do |s|
+      s.name = "round-trip-test"
+      s.version = "2.3.4"
+      s.platform = "ruby"
+      s.authors = ["Test Author"]
+      s.summary = "A test gem for round-trip"
+      s.description = "Longer description of the test gem"
+      s.files = ["lib/foo.rb", "README.md"]
+      s.require_paths = ["lib"]
+      s.homepage = "https://example.com"
+      s.licenses = ["MIT"]
+      s.metadata = { "source_code_uri" => "https://example.com/src" }
+      s.add_dependency "rake", ">= 1.0"
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal "round-trip-test", loaded.name
+    assert_equal Gem::Version.new("2.3.4"), loaded.version
+    assert_equal ["Test Author"], loaded.authors
+    assert_equal "A test gem for round-trip", loaded.summary
+    assert_equal ["README.md", "lib/foo.rb"], loaded.files
+    assert_equal ["lib"], loaded.require_paths
+    assert_equal "https://example.com", loaded.homepage
+    assert_equal ["MIT"], loaded.licenses
+    assert_equal({ "source_code_uri" => "https://example.com/src" }, loaded.metadata)
+    assert_equal 1, loaded.dependencies.size
+
+    dep = loaded.dependencies.first
+    assert_equal "rake", dep.name
+    assert_equal :runtime, dep.type
+  end
+
+  def test_roundtrip_specification_with_extensions
+    spec = Gem::Specification.new do |s|
+      s.name = "native-ext-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with native extensions"
+      s.files = ["lib/native.rb", "ext/native/extconf.rb", "ext/native/native.c"]
+      s.extensions = ["ext/native/extconf.rb"]
+      s.require_paths = ["lib"]
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal ["ext/native/extconf.rb"], loaded.extensions
+    assert_equal ["ext/native/extconf.rb", "ext/native/native.c", "lib/native.rb"], loaded.files
+  end
+
+  def test_roundtrip_specification_with_windows_paths
+    spec = Gem::Specification.new do |s|
+      s.name = "win-path-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with Windows-style paths"
+      s.files = ["lib/foo.rb", "lib/foo/bar.rb"]
+      s.require_paths = ["lib"]
+      s.description = 'Installed in D:\ruby\lib\ruby\gems'
+      s.post_install_message = "Installed to C:\\Program Files\\Ruby\\lib\\rdoc"
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal 'Installed in D:\ruby\lib\ruby\gems', loaded.description
+    assert_equal "Installed to C:\\Program Files\\Ruby\\lib\\rdoc", loaded.post_install_message
+  end
+
+  def test_roundtrip_specification_with_metadata
+    metadata = {
+      "changelog_uri" => "https://example.com/CHANGELOG.md",
+      "source_code_uri" => "https://github.com/example/metadata-test",
+      "bug_tracker_uri" => "https://github.com/example/metadata-test/issues",
+      "allowed_push_host" => "https://rubygems.org",
+      "\"double_quoted\"" => "\"quoted_value\"",
+      "'single_quoted'" => "'quoted_value'",
+      "have:colon" => "value:colon",
+      "have space" => "value space",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.files = ["lib/foo.rb"]
+      s.require_paths = ["lib"]
+      s.metadata = metadata
+    end
+
+    yaml = yaml_dump(spec)
+    loaded = Gem::SafeYAML.safe_load(yaml)
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_roundtrip_specification_with_quoted_first_metadata_key
+    metadata = {
+      "\"double_quoted\"" => "\"quoted_value\"",
+      "'single_quoted'" => "'quoted_value'",
+      "have:colon" => "value:colon",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.metadata = metadata
+    end
+
+    loaded = Gem::SafeYAML.safe_load(yaml_dump(spec))
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal "metadata-test", loaded.name
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_roundtrip_specification_with_special_metadata_keys
+    metadata = {
+      "have: colon-space" => "value: colon-space",
+      "have#hash" => "value#hash",
+      "padded" => " padded value ",
+      "looks_null" => "null",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.metadata = metadata
+    end
+
+    loaded = Gem::SafeYAML.safe_load(yaml_dump(spec))
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_roundtrip_specification_with_control_character_metadata
+    metadata = {
+      "bell" => "bell\a",
+      "escape" => "esc\e[0m",
+      "control" => "soh\x01del\x7F",
+      "tab" => "tab\tinside",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.metadata = metadata
+    end
+
+    loaded = Gem::SafeYAML.safe_load(yaml_dump(spec))
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_load_escaped_control_characters
+    yaml = <<~YAML
+      ---
+      key: "bell\\aesc\\enull\\0soh\\x01del\\x7F"
+    YAML
+
+    assert_equal({ "key" => "bell\aesc\enull\0soh\x01del\x7F" }, yaml_load(yaml))
+  end
+
+  def test_load_comment_only_mapping_value
+    yaml = <<~YAML
+      ---
+      commented: # comment
+      plain: value # trailing comment
+      quoted: "kept # inside quotes"
+    YAML
+
+    expected = {
+      "commented" => nil,
+      "plain" => "value",
+      "quoted" => "kept # inside quotes",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_psych_style_quoted_mapping_keys
+    yaml = <<~YAML
+      ---
+      '"double_quoted"': '"quoted_value"'
+      "'single_quoted'": "'quoted_value'"
+      'have: colon-space': v
+      key#hash: value#hash
+    YAML
+
+    expected = {
+      "\"double_quoted\"" => "\"quoted_value\"",
+      "'single_quoted'" => "'quoted_value'",
+      "have: colon-space" => "v",
+      "key#hash" => "value#hash",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_roundtrip_version
+    ver = Gem::Version.new("1.2.3")
+    yaml = yaml_dump(ver)
+    loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Version, loaded
+    assert_equal ver, loaded
+  end
+
+  def test_roundtrip_platform
+    plat = Gem::Platform.new("x86_64-linux")
+    yaml = yaml_dump(plat)
+    loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Platform, loaded
+    assert_equal plat.cpu, loaded.cpu
+    assert_equal plat.os, loaded.os
+    assert_equal plat.version, loaded.version
+  end
+
+  def test_roundtrip_requirement
+    req = Gem::Requirement.new(">= 1.0", "< 2.0")
+    yaml = yaml_dump(req)
+    loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Requirement, loaded
+    assert_equal req.requirements.sort_by(&:to_s), loaded.requirements.sort_by(&:to_s)
+  end
+
+  def test_roundtrip_dependency
+    dep = Gem::Dependency.new("foo", ">= 1.0", :development)
+    yaml = yaml_dump(dep)
+    loaded = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+
+    assert_kind_of Gem::Dependency, loaded
+    assert_equal "foo", loaded.name
+    assert_equal :development, loaded.type
+    assert_equal dep.requirement.requirements, loaded.requirement.requirements
+  end
+
+  def test_roundtrip_nested_hash
+    obj = { "a" => { "b" => "c", "d" => [1, 2, 3] } }
+    yaml = yaml_dump(obj)
+    loaded = yaml_load(yaml)
+
+    assert_equal obj, loaded
+  end
+
+  def test_roundtrip_block_scalar
+    obj = { "text" => "line1\nline2\n" }
+    yaml = yaml_dump(obj)
+    loaded = yaml_load(yaml)
+
+    assert_equal "line1\nline2\n", loaded["text"]
+  end
+
+  def test_roundtrip_block_scalar_indicators
+    require "yaml"
+    strings = [
+      "  starts with spaces\nsecond line\n",
+      "\n  first line empty, second indented\n",
+      "line1\nline2\n\n",
+      "  starts with spaces\nends with three newlines\n\n\n",
+    ]
+
+    strings.each do |str|
+      [{ "text" => str }, [str], { "list" => [str] }].each do |obj|
+        yaml = Gem::YAMLSerializer.dump(obj)
+        assert_equal obj, Gem::YAMLSerializer.load(yaml), yaml
+        assert_equal obj, Psych.unsafe_load(yaml), yaml
+      end
+    end
+  end
+
+  def test_roundtrip_special_characters
+    obj = {
+      "dollar" => "$HOME",
+      "exclamation" => "!important",
+      "ampersand" => "&anchor",
+      "asterisk" => "*ref",
+      "colon_prefix" => ":symbol",
+      "hash_char" => "value#comment",
+      "brackets" => "[item]",
+      "braces" => "{key}",
+      "comma" => "a,b,c",
+    }
+    yaml = yaml_dump(obj)
+    loaded = yaml_load(yaml)
+
+    obj.each do |key, value|
+      assert_equal value, loaded[key], "Round-trip failed for key #{key}"
+    end
+  end
+
+  def test_roundtrip_boolean_nil_integer
+    obj = { "flag" => true, "count" => 42, "empty" => nil, "off" => false }
+    yaml = yaml_dump(obj)
+    loaded = yaml_load(yaml)
+
+    assert_equal true, loaded["flag"]
+    assert_equal 42, loaded["count"]
+    assert_nil loaded["empty"]
+    assert_equal false, loaded["off"]
+  end
+
+  def test_roundtrip_time
+    time = Time.utc(2024, 6, 15, 12, 30, 45)
+    obj = { "created" => time }
+    yaml = yaml_dump(obj)
+    loaded = yaml_load(yaml)
+
+    assert_kind_of Time, loaded["created"]
+    assert_equal time.year, loaded["created"].year
+    assert_equal time.month, loaded["created"].month
+    assert_equal time.day, loaded["created"].day
+  end
+
+  def test_roundtrip_empty_collections
+    obj = { "arr" => [], "hash" => {} }
+    yaml = yaml_dump(obj)
+    loaded = yaml_load(yaml)
+
+    assert_equal [], loaded["arr"]
+    assert_equal({}, loaded["hash"])
+  end
+
+  def test_load_url_key_and_value
+    # Bundler mirror settings use URLs both as mapping key and value
+    yaml = "BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: http://example-mirror.rubygems.org\n"
+
+    expected = { "BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org" }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_psych_interop_roundtrip
+    require "yaml"
+
+    hash = {
+      "a_joke" => {
+        "my-stand" => "I can totally keep secrets",
+        "but" => "The people I tell them to can't :P",
+        "wouldn't it be funny if this string were empty?" => "",
+      },
+      "more" => {
+        "first" => [
+          "Can a kangaroo jump higher than a house?",
+          "Of course, a house doesn't jump at all.",
+        ],
+        "second" => [
+          "What did the sea say to the sand?",
+          "Nothing, it simply waved.",
+        ],
+        "array with empty string" => [""],
+      },
+      "sales" => {
+        "item" => "A Parachute",
+        "description" => "Only used once, never opened.",
+      },
+      "one-more" => "I'd tell you a chemistry joke but I know I wouldn't get a reaction.",
+    }
+
+    assert_equal hash, Gem::YAMLSerializer.load(Psych.dump(hash))
+    assert_equal hash, Psych.load(Gem::YAMLSerializer.dump(hash))
+  end
+
+  def test_load_double_quoted_escape_sequences
+    result = yaml_load("newline: \"hello\\nworld\"")
+    assert_equal "hello\nworld", result["newline"]
+
+    result = yaml_load("tab: \"col1\\tcol2\"")
+    assert_equal "col1\tcol2", result["tab"]
+
+    result = yaml_load("cr: \"line\\rend\"")
+    assert_equal "line\rend", result["cr"]
+
+    result = yaml_load("quote: \"say\\\"hi\\\"\"")
+    assert_equal "say\"hi\"", result["quote"]
+  end
+
+  def test_load_double_quoted_backslash_before_escape_chars
+    # \\r in YAML should become literal backslash + r, not carriage return
+    result = yaml_load('path: "D:\\\\ruby-mswin\\\\lib"')
+    assert_equal "D:\\ruby-mswin\\lib", result["path"]
+
+    # \\n should become literal backslash + n, not newline
+    result = yaml_load('path: "C:\\\\new_folder"')
+    assert_equal "C:\\new_folder", result["path"]
+
+    # \\t should become literal backslash + t, not tab
+    result = yaml_load('path: "C:\\\\tmp\\\\test"')
+    assert_equal "C:\\tmp\\test", result["path"]
+
+    # \\\\ should become two literal backslashes
+    result = yaml_load('val: "a\\\\\\\\b"')
+    assert_equal "a\\\\b", result["val"]
+  end
+
+  def test_load_double_quoted_unicode_escapes
+    yaml = <<~'YAML'
+      ---
+      nel: "x\Ny"
+      nbsp: "x\_y"
+      line_separator: "x\Ly"
+      paragraph_separator: "x\Py"
+      bom: "\uFEFFx"
+      astral: "x\U0001F600y"
+    YAML
+
+    expected = {
+      "nel" => "x\u0085y",
+      "nbsp" => "x\u00A0y",
+      "line_separator" => "x\u2028y",
+      "paragraph_separator" => "x\u2029y",
+      "bom" => "\uFEFFx",
+      "astral" => "x\u{1F600}y",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_double_quoted_unicode_escape_in_binary_metadata
+    yaml = "description: \"\xE3\x81\x82\\N\"\n".b
+
+    assert_equal({ "description" => "\xE3\x81\x82\xC2\x85".b }, Gem::YAMLSerializer.load(yaml))
+  end
+
+  def test_load_double_quoted_invalid_code_point_escape_kept
+    assert_equal({ "a" => "x\\uD800y" }, Gem::YAMLSerializer.load(%(a: "x\\uD800y")))
+  end
+
+  def test_load_single_quoted_escape
+    result = yaml_load("key: 'it''s'")
+    assert_equal "it's", result["key"]
+
+    result = yaml_load("key: 'no escape \\n here'")
+    assert_equal "no escape \\n here", result["key"]
+  end
+
+  def test_load_multiline_single_quoted_scalar
+    yaml = <<~YAML
+      ---
+      summary: 'A short summary.
+
+        '
+      description: 'It''s wrapped: onto
+        the next line
+
+        and keeps # as is'
+      legacy: ! '
+
+        Written by old RubyGems'
+      other: 1
+    YAML
+
+    expected = {
+      "summary" => "A short summary.\n",
+      "description" => "It's wrapped: onto the next line\nand keeps # as is",
+      "legacy" => "\nWritten by old RubyGems",
+      "other" => 1,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_double_quoted_scalar
+    yaml = <<~'YAML'
+      ---
+      description: "Ends with \"quoted\"
+        and wraps\n
+        \ indented\
+
+        joined"
+      other: 1
+    YAML
+
+    expected = {
+      "description" => "Ends with \"quoted\" and wraps\n  indented\njoined",
+      "other" => 1,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_quoted_scalar_in_sequence
+    yaml = <<~'YAML'
+      ---
+      requirements:
+      - 'libfoo: version 1.0
+        or later'
+      - "second item\
+        \ joined"
+      - ! 'legacy: tag
+        continued'
+      - plain
+    YAML
+
+    expected = {
+      "requirements" => ["libfoo: version 1.0 or later", "second item joined", "legacy: tag continued", "plain"],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_multiline_quoted_scalar_in_linear_time
+    pre = ->(n) { "description: '#{"word\n  " * n}end'\n" }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
+      Gem::YAMLSerializer.load(yaml)
+    end
+  end
+
+  def test_load_quoted_numeric_stays_string
+    result = yaml_load("key: \"42\"")
+    assert_equal "42", result["key"]
+    assert_kind_of String, result["key"]
+
+    result = yaml_load("key: '99'")
+    assert_equal "99", result["key"]
+    assert_kind_of String, result["key"]
+  end
+
+  def test_load_empty_string_value
+    result = yaml_load("key: \"\"")
+    assert_equal "", result["key"]
+  end
+
+  def test_load_unquoted_integer
+    result = yaml_load("key: 42")
+    assert_equal 42, result["key"]
+    assert_kind_of Integer, result["key"]
+
+    result = yaml_load("key: -7")
+    assert_equal(-7, result["key"])
+  end
+
+  def test_load_boolean_values
+    result = yaml_load("a: true\nb: false")
+    assert_equal true, result["a"]
+    assert_equal false, result["b"]
+  end
+
+  def test_load_nil_value
+    # YAML 1.2: "nil" is not a null value, only ~ and null are
+    result = yaml_load("key: nil")
+    assert_equal "nil", result["key"]
+
+    result = yaml_load("key: ~")
+    assert_nil result["key"]
+
+    result = yaml_load("key: null")
+    assert_nil result["key"]
+  end
+
+  def test_load_time_value
+    result = yaml_load("date: 2024-06-15 12:30:45.000000000 Z")
+    assert_kind_of Time, result["date"]
+    assert_equal 2024, result["date"].year
+    assert_equal 6, result["date"].month
+    assert_equal 15, result["date"].day
+  end
+
+  def test_load_block_scalar_keep_trailing_newline
+    yaml = "text: |\n  line1\n  line2\n"
+    result = yaml_load(yaml)
+    assert_equal "line1\nline2\n", result["text"]
+  end
+
+  def test_load_block_scalar_strip_trailing_newline
+    yaml = "text: |-\n  no trailing newline\n"
+    result = yaml_load(yaml)
+    assert_equal "no trailing newline", result["text"]
+    refute result["text"].end_with?("\n")
+  end
+
+  def test_load_block_scalar_keeps_spaces_beyond_indentation_on_blank_lines
+    yaml = "text: |\n  x\n     \n  \n  y\n"
+    assert_equal({ "text" => "x\n   \n\ny\n" }, yaml_load(yaml))
+  end
+
+  def test_roundtrip_block_scalar_with_whitespace_only_lines
+    obj = { "inner" => "x\n   \ny\n", "last" => "x\n  " }
+    assert_equal obj, yaml_load(yaml_dump(obj))
+  end
+
+  def test_load_block_scalar_strip_indicator_removes_every_trailing_newline
+    yaml = <<~YAML
+      ---
+      message: |2-
+
+        Thanks!
+      reversed: |-2
+          indented
+      trailing: |-
+        text
+
+
+      other: value
+    YAML
+
+    expected = {
+      "message" => "\nThanks!",
+      "reversed" => "  indented",
+      "trailing" => "text",
+      "other" => "value",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_block_scalar_strip_indicator_in_linear_time
+    pre = ->(n) { "text: |-\n  a\n#{"\n" * n}  b\n" }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |yaml|
+      Gem::YAMLSerializer.load(yaml)
+    end
+  end
+
+  def test_load_block_scalar_indentation_indicator
+    yaml = <<~YAML
+      ---
+      description: |2
+          Indented first line
+        second line
+      list:
+      - |2
+          indented item
+        next line
+    YAML
+
+    expected = {
+      "description" => "  Indented first line\nsecond line\n",
+      "list" => ["  indented item\nnext line\n"],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_block_scalar_keep_indicator
+    yaml = <<~YAML
+      ---
+      message: |+
+        Thanks!
+
+
+      indented: |2+
+          indented
+
+
+      reversed: |+2
+          indented
+
+      last: |+
+        at the end
+
+
+    YAML
+
+    expected = {
+      "message" => "Thanks!\n\n\n",
+      "indented" => "  indented\n\n\n",
+      "reversed" => "  indented\n\n",
+      "last" => "at the end\n\n\n",
+    }
+    assert_equal expected, yaml_load(yaml)
+    assert_equal expected, yaml_load(yaml + "...\n")
+  end
+
+  def test_load_block_scalar_clip_drops_trailing_empty_lines
+    yaml = "text: |\n  line\n\n\nempty: |\n\n\nother: value\n"
+    assert_equal({ "text" => "line\n", "empty" => "", "other" => "value" }, yaml_load(yaml))
+  end
+
+  def test_load_flow_array
+    result = yaml_load("items: [a, b, c]")
+    assert_equal ["a", "b", "c"], result["items"]
+  end
+
+  def test_load_flow_array_with_quoted_commas
+    result = yaml_load(%(items: ["x, y", 'a, b', z]))
+    assert_equal ["x, y", "a, b", "z"], result["items"]
+  end
+
+  def test_load_flow_empty_array
+    result = yaml_load("items: []")
+    assert_equal [], result["items"]
+  end
+
+  def test_load_mapping_key_with_no_value
+    result = yaml_load("key:")
+    assert_kind_of Hash, result
+    assert_nil result["key"]
+  end
+
+  def test_load_tab_after_mapping_colon
+    # Psych treats tabs after the ":" as separation whitespace, like spaces.
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH:\tvendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH: \tvendor\n"))
+    assert_equal({ "BUNDLE_PATH" => "vendor" }, yaml_load("BUNDLE_PATH:\t\tvendor\n"))
+    assert_equal({ "key" => "quoted" }, yaml_load("key:\t\"quoted\"\n"))
+    assert_equal({ "key" => "a\tb" }, yaml_load("key:\ta\tb\n"))
+    assert_equal({ "key" => { "nested" => 1 } }, yaml_load("key:\t\n  nested: 1\n"))
+    assert_equal([{ "key" => "v" }], yaml_load("- key:\tv\n"))
+    assert_equal({ "q" => "v" }, yaml_load("\"q\":\tv\n"))
+  end
+
+  def test_load_sequence_item_as_mapping
+    yaml = "items:\n- name: foo\n  ver: 1\n- name: bar\n  ver: 2"
+    result = yaml_load(yaml)
+    assert_equal [{ "name" => "foo", "ver" => 1 }, { "name" => "bar", "ver" => 2 }], result["items"]
+  end
+
+  def test_load_nested_sequence
+    yaml = "matrix:\n- - a\n  - b\n- - c\n  - d"
+    result = yaml_load(yaml)
+    assert_equal [["a", "b"], ["c", "d"]], result["matrix"]
+  end
+
+  def test_load_comment_stripped_from_value
+    result = yaml_load("key: value # this is a comment")
+    assert_equal "value", result["key"]
+  end
+
+  def test_load_comment_in_quoted_string_preserved
+    result = yaml_load("key: \"value # not a comment\"")
+    assert_equal "value # not a comment", result["key"]
+
+    result = yaml_load("key: 'value # not a comment'")
+    assert_equal "value # not a comment", result["key"]
+  end
+
+  def test_load_indented_comment_line_after_plain_scalar
+    yaml = <<~YAML
+      ---
+      ssl_ca_cert: /etc/ssl/ca.pem
+        # the corporate bundle
+      plain:
+        value
+          # trailing note
+      folded: first
+        second
+        # trailing note
+    YAML
+
+    expected = {
+      "ssl_ca_cert" => "/etc/ssl/ca.pem",
+      "plain" => "value",
+      "folded" => "first second",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_open_quoted_scalar_keeps_continuation_line_starting_with_hash
+    yaml = <<~YAML
+      ---
+      summary: 'first part of a summary Psych folded
+        #tag and the rest'
+      other: 1
+    YAML
+
+    expected = { "summary" => "first part of a summary Psych folded #tag and the rest", "other" => 1 }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_skipping_blank_and_comment_lines_does_not_allocate
+    omit "GC.stat(:total_allocated_objects) is CRuby only" unless RUBY_ENGINE == "ruby"
+
+    parser = Gem::YAMLSerializer::Parser.new("- item\n")
+    parser.send(:skip_blank_and_comments)
+    calls = 100
+    before = GC.stat(:total_allocated_objects)
+    calls.times { parser.send(:skip_blank_and_comments) }
+    allocated = GC.stat(:total_allocated_objects) - before
+
+    assert_operator allocated, :<, calls
+  end
+
+  def test_folding_a_single_line_scalar_does_not_allocate
+    omit "GC.stat(:total_allocated_objects) is CRuby only" unless RUBY_ENGINE == "ruby"
+
+    parser = Gem::YAMLSerializer::Parser.new("")
+    value = +"lib/file.rb"
+    parser.send(:fold_continuation_lines, value, value, 0)
+    calls = 100
+    before = GC.stat(:total_allocated_objects)
+    calls.times { parser.send(:fold_continuation_lines, value, value, 0) }
+    allocated = GC.stat(:total_allocated_objects) - before
+
+    assert_operator allocated, :<, calls
+  end
+
+  def test_load_comment_and_blank_lines_inside_nested_collections
+    yaml = <<~YAML
+      ---
+      sources:
+      - https://rubygems.org/
+      # - https://old.example/
+
+      - https://gems.example.com/
+      nested:
+        a: 1
+        # note
+
+        b: 2
+      backtrace: true
+    YAML
+
+    expected = {
+      "sources" => ["https://rubygems.org/", "https://gems.example.com/"],
+      "nested" => { "a" => 1, "b" => 2 },
+      "backtrace" => true,
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_comment_before_first_entry_of_nested_collection
+    yaml = <<~YAML
+      ---
+      sources:
+      # first
+      - https://rubygems.org/
+      items:
+      -
+      # note
+        name: foo
+    YAML
+
+    expected = {
+      "sources" => ["https://rubygems.org/"],
+      "items" => [{ "name" => "foo" }],
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_load_crlf_line_endings
+    result = yaml_load("key: value\r\nother: data\r\n")
+    assert_equal "value", result["key"]
+    assert_equal "data", result["other"]
+  end
+
+  def test_dump_crlf_string_roundtrip
+    obj = { "pem" => "line one\r\nline two\r\n" }
+    assert_equal obj, yaml_load(yaml_dump(obj))
+  end
+
+  def test_load_crlf_with_sequence
+    yaml = <<~YAML.gsub("\n", "\r\n")
+      ---
+      nested_hash:
+        contains_array:
+        - "quoted item"
+        - plain item
+    YAML
+
+    assert_equal({ "nested_hash" => { "contains_array" => ["quoted item", "plain item"] } }, yaml_load(yaml))
+  end
+
+  def test_load_version_requirement_old_tag
+    yaml = <<~YAML
+      !ruby/object:Gem::Version::Requirement
+      requirements:
+      - - ">="
+        - !ruby/object:Gem::Version
+          version: "1.0"
+    YAML
+
+    req = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Requirement, req
+    assert_equal [[">=", Gem::Version.new("1.0")]], req.requirements
+  end
+
+  def test_load_dependency_version_version_requirement_old_tag
+    yaml = <<~YAML
+      - !ruby/object:Gem::Dependency
+        name: test-unit
+        type: :development
+        version_requirement:
+        version_requirements: !ruby/object:Gem::Requirement
+          requirements:
+          - - ">="
+            - !ruby/object:Gem::Version
+              version: 2.0.2
+          version:
+    YAML
+
+    deps = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_not_nil(deps.first)
+
+    assert_equal [[">=", Gem::Version.new("2.0.2")]], deps.first.requirement.requirements
+  end
+
+  def test_load_platform_from_value_field
+    yaml = "!ruby/object:Gem::Platform\nvalue: x86-linux\n"
+    plat = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Platform, plat
+    assert_nil plat.cpu
+  end
+
+  def test_load_platform_from_cpu_os_version_fields
+    yaml = "!ruby/object:Gem::Platform\ncpu: x86_64\nos: darwin\nversion: nil\n"
+    plat = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Platform, plat
+    assert_equal "x86_64", plat.cpu
+    assert_equal "darwin", plat.os
+  end
+
+  def test_load_platform_malicious_sequence
+    yaml = "!ruby/object:Gem::Platform\n- \"x86-mswin32\\n system('id')#\"\n"
+    result = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    refute_kind_of Gem::Platform, result
+    assert_kind_of Array, result
+  end
+
+  def test_load_dependency_missing_requirement_uses_default
+    yaml = <<~YAML
+      !ruby/object:Gem::Dependency
+      name: foo
+      type: :runtime
+    YAML
+
+    dep = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_kind_of Gem::Dependency, dep
+    assert_equal "foo", dep.name
+    assert_equal :runtime, dep.type
+    assert_nil dep.instance_variable_get(:@requirement)
+  end
+
+  def test_load_dependency_missing_type_defaults_to_runtime
+    yaml = <<~YAML
+      !ruby/object:Gem::Dependency
+      name: bar
+      requirement: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+    YAML
+
+    dep = yaml_load(yaml, permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES)
+    assert_equal :runtime, dep.type
+  end
+
+  def test_specification_version_non_numeric_string_not_converted
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      specification_version: abc
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Specification, spec
+    # Non-numeric string should not be converted to Integer
+    assert_equal "abc", spec.specification_version
+  end
+
+  def test_unknown_permitted_tag_raises_argument_error
+    yaml = "!ruby/object:MyCustomClass\nfoo: bar\n"
+    assert_raise(ArgumentError) do
+      yaml_load(yaml, permitted_classes: ["MyCustomClass"])
+    end
+  end
+
+  def test_dump_block_scalar_with_trailing_newline
+    yaml = yaml_dump({ "text" => "line1\nline2\n" })
+    assert_include yaml, " |\n"
+    refute_includes yaml, " |-\n"
+  end
+
+  def test_dump_block_scalar_without_trailing_newline
+    yaml = yaml_dump({ "text" => "line1\nline2" })
+    assert_include yaml, " |-\n"
+  end
+
+  def test_dump_block_scalar_indentation_indicator
+    require "yaml"
+    hash = { "text" => "  indented\nnot indented\n" }
+    array = ["\n  second line indented"]
+
+    assert_equal "---\ntext: |2\n    indented\n  not indented\n", Gem::YAMLSerializer.dump(hash)
+    assert_equal "---\n- |2-\n\n    second line indented\n", Gem::YAMLSerializer.dump(array)
+    assert_equal Psych.dump(hash), Gem::YAMLSerializer.dump(hash)
+    assert_equal Psych.dump(array), Gem::YAMLSerializer.dump(array)
+  end
+
+  def test_dump_block_scalar_keep_indicator
+    require "yaml"
+    hash = { "text" => "line1\nline2\n\n", "other" => "value" }
+    array = ["  indented\nthree trailing newlines\n\n\n"]
+
+    assert_equal "---\ntext: |+\n  line1\n  line2\n\nother: value\n...\n", Gem::YAMLSerializer.dump(hash)
+    assert_equal "---\n- |2+\n    indented\n  three trailing newlines\n\n\n...\n", Gem::YAMLSerializer.dump(array)
+    # JRuby's Psych.dump leaves out the trailing `...`, so compare what Psych reads back.
+    assert_equal hash, Psych.load(Gem::YAMLSerializer.dump(hash))
+    assert_equal array, Psych.load(Gem::YAMLSerializer.dump(array))
+  end
+
+  def test_dump_nil_value
+    yaml = yaml_dump({ "key" => nil })
+
+    loaded = yaml_load(yaml)
+    assert_nil loaded["key"]
+  end
+
+  def test_dump_symbol_keys_quoted
+    yaml = yaml_dump({ foo: "bar" })
+    # Symbol keys should use inspect format
+    assert_include yaml, ":foo:"
+
+    # Symbol values in hash with symbol keys should be quoted
+    yaml = yaml_dump({ type: ":runtime" })
+    assert_include yaml, "\":runtime\""
+  end
+
+  def test_regression_flow_empty_hash_as_root
+    # Previously returned Mapping struct instead of Hash
+    result = yaml_load("--- {}")
+    assert_kind_of Hash, result
+    assert_empty result
+  end
+
+  def test_regression_alias_check_in_builder_not_parser
+    # Previously aliases were resolved in Parser, bypassing Builder's policy check.
+    # The Builder must enforce aliases: false.
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = false
+
+    # Alias in mapping value
+    assert_raise(Psych::AliasesNotEnabled) do
+      yaml_load("a: &x val\nb: *x", aliases: false)
+    end
+
+    # Alias in sequence item
+    assert_raise(Psych::AliasesNotEnabled) do
+      yaml_load("items:\n- &x val\n- *x", aliases: false)
+    end
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_regression_anchored_mapping_stored_for_alias_resolution
+    # Previously build_mapping didn't call store_anchor, so anchored
+    # Gem types (Requirement, etc.) couldn't be resolved via aliases.
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    yaml = <<~YAML
+      a: &req !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: '0'
+      b: *req
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Gem::Requirement, result["a"]
+    assert_kind_of Gem::Requirement, result["b"]
+    assert_equal result["a"].requirements, result["b"].requirements
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_regression_register_anchor_sets_node_anchor
+    # Previously register_anchor only stored node in @anchors hash but
+    # didn't set node.anchor, so Builder couldn't track anchored values.
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = true
+
+    yaml = <<~YAML
+      items:
+      - &item !ruby/object:Gem::Version
+        version: '1.0'
+      - *item
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Array, result["items"]
+    assert_equal 2, result["items"].size
+    assert_kind_of Gem::Version, result["items"][0]
+    assert_kind_of Gem::Version, result["items"][1]
+    assert_equal result["items"][0], result["items"][1]
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
+  def test_load_anchor_at_end_of_line_before_sequence
+    result = yaml_load("a: &1\n- x\n- y\nb: *1\n")
+    assert_equal({ "a" => ["x", "y"], "b" => ["x", "y"] }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_line_before_indented_sequence
+    result = yaml_load("a: &1\n  - x\n  - y\nb: *1\n")
+    assert_equal({ "a" => ["x", "y"], "b" => ["x", "y"] }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_line_before_mapping
+    result = yaml_load("a: &1\n  k: v\nb: *1\n")
+    assert_equal({ "a" => { "k" => "v" }, "b" => { "k" => "v" } }, result)
+    assert_same result["a"], result["b"]
+  end
+
+  def test_load_anchor_at_end_of_document_start_line
+    assert_equal ["x", "y"], yaml_load("--- &1\n- x\n- y\n")
+  end
+
+  def test_load_anchor_alone_at_end_of_document
+    assert_nil Gem::SafeYAML.safe_load("--- &1\n")
+  end
+
+  def test_load_anchor_alone_on_line_before_dedent
+    assert_equal({ "a" => nil, "b" => 2 }, yaml_load("a:\n  &1\nb: 2\n"))
+  end
+
+  def test_load_anchor_alone_on_line_under_empty_sequence_item
+    assert_equal [nil, "x", "y"], yaml_load("-\n  &1\n- x\n- y\n")
+  end
+
+  def test_load_alias_to_anchored_empty_node
+    assert_equal({ "a" => nil, "b" => nil }, yaml_load("a: &1\nb: *1\n"))
+    assert_equal({ "a" => nil, "b" => nil }, yaml_load("a:\n  &1\nb: *1\n"))
+    assert_equal [nil, nil], yaml_load("- &1\n- *1\n")
+  end
+
+  def test_load_anchor_redefined_on_empty_node
+    assert_equal({ "a" => "old", "b" => nil, "c" => nil }, yaml_load("a: &1 old\nb: &1\nc: *1\n"))
+  end
+
+  def test_regression_coerce_empty_hash_not_wrapped_in_scalar
+    # Previously coerce("{}") returned Mapping but parse_plain_scalar
+    # wrapped it in Scalar.new(value: Mapping), causing type mismatch.
+    result = yaml_load("--- {}")
+    assert_kind_of Hash, result
+
+    result = yaml_load("key: {}")
+    assert_kind_of Hash, result["key"]
+  end
+
+  def test_regression_rdoc_options_normalized_to_array
+    # rdoc_options as Hash (malformed gemspec)
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      rdoc_options:
+        --title: MyGem
+        --main: README
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_equal ["--title", "MyGem", "--main", "README"], spec.rdoc_options
+  end
+
+  def test_regression_requirements_field_normalized_to_array
+    # The "requirements" field in a Specification (not Requirement)
+    # should be normalized from Hash to Array if malformed
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: test
+      version: !ruby/object:Gem::Version
+        version: 1.0.0
+      requirements:
+        foo: bar
+    YAML
+
+    spec = Gem::SafeYAML.safe_load(yaml)
+    assert_equal [["foo", "bar"]], spec.requirements
+  end
+
+  def test_binary_tag_decoded_in_mapping_key
+    yaml = <<~YAML
+      ---
+      !binary "U0hBMQ==":
+        metadata.gz: abc123
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal "SHA1", result.keys.first
+    assert_equal "abc123", result["SHA1"]["metadata.gz"]
+  end
+
+  def test_binary_tag_decoded_in_block_scalar_value
+    yaml = <<~YAML
+      ---
+      SHA256:
+        metadata.gz: !binary |-
+          OWY4YTM5Y2MxOTc3Mzc5MWYzNzk1NjRmZjVlYzljYjY1MDQwYWIwMg==
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal "9f8a39cc19773791f379564ff5ec9cb65040ab02", result["SHA256"]["metadata.gz"]
+  end
+
+  def test_binary_tag_decoded_in_inline_value
+    yaml = <<~YAML
+      ---
+      key: !binary "U0hBMQ=="
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal "SHA1", result["key"]
+  end
+
+  def test_binary_tag_checksums_yaml_roundtrip
+    # Simulates the checksums.yaml.gz format from older gems
+    yaml = <<~YAML
+      ---
+      !binary "U0hBMQ==":
+        metadata.gz: !binary |-
+          OWY4YTM5Y2MxOTc3Mzc5MWYzNzk1NjRmZjVlYzljYjY1MDQwYWIwMg==
+        data.tar.gz: !binary |-
+          ZTRmZGRhNjc1MWM5NmIwYzRhODFkYjI0OTlkMjY3ZjQ2MWNkMGM1ZA==
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal ["SHA1"], result.keys
+    assert_equal "9f8a39cc19773791f379564ff5ec9cb65040ab02", result["SHA1"]["metadata.gz"]
+    assert_equal "e4fdda6751c96b0c4a81db2499d267f461cd0c5d", result["SHA1"]["data.tar.gz"]
+  end
+
+  def test_binary_tag_decoded_in_sequence_item_inline
+    yaml = <<~YAML
+      ---
+      - !binary "U0hBMQ=="
+    YAML
+
+    result = yaml_load(yaml)
+    assert_equal ["SHA1"], result
+  end
+
+  def test_version_requirement_tag_always_permitted
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Specification
+      name: escape
+      version: !ruby/object:Gem::Version
+        version: 0.0.4
+      required_ruby_version: !ruby/object:Gem::Version::Requirement
+        requirements:
+        - - ">"
+          - !ruby/object:Gem::Version
+            version: 0.0.0
+        version:
+    YAML
+
+    result = yaml_load(yaml)
+    assert_kind_of Gem::Specification, result
+    assert_equal "escape", result.name
+    assert_kind_of Gem::Requirement, result.required_ruby_version
   end
 end

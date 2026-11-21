@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
-require_relative '../fixtures/classes'
-require_relative '../shared/socketpair'
 
 describe "Socket.socketpair" do
-  it_behaves_like :socket_socketpair, :socketpair
+  it "is an alias of Socket.pair" do
+    Socket.method(:socketpair).should == Socket.method(:pair)
+  end
 end

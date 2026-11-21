@@ -85,6 +85,16 @@ def debug_perf
   end
 end
 
+def benchmark_measure
+  raise "No block given" unless block_given?
+
+  if defined?(::Benchmark)
+    debug_display(Benchmark.measure { yield })
+  else
+    yield
+  end
+end
+
 def run!(cmd, raise_on_nonzero_exit: true)
   out = `#{cmd} 2>&1`
   raise "Command: #{cmd} failed: #{out}" if !$?.success? && raise_on_nonzero_exit

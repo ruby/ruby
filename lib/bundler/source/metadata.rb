@@ -58,6 +58,10 @@ module Bundler
       def version_message(spec)
         "#{spec.name} #{spec.version}"
       end
+
+      def checksum_store
+        @checksum_store ||= Checksum::Store.new
+      end
     end
   end
 end

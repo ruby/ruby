@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Regexp#named_captures" do
   it "returns a Hash" do
-    /foo/.named_captures.should be_an_instance_of(Hash)
+    /foo/.named_captures.should.instance_of?(Hash)
   end
 
   it "returns an empty Hash when there are no capture groups" do
@@ -17,7 +17,7 @@ describe "Regexp#named_captures" do
   it "sets the values of the Hash to Arrays" do
     rex = /this (?<is>is) [aA] (?<pat>pate?rn)/
     rex.named_captures.values.each do |value|
-      value.should be_an_instance_of(Array)
+      value.should.instance_of?(Array)
     end
   end
 

@@ -5,13 +5,13 @@ describe "IO::Buffer#free" do
     it "frees internal memory and nullifies the buffer" do
       buffer = IO::Buffer.new(4)
       buffer.free
-      buffer.null?.should be_true
+      buffer.null?.should == true
     end
 
     it "frees mapped memory and nullifies the buffer" do
       buffer = IO::Buffer.new(4, IO::Buffer::MAPPED)
       buffer.free
-      buffer.null?.should be_true
+      buffer.null?.should == true
     end
   end
 
@@ -20,7 +20,7 @@ describe "IO::Buffer#free" do
       File.open(__FILE__, "r") do |file|
         buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)
         buffer.free
-        buffer.null?.should be_true
+        buffer.null?.should == true
       end
     end
   end
@@ -32,7 +32,7 @@ describe "IO::Buffer#free" do
         buffer = IO::Buffer.for(string)
         # Read-only buffer, can't modify the string.
         buffer.free
-        buffer.null?.should be_true
+        buffer.null?.should == true
       end
     end
 
@@ -42,54 +42,86 @@ describe "IO::Buffer#free" do
         IO::Buffer.for(string) do |buffer|
           buffer.set_string("meat")
           buffer.free
-          buffer.null?.should be_true
+          buffer.null?.should == true
         end
         string.should == "meat"
       end
     end
   end
 
-  ruby_version_is "3.3" do
-    context "with a String-backed buffer created with .string" do
-      it "disassociates the buffer from the string and nullifies the buffer" do
-        string =
-          IO::Buffer.string(4) do |buffer|
-            buffer.set_string("meat")
-            buffer.free
-            buffer.null?.should be_true
-          end
-        string.should == "meat"
-      end
+  context "with a String-backed buffer created with .string" do
+    it "disassociates the buffer from the string and nullifies the buffer" do
+      string =
+        IO::Buffer.string(4) do |buffer|
+          buffer.set_string("meat")
+          buffer.free
+          buffer.null?.should == true
+        end
+      string.should == "meat"
     end
   end
 
   it "can be called repeatedly without an error" do
     buffer = IO::Buffer.new(4)
     buffer.free
-    buffer.null?.should be_true
+    buffer.null?.should == true
     buffer.free
-    buffer.null?.should be_true
+    buffer.null?.should == true
+  end
+
+  ruby_version_is "3.4" do
+    it "resets the buffer to a valid empty state" do
+      buffer = IO::Buffer.new(4)
+      buffer.free
+
+      buffer.null?.should == true
+      buffer.empty?.should == true
+      buffer.valid?.should == true
+      buffer.get_string.should == ""
+    end
+  end
+
+  ruby_version_is "4.1" do
+    it "raises FrozenError without freeing a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.free }.should.raise(FrozenError)
+      buffer.null?.should == false
+      buffer.get_string.should == "test"
+    end
+
+    it "allows internal cleanup after a buffer is frozen inside .for" do
+      string = +"test"
+      buffer = IO::Buffer.for(string, &:freeze)
+
+      buffer.null?.should == true
+      (string << "!").should == "test!"
+    end
   end
 
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     buffer = IO::Buffer.new(4)
     buffer.locked do
-      -> { buffer.free }.should raise_error(IO::Buffer::LockedError, "Buffer is locked!")
+      -> { buffer.free }.should.raise(IO::Buffer::LockedError, "Buffer is locked!")
     end
     buffer.free
-    buffer.null?.should be_true
+    buffer.null?.should == true
   end
 
   context "with a slice of a buffer" do
-    it "nullifies the slice, not touching the buffer" do
-      buffer = IO::Buffer.new(4)
-      slice = buffer.slice(0, 2)
+    ruby_version_is ""..."4.1" do
+      it "nullifies the slice, not touching the buffer" do
+        buffer = IO::Buffer.new(4)
+        slice = buffer.slice(0, 2)
 
-      slice.free
-      slice.null?.should be_true
-      buffer.null?.should be_false
+        slice.free
+        slice.null?.should == true
+        buffer.null?.should == false
 
-      buffer.free
+        buffer.free
+      end
     end
 
     it "nullifies buffer, invalidating the slice" do
@@ -97,8 +129,16 @@ describe "IO::Buffer#free" do
       slice = buffer.slice(0, 2)
 
       buffer.free
-      slice.null?.should be_false
-      slice.valid?.should be_false
+      slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the freed source.
+        slice.null?.should == true
+      end
     end
   end
 end

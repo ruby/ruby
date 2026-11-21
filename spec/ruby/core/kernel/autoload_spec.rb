@@ -25,7 +25,7 @@ describe "Kernel#autoload" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:autoload)
+    Kernel.private_instance_methods(false).should.include?(:autoload)
   end
 
   it "registers a file to load the first time the named constant is accessed" do
@@ -37,7 +37,7 @@ describe "Kernel#autoload" do
   end
 
   it "sets the autoload constant in Object's constant table" do
-    Object.should have_constant(:KSAutoloadA)
+    Object.should.const_defined?(:KSAutoloadA, false)
   end
 
   it "loads the file when the constant is accessed" do
@@ -49,7 +49,7 @@ describe "Kernel#autoload" do
     main = TOPLEVEL_BINDING.eval("self")
     main.should_receive(:require).with("main_autoload_not_exist.rb")
     # The constant won't be defined since require is mocked to do nothing
-    -> { KSAutoloadCallsRequire }.should raise_error(NameError)
+    -> { KSAutoloadCallsRequire }.should.raise(NameError)
   end
 
   it "can autoload in instance_eval" do
@@ -102,7 +102,7 @@ end
 
 describe "Kernel#autoload?" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:autoload?)
+    Kernel.private_instance_methods(false).should.include?(:autoload?)
   end
 
   it "returns the name of the file that will be autoloaded" do
@@ -110,7 +110,7 @@ describe "Kernel#autoload?" do
   end
 
   it "returns nil if no file has been registered for a constant" do
-    check_autoload(:Manualload).should be_nil
+    check_autoload(:Manualload).should == nil
   end
 end
 
@@ -131,13 +131,17 @@ describe "Kernel.autoload" do
     $".replace @loaded_features
   end
 
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:autoload)
+  end
+
   it "registers a file to load the first time the toplevel constant is accessed" do
     Kernel.autoload :KSAutoloadAA, @non_existent
     Kernel.autoload?(:KSAutoloadAA).should == @non_existent
   end
 
   it "sets the autoload constant in Object's constant table" do
-    Object.should have_constant(:KSAutoloadBB)
+    Object.should.const_defined?(:KSAutoloadBB, false)
   end
 
   it "calls #to_path on non-String filenames" do
@@ -164,15 +168,52 @@ describe "Kernel.autoload" do
       KernelSpecs::AutoloadMethod2::AutoloadFromIncludedModule2.loaded.should == :autoload_from_included_module2
     end
   end
+
+  describe "after the autoload was satisfied by requiring the file directly" do
+    before :each do
+      @path = fixture(__FILE__, "autoload_satisfied_by_require.rb")
+      Kernel.autoload :KSAutoloadSatisfiedByRequire, @path
+      ScratchPad.record []
+    end
+
+    after :each do
+      if Object.const_defined?(:KSAutoloadSatisfiedByRequire, false)
+        Object.send(:remove_const, :KSAutoloadSatisfiedByRequire)
+      end
+    end
+
+    it "defines a regular constant that no longer depends on $LOADED_FEATURES" do
+      require @path
+      ScratchPad.recorded.should == [:loaded]
+      Kernel.autoload?(:KSAutoloadSatisfiedByRequire).should == nil
+      klass = KSAutoloadSatisfiedByRequire
+      data = Marshal.dump(klass.new)
+
+      $LOADED_FEATURES.replace(@loaded_features)
+      Thread.new { Marshal.load(data).class }.value.should.equal?(klass)
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "returns the constant from remove_const" do
+      require @path
+      klass = KSAutoloadSatisfiedByRequire
+
+      Object.send(:remove_const, :KSAutoloadSatisfiedByRequire).should.equal?(klass)
+    end
+  end
 end
 
 describe "Kernel.autoload?" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:autoload?)
+  end
+
   it "returns the name of the file that will be autoloaded" do
     Kernel.autoload :KSAutoload, "autoload.rb"
     Kernel.autoload?(:KSAutoload).should == "autoload.rb"
   end
 
   it "returns nil if no file has been registered for a constant" do
-    Kernel.autoload?(:Manualload).should be_nil
+    Kernel.autoload?(:Manualload).should == nil
   end
 end

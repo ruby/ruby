@@ -1,0 +1,4 @@
+1 in ^$&
+     ^ expected a pattern expression after the `^` pin operator
+      ^~ unexpected back reference, expecting end-of-input
+

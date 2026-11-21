@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/equal'
 
 describe "Float#===" do
-  it_behaves_like :float_equal, :===
+  it "is an alias of Float#==" do
+    Float.instance_method(:===).should == Float.instance_method(:==)
+  end
 end

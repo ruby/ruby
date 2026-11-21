@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 # This module allows for introspection of ZJIT, CRuby's just-in-time compiler.
 # Everything in the module is highly implementation specific and the API might
@@ -7,7 +8,7 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
-  # Blocks that are called when YJIT is enabled
+  # Blocks that are called when ZJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
   if Primitive.rb_zjit_get_stats_file_path_p
@@ -15,9 +16,6 @@ module RubyVM::ZJIT
   end
   if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
-  end
-  if Primitive.rb_zjit_trace_exit_locations_enabled_p
-    at_exit { dump_locations }
   end
 end
 
@@ -44,108 +42,46 @@ class << RubyVM::ZJIT
     Primitive.rb_zjit_trace_exit_locations_enabled_p
   end
 
-  # If --zjit-trace-exits is enabled parse the hashes from
-  # Primitive.rb_zjit_get_exit_locations into a format readable
-  # by Stackprof. This will allow us to find the exact location of a
-  # side exit in ZJIT based on the instruction that is exiting.
-  def exit_locations
-    return unless trace_exit_locations_enabled?
+  # A directive for the compiler to fail to compile the call to this method.
+  # To show this to ZJIT, say `::RubyVM::ZJIT.induce_compile_failure!` verbatim.
+  # Other forms are too dynamic to detect during compilation.
+  #
+  # Actually running this method does nothing, whether ZJIT sees the call or not.
+  def induce_compile_failure! = nil
 
-    results = Primitive.rb_zjit_get_exit_locations
-    raw_samples = results[:raw]
-    line_samples = results[:lines]
-    frames = results[:frames]
-    samples_count = 0
+  # A directive for the compiler to exit out of compiled code at the call site of this method.
+  # To show this to ZJIT, say `::RubyVM::ZJIT.induce_side_exit!` verbatim.
+  # Other forms are too dynamic to detect during compilation.
+  #
+  # Actually running this method does nothing, whether ZJIT sees the call or not.
+  def induce_side_exit! = nil
 
-    # Use nonexistent.def as a dummy file name.
-    frame_template = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
+  # A directive for the compiler to emit a breakpoint instruction at the call site of this method.
+  # To show this to ZJIT, say `::RubyVM::ZJIT.induce_breakpoint!` verbatim.
+  # Other forms are too dynamic to detect during compilation.
+  def induce_breakpoint! = nil
 
-    # Loop through all possible instructions and setup the frame hash.
-    RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
-      frames[frame_id] = frame_template.dup.tap { |h| h[:name] = name }
-    end
-
-    # Loop through the raw_samples and build the hashes for StackProf.
-    # The loop is based off an example in the StackProf documentation and therefore
-    # this functionality can only work with that library.
-    #
-    # Raw Samples:
-    # [ length, frame1, frame2, frameN, ..., instruction, count
-    #
-    # Line Samples
-    # [ length, line_1, line_2, line_n, ..., dummy value, count
-    i = 0
-    while i < raw_samples.length
-      stack_length = raw_samples[i]
-      i += 1 # consume the stack length
-
-      sample_count = raw_samples[i + stack_length]
-
-      prev_frame_id = nil
-      stack_length.times do |idx|
-        idx += i
-        frame_id = raw_samples[idx]
-
-        if prev_frame_id
-          prev_frame = frames[prev_frame_id]
-          prev_frame[:edges][frame_id] ||= 0
-          prev_frame[:edges][frame_id] += sample_count
-        end
-
-        frame_info = frames[frame_id]
-        frame_info[:total_samples] += sample_count
-
-        frame_info[:lines][line_samples[idx]] ||= [0, 0]
-        frame_info[:lines][line_samples[idx]][0] += sample_count
-
-        prev_frame_id = frame_id
-      end
-
-      i += stack_length # consume the stack
-
-      top_frame_id = prev_frame_id
-      top_frame_line = 1
-
-      frames[top_frame_id][:samples] += sample_count
-      frames[top_frame_id][:lines] ||= {}
-      frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]
-      frames[top_frame_id][:lines][top_frame_line][1] += sample_count
-
-      samples_count += sample_count
-      i += 1
-    end
-
-    results[:samples] = samples_count
-
-    # These values are mandatory to include for stackprof, but we don't use them.
-    results[:missed_samples] = 0
-    results[:gc_samples] = 0
-    results
+  # Monotonically increasing counter representing the amount of wall time
+  # nanoseconds spent compiling.
+  def total_compile_time_ns
+    Primitive.rb_zjit_total_compile_time_ns_get
   end
 
-  # Marshal dumps exit locations to the given filename.
-  #
-  # Usage:
-  #
-  # In a script call:
-  #
-  #   RubyVM::ZJIT.dump_exit_locations("my_file.dump")
-  #
-  # Then run the file with the following options:
-  #
-  #   ruby --zjit --zjit-stats --zjit-trace-exits test.rb
-  #
-  # Once the code is done running, use Stackprof to read the dump file.
-  # See Stackprof documentation for options.
-  def dump_exit_locations(filename)
-    unless trace_exit_locations_enabled?
-      raise ArgumentError, "--zjit-trace-exits must be enabled to use dump_exit_locations."
-    end
+  # The maximum amount of time `ZJIT` is allowed to spend compiling.
+  # When `total_compile_time_ns` goes over `max_compile_time_ns`, `YJIT`
+  # pause compilation until `max_compile_time_ns` is raised.
+  # If set to `0`, there is no limit.
+  # This is a best-effort functionality, there are situations in which `ZJIT` may
+  # still compile even when paused.
+  # This feature is intended to be used to control how fast the JIT warms up,
+  # to spread the compilation overhead over a longer period of time.
+  def max_compile_time_ns
+    Primitive.rb_zjit_max_compile_time_ns_get
+  end
 
-    File.open(filename, "wb") do |file|
-      Marshal.dump(RubyVM::ZJIT.exit_locations, file)
-      file.size
-    end
+  # Set the maximum amount of time YJIT is allowed to spend compiling.
+  def max_compile_time_ns=(max_compile_time_ns)
+    Primitive.rb_zjit_max_compile_time_ns_set(max_compile_time_ns)
   end
 
   # Check if `--zjit-stats` is used
@@ -165,36 +101,45 @@ class << RubyVM::ZJIT
 
   # Get the summary of ZJIT statistics as a String
   def stats_string
+    return unless stats = self.stats
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
-    stats = self.stats
 
-    if stats[:guard_type_count].nonzero?
+    if stats[:guard_type_count]&.nonzero?
       stats[:guard_type_exit_ratio] = stats[:exit_guard_type_failure].to_f / stats[:guard_type_count] * 100
     end
-    if stats[:guard_shape_count].nonzero?
+    if stats[:guard_shape_count]&.nonzero?
       stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
+    end
+    if stats[:code_region_bytes]&.nonzero?
+      stats[:side_exit_size_ratio] = stats[:side_exit_size_bytes].to_f / stats[:code_region_bytes] * 100
+    end
+    if stats[:compile_time_ns]&.nonzero?
+      stats[:compile_side_exit_time_ratio] = stats[:compile_side_exit_time_ns].to_f / stats[:compile_time_ns] * 100
     end
 
     # Show counters independent from exit_* or dynamic_send_*
     print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'ccall_', prompt: 'calls to C functions from JIT code', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'iseq_calls_count_', prompt: 'most called JIT functions', buf:, stats:, limit: 20)
     # Don't show not_annotated_cfuncs right now because it mostly duplicates not_inlined_cfuncs
     # print_counters_with_prefix(prefix: 'not_annotated_cfuncs_', prompt: 'not annotated C methods', buf:, stats:, limit: 20)
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'unspecialized_send_without_block_def_type_', prompt: 'not optimized method types for send_without_block', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'unspecialized_super_def_type_', prompt: 'not optimized method types for super', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'send_direct_fallback_context_', prompt: 'SendDirect fallback contexts', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'setivar_fallback_', prompt: 'setivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'getivar_fallback_', prompt: 'getivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
-    print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'inline_reject_', prompt: 'HIR-level inlining rejection reasons', buf:, stats:, limit: 10)
 
     # Show most popular unsupported call features. Because each call can
     # use multiple complex features, a decrease in this number does not
     # necessarily mean an increase in number of optimized calls.
     print_counters_with_prefix(prefix: 'complex_arg_pass_', prompt: 'popular complex argument-parameter features not optimized', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'caller_splat_profile_', prompt: 'caller splat length profiles', buf:, stats:, limit: 10)
 
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
@@ -207,39 +152,68 @@ class << RubyVM::ZJIT
       :send_count,
       :dynamic_send_count,
       :optimized_send_count,
-      :dynamic_setivar_count,
-      :dynamic_getivar_count,
-      :dynamic_definedivar_count,
       :iseq_optimized_send_count,
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
+      :inline_method_count,
+      :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
+      :caller_splat_optimized,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
+      :dynamic_setivar_count,
+      :dynamic_getivar_count,
+      :dynamic_definedivar_count,
+
       :compiled_iseq_count,
+      :compiled_side_exit_count,
       :failed_iseq_count,
 
       :compile_time_ns,
+      :compile_side_exit_time_ns,
+      :compile_side_exit_time_ratio,
+      :compile_hir_time_ns,
+      :compile_hir_build_time_ns,
+      :compile_hir_strength_reduce_time_ns,
+      :compile_hir_inline_methods_time_ns,
+      :compile_hir_remove_trivial_block_params_time_ns,
+      :compile_hir_optimize_load_store_time_ns,
+      :compile_hir_canonicalize_time_ns,
+      :compile_hir_fold_constants_time_ns,
+      :compile_hir_clean_cfg_time_ns,
+      :compile_hir_remove_redundant_patch_points_time_ns,
+      :compile_hir_remove_duplicate_check_interrupts_time_ns,
+      :compile_hir_eliminate_empty_inline_frames_time_ns,
+      :compile_hir_eliminate_dead_code_time_ns,
+      :compile_lir_time_ns,
       :profile_time_ns,
       :gc_time_ns,
       :invalidation_time_ns,
 
-      :vm_write_pc_count,
+      :vm_write_jit_frame_count,
       :vm_write_sp_count,
-      :vm_write_locals_count,
       :vm_write_stack_count,
       :vm_write_to_parent_iseq_local_count,
-      :vm_read_from_parent_iseq_local_count,
 
       :guard_type_count,
       :guard_type_exit_ratio,
       :guard_shape_count,
       :guard_shape_exit_ratio,
 
+      :load_field_count,
+      :store_field_count,
+
+      :throw_count,
+
+      :side_exit_size_bytes,
+      :side_exit_size_ratio,
+      :jit_frame_heap_bytes,
+      :jit_frame_region_bytes,
       :code_region_bytes,
       :zjit_alloc_bytes,
       :total_mem_bytes,
+      :total_native_stack_bytes,
 
       :side_exit_count,
       :total_insn_count,
@@ -289,7 +263,7 @@ class << RubyVM::ZJIT
       case key
       when :ratio_in_zjit
         value = '%0.1f%%' % value
-      when :guard_type_exit_ratio, :guard_shape_exit_ratio
+      when :guard_type_exit_ratio, :guard_shape_exit_ratio, :side_exit_size_ratio, :compile_side_exit_time_ratio
         value = '%0.1f%%' % value
       when /_time_ns\z/
         key = key.to_s.sub(/_time_ns\z/, '_time')
@@ -307,13 +281,14 @@ class << RubyVM::ZJIT
     return if counters.empty?
 
     counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
-    key_pad = counters.keys.map(&:size).max
-    value_pad = counters.values.map { |value| number_with_delimiter(value).size }.max
     total = counters.values.sum
 
     counters = counters.to_a
     counters.sort_by! { |_, value| -value }
     counters = counters.first(limit) if limit
+
+    key_pad = counters.map { |key, _| key.size }.max
+    value_pad = counters.map { |_, value| number_with_delimiter(value).size }.max
 
     buf << "Top-#{counters.size} " if limit
     buf << "#{prompt}"
@@ -340,17 +315,13 @@ class << RubyVM::ZJIT
   def print_stats_file
     filename = Primitive.rb_zjit_get_stats_file_path_p
     File.open(filename, "wb") do |file|
-      file.write stats_string
+      if filename.end_with?(".json")
+        require "json"
+        file.write(JSON.pretty_generate(stats))
+      else
+        file.write stats_string
+      end
     end
   end
 
-  def dump_locations # :nodoc:
-    return unless trace_exit_locations_enabled?
-
-    filename = "zjit_exits_#{Process.pid}.dump"
-    n_bytes = dump_exit_locations(filename)
-
-    absolute_filename = File.expand_path(filename)
-    $stderr.puts("#{n_bytes} bytes written to #{absolute_filename}")
-  end
 end

@@ -31,8 +31,8 @@ class Output
     @vpath.def_options(opt)
   end
 
-  def write(data, overwrite: @overwrite, create_only: @create_only)
-    unless @path
+  def write(data, overwrite: @overwrite, create_only: @create_only, name: nil, newer: nil, quiet: false)
+    unless (name = name ? (@path ? File.join(@path, name) : name) : @path)
       $stdout.print data
       return true
     end
@@ -41,20 +41,21 @@ class Output
     updated = color.fail("updated")
     outpath = nil
 
-    if (@ifchange or overwrite or create_only) and (@vpath.open(@path, "rb") {|f|
+    if (@ifchange or overwrite or create_only or newer) and (@vpath.open(name, "rb") {|f|
       outpath = f.path
+      next true if newer and f.mtime > newer
       if @ifchange or create_only
         original = f.read
         (@ifchange and original == data) or (create_only and !original.empty?)
       end
     } rescue false)
-      puts "#{outpath} #{unchanged}"
+      puts "#{outpath} #{unchanged}" unless quiet
       written = false
     else
       unless overwrite and outpath and (File.binwrite(outpath, data) rescue nil)
-        File.binwrite(outpath = @path, data)
+        File.binwrite(outpath = name, data)
       end
-      puts "#{outpath} #{updated}"
+      puts "#{outpath} #{updated}" unless quiet
       written = true
     end
     if timestamp = @timestamp

@@ -41,7 +41,7 @@ describe 'Socket.udp_server_loop_on' do
       end
 
       msg.should == 'hello'
-      src.should be_an_instance_of(Socket::UDPSource)
+      src.should.instance_of?(Socket::UDPSource)
     end
   end
 end

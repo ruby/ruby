@@ -90,8 +90,8 @@ describe "Module#attr" do
       attr :foo, true
     end
 
-    -> { c.new.foo }.should raise_error(NoMethodError)
-    -> { c.new.foo=1 }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should.raise(NoMethodError)
+    -> { c.new.foo=1 }.should.raise(NoMethodError)
   end
 
   it "creates a getter but no setter for all given attribute names" do
@@ -121,8 +121,8 @@ describe "Module#attr" do
       attr :foo, :bar
     end
 
-    -> { c.new.foo }.should raise_error(NoMethodError)
-    -> { c.new.bar }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should.raise(NoMethodError)
+    -> { c.new.bar }.should.raise(NoMethodError)
   end
 
   it "converts non string/symbol names to strings using to_str" do
@@ -132,9 +132,9 @@ describe "Module#attr" do
 
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     o = mock('o')
-    -> { Class.new { attr o } }.should raise_error(TypeError)
+    -> { Class.new { attr o } }.should.raise(TypeError)
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    -> { Class.new { attr o } }.should raise_error(TypeError)
+    -> { Class.new { attr o } }.should.raise(TypeError)
   end
 
   it "with a boolean argument emits a warning when $VERBOSE is true" do
@@ -144,7 +144,7 @@ describe "Module#attr" do
   end
 
   it "is a public method" do
-    Module.should have_public_instance_method(:attr, false)
+    Module.public_instance_methods(false).should.include?(:attr)
   end
 
   it "returns an array of defined method names as symbols" do

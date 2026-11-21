@@ -2,12 +2,10 @@
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
-require_relative 'shared/taint'
 
 describe "String#unpack with format 'B'" do
   it_behaves_like :string_unpack_basic, 'B'
   it_behaves_like :string_unpack_no_platform, 'B'
-  it_behaves_like :string_unpack_taint, 'B'
 
   it "decodes one bit from each byte for each format character starting with the most significant bit" do
     [ ["\x00",     "B",  ["0"]],
@@ -86,20 +84,10 @@ describe "String#unpack with format 'B'" do
     ].should be_computed_by(:unpack, "BBB")
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        "\x80\x00".unpack("B\x00B").should == ["1", "0"]
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        "\x80\x00".unpack("B\x00B")
-      }.should raise_error(ArgumentError, /unknown unpack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      "\x80\x00".unpack("B\x00B")
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -115,7 +103,6 @@ end
 describe "String#unpack with format 'b'" do
   it_behaves_like :string_unpack_basic, 'b'
   it_behaves_like :string_unpack_no_platform, 'b'
-  it_behaves_like :string_unpack_taint, 'b'
 
   it "decodes one bit from each byte for each format character starting with the least significant bit" do
     [ ["\x00",     "b",  ["0"]],
@@ -194,20 +181,10 @@ describe "String#unpack with format 'b'" do
     ].should be_computed_by(:unpack, "bbb")
   end
 
-  ruby_version_is ""..."3.3" do
-    it "ignores NULL bytes between directives" do
-      suppress_warning do
-        "\x01\x00".unpack("b\x00b").should == ["1", "0"]
-      end
-    end
-  end
-
-  ruby_version_is "3.3" do
-    it "raise ArgumentError for NULL bytes between directives" do
-      -> {
-        "\x01\x00".unpack("b\x00b")
-      }.should raise_error(ArgumentError, /unknown unpack directive/)
-    end
+  it "raise ArgumentError for NULL bytes between directives" do
+    -> {
+      "\x01\x00".unpack("b\x00b")
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

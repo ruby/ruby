@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/length'
 require 'tempfile'
 
 describe "Tempfile#length" do
-  it_behaves_like :tempfile_length, :length
+  it "is an alias of Tempfile#size" do
+    Tempfile.instance_method(:length).should == Tempfile.instance_method(:size)
+  end
 end

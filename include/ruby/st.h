@@ -80,17 +80,19 @@ struct st_table {
     /* Cached features of the table -- see st.c for more details.  */
     unsigned char entry_power, bin_power, size_ind;
     /* How many times the table was rebuilt.  */
-    unsigned int rebuilds_num;
+    unsigned char rebuilds_num;
+    /* Start index of entries in array entries. */
+    unsigned int entries_start;
+
     const struct st_hash_type *type;
     /* Number of entries currently in the table.  */
     st_index_t num_entries;
-    /* Array of bins used for access by keys.  */
-    st_index_t *bins;
-    /* Start and bound index of entries in array entries.
+    /* bound index of entries in array entries.
        entries_starts and entries_bound are in interval
        [0,allocated_entries].  */
-    st_index_t entries_start, entries_bound;
-    /* Array of size 2^entry_power.  */
+    st_index_t entries_bound;
+    /* Array of size 2^entry_power.
+       Optionally followed by an array of bins used for access by keys.  */
     st_table_entry *entries;
 };
 
@@ -184,8 +186,6 @@ CONSTFUNC(st_index_t rb_st_hash_end(st_index_t h));
 #define st_hash_end rb_st_hash_end
 CONSTFUNC(st_index_t rb_st_hash_start(st_index_t h));
 #define st_hash_start(h) ((st_index_t)(h))
-
-void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
 
 RUBY_SYMBOL_EXPORT_END
 

@@ -19,7 +19,7 @@ describe 'BasicSocket#sendmsg' do
       platform_is_not :windows do
         describe 'without a destination address' do
           it "raises #{SocketSpecs.dest_addr_req_error}" do
-            -> { @client.sendmsg('hello') }.should raise_error(SocketSpecs.dest_addr_req_error)
+            -> { @client.sendmsg('hello') }.should.raise(SocketSpecs.dest_addr_req_error)
           end
         end
       end

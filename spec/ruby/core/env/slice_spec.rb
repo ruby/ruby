@@ -32,6 +32,6 @@ describe "ENV.slice" do
   end
 
   it "raises TypeError if any argument is not a String and does not respond to #to_str" do
-    -> { ENV.slice(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV.slice(Object.new) }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 end

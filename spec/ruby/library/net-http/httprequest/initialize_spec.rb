@@ -21,12 +21,12 @@ describe "Net::HTTPRequest#initialize" do
 
   it "uses the REQUEST_HAS_BODY to set whether the Request has a body or not" do
     @req.send(:initialize, "/some/path")
-    @req.request_body_permitted?.should be_false
+    @req.request_body_permitted?.should == false
   end
 
   it "uses the RESPONSE_HAS_BODY to set whether the Response can have a body or not" do
     @req.send(:initialize, "/some/path")
-    @req.response_body_permitted?.should be_true
+    @req.response_body_permitted?.should == true
   end
 
   describe "when passed path" do

@@ -253,7 +253,7 @@ class Integer
   #
   # With no block given, returns an Enumerator.
   def times
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, int_dotimes_size)'
     end
@@ -327,12 +327,48 @@ class Integer
     1
   end
 
+  # call-seq:
+  #   upto(limit) {|i| ... } -> self
+  #   upto(limit)            -> enumerator
+  #
+  # Calls the given block with each integer value from +self+ up to +limit+;
+  # returns +self+:
+  #
+  #   a = []
+  #   5.upto(10) {|i| a << i }              # => 5
+  #   a                                     # => [5, 6, 7, 8, 9, 10]
+  #   a = []
+  #   -5.upto(0) {|i| a << i }              # => -5
+  #   a                                     # => [-5, -4, -3, -2, -1, 0]
+  #   5.upto(4) {|i| fail 'Cannot happen' } # => 5
+  #
+  # With no block given, returns an Enumerator.
+  def upto(to)
+    Primitive.attr! :inline_block, :always_inline
+
+    # When no block is given, return an Enumerator that enumerates from `self` to `to`.
+    # Not using `block_given?` and `to_enum` to keep them unaffected by redefinitions.
+    unless defined?(yield)
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &to, int_upto_size)'
+    end
+
+    from = self
+    until (cmp = from > to)
+      if cmp.nil?
+        Primitive.cstmt! %{ rb_cmperr_reason(from, to, "comparator returned nil"); }
+      end
+      yield from
+      from = from.succ
+    end
+    self
+  end
+
   with_jit do
     if Primitive.rb_builtin_basic_definition_p(:downto)
       undef :downto
 
       def downto(to) # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :always_inline, :c_trace
 
         # When no block is given, return an Enumerator that enumerates from `self` to `to`.
         # Not using `block_given?` and `to_enum` to keep them unaffected by redefinitions.
@@ -341,7 +377,10 @@ class Integer
         end
 
         from = self
-        while from >= to
+        until (cmp = from < to)
+          if cmp.nil?
+            Primitive.cstmt! %{ rb_cmperr_reason(from, to, "comparator returned nil"); }
+          end
           yield from
           from = from.pred
         end

@@ -36,6 +36,7 @@ class TestSocketAncData < Test::Unit::TestCase
   end
 
   def test_ipv6_pktinfo
+    omit_unless_ipv6
     addr = Addrinfo.ip("::1")
     ifindex = 0
     begin
@@ -64,5 +65,29 @@ class TestSocketAncData < Test::Unit::TestCase
         Socket::AncillaryData.int(:UNIX, :SOL_SOCKET, :TIMESTAMP, 1).unix_rights
       }
     end
+  end
+
+  if /freebsd/ =~ RUBY_PLATFORM
+    def test_cmsgcred_inspect
+      cred = [0, 0, 0, 0, 9999, *Array.new(16, 0)].pack('L4I!L*')
+      s = Socket::AncillaryData.new(:UNIX, :SOCKET, :SCM_CREDS, cred).inspect
+      assert_include(s, 'groups[9999]')
+      assert_include(s, '(cmsgcred)')
+    end
+  end
+
+  if /netbsd|freebsd/ =~ RUBY_PLATFORM
+    def test_sockcred_inspect
+      cred = [0, 0, 0, 0, 9999, 0].pack('L4S!L')
+      s = Socket::AncillaryData.new(:UNIX, :SOCKET, :SCM_CREDS, cred).inspect
+      assert_include(s, 'groups[9999]')
+      assert_include(s, '(sockcred)')
+    end
+  end
+
+  private
+
+  def omit_unless_ipv6(reason = "IPv6 is not supported")
+    omit reason unless defined?(Socket::AF_INET6)
   end
 end if defined? Socket::AncillaryData

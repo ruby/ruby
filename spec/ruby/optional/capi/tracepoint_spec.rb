@@ -14,7 +14,7 @@ describe "CApiTracePointSpecs" do
   describe "rb_tracepoint_new" do
     it "returns a tracepoint object" do
       @trace = @s.rb_tracepoint_new(7)
-      @trace.should be_an_instance_of(TracePoint)
+      @trace.should.instance_of?(TracePoint)
       @trace.should_not.enabled?
     end
 

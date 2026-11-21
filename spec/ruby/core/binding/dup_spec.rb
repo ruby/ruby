@@ -21,7 +21,7 @@ describe "Binding#dup" do
     eval("a", bind2).should == 2
 
     eval("b = 2", bind2)
-    -> { eval("b", bind1) }.should raise_error(NameError)
+    -> { eval("b", bind1) }.should.raise(NameError)
     eval("b", bind2).should == 2
 
     bind1.local_variables.sort.should == [:a, :bind1, :bind2]

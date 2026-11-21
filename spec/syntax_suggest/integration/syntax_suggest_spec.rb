@@ -4,10 +4,6 @@ require_relative "../spec_helper"
 
 module SyntaxSuggest
   RSpec.describe "Integration tests that don't spawn a process (like using the cli)" do
-    before(:each) do
-      skip "Benchmark is not available" unless defined?(::Benchmark)
-    end
-
     it "does not timeout on massive files" do
       next unless ENV["SYNTAX_SUGGEST_TIMEOUT"]
 
@@ -17,7 +13,7 @@ module SyntaxSuggest
 
       io = StringIO.new
 
-      benchmark = Benchmark.measure do
+      benchmark_measure do
         debug_perf do
           SyntaxSuggest.call(
             io: io,
@@ -28,7 +24,6 @@ module SyntaxSuggest
       end
 
       debug_display(io.string)
-      debug_display(benchmark)
 
       expect(io.string).to include(<<~EOM)
              6  class SyntaxTree < Ripper
@@ -46,7 +41,7 @@ module SyntaxSuggest
       io = StringIO.new
 
       debug_perf do
-        benchmark = Benchmark.measure do
+        benchmark_measure do
           SyntaxSuggest.call(
             io: io,
             source: file.read,
@@ -54,7 +49,6 @@ module SyntaxSuggest
           )
         end
         debug_display(io.string)
-        debug_display(benchmark)
       end
 
       expect(io.string).to_not include("def ruby_install_binstub_path")
@@ -206,6 +200,29 @@ module SyntaxSuggest
         > 1  class Dog
         > 2    def bark
         > 4  end
+      EOM
+    end
+
+    it "multi-line chain with missing paren" do
+      source = <<~EOM
+        class Dog
+          def bark
+            User
+              .where(name: "schneems"
+              .first
+          end
+        end
+      EOM
+      io = StringIO.new
+      SyntaxSuggest.call(
+        io: io,
+        source: source
+      )
+      out = io.string
+      expect(out).to include(<<~EOM)
+        > 3      User
+        > 4        .where(name: "schneems"
+        > 5        .first
       EOM
     end
 

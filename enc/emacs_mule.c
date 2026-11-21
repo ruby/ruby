@@ -272,24 +272,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 	      const UChar** pp, const UChar* end, UChar* lower,
 	      OnigEncoding enc)
 {
-  int len;
-  const UChar* p = *pp;
-
-  if (ONIGENC_IS_MBC_ASCII(p)) {
-    *lower = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
-    (*pp)++;
-    return 1;
-  }
-  else {
-    int i;
-
-    len = mbc_enc_len(p, end, enc);
-    for (i = 0; i < len; i++) {
-      *lower++ = *p++;
-    }
-    (*pp) += len;
-    return len; /* return byte length of converted char to lower */
-  }
+  return onigenc_mbn_mbc_case_fold(enc, flag, pp, end, lower);
 }
 
 static UChar*
@@ -309,8 +292,10 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
 {
   if (code < 128)
     return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
-  else
+  else if (CTYPE_IS_WORD_GRAPH_PRINT(ctype))
     return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
+  else
+    return FALSE;
 }
 
 /*
@@ -334,7 +319,11 @@ OnigEncodingDefine(emacs_mule, Emacs_Mule) = {
   onigenc_not_support_get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

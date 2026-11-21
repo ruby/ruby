@@ -154,6 +154,7 @@
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
+#define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
@@ -166,7 +167,7 @@
 #define rb_set_errinfo p->config->set_errinfo
 #define rb_make_exception p->config->make_exception
 
-#define ruby_sized_xfree p->config->sized_xfree
+#define ruby_xfree_sized p->config->sized_xfree
 #define SIZED_REALLOC_N(v, T, m, n) ((v) = (T *)p->config->sized_realloc_n((void *)(v), (m), sizeof(T), (n)))
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
@@ -187,8 +188,6 @@
 
 #define rb_make_backtrace p->config->make_backtrace
 
-#define ruby_scan_hex    p->config->scan_hex
-#define ruby_scan_oct    p->config->scan_oct
 #define ruby_scan_digits p->config->scan_digits
 #define strtod           p->config->strtod
 
@@ -201,11 +200,15 @@
 #undef Qfalse
 #define Qfalse p->config->qfalse
 #define rb_eArgError p->config->eArgError()
-#undef rb_long2int
-#define rb_long2int p->config->long2int
+#undef rb_len2int
+#define rb_len2int p->config->long2int
 #define rb_enc_mbminlen p->config->enc_mbminlen
 #define rb_enc_isascii p->config->enc_isascii
 #define rb_enc_mbc_to_codepoint p->config->enc_mbc_to_codepoint
 
 #define rb_ast_new() \
     rb_ast_new(p->config)
+
+#define rb_source_hash_init      p->config->source_hash_init
+#define rb_source_hash_update    p->config->source_hash_update
+#define rb_source_hash_finalize  p->config->source_hash_finalize

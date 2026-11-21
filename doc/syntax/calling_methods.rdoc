@@ -425,7 +425,7 @@ as keyword arguments:
 
   name = Name.new('Jane Doe')
   p(**name)
-  # Prints: {name: "Jane", last: "Doe"}
+  # Prints: {first: "Jane", last: "Doe"}
 
 Unlike <code>*</code> operator, <code>**</code> raises an error when used on an
 object that doesn't respond to <code>#to_hash</code>. The one exception is

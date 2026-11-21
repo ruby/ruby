@@ -11,7 +11,7 @@ platform_is :windows do
     end
 
     it "returns a String" do
-      @var.ole_type.should be_kind_of String
+      @var.ole_type.should.is_a? String
     end
 
   end
