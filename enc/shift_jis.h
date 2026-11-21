@@ -493,6 +493,12 @@ static int
 property_name_to_ctype(OnigEncoding enc, const UChar* p, const UChar* end)
 {
   const UChar *s = p, *e = end;
+
+  for (; p < end; p++) {
+    if (!ONIGENC_IS_CODE_ASCII(*p))
+      return onigenc_minimum_property_name_to_ctype(enc, s, e);
+  }
+
   const struct enc_property *prop =
     onig_jis_property((const char* )s, (unsigned int )(e - s));
 
