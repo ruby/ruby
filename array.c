@@ -2320,22 +2320,23 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
- *  When +offset+ is non-negative, it specifies the maximum starting position in the
- *  array to end the search:
+ *  When +offset+ is non-negative, begins the search backward at position +offset+;
+ *  the returned index is relative to the beginning of +self+:
  *
  *    a = [:foo, 'bar', 2, 'bar']
- *    a.rindex('bar', offset: 0) # => 3
- *    a.rindex(2, offset: 1) # => 2
- *    a.rindex(2, offset: 3) # => nil
+ *    a.rindex('bar', offset: 3) # => 3
+ *    a.rindex('bar', offset: 2) # => 1
+ *    a.rindex('bar', offset: 0) # => nil
+ *    a.rindex('bar', offset: 10) # => 3
  *
  *  With negative integer argument +offset+,
  *  selects the search position by counting backward from the end of +self+:
  *
  *    a = [:foo, 'bar', 2, 'bar']
- *    a.rindex('bar', -1) # => 3
- *    a.rindex('bar', -2) # => 1
- *    a.rindex('bar', -3) # => 1
- *    a.rindex('bar', -4) # => nil
+ *    a.rindex('bar', offset: -1) # => 3
+ *    a.rindex('bar', offset: -2) # => 1
+ *    a.rindex('bar', offset: -3) # => 1
+ *    a.rindex('bar', offset: -4) # => nil
  *
  *  When neither an argument nor a block is given, returns a new Enumerator.
  *
@@ -2346,7 +2347,7 @@ static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
     VALUE val, opts = Qnil;
-    rb_len_t i = RARRAY_LEN(ary) - 1, end_pos = 0;
+    rb_len_t i = RARRAY_LEN(ary) - 1;
 
     int nargc = rb_scan_args(argc, argv, "01:", &val, &opts);
     if (nargc == 0) {
@@ -2361,16 +2362,11 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
             rb_len_t offset = NUM2LEN(offset_arg);
             /* to_int may have resized the array */
             i = RARRAY_LEN(ary) - 1;
-            if (offset < 0) {
-                if ((i += offset + 1) < 0) return Qnil;
-            }
-            else {
-                if (offset >= RARRAY_LEN(ary)) return Qnil;
-                end_pos = offset;
-            }
+            if (offset < 0 && (offset += RARRAY_LEN(ary)) < 0) return Qnil;
+            if (offset < i) i = offset;
         }
     }
-    for (; i >= end_pos; i--) {
+    for (; i >= 0; i--) {
         VALUE e = RARRAY_AREF(ary, i);
         if (nargc == 0 ? RTEST(rb_yield(e)) : rb_equal(e, val)) {
             return LEN2NUM(i);
