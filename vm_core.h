@@ -578,7 +578,7 @@ struct rb_iseq_constant_body {
         iseq_bits_t single;
     } mark_bits;
 
-    struct rb_id_table *outer_variables;
+    struct rb_iseq_outer_variables *outer_variables;
 
     const rb_iseq_t *mandatory_only_iseq;
 

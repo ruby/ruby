@@ -300,6 +300,29 @@ void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
+
+/*
+ * Locals of enclosing scopes that a block (or any block nested in it)
+ * reads or writes, plus `yield`. Used for Ractor isolation checks and by
+ * ZJIT. Most blocks reference one or two, so this is a small packed array
+ * (ids[capa], sorted, followed by one write flag byte per entry) rather
+ * than an rb_id_table.
+ */
+struct rb_iseq_outer_variables {
+    uint32_t num;
+    uint32_t capa;
+    ID ids[FLEX_ARY_LEN];
+    /* uint8_t write[capa] follows ids[capa] */
+};
+
+void rb_iseq_outer_variables_add(struct rb_iseq_constant_body *body, ID id, bool write);
+int rb_iseq_outer_variables_lookup(const struct rb_iseq_outer_variables *ovs, ID id, VALUE *write);
+size_t rb_iseq_outer_variables_size(const struct rb_iseq_outer_variables *ovs);
+void rb_iseq_outer_variables_foreach(const struct rb_iseq_outer_variables *ovs,
+                                     enum rb_id_table_iterator_result (*func)(ID id, VALUE write, void *data),
+                                     void *data);
+size_t rb_iseq_outer_variables_memsize(const struct rb_iseq_outer_variables *ovs);
+void rb_iseq_outer_variables_free(struct rb_iseq_outer_variables *ovs);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 

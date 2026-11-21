@@ -1634,14 +1634,14 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
 }
 
 static VALUE
-proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *message)
+proc_shared_outer_variables(const struct rb_iseq_outer_variables *outer_variables, const char *message)
 {
     struct collect_outer_variable_name_data data = {
         .ary = Qfalse,
         .read_only = Qfalse,
         .yield = false,
     };
-    rb_id_table_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
+    rb_iseq_outer_variables_foreach(outer_variables, collect_outer_variable_names, (void *)&data);
 
     if (data.ary != Qfalse) {
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);

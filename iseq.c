@@ -184,6 +184,115 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     return hook_list;
 }
 
+static inline size_t
+outer_variables_bytes(uint32_t capa)
+{
+    return offsetof(struct rb_iseq_outer_variables, ids) + capa * (sizeof(ID) + sizeof(uint8_t));
+}
+
+static inline uint8_t *
+outer_variables_writes(const struct rb_iseq_outer_variables *ovs)
+{
+    return (uint8_t *)&ovs->ids[ovs->capa];
+}
+
+/* ids[] is kept sorted; returns the index of id, or -(insertion point) - 1. */
+static long
+outer_variables_search(const struct rb_iseq_outer_variables *ovs, ID id)
+{
+    long lo = 0, hi = ovs ? (long)ovs->num : 0;
+    while (lo < hi) {
+        long mid = lo + (hi - lo) / 2;
+        if (ovs->ids[mid] == id) return mid;
+        if (ovs->ids[mid] < id) lo = mid + 1;
+        else hi = mid;
+    }
+    return -lo - 1;
+}
+
+static long
+outer_variables_index(const struct rb_iseq_outer_variables *ovs, ID id)
+{
+    long idx = outer_variables_search(ovs, id);
+    return idx >= 0 ? idx : -1;
+}
+
+/* Record that `body`'s block accesses outer local (or yield) `id`. */
+void
+rb_iseq_outer_variables_add(struct rb_iseq_constant_body *body, ID id, bool write)
+{
+    struct rb_iseq_outer_variables *ovs = body->outer_variables;
+    long idx = outer_variables_search(ovs, id);
+
+    if (idx >= 0) {
+        if (write) outer_variables_writes(ovs)[idx] = 1;
+        return;
+    }
+    long pos = -idx - 1;
+
+    if (!ovs || ovs->num == ovs->capa) {
+        uint32_t old_capa = ovs ? ovs->capa : 0;
+        uint32_t new_capa = old_capa ? old_capa * 2 : 1;
+        if (new_capa < old_capa) rb_fatal("too many outer variables");
+        struct rb_iseq_outer_variables *grown = ruby_xmalloc(outer_variables_bytes(new_capa));
+        grown->num = 0;
+        grown->capa = new_capa;
+        if (ovs) {
+            MEMCPY(grown->ids, ovs->ids, ID, ovs->num);
+            MEMCPY(outer_variables_writes(grown), outer_variables_writes(ovs), uint8_t, ovs->num);
+            grown->num = ovs->num;
+            ruby_xfree_sized(ovs, outer_variables_bytes(old_capa));
+        }
+        body->outer_variables = ovs = grown;
+    }
+
+    uint8_t *writes = outer_variables_writes(ovs);
+    MEMMOVE(&ovs->ids[pos + 1], &ovs->ids[pos], ID, ovs->num - pos);
+    MEMMOVE(&writes[pos + 1], &writes[pos], uint8_t, ovs->num - pos);
+    ovs->ids[pos] = id;
+    writes[pos] = write ? 1 : 0;
+    ovs->num++;
+}
+
+/* Same contract as rb_id_table_lookup: nonzero if present, *write = Qtrue/Qfalse. */
+int
+rb_iseq_outer_variables_lookup(const struct rb_iseq_outer_variables *ovs, ID id, VALUE *write)
+{
+    long idx = outer_variables_index(ovs, id);
+    if (idx < 0) return 0;
+    if (write) *write = RBOOL(outer_variables_writes(ovs)[idx]);
+    return 1;
+}
+
+size_t
+rb_iseq_outer_variables_size(const struct rb_iseq_outer_variables *ovs)
+{
+    return ovs ? ovs->num : 0;
+}
+
+void
+rb_iseq_outer_variables_foreach(const struct rb_iseq_outer_variables *ovs,
+                                enum rb_id_table_iterator_result (*func)(ID id, VALUE write, void *data),
+                                void *data)
+{
+    if (!ovs) return;
+    for (uint32_t i = 0; i < ovs->num; i++) {
+        if (func(ovs->ids[i], RBOOL(outer_variables_writes(ovs)[i]), data) == ID_TABLE_STOP) break;
+    }
+}
+
+size_t
+rb_iseq_outer_variables_memsize(const struct rb_iseq_outer_variables *ovs)
+{
+    return ovs ? outer_variables_bytes(ovs->capa) : 0;
+}
+
+void
+rb_iseq_outer_variables_free(struct rb_iseq_outer_variables *ovs)
+{
+    if (ovs) ruby_xfree_sized(ovs, outer_variables_bytes(ovs->capa));
+}
+
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {
@@ -242,7 +351,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         }
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
-        if (body->outer_variables) rb_id_table_free(body->outer_variables);
+        rb_iseq_outer_variables_free(body->outer_variables);
         SIZED_FREE(body);
     }
 
@@ -611,7 +720,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += (body->param.opt_num + 1) * sizeof(VALUE);
         size += param_keyword_size(body->param.keyword);
 
-        if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
+        size += rb_iseq_outer_variables_memsize(body->outer_variables);
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
