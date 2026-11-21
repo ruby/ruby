@@ -735,7 +735,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, function, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, function, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, function, &function.frame_state(*state), unsafe { &**bf }, *leaf, opnds!(args)),
-        Insn::InvokeBlockIseqDirect { iseq, captured, args, state } => gen_invoke_block_iseq_direct(cb, jit, asm, function, *iseq, opnd!(captured), opnds!(args), &function.frame_state(*state)),
+        Insn::InvokeBlockIseqDirect { iseq, captured, args, argc, state } => gen_invoke_block_iseq_direct(cb, jit, asm, function, *iseq, opnd!(captured), opnds!(args), *argc, &function.frame_state(*state)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -2130,6 +2130,7 @@ fn gen_invoke_block_iseq_direct(
     block_iseq: IseqPtr,
     captured: Opnd,
     args: Vec<Opnd>,
+    argc: usize,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::block_iseq_direct_optimized_send_count);
@@ -2147,14 +2148,14 @@ fn gen_invoke_block_iseq_direct(
     // specval = VM_GUARDED_PREV_EP(captured->ep) = captured->ep | 0x01
     let specval = asm.or(captured_ep, Opnd::Imm(0x1));
 
-    let stack_size = state.stack().len() - args.len();
+    let stack_size = state.stack().len() - argc;
     let stack_map = build_stack_map(jit, function, &state.with_stack_size(stack_size));
     let jit_frame = gen_write_jit_frame(asm, state);
     gen_save_sp(asm, stack_size);
 
     asm.stack_map(stack_map, jit_frame, state.depth);
 
-    gen_push_frame(asm, args.len(), state, ControlFrame {
+    gen_push_frame(asm, argc, state, ControlFrame {
         recv: captured_self,
         iseq: Some(block_iseq),
         cme: std::ptr::null(),
