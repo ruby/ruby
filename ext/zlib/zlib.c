@@ -4094,7 +4094,7 @@ rb_gzreader_s_zcat(int argc, VALUE *argv, VALUE klass)
     io = argv[0];
 
     do {
-        obj = rb_funcallv(klass, rb_intern("new"), argc, argv);
+        obj = rb_funcallv_kw(klass, rb_intern("new"), argc, argv, RB_PASS_CALLED_KEYWORDS);
         if (rb_block_given_p()) {
            rb_gzreader_each(0, 0, obj);
         }

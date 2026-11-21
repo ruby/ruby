@@ -873,6 +873,34 @@ if defined? Zlib
       }
     end
 
+    def test_gzip_reader_zcat_with_options
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        t.binmode
+        gz = Zlib::GzipWriter.new(t)
+        gz.print("foo")
+        gz.close
+        File.open(t.path, 'ab') do |f|
+          gz = Zlib::GzipWriter.new(f)
+          gz.print("bar")
+          gz.close
+        end
+
+        results = []
+        File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f, external_encoding: Encoding::UTF_8) do |str|
+            results << str
+          end
+        end
+        assert_equal(["foo", "bar"], results)
+        assert_equal([Encoding::UTF_8, Encoding::UTF_8], results.map(&:encoding))
+
+        results = File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f, external_encoding: Encoding::UTF_8)
+        end
+        assert_equal("foobar", results)
+      }
+    end
+
     def test_to_io
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         t.close
