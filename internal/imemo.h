@@ -46,6 +46,7 @@ enum imemo_type {
     imemo_fields         = 13,
     imemo_subclasses     = 14,
     imemo_cdhash         = 15,
+    imemo_iseq_code      = 16, /*!< liveness of an iseq's executable parts */
 };
 
 /* CREF (Class REFerence) is defined in method.h */

@@ -1267,6 +1267,28 @@ cont_compact(void *ptr)
     rb_execution_context_update(&cont->saved_ec);
 }
 
+/* The iseq of a control frame saved in a continuation. A ZJIT frame keeps
+ * its JITFrame pointer in a slot on the machine stack, and that address is
+ * only valid while the continuation runs; until then the slot's contents are
+ * in the continuation's copy of the machine stack. */
+static const rb_iseq_t *
+cont_saved_frame_iseq(const rb_context_t *cont, const rb_control_frame_t *cfp)
+{
+    if (!CFP_ZJIT_FRAME_P(cfp)) return cfp->_iseq;
+#if USE_ZJIT
+    if ((VALUE)cfp->jit_return == ZJIT_JIT_RETURN_C_FRAME) return CFP_ZJIT_FRAME(cfp)->iseq;
+
+    const VALUE *slot = (const VALUE *)cfp->jit_return - 1;
+    if (cont->machine.stack && slot >= cont->machine.stack_src &&
+        slot < cont->machine.stack_src + cont->machine.stack_size) {
+        const zjit_jit_frame_t *jit_frame =
+            (const zjit_jit_frame_t *)cont->machine.stack[slot - cont->machine.stack_src];
+        if (jit_frame) return jit_frame->iseq;
+    }
+#endif
+    return NULL;
+}
+
 static void
 cont_mark_ctx(const struct rb_gc_mark_ctx *ctx, rb_context_t *cont)
 {
@@ -1283,6 +1305,12 @@ cont_mark_ctx(const struct rb_gc_mark_ctx *ctx, rb_context_t *cont)
 #ifdef CAPTURE_JUST_VALID_VM_STACK
         rb_gc_mark_locations_ctx(ctx, cont->saved_vm_stack.ptr,
                                  cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+        /* saved control frames can be resumed: keep their code */
+        const rb_control_frame_t *cfp = (const rb_control_frame_t *)(cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen);
+        const rb_control_frame_t *cfp_end = (const rb_control_frame_t *)(cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+        for (; cfp < cfp_end; cfp++) {
+            rb_iseq_mark_code_maybe_ctx(ctx, (VALUE)cont_saved_frame_iseq(cont, cfp));
+        }
 #else
         rb_gc_mark_locations_ctx(ctx, cont->saved_vm_stack.ptr,
                                  cont->saved_vm_stack.ptr, cont->saved_ec.stack_size);

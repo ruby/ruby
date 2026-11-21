@@ -151,7 +151,11 @@ static void
 location_mark_entry(rb_backtrace_location_t *fi)
 {
     rb_gc_mark((VALUE)fi->cme);
-    if (fi->iseq) rb_gc_mark_movable((VALUE)fi->iseq);
+    if (fi->iseq) {
+        rb_gc_mark_movable((VALUE)fi->iseq);
+        /* pc -> line number and node id decoding needs the code */
+        rb_iseq_mark_code(fi->iseq);
+    }
 }
 
 static const rb_data_type_t location_data_type = {

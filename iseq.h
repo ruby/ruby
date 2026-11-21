@@ -12,6 +12,7 @@
 **********************************************************************/
 #include "internal/coverage.h"
 #include "internal/gc.h"
+#include "internal/imemo.h"
 #include "shape.h"
 #include "vm_core.h"
 
@@ -171,6 +172,79 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 /* set on every iseq of a subtree copied for Proc#refined */
 #define ISEQ_REFINED_COPY     IMEMO_FL_USER4
+/* the iseq keeps its own code object alive: set when the code object is
+ * created, cleared once something that can run the code holds it (the
+ * parent's code object for child iseqs, the first frame for top-level,
+ * main and eval iseqs) */
+#define ISEQ_CODE_ROOTED      IMEMO_FL_USER5
+
+/*
+ * Executable parts of an iseq that has child iseqs (iseq_encoded and its
+ * operands, original_iseq, mark bits, inline caches, call data, catch
+ * table, insns_info, node ids, JIT code) are kept alive by this object
+ * rather than by the iseq itself. Only things that can run or decode the
+ * code mark it: control frames, method entries, procs, iseq wrappers,
+ * backtrace locations, and the code object of the parent iseq. When it is
+ * collected while the iseq stays alive, the iseq becomes code-less
+ * (iseq_size == 0) and keeps only its metadata.
+ */
+struct rb_iseq_code {
+    VALUE flags;
+    const rb_iseq_t *iseq;
+};
+
+/* imemo_iseq_code owning the executable parts, or 0 when the iseq has no
+ * child iseqs (it then owns them itself), is not loaded yet, or its code
+ * has been collected. */
+static inline VALUE
+rb_iseq_code_obj(const rb_iseq_t *iseq)
+{
+    return FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET) ? 0 : iseq->aux.exec.code;
+}
+
+static inline void
+rb_iseq_mark_code_ctx(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq)
+{
+    VALUE code = iseq ? rb_iseq_code_obj(iseq) : 0;
+    if (code) rb_gc_mark_movable_ctx(ctx, code);
+}
+
+static inline void
+rb_iseq_mark_code(const rb_iseq_t *iseq)
+{
+    VALUE code = iseq ? rb_iseq_code_obj(iseq) : 0;
+    if (code) rb_gc_mark_movable(code);
+}
+
+/* v may be any object or 0 (e.g. a control frame's iseq slot) */
+static inline void
+rb_iseq_mark_code_maybe_ctx(const struct rb_gc_mark_ctx *ctx, VALUE v)
+{
+    if (v && !RB_SPECIAL_CONST_P(v) && IMEMO_TYPE_P(v, imemo_iseq)) {
+        rb_iseq_mark_code_ctx(ctx, (const rb_iseq_t *)v);
+    }
+}
+
+/* For mark_and_move functions that do not know whether the GC is marking
+ * or updating references: marks while marking, is a no-op otherwise (the
+ * iseq updates its own pointer to the code object). */
+static inline void
+rb_iseq_mark_and_move_code(const rb_iseq_t *iseq)
+{
+    VALUE code = iseq ? rb_iseq_code_obj(iseq) : 0;
+    if (code) {
+        rb_gc_mark_and_move(&code);
+    }
+}
+
+/* Once something that runs the code holds it, the iseq stops rooting it. */
+static inline void
+rb_iseq_code_unroot(const rb_iseq_t *iseq)
+{
+    if (RB_UNLIKELY(FL_TEST_RAW((VALUE)iseq, ISEQ_CODE_ROOTED))) {
+        FL_UNSET_RAW((VALUE)iseq, ISEQ_CODE_ROOTED);
+    }
+}
 
 #define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
@@ -288,6 +362,9 @@ void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
                             VALUE locals, VALUE args,
                             VALUE exception, VALUE body);
 void rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *arena);
+void rb_iseq_attach_code(rb_iseq_t *iseq);
+void rb_iseq_code_mark_and_move(const struct rb_gc_mark_ctx *ctx, struct rb_iseq_code *code, bool reference_updating);
+void rb_iseq_code_free(struct rb_iseq_code *code);
 
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
