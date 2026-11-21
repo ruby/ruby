@@ -54,6 +54,7 @@ class TestISeqCodeGC < Test::Unit::TestCase
   end
 
   def test_retained_proc_does_not_pin_siblings
+    omit 'MMTk has no old/young check, so an iseq always marks its code' unless GC.config[:implementation] == 'default'
     many = +"class CodeGCMany\n"
     400.times { |i| many << "  [1, 2].each { |x| x + #{i} }\n" }
     many << "  KEEP = proc { 1 }\n  def m = 2\nend\n"
@@ -131,6 +132,8 @@ class TestISeqCodeGC < Test::Unit::TestCase
   end
 
   def test_callcc_reenters_finished_class_body
+    EnvUtil.suppress_warning {require 'continuation'}
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
     with_lib(<<~'RUBY')
       v, $VERBOSE = $VERBOSE, nil
       require "continuation"
