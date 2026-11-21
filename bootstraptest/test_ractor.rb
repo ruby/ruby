@@ -1002,6 +1002,38 @@ assert_equal 'true', <<~'RUBY', frozen_string_literal: false
   end
 RUBY
 
+# Ractor#value hands the classes the dead Ractor created to the Ractor taking the value
+assert_equal '[:ok, :ok, :ok, :ok, Ractor::IsolationError, :ok]', <<~'RUBY'
+  def try = (yield; :ok) rescue $!.class
+
+  c = Ractor.new do
+    k = Class.new
+    k.instance_variable_set(:@iv, +'str')
+    k
+  end.value
+  main = try { c.instance_variable_get(:@iv) << '!'; c.include(Comparable) }
+  meta = try { def c.foo = :foo }
+
+  r = Ractor.new do
+    k = Ractor.new { Class.new }.value
+    [try { k.define_method(:a) { } }, k]
+  end
+  nonmain, c = r.value
+  main_after = try { c.define_method(:b) { } }
+
+  other = Ractor.new(c) { |k| try { k.define_method(:c) { } } }.value
+
+  # a moved object's singleton class stays where it was allocated
+  o = Object.new
+  def o.foo = :foo
+  r = Ractor.new { Ractor.receive }
+  r.send(o, move: true)
+  o = r.value
+  moved = try { def o.bar = :bar }
+
+  [main, meta, nonmain, main_after, other, moved]
+RUBY
+
 # normal and JIT-compiled ivar reads report the same names without calling to_s
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
   class C
