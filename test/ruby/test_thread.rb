@@ -253,6 +253,17 @@ class TestThread < Test::Unit::TestCase
     assert_same(t, t.join(limit))
   end
 
+  def test_join_rejects_nan_timeout
+    t = Thread.new { sleep }
+    begin
+      assert_raise_with_message(FloatDomainError, "NaN") { t.join(Float::NAN) }
+      assert_raise_with_message(FloatDomainError, "NaN") { t.join(-Float::NAN) }
+    ensure
+      t.kill
+      t.join
+    end
+  end
+
   { 'FIXNUM_MAX' => RbConfig::LIMITS['FIXNUM_MAX'],
     'UINT64_MAX' => RbConfig::LIMITS['UINT64_MAX'],
     'INFINITY'   => Float::INFINITY
