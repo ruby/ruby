@@ -1768,6 +1768,10 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         printf("%s\n", StringValueCStr(str));
     }
     verify_call_cache(iseq);
+
+    debugs("[compile step 8 (rb_iseq_pack_body)] \n");
+    rb_iseq_pack_body(iseq);
+
     debugs("[compile step: finish]\n");
 
     return COMPILE_OK;
@@ -14294,6 +14298,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load->current_buffer = saved_buffer;
 #endif
     verify_call_cache(iseq);
+    rb_iseq_pack_body(iseq);
 
     RB_GC_GUARD(dummy_frame);
     rb_vm_pop_frame_no_int(ec);

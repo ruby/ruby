@@ -171,6 +171,8 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 /* set on every iseq of a subtree copied for Proc#refined */
 #define ISEQ_REFINED_COPY     IMEMO_FL_USER4
+/* set once rb_iseq_pack_body() has moved the read-only arrays into one block */
+#define ISEQ_PACKED           IMEMO_FL_USER5
 
 #define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
@@ -299,6 +301,7 @@ void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 void rb_iseq_alloc_inline_storage(struct rb_iseq_constant_body *body);
+void rb_iseq_pack_body(rb_iseq_t *iseq);
 
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
