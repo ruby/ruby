@@ -761,6 +761,24 @@ class TestBignum < Test::Unit::TestCase
     assert_in_delta(1E+300, (10**500).fdiv(1E+200), 1E+285)
   end
 
+  def test_fdiv_zero
+    assert_equal(Float::INFINITY, @fmax2.fdiv(0))
+    assert_equal(-Float::INFINITY, (-@fmax2).fdiv(0))
+    assert_equal(Float::INFINITY, @fmax2.fdiv(0.0))
+    assert_equal(-Float::INFINITY, @fmax2.fdiv(-0.0))
+    assert_equal(-Float::INFINITY, (-@fmax2).fdiv(0.0))
+    assert_equal(Float::INFINITY, (-@fmax2).fdiv(-0.0))
+    assert_equal(Float::INFINITY, @fmax2.quo(0.0))
+    assert_equal(-Float::INFINITY, @fmax2.quo(-0.0))
+  end
+
+  def test_fdiv_infinity
+    assert_equal(Float::INFINITY, 1.0 / @fmax2.fdiv(Float::INFINITY))
+    assert_equal(-Float::INFINITY, 1.0 / @fmax2.fdiv(-Float::INFINITY))
+    assert_equal(-Float::INFINITY, 1.0 / (-@fmax2).fdiv(Float::INFINITY))
+    assert_equal(Float::INFINITY, 1.0 / (-@fmax2).fdiv(-Float::INFINITY))
+  end
+
   def test_obj_fdiv
     o = Object.new
     def o.coerce(x); [x, 2**100]; end
