@@ -32,17 +32,39 @@
 #define rb_int_new  rb_int2inum  /**< @alias{rb_int2inum} */
 #define rb_uint_new rb_uint2inum /**< @alias{rb_uint2inum} */
 
-// These definitions are same as fiddle/conversions.h
-#if SIZEOF_VOIDP <= SIZEOF_LONG
-# define PTR2NUM(x) (LONG2NUM((long)(x)))
-# define NUM2PTR(x) ((void*)(NUM2ULONG(x)))
-#elif SIZEOF_VOIDP <= SIZEOF_LONG_LONG
-# define PTR2NUM(x) (LL2NUM((LONG_LONG)(x)))
-# define NUM2PTR(x) ((void*)(NUM2ULL(x)))
+#if SIZEOF_INTPTR_T == SIZEOF_LONG
+/** Converts a C's `intptr_t` into an instance of ::rb_cInteger. */
+# define RB_INTPTR2NUM RB_LONG2NUM
+/** Converts a C's `uintptr_t` into an instance of ::rb_cInteger. */
+# define RB_UINTPTR2NUM RB_ULONG2NUM
+/** Converts an instance of ::rb_cNumeric into C's `intptr_t`. */
+# define RB_NUM2INTPTR RB_NUM2LONG
+/** Converts an instance of ::rb_cNumeric into C's `uintptr_t`. */
+# define RB_NUM2UINTPTR RB_NUM2ULONG
+#elif SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
+# define RB_INTPTR2NUM RB_LL2NUM
+# define RB_UINTPTR2NUM RB_ULL2NUM
+# define RB_NUM2INTPTR RB_NUM2LL
+# define RB_NUM2UINTPTR RB_NUM2ULL
 #else
 // should have been an error in ruby/internal/value.h
 # error Need integer for VALUE
 #endif
+
+/** Converts a Fixnum into C's `intptr_t`. */
+#define RB_FIX2INTPTR RB_FIX2LONG
+/** Converts a Fixnum into C's `uintptr_t`. */
+#define RB_FIX2UINTPTR RB_FIX2ULONG
+
+#define INTPTR2NUM RB_INTPTR2NUM   /**< @old{RB_INTPTR2NUM} */
+#define UINTPTR2NUM RB_UINTPTR2NUM /**< @old{RB_UINTPTR2NUM} */
+#define NUM2INTPTR RB_NUM2INTPTR   /**< @old{RB_NUM2INTPTR} */
+#define NUM2UINTPTR RB_NUM2UINTPTR /**< @old{RB_NUM2UINTPTR} */
+#define FIX2INTPTR RB_FIX2INTPTR   /**< @old{RB_FIX2INTPTR} */
+#define FIX2UINTPTR RB_FIX2UINTPTR /**< @old{RB_FIX2UINTPTR} */
+
+#define PTR2NUM(x) RB_UINTPTR2NUM((uintptr_t)(x))
+#define NUM2PTR(x) ((void *)RB_NUM2UINTPTR(x))
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
