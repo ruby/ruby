@@ -757,6 +757,124 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  LAZY_LOAD_PRELUDE = <<~'RUBY'
+    def lazy_load(src, file = "lazy.rb")
+      bin = RubyVM::InstructionSequence.compile(src, file).to_binary
+      RubyVM::InstructionSequence.load_from_binary(bin, lazy: true)
+    end
+  RUBY
+
+  def test_load_from_binary_lazy
+    assert_separately([], LAZY_LOAD_PRELUDE + <<~'RUBY')
+      src = <<~'SRC'
+        class LazyA
+          def initialize = (@a = 1; @b = 2)
+          def m1(a, b = 2, *r, k: 1, **kw, &blk) = [a, b, r, k, kw, blk&.call]
+          def m2 = [1, 2].map { |x| [x].map { |y| y * 10 } }
+          def m3
+            yield 1
+          rescue => e
+            e.message
+          end
+          def m4(*a) = a
+          ruby2_keywords :m4
+          define_method(:m5) { |x| x * 3 }
+          def self.sm = :sm
+          P = ->(*a) { a }
+          P.ruby2_keywords
+        end
+      SRC
+      top = lazy_load(src)
+      assert_equal(RubyVM::InstructionSequence.compile(src, "lazy.rb").to_a, top.to_a)
+      bin = top.to_binary
+      top.eval
+      assert_equal(RubyVM::InstructionSequence.load_from_binary(bin).to_a, top.to_a)
+
+      m1 = LazyA.instance_method(:m1)
+      hash = m1.hash
+      assert_equal([[:req, :a], [:opt, :b], [:rest, :r], [:key, :k], [:keyrest, :kw], [:block, :blk]], m1.parameters)
+      assert_equal(-2, m1.arity)
+      assert_equal(["lazy.rb", 3], m1.source_location)
+      assert_equal(["block in m2"], [].tap { |a| RubyVM::InstructionSequence.of(LazyA.instance_method(:m2)).each_child { a << _1.label } })
+
+      a = LazyA.new
+      assert_equal([1, 2, [], 1, {}, :b], a.m1(1) { :b })
+      assert_equal(hash, LazyA.instance_method(:m1).hash)
+      assert_equal([[10], [20]], a.m2)
+      assert_equal(1, a.m3 { _1 })
+      assert_equal("x", a.m3 { raise "x" })
+      assert_equal([{k: 1}], a.m4(k: 1))
+      assert_equal(6, a.m5(2))
+      assert_equal(:sm, LazyA.sm)
+      assert_equal([{k: 1}], LazyA::P.(k: 1))
+
+      bin = RubyVM::InstructionSequence.compile("class LazyB; def b = :b; end").to_binary
+      src = bin.dup
+      lazy = RubyVM::InstructionSequence.load_from_binary(src, lazy: true)
+      src.replace("x" * src.bytesize)
+      lazy.eval
+      GC.start
+      assert_equal(:b, LazyB.new.b)
+    RUBY
+  end
+
+  def test_load_from_binary_lazy_gc_compact
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+    assert_separately([], LAZY_LOAD_PRELUDE + <<~'RUBY')
+      lazy_load("class LazyC; def deep = [1].map { [2].map { [3].map { |x| x } } }; def other = 7; end").eval
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert_equal([[[3]]], LazyC.new.deep)
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert_equal(7, LazyC.new.other)
+    RUBY
+  end
+
+  def test_load_from_binary_lazy_tracepoint
+    assert_separately([], LAZY_LOAD_PRELUDE + <<~'RUBY')
+      src = "class LazyD\n def t\n  x = 1\n  [x].map { |y|\n    y + 1\n  }\n end\nend"
+      lazy_load(src, "d.rb").eval
+      lines = []
+      TracePoint.new(:line) { |tp| lines << tp.lineno if tp.path == "d.rb" }.enable { LazyD.new.t }
+      assert_equal([3, 4, 5], lines)
+
+      lazy_load(src.sub("LazyD", "LazyE"), "e.rb").eval
+      lines = []
+      TracePoint.new(:line) { |tp| lines << tp.lineno }.enable(target: LazyE.instance_method(:t)) { LazyE.new.t }
+      assert_equal([3, 4, 5], lines)
+    RUBY
+  end
+
+  def test_load_from_binary_lazy_coverage
+    assert_separately(%w[-rcoverage], LAZY_LOAD_PRELUDE + <<~'RUBY')
+      iseq = lazy_load("class LazyF; def f = [1].map { _1 }; end")
+      Coverage.start(lines: true)
+      iseq.eval
+      Coverage.result
+      assert_equal([1], LazyF.new.f)
+    RUBY
+  end
+
+  def test_load_from_binary_lazy_first_call_on_stack_overflow
+    assert_separately([], LAZY_LOAD_PRELUDE + <<~'RUBY')
+      lazy_load("class LazyS; def m = [1, 2].map { |x| x * 2 }; end").eval
+      def r
+        r
+      rescue SystemStackError
+        LazyS.new.m
+      end
+      assert_equal([2, 4], r)
+      assert_equal([2, 4], LazyS.new.m)
+    RUBY
+  end
+
+  def test_load_from_binary_lazy_ractor
+    assert_ractor(LAZY_LOAD_PRELUDE + <<~'RUBY')
+      lazy_load("class LazyR; " + (1..200).map { |i| "def self.r#{i} = [#{i}].map { |x| x }.first" }.join("; ") + "; end").eval
+      rs = 4.times.map { Ractor.new { (1..200).sum { |i| LazyR.send(:"r#{i}") } } }
+      assert_equal([20100] * 4, rs.map(&:value))
+    RUBY
+  end
+
   def collect_from_binary_tracepoint_lines(tracepoint_type, filename)
     iseq = RubyVM::InstructionSequence.compile(strip_lineno(<<-RUBY), filename)
       class A
