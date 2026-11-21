@@ -1436,6 +1436,21 @@ eom
     end
   end
 
+  def test_warning_line_for_literals_in_condition
+    assert_warning(<<~WARN) do
+      test:2: warning: symbol literal in condition
+      test:3: warning: string literal in flip-flop
+    WARN
+      eval(<<~RUBY, nil, "test")
+        if (
+          :c &&
+          (""..false)
+        )
+        end
+      RUBY
+    end
+  end
+
   def test_warning_literal_in_flip_flop
     assert_warn(/literal in flip-flop/) do
       eval('1 if ""..false')
