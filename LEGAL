@@ -407,23 +407,39 @@ mentioned below.
     This special exception was added by the Free Software Foundation in
     version 2.2 of Bison.
 
-[missing/dtoa.c]
-
+[missing/fpfmt.c]
+  
   This file is under these licenses.
 
   >>>
-    Copyright (c) 1991, 2000, 2001:: by Lucent Technologies.
+    Copyright (c) 2009:: The Go Authors 
+                         All rights reserved.
 
-    Permission to use, copy, modify, and distribute this software for any
-    purpose without fee is hereby granted, provided that this entire notice
-    is included in all copies of any software which is or includes a copy
-    or modification of this software and in all copies of the supporting
-    documentation for such software.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
 
-    THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
-    WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR LUCENT MAKES ANY
-    REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
-    OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
+      1. Redistributions of source code must retain the above copyright
+         notice, this list of conditions and the following disclaimer.
+      2. Redistributions in binary form must reproduce the above
+         copyright notice, this list of conditions and the following 
+         disclaimer in the documentation and/or other materials provided 
+         with the distribution.
+      3. Neither the name of Google Inc. nor the names of its contributors
+         may be used to endorse or promote products derived from this
+         software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   >>>
     Copyright (c) 2004-2008:: David Schultz <das@FreeBSD.ORG>
@@ -449,6 +465,40 @@ mentioned below.
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
+
+[missing/pow10.h]
+
+  This file is under this license.
+
+  >>>
+    Copyright (c) 2009:: The Go Authors 
+                         All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+
+      1. Redistributions of source code must retain the above copyright
+         notice, this list of conditions and the following disclaimer.
+      2. Redistributions in binary form must reproduce the above
+         copyright notice, this list of conditions and the following 
+         disclaimer in the documentation and/or other materials provided 
+         with the distribution.
+      3. Neither the name of Google Inc. nor the names of its contributors
+         may be used to endorse or promote products derived from this
+         software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 [win32/win32.c]
 [include/ruby/win32.h]
