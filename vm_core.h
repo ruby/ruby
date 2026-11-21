@@ -429,6 +429,24 @@ enum lvar_state {
 
 /* Lazily-allocated per-iseq variable data. NULL when unused (the common case:
  * no coverage, no script_lines, no flip-flops, no disassembly). */
+#if USE_YJIT || USE_ZJIT
+/* JIT state of an ISeq that the interpreter does not touch on its call path.
+ * Allocated by rb_iseq_jit_data_ensure() when a JIT first needs it, and
+ * reached through ISEQ_JIT_DATA(). jit_entry and jit_entry_calls stay in
+ * rb_iseq_constant_body since jit_exec() reads them on every call. */
+struct rb_iseq_jit_data {
+    // Function pointer for JIT code on jit_exec_exception()
+    rb_jit_func_t jit_exception;
+    void *jit_payload;
+    // Number of calls on jit_exec_exception()
+    unsigned int jit_exception_calls;
+    // Set once an EP escape of this iseq has been reported to the enabled JIT.
+    rb_atomic_t jit_ep_escape_recorded;
+    // Used by YJIT to estimate how frequently this ISEQ gets called
+    unsigned int yjit_calls_at_interv;
+};
+#endif
+
 /* Rarely-set ISeq state, kept out of rb_iseq_constant_body and allocated on
  * first use by rb_iseq_variable_ensure(). Read through the NULL-safe
  * ISEQ_BODY_VARIABLE_* accessors in iseq.h. */
@@ -443,6 +461,10 @@ struct rb_iseq_variable {
     struct iseq_catch_table *catch_table;
     struct rb_id_table *outer_variables;
     const rb_iseq_t *mandatory_only_iseq;
+
+#if USE_YJIT || USE_ZJIT
+    struct rb_iseq_jit_data *jit;
+#endif
 };
 
 struct rb_iseq_constant_body {
@@ -577,9 +599,6 @@ struct rb_iseq_constant_body {
     bool prism; // ISEQ was generated from prism compiler
     bool no_realpath; // location.pathobj names no real file (ex: during eval)
 
-    // Set once an EP escape of this iseq has been reported to the enabled JIT.
-    rb_atomic_t jit_ep_escape_recorded;
-
     union {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;
@@ -588,18 +607,8 @@ struct rb_iseq_constant_body {
 #if USE_YJIT || USE_ZJIT
     // Number of calls on jit_exec()
     unsigned int jit_entry_calls;
-    // Number of calls on jit_exec_exception()
-    unsigned int jit_exception_calls;
     // Function pointer for JIT code on jit_exec()
     rb_jit_func_t jit_entry;
-    // Function pointer for JIT code on jit_exec_exception()
-    rb_jit_func_t jit_exception;
-    void *jit_payload;
-#endif
-
-#if USE_YJIT
-    // Used to estimate how frequently this ISEQ gets called
-    unsigned int yjit_calls_at_interv;
 #endif
 
     // Hash of the source this iseq was compiled from, or 0 if it is

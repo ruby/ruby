@@ -660,6 +660,15 @@ pub type rb_jit_func_t = ::std::option::Option<
     ) -> VALUE,
 >;
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_jit_data {
+    pub jit_exception: rb_jit_func_t,
+    pub jit_payload: *mut ::std::os::raw::c_void,
+    pub jit_exception_calls: ::std::os::raw::c_uint,
+    pub jit_ep_escape_recorded: rb_atomic_t,
+    pub yjit_calls_at_interv: ::std::os::raw::c_uint,
+}
+#[repr(C)]
 pub struct rb_iseq_variable {
     pub flip_count: rb_snum_t,
     pub script_lines: VALUE,
@@ -669,6 +678,7 @@ pub struct rb_iseq_variable {
     pub catch_table: *mut iseq_catch_table,
     pub outer_variables: *mut rb_id_table,
     pub mandatory_only_iseq: *const rb_iseq_t,
+    pub jit: *mut rb_iseq_jit_data,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

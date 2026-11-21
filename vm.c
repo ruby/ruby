@@ -497,7 +497,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, unsigned int entry_calls)
 
     // Record the number of calls at the beginning of the interval
     if (entry_calls + YJIT_CALL_COUNT_INTERV == rb_yjit_call_threshold) {
-        ISEQ_BODY(iseq)->yjit_calls_at_interv = yjit_total_entry_hits;
+        rb_iseq_jit_data_ensure(iseq)->yjit_calls_at_interv = yjit_total_entry_hits;
     }
 
     // Try to estimate the total time taken (total number of calls) to reach 20 calls to this ISEQ
@@ -508,7 +508,8 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, unsigned int entry_calls)
             return true;
         }
 
-        unsigned int num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
+        struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
+        unsigned int num_calls = yjit_total_entry_hits - (jit ? jit->yjit_calls_at_interv : 0);
 
         // Reject ISEQs that don't get called often enough
         if (num_calls > rb_yjit_cold_threshold) {
@@ -637,22 +638,23 @@ static inline rb_jit_func_t
 jit_compile_exception(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
-    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
 
 #if USE_ZJIT
     // rb_zjit_compiling_p is false until ZJIT is enabled, so no
     // rb_zjit_enabled_p check is needed here.
-    if (body->jit_exception == NULL && rb_zjit_compiling_p) {
-        body->jit_exception_calls++;
+    if ((jit == NULL || jit->jit_exception == NULL) && rb_zjit_compiling_p) {
+        jit = rb_iseq_jit_data_ensure(iseq);
+        jit->jit_exception_calls++;
 
         // At profile-threshold, rewrite some of the YARV instructions
         // to zjit_* instructions to profile these instructions.
-        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+        if (jit->jit_exception_calls == rb_zjit_profile_threshold) {
             rb_zjit_profile_enable(iseq);
         }
 
         // At call-threshold, compile the ISEQ with ZJIT.
-        if (body->jit_exception_calls == rb_zjit_call_threshold) {
+        if (jit->jit_exception_calls == rb_zjit_call_threshold) {
             rb_zjit_compile_iseq(iseq, ec, true);
         }
     }
@@ -661,14 +663,15 @@ jit_compile_exception(rb_execution_context_t *ec)
 #if USE_YJIT
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
     // Like the ZJIT branch above, no rb_yjit_enabled_p check is needed here.
-    if (body->jit_exception == NULL && rb_yjit_compiling_p) {
-        body->jit_exception_calls++;
-        if (body->jit_exception_calls == rb_yjit_call_threshold) {
+    if ((jit == NULL || jit->jit_exception == NULL) && rb_yjit_compiling_p) {
+        jit = rb_iseq_jit_data_ensure(iseq);
+        jit->jit_exception_calls++;
+        if (jit->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
 #endif
-    return body->jit_exception;
+    return jit ? jit->jit_exception : NULL;
 }
 
 // Execute JIT code compiled by jit_compile_exception()
@@ -1137,6 +1140,18 @@ static void rb_zjit_extract_values_from_stack_map(const rb_execution_context_t *
 #endif
 
 // child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
+// Whether an EP escape of this iseq has been reported to the enabled JIT.
+static inline bool
+iseq_jit_ep_escape_recorded_p(const rb_iseq_t *iseq)
+{
+#if USE_YJIT || USE_ZJIT
+    struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
+    return jit && rbimpl_atomic_load(&jit->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED);
+#else
+    return true;
+#endif
+}
+
 static VALUE
 vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
 {
@@ -1193,8 +1208,8 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // below leaves the on-stack ep in a state that is unsafe to GC.
     // Once the enabled JIT has recorded this iseq's escape, the invalidations
     // are no longer useful and can slow down Ractors.
-    if (VM_FRAME_RUBYFRAME_P(cfp) &&
-        !rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED)) {
+    if ((rb_yjit_enabled_p || rb_zjit_enabled_p) && VM_FRAME_RUBYFRAME_P(cfp) &&
+        !iseq_jit_ep_escape_recorded_p(iseq)) {
         if (rb_yjit_enabled_p) rb_yjit_invalidate_ep_is_bp(iseq);
         if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(iseq);
     }

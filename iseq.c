@@ -229,6 +229,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
                 ruby_xfree_sized(v->catch_table, iseq_catch_table_bytes(v->catch_table->size));
             }
             if (v->outer_variables) rb_id_table_free(v->outer_variables);
+#if USE_YJIT || USE_ZJIT
+            if (v->jit) SIZED_FREE(v->jit);
+#endif
             SIZED_FREE(v);
         }
 
@@ -274,6 +277,29 @@ rb_iseq_variable_ensure(rb_iseq_t *iseq)
     }
     return v;
 }
+
+#if USE_YJIT || USE_ZJIT
+struct rb_iseq_jit_data *
+rb_iseq_jit_data_ensure(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
+    if (jit) return jit;
+
+    rb_ractor_t *cr = rb_current_ractor_raw(false);
+    bool saved_malloc_gc_disabled = cr ? cr->malloc_gc_disabled : false;
+    if (cr) cr->malloc_gc_disabled = true;
+    struct rb_iseq_variable *v = rb_iseq_variable_ensure((rb_iseq_t *)iseq);
+    jit = ZALLOC(struct rb_iseq_jit_data);
+    if (cr) cr->malloc_gc_disabled = saved_malloc_gc_disabled;
+
+    struct rb_iseq_jit_data *prev = ATOMIC_PTR_CAS(v->jit, NULL, jit);
+    if (prev) {
+        SIZED_FREE(jit);
+        jit = prev;
+    }
+    return jit;
+}
+#endif
 
 void
 rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov)
@@ -489,7 +515,9 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
          * compile/invalidate). Iseqs are born shareable, so a multi-Ractor local GC
          * never traverses them. */
         const bool jit_payload_lock_p = rb_gc_multi_objspace_p();
-        bool jit_payload_p = body->jit_payload != NULL;
+        struct rb_iseq_jit_data *jit_data = v ? v->jit : NULL;
+        void *jit_payload = jit_data ? jit_data->jit_payload : NULL;
+        bool jit_payload_p = jit_payload != NULL;
 #endif
         if (reference_updating) {
 #if USE_YJIT || USE_ZJIT
@@ -500,7 +528,7 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                         if (rb_yjit_enabled_p) rb_yjit_iseq_update_references(iseq);
 # endif
 # if USE_ZJIT
-                        if (rb_zjit_enabled_p) rb_zjit_iseq_update_references(body->jit_payload);
+                        if (rb_zjit_enabled_p) rb_zjit_iseq_update_references(jit_payload);
 # endif
                     }
                 }
@@ -509,7 +537,7 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                     if (rb_yjit_enabled_p) rb_yjit_iseq_update_references(iseq);
 # endif
 # if USE_ZJIT
-                    if (rb_zjit_enabled_p) rb_zjit_iseq_update_references(body->jit_payload);
+                    if (rb_zjit_enabled_p) rb_zjit_iseq_update_references(jit_payload);
 # endif
                 }
             }
@@ -523,19 +551,19 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
                     if (jit_payload_lock_p) {
                         RB_VM_LOCKING_NO_BARRIER() {
 # if USE_YJIT
-                            if (rb_yjit_enabled_p) rb_yjit_iseq_mark(body->jit_payload);
+                            if (rb_yjit_enabled_p) rb_yjit_iseq_mark(jit_payload);
 # endif
 # if USE_ZJIT
-                            if (rb_zjit_enabled_p) rb_zjit_iseq_mark(body->jit_payload);
+                            if (rb_zjit_enabled_p) rb_zjit_iseq_mark(jit_payload);
 # endif
                         }
                     }
                     else {
 # if USE_YJIT
-                        if (rb_yjit_enabled_p) rb_yjit_iseq_mark(body->jit_payload);
+                        if (rb_yjit_enabled_p) rb_yjit_iseq_mark(jit_payload);
 # endif
 # if USE_ZJIT
-                        if (rb_zjit_enabled_p) rb_zjit_iseq_mark(body->jit_payload);
+                        if (rb_zjit_enabled_p) rb_zjit_iseq_mark(jit_payload);
 # endif
                     }
                 }
@@ -608,6 +636,9 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
     if (ISEQ_EXECUTABLE_P(iseq) && body) {
         size += sizeof(struct rb_iseq_constant_body);
         if (body->variable) size += sizeof(struct rb_iseq_variable);
+#if USE_YJIT || USE_ZJIT
+        if (ISEQ_JIT_DATA(iseq)) size += sizeof(struct rb_iseq_jit_data);
+#endif
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
 #ifdef USE_ISEQ_NODE_ID

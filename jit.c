@@ -249,14 +249,15 @@ rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
 void
 rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
 {
-    rbimpl_atomic_store(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
+    rbimpl_atomic_store(&rb_iseq_jit_data_ensure(iseq)->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
 }
 
 // Whether an EP escape of this iseq has been reported to the enabled JIT.
 bool
 rb_jit_iseq_ep_escape_recorded_p(const rb_iseq_t *iseq)
 {
-    return rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
+    struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
+    return jit && rbimpl_atomic_load(&jit->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
 }
 
 int
@@ -626,7 +627,8 @@ rb_iseq_get_jit_payload(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
     if (ISEQ_BODY(iseq)) {
-        return ISEQ_BODY(iseq)->jit_payload;
+        struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
+        return jit ? jit->jit_payload : NULL;
     }
     else {
         return NULL;
@@ -638,8 +640,9 @@ rb_iseq_set_jit_payload(const rb_iseq_t *iseq, void *payload)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
     RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
-    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->jit_payload);
-    ISEQ_BODY(iseq)->jit_payload = payload;
+    struct rb_iseq_jit_data *jit = rb_iseq_jit_data_ensure(iseq);
+    RUBY_ASSERT_ALWAYS(NULL == jit->jit_payload);
+    jit->jit_payload = payload;
 }
 
 void
@@ -647,19 +650,21 @@ rb_iseq_clear_jit_payload(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
     RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
-    ISEQ_BODY(iseq)->jit_payload = NULL;
+    struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
+    if (jit) jit->jit_payload = NULL;
 }
 
 void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    struct rb_iseq_jit_data *jit = ISEQ_JIT_DATA(iseq);
     ISEQ_BODY(iseq)->jit_entry = NULL;
-    ISEQ_BODY(iseq)->jit_exception = NULL;
+    if (jit) jit->jit_exception = NULL;
     // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
     // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
     ISEQ_BODY(iseq)->jit_entry_calls = 0;
-    ISEQ_BODY(iseq)->jit_exception_calls = 0;
+    if (jit) jit->jit_exception_calls = 0;
 }
 
 // Callback data for rb_jit_for_each_iseq

@@ -136,6 +136,19 @@ ISEQ_BODY_VARIABLE_MANDATORY_ONLY_ISEQ(const rb_iseq_t *iseq)
     return v ? v->mandatory_only_iseq : NULL;
 }
 
+#if USE_YJIT || USE_ZJIT
+static inline struct rb_iseq_jit_data *
+ISEQ_JIT_DATA(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->jit : NULL;
+}
+
+/* Ensure ISEQ_JIT_DATA(iseq) is allocated. This never triggers GC, so JIT
+ * compilers may call it in the middle of compilation. */
+struct rb_iseq_jit_data *rb_iseq_jit_data_ensure(const rb_iseq_t *iseq);
+#endif
+
 /* Write accessors (lazily allocate variable as needed). */
 void rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov);
 void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);
