@@ -235,6 +235,17 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(4, 14.0.remainder(ten))
   end
 
+  def test_strtod_near_halfway
+    # between 139090927331892.609375 and 139090927331892.625
+    assert_equal(139090927331892.61, "139090927331892.61718749".to_f)
+    assert_equal(139090927331892.62, "139090927331892.6171875".to_f)
+    assert_equal(139090927331892.62, "139090927331892.61718751".to_f)
+    assert_equal(1022987641419180.1, "1022987641419180.18749".to_f)
+    assert_equal(121029756227085.27, "121029756227085.25781251".to_f)
+    assert_equal(140360966493656.55, "140360966493656.53906251".to_f)
+    assert_equal(121374757949434.89, "121374757949434.89843749".to_f)
+  end
+
   def test_to_s
     inf = Float::INFINITY
     assert_equal("Infinity", inf.to_s)
