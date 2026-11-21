@@ -1370,6 +1370,80 @@ class TestEnumerable < Test::Unit::TestCase
     assert_nil(b.block.call(:foo))
   end
 
+  def test_longest_slice
+    assert_equal(0...0, @empty.longest_slice)
+    assert_equal(0...0, [].longest_slice)
+    assert_equal(0...0, [nil, nil].longest_slice)
+    assert_equal(0...0, [false].longest_slice)
+    assert_equal(1...3, [false, 0, []].longest_slice)
+    assert_equal(0...5, @obj.longest_slice)
+    assert_equal(1...2, [nil, :a, false, nil, :b].longest_slice)
+    assert_equal(2...4, [1, false, 2, 3].longest_slice)
+    assert_equal(2...5, [:a, nil, :b, :c, :d].longest_slice)
+    assert_equal(0...2, [:a, :b, nil, :c].longest_slice)
+    assert_equal(0...2, [:a, :b, nil, :c, :d].longest_slice)
+    assert_equal(1...2, [nil, :a, nil, :b, nil].longest_slice)
+    assert_raise(ArgumentError) { @obj.longest_slice(1) }
+  end
+
+  def test_longest_slice_with_block
+    assert_equal(0...0, @empty.longest_slice { flunk('unexpected yield') })
+    assert_equal(0...0, @obj.longest_slice { false })
+    assert_equal(0...0, @obj.longest_slice { nil })
+    assert_equal(0...5, @obj.longest_slice { true })
+    assert_equal(0...2, [nil, nil].longest_slice { true })
+    assert_equal(0...2, [false, false].longest_slice { true })
+    assert_equal(1...4, [false, 0, :a, [], nil].longest_slice { |v| v })
+    assert_equal(1...3, [1, 2, 4, 3, 6].longest_slice { |v| v.even? })
+    assert_equal(2...5, [2, 1, 4, 6, 8].longest_slice { |v| v.even? })
+
+    seen = []
+    assert_equal(0...2, [2, 4, 1, 6, 8].longest_slice { |v| seen << v; v.even? })
+    assert_equal([2, 4, 1, 6, 8], seen)
+    assert_equal(:stopped, @obj.longest_slice { break :stopped })
+    assert_raise(RuntimeError) { @obj.longest_slice { raise 'failure' } }
+  end
+
+  def test_longest_slice_with_index
+    seen = []
+    range = [10, 20, 30, 40].each.with_index(1).longest_slice do |v, index|
+      seen << [v, index]
+      v >= 20 && index <= 3
+    end
+    assert_equal(1...3, range)
+    assert_equal([[10, 1], [20, 2], [30, 3], [40, 4]], seen)
+    predicate = ->(v, index) { v >= 20 && index <= 3 }
+    assert_equal(1...3, [10, 20, 30, 40].each.with_index(1).longest_slice(&predicate))
+    assert_equal(0...2, [nil, nil].each.with_index(1).longest_slice)
+  end
+
+  def test_longest_slice_yield_arguments
+    enum = Enumerator.new do |y|
+      y.yield
+      y.yield nil
+      y.yield nil, nil
+      y.yield [nil, nil]
+      y.yield false
+    end
+    assert_equal(2...4, enum.longest_slice)
+
+    seen = []
+    assert_equal(2...5, enum.longest_slice { |*args| seen << args; !args.empty? && args != [nil] })
+    assert_equal([[], [nil], [nil, nil], [[nil, nil]], [false]], seen)
+    assert_equal(1...3, {a: 1, b: 2, c: 4, d: 3}.longest_slice { |key, value| value.even? })
+    assert_equal(1...2, [[1, 2], [3, 4], [5, 6]].longest_slice { |a, b| a == 3 && b == 4 })
+  end
+
+  def test_longest_slice_gc
+    assert_equal(1...3, [nil, :a, :b, nil].longest_slice { |v| GC.start; !v.nil? })
+  end
+
+  def test_longest_slice_retained_block
+    assert_equal(0...0, @empty.longest_slice)
+    assert_nil(@empty.block.call(:a))
+    assert_nil(@empty.block.call(nil))
+  end
+
   def test_compact
     class << (enum = Object.new)
       include Enumerable
