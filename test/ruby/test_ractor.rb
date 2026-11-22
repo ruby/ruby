@@ -73,6 +73,16 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_monitor_non_port
+    assert_ractor(<<~'RUBY')
+      r = Ractor.current
+      [Object.new, nil, 1, r].each do |obj|
+        assert_raise(TypeError) { r.monitor(obj) }
+        assert_raise(TypeError) { r.unmonitor(obj) }
+      end
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
