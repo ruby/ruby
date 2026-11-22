@@ -330,6 +330,16 @@ class TestData < Test::Unit::TestCase
     assert_predicate(test.dup, :frozen?)
   end
 
+  def test_dup_and_clone_of_class
+    klass = Data.define(:foo, :bar)
+    [klass.dup, klass.clone, Class.new(klass).dup].each do |copy|
+      assert_equal([:foo, :bar], copy.members)
+      test = copy.new(foo: 1, bar: 2)
+      assert_equal(1, test.foo)
+      assert_equal({foo: 1, bar: 2}, test.to_h)
+    end
+  end
+
   Klass = Data.define(:foo, :bar)
 
   def test_marshal

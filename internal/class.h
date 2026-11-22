@@ -82,6 +82,7 @@ struct rb_classext_struct {
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
+    bool has_struct_inline_field : 1; // See RCLASS_STRUCT_INLINE_FIELD.
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -99,6 +100,7 @@ struct RClass {
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
+    /* VALUE struct_inline_field (optional) */
 };
 
 #if SIZEOF_VALUE >= SIZEOF_LONG_LONG
@@ -110,6 +112,7 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 2
 struct RClass_boxable {
     struct RClass_and_rb_classext_t base;
     st_table *box_classext_tbl; // box_object -> (rb_classext_t *)
+    /* VALUE struct_inline_field (optional) */
 };
 
 static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
@@ -294,6 +297,37 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
     box_klass->box_classext_tbl = tbl;
 }
 
+/* A "struct inline field" is stored right after the class in the same slot
+ * if its `has_struct_inline_field` is true.
+ * It starts as nil and belongs to the class, not to a box.
+ * Subclasses and copies of the class inherit the same value.
+ */
+static inline bool
+RCLASS_HAS_STRUCT_INLINE_FIELD(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->has_struct_inline_field;
+}
+
+static inline VALUE *
+RCLASS_STRUCT_INLINE_FIELD_PTR(VALUE klass)
+{
+    RUBY_ASSERT(RCLASS_HAS_STRUCT_INLINE_FIELD(klass));
+    size_t offset = FL_TEST_RAW(klass, RCLASS_BOXABLE) ? sizeof(struct RClass_boxable) : sizeof(struct RClass_and_rb_classext_t);
+    return (VALUE *)((char *)klass + offset);
+}
+
+static inline VALUE
+RCLASS_STRUCT_INLINE_FIELD(VALUE klass)
+{
+    return *RCLASS_STRUCT_INLINE_FIELD_PTR(klass);
+}
+
+static inline void
+RCLASS_SET_STRUCT_INLINE_FIELD(VALUE klass, VALUE value)
+{
+    RB_OBJ_WRITE(klass, RCLASS_STRUCT_INLINE_FIELD_PTR(klass), value);
+}
+
 /* class.c */
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box, int *first_set);
 void rb_class_ensure_writable(VALUE obj);
@@ -474,7 +508,8 @@ void rb_class_update_superclasses(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
-VALUE rb_class_s_alloc(VALUE klass);
+VALUE rb_class_new_with_struct_inline_field(VALUE super);
+VALUE rb_class_alloc_with_struct_inline_field_of(VALUE from);
 VALUE rb_module_s_alloc(VALUE klass);
 void rb_class_set_initialized(VALUE klass);
 void rb_module_check_initializable(VALUE module);
