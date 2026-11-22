@@ -2256,9 +2256,6 @@ Before inserting write barriers, you need to know about RGenGC algorithm
 (gc.c will help you). Macros and functions to insert write barriers are
 available in include/ruby/ruby.h. An example is available in iseq.c.
 
-For a complete guide for RGenGC and write barriers, please refer to
-<https://bugs.ruby-lang.org/projects/ruby-master/wiki/RGenGC>.
-
 == Appendix E. +RB_GC_GUARD+ to protect from premature GC
 
 C Ruby currently uses conservative garbage collection, thus VALUE
