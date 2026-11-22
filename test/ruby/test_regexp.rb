@@ -1678,6 +1678,16 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_ignorecase_literal_search_at_end_of_string
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      s = "x" * 100 + "\u212a\u00e9"
+      s.chop!
+      assert_no_match(/k\0A/i, s)
+      assert_nil(s.rindex(/k\0A/i))
+    end;
+  end
+
   def test_unicode_age
     assert_unicode_age("\u261c", matches: %w"6.0 1.1", unmatches: [])
 
