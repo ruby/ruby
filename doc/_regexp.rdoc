@@ -560,10 +560,7 @@ Quantifier matching may be greedy, lazy, or possessive:
 
 More:
 
-- About greedy and lazy matching, see
-  {Choosing Minimal or Maximal Repetition}[https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch02s13.html].
-- About possessive matching, see
-  {Eliminate Needless Backtracking}[https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch02s14.html].
+- See {Mastering Quantifiers}[https://www.rexegg.com/regex-quantifiers.php].
 
 === Groups and Captures
 
