@@ -37,15 +37,20 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
+    /*
+     * Fields up to RCLASSEXT_ICLASS_SIZE are used by every type. The prime
+     * classext of a non-boxable T_ICLASS is allocated only up to there, so
+     * that it fits a smaller GC slot; the fields after it must not be touched
+     * through a T_ICLASS's prime classext. Boxable objects and non-prime (box)
+     * classexts are always allocated in full.
+     */
     const rb_box_t *box;
     VALUE super;
-    VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     VALUE cc_tbl; /* { ID => { cme, [cc1, cc2, ...] }, ... } */
     VALUE cvc_tbl;
-    VALUE *superclasses;
     /**
      * imemo_subclasses VALUE tracking this class's subclasses.
      * Only used in prime classext. Lazily allocated on first subclass addition.
@@ -68,11 +73,6 @@ struct rb_classext_struct {
             VALUE refinement_iclasses;
         } iclass;
     } as;
-    /* Id of the Ractor that created this class/module; only that Ractor may modify
-     * it.  0 is the main Ractor, so a program that never leaves it stores nothing.
-     * Ids are never reused, so a terminated owner leaves the class read-only for
-     * everybody.  Prime classext only; always 0 for T_ICLASS. */
-    rb_serial_t owner_ractor_id;
     uint16_t superclass_depth;
     attr_index_t max_iv_count;
     uint8_t variation_count;
@@ -83,6 +83,15 @@ struct rb_classext_struct {
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
     bool has_struct_inline_field : 1; // See RCLASS_STRUCT_INLINE_FIELD.
+
+    /* T_CLASS / T_MODULE only (absent from a T_ICLASS's prime classext) */
+    VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
+    VALUE *superclasses;
+    /* Id of the Ractor that created this class/module; only that Ractor may modify
+     * it.  0 is the main Ractor, so a program that never leaves it stores nothing.
+     * Ids are never reused, so a terminated owner leaves the class read-only for
+     * everybody.  Prime classext only. */
+    rb_serial_t owner_ractor_id;
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -103,12 +112,22 @@ struct RClass_and_rb_classext_t {
     /* VALUE struct_inline_field (optional) */
 };
 
+/* Bytes of the prime classext of a non-boxable T_ICLASS (see rb_classext_struct). */
+#define RCLASSEXT_ICLASS_SIZE offsetof(rb_classext_t, fields_obj)
+#define RCLASS_ICLASS_ALLOC_SIZE (sizeof(struct RClass) + RCLASSEXT_ICLASS_SIZE)
+
 #if SIZEOF_VALUE >= SIZEOF_LONG_LONG
 // Assert that classes can be embedded in heaps[3] (256B slot size on 64-bit).
 // On 32bit platforms there is no variable width allocation so it doesn't matter.
 STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 256);
+// Non-boxable ICLASSes fit a 128B slot (classes and modules take 160B).
+STATIC_ASSERT(sizeof_iclass, RCLASS_ICLASS_ALLOC_SIZE <= 128);
 #endif
 
+/*
+ * A boxable class, module or iclass always has a full prime classext, so that
+ * box_classext_tbl is at the same offset for every type.
+ */
 struct RClass_boxable {
     struct RClass_and_rb_classext_t base;
     st_table *box_classext_tbl; // box_object -> (rb_classext_t *)
@@ -132,12 +151,14 @@ static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 static inline rb_serial_t
 RCLASS_OWNER_RACTOR_ID(VALUE klass)
 {
+    RUBY_ASSERT(!RB_TYPE_P(klass, T_ICLASS));
     return RCLASS_EXT_PRIME(klass)->owner_ractor_id;
 }
 
 static inline void
 RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, rb_serial_t ractor_id)
 {
+    RUBY_ASSERT(!RB_TYPE_P(klass, T_ICLASS));
     // not a VALUE: no write barrier, nothing for the GC to mark or move
     RCLASS_EXT_PRIME(klass)->owner_ractor_id = ractor_id;
 }
