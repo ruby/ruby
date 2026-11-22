@@ -179,6 +179,22 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     end
   end
 
+  def test_sendmsg_drop_bytes_from_data
+    omit "not supported on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    data = "x" * 1_000
+    flags = Object.new
+    flags.define_singleton_method(:to_int) { data[0, 5] = ""; 0 }
+
+    UNIXSocket.pair {|s1, s2|
+      assert_equal(1_000, s1.sendmsg(data, flags))
+      assert_equal("x" * 1_000, s2.read(1_000))
+    }
+
+    data << "z" * 10
+    assert_equal("x" * 995 + "z" * 10, data)
+  end
+
   def test_sendmsg
     return if !defined?(Socket::SCM_RIGHTS)
     IO.pipe {|r1, w|

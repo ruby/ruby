@@ -1656,10 +1656,12 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
             !OBJ_FROZEN_RAW(orig)) {
         VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
-        if (shared == tmp && !FL_TEST_RAW(tmp, STR_BORROWED)) {
-            RUBY_ASSERT(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
-            RUBY_ASSERT(RSTRING_LEN(orig) == RSTRING_LEN(tmp));
-
+        if (shared == tmp &&
+                !FL_TEST_RAW(tmp, STR_BORROWED) &&
+                /* It's possible that orig was modified since rb_str_tmp_frozen_acquire
+                 * so we should not modify orig if that happened. */
+                RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr &&
+                RSTRING_LEN(orig) == RSTRING_LEN(tmp)) {
             /* Unshare orig since the root (tmp) only has this one child. */
             FL_UNSET_RAW(orig, STR_SHARED);
             RSTRING(orig)->as.heap.aux.capa = RSTRING(tmp)->as.heap.aux.capa + TERM_LEN(tmp) - TERM_LEN(orig);

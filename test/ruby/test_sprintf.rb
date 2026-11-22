@@ -303,6 +303,22 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_drop_bytes_from_format_string
+    prefix = "x" * 1_000
+    fmt = prefix + "%s"
+    obj = Object.new
+    obj.define_singleton_method(:to_s) do
+      fmt[0, 5] = ""
+      "y"
+    end
+
+    assert_equal(prefix + "y", fmt % [obj])
+    assert_equal(prefix[5..] + "%s", fmt)
+
+    fmt << "z" * 10
+    assert_equal(prefix[5..] + "%s" + "z" * 10, fmt)
+  end
+
   def test_float
     assert_equal("36893488147419111424",
                  sprintf("%20.0f", 36893488147419107329.0))
