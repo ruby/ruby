@@ -3194,6 +3194,17 @@ class TestString < Test::Unit::TestCase
     assert_equal(other, str)
   end
 
+  def test_tr_modify_receiver
+    str = S("a" * 10)
+    src = Object.new
+    src.define_singleton_method(:to_str) do
+      str.replace("\u{1F600}")
+      "\u009f"
+    end
+    assert_nil(str.tr!(src, "X"))
+    assert_equal("\u{1F600}", str)
+  end
+
   def test_tr_hash_no_match_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
     begin;

@@ -10529,7 +10529,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     int modify = 0, i, l;
     unsigned char *s, *send;
     VALUE hash = 0;
-    int singlebyte = single_byte_optimizable(str);
+    int singlebyte;
     int termlen;
     int cr;
 
@@ -10544,6 +10544,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         return rb_str_delete_bang(1, &src, str);
     }
 
+    singlebyte = single_byte_optimizable(str);
     cr = ENC_CODERANGE(str);
     e1 = rb_enc_check(str, src);
     e2 = rb_enc_check(str, repl);
