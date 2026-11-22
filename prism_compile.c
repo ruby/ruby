@@ -6248,7 +6248,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     pm_node_list_t *block_locals = NULL;
     bool trailing_comma = false;
 
-    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
+    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_SINGLETON_CLASS_NODE)) {
         PUSH_TRACE(ret, RUBY_EVENT_CLASS);
     }
 
@@ -7170,7 +7170,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         break;
     }
 
-    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
+    if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_SINGLETON_CLASS_NODE)) {
         const pm_node_location_t end_location = PM_NODE_END_LOCATION(scope_node->ast_node);
         PUSH_TRACE(ret, RUBY_EVENT_END);
         ISEQ_COMPILE_DATA(iseq)->last_line = end_location.line;
