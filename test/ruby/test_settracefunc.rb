@@ -163,6 +163,26 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events)
   end
 
+  def test_tracepoint_class_end_singleton_class
+    events = []
+    name = "#{self.class}\##{__method__}"
+    tp = TracePoint.new(:class, :end) { |t|
+      events << [t.event, t.lineno, t.self] if t.path == name
+    }
+    obj = Object.new
+    tp.enable do
+      eval <<-EOF.gsub(/^.*?: /, ""), binding, name, 1
+       1: class << obj
+       2:   def foo; end
+       3: end
+      EOF
+    end
+    assert_equal([
+      [:class, 1, obj.singleton_class],
+      [:end, 3, obj.singleton_class],
+    ], events)
+  end
+
   def test_class
     events = []
     name = "#{self.class}\##{__method__}"
