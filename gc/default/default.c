@@ -641,6 +641,10 @@ struct gc_process_stat_total {
     uint64_t sweeping_time_ns;
 };
 
+#ifndef GC_MARK_PREFETCH_DISTANCE
+# define GC_MARK_PREFETCH_DISTANCE 16
+#endif
+
 typedef struct rb_objspace {
     struct {
         struct gc_malloc_bytes counters;
@@ -798,6 +802,15 @@ typedef struct rb_objspace {
     struct {
         bool parent_object_old_p;
         VALUE parent_object;
+
+        /* Prefetched children wait here so their header is in cache when marked. */
+        bool prefetch_active;
+        unsigned int prefetch_head, prefetch_count;
+        struct {
+            VALUE obj;
+            VALUE parent;
+            bool parent_old_p;
+        } prefetch_queue[GC_MARK_PREFETCH_DISTANCE];
 
         int need_major_gc;
         size_t last_major_gc;
@@ -6525,12 +6538,68 @@ gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static void gc_mark_now(rb_objspace_t *objspace, VALUE obj);
+
+static void
+gc_mark_deferred(rb_objspace_t *objspace, VALUE obj, VALUE parent, bool parent_old_p)
+{
+    VALUE saved_parent = objspace->rgengc.parent_object;
+    bool saved_old_p = objspace->rgengc.parent_object_old_p;
+    objspace->rgengc.parent_object = parent;
+    objspace->rgengc.parent_object_old_p = parent_old_p;
+    gc_mark_now(objspace, obj);
+    objspace->rgengc.parent_object = saved_parent;
+    objspace->rgengc.parent_object_old_p = saved_old_p;
+}
+
+static void
+gc_mark_prefetch_flush(rb_objspace_t *objspace)
+{
+    while (objspace->rgengc.prefetch_count > 0) {
+        unsigned int i = objspace->rgengc.prefetch_head;
+        objspace->rgengc.prefetch_head = (i + 1) % GC_MARK_PREFETCH_DISTANCE;
+        objspace->rgengc.prefetch_count--;
+        gc_mark_deferred(objspace, objspace->rgengc.prefetch_queue[i].obj,
+                         objspace->rgengc.prefetch_queue[i].parent,
+                         objspace->rgengc.prefetch_queue[i].parent_old_p);
+    }
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(during_gc);
     GC_ASSERT(!objspace->flags.during_reference_updating);
 
+    if (objspace->rgengc.prefetch_active) {
+        __builtin_prefetch((const void *)obj);
+        unsigned int tail = (objspace->rgengc.prefetch_head + objspace->rgengc.prefetch_count) % GC_MARK_PREFETCH_DISTANCE;
+        if (objspace->rgengc.prefetch_count == GC_MARK_PREFETCH_DISTANCE) {
+            unsigned int i = objspace->rgengc.prefetch_head;
+            VALUE ready = objspace->rgengc.prefetch_queue[i].obj;
+            VALUE ready_parent = objspace->rgengc.prefetch_queue[i].parent;
+            bool ready_old_p = objspace->rgengc.prefetch_queue[i].parent_old_p;
+            objspace->rgengc.prefetch_queue[i].obj = obj;
+            objspace->rgengc.prefetch_queue[i].parent = objspace->rgengc.parent_object;
+            objspace->rgengc.prefetch_queue[i].parent_old_p = objspace->rgengc.parent_object_old_p;
+            objspace->rgengc.prefetch_head = (i + 1) % GC_MARK_PREFETCH_DISTANCE;
+            gc_mark_deferred(objspace, ready, ready_parent, ready_old_p);
+        }
+        else {
+            objspace->rgengc.prefetch_queue[tail].obj = obj;
+            objspace->rgengc.prefetch_queue[tail].parent = objspace->rgengc.parent_object;
+            objspace->rgengc.prefetch_queue[tail].parent_old_p = objspace->rgengc.parent_object_old_p;
+            objspace->rgengc.prefetch_count++;
+        }
+        return;
+    }
+
+    gc_mark_now(objspace, obj);
+}
+
+static void
+gc_mark_now(rb_objspace_t *objspace, VALUE obj)
+{
     /* Never step into another objspace: a foreign object is a live leaf whose liveness
      * belongs to its owner, so touching its bitmaps here would be unsound.  A global GC
      * lifts this: everyone is stopped and the bits live on the object's own page. */
@@ -6768,13 +6837,23 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
     size_t marked_slots_at_the_beginning = objspace->marked_slots;
     size_t popped_count = 0;
 
-    while (pop_mark_stack(mstack, &obj)) {
+    /* Minor marks touch few objects, so the queue costs more than it saves there. */
+    bool prefetch = is_full_marking(objspace) && !objspace->flags.during_global_gc && !RGENGC_CHECK_MODE;
+
+    for (;;) {
+        if (!pop_mark_stack(mstack, &obj)) {
+            if (objspace->rgengc.prefetch_count == 0) break;
+            gc_mark_prefetch_flush(objspace);
+            continue;
+        }
         if (obj == Qundef) continue; /* skip */
 
         if (RGENGC_CHECK_MODE && !RVALUE_MARKED(objspace, obj)) {
             rb_bug("gc_mark_stacked_objects: %s is not marked.", rb_obj_info(obj));
         }
+        objspace->rgengc.prefetch_active = prefetch;
         gc_mark_children(objspace, obj);
+        objspace->rgengc.prefetch_active = false;
 
         popped_count++;
 
@@ -6785,6 +6864,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
 
             if (popped_count + (objspace->marked_slots - marked_slots_at_the_beginning) > count) {
+                gc_mark_prefetch_flush(objspace);
                 break;
             }
         }
