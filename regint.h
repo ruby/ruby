@@ -124,6 +124,14 @@
 # endif
 #endif /* RUBY */
 
+#if defined(RB_THREAD_LOCAL_SPECIFIER)
+# define ONIG_THREAD_LOCAL RB_THREAD_LOCAL_SPECIFIER
+#elif defined(_MSC_VER)
+# define ONIG_THREAD_LOCAL __declspec(thread)
+#elif defined(_WIN32) && defined(__GNUC__)
+# define ONIG_THREAD_LOCAL __thread
+#endif
+
 #include <stdarg.h>
 
 /* */
