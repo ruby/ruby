@@ -459,11 +459,6 @@ pub type rb_atomic_t = ::std::os::raw::c_uint;
 pub struct rb_id_table {
     pub _bindgen_opaque_blob: [u64; 3usize],
 }
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_iseq_outer_variables {
-    _unused: [u8; 0],
-}
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -2062,6 +2057,12 @@ pub struct iseq_compile_data__bindgen_ty_3 {
     pub storage_current: *mut iseq_compile_data_storage,
 }
 #[repr(C)]
+#[repr(align(8))]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_iseq_outer_variables {
+    pub _bindgen_opaque_blob: u64,
+}
+#[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_insn_info_entry {
     pub line_no: ::std::os::raw::c_int,
@@ -2358,11 +2359,6 @@ unsafe extern "C" {
         id: ID,
         valp: *mut VALUE,
     ) -> ::std::os::raw::c_int;
-    pub fn rb_iseq_outer_variables_lookup(
-        ovs: *const rb_iseq_outer_variables,
-        id: ID,
-        write: *mut VALUE,
-    ) -> ::std::os::raw::c_int;
     pub fn rb_ary_tmp_new_from_values(arg1: VALUE, arg2: rb_len_t, arg3: *const VALUE) -> VALUE;
     pub fn rb_ec_ary_new_from_values(
         ec: *mut rb_execution_context_struct,
@@ -2422,6 +2418,11 @@ unsafe extern "C" {
     pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
+    pub fn rb_iseq_outer_variables_lookup(
+        ovs: *const rb_iseq_outer_variables,
+        id: ID,
+        write: *mut VALUE,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
