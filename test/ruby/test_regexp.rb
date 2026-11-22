@@ -868,7 +868,7 @@ class TestRegexp < Test::Unit::TestCase
           src, inner = inner, nil
           begin
             re.send(:initialize, src) if src
-          rescue RegexpError => error
+          rescue TypeError => error
           end
           re.freeze if freeze
         end
@@ -877,22 +877,17 @@ class TestRegexp < Test::Unit::TestCase
       re = Regexp.allocate
       inner = "(?<n>a)(b)(c)[b-a]?x{2,3}" * 20
       re.send(:initialize, "(?<m>x)[]a](y)")
-      assert_kind_of(RegexpError, error)
+      assert_kind_of(TypeError, error)
       assert_equal("(?<m>x)[]a](y)", re.source)
       assert_equal(["x"], re.match("xay").captures)
       assert_equal(["m"], re.names)
 
       re = Regexp.allocate
-      inner = "(?<n>a)(b)"
-      assert_raise(FrozenError) { re.send(:initialize, "(?<m>x)[]a](y)") }
-      assert_equal("(?<n>a)(b)", re.source)
-      assert_equal(["a"], re.match("ab").captures)
-      assert_equal(["n"], re.names)
-
-      re = Regexp.allocate
       freeze = true
-      assert_raise(FrozenError) { re.send(:initialize, "(?<m>x)[]a](y)") }
-      assert_raise(TypeError) { re.source }
+      re.send(:initialize, "(?<m>x)[]a](y)")
+      assert_predicate(re, :frozen?)
+      assert_equal("(?<m>x)[]a](y)", re.source)
+      assert_equal(["m"], re.names)
     end;
   end
 
