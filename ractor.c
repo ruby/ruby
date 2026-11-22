@@ -1795,7 +1795,9 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             .stop = false,
             .data = data,
         };
-        rb_ivar_foreach(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
+        // A child's #freeze may transition the shape of obj (e.g. via object_id)
+        // while its ivars are iterated, so iterate from a snapshot.
+        rb_ivar_foreach_buffered(obj, obj_traverse_ivar_foreach_i, (st_data_t)&d);
         if (d.stop) return 1;
     }
 
