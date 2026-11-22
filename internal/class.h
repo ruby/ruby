@@ -82,19 +82,7 @@ struct rb_classext_struct {
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
-    // Set when the class was allocated with one VALUE right after it, which a
-    // Struct or Data class uses for its member info (RCLASS_STRUCT_INLINE_FIELD()).
-    // Prime classext only. The class is then laid out as:
-    //
-    //   [ struct RClass_and_rb_classext_t ][ VALUE ]  152 + 8 bytes on 64-bit
-    //   [ struct RClass_boxable           ][ VALUE ]  160 + 8, when RCLASS_BOXABLE
-    //
-    // A boxable class, defined at boot when Ruby::Box is enabled, moves to a larger
-    // slot because of it; others keep the slot size they would have anyway.
-    //
-    // Named after Struct, its only user, to make clear what it is for. The field
-    // itself is generic: rename it when something else needs one.
-    bool has_struct_inline_field : 1;
+    bool has_struct_inline_field : 1; // See RCLASS_STRUCT_INLINE_FIELD.
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -112,6 +100,7 @@ struct RClass {
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
+    /* VALUE struct_inline_field (optional) */
 };
 
 #if SIZEOF_VALUE >= SIZEOF_LONG_LONG
@@ -123,6 +112,7 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 2
 struct RClass_boxable {
     struct RClass_and_rb_classext_t base;
     st_table *box_classext_tbl; // box_object -> (rb_classext_t *)
+    /* VALUE struct_inline_field (optional) */
 };
 
 static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
@@ -307,9 +297,11 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
     box_klass->box_classext_tbl = tbl;
 }
 
-/* The VALUE after the class described at has_struct_inline_field. It starts as
- * nil and belongs to the class, not to a box. A subclass and a copy of the class
- * have one too, holding the value it had at that time. */
+/* A "struct inline field" is stored right after the class in the same slot
+ * if its `has_struct_inline_field` is true.
+ * It starts as nil and belongs to the class, not to a box.
+ * Subclasses and copies of the class inherit the same value.
+ */
 static inline bool
 RCLASS_HAS_STRUCT_INLINE_FIELD(VALUE klass)
 {
