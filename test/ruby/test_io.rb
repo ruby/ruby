@@ -1652,6 +1652,20 @@ class TestIO < Test::Unit::TestCase
     assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
   end
 
+  def test_write_with_multiple_arguments_drop_bytes
+    str = "x" * 1_000
+    obj = Object.new
+    obj.define_singleton_method(:to_s) { str[0, 5] = ""; "y" }
+
+    with_pipe do |r, w|
+      w.write(str, obj)
+      assert_equal("x" * 1_000 + "y", r.read(1_001))
+    end
+
+    str << "z" * 10
+    assert_equal("x" * 995 + "z" * 10, str)
+  end
+
   def test_write_buffered_with_multiple_arguments
     out, err, (_, status) = EnvUtil.invoke_ruby(["-e", "sleep 0.1;puts 'foo'"], "", true, true) do |_, o, e, i|
       [o.read, e.read, Process.waitpid2(i)]
