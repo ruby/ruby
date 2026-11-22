@@ -1686,7 +1686,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return !(flags & RARRAY_EMBED_FLAG);
 
       case T_HASH:
-        return (flags & RHASH_ST_TABLE_FLAG);
+        return (flags & (RHASH_ST_TABLE_FLAG | RHASH_AR_HEAP_FLAG));
 
       case T_MATCH:
         return (flags & RMATCH_ONIG) || RMATCH(obj)->char_offset || USE_DEBUG_COUNTER;
@@ -2710,6 +2710,10 @@ rb_obj_memsize_of(VALUE obj)
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
             /* st_table is in the slot */
             size += st_memsize(RHASH_ST_TABLE(obj)) - sizeof(st_table);
+        }
+        else if (FL_TEST_RAW(obj, RHASH_AR_HEAP_FLAG)) {
+            const struct RHashARHeap *heap = (const struct RHashARHeap *)obj;
+            size += sizeof(VALUE) + offsetof(ar_table, pairs) + heap->capa * sizeof(ar_table_pair);
         }
         break;
       case T_REGEXP:
@@ -4127,7 +4131,10 @@ rb_gc_obj_optimal_size(VALUE obj)
 
       case T_HASH:
         {
-            if (RHASH_AR_TABLE_P(obj)) {
+            if (FL_TEST_RAW(obj, RHASH_AR_HEAP_FLAG)) {
+                if (OBJ_FROZEN(obj)) return sizeof(struct RHashARHeap);
+            }
+            else if (RHASH_AR_TABLE_P(obj)) {
                 const unsigned bound = RHASH_AR_TABLE_BOUND(obj);
                 const size_t ar_size = RHASH_AR_SLOT_SIZE(bound);
                 if (ar_size > RHASH_ST_SLOT_SIZE || OBJ_FROZEN(obj)) {

@@ -2429,4 +2429,78 @@ class TestHashOnly < Test::Unit::TestCase
 
     assert_equal nil, h[lookup_key]
   end
+
+  def test_ar_find_entry_hint_eql_grows_hash
+    # #eql? adds entries while a lookup scans the table: the table can be
+    # reallocated with more room, or converted to st_table, mid-scan.
+    key_class = Class.new do
+      attr_reader :v
+      def initialize(v, h = nil, n = 0)
+        @v = v
+        @h = h
+        @n = n
+      end
+      def hash; 0; end
+      def eql?(other)
+        if @h
+          h, @h = @h, nil
+          @n.times { |i| h[100 + i] = i }
+        end
+        other.is_a?(self.class) && @v == other.v
+      end
+    end
+
+    [1, 4, 8].each do |grow|
+      [3, 7, 11, 14].each do |size|
+        h = {}
+        size.times { |i| h[key_class.new(i)] = i }
+        assert_nil h[key_class.new(-1, h, grow)]
+        assert_equal size + grow, h.size
+        assert_equal size - 1, h[key_class.new(size - 1)]
+      end
+    end
+  end
+
+  def test_small_table_sizes
+    [:sym, :str, :obj].each do |kind|
+      0.upto(20) do |n|
+        keys = (0...n).map { |i| kind == :sym ? :"k#{i}" : kind == :str ? "k#{i}" : [i] }
+        h = {}
+        keys.each_with_index { |k, i| h[k] = i }
+        msg = "#{kind} #{n}"
+        assert_equal n, h.size, msg
+        keys.each_with_index { |k, i| assert_equal i, h[k], msg }
+        assert_nil h[:missing], msg
+        assert_equal keys, h.keys, msg
+
+        d = h.dup
+        assert_equal h, d, msg
+        assert_equal h, eval("{#{keys.each_with_index.map { |k, i| "#{k.inspect} => #{i}" }.join(", ")}}"), msg
+        assert_equal h, {}.replace(h), msg
+        assert_equal h, h.dup.rehash, msg
+        assert_equal h, Hash[h.to_a], msg
+        assert_equal h, h.merge({}), msg
+        assert_equal n * 2, h.merge(keys.to_h { [[_1], 0] }).size, msg
+
+        kept = keys.each_slice(2).filter_map { |_, k| k }
+        keys.each_slice(2) { |k, _| h.delete(k) }
+        assert_equal kept, h.keys, msg
+        h[:extra] = 1
+        assert_equal kept + [:extra], h.keys, msg
+
+        f = d.dup
+        f.delete(keys.first)
+        f.freeze
+        assert_equal keys.drop(1), f.keys, msg
+        keys.drop(1).each { |k| assert_equal d[k], f[k], msg }
+
+        c = d.dup.compare_by_identity
+        d.each_key.with_index { |k, i| assert_equal i, c[k], msg }
+
+        it = d.dup
+        it.each { |k, _| it.delete(k) }
+        assert_empty it, msg
+      end
+    end
+  end
 end

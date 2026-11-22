@@ -535,7 +535,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_include(info, '"ar_table":true')
 
     st_hash = {}
-    9.times { |i| st_hash[i] = i }
+    16.times { |i| st_hash[i] = i }
     info = ObjectSpace.dump(st_hash)
     assert_not_include(info, '"ar_table":true')
   end

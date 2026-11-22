@@ -109,6 +109,8 @@ static VALUE rb_hash_s_try_convert(VALUE, VALUE);
  */
 
 static int ar_compact_table(VALUE hash);
+static void ar_heap_shrink(VALUE hash);
+static inline bool hash_iterating_p(VALUE hash);
 
 /* :nodoc: */
 VALUE
@@ -116,6 +118,7 @@ rb_hash_freeze(VALUE hash)
 {
     if (!OBJ_FROZEN(hash) && RHASH_AR_TABLE_P(hash)) {
         ar_compact_table(hash);
+        ar_heap_shrink(hash);
     }
     return rb_obj_freeze(hash);
 }
@@ -415,17 +418,23 @@ typedef st_index_t st_hash_t;
  *   RHASH_ST_TABLE points st_table.
  */
 
+#define RHASH_AR_HEAP_P(h) FL_TEST_RAW(h, RHASH_AR_HEAP_FLAG)
+#define RHASH_AR_HEAP(h) ((struct RHashARHeap *)(h))
+
 static inline unsigned int
 RHASH_AR_TABLE_MAX_BOUND(VALUE h)
 {
+    if (RHASH_AR_HEAP_P(h)) {
+        return RHASH_AR_HEAP(h)->capa;
+    }
     size_t usable_space = rb_obj_shape_slot_size(h) - sizeof(struct RHash) - offsetof(ar_table, pairs);
     usable_space /= sizeof(ar_table_pair);
     /* The GC may give a hash a larger slot than it asked for. */
     return usable_space <= RHASH_AR_TABLE_MAX_SIZE ? (unsigned)usable_space : RHASH_AR_TABLE_MAX_SIZE;
 }
 
-#define RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE (RHASH_AR_TABLE_MAX_SIZE + 1)
-#define RHASH_AR_TABLE_MISS RHASH_AR_TABLE_MAX_SIZE
+#define RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE (RHASH_AR_HEAP_MAX_SIZE + 1)
+#define RHASH_AR_TABLE_MISS RHASH_AR_HEAP_MAX_SIZE
 
 #define RHASH_AR_TABLE_REF(hash, n) (&RHASH_AR_TABLE(hash)->pairs[n])
 #define RHASH_AR_CLEARED_HINT 0x00
@@ -447,16 +456,39 @@ ar_do_hash_hint(st_hash_t hash_value)
     return hint == RHASH_AR_CLEARED_HINT ? RHASH_AR_SUBSTITUTION_HINT : hint;
 }
 
+/* Hints of entries RHASH_AR_TABLE_MAX_SIZE.. of a heap table are in the word before the ar_table. */
+static inline VALUE *
+ar_heap_hint_word(ar_table *ar)
+{
+    return (VALUE *)ar - 1;
+}
+
+static inline ar_hint_t *
+ar_table_hint_ref(ar_table *ar, unsigned int index)
+{
+    if (LIKELY(index < RHASH_AR_TABLE_MAX_SIZE)) {
+        return &ar->ar_hint.ary[index];
+    }
+    return (ar_hint_t *)ar_heap_hint_word(ar) + (index - RHASH_AR_TABLE_MAX_SIZE);
+}
+
+static inline ar_hint_t *
+ar_hint_ref(VALUE hash, unsigned int index)
+{
+    RUBY_ASSERT(index < RHASH_AR_TABLE_MAX_SIZE || RHASH_AR_HEAP_P(hash));
+    return ar_table_hint_ref(RHASH_AR_TABLE(hash), index);
+}
+
 static inline ar_hint_t
 ar_hint(VALUE hash, unsigned int index)
 {
-    return RHASH_AR_TABLE(hash)->ar_hint.ary[index];
+    return *ar_hint_ref(hash, index);
 }
 
 static inline void
 ar_hint_set_hint(VALUE hash, unsigned int index, ar_hint_t hint)
 {
-    RHASH_AR_TABLE(hash)->ar_hint.ary[index] = hint;
+    *ar_hint_ref(hash, index) = hint;
 }
 
 static inline void
@@ -607,12 +639,108 @@ RHASH_AR_TABLE_SIZE_DEC(VALUE h)
     hash_verify(h);
 }
 
+static inline size_t
+ar_heap_bytes(unsigned int capa)
+{
+    return sizeof(VALUE) + offsetof(ar_table, pairs) + capa * sizeof(ar_table_pair);
+}
+
+static void
+ar_heap_free(VALUE hash)
+{
+    if (RHASH_AR_HEAP_P(hash)) {
+        struct RHashARHeap *heap = RHASH_AR_HEAP(hash);
+        ruby_xfree_sized(ar_heap_hint_word(heap->table), ar_heap_bytes(heap->capa));
+        FL_UNSET_RAW(hash, RHASH_AR_HEAP_FLAG);
+    }
+}
+
+/*
+ * Move the entries of an ar hash into a malloc'ed table with room for `capa`
+ * entries.  Entries keep their indexes: a lookup or iteration that called back
+ * into Ruby code (which inserted into the hash) continues by index.
+ */
+static void
+ar_heap_resize(VALUE hash, unsigned int capa)
+{
+    HASH_ASSERT(RHASH_AR_TABLE_P(hash));
+    HASH_ASSERT(capa >= RHASH_AR_TABLE_BOUND(hash));
+    HASH_ASSERT(capa <= RHASH_AR_HEAP_MAX_SIZE);
+    HASH_ASSERT(rb_gc_obj_slot_size(hash) >= sizeof(struct RHashARHeap));
+
+    VALUE *mem = ruby_xmalloc(ar_heap_bytes(capa));
+    ar_table *new_tab = (ar_table *)(mem + 1);
+    ar_table *old_tab = RHASH_AR_TABLE(hash);
+    unsigned int bound = RHASH_AR_TABLE_BOUND(hash);
+
+    mem[0] = RHASH_AR_HEAP_P(hash) ? *ar_heap_hint_word(old_tab) : 0;
+    new_tab->ar_hint.word = old_tab->ar_hint.word;
+    MEMCPY(new_tab->pairs, old_tab->pairs, ar_table_pair, bound);
+
+    ar_heap_free(hash);
+    RHASH_AR_HEAP(hash)->table = new_tab;
+    RHASH_AR_HEAP(hash)->capa = capa;
+    FL_SET_RAW(hash, RHASH_AR_HEAP_FLAG);
+}
+
+/* Ensure room for `capa` entries without converting to st_table, if possible. */
+static bool
+ar_reserve(VALUE hash, unsigned int capa)
+{
+    if (capa <= RHASH_AR_TABLE_MAX_BOUND(hash)) return true;
+    if (capa > RHASH_AR_HEAP_MAX_SIZE) return false;
+    if (!RHASH_AR_HEAP_P(hash) && rb_gc_obj_slot_size(hash) < sizeof(struct RHashARHeap)) return false;
+
+    if (RHASH_AR_TABLE_BOUND(hash) > capa) ar_compact_table(hash);
+    ar_heap_resize(hash, capa);
+    return true;
+}
+
+/* Called when the ar table is full.  Returns false if the hash has to become an st_table. */
+static bool
+ar_grow(VALUE hash)
+{
+    unsigned int capa = RHASH_AR_TABLE_MAX_BOUND(hash);
+    if (capa >= RHASH_AR_HEAP_MAX_SIZE) return false;
+    capa = capa < 4 ? 4 : capa < 8 ? 8 : capa < 12 ? 12 : RHASH_AR_HEAP_MAX_SIZE;
+    if (capa > RHASH_AR_HEAP_MAX_SIZE) capa = RHASH_AR_HEAP_MAX_SIZE;
+    return ar_reserve(hash, capa);
+}
+
+/* Give a malloc'ed table back the unused capacity, or move it back into the slot. */
+static void
+ar_heap_shrink(VALUE hash)
+{
+    if (!RHASH_AR_HEAP_P(hash)) return;
+    // Iterators keep the bound they started with and index the table with it.
+    if (hash_iterating_p(hash)) return;
+
+    ar_compact_table(hash);
+    unsigned int size = RHASH_AR_TABLE_SIZE(hash);
+    struct RHashARHeap *heap = RHASH_AR_HEAP(hash);
+    if (size == heap->capa) return;
+
+    if (size <= RHASH_AR_TABLE_MAX_SIZE && RHASH_AR_SLOT_SIZE(size) <= rb_obj_shape_slot_size(hash)) {
+        ar_table *old_tab = heap->table;
+        unsigned int old_capa = heap->capa;
+        FL_UNSET_RAW(hash, RHASH_AR_HEAP_FLAG);
+        ar_table *tab = RHASH_AR_TABLE(hash);
+        tab->ar_hint.word = old_tab->ar_hint.word;
+        MEMCPY(tab->pairs, old_tab->pairs, ar_table_pair, size);
+        ruby_xfree_sized(ar_heap_hint_word(old_tab), ar_heap_bytes(old_capa));
+    }
+    else {
+        ar_heap_resize(hash, size);
+    }
+}
+
 static inline void
 RHASH_AR_TABLE_CLEAR(VALUE h)
 {
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK;
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK;
 
+    ar_heap_free(h);
     memset(RHASH_AR_TABLE(h), 0, rb_obj_shape_slot_size(h) - sizeof(struct RHash));
 }
 
@@ -679,8 +807,7 @@ ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned 
     // and avoid this loop, but sine `ar_equal` may call back into arbitrary code,
     // the `ar_hint` may have changed.
     for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
-        const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
-        if (UNLIKELY(hints[i] == hint)) {
+        if (UNLIKELY(ar_hint(hash, i) == hint)) {
             eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
             if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
                 return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
@@ -704,15 +831,25 @@ ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned 
 static inline unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
-    unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
+    ar_table *ar = RHASH_AR_TABLE(hash);
+    const unsigned bound = RHASH_AR_TABLE_BOUND(hash);
+    unsigned first_match = ar_hint_first_match(hint, ar->ar_hint.word);
 
-    if (LIKELY(first_match >= RHASH_AR_TABLE_BOUND(hash))) {
+    if (LIKELY(first_match >= bound)) {
         RB_DEBUG_COUNTER_INC(artable_hint_notfound);
         return RHASH_AR_TABLE_MISS;
     }
+    if (UNLIKELY(first_match == RHASH_AR_TABLE_MAX_SIZE)) {
+        // No match in the first hint word of a heap table: search the second one.
+        first_match += ar_hint_first_match(hint, *ar_heap_hint_word(ar));
+        if (first_match >= bound) {
+            RB_DEBUG_COUNTER_INC(artable_hint_notfound);
+            return RHASH_AR_TABLE_MISS;
+        }
+    }
 
-    RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
-    if (LIKELY(key == RHASH_AR_TABLE_REF(hash, first_match)->key)) {
+    RUBY_ASSERT(ar_hint(hash, first_match) == hint);
+    if (LIKELY(key == ar->pairs[first_match].key)) {
         RB_DEBUG_COUNTER_INC(artable_hint_hit);
         return first_match;
     }
@@ -774,8 +911,8 @@ ar_force_convert_table(VALUE hash)
         return RHASH_ST_TABLE(hash);
     }
     else {
-        ar_table *ar = RHASH_AR_TABLE(hash);
-        st_hash_t hashes[RHASH_AR_TABLE_MAX_SIZE];
+        ar_table *ar;
+        st_hash_t hashes[RHASH_AR_HEAP_MAX_SIZE];
         unsigned int bound, size;
         const struct st_hash_type *type = RHASH_TYPE(hash);
 
@@ -783,7 +920,8 @@ ar_force_convert_table(VALUE hash)
 
         // prepare hash values
         while (1) {
-            st_data_t keys[RHASH_AR_TABLE_MAX_SIZE];
+            st_data_t keys[RHASH_AR_HEAP_MAX_SIZE];
+            ar = RHASH_AR_TABLE(hash);
             bound = RHASH_AR_TABLE_BOUND(hash);
             size = RHASH_AR_TABLE_SIZE(hash);
             ar_each_key(ar, bound, ar_each_key_copy, keys, NULL, NULL);
@@ -795,6 +933,7 @@ ar_force_convert_table(VALUE hash)
 
             // check if modified
             if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) return RHASH_ST_TABLE(hash);
+            if (UNLIKELY(RHASH_AR_TABLE(hash) != ar)) continue;
             if (UNLIKELY(RHASH_AR_TABLE_BOUND(hash) != bound)) continue;
             if (UNLIKELY(ar_each_key(ar, bound, ar_each_key_cmp, keys, NULL, NULL))) continue;
 
@@ -878,7 +1017,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
 {
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
 
-    if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_BOUND(hash)) {
+    if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_BOUND(hash) && !ar_grow(hash)) {
         return 1;
     }
     else {
@@ -909,9 +1048,10 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
         unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
 
         for (i = 0; i < bound; i++) {
-            if (ar_cleared_entry(hash, i)) continue;
+            ar_table *ar = RHASH_AR_TABLE(hash);
+            if (*ar_table_hint_ref(ar, i) == RHASH_AR_CLEARED_HINT) continue;
 
-            ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
+            ar_table_pair *pair = &ar->pairs[i];
             st_data_t key = (st_data_t)pair->key;
             st_data_t val = (st_data_t)pair->val;
             enum st_retval retval = (*func)(key, val, arg, 0);
@@ -982,11 +1122,12 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
         ar_hint_t hint;
 
         for (i = 0; i < bound; i++) {
-            if (ar_cleared_entry(hash, i)) continue;
+            ar_table *ar = RHASH_AR_TABLE(hash);
+            hint = *ar_table_hint_ref(ar, i);
+            if (hint == RHASH_AR_CLEARED_HINT) continue;
 
-            pair = RHASH_AR_TABLE_REF(hash, i);
+            pair = &ar->pairs[i];
             key = pair->key;
-            hint = ar_hint(hash, i);
 
             retval = (*func)(key, pair->val, arg, 0);
             ensure_ar_table(hash);
@@ -996,6 +1137,8 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
               case ST_CHECK: {
                 pair = RHASH_AR_TABLE_REF(hash, i);
                 if (pair->key == never) break;
+                // The entry is still in place, so the key is still in the hash.
+                if (LIKELY(pair->key == key)) break;
                 ret = ar_find_entry_hint(hash, hint, key);
                 if (UNLIKELY(ret == RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE)) {
                     ensure_ar_table(hash);
@@ -1098,7 +1241,7 @@ ar_insert_direct(VALUE hash, st_data_t key, st_data_t value, st_hash_t hash_valu
     }
 
     if (bin == RHASH_AR_TABLE_MISS) {
-        if (RHASH_AR_TABLE_SIZE(hash) == RHASH_AR_TABLE_MAX_BOUND(hash)) {
+        if (RHASH_AR_TABLE_SIZE(hash) == RHASH_AR_TABLE_MAX_BOUND(hash) && !ar_grow(hash)) {
           return -1;
         }
 
@@ -1245,14 +1388,16 @@ ar_values(VALUE hash, st_data_t *values, st_index_t size)
     return values - values_start;
 }
 
-static ar_table*
+static inline ar_table*
 ar_copy(VALUE hash1, VALUE hash2)
 {
-    RUBY_ASSERT(rb_gc_obj_slot_size(hash1) >= RHASH_AR_SLOT_SIZE(RHASH_SIZE(hash2)));
-    ar_table *new_tab = RHASH_AR_TABLE(hash1);
-
     unsigned int bound = RHASH_AR_TABLE_BOUND(hash2);
     unsigned int size = RHASH_AR_TABLE_SIZE(hash2);
+
+    RUBY_ASSERT(RHASH_AR_TABLE_SIZE(hash1) == 0);
+    RUBY_ASSERT(RHASH_AR_TABLE_MAX_BOUND(hash1) >= size);
+    ar_table *new_tab = RHASH_AR_TABLE(hash1);
+
     if (UNLIKELY(bound != size)) {
         ar_compact_into(hash1, hash2);
         return new_tab;
@@ -1260,6 +1405,9 @@ ar_copy(VALUE hash1, VALUE hash2)
 
     ar_table *old_tab = RHASH_AR_TABLE(hash2);
     new_tab->ar_hint.word = old_tab->ar_hint.word;
+    if (bound > RHASH_AR_TABLE_MAX_SIZE) {
+        *ar_heap_hint_word(new_tab) = *ar_heap_hint_word(old_tab);
+    }
     MEMCPY(&new_tab->pairs, &old_tab->pairs, ar_table_pair, bound);
     RHASH_AR_TABLE_BOUND_SET(hash1, bound);
     RHASH_AR_TABLE_SIZE_SET(hash1, RHASH_AR_TABLE_SIZE(hash2));
@@ -1301,6 +1449,9 @@ rb_hash_free(VALUE hash)
 {
     if (RHASH_ST_TABLE_P(hash)) {
         hash_st_free(hash);
+    }
+    else {
+        ar_heap_free(hash);
     }
 }
 
@@ -1577,7 +1728,7 @@ hash_alloc(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen)
 static VALUE
 hash_init_capa(VALUE hash, size_t size)
 {
-    if (size > RHASH_AR_TABLE_MAX_SIZE) {
+    if (size > RHASH_AR_TABLE_MAX_SIZE && !ar_reserve(hash, (unsigned int)size)) {
         hash_st_table_init(hash, size);
     }
     else {
@@ -1685,7 +1836,8 @@ hash_copy(VALUE ret, VALUE hash)
         FL_UNSET_RAW(ret, RHASH_COMPARE_BY_IDENTITY);
     }
 
-    if (RHASH_AR_TABLE_MAX_BOUND(ret) < RHASH_SIZE(hash)) {
+    if (RHASH_SIZE(hash) > RHASH_AR_TABLE_MAX_BOUND(ret) &&
+        (RHASH_SIZE(hash) > RHASH_AR_HEAP_MAX_SIZE || !ar_reserve(ret, (unsigned int)RHASH_SIZE(hash)))) {
         RHASH_SET_ST_FLAG(ret);
     }
 
@@ -1745,7 +1897,7 @@ static VALUE
 hash_dup_capa(VALUE hash, size_t capa)
 {
     VALUE ret = hash_alloc_capa(rb_cHash, capa);
-    if (capa > RHASH_AR_TABLE_MAX_SIZE) {
+    if (capa > RHASH_AR_TABLE_MAX_SIZE && (capa > RHASH_AR_HEAP_MAX_SIZE || !ar_reserve(ret, (unsigned int)capa))) {
         RHASH_SET_ST_FLAG(ret);
         RHASH_ST_CLEAR(ret); // Ensure the hash can be marked.
     }
@@ -1792,6 +1944,7 @@ bool
 rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, rb_len_t *bound_out)
 {
     if (!RHASH_AR_TABLE_P(hash)) return false;
+    if (RHASH_AR_HEAP_P(hash)) return false;
     if (rb_hash_compare_by_id_p(hash)) return false;
 
     const unsigned int bound = RHASH_AR_TABLE_BOUND(hash);
@@ -1964,7 +2117,8 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
     if (capa_value != INT2FIX(0)) {
         rb_len_t capa = NUM2LEN(capa_value);
         if (capa > 0 && RHASH_AR_TABLE_P(hash) && RHASH_SIZE(hash) == 0 &&
-            (rb_ulen_t)capa > RHASH_AR_TABLE_MAX_BOUND(hash)) {
+            (rb_ulen_t)capa > RHASH_AR_TABLE_MAX_BOUND(hash) &&
+            ((rb_ulen_t)capa > RHASH_AR_HEAP_MAX_SIZE || !ar_reserve(hash, (unsigned int)capa))) {
             hash_st_table_init(hash, capa);
         }
     }
@@ -2274,6 +2428,9 @@ rb_hash_rehash(VALUE hash)
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
         hash_ar_free_and_clear_table(hash);
+        if (!ar_reserve(hash, RHASH_AR_TABLE_SIZE(tmp))) {
+            rb_bug("rb_hash_rehash: no room for %u entries", RHASH_AR_TABLE_SIZE(tmp));
+        }
         ar_copy(hash, tmp);
     }
     else if (RHASH_ST_TABLE_P(hash)) {
@@ -4606,7 +4763,7 @@ hash_merge_guess_size(int argc, VALUE *argv, VALUE self)
     }
 
     VALUE other = argv[0];
-    if (!RB_TYPE_P(other, T_HASH) || !RHASH_AR_TABLE_P(other)) {
+    if (!RB_TYPE_P(other, T_HASH) || !RHASH_AR_TABLE_P(other) || RHASH_AR_HEAP_P(other)) {
         return 0;
     }
 
@@ -5447,7 +5604,8 @@ rb_hash_bulk_insert(rb_len_t argc, const VALUE *argv, VALUE hash)
         st_index_t size = argc / 2;
 
         if (RHASH_AR_TABLE_P(hash) &&
-            (RHASH_AR_TABLE_SIZE(hash) + size <= RHASH_AR_TABLE_MAX_BOUND(hash))) {
+            RHASH_AR_TABLE_SIZE(hash) + size <= RHASH_AR_HEAP_MAX_SIZE &&
+            ar_reserve(hash, (unsigned int)(RHASH_AR_TABLE_SIZE(hash) + size))) {
             ar_bulk_insert(hash, argc, argv);
         }
         else {

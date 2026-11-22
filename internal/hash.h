@@ -14,12 +14,17 @@
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "ruby/st.h"            /* for struct st_table */
 
+/* Entries an ar_table embedded in the RHash slot can hold (one hint word). */
 #define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
+/* Entries a malloc'ed ar_table can hold: two hint words, and the size and bound
+ * must fit their 4-bit flag fields. */
+#define RHASH_AR_HEAP_MAX_SIZE (2 * SIZEOF_VALUE < 15 ? 2 * SIZEOF_VALUE : 15)
 
 struct ar_table_struct;
 typedef unsigned char ar_hint_t;
 
 enum ruby_rhash_flags {
+    RHASH_AR_HEAP_FLAG = FL_USER0,                                       /* FL 0 */
     RHASH_PASS_AS_KEYWORDS = FL_USER1,                                   /* FL 1 */
     RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
@@ -54,6 +59,18 @@ typedef struct ar_table_struct {
 struct RHash {
     struct RBasic basic;
     const VALUE ifnone;
+};
+
+/*
+ * Layout of an ar hash with RHASH_AR_HEAP_FLAG: the table lives in a malloc'ed
+ * block holding the hints of entries SIZEOF_VALUE.. in one VALUE, followed by
+ * an ar_table with `capa` pairs.  `table` points at that ar_table, so pairs
+ * and the first hint word are accessed the same way as for an embedded table.
+ */
+struct RHashARHeap {
+    struct RHash hash;
+    struct ar_table_struct *table;
+    unsigned int capa;
 };
 
 #define RHASH(obj) ((struct RHash *)(obj))
@@ -138,7 +155,11 @@ RBIMPL_ATTR_RETURNS_NONNULL()
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
-    return (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
+    /* Every hash slot has at least one word after struct RHash, so the
+     * table pointer can be loaded unconditionally and selected without a branch. */
+    struct ar_table_struct *heap = ((struct RHashARHeap *)h)->table;
+    struct ar_table_struct *embedded = (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
+    return FL_TEST_RAW(h, RHASH_AR_HEAP_FLAG) ? heap : embedded;
 }
 
 RBIMPL_ATTR_RETURNS_NONNULL()
@@ -207,7 +228,7 @@ RHASH_AR_TABLE_BOUND(VALUE h)
 {
     RUBY_ASSERT(RHASH_AR_TABLE_P(h));
     const unsigned int bound = RHASH_AR_TABLE_BOUND_RAW(h);
-    RBIMPL_ASSERT_OR_ASSUME(bound <= RHASH_AR_TABLE_MAX_SIZE);
+    RBIMPL_ASSERT_OR_ASSUME(bound <= RHASH_AR_HEAP_MAX_SIZE);
     return bound;
 }
 
