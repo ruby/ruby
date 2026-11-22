@@ -747,6 +747,16 @@ reg_warn_kept(void)
 #endif
 }
 
+static void
+reg_warn_discard(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    free(reg_onig_warnings.buf);
+    reg_onig_warnings.buf = NULL;
+    reg_onig_warnings.len = reg_onig_warnings.capa = 0;
+#endif
+}
+
 static VALUE
 reg_warn_kept_i(VALUE _)
 {
@@ -829,7 +839,7 @@ rb_reg_str_with_term(VALUE re, int term)
                 reg_onig_end();
                 onig_free(rp);
                 ruby_verbose = verbose;
-                reg_warn_kept();
+                reg_warn_discard();
                 RB_GC_GUARD(unescaped);
             }
         }
