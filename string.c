@@ -382,7 +382,7 @@ rb_str_unexpect_wchar(VALUE str)
     rb_raise(rb_eArgError, "wide char encoding: %s", rb_enc_name(STR_ENC_GET(str)));
 }
 
-static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
+static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash, bool keep_identity);
 
 #if SIZEOF_RB_LEN_T == SIZEOF_VOIDP
 #define PRECOMPUTED_FAKESTR_HASH 1
@@ -425,8 +425,11 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
     return str;
 }
 
-VALUE
-rb_fstring(VALUE str)
+/* With keep_identity, a frozen bare String that is not interned yet becomes
+ * the fstring itself, as String#-@ documents. Otherwise it may be replaced by
+ * a smaller copy, so callers must use the returned string. */
+static inline VALUE
+fstring_intern(VALUE str, bool keep_identity)
 {
     VALUE fstr;
     int bare;
@@ -452,7 +455,7 @@ rb_fstring(VALUE str)
     if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE | STR_CHILLED))
         rb_str_resize(str, RSTRING_LEN(str));
 
-    fstr = register_fstring(str, false, false);
+    fstr = register_fstring(str, false, false, keep_identity);
 
     if (!bare) {
         str_replace_shared_without_enc(str, fstr);
@@ -460,6 +463,12 @@ rb_fstring(VALUE str)
         return str;
     }
     return fstr;
+}
+
+VALUE
+rb_fstring(VALUE str)
+{
+    return fstring_intern(str, false);
 }
 
 static VALUE fstring_table_obj;
@@ -503,7 +512,55 @@ fstring_concurrent_set_cmp(VALUE a, VALUE b)
 struct fstr_create_arg {
     bool copy;
     bool force_precompute_hash;
+    bool keep_identity;
 };
+
+/* Returns a frozen copy of str in the smallest embedded slot that fits it,
+ * storing the hash too when the slot has room left for it. */
+static VALUE
+fstr_new_embedded(VALUE str)
+{
+    rb_len_t len = RSTRING_LEN(str);
+    int termlen = TERM_LEN(str);
+    VALUE new_str = str_alloc_embed(rb_cString, len + termlen);
+
+    memcpy(RSTRING_PTR(new_str), RSTRING_PTR(str), len);
+    STR_SET_LEN(new_str, len);
+    TERM_FILL(RSTRING_END(new_str), termlen);
+    rb_enc_copy(new_str, str);
+    RUBY_ASSERT(STR_EMBED_P(new_str));
+    if ((size_t)str_embed_capa(new_str) >= (size_t)len + termlen + sizeof(st_index_t)) {
+        str_store_precomputed_hash(new_str, str_do_hash(str));
+    }
+    OBJ_FREEZE(new_str);
+    return new_str;
+}
+
+/* True when a string being registered in place would keep a slot (plus heap
+ * buffer) larger than an embedded copy of its bytes needs. */
+static bool
+fstr_oversized_p(VALUE str)
+{
+    rb_len_t len = RSTRING_LEN(str);
+    int termlen = TERM_LEN(str);
+    size_t used;
+
+    if (!STR_EMBEDDABLE_P(len, termlen)) return false;
+    if (STR_EMBED_P(str)) {
+        /* Other strings point into an embedded shared root's slot. */
+        if (FL_TEST_RAW(str, STR_SHARED_ROOT)) return false;
+        used = rb_obj_shape_slot_size(str);
+    }
+    else {
+        /* NOFREE buffers cost nothing, and a shared root's buffer stays
+         * alive for the strings sharing it. */
+        if (FL_TEST_RAW(str, STR_NOFREE | STR_SHARED_ROOT)) return false;
+        /* A shared substring gets its own buffer when registered as is. */
+        used = rb_obj_shape_slot_size(str) +
+            (FL_TEST_RAW(str, STR_SHARED) ? (size_t)len + termlen : STR_HEAP_SIZE(str));
+    }
+    return rb_gc_size_slot_size(rb_str_embed_size(len, termlen)) < used;
+}
 
 static VALUE
 fstring_concurrent_set_create(VALUE str, void *data)
@@ -545,6 +602,12 @@ fstring_concurrent_set_create(VALUE str, void *data)
                     ENCODING_GET(str));
         }
         OBJ_FREEZE(str);
+    }
+    else if (!arg->keep_identity && OBJ_FROZEN(str) && !CHILLED_STRING_P(str) &&
+             BARE_STRING_P(str) && fstr_oversized_p(str)) {
+        /* An already frozen string would be registered as is; copy it
+         * into a slot that fits instead. Other cases below copy anyway. */
+        str = fstr_new_embedded(str);
     }
     else {
         if (!OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
@@ -591,11 +654,12 @@ Init_fstring_table(void)
 }
 
 static VALUE
-register_fstring(VALUE str, bool copy, bool force_precompute_hash)
+register_fstring(VALUE str, bool copy, bool force_precompute_hash, bool keep_identity)
 {
     struct fstr_create_arg args = {
         .copy = copy,
-        .force_precompute_hash = force_precompute_hash
+        .force_precompute_hash = force_precompute_hash,
+        .keep_identity = keep_identity
     };
 
 #ifdef PRECOMPUTED_FAKESTR_HASH
@@ -689,14 +753,14 @@ VALUE
 rb_fstring_new(const char *ptr, rb_len_t len)
 {
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), false, false);
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), false, false, false);
 }
 
 VALUE
 rb_fstring_enc_new(const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), false, false);
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), false, false, false);
 }
 
 VALUE
@@ -3492,7 +3556,7 @@ str_uminus(VALUE str)
     if (!BARE_STRING_P(str) && !rb_obj_frozen_p(str)) {
         str = rb_str_dup(str);
     }
-    return rb_fstring(str);
+    return fstring_intern(str, true);
 }
 
 RUBY_ALIAS_FUNCTION(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
@@ -16363,7 +16427,7 @@ rb_interned_str(const char *ptr, rb_len_t len)
     }
     VALUE str = setup_fake_str(&fake_str, ptr, len, encidx);
     ENC_CODERANGE_SET(str, coderange);
-    return register_fstring(str, true, false);
+    return register_fstring(str, true, false, false);
 }
 
 VALUE
@@ -16380,7 +16444,7 @@ rb_enc_interned_str(const char *ptr, rb_len_t len, rb_encoding *enc)
     }
 
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, false);
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, false, false);
 }
 
 VALUE
@@ -16391,7 +16455,7 @@ rb_enc_literal_str(const char *ptr, rb_len_t len, rb_encoding *enc)
     }
 
     struct RString fake_str = {RBASIC_INIT};
-    VALUE str = register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true);
+    VALUE str = register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true, false);
     RUBY_ASSERT(RB_OBJ_SHAREABLE_P(str) && (rb_gc_verify_shareable(str), 1));
     return str;
 }
