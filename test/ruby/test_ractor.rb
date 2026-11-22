@@ -1719,18 +1719,33 @@ class TestRactor < Test::Unit::TestCase
     assert_predicate(parent.instance_variable_get(:@a), :frozen?)
   end
 
-  # A shareable T_DATA owned by another Ractor can be reached by Kernel#deep_freeze in a
-  # different Ractor. Freezing it or reading its contents would race its owner, so it
-  # must be left alone.
-  def test_deep_freeze_shareable_data_of_other_ractor
+  def test_deep_freeze_ractor_raises
+    assert_raise_with_message(TypeError, /\Acannot freeze #<Ractor:/) { [Ractor.current].deep_freeze }
+    refute_predicate Ractor.current, :frozen?
+  end
+
+  # A shareable owned by another Ractor can be reached by Kernel#deep_freeze in a different
+  # Ractor: a Ractor::Port passed to Ractor.new, a frozen literal, a shareable constant.
+  # It is traversed like any object (reading a shareable is fine); its unfrozen parts,
+  # i.e. the Ractor a Port refers to, raise instead of being written to.
+  def test_deep_freeze_shareable_of_other_ractor
     assert_ractor(<<~'RUBY', require: '-test-/gc/writebarrier')
       port = Ractor::Port.new
-      assert_equal :ok, Ractor.new(port) { |port| [port].deep_freeze; :ok }.value
+      result = Ractor.new(port) do |port|
+        begin
+          [port].deep_freeze
+          :frozen
+        rescue TypeError => e
+          e.message
+        end
+      end.value
+      assert_match(/\Acannot freeze #<Ractor:/, result)
+      refute_predicate Ractor.current, :frozen?
 
       box = Bug::GC::WriteBarrier::Box.new
       box.store(Object.new)
       Ractor.make_shareable(box)
-      assert_equal :ok, Ractor.new(box) { |box| [box].deep_freeze; :ok }.value
+      assert_equal :ok, Ractor.new(box) { |box| [box, "literal".freeze, {a: 1}].deep_freeze; :ok }.value
     RUBY
   end
 

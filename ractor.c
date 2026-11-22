@@ -1700,9 +1700,10 @@ zombie_writable_p(VALUE obj)
     return RB_VM_LOCKED_P() && rb_gc_obj_in_zombie_objspace_p(obj);
 }
 
-// reading obj's contents races its owner, which may be making the graph shareable
+// reading obj's contents races its owner, which may be making the graph shareable,
+// unless obj is shareable already (the flag is set last, once its graph is complete)
 #define ASSERT_traversable(obj) \
-    VM_ASSERT(!rb_objspace_foreign_object_p(obj) || zombie_writable_p(obj), "%s", rb_obj_info(obj))
+    VM_ASSERT(!rb_objspace_foreign_object_p(obj) || zombie_writable_p(obj) || RB_OBJ_SHAREABLE_P(obj), "%s", rb_obj_info(obj))
 
 static bool
 traverse_child_p(VALUE obj)
@@ -1732,10 +1733,16 @@ obj_traverse_collect_i(VALUE obj, void *ptr)
 {
     VALUE children = (VALUE)ptr;
 
-    // We need to assume foreign objects are properly shareable. If we check
-    // their shareability, this could result in a crash because the page could
-    // be unmapped. The object could also be freed concurrently.
-    if (traverse_child_p(obj) && !rb_objspace_garbage_object_p(obj)) {
+    if (traverse_child_p(obj)) {
+        if (!rb_objspace_garbage_object_p(obj)) {
+            rb_ary_push(children, obj);
+        }
+    }
+    else if (rb_objspace_foreign_object_p(obj) && RB_OBJ_SHAREABLE_P(obj)) {
+        // Another Ractor's shareable: a live leaf for this Ractor's GC (see
+        // rb_gc_impl_garbage_object_p), whose contents can be read. A foreign
+        // object which is not shareable is an edge that should not exist; leave
+        // it alone rather than read it.
         rb_ary_push(children, obj);
     }
 }
@@ -1743,7 +1750,7 @@ obj_traverse_collect_i(VALUE obj, void *ptr)
 // Traverse obj's children via its GC mark function. Returns 1 to stop.
 // The children are collected first, then traversed once the walk has returned:
 // #freeze (arbitrary Ruby code) must not run while the mark function is on the
-// stack.
+// stack or the VM lock is held.
 // Besides the dmark references, rb_gc_mark_children also reports the class of
 // obj (and its fields object): the enter functions skip those.
 static int
@@ -1754,7 +1761,8 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         rb_objspace_reachable_objects_from_locked(obj, obj_traverse_collect_i, (void *)children); // a zombie's object
     }
     else {
-        rb_objspace_reachable_objects_from_local(obj, obj_traverse_collect_i, (void *)children);
+        // takes the VM lock: obj may be a shareable owned by another Ractor
+        rb_objspace_reachable_objects_from(obj, obj_traverse_collect_i, (void *)children);
     }
 
     int stop = 0;
@@ -2155,25 +2163,25 @@ deep_freeze_enter(VALUE obj)
         return traverse_skip;
     }
 
-    // An object owned by another Ractor is necessarily shareable (hence the cheap
-    // flag check first), and so is everything reachable from it: there is nothing
-    // to freeze there, and the shareables which are not frozen (a Ractor, ENV)
-    // must not be frozen from another Ractor anyway. Skipping it also keeps the
-    // traversal from reading another Ractor's objects (see ASSERT_traversable).
-    if (RB_OBJ_SHAREABLE_P(obj) && rb_objspace_foreign_object_p(obj)) {
-        return traverse_skip;
+    if (rb_ractor_p(obj)) {
+        // Freezing a Ractor has no effect, and a Ractor reachable from another
+        // Ractor must not be written to. Behave as if Ractor#freeze raised.
+        rb_raise(rb_eTypeError, "cannot freeze %+"PRIsVALUE, obj);
     }
 
+    // An object owned by another Ractor can be reached (a shareable passed by
+    // reference, a constant, a frozen string literal compiled by the main
+    // Ractor, ...). It is shareable, so reading it is fine, and so is calling
+    // #freeze: it is either frozen already, or its #freeze raises (ENV).
     traverse_ensure_frozen(obj, rb_eRuntimeError);
 
     if (RB_TYPE_P(obj, T_DATA)) {
         // deep_freeze follows data, not code or execution context. What these
         // reference is the self and variables of a binding (Proc, Method,
-        // Binding), or every object on the VM stack(s) of a thread or fiber
-        // (and of all the threads of a Ractor). That is not the object's
-        // contents, so freeze them but do not traverse.
+        // Binding), or every object on the VM stack(s) of a thread or fiber.
+        // That is not the object's contents, so freeze them but do not traverse.
         if (rb_obj_is_proc(obj) || rb_obj_is_method(obj) || rb_typeddata_is_kind_of(obj, &ruby_binding_data_type) ||
-            rb_obj_is_thread(obj) || rb_obj_is_fiber(obj) || rb_ractor_p(obj)) {
+            rb_obj_is_thread(obj) || rb_obj_is_fiber(obj)) {
             return traverse_skip;
         }
     }
@@ -2208,7 +2216,7 @@ deep_freeze_enter(VALUE obj)
  *    Foo.deep_freeze     # does nothing
  *    [Foo].deep_freeze   # freezes the Array but not Foo
  *
- *  Proc, Method, Binding, Thread, Fiber and Ractor objects are frozen but not
+ *  Proc, Method, Binding, Thread and Fiber objects are frozen but not
  *  traversed: what they reference is code or execution context (the +self+
  *  and variables of a binding, the objects on an execution stack), not data.
  *
@@ -2219,7 +2227,8 @@ deep_freeze_enter(VALUE obj)
  *  cached values eagerly) by overriding #freeze. If a #freeze method does not
  *  freeze the object, a RuntimeError is raised. If #freeze raises, for
  *  example Thread::Queue#freeze which raises TypeError, the exception
- *  propagates.
+ *  propagates. A Ractor cannot be frozen either: TypeError is raised when
+ *  the traversal reaches one.
  *
  *  Cyclic references are supported:
  *
@@ -2229,7 +2238,7 @@ deep_freeze_enter(VALUE obj)
  *    a.frozen? # => true
  *
  *  Already frozen objects are still traversed, as they may refer to
- *  unfrozen objects. Objects owned by another Ractor are left alone.
+ *  unfrozen objects.
  *
  *  Unlike Ractor.make_shareable, +deep_freeze+ is not related to Ractor:
  *  it only freezes objects and does not check or mark them as shareable.
