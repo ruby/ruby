@@ -193,6 +193,10 @@ module Ruby::Prism
       assert_warning("_ = 1e-400", "out of range")
       assert_warning("_ = 2.4703282292062327e-324", "out of range")
 
+      literal = "1.23456789012345e999"
+      assert_warning("_ = #{literal}", "Float #{literal} out of range")
+      assert_warning("_ = #{literal}9", "Float #{literal}... out of range", compare: false)
+
       refute_warning("_ = 1e-310")
       refute_warning("_ = 2.4703282292062328e-324")
       refute_warning("_ = 0e99999")
