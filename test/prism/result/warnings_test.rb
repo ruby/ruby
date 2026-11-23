@@ -267,6 +267,13 @@ module Ruby::Prism
       assert_warning("1 if 2..foo", "integer")
     end
 
+    def test_literal_predicate_warnings
+      assert_warning('if "s"; end', "string literal in condition")
+      assert_warning("if /r/; end", "regex literal in condition")
+      assert_warning("if :s..1.5; end", "symbol literal in flip-flop", "literal in flip-flop")
+      refute_warning("if !:s; end")
+    end
+
     def test_literal_in_conditionals
       sources = [
         "if (a = 2); a; end",
