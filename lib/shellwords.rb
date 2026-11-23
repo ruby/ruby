@@ -40,11 +40,10 @@
 #   # runs "cat -- special\\'s.txt"
 #
 # Note the '--'.  Without it, cat(1) will treat the following argument
-# as a command line option if it starts with '-'.  It is guaranteed
-# that Shellwords.escape converts a string to a form that a Bourne
-# shell will parse back to the original string, but it is the
-# programmer's responsibility to make sure that passing an arbitrary
-# argument to a command does no harm.
+# as a command line option if it starts with '-'.  When the string's encoding
+# is compatible with how the shell parses command lines, Shellwords.escape
+# preserves the original argument.
+# The caller must still ensure that passing the argument to the command is safe.
 #
 # Shellwords also comes with a core extension for Array, Array#shelljoin.
 #
@@ -123,8 +122,8 @@ module Shellwords
   end
 
   # Escapes a string so that it can be safely used in a Bourne shell
-  # command line.  +str+ can be a non-string object that responds to
-  # +to_s+.
+  # command line (see {Encoding considerations}[rdoc-ref:Shellwords.shellescape@Encoding+considerations]).
+  # +str+ can be a non-string object that responds to +to_s+.
   #
   # +str+ must not contain NUL characters because of nature of +exec+
   # system call.
@@ -149,12 +148,20 @@ module Shellwords
   #     }
   #   }
   #
-  # It is the caller's responsibility to encode the string in the right
-  # encoding for the shell environment where this string is used.
-  #
-  # Multibyte characters are treated as multibyte characters, not as bytes.
-  #
   # Returns an empty quoted String if +str+ has a length of zero.
+  #
+  # === Encoding considerations
+  #
+  # The caller must choose an encoding suited to the shell environment.
+  # Shellwords escapes the string character by character.  Some shells parse
+  # command lines byte by byte, even in multibyte locales.  With encodings
+  # such as GBK, Big5, and Shift_JIS, these shells may interpret shell
+  # metacharacters in the escaped result even when the string's encoding
+  # matches the shell's locale.
+  #
+  # For byte-oriented shells, use <tt>Shellwords.escape(str.b)</tt> to escape
+  # the string byte by byte, or bypass the shell by passing arguments directly
+  # to the command.
   def shellescape(str)
     str = str.to_s
 
@@ -232,7 +239,7 @@ class String
   #   str.shellescape => string
   #
   # Escapes +str+ so that it can be safely used in a Bourne shell
-  # command line.
+  # command line (see {Encoding considerations}[rdoc-ref:Shellwords.shellescape@Encoding+considerations]).
   #
   # See Shellwords.shellescape for details.
   def shellescape
