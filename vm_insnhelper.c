@@ -6831,53 +6831,6 @@ rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, c
 
 #undef id_cmp
 
-static void
-vm_track_constant_cache(ID id, void *ic)
-{
-    rb_vm_t *vm = GET_VM();
-    struct rb_id_table *const_cache = &vm->constant_cache;
-    VALUE lookup_result;
-    set_table *ics;
-
-    if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
-        ics = (set_table *)lookup_result;
-    }
-    else {
-        ics = set_init_numtable();
-        rb_id_table_insert(const_cache, id, (VALUE)ics);
-    }
-
-    /* The call below to st_insert could allocate which could trigger a GC.
-     * If it triggers a GC, it may free an iseq that also holds a cache to this
-     * constant. If that iseq is the last iseq with a cache to this constant, then
-     * it will free this ST table, which would cause an use-after-free during this
-     * st_insert.
-     *
-     * So to fix this issue, we store the ID that is currently being inserted
-     * and, in remove_from_constant_cache, we don't free the ST table for ID
-     * equal to this one.
-     *
-     * See [Bug #20921].
-     */
-    vm->inserting_constant_cache_id = id;
-
-    set_insert(ics, (st_data_t)ic);
-
-    vm->inserting_constant_cache_id = (ID)0;
-}
-
-static void
-vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
-{
-    RB_VM_LOCKING() {
-        for (int i = 0; segments[i]; i++) {
-            ID id = segments[i];
-            if (id == idNULL) continue;
-            vm_track_constant_cache(id, ic);
-        }
-    }
-}
-
 // For JIT inlining
 static inline bool
 vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ractor_id, const VALUE *reg_ep)
@@ -6950,10 +6903,16 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
     else {
         ruby_vm_constant_cache_misses++;
         val = vm_get_ev_const_chain(ec, segments);
-        vm_ic_track_const_chain(GET_CFP(), ic, segments);
         // Undo the PC increment to get the address to this instruction
         // INSN_ATTR(width) == 2
         vm_ic_update(ec, CFP_ISEQ(GET_CFP()), ic, val, GET_EP(), CFP_PC(GET_CFP()) - 2);
+        // An IC is registered for invalidation exactly while it has an entry.
+        if (ic->entry) {
+            rb_iseq_const_path_register_ic(ic);
+        }
+        else {
+            rb_iseq_const_path_unregister_ic(ic);
+        }
     }
     return val;
 }

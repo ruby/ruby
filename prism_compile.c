@@ -5679,7 +5679,7 @@ pm_constant_path_parts(const pm_node_t *node, const pm_scope_node_t *scope_node)
             VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
 
             rb_ary_unshift(parts, name);
-            return parts;
+            return rb_iseq_const_path_fits_p(RARRAY_LEN(parts)) ? parts : Qnil;
           }
           case PM_CONSTANT_PATH_NODE: {
             const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
@@ -5688,7 +5688,7 @@ pm_constant_path_parts(const pm_node_t *node, const pm_scope_node_t *scope_node)
             rb_ary_unshift(parts, name);
             if (cast->parent == NULL) {
                 rb_ary_unshift(parts, ID2SYM(idNULL));
-                return parts;
+                return rb_iseq_const_path_fits_p(RARRAY_LEN(parts)) ? parts : Qnil;
             }
 
             node = cast->parent;

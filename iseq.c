@@ -33,6 +33,7 @@
 #include "internal/io.h"
 #include "internal/ruby_parser.h"
 #include "internal/sanitizers.h"
+#include "internal/concurrent_set.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -109,164 +110,261 @@ compile_data_free(struct iseq_compile_data *compile_data)
     }
 }
 
-static void
-remove_from_constant_cache(ID id, IC ic)
-{
-    rb_vm_t *vm = GET_VM();
-    VALUE lookup_result;
-    st_data_t ic_data = (st_data_t)ic;
-
-    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
-        set_table *ics = (set_table *)lookup_result;
-        set_table_delete(ics, &ic_data);
-
-        if (ics->num_entries == 0 &&
-                // See comment in vm_track_constant_cache on why we need this check
-                id != vm->inserting_constant_cache_id) {
-            rb_id_table_delete(&vm->constant_cache, id);
-            set_free_table(ics);
-        }
-    }
-}
-
-// When an ISEQ is being freed, all of its associated ICs are going to go away
-// as well. Because of this, we need to iterate over the ICs, and clear them
-// from the VM's constant cache.
 /*
- * Constant path segment lists (IC->segments) are interned: every
+ * Constant path segment lists (IC->segments) are imemo_const_path objects,
+ * deduplicated in a weak concurrent set like frozen strings: every
  * opt_getconstant_path with the same path (e.g. `Foo::Bar`) shares one
- * 0-terminated ID list. A large app has ~8x more constant references than
- * distinct paths, and most lists are 1-2 IDs, so a malloc each was mostly
- * allocator overhead.
+ * 0-terminated ID list. ISeqs mark (and pin) the paths of their ICs, so a path
+ * lives as long as any ISeq that uses it, without a refcount.
  *
- * Each list is preceded by a refcount. Releasing (from rb_iseq_free, i.e.
- * during GC sweep) only decrements it and never touches the table, because
- * GC can run while the table is being updated (an allocation inside
- * set_insert). Entries whose count reached zero stay in the table, can be
- * revived by a later lookup, and are reclaimed by the interning path once
- * they make up a large share of the table.
+ * Inline constant caches are registered per path: vm->constant_cache maps each
+ * ID to the paths containing it, and a path holds its registered ICs. An IC is
+ * registered exactly while ic->entry is set. That is what makes freeing safe
+ * when an ISeq and its paths die in the same GC and are swept in any order:
+ * freeing an ISeq only reads the paths of ICs with an entry, and a path freed
+ * first clears the entries of its registered ICs.
  */
-struct const_segments_entry {
-    rb_atomic_t refcnt;
-    ID ids[FLEX_ARY_LEN];
-};
+static VALUE const_path_set;
 
-static set_table *const_segments_tbl;
-static size_t const_segments_reclaim_at = 1024;
-
-static inline struct const_segments_entry *
-const_segments_entry(const ID *ids)
+static long
+const_path_len(const ID *ids)
 {
-    return (struct const_segments_entry *)((char *)ids - offsetof(struct const_segments_entry, ids));
-}
-
-static size_t
-idlist_len(const ID *ids)
-{
-    size_t n = 0;
+    long n = 0;
     while (ids[n]) n++;
     return n;
 }
 
 static size_t
-const_segments_entry_bytes(size_t len)
+const_path_bytes(long len)
 {
-    return offsetof(struct const_segments_entry, ids) + (len + 1) * sizeof(ID);
+    return offsetof(struct rb_imemo_const_path, ids) + (len + 1) * sizeof(ID);
 }
 
-static st_index_t
-idlist_hash(st_data_t key)
+/* Whether a path of `len` segments fits in an object. Longer paths compile to
+ * uncached constant lookups instead of opt_getconstant_path. */
+bool
+rb_iseq_const_path_fits_p(long len)
 {
-    const ID *ids = (const ID *)key;
-    return st_hash(ids, idlist_len(ids) * sizeof(ID), 0);
+    return rb_gc_size_allocatable_p(const_path_bytes(len));
 }
 
-static int
-idlist_cmp(st_data_t a, st_data_t b)
+static VALUE
+const_path_hash(VALUE key)
 {
-    const ID *x = (const ID *)a, *y = (const ID *)b;
+    const ID *ids = ((const struct rb_imemo_const_path *)key)->ids;
+    return (VALUE)st_hash(ids, const_path_len(ids) * sizeof(ID), 0);
+}
+
+static bool
+const_path_cmp(VALUE a, VALUE b)
+{
+    const ID *x = ((const struct rb_imemo_const_path *)a)->ids;
+    const ID *y = ((const struct rb_imemo_const_path *)b)->ids;
     while (*x && *x == *y) { x++; y++; }
-    return *x != *y;
+    return *x == *y;
 }
 
-static const struct st_hash_type idlist_hash_type = {
-    idlist_cmp,
-    idlist_hash,
+static VALUE
+const_path_create(VALUE key, void *data)
+{
+    long len = *(long *)data;
+    VALUE obj = rb_imemo_new(imemo_const_path, 0, const_path_bytes(len), true);
+    MEMCPY(((struct rb_imemo_const_path *)obj)->ids, ((const struct rb_imemo_const_path *)key)->ids, ID, len + 1);
+    return obj;
+}
+
+static const struct rb_concurrent_set_funcs const_path_set_funcs = {
+    .hash = const_path_hash,
+    .cmp = const_path_cmp,
+    .create = const_path_create,
+    .free = NULL,
 };
 
-static int
-const_segments_reclaim_i(st_data_t key, st_data_t arg)
+void
+Init_const_path_table(void)
 {
-    struct const_segments_entry *e = const_segments_entry((const ID *)key);
-    if (RUBY_ATOMIC_LOAD(e->refcnt) == 0) {
-        ruby_xfree_sized(e, const_segments_entry_bytes(idlist_len(e->ids)));
-        return ST_DELETE;
-    }
-    return ST_CONTINUE;
+    const_path_set = rb_concurrent_set_new(&const_path_set_funcs, 1024);
+    rb_gc_register_address(&const_path_set);
 }
 
-/* Returns an interned, 0-terminated ID list for an Array of Symbols. */
+/* Returns the interned, 0-terminated ID list for an Array of Symbols, and
+ * records that `iseq` references it. */
 const ID *
-rb_iseq_intern_const_segments(VALUE arr)
+rb_iseq_intern_const_segments(const rb_iseq_t *iseq, VALUE arr)
 {
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
     long len = RARRAY_LEN(arr);
-    size_t bytes = const_segments_entry_bytes(len);
+    if (!rb_iseq_const_path_fits_p(len)) {
+        rb_raise(rb_eArgError, "constant path too long (%ld segments)", len);
+    }
 
-    /* Allocate before taking the lock: allocation can GC. */
-    struct const_segments_entry *fresh = ruby_xmalloc(bytes);
-    fresh->refcnt = 1;
+    VALUE tmp = 0;
+    struct rb_imemo_const_path *key = ALLOCV(tmp, const_path_bytes(len));
+    key->flags = 0;
+    key->ics = NULL;
     for (long i = 0; i < len; i++) {
-        fresh->ids[i] = SYM2ID(RARRAY_AREF(arr, i));
+        key->ids[i] = SYM2ID(RARRAY_AREF(arr, i));
     }
-    fresh->ids[len] = 0;
+    key->ids[len] = 0;
 
-    const ID *result = NULL;
+    VALUE path = rb_concurrent_set_find_or_insert(&const_path_set, (VALUE)key, &len);
+    ALLOCV_END(tmp);
 
-    RB_VM_LOCKING() {
-        if (!const_segments_tbl) {
-            const_segments_tbl = set_init_table_with_size(NULL, &idlist_hash_type, 0);
+    RB_OBJ_WRITTEN((VALUE)iseq, Qundef, path);
+    return ((struct rb_imemo_const_path *)path)->ids;
+}
+
+/* Called with the VM lock held, and not during GC. */
+static void
+const_path_register(struct rb_imemo_const_path *path)
+{
+    struct rb_id_table *const_cache = &GET_VM()->constant_cache;
+    for (const ID *id = path->ids; *id; id++) {
+        if (*id == idNULL) continue;
+        VALUE paths;
+        if (!rb_id_table_lookup(const_cache, *id, &paths)) {
+            paths = (VALUE)set_init_numtable();
+            rb_id_table_insert(const_cache, *id, paths);
         }
+        set_insert((set_table *)paths, (st_data_t)path);
+    }
+}
 
-        st_data_t existing;
-        if (set_get_key(const_segments_tbl, (st_data_t)fresh->ids, &existing)) {
-            struct const_segments_entry *e = const_segments_entry((const ID *)existing);
-            RUBY_ATOMIC_INC(e->refcnt);
-            result = e->ids;
-        }
-        else {
-            if (const_segments_tbl->num_entries >= const_segments_reclaim_at) {
-                set_table_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
-                const_segments_reclaim_at = const_segments_tbl->num_entries * 2 + 1024;
+/* Drops the path from vm->constant_cache, except for the ID `skip`, and
+ * forgets its ICs. Does not allocate, so it is safe during GC. */
+static void
+const_path_unregister(struct rb_imemo_const_path *path, ID skip)
+{
+    struct rb_id_table *const_cache = &GET_VM()->constant_cache;
+    for (const ID *id = path->ids; *id; id++) {
+        if (*id == idNULL || *id == skip) continue;
+        VALUE paths;
+        if (rb_id_table_lookup(const_cache, *id, &paths)) {
+            st_data_t key = (st_data_t)path;
+            set_table_delete((set_table *)paths, &key);
+            if (((set_table *)paths)->num_entries == 0) {
+                rb_id_table_delete(const_cache, *id);
+                set_free_table((set_table *)paths);
             }
-            set_insert(const_segments_tbl, (st_data_t)fresh->ids);
-            result = fresh->ids;
-            fresh = NULL;
         }
     }
+    set_free_table(path->ics);
+    path->ics = NULL;
+}
 
-    if (fresh) ruby_xfree_sized(fresh, bytes);
-    return result;
+/* Registers `ic` for invalidation once ic->entry has been set. */
+void
+rb_iseq_const_path_register_ic(IC ic)
+{
+    RB_VM_LOCKING() {
+        /* A GC here could free ISeqs or paths, which edits these tables. */
+        VALUE gc_disabled = rb_gc_disable_no_rest();
+        struct rb_imemo_const_path *path = rb_imemo_const_path_from_ids(ic->segments);
+        if (!path->ics) {
+            path->ics = set_init_numtable();
+            const_path_register(path);
+        }
+        set_insert(path->ics, (st_data_t)ic);
+        if (gc_disabled == Qfalse) rb_gc_enable();
+    }
 }
 
 static void
-iseq_release_const_segments(const ID *ids)
+const_path_unregister_ic(IC ic)
 {
-    struct const_segments_entry *e = const_segments_entry(ids);
-    RUBY_ASSERT(RUBY_ATOMIC_LOAD(e->refcnt) > 0);
-    RUBY_ATOMIC_DEC(e->refcnt);
+    struct rb_imemo_const_path *path = rb_imemo_const_path_from_ids(ic->segments);
+    if (path->ics) {
+        st_data_t key = (st_data_t)ic;
+        set_table_delete(path->ics, &key);
+        if (path->ics->num_entries == 0) const_path_unregister(path, 0);
+    }
 }
 
-/* Called at VM teardown after all ISeqs have been freed (RUBY_FREE_AT_EXIT). */
+/* Unregisters `ic`, whose entry was just cleared. */
 void
-rb_iseq_free_const_segments_table(void)
+rb_iseq_const_path_unregister_ic(IC ic)
 {
-    if (!const_segments_tbl) return;
-    set_table_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
-    set_free_table(const_segments_tbl);
-    const_segments_tbl = NULL;
+    RB_VM_LOCKING() {
+        const_path_unregister_ic(ic);
+    }
 }
 
+static int
+const_path_clear_ic_i(st_data_t ic, st_data_t arg)
+{
+    ((IC)ic)->entry = NULL;
+    (*(size_t *)arg)++;
+    return ST_CONTINUE;
+}
+
+static int
+const_path_invalidate_i(st_data_t key, st_data_t arg)
+{
+    struct rb_imemo_const_path *path = (struct rb_imemo_const_path *)key;
+    size_t *count = (size_t *)((VALUE *)arg)[0];
+    ID id = (ID)((VALUE *)arg)[1];
+    set_table_foreach(path->ics, const_path_clear_ic_i, (st_data_t)count);
+    const_path_unregister(path, id);
+    return ST_CONTINUE;
+}
+
+/* Clears every IC whose path contains `id`, returning how many were cleared. */
+size_t
+rb_iseq_const_path_invalidate(ID id)
+{
+    size_t count = 0;
+    RB_VM_LOCKING() {
+        struct rb_id_table *const_cache = &GET_VM()->constant_cache;
+        VALUE paths;
+        if (rb_id_table_lookup(const_cache, id, &paths)) {
+            rb_id_table_delete(const_cache, id);
+            VALUE arg[2] = { (VALUE)&count, (VALUE)id };
+            set_table_foreach((set_table *)paths, const_path_invalidate_i, (st_data_t)arg);
+            set_free_table((set_table *)paths);
+        }
+    }
+    return count;
+}
+
+static int
+const_path_forget_ic_i(st_data_t ic, st_data_t arg)
+{
+    ((IC)ic)->entry = NULL;
+    return ST_CONTINUE;
+}
+
+/* GC is freeing a path. Its registered ICs belong to ISeqs being freed in the
+ * same sweep, so clear their entries to keep those ISeqs from reading it. */
+void
+rb_iseq_free_const_path(VALUE obj)
+{
+    struct rb_imemo_const_path *path = (struct rb_imemo_const_path *)obj;
+    rb_concurrent_set_delete_by_identity(const_path_set, obj);
+    if (path->ics) {
+        set_table_foreach(path->ics, const_path_forget_ic_i, 0);
+        const_path_unregister(path, 0);
+    }
+}
+
+static enum rb_id_table_iterator_result
+const_path_free_paths_i(ID id, VALUE paths, void *data)
+{
+    set_free_table((set_table *)paths);
+    return ID_TABLE_CONTINUE;
+}
+
+/* Called at VM teardown, before objects are freed. */
+void
+rb_iseq_free_constant_cache(rb_vm_t *vm)
+{
+    rb_id_table_foreach(&vm->constant_cache, const_path_free_paths_i, NULL);
+    rb_id_table_free_items(&vm->constant_cache);
+    rb_id_table_init(&vm->constant_cache, 0);
+}
+
+// When an ISEQ is being freed, all of its associated ICs are going to go away
+// as well. Because of this, we need to unregister the ones in the VM's
+// constant cache (those with an entry).
 static void
 iseq_clear_ic_references(const rb_iseq_t *iseq)
 {
@@ -281,22 +379,13 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
     for (unsigned int ic_idx = 0; ic_idx < ISEQ_BODY(iseq)->ic_size; ic_idx++) {
         IC ic = &ISEQ_IS_IC_ENTRY(ISEQ_BODY(iseq), ic_idx);
 
-        // Iterate over the IC's constant path's segments and clean any references to
-        // the ICs out of the VM's constant cache table.
-        const ID *segments = ic->segments;
-
-        // It's possible that segments is NULL if we overallocated an IC but
-        // optimizations removed the instruction using it
-        if (segments == NULL)
-            continue;
-
-        for (int i = 0; segments[i]; i++) {
-            ID id = segments[i];
-            if (id == idNULL) continue;
-            remove_from_constant_cache(id, ic);
+        // segments is NULL if we overallocated an IC but optimizations
+        // removed the instruction using it.
+        if (ic->entry && ic->segments) {
+            RB_VM_LOCKING() {
+                const_path_unregister_ic(ic);
+            }
         }
-
-        iseq_release_const_segments(segments);
     }
 }
 
@@ -479,7 +568,7 @@ rb_iseq_mark_and_move_each_compile_data_value(const struct rb_gc_mark_ctx *ctx, 
     }
 }
 static void
-rb_iseq_mark_and_move_each_body_value(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, VALUE *original_iseq)
+rb_iseq_mark_and_move_each_body_value(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, VALUE *original_iseq, bool reference_updating)
 {
     unsigned int size;
     VALUE *code;
@@ -516,6 +605,10 @@ rb_iseq_mark_and_move_each_body_value(const struct rb_gc_mark_ctx *ctx, const rb
             if (ic->entry) {
                 rb_gc_mark_and_move_ptr_ctx(ctx, &ic->entry);
             }
+            // Pinned: IC->segments points into the path, and vm->constant_cache holds it.
+            if (ic->segments && !reference_updating) {
+                rb_gc_mark_ctx(ctx, (VALUE)rb_imemo_const_path_from_ids(ic->segments));
+            }
         }
     }
 
@@ -550,7 +643,7 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
     if (ISEQ_BODY(iseq)) {
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        rb_iseq_mark_and_move_each_body_value(ctx, iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+        rb_iseq_mark_and_move_each_body_value(ctx, iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL, reference_updating);
 
         struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
         if (v) rb_gc_mark_and_move_ctx(ctx, &v->script_lines);

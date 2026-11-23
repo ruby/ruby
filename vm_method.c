@@ -323,24 +323,10 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     rb_zjit_cme_invalidate(cme);
 }
 
-static int
-rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
-{
-    ((IC) ic)->entry = NULL;
-    return ST_CONTINUE;
-}
-
 void
 rb_clear_constant_cache_for_id(ID id)
 {
-    VALUE lookup_result;
-    rb_vm_t *vm = GET_VM();
-
-    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
-        set_table *ics = (set_table *)lookup_result;
-        set_table_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
-        ruby_vm_constant_cache_invalidations += ics->num_entries;
-    }
+    ruby_vm_constant_cache_invalidations += rb_iseq_const_path_invalidate(id);
 
     rb_yjit_constant_state_changed(id);
     rb_zjit_constant_state_changed(id);

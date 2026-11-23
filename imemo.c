@@ -4,6 +4,7 @@
 #include "internal.h"
 #include "internal/imemo.h"
 #include "internal/object.h"
+#include "internal/set_table.h"
 #include "internal/st.h"
 #include "vm_callinfo.h"
 
@@ -54,6 +55,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(fields);
         IMEMO_NAME(subclasses);
         IMEMO_NAME(cdhash);
+        IMEMO_NAME(const_path);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -329,6 +331,12 @@ rb_imemo_memsize(VALUE obj)
         size += st_memsize(rb_imemo_cdhash_tbl(obj)) - sizeof(st_table);
 
         break;
+      case imemo_const_path: {
+        const struct rb_imemo_const_path *path = (const struct rb_imemo_const_path *)obj;
+        if (path->ics) size += set_memsize(path->ics);
+
+        break;
+      }
       default:
         rb_bug("unreachable");
     }
@@ -603,6 +611,9 @@ rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool referen
         }
         break;
       }
+      case imemo_const_path:
+        /* IDs only; registered ICs are not references. */
+        break;
       default:
         rb_bug("unreachable");
     }
@@ -718,6 +729,11 @@ rb_imemo_free(VALUE obj)
       case imemo_cdhash:
         st_free_embedded_table(rb_imemo_cdhash_tbl(obj));
         RB_DEBUG_COUNTER_INC(obj_imemo_cdhash);
+
+        break;
+      case imemo_const_path:
+        /* Its registrations were dropped by rb_iseq_free_const_path. */
+        RB_DEBUG_COUNTER_INC(obj_imemo_const_path);
 
         break;
       default:

@@ -475,6 +475,7 @@ pub const imemo_constcache: imemo_type = 12;
 pub const imemo_fields: imemo_type = 13;
 pub const imemo_subclasses: imemo_type = 14;
 pub const imemo_cdhash: imemo_type = 15;
+pub const imemo_const_path: imemo_type = 16;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

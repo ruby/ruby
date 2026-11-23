@@ -12,6 +12,7 @@
 #include <stddef.h>             /* for size_t */
 #include "id_table.h"
 #include "internal/array.h"     /* for rb_ary_hidden_new_fill */
+#include "internal/compilers.h" /* for FLEX_ARY_LEN */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
@@ -46,6 +47,7 @@ enum imemo_type {
     imemo_fields         = 13,
     imemo_subclasses     = 14,
     imemo_cdhash         = 15,
+    imemo_const_path     = 16,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -106,6 +108,21 @@ struct rb_imemo_cdhash {
     VALUE flags;
     st_table tbl;
 };
+
+/* An interned constant path; IC->segments points at its ids (see iseq.c). */
+struct rb_imemo_const_path {
+    VALUE flags;
+    struct set_table *ics; /* registered inline constant caches, or NULL */
+    ID ids[FLEX_ARY_LEN];  /* 0-terminated */
+};
+
+void rb_iseq_free_const_path(VALUE obj);
+
+static inline struct rb_imemo_const_path *
+rb_imemo_const_path_from_ids(const ID *ids)
+{
+    return (struct rb_imemo_const_path *)((char *)ids - offsetof(struct rb_imemo_const_path, ids));
+}
 
 /* Set on imemo_memo when u3 holds a VALUE that GC must mark.
  * When unset, u3 is a non-VALUE (cnt/ucnt/state). */

@@ -3788,7 +3788,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
             st_free_embedded_table(&vm->static_ext_inits);
 
-            rb_id_table_free_items(&vm->constant_cache);
+            rb_iseq_free_constant_cache(vm);
             set_free_embedded_table(&vm->unused_block_warning_table);
 
             rb_thread_free_native_thread(th);
@@ -3814,7 +3814,6 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_objspace_free_objects(objspace);
                 rb_free_generic_fields_tbl_();
                 rb_free_default_rand_key();
-                rb_iseq_free_const_segments_table();
             }
             rb_objspace_free(objspace);
         }

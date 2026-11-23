@@ -1604,6 +1604,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
       case imemo_iseq:
       case imemo_callinfo:
       case imemo_cdhash:
+      case imemo_const_path:
         return true;
 
       case imemo_subclasses:
@@ -2524,6 +2525,9 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
             break;
           case imemo_ment:
             rb_free_method_entry_vm_weak_references((const rb_method_entry_t *)obj);
+            break;
+          case imemo_const_path:
+            rb_iseq_free_const_path(obj);
             break;
           default:
             break;

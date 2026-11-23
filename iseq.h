@@ -300,8 +300,13 @@ void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
-const ID *rb_iseq_intern_const_segments(VALUE arr);
-void rb_iseq_free_const_segments_table(void);
+void Init_const_path_table(void);
+bool rb_iseq_const_path_fits_p(long len);
+const ID *rb_iseq_intern_const_segments(const rb_iseq_t *iseq, VALUE arr);
+void rb_iseq_const_path_register_ic(IC ic);
+void rb_iseq_const_path_unregister_ic(IC ic);
+size_t rb_iseq_const_path_invalidate(ID id);
+void rb_iseq_free_constant_cache(rb_vm_t *vm);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 

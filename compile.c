@@ -2892,7 +2892,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = rb_iseq_intern_const_segments(operands[j]);
+                            ic->segments = rb_iseq_intern_const_segments(iseq, operands[j]);
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -6294,11 +6294,13 @@ collect_const_segments(rb_iseq_t *iseq, const NODE *node)
         switch (nd_type(node)) {
           case NODE_CONST:
             rb_ary_unshift(arr, ID2SYM(RNODE_CONST(node)->nd_vid));
+            if (!rb_iseq_const_path_fits_p(RARRAY_LEN(arr))) return Qfalse;
             RB_OBJ_SET_SHAREABLE(arr);
             return arr;
           case NODE_COLON3:
             rb_ary_unshift(arr, ID2SYM(RNODE_COLON3(node)->nd_mid));
             rb_ary_unshift(arr, ID2SYM(idNULL));
+            if (!rb_iseq_const_path_fits_p(RARRAY_LEN(arr))) return Qfalse;
             RB_OBJ_SET_SHAREABLE(arr);
             return arr;
           case NODE_COLON2:
@@ -13379,7 +13381,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = rb_iseq_intern_const_segments(arr);
+                    ic->segments = rb_iseq_intern_const_segments(iseq, arr);
 
                     code[code_index] = (VALUE)ic;
                 }

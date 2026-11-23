@@ -82,6 +82,32 @@ class TestISeq < Test::Unit::TestCase
     end;
   end if defined?(RubyVM::InstructionSequence.load)
 
+  def test_shared_constant_path_after_freeing_iseqs
+    assert_separately([], <<~'RUBY')
+      module ConstPathA; module B; C = 1; end; end
+      100.times { eval("ConstPathA::B::C + ::ConstPathA::B::C") }
+      GC.start
+      ConstPathA::B.send(:remove_const, :C)
+      ConstPathA::B.const_set(:C, 2)
+      assert_equal(4, eval("ConstPathA::B::C + ::ConstPathA::B::C"))
+
+      keep = proc { ConstPathA::B::C }
+      assert_equal(2, keep.call)
+      100.times { eval("ConstPathA::B::C") }
+      GC.start
+      ConstPathA::B.send(:remove_const, :C)
+      ConstPathA::B.const_set(:C, 3)
+      assert_equal(3, keep.call)
+    RUBY
+  end
+
+  def test_very_long_constant_path
+    path = (["ConstPathLong"] * 300).join("::")
+    insns = RubyVM::InstructionSequence.compile(path).to_a.last.grep(Array).map(&:first)
+    assert_not_include(insns, :opt_getconstant_path)
+    assert_raise(NameError) { eval(path) }
+  end
+
   def test_cdhash_after_roundtrip
     # CDHASH was not built properly when loading from binary and
     # was causing opt_case_dispatch to clobber its stack canary
