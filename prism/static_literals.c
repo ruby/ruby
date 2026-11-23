@@ -17,7 +17,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 
 /**
  * Hash the key built from the given values. Nodes that compare as equal must
@@ -460,13 +459,11 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
 
             break;
         }
-        case PM_SOURCE_ENCODING_NODE: {
-            const char *name = parser->encoding->name;
+        case PM_SOURCE_ENCODING_NODE:
             PM_BUFFER_APPEND_LITERAL(buffer, "#<Encoding:");
-            pm_buffer_append_string(buffer, name, strlen(name));
+            pm_buffer_append_string(buffer, parser->encoding->name, parser->encoding->name_length);
             pm_buffer_append_byte(buffer, '>');
             break;
-        }
         case PM_SOURCE_FILE_NODE: {
             const pm_string_t *filepath = &((const pm_source_file_node_t *) node)->filepath;
             pm_buffer_append_byte(buffer, '"');
