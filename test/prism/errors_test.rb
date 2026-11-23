@@ -631,6 +631,14 @@ module Ruby::Prism
       assert_false Ruby::Prism.parse_success?("not(a += f x)")
     end
 
+    def test_comma_after_a_brace_command_on_assignment_rhs
+      ["x = f (v) {}, z", "x, y = obj.f (v) {}, z", "x = y ||= f (v) {}, z"].each do |source|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal [:invalid_comma], errors.map(&:type), source
+        assert_equal source.rindex(","), errors.first.location.start_offset, source
+      end
+    end
+
     def test_comma_after_nested_command_assignment
       source = "x = y = f 1 rescue 2, z"
       errors = Ruby::Prism.parse(source).errors

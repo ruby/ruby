@@ -400,6 +400,22 @@ module Ruby::Prism
       end
     end
 
+    def test_assignment_comma_after_a_call_with_a_brace_block
+      ["f(v) {}", "(f (v) {})"].each do |first|
+        source = "x = #{first}, z"
+        assert_location(ArrayNode, source, 4...source.length) do |write|
+          assert_equal [first, "z"], write.value.elements.map(&:slice)
+          write.value
+        end
+      end
+
+      source = "x = f v {}, z"
+      assert_location(CallNode, source, 4...source.length) do |write|
+        assert_equal ["v {}", "z"], write.value.arguments.arguments.map(&:slice)
+        write.value
+      end
+    end
+
     def test_nested_command_assignment_registers_targets_before_the_call
       source = "x = y ||= f x, y if ready"
       assert_location(CallNode, source, 10...16) do |modifier|

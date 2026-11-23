@@ -14332,16 +14332,24 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
- * Returns true if the given node is a command that can end before a comma
- * without consuming it: a constant-path command with a brace block
- * (`Foo::Bar { }`), or an endless method whose command body ends in a rescue
- * modifier value (`def f = foo 1 rescue z`). Other commands take a following
- * comma into their own arguments. A command can be neither one of several
- * arguments nor one of several values of a write, so a comma after one of
- * these is an error.
+ * A command must be the sole argument or the entire RHS of a write. Most
+ * commands consume a comma in their own arguments, but a brace command, a
+ * block_call, or an endless method with a command body can finish before it.
  */
 static bool
-pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node) {
+pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node, enum pm_reduction_kind kind) {
+    switch (kind) {
+        case PM_REDUCTION_BRACE_COMMAND:
+        case PM_REDUCTION_BLOCK_CALL:
+            return true;
+        case PM_REDUCTION_COMMAND:
+        case PM_REDUCTION_JUMP:
+        case PM_REDUCTION_EXPRESSION:
+            return false;
+        case PM_REDUCTION_DEFAULT:
+            break;
+    }
+
     switch (PM_NODE_TYPE(node)) {
         case PM_CALL_NODE:
             return pm_constant_path_command_call_p(parser, (const pm_call_node_t *) node);
@@ -15816,8 +15824,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 }
             }
 
-            /* A block_call, like any other command, must be the sole argument. */
-            if (argument_kind == PM_REDUCTION_BLOCK_CALL || pm_command_before_comma_p(parser, argument)) {
+            if (pm_command_before_comma_p(parser, argument, argument_kind)) {
                 pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
             }
         } else {
@@ -21531,7 +21538,7 @@ parse_rescue_modifier_terminator(pm_parser_t *parser, uint8_t flags, uint16_t de
  */
 static void
 parse_write_value_comma_check(pm_parser_t *parser, pm_reduction_t value) {
-    if (match1(parser, PM_TOKEN_COMMA) && (PM_REDUCTION_KIND(value) == PM_REDUCTION_BLOCK_CALL || pm_command_before_comma_p(parser, value.node))) {
+    if (match1(parser, PM_TOKEN_COMMA) && pm_command_before_comma_p(parser, value.node, PM_REDUCTION_KIND(value))) {
         pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
     }
 }
