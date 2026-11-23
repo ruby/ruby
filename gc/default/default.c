@@ -6342,56 +6342,6 @@ mark_stack_free_cache(mark_stack_t *stack)
     stack->unused_cache_size = 0;
 }
 
-static void
-push_mark_stack(mark_stack_t *stack, VALUE obj)
-{
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-      case T_CLASS:
-      case T_MODULE:
-      case T_FLOAT:
-      case T_STRING:
-      case T_REGEXP:
-      case T_ARRAY:
-      case T_HASH:
-      case T_STRUCT:
-      case T_BIGNUM:
-      case T_FILE:
-      case T_DATA:
-      case T_MATCH:
-      case T_COMPLEX:
-      case T_RATIONAL:
-      case T_TRUE:
-      case T_FALSE:
-      case T_SYMBOL:
-      case T_IMEMO:
-      case T_ICLASS:
-        if (stack->index == stack->limit) {
-            push_mark_stack_chunk(stack);
-        }
-        stack->chunk->data[stack->index++] = obj;
-        return;
-
-      case T_NONE:
-      case T_NIL:
-      case T_FIXNUM:
-      case T_MOVED:
-      case T_ZOMBIE:
-      case T_UNDEF:
-      case T_MASK:
-        rb_bug("push_mark_stack() called for broken object");
-        break;
-
-      case T_NODE:
-        rb_bug("push_mark_stack: unexpected T_NODE object");
-        break;
-    }
-
-    rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
-            BUILTIN_TYPE(obj), (void *)obj,
-            is_pointer_to_heap((rb_objspace_t *)rb_gc_get_objspace(), (void *)obj) ? "corrupted object" : "non object");
-}
-
 static int
 pop_mark_stack(mark_stack_t *stack, VALUE *data)
 {
@@ -6424,10 +6374,33 @@ init_mark_stack(mark_stack_t *stack)
 
 /* Marking */
 
+/* Where an object's bits live: its page, the bitmap word index and the bit in it.  The
+ * marking fast path computes this once and uses it for every bitmap it touches. */
+struct gc_slot_bit {
+    struct heap_page *page;
+    size_t word;
+    bits_t bit;
+};
+
+static inline struct gc_slot_bit
+gc_slot_bit(VALUE obj)
+{
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    size_t slot = SLOT_INDEX(page, obj);
+    return (struct gc_slot_bit){
+        .page = page,
+        .word = slot / BITS_BITLENGTH,
+        .bit = (bits_t)1 << (slot & (BITS_BITLENGTH - 1)),
+    };
+}
+
 ALWAYS_INLINE(static int gc_mark_set(rb_objspace_t *objspace, VALUE obj));
-ALWAYS_INLINE(static void gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj));
 ALWAYS_INLINE(static void rgengc_check_relation(rb_objspace_t *objspace, VALUE obj));
+ALWAYS_INLINE(static void gc_page_old_uncollectible_set_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb));
+ALWAYS_INLINE(static void gc_age_inc_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb));
+ALWAYS_INLINE(static void gc_aging_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb));
 ALWAYS_INLINE(static void gc_aging(rb_objspace_t *objspace, VALUE obj));
+ALWAYS_INLINE(static void gc_grey_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb));
 ALWAYS_INLINE(static void gc_grey(rb_objspace_t *objspace, VALUE obj));
 static void
 rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
@@ -6451,7 +6424,49 @@ gc_mark_set(rb_objspace_t *objspace, VALUE obj)
 }
 
 static void
-gc_aging(rb_objspace_t *objspace, VALUE obj)
+gc_page_old_uncollectible_set_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb)
+{
+    sb.page->uncollectible_bits[sb.word] |= sb.bit;
+    /* Counted in the object's own objspace, as in RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET. */
+    sb.page->objspace->rgengc.old_objects++;
+
+#if RGENGC_PROFILE >= 2
+    objspace->profile.total_promoted_count++;
+    objspace->profile.promoted_types[BUILTIN_TYPE(obj)]++;
+#endif
+}
+
+/* RVALUE_AGE_INC for a young, write-barrier-protected object. */
+static void
+gc_age_inc_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb)
+{
+    bits_t *age_bits = &sb.page->age_bits[sb.word * 2];
+    bits_t lo = age_bits[0] & sb.bit, hi = age_bits[1] & sb.bit;
+
+    if (RGENGC_CHECK_MODE && lo && hi) {
+        rb_bug("RVALUE_AGE_INC: can not increment age of OLD object %s.", rb_obj_info(obj));
+    }
+
+    if (!lo) {
+        /* 0 -> 1, 2 -> 3 */
+        age_bits[0] |= sb.bit;
+        if (hi) {
+            RB_FL_SET_RAW(obj, RUBY_FL_PROMOTED);
+            RB_DEBUG_COUNTER_INC(obj_promote);
+            gc_page_old_uncollectible_set_at(objspace, obj, sb);
+        }
+    }
+    else {
+        /* 1 -> 2 */
+        age_bits[0] &= ~sb.bit;
+        age_bits[1] |= sb.bit;
+    }
+
+    check_rvalue_consistency(objspace, obj);
+}
+
+static void
+gc_aging_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb)
 {
     /* Disable aging if Major GC's are disabled. This will prevent longish lived
      * objects filling up the heap at the expense of marking many more objects.
@@ -6463,36 +6478,86 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     if(!gc_config_full_mark_val)
         return;
 
-    struct heap_page *page = GET_HEAP_PAGE(obj);
-
+    GC_ASSERT(sb.page == GET_HEAP_PAGE(obj));
     GC_ASSERT(RVALUE_MARKING(objspace, obj) == FALSE);
     check_rvalue_consistency(objspace, obj);
 
-    if (!RVALUE_PAGE_WB_UNPROTECTED(page, obj)) {
-        if (!RVALUE_OLD_P(objspace, obj)) {
-            int t = BUILTIN_TYPE(obj);
+    if (!(sb.page->wb_unprotected_bits[sb.word] & sb.bit)) {
+        VALUE flags = RBASIC(obj)->flags;
+        if (!(flags & RUBY_FL_PROMOTED)) {
+            int t = (int)(flags & T_MASK);
             if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
                 gc_report(3, objspace, "gc_aging: YOUNG class: %s\n", rb_obj_info(obj));
                 RVALUE_AGE_SET(obj, RVALUE_OLD_AGE);
-                RVALUE_OLD_UNCOLLECTIBLE_SET(objspace, obj);
+                RB_DEBUG_COUNTER_INC(obj_promote);
+                gc_page_old_uncollectible_set_at(objspace, obj, sb);
             }
             else {
                 gc_report(3, objspace, "gc_aging: YOUNG: %s\n", rb_obj_info(obj));
-                RVALUE_AGE_INC(objspace, obj);
+                gc_age_inc_at(objspace, obj, sb);
             }
         }
         else if (is_full_marking(objspace)) {
-            GC_ASSERT(RVALUE_PAGE_UNCOLLECTIBLE(page, obj) == FALSE);
-            RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(objspace, page, obj);
+            GC_ASSERT(RVALUE_PAGE_UNCOLLECTIBLE(sb.page, obj) == FALSE);
+            gc_page_old_uncollectible_set_at(objspace, obj, sb);
         }
     }
     check_rvalue_consistency(objspace, obj);
 
-    page->objspace->marked_slots++;
+    sb.page->objspace->marked_slots++;
 }
 
 static void
-gc_grey(rb_objspace_t *objspace, VALUE obj)
+gc_aging(rb_objspace_t *objspace, VALUE obj)
+{
+    gc_aging_at(objspace, obj, gc_slot_bit(obj));
+}
+
+NORETURN(static void gc_mark_stack_push_bug(VALUE obj));
+NOINLINE(static void gc_mark_stack_push_bug(VALUE obj));
+
+static void
+gc_mark_stack_push_bug(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NODE:
+        rb_bug("push_mark_stack: unexpected T_NODE object");
+      case T_NONE:
+      case T_NIL:
+      case T_FIXNUM:
+      case T_MOVED:
+      case T_ZOMBIE:
+      case T_UNDEF:
+      case T_MASK:
+        rb_bug("push_mark_stack() called for broken object");
+      default:
+        rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
+               BUILTIN_TYPE(obj), (void *)obj,
+               is_pointer_to_heap((rb_objspace_t *)rb_gc_get_objspace(), (void *)obj) ? "corrupted object" : "non object");
+    }
+}
+
+#define GC_MARK_STACK_PUSHABLE_TYPES ( \
+    (1u << T_OBJECT) | (1u << T_CLASS) | (1u << T_MODULE) | (1u << T_FLOAT) | \
+    (1u << T_STRING) | (1u << T_REGEXP) | (1u << T_ARRAY) | (1u << T_HASH) | \
+    (1u << T_STRUCT) | (1u << T_BIGNUM) | (1u << T_FILE) | (1u << T_DATA) | \
+    (1u << T_MATCH) | (1u << T_COMPLEX) | (1u << T_RATIONAL) | (1u << T_TRUE) | \
+    (1u << T_FALSE) | (1u << T_SYMBOL) | (1u << T_IMEMO) | (1u << T_ICLASS))
+
+static inline void
+push_mark_stack(mark_stack_t *stack, VALUE obj)
+{
+    if (RB_UNLIKELY(!((GC_MARK_STACK_PUSHABLE_TYPES >> BUILTIN_TYPE(obj)) & 1))) {
+        gc_mark_stack_push_bug(obj);
+    }
+    if (RB_UNLIKELY(stack->index == stack->limit)) {
+        push_mark_stack_chunk(stack);
+    }
+    stack->chunk->data[stack->index++] = obj;
+}
+
+static void
+gc_grey_at(rb_objspace_t *objspace, VALUE obj, struct gc_slot_bit sb)
 {
 #if RGENGC_CHECK_MODE
     if (RVALUE_MARKED(objspace, obj) == FALSE) rb_bug("gc_grey: %s is not marked.", rb_obj_info(obj));
@@ -6500,28 +6565,54 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
 #endif
 
     if (is_incremental_marking(objspace)) {
-        MARK_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
+        sb.page->marking_bits[sb.word] |= sb.bit;
     }
 
-    if (RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) {
+    if (RB_UNLIKELY(RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE))) {
         rb_darray_append_without_gc(&objspace->weak_references, obj);
     }
 
     push_mark_stack(&objspace->mark_stack, obj);
 }
 
-static inline void
-gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
+static void
+gc_grey(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RB_UNLIKELY(BUILTIN_TYPE(obj) == T_NONE)) {
-        enum {info_size = 256};
-        char obj_info_buf[info_size];
-        rb_raw_obj_info(obj_info_buf, info_size, obj);
+    gc_grey_at(objspace, obj, gc_slot_bit(obj));
+}
 
-        char parent_obj_info_buf[info_size];
-        rb_raw_obj_info(parent_obj_info_buf, info_size, objspace->rgengc.parent_object);
+NORETURN(static void gc_mark_t_none_bug(rb_objspace_t *objspace, VALUE obj));
+NOINLINE(static void gc_mark_t_none_bug(rb_objspace_t *objspace, VALUE obj));
 
-        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+/* Out of line so that its buffers do not give gc_mark a large frame and a stack protector. */
+static void
+gc_mark_t_none_bug(rb_objspace_t *objspace, VALUE obj)
+{
+    enum {info_size = 256};
+    char obj_info_buf[info_size];
+    rb_raw_obj_info(obj_info_buf, info_size, obj);
+
+    char parent_obj_info_buf[info_size];
+    rb_raw_obj_info(parent_obj_info_buf, info_size, objspace->rgengc.parent_object);
+
+    rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+}
+
+NOINLINE(static void gc_mark_global_shref(rb_objspace_t *objspace, VALUE obj));
+
+static void
+gc_mark_global_shref(rb_objspace_t *objspace, VALUE obj)
+{
+    /* Recompute the shref of every shareable -> unshareable edge, within and across
+     * objspaces: the clear pass dropped all shref bits and the write barrier
+     * maintains them from here on. */
+    VALUE parent = objspace->rgengc.parent_object;
+    if (!UNDEF_P(parent) && parent != Qfalse &&
+        RB_FL_TEST_RAW(parent, RUBY_FL_SHAREABLE) &&
+        !RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE)) {
+        struct heap_page *page = GET_HEAP_PAGE(obj);
+        _MARK_IN_BITMAP(page->shref_bits, page, obj);
+        page->flags.has_shref_objects = TRUE;
     }
 }
 
@@ -6539,21 +6630,16 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
     }
 
     if (RB_UNLIKELY(objspace->flags.during_global_gc)) {
-        /* Recompute the shref of every shareable -> unshareable edge, within and across
-         * objspaces: the clear pass dropped all shref bits and the write barrier
-         * maintains them from here on. */
-        VALUE parent = objspace->rgengc.parent_object;
-        if (!UNDEF_P(parent) && parent != Qfalse &&
-            RB_FL_TEST_RAW(parent, RUBY_FL_SHAREABLE) &&
-            !RB_FL_TEST_RAW(obj, RUBY_FL_SHAREABLE)) {
-            struct heap_page *page = GET_HEAP_PAGE(obj);
-            _MARK_IN_BITMAP(page->shref_bits, page, obj);
-            page->flags.has_shref_objects = TRUE;
-        }
+        gc_mark_global_shref(objspace, obj);
     }
 
     rgengc_check_relation(objspace, obj);
-    if (!gc_mark_set(objspace, obj)) return; /* already marked */
+
+    check_rvalue_consistency(objspace, obj);
+    struct gc_slot_bit sb = gc_slot_bit(obj);
+    bits_t *mark_word = &sb.page->mark_bits[sb.word];
+    if (*mark_word & sb.bit) return; /* already marked */
+    *mark_word |= sb.bit;
 
     if (0) { // for debug GC marking miss
         RUBY_DEBUG_LOG("%p (%s) parent:%p (%s)",
@@ -6561,10 +6647,12 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
                         (void *)objspace->rgengc.parent_object, obj_type_name(objspace->rgengc.parent_object));
     }
 
-    gc_mark_check_t_none(objspace, obj);
+    if (RB_UNLIKELY(BUILTIN_TYPE(obj) == T_NONE)) {
+        gc_mark_t_none_bug(objspace, obj);
+    }
 
-    gc_aging(objspace, obj);
-    gc_grey(objspace, obj);
+    gc_aging_at(objspace, obj, sb);
+    gc_grey_at(objspace, obj, sb);
 }
 
 static inline void
