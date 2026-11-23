@@ -2972,14 +2972,14 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
  * Allocate and initialize a new synthesized CallNode node from a call expression.
  */
 static pm_call_node_t *
-pm_call_node_call_synthesized_create(pm_parser_t *parser, pm_node_t *receiver, const char *message, pm_arguments_node_t *arguments, pm_location_t location) {
+pm_call_node_call_synthesized_create(pm_parser_t *parser, pm_node_t *receiver, const char *name, size_t length, pm_arguments_node_t *arguments, pm_location_t location) {
     pm_call_node_t *node = pm_call_node_create(parser, 0);
     node->base.location = location;
 
     node->receiver = receiver;
     node->arguments = arguments;
 
-    node->name = pm_parser_constant_id_constant(parser, message, strlen(message));
+    node->name = pm_parser_constant_id_constant(parser, name, length);
     return node;
 }
 
@@ -3082,7 +3082,7 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
  * Allocate and initialize a new CallNode node from a unary operator expression.
  */
 static pm_call_node_t *
-pm_call_node_unary_create(pm_parser_t *parser, pm_token_t *operator, pm_node_t *receiver, const char *name) {
+pm_call_node_unary_create(pm_parser_t *parser, pm_token_t *operator, pm_node_t *receiver, const char *name, size_t length) {
     pm_assert_value_expression(parser, receiver);
 
     pm_call_node_t *node = pm_call_node_create(parser, pm_call_node_ignore_visibility_flag(receiver));
@@ -3093,7 +3093,7 @@ pm_call_node_unary_create(pm_parser_t *parser, pm_token_t *operator, pm_node_t *
     node->receiver = receiver;
     node->message_loc = TOK2LOC(parser, operator);
 
-    node->name = pm_parser_constant_id_constant(parser, name, strlen(name));
+    node->name = pm_parser_constant_id_constant(parser, name, length);
     return node;
 }
 
@@ -6601,8 +6601,8 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
  * Allocate and initialize a new synthesized SymbolNode node.
  */
 static pm_symbol_node_t *
-pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
-    pm_symbol_node_t *node = pm_symbol_node_new(
+pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content, size_t length) {
+    return pm_symbol_node_new(
         parser->arena,
         ++parser->node_id,
         PM_NODE_FLAG_STATIC_LITERAL | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING,
@@ -6610,11 +6610,8 @@ pm_symbol_node_synthesized_create(pm_parser_t *parser, const char *content) {
         ((pm_location_t) { 0 }),
         ((pm_location_t) { 0 }),
         ((pm_location_t) { 0 }),
-        ((pm_string_t) { 0 })
+        ((pm_string_t) { .source = (const uint8_t *) content, .length = length })
     );
-
-    pm_string_init(&node->unescaped, (const uint8_t *) content, strlen(content));
-    return node;
 }
 
 /**
@@ -20853,7 +20850,7 @@ parse_unary_plus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
 
     pm_token_t operator = parser->previous;
     pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-    return pm_call_node_unary_create(parser, &operator, receiver, "+@");
+    return pm_call_node_unary_create(parser, &operator, receiver, "+@", 2);
 }
 
 static pm_call_node_t *
@@ -20865,7 +20862,7 @@ parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 
     pm_token_t operator = parser->previous;
     pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-    return pm_call_node_unary_create(parser, &operator, receiver, "-@");
+    return pm_call_node_unary_create(parser, &operator, receiver, "-@", 2);
 }
 
 static pm_node_t *
@@ -20879,7 +20876,7 @@ parse_unary_minus_number(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         pm_token_t exponent_operator = parser->previous;
         pm_node_t *exponent = parse_expression(parser, pm_binding_powers[exponent_operator.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
         node = UP(pm_call_node_binary_create(parser, node, &exponent_operator, exponent, 0));
-        node = UP(pm_call_node_unary_create(parser, &operator, node, "-@"));
+        node = UP(pm_call_node_unary_create(parser, &operator, node, "-@", 2));
     } else {
         switch (PM_NODE_TYPE(node)) {
             case PM_INTEGER_NODE:
@@ -20889,7 +20886,7 @@ parse_unary_minus_number(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
                 parse_negative_numeric(node);
                 break;
             default:
-                node = UP(pm_call_node_unary_create(parser, &operator, node, "-@"));
+                node = UP(pm_call_node_unary_create(parser, &operator, node, "-@", 2));
                 break;
         }
     }
@@ -20965,7 +20962,7 @@ parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags,
     pm_token_t operator = parser->previous;
     pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
     pm_conditional_predicate(parser, receiver, PM_CONDITIONAL_PREDICATE_TYPE_NOT);
-    return pm_call_node_unary_create(parser, &operator, receiver, "!");
+    return pm_call_node_unary_create(parser, &operator, receiver, "!", 1);
 }
 
 static pm_call_node_t *
@@ -20978,7 +20975,7 @@ parse_tilde(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
 
     pm_token_t operator = parser->previous;
     pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
-    return pm_call_node_unary_create(parser, &operator, receiver, "~");
+    return pm_call_node_unary_create(parser, &operator, receiver, "~", 1);
 }
 
 /**
@@ -22798,7 +22795,7 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             );
 
             pm_global_variable_read_node_t *receiver = pm_global_variable_read_node_synthesized_create(parser, pm_parser_constant_id_constant(parser, "$_", 2));
-            pm_call_node_t *call = pm_call_node_call_synthesized_create(parser, UP(receiver), "split", arguments, location);
+            pm_call_node_t *call = pm_call_node_call_synthesized_create(parser, UP(receiver), "split", 5, arguments, location);
 
             pm_global_variable_write_node_t *write = pm_global_variable_write_node_synthesized_create(
                 parser,
@@ -22820,7 +22817,7 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             pm_hash_elements_t elements = { 0 };
             pm_hash_elements_append(parser, &elements, UP(pm_assoc_node_create(
                 parser,
-                UP(pm_symbol_node_synthesized_create(parser, "chomp")),
+                UP(pm_symbol_node_synthesized_create(parser, "chomp", 5)),
                 NULL,
                 UP(pm_true_node_synthesized_create(parser))
             )));
