@@ -22898,20 +22898,16 @@ parse_program(pm_parser_t *parser) {
 /******************************************************************************/
 
 /**
- * A vendored version of strnstr that is used to find a substring within a
- * string with a given length. This function is used to search for "ruby"
- * within a shebang when the -x option is passed to Ruby.
- *
- * The only modification that we made here is that we don't do NULL byte checks
- * because we know the little parameter will not have a NULL byte and we allow
- * the big parameter to have them.
+ * Find a nonempty literal in a shebang line, which can contain NUL bytes.
  */
-static const char *
-pm_strnstr(const char *big, const char *little, size_t big_length) {
-    size_t little_length = strlen(little);
+static const uint8_t *
+pm_shebang_find(const uint8_t *line, size_t length, const char *literal, size_t literal_length) {
+    if (length < literal_length) return NULL;
 
-    for (const char *max = big + big_length - little_length; big <= max; big++) {
-        if (*big == *little && pm_memequal(big, little, little_length)) return big;
+    /* Search only positions where the whole literal fits. */
+    const uint8_t *end = line + (length - literal_length + 1);
+    for (; (line = memchr(line, (uint8_t) literal[0], (size_t) (end - line))) != NULL; line++) {
+        if (pm_memequal(line + 1, literal + 1, literal_length - 1)) return line;
     }
 
     return NULL;
@@ -22938,14 +22934,14 @@ pm_parser_warn_shebang_carriage_return(pm_parser_t *parser, const uint8_t *start
  * the shebang_callback option has already been checked for nullability.
  */
 static void
-pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const char *engine, size_t length) {
-    const char *switches = pm_strnstr(engine, " -", length);
+pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const uint8_t *engine, size_t length) {
+    const uint8_t *switches = pm_shebang_find(engine, length, " -", 2);
     if (switches == NULL) return;
 
     pm_options_t next_options = *options;
     options->shebang_callback(
         &next_options,
-        (const uint8_t *) (switches + 1),
+        switches + 1,
         length - ((size_t) (switches - engine)) - 1,
         options->shebang_callback_data
     );
@@ -23210,9 +23206,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
     if (length >= 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
         parser->encoding_comment_start = newline != NULL ? newline + 1 : parser->end;
-        const char *engine;
+        const uint8_t *engine;
 
-        if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
+        if ((engine = pm_shebang_find(parser->start, length, "ruby", 4)) != NULL) {
             if (newline != NULL) {
                 if (options == NULL || options->main_script) {
                     pm_parser_warn_shebang_carriage_return(parser, parser->start, length + 1);
@@ -23220,7 +23216,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
             }
 
             if (options != NULL && options->main_script && options->shebang_callback != NULL) {
-                pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) parser->start)));
+                pm_parser_init_shebang(parser, options, engine, length - (size_t) (engine - parser->start));
             }
 
             search_shebang = false;
@@ -23252,8 +23248,8 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
             size_t length = (size_t) ((newline != NULL ? newline : parser->end) - cursor);
             if (length > 2 && cursor[0] == '#' && cursor[1] == '!') {
-                const char *engine;
-                if ((engine = pm_strnstr((const char *) cursor, "ruby", length)) != NULL) {
+                const uint8_t *engine;
+                if ((engine = pm_shebang_find(cursor, length, "ruby", 4)) != NULL) {
                     found_shebang = true;
 
                     if (newline != NULL) {
@@ -23262,7 +23258,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
                     }
 
                     if (options != NULL && options->shebang_callback != NULL) {
-                        pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) cursor)));
+                        pm_parser_init_shebang(parser, options, engine, length - (size_t) (engine - cursor));
                     }
 
                     break;
