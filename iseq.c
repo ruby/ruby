@@ -310,7 +310,7 @@ const struct rb_const_path *
 rb_iseq_intern_const_path(VALUE arr)
 {
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
-    long len = RARRAY_LEN(arr);
+    rb_len_t len = RARRAY_LEN(arr);
     VALUE tmp = 0;
     ID *ids = ALLOCV_N(ID, tmp, len);
     for (long i = 0; i < len; i++) {
