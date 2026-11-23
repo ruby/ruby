@@ -462,6 +462,36 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
+  def test_reembedding_empty_strings_frees_buffers
+    omit "default GC only" unless GC.config[:implementation] == "default"
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
+    begin;
+      STR_COUNT = 4096
+      PAYLOAD_SIZE = 128
+
+      # Build the strings in a fiber so that no references to them are left on
+      # the main stack, where conservative scanning would pin them in place.
+      # `delete!` empties each string but leaves its heap buffer allocated.
+      Fiber.new {
+        $ary = STR_COUNT.times.map { (+"" << "x" * PAYLOAD_SIZE).delete!("x") }
+      }.resume
+      GC.start
+
+      # Keep the strings alive so sweeping them can't account for the freed bytes.
+      before = GC.stat(:total_free_bytes)
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      freed = GC.stat(:total_free_bytes) - before
+
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT - 25)
+
+      embedded = $ary.count { |s| ObjectSpace.dump(s).include?('"embedded":true') }
+      assert_operator(embedded, :>=, STR_COUNT - 25)
+      assert_operator(freed, :>=, embedded * PAYLOAD_SIZE)
+    end;
+  end
+
   def test_moving_hashes_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
