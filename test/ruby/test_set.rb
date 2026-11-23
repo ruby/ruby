@@ -566,6 +566,18 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[2,4,6,'A','B','C',nil], set)
   end
 
+  def test_collect_bang_gc_stress
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # The temporary set must stay alive while it is copied back.
+      set = Set.new
+      EnvUtil.under_gc_stress do
+        set.collect! { |i| i }
+      end
+      assert_empty(set)
+    end;
+  end
+
   def test_reject!
     set = Set.new(1..10)
 
