@@ -1670,6 +1670,17 @@ class TestString < Test::Unit::TestCase
     end;
   end
 
+  def test_each_grapheme_cluster_break_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    begin;
+      str = "hello world".encode(Encoding::UTF_32LE)
+
+      10_000.times do
+        str.each_grapheme_cluster { break }
+      end
+    end;
+  end
+
   def test_byteslice_grapheme_clusters
     string = "안녕"
     assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
