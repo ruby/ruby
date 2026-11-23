@@ -13048,12 +13048,46 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
     return SIZET2NUM(grapheme_cluster_count);
 }
 
+struct enumerate_grapheme_clusters_args {
+    VALUE str;
+    VALUE ary;
+    regex_t *reg_grapheme_cluster;
+};
+
+static VALUE
+enumerate_grapheme_clusters(VALUE v)
+{
+    struct enumerate_grapheme_clusters_args *args = (struct enumerate_grapheme_clusters_args *)v;
+    VALUE str = args->str;
+    const char *ptr0, *ptr, *end;
+
+    ptr0 = ptr = RSTRING_PTR(str);
+    end = RSTRING_END(str);
+
+    while (ptr < end) {
+        OnigPosition len = onig_match(args->reg_grapheme_cluster,
+                                      (const OnigUChar *)ptr, (const OnigUChar *)end,
+                                      (const OnigUChar *)ptr, NULL, 0);
+        if (len <= 0) break;
+        ENUM_ELEM(args->ary, rb_str_subseq(str, ptr-ptr0, len));
+        ptr += len;
+    }
+
+    return Qnil;
+}
+
+static VALUE
+free_reg_grapheme_cluster(VALUE reg_grapheme_cluster)
+{
+    onig_free((regex_t *)reg_grapheme_cluster);
+    return Qnil;
+}
+
 static VALUE
 rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 {
     VALUE orig = str;
     rb_encoding *enc = get_encoding(str);
-    const char *ptr0, *ptr, *end;
 
     if (!rb_enc_unicode_p(enc)) {
         return rb_str_enumerate_chars(str, ary);
@@ -13061,27 +13095,22 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 
     if (!ary) str = rb_str_new_frozen(str);
 
-    bool cached_reg_grapheme_cluster = true;
-    regex_t *reg_grapheme_cluster = get_cached_reg_grapheme_cluster(enc);
-    if (!reg_grapheme_cluster) {
-        reg_grapheme_cluster = get_reg_grapheme_cluster(enc);
-        cached_reg_grapheme_cluster = false;
+    struct enumerate_grapheme_clusters_args args = {
+        .str = str,
+        .ary = ary,
+        .reg_grapheme_cluster = get_cached_reg_grapheme_cluster(enc),
+    };
+
+    if (args.reg_grapheme_cluster) {
+        enumerate_grapheme_clusters((VALUE)&args);
     }
+    else {
+        /* The regexp is not cached, so it must be freed even if the block
+         * breaks or raises. */
+        args.reg_grapheme_cluster = get_reg_grapheme_cluster(enc);
 
-    ptr0 = ptr = RSTRING_PTR(str);
-    end = RSTRING_END(str);
-
-    while (ptr < end) {
-        OnigPosition len = onig_match(reg_grapheme_cluster,
-                                      (const OnigUChar *)ptr, (const OnigUChar *)end,
-                                      (const OnigUChar *)ptr, NULL, 0);
-        if (len <= 0) break;
-        ENUM_ELEM(ary, rb_str_subseq(str, ptr-ptr0, len));
-        ptr += len;
-    }
-
-    if (!cached_reg_grapheme_cluster) {
-        onig_free(reg_grapheme_cluster);
+        rb_ensure(enumerate_grapheme_clusters, (VALUE)&args,
+                  free_reg_grapheme_cluster, (VALUE)args.reg_grapheme_cluster);
     }
 
     RB_GC_GUARD(str);
