@@ -42,7 +42,7 @@ pm_strpbrk_invalid_multibyte_char(pm_parser_t *parser, const uint8_t *source) {
         (uint32_t) (source - parser->start),
         1,
         PM_ERR_INVALID_MULTIBYTE_CHAR,
-        pm_diagnostic_string(parser->encoding->name)
+        pm_encoding_string(parser->encoding)
     );
 }
 
@@ -63,7 +63,7 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
                 start,
                 length,
                 PM_ERR_MIXED_ENCODING,
-                pm_diagnostic_string(parser->encoding->name)
+                pm_encoding_string(parser->encoding)
             );
         } else {
             /* Should not be anything else. */

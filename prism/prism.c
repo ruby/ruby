@@ -8886,7 +8886,7 @@ escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t fla
                     U32(start - parser->start),
                     U32(end - start),
                     PM_ERR_MIXED_ENCODING,
-                    pm_diagnostic_string(parser->explicit_encoding->name)
+                    pm_encoding_string(parser->explicit_encoding)
                 );
             }
         }
@@ -8916,7 +8916,14 @@ escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_
                 // In regexp context, suppress this error — the regexp encoding
                 // validation will produce a more specific error message.
             } else {
-                pm_parser_err_token_string(parser, &parser->current, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+                pm_diagnostic_list_append_slice(
+                    &parser->metadata_arena,
+                    &parser->error_list,
+                    PM_TOKEN_START(parser, &parser->current),
+                    PM_TOKEN_LENGTH(&parser->current),
+                    PM_ERR_MIXED_ENCODING,
+                    pm_encoding_string(parser->encoding)
+                );
             }
         }
 

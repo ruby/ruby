@@ -168,6 +168,7 @@ module Ruby::Prism
         error = Ruby::Prism.parse(source, encoding: encoding).errors.find { |diagnostic| diagnostic.type == :mixed_encoding }
 
         assert_not_nil error
+        assert_equal "UTF-8 mixed within #{encoding} source", error.message
         assert_equal 10, error.location.start_offset
         assert_equal bytes.bytesize, error.location.length
         assert_equal bytes.b, error.location.slice.b
