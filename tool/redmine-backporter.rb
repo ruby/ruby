@@ -364,7 +364,9 @@ eom
       notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
     elsif rev.nil? && (log = find_git_log("##@issue]")) && !(revs = log.scan(/^commit (\h{40})$/).flatten).empty?
       commits = revs.map { |rev| "commit:#{rev}" }.join(", ")
-      if merged_revs = log[/merge revision\(s\) ([^:]+)(?=:)/]
+      if !(picked_revs = log.scan(/^ *\(cherry picked from commit (\h{7,40})\)$/).flatten).empty?
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{commits} merged revision(s) #{picked_revs.map { |rev| "commit:#{rev}" }.join(', ')}."
+      elsif merged_revs = log[/merge revision\(s\) ([^:]+)(?=:)/]
         merged_revs.sub!(/\Amerge/, 'merged')
         merged_revs.gsub!(/\h{8,40}/, 'commit:\0')
         str = "ruby_#{TARGET_VERSION.tr('.','_')} #{commits} #{merged_revs}."

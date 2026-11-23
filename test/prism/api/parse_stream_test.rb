@@ -44,6 +44,24 @@ module Ruby::Prism
       assert_equal "5 + 6\n", io.read
     end
 
+    def test___END___after_syntax_error
+      io = StringIO.new(")\n__END__\ndata\n")
+      result = Ruby::Prism.parse_stream(io)
+
+      assert_predicate result, :failure?
+      assert_equal "__END__\n", result.data_loc.slice
+      assert_equal "data\n", io.read
+    end
+
+    def test_false___END___in_percent_string
+      io = StringIO.new("p(%\n__END__\n+ %q{hi})\n")
+      result = Ruby::Prism.parse_stream(io)
+
+      assert_predicate result, :success?
+      assert_nil result.data_loc
+      assert_equal "p(%\n__END__\n+ %q{hi})", result.statement.location.slice
+    end
+
     # __END__ as the final line with no trailing newline must still be detected
     # as the terminator. This exercises the EOF check for a chunk that does not
     # end in a newline, distinct from a line longer than the internal read

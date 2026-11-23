@@ -187,6 +187,17 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("x"), s)
   end
 
+  def test_AREF_fixed_width_large_length
+    require "rbconfig/sizeof"
+    len = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    [Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      s = S("abcd".encode(enc))
+      assert_equal(S("bcd".encode(enc)), s[1, len], enc.name)
+      assert_equal(S("bcd".encode(enc)), s[1, len * 2], enc.name)
+      assert_equal(S("bcd".encode(enc)), s.dup.slice!(1, len), enc.name)
+    end
+  end
+
   def test_AREF_invalid_encoding
     assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
   end
@@ -1659,6 +1670,17 @@ class TestString < Test::Unit::TestCase
     end;
   end
 
+  def test_each_grapheme_cluster_break_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    begin;
+      str = "hello world".encode(Encoding::UTF_32LE)
+
+      10_000.times do
+        str.each_grapheme_cluster { break }
+      end
+    end;
+  end
+
   def test_byteslice_grapheme_clusters
     string = "안녕"
     assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
@@ -3087,6 +3109,14 @@ class TestString < Test::Unit::TestCase
     assert_not_predicate(result, :ascii_only?, bug13950)
 
     assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
+
+    assert_equal(S("aああ"), S("abc").tr("^a", "あ"))
+    result = S("abc").tr("^a", "é")
+    assert_equal(S("aéé"), result)
+    assert_not_predicate(result, :ascii_only?)
+    result = S("abc").b.tr("^a".b, "\xB0".b)
+    assert_equal("a\xB0\xB0".b, result)
+    assert_not_predicate(result, :ascii_only?)
   end
 
   def test_tr_hash
@@ -3121,6 +3151,18 @@ class TestString < Test::Unit::TestCase
     replacements[obj] = "x"
     ("b".."z").each { |c| replacements[c] = (c.ord + 1).chr }
     assert_equal(S("xb"), S("ab").tr(replacements))
+  end
+
+  def test_tr_hash_modify_receiver
+    str = S("abc" * 1000)
+    other = "\x8F\xA1\xA1".force_encoding("EUC-JP") * 1000
+    key = Object.new
+    key.define_singleton_method(:to_str) do
+      str.replace(other)
+      "\xA4\xA2".force_encoding("EUC-JP")
+    end
+    assert_nil(str.tr!({key => "X"}))
+    assert_equal(other, str)
   end
 
   def test_tr_hash_no_match_memory_leak
@@ -3388,6 +3430,14 @@ class TestString < Test::Unit::TestCase
 
   def test_match_method
     assert_equal("bar", S("foobarbaz").match(/bar/).to_s)
+
+    require "rbconfig/sizeof"
+    pos = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    s = S("abcd".encode(Encoding::UTF_32LE))
+    re = Regexp.new("c".encode(Encoding::UTF_32LE))
+    assert_nil(s.match(re, pos))
+    assert_nil(s.match(re, pos * 2))
+    assert_equal(false, s.match?(re, pos))
 
     o = Class.new(Regexp) {
       def match(x, y, z) = x + y + z

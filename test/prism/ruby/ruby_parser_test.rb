@@ -39,6 +39,10 @@ module Ruby::Prism
       "dos_endings.txt",
       "endless_method_not.txt",
       "endless_method_rescue_modifier.txt",
+      # A class body inside a loop condition can contain a do block.
+      "class_in_loop_condition.txt",
+      # A numbered parameter in a block passed to a call named _1.
+      "numbered_parameter_calls.txt",
       "heredoc_dedent_line_continuation.txt",
       "heredoc_percent_newline_delimiter.txt",
       "heredoc_percent_q_newline_delimiter.txt",

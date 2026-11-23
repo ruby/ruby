@@ -20,7 +20,6 @@ struct rb_regexp_variant {
 };
 
 #define RMATCH_ONIG FL_USER1
-#define RMATCH_OFFSETS_EXTERNAL FL_USER2
 
 static inline OnigPosition *
 RMATCH_BEG_PTR(VALUE match)

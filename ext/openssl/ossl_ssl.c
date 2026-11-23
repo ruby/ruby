@@ -36,8 +36,7 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each,
-          id_original_context;
+static ID id_call, id_npn_protocols_encoded, id_each, id_original_context;
 static VALUE sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -111,38 +110,79 @@ ossl_sslctx_s_alloc(VALUE klass)
     return obj;
 }
 
-static VALUE
-ossl_call_client_cert_cb(VALUE obj)
+static int
+ssl_cb_call(VALUE (*func)(VALUE args), VALUE args, VALUE *ret)
 {
-    VALUE ctx_obj, cb, ary, cert, key;
+    int state;
 
+    if (ossl_cb_state_get()) {
+        *ret = Qnil;
+        return 0;
+    }
+    *ret = rb_protect(func, args, &state);
+    if (state) {
+        ossl_cb_state_set(state);
+        return 0;
+    }
+    return 1;
+}
+
+struct client_cert_cb_args {
+    SSL *ssl;
+    X509 **x509;
+    EVP_PKEY **pkey;
+};
+
+static VALUE
+ossl_call_client_cert_cb(VALUE args_)
+{
+    struct client_cert_cb_args *args = (struct client_cert_cb_args *)args_;
+    VALUE obj, ctx_obj, cb, ary, cert, key;
+    X509 *x509;
+    EVP_PKEY *pkey;
+
+    obj = (VALUE)SSL_get_ex_data(args->ssl, ossl_ssl_ex_ptr_idx);
     ctx_obj = rb_attr_get(obj, id_i_context);
     cb = rb_attr_get(ctx_obj, id_i_client_cert_cb);
     if (NIL_P(cb))
         return Qnil;
 
-    ary = rb_funcallv(cb, id_call, 1, &obj);
-    Check_Type(ary, T_ARRAY);
-    GetX509CertPtr(cert = rb_ary_entry(ary, 0));
-    GetPrivPKeyPtr(key = rb_ary_entry(ary, 1));
+    ary = rb_funcall(cb, id_call, 1, obj);
+    if (NIL_P(ary))
+        return Qnil;
+    ary = rb_check_array_type(ary);
+    if (NIL_P(ary) || RARRAY_LEN(ary) != 2) {
+        rb_raise(rb_eTypeError,
+                 "client_cert_cb must return either nil or [cert, key]");
+    }
 
-    return rb_ary_new3(2, cert, key);
+    x509 = GetX509CertPtr(cert = rb_ary_entry(ary, 0));
+    pkey = GetPrivPKeyPtr(key = rb_ary_entry(ary, 1));
+    if (!X509_check_private_key(x509, pkey))
+        ossl_raise(eSSLError, "X509_check_private_key");
+    if (!X509_up_ref(x509))
+        ossl_raise(eSSLError, "X509_up_ref");
+    if (!EVP_PKEY_up_ref(pkey)) {
+        X509_free(x509);
+        ossl_raise(eSSLError, "EVP_PKEY_up_ref");
+    }
+    RB_GC_GUARD(cert);
+    RB_GC_GUARD(key);
+
+    *args->x509 = x509;
+    *args->pkey = pkey;
+    return Qtrue;
 }
 
 static int
 ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 {
-    VALUE obj, ret;
+    struct client_cert_cb_args args = { ssl, x509, pkey };
+    VALUE ret;
 
-    obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    ret = rb_protect(ossl_call_client_cert_cb, obj, NULL);
-    if (NIL_P(ret))
-        return 0;
-
-    *x509 = DupX509CertPtr(RARRAY_AREF(ret, 0));
-    *pkey = DupPKeyPtr(RARRAY_AREF(ret, 1));
-
-    return 1;
+    if (!ssl_cb_call(ossl_call_client_cert_cb, (VALUE)&args, &ret))
+        return -1;
+    return RTEST(ret);
 }
 
 #if !defined(OPENSSL_NO_DH)
@@ -177,14 +217,12 @@ ossl_call_tmp_dh_callback(VALUE arg)
 static DH *
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
-    int state;
     VALUE rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     struct tmp_dh_callback_args args = {rb_ssl, is_export, keylength};
-    VALUE ret = rb_protect(ossl_call_tmp_dh_callback, (VALUE)&args, &state);
-    if (state) {
-        rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));
+    VALUE ret;
+
+    if (!ssl_cb_call(ossl_call_tmp_dh_callback, (VALUE)&args, &ret))
         return NULL;
-    }
     return (DH *)ret;
 }
 #endif /* OPENSSL_NO_DH */
@@ -215,7 +253,6 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 {
     VALUE cb, ssl_obj, sslctx_obj, verify_hostname, ret;
     SSL *ssl;
-    int status;
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
@@ -225,11 +262,8 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 
     if (preverify_ok && RTEST(verify_hostname) && !SSL_is_server(ssl) &&
         !X509_STORE_CTX_get_error_depth(ctx)) {
-        ret = rb_protect(call_verify_certificate_identity, (VALUE)ctx, &status);
-        if (status) {
-            rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
+        if (!ssl_cb_call(call_verify_certificate_identity, (VALUE)ctx, &ret))
             return 0;
-        }
         if (ret != Qtrue) {
             preverify_ok = 0;
             X509_STORE_CTX_set_error(ctx, X509_V_ERR_HOSTNAME_MISMATCH);
@@ -239,89 +273,92 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     return ossl_verify_cb_call(cb, preverify_ok, ctx);
 }
 
+struct sess_get_cb_args {
+    SSL *ssl;
+    const unsigned char *data;
+    int len;
+};
+
 static VALUE
-ossl_call_session_get_cb(VALUE ary)
+ossl_call_session_get_cb(VALUE args_)
 {
-    VALUE ssl_obj, cb;
+    struct sess_get_cb_args *args = (struct sess_get_cb_args *)args_;
+    VALUE ssl_obj, sslctx_obj, cb, session_id, ret;
+    SSL_SESSION *sess;
 
-    Check_Type(ary, T_ARRAY);
-    ssl_obj = rb_ary_entry(ary, 0);
+    ssl_obj = (VALUE)SSL_get_ex_data(args->ssl, ossl_ssl_ex_ptr_idx);
+    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb = rb_attr_get(sslctx_obj, id_i_session_get_cb);
+    if (NIL_P(cb))
+        return (VALUE)NULL;
 
-    cb = rb_funcall(ssl_obj, rb_intern("session_get_cb"), 0);
-    if (NIL_P(cb)) return Qnil;
+    session_id = rb_str_new((const char *)args->data, args->len);
+    ret = rb_funcall(cb, id_call, 1, rb_assoc_new(ssl_obj, session_id));
+    if (NIL_P(ret))
+        return (VALUE)NULL;
+    // XXX: Should we raise if ret is not a Session?
+    if (!rb_obj_is_instance_of(ret, cSSLSession))
+        return (VALUE)NULL;
 
-    return rb_funcallv(cb, id_call, 1, &ary);
+    GetSSLSession(ret, sess);
+    return (VALUE)sess;
 }
 
 static SSL_SESSION *
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
 {
-    VALUE ary, ssl_obj, ret_obj;
-    SSL_SESSION *sess;
-    int state = 0;
+    struct sess_get_cb_args args = { ssl, buf, len };
+    VALUE ret;
 
     OSSL_Debug("SSL SESSION get callback entered");
-    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    ary = rb_ary_new2(2);
-    rb_ary_push(ary, ssl_obj);
-    rb_ary_push(ary, rb_str_new((const char *)buf, len));
-
-    ret_obj = rb_protect(ossl_call_session_get_cb, ary, &state);
-    if (state) {
-        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+    if (!ssl_cb_call(ossl_call_session_get_cb, (VALUE)&args, &ret))
         return NULL;
-    }
-    if (!rb_obj_is_instance_of(ret_obj, cSSLSession))
+    if (!ret)
         return NULL;
-
-    GetSSLSession(ret_obj, sess);
     *copy = 1;
-
-    return sess;
+    return (SSL_SESSION *)ret;
 }
 
+struct sess_new_cb_args {
+    SSL *ssl;
+    SSL_SESSION *sess;
+};
+
 static VALUE
-ossl_call_session_new_cb(VALUE ary)
+ossl_call_session_new_cb(VALUE args_)
 {
-    VALUE ssl_obj, cb;
+    struct sess_new_cb_args *args = (struct sess_new_cb_args *)args_;
+    VALUE ssl_obj, sslctx_obj, cb, sess_obj;
 
-    Check_Type(ary, T_ARRAY);
-    ssl_obj = rb_ary_entry(ary, 0);
-
-    cb = rb_funcall(ssl_obj, rb_intern("session_new_cb"), 0);
+    ssl_obj = (VALUE)SSL_get_ex_data(args->ssl, ossl_ssl_ex_ptr_idx);
+    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb = rb_attr_get(sslctx_obj, id_i_session_new_cb);
     if (NIL_P(cb)) return Qnil;
 
-    return rb_funcallv(cb, id_call, 1, &ary);
+    sess_obj = rb_obj_alloc(cSSLSession);
+    if (!SSL_SESSION_up_ref(args->sess))
+        ossl_raise(eSSLError, "SSL_SESSION_up_ref");
+    RTYPEDDATA_DATA(sess_obj) = args->sess;
+
+    rb_funcall(cb, id_call, 1, rb_assoc_new(ssl_obj, sess_obj));
+    return Qnil;
 }
 
 /* return 1 normal.  return 0 removes the session */
 static int
 ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 {
-    VALUE ary, ssl_obj, sess_obj;
-    int state = 0;
+    struct sess_new_cb_args args = { ssl, sess };
+    VALUE ret;
 
     OSSL_Debug("SSL SESSION new callback entered");
-
-    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    sess_obj = rb_obj_alloc(cSSLSession);
-    SSL_SESSION_up_ref(sess);
-    DATA_PTR(sess_obj) = sess;
-
-    ary = rb_ary_new2(2);
-    rb_ary_push(ary, ssl_obj);
-    rb_ary_push(ary, sess_obj);
-
-    rb_protect(ossl_call_session_new_cb, ary, &state);
-    if (state) {
-        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
-    }
+    (void)ssl_cb_call(ossl_call_session_new_cb, (VALUE)&args, &ret);
 
     /*
      * return 0 which means to OpenSSL that the session is still
      * valid (since we created Ruby Session object) and was not freed by us
-     * with SSL_SESSION_free(). Call SSLContext#remove_session(sess) in
-     * session_get_cb block if you don't want OpenSSL to cache the session
+     * with SSL_SESSION_free(). Call SSLContext#session_remove(sess) in
+     * session_new_cb block if you don't want OpenSSL to cache the session
      * internally.
      */
     return 0;
@@ -358,9 +395,8 @@ ossl_call_keylog_cb(VALUE args_v)
 static void
 ossl_sslctx_keylog_cb(const SSL *ssl, const char *line)
 {
-    VALUE ssl_obj;
+    VALUE ssl_obj, ret;
     struct ossl_call_keylog_cb_args args;
-    int state = 0;
 
     OSSL_Debug("SSL keylog callback entered");
 
@@ -368,32 +404,38 @@ ossl_sslctx_keylog_cb(const SSL *ssl, const char *line)
     args.ssl_obj = ssl_obj;
     args.line = line;
 
-    rb_protect(ossl_call_keylog_cb, (VALUE)&args, &state);
-    if (state) {
-        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
-    }
+    (void)ssl_cb_call(ossl_call_keylog_cb, (VALUE)&args, &ret);
 }
 #endif
 
+struct sess_remove_cb_args {
+    SSL_CTX *ctx;
+    SSL_SESSION *sess;
+};
+
 static VALUE
-ossl_call_session_remove_cb(VALUE ary)
+ossl_call_session_remove_cb(VALUE args_)
 {
-    VALUE sslctx_obj, cb;
+    struct sess_remove_cb_args *args = (struct sess_remove_cb_args *)args_;
+    VALUE sslctx_obj, cb, sess_obj;
 
-    Check_Type(ary, T_ARRAY);
-    sslctx_obj = rb_ary_entry(ary, 0);
-
+    sslctx_obj = (VALUE)SSL_CTX_get_ex_data(args->ctx, ossl_sslctx_ex_ptr_idx);
     cb = rb_attr_get(sslctx_obj, id_i_session_remove_cb);
     if (NIL_P(cb)) return Qnil;
 
-    return rb_funcallv(cb, id_call, 1, &ary);
+    sess_obj = rb_obj_alloc(cSSLSession);
+    if (!SSL_SESSION_up_ref(args->sess))
+        ossl_raise(eSSLError, "SSL_SESSION_up_ref");
+    RTYPEDDATA_DATA(sess_obj) = args->sess;
+
+    rb_funcall(cb, id_call, 1, rb_assoc_new(sslctx_obj, sess_obj));
+    return Qnil;
 }
 
 static void
 ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
 {
-    VALUE ary, sslctx_obj, sess_obj;
-    int state = 0;
+    struct sess_remove_cb_args args = { ctx, sess };
 
     /*
      * This callback is also called for all sessions in the internal store
@@ -403,24 +445,7 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
         return;
 
     OSSL_Debug("SSL SESSION remove callback entered");
-
-    sslctx_obj = (VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx);
-    sess_obj = rb_obj_alloc(cSSLSession);
-    SSL_SESSION_up_ref(sess);
-    DATA_PTR(sess_obj) = sess;
-
-    ary = rb_ary_new2(2);
-    rb_ary_push(ary, sslctx_obj);
-    rb_ary_push(ary, sess_obj);
-
-    rb_protect(ossl_call_session_remove_cb, ary, &state);
-    if (state) {
-/*
-  the SSL_CTX is frozen, nowhere to save state.
-  there is no common accessor method to check it either.
-        rb_ivar_set(sslctx_obj, ID_callback_state, INT2NUM(state));
-*/
-    }
+    ossl_suppress(ossl_call_session_remove_cb, (VALUE)&args);
 }
 
 static VALUE
@@ -473,29 +498,43 @@ ossl_call_servername_cb(VALUE arg)
 static int
 ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 {
-    int state;
+    VALUE ret;
 
-    rb_protect(ossl_call_servername_cb, (VALUE)ssl, &state);
-    if (state) {
-        VALUE ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+    if (!ssl_cb_call(ossl_call_servername_cb, (VALUE)ssl, &ret))
         return SSL_TLSEXT_ERR_ALERT_FATAL;
-    }
 
     return SSL_TLSEXT_ERR_OK;
 }
 
-static void
-ssl_renegotiation_cb(const SSL *ssl)
+struct info_cb_args {
+    const SSL *ssl;
+    int where;
+    int val;
+};
+
+static VALUE
+call_renegotiation_cb(VALUE args_)
 {
-    VALUE ssl_obj, sslctx_obj, cb;
+    struct info_cb_args *args = (struct info_cb_args *)args_;
+    VALUE ssl_obj = (VALUE)SSL_get_ex_data(args->ssl, ossl_ssl_ex_ptr_idx);
+    VALUE sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    VALUE cb = rb_attr_get(sslctx_obj, id_i_renegotiation_cb);
+    if (NIL_P(cb))
+        return Qnil;
 
-    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
-    cb = rb_attr_get(sslctx_obj, id_i_renegotiation_cb);
-    if (NIL_P(cb)) return;
+    return rb_funcall(cb, id_call, 1, ssl_obj);
+}
 
-    rb_funcallv(cb, id_call, 1, &ssl_obj);
+/* This function may serve as the entry point to support further callbacks. */
+static void
+ssl_info_cb(const SSL *ssl, int where, int val)
+{
+    struct info_cb_args args = { ssl, where, val };
+    VALUE ret;
+
+    if (where & SSL_CB_HANDSHAKE_START && SSL_is_server(ssl)) {
+        (void)ssl_cb_call(call_renegotiation_cb, (VALUE)&args, &ret);
+    }
 }
 
 static VALUE
@@ -559,20 +598,14 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
                          unsigned int inlen)
 {
     VALUE selected;
-    int status;
     struct npn_select_cb_common_args args;
 
     args.cb = cb;
     args.in = in;
     args.inlen = inlen;
 
-    selected = rb_protect(npn_select_cb_common_i, (VALUE)&args, &status);
-    if (status) {
-        VALUE ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-
-        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(status));
+    if (!ssl_cb_call(npn_select_cb_common_i, (VALUE)&args, &selected))
         return SSL_TLSEXT_ERR_ALERT_FATAL;
-    }
 
     *out = (unsigned char *)RSTRING_PTR(selected);
     *outlen = (unsigned char)RSTRING_LEN(selected);
@@ -626,17 +659,6 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
     cb = rb_attr_get(sslctx_obj, id_i_alpn_select_cb);
 
     return ssl_npn_select_cb_common(ssl, cb, out, outlen, in, inlen);
-}
-
-/* This function may serve as the entry point to support further callbacks. */
-static void
-ssl_info_cb(const SSL *ssl, int where, int val)
-{
-    int is_server = SSL_is_server((SSL *)ssl);
-
-    if (is_server && where & SSL_CB_HANDSHAKE_START) {
-        ssl_renegotiation_cb(ssl);
-    }
 }
 
 /*
@@ -812,6 +834,9 @@ ossl_sslctx_setup(VALUE self)
     val = rb_attr_get(self, id_i_verify_depth);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
+    if (!NIL_P(rb_attr_get(self, id_i_renegotiation_cb)))
+        SSL_CTX_set_info_callback(ctx, ssl_info_cb);
+
 #ifdef OSSL_USE_NEXTPROTONEG
     val = rb_attr_get(self, id_i_npn_protocols);
     if (!NIL_P(val)) {
@@ -911,7 +936,8 @@ parse_proto_version(VALUE str)
         str = rb_sym2str(str);
     StringValue(str);
     for (i = 0; i < numberof(map); i++)
-        if (!strncmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)))
+        if ((size_t)RSTRING_LEN(str) == strlen(map[i].name) &&
+            memcmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
             return map[i].version;
     rb_raise(rb_eArgError, "unrecognized version %+"PRIsVALUE, str);
 }
@@ -1830,7 +1856,6 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     if (!SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self))
         ossl_raise(eSSLError, "SSL_set_ex_data");
-    SSL_set_info_callback(ssl, ssl_info_cb);
 
     rb_call_super(0, NULL);
 
@@ -1870,38 +1895,46 @@ ossl_ssl_setup(VALUE self)
     return Qtrue;
 }
 
-static int
-errno_mapped(void)
+static void
+ssl_call_begin(VALUE self)
 {
+    ossl_cb_state_begin();
+}
+
+static int
+ssl_call_end(VALUE self)
+{
+    int saved_errno, state;
+
 #ifdef _WIN32
-    return rb_w32_map_errno(WSAGetLastError());
+    saved_errno = rb_w32_map_errno(WSAGetLastError());
 #else
-    return errno;
+    saved_errno = errno;
 #endif
+
+    state = ossl_cb_state_end();
+    if (state) {
+        /* must cleanup OpenSSL error stack before re-raising */
+        ossl_clear_error();
+        rb_jump_tag(state);
+    }
+
+    return saved_errno;
 }
 
 static VALUE
 ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname)
 {
     SSL *ssl;
-    VALUE cb_state;
-
-    rb_ivar_set(self, ID_callback_state, Qnil);
 
     GetSSL(self, ssl);
 
 #ifdef __APPLE__
   retry:;
 #endif
+    ssl_call_begin(self);
     int ret = func(ssl);
-    int saved_errno = errno_mapped();
-
-    cb_state = rb_attr_get(self, ID_callback_state);
-    if (!NIL_P(cb_state)) {
-        /* must cleanup OpenSSL error stack before re-raising */
-        ossl_clear_error();
-        rb_jump_tag(NUM2INT(cb_state));
-    }
+    int saved_errno = ssl_call_end(self);
 
     int code = SSL_get_error(ssl, ret);
     switch (code) {
@@ -1995,7 +2028,6 @@ ossl_ssl_read(VALUE self, VALUE len, VALUE str)
 {
     SSL *ssl;
     int ilen;
-    VALUE cb_state;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
@@ -2015,17 +2047,11 @@ ossl_ssl_read(VALUE self, VALUE len, VALUE str)
         return str;
     }
 
+    ssl_call_begin(self);
     rb_str_locktmp(str);
     int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
     rb_str_unlocktmp(str);
-    int saved_errno = errno_mapped();
-
-    cb_state = rb_attr_get(self, ID_callback_state);
-    if (!NIL_P(cb_state)) {
-        rb_ivar_set(self, ID_callback_state, Qnil);
-        ossl_clear_error();
-        rb_jump_tag(NUM2INT(cb_state));
-    }
+    int saved_errno = ssl_call_end(self);
 
     switch (SSL_get_error(ssl, nread)) {
       case SSL_ERROR_NONE:
@@ -2066,7 +2092,6 @@ static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
 {
     SSL *ssl;
-    VALUE cb_state;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
@@ -2081,6 +2106,7 @@ ossl_ssl_write(VALUE self, VALUE str)
 #ifdef __APPLE__
   retry:;
 #endif
+    ssl_call_begin(self);
     int frozen = RB_OBJ_FROZEN(str);
     if (!frozen) {
         rb_str_locktmp(str);
@@ -2089,14 +2115,7 @@ ossl_ssl_write(VALUE self, VALUE str)
     if (!frozen) {
         rb_str_unlocktmp(str);
     }
-    int saved_errno = errno_mapped();
-
-    cb_state = rb_attr_get(self, ID_callback_state);
-    if (!NIL_P(cb_state)) {
-        rb_ivar_set(self, ID_callback_state, Qnil);
-        ossl_clear_error();
-        rb_jump_tag(NUM2INT(cb_state));
-    }
+    int saved_errno = ssl_call_end(self);
 
     switch (SSL_get_error(ssl, nwritten)) {
       case SSL_ERROR_NONE:
@@ -2128,34 +2147,59 @@ ossl_ssl_write(VALUE self, VALUE str)
 
 /*
  * call-seq:
- *    ssl.stop => nil
+ *    ssl.ssl_shutdown -> 0, 1, :wait_readable, or :wait_writable
  *
- * Sends "close notify" to the peer and tries to shut down the SSL connection
- * gracefully.
+ * Calls SSL_shutdown() once. This is a low-level method used by #close and
+ * #close_write.
+ *
+ * This method works in two steps. First, it sends a close_notify alert to the
+ * peer and returns 0 or 1 on success. A return value of 0 indicates that the
+ * alert has been sent, but not received, and a return value of 1 indicates
+ * that the alert has been sent and received.
+ *
+ * When called again, it attempts to receive a close_notify alert from the peer
+ * and returns 1 on success.
+ *
+ * This method does not block. If the underlying socket is not ready,
+ * +:wait_readable+ or +:wait_writable+ is returned. If an unrecoverable error
+ * occurs, SSLError or SystemCallError is raised.
+ *
+ * Most users should use this method only to send the alert. The peer's alert
+ * can be received by reading from the socket until it reaches EOF.
+ *
+ * See also the man page SSL_shutdown(3).
  */
 static VALUE
-ossl_ssl_stop(VALUE self)
+ossl_ssl_shutdown(VALUE self)
 {
     SSL *ssl;
-    int ret;
+    int ret, saved_errno;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
-        return Qnil;
-    ret = SSL_shutdown(ssl);
-    if (ret == 1) /* Have already received close_notify */
-        return Qnil;
-    if (ret == 0) /* Sent close_notify, but we don't wait for reply */
-        return Qnil;
+        rb_raise(eSSLError, "SSL session is not started yet");
 
-    /*
-     * XXX: Something happened. Possibly it failed because the underlying socket
-     * is not writable/readable, since it is in non-blocking mode. We should do
-     * some proper error handling using SSL_get_error() and maybe retry, but we
-     * can't block here. Give up for now.
-     */
-    ossl_clear_error();
-    return Qnil;
+    ssl_call_begin(self);
+    ret = SSL_shutdown(ssl);
+    saved_errno = ssl_call_end(self);
+
+    if (ret >= 0)
+        return INT2FIX(ret);
+
+    switch (SSL_get_error(ssl, ret)) {
+      case SSL_ERROR_WANT_WRITE:
+        return sym_wait_writable;
+      case SSL_ERROR_WANT_READ:
+        return sym_wait_readable;
+      case SSL_ERROR_SYSCALL:
+        if (saved_errno) {
+            ossl_clear_error();
+            rb_exc_raise(rb_syserr_new(saved_errno, "SSL_shutdown"));
+        }
+        /* fallthrough */
+      default:
+        ossl_raise(eSSLError, "SSL_shutdown");
+    }
 }
 
 /*
@@ -2658,9 +2702,6 @@ Init_ossl_ssl(void)
 #endif
 
 #ifndef OPENSSL_NO_SOCK
-    id_call = rb_intern_const("call");
-    ID_callback_state = rb_intern_const("callback_state");
-
     ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_ptr_idx", 0, 0, 0);
     if (ossl_ssl_ex_ptr_idx < 0)
         ossl_raise(rb_eRuntimeError, "SSL_get_ex_new_index");
@@ -2796,11 +2837,11 @@ Init_ossl_ssl(void)
 
     /*
      * A callback invoked when a client certificate is requested by a server
-     * and no certificate has been set.
+     * and no certificate has been set (see #add_certificate).
      *
-     * The callback is invoked with a Session and must return an Array
-     * containing an OpenSSL::X509::Certificate and an OpenSSL::PKey.  If any
-     * other value is returned the handshake is suspended.
+     * The callback is invoked with the SSLSocket, and must return a
+     * two-element Array of an OpenSSL::X509::Certificate and the corresponding
+     * private key OpenSSL::PKey::PKey, or nil to send no certificate.
      */
     rb_attr(cSSLContext, rb_intern_const("client_cert_cb"), 1, 1, Qfalse);
 
@@ -3059,7 +3100,7 @@ Init_ossl_ssl(void)
     rb_define_private_method(cSSLSocket, "string_new_capacity", ossl_ssl_string_new_capacity, 1);
     rb_define_private_method(cSSLSocket, "ssl_read", ossl_ssl_read, 2);
     rb_define_private_method(cSSLSocket, "ssl_write", ossl_ssl_write, 1);
-    rb_define_private_method(cSSLSocket, "stop",   ossl_ssl_stop, 0);
+    rb_define_method(cSSLSocket, "ssl_shutdown", ossl_ssl_shutdown, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);
@@ -3242,6 +3283,7 @@ Init_ossl_ssl(void)
     sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 
+    id_call = rb_intern_const("call");
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
     id_each = rb_intern_const("each");
     id_original_context = rb_intern_const("original_context");

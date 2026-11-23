@@ -22,6 +22,143 @@ module Ruby::Prism
       end
     end
 
+    def test_unterminated_quoted_symbol_closing_location
+      {
+        ':"#s' => :symbol_term_interpolated,
+        ':"#{x}' => :symbol_term_interpolated,
+        ":'s" => :symbol_term_dynamic
+      }.each do |source, diagnostic|
+        result = Ruby::Prism.parse(source)
+        symbol = result.value.statements.body.first
+
+        assert_equal [diagnostic], result.errors.map(&:type)
+        assert_equal source, symbol.location.slice
+        assert_nil symbol.closing_loc
+      end
+    end
+
+    def test_unclosed_array_location_covers_last_element
+      source = '[r="#{ '
+      result = Ruby::Prism.parse(source)
+      array = result.value.statements.body.first
+
+      assert_includes result.errors.map(&:type), :array_term
+      assert_nil array.closing_loc
+      assert_equal source, array.location.slice
+      assert_equal array.elements.last.location.end_offset, array.location.end_offset
+    end
+
+    def test_implicit_method_rescue_rejects_constant_target
+      ["", "StandardError "].each do |exceptions|
+        result = Ruby::Prism.parse("def f; raise; rescue #{exceptions}=> CaughtError; end")
+
+        assert_equal [:write_target_in_method], result.errors.map(&:type)
+        assert_equal "CaughtError", result.errors.first.location.slice
+      end
+    end
+
+    def test_endless_method_rescue_rejects_unattached_do_block
+      result = Ruby::Prism.parse("relay def f = 1 rescue 2 do end")
+
+      assert_equal [:def_endless_do_block], result.errors.map(&:type)
+      assert_equal "do end", result.errors.first.location.slice
+    end
+
+    def test_module_name_rejects_symbol_ending_in_constant_token
+      result = Ruby::Prism.parse("module:A; end")
+
+      assert_equal [:module_name], result.errors.map(&:type)
+      assert_equal ":A", result.errors.first.location.slice
+    end
+
+    def test_begin_with_rescue_and_ensure_rejects_void_values
+      result = Ruby::Prism.parse("def f; x = begin; return :body; rescue; return :rescue; ensure; end; end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return :body", result.errors.first.location.slice
+
+      result = Ruby::Prism.parse("def f; x = begin; return :body; rescue; 1; ensure; return :ensure; end; end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return :ensure", result.errors.first.location.slice
+    end
+
+    def test_parenthesized_targets_reject_newline_before_assignment
+      ["(first, second\n= [1, 2])", "((first, second), third\n= [1, 2, 3])"].each do |source|
+        result = Ruby::Prism.parse(source)
+
+        assert_equal [:write_target_unexpected], result.errors.map(&:type), source
+      end
+    end
+
+    def test_class_headers_respect_enclosing_loop_condition
+      ["while", "until"].each do |keyword|
+        result = Ruby::Prism.parse("#{keyword} class << target do end; end; end")
+
+        assert_includes result.errors.map(&:type), :expect_singleton_class_delimiter
+      end
+
+      result = Ruby::Prism.parse("while class A < target do end; end; end")
+      assert_includes result.errors.map(&:type), :class_unexpected_end
+    end
+
+    def test_singleton_method_definition_rejects_setter_name_as_receiver
+      [".", "::"].each do |operator|
+        result = Ruby::Prism.parse("def target=#{operator}greet; end")
+
+        assert_equal [:def_receiver_setter], result.errors.map(&:type)
+        assert_equal "target=", result.errors.first.location.slice
+      end
+    end
+
+    def test_uppercase_shorthand_hash_labels_reject_method_suffixes
+      ["Flag?", "Status!"].each do |name|
+        result = Ruby::Prism.parse("{ #{name}: }")
+
+        assert_equal [:invalid_constant_read], result.errors.map(&:type)
+        assert_equal name, result.errors.first.location.slice
+      end
+
+      assert_equal [:invalid_local_variable_read], Ruby::Prism.parse("{ flag?: }").errors.map(&:type)
+    end
+
+    def test_colon_delimited_percent_symbol_requires_hash_rocket
+      result = Ruby::Prism.parse("{ %s:: 1 }")
+      assert_equal [:hash_rocket], result.errors.map(&:type)
+    end
+
+    def test_beginless_range_rejects_unparenthesized_binary_range_operand
+      assert_equal [:unexpected_range_operator], Ruby::Prism.parse("p(...1..2)").errors.map(&:type)
+    end
+
+    def test_leading_logical_label_does_not_turn_following_keyword_into_symbol
+      ["and", "or"].each do |keyword|
+        result = Ruby::Prism.parse("show\n#{keyword}:then", version: "4.0")
+
+        assert_predicate result, :failure?
+        assert_equal "then", result.errors.first.location.slice
+      end
+    end
+
+    def test_keyword_not_is_not_a_write_target
+      [
+        "not() = :value",
+        "*not() = value",
+        "first, not() = 1, 2",
+        "begin; rescue => not(); end",
+        "for not() in []; end",
+        "not() |= 42",
+        "not() &&= 1",
+        "not() ||= 1",
+        "not flag.. ||= 1"
+      ].each do |source|
+        assert_equal [:write_target_unexpected], Ruby::Prism.parse(source).errors.map(&:type), source
+      end
+
+      result = Ruby::Prism.parse("first, not() = 1, 2")
+      target = result.statement.lefts.last
+      assert_kind_of ErrorRecoveryNode, target
+      assert_equal "not()", target.unexpected.location.slice
+    end
+
     def test_mixed_encoding_locations
       ["ASCII-8BIT", "US-ASCII", "EUC-JP"].each do |encoding|
         next if ENV["PRISM_BUILD_MINIMAL"] && encoding == "EUC-JP"
@@ -155,18 +292,16 @@ module Ruby::Prism
     end
 
     def test_long_formatted_messages
-      # Messages are formatted into a fixed-size buffer first, so check lengths
-      # on either side of its size to cover both the copy and the reformat.
-      template = "unterminated heredoc; can't find string \"%s\" anywhere before EOF"
-
-      (254..258).each do |length|
-        identifier = "E" * (length - template.length + 2)
-        expected = format(template, identifier)
-        assert_equal length, expected.bytesize
-
+      [1, 255, 256, 4096].each do |length|
+        identifier = "E" * length
         messages = Ruby::Prism.parse("<<#{identifier}\n").errors.map(&:message)
-        assert_includes messages, expected
+        assert_includes messages, "unterminated heredoc; can't find string \"#{identifier}\" anywhere before EOF"
       end
+    end
+
+    def test_heredoc_diagnostic_with_embedded_nul
+      result = Ruby::Prism.parse("<<\"BEFORE\0AFTER\"\n")
+      assert_equal ["unterminated heredoc; can't find string \"BEFORE\" anywhere before EOF"], result.errors.map(&:message)
     end
 
     def test_incomplete_def_closing_loc

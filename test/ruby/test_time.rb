@@ -1135,6 +1135,19 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_strftime_drop_bytes_from_format
+    fmt = "x" * 1_000 + "%Z"
+    zone = Object.new
+    zone.define_singleton_method(:utc_to_local) { |t| t }
+    zone.define_singleton_method(:local_to_utc) { |t| t }
+    zone.define_singleton_method(:abbr) { |t| fmt[0, 5] = ""; "ZZ" }
+
+    assert_equal("x" * 1_000 + "ZZ", Time.at(0, in: zone).strftime(fmt))
+
+    fmt << "z" * 10
+    assert_equal("x" * 995 + "%Z" + "z" * 10, fmt)
+  end
+
   def test_strftime_invalid_modifier
     t2000 = get_t2000
     t = t2000.getlocal("+09:00")

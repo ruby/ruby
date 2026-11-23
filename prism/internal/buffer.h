@@ -1,8 +1,6 @@
 #ifndef PRISM_INTERNAL_BUFFER_H
 #define PRISM_INTERNAL_BUFFER_H
 
-#include "prism/compiler/format.h"
-
 #include "prism/buffer.h"
 
 #include <stdbool.h>
@@ -34,8 +32,26 @@ void pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length);
 /* Append the given byte to the buffer the given number of times. */
 void pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length);
 
-/* Append a formatted string to the buffer. */
-void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) PRISM_ATTRIBUTE_FORMAT(2, 3);
+/* Append the decimal digits of an unsigned integer without leading zeros. */
+void pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value);
+
+/* Append uppercase hexadecimal digits, padded with zeros to the given width. */
+void pm_buffer_append_hexadecimal(pm_buffer_t *buffer, uint32_t value, uint8_t width);
+
+/* Write both uppercase hexadecimal digits of a byte. */
+void pm_buffer_hexadecimal_byte_digits(uint8_t byte, char digits[2]);
+
+/* Append a byte as a \xHH escape. */
+void pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte);
+
+/* Return the decimal width of a line number, including its sign. */
+uint8_t pm_buffer_line_number_width(int32_t line);
+
+/* Write a line number at the end of digits and return its length. */
+uint8_t pm_buffer_line_number_digits(int32_t line, char digits[11]);
+
+/* Append a line number, padded on the left with spaces to the given width. */
+void pm_buffer_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width);
 
 /* Append a string to the buffer. */
 void pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length);
@@ -94,11 +110,5 @@ void pm_buffer_clear(pm_buffer_t *buffer);
 
 /* Strip the whitespace from the end of the buffer. */
 void pm_buffer_rstrip(pm_buffer_t *buffer);
-
-/* Checks if the buffer includes the given value. */
-size_t pm_buffer_index(const pm_buffer_t *buffer, char value);
-
-/* Insert the given string into the buffer at the given index. */
-void pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length);
 
 #endif

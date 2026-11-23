@@ -1051,6 +1051,62 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_bind_refined_module_method_to_class_not_including_module
+    bug22614 = '[Bug #22614]'
+    assert_separately([], <<-"end;")
+      bug22614 = #{bug22614.dump}
+      class C
+        def m = [:C]
+      end
+      class D
+        def m = [:D]
+      end
+      module M
+      end
+      class E < C
+        include M
+      end
+      module R
+        refine M do
+          def m = [:R, *super]
+        end
+      end
+      using R
+      [E.instance_method(:m), M.instance_method(:m)].each do |um|
+        assert_equal([:R, :D], um.bind_call(D.new), bug22614)
+        assert_raise(NoMethodError, bug22614) {um.bind_call(Object.new)}
+      end
+      assert_equal([:R, :C], E.instance_method(:m).bind_call(E.new), bug22614)
+    end;
+  end
+
+  def test_bind_module_method_with_unused_refinement
+    bug22614 = '[Bug #22614]'
+    assert_separately([], <<-"end;")
+      bug22614 = #{bug22614.dump}
+      class C
+        def m = :C
+      end
+      class D
+        def m = :D
+      end
+      module M
+        def m = super
+      end
+      class E < C
+        include M
+      end
+      module R
+        refine M do
+          def m = :R
+        end
+      end
+      um = E.new.method(:m).unbind
+      assert_equal(:D, um.bind_call(D.new), bug22614)
+      assert_equal(:D, um.bind(D.new).call, bug22614)
+    end;
+  end
+
   def test_proc_refined_module_iclass_allocations_separate_classes
     assert_separately([], <<-"end;")
       module M
@@ -1134,6 +1190,38 @@ class TestRefinement < Test::Unit::TestCase
       end
       GC.start
       assert_operator(ObjectSpace.count_objects[:T_ICLASS] - starting_iclasses, :<, 100)
+    end;
+  end
+
+  def test_super_in_refined_method_of_module_included_twice
+    bug22616 = '[Bug #22616]'
+    assert_separately([], <<-"end;")
+      bug22616 = #{bug22616.dump}
+      class C0
+      end
+      class C1 < C0
+      end
+      module M
+      end
+      C1.include M
+      module R
+        refine M do
+          def m = [:R, *super]
+          def n = super
+        end
+      end
+      C0.include M
+      assert_equal([C1, M, C0, M], C1.ancestors.take(4))
+      class Object
+        def m = [:Object]
+      end
+      using R
+      2.times do
+        assert_equal([:R, :R, :Object], C1.new.m, bug22616)
+        assert_equal([:R, :Object], C0.new.m, bug22616)
+        assert_raise(NoMethodError, bug22616) {C1.new.n}
+        assert_raise(NoMethodError, bug22616) {C0.new.n}
+      end
     end;
   end
 

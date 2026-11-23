@@ -423,6 +423,11 @@ module Ruby::Prism
       assert_operator errors.sum { |error| error.message.bytesize }, :<, pattern.bytesize * 50
     end
 
+    def test_unicode_escapes_in_regexp_error
+      errors = Ruby::Prism.parse("%r!/\u0080\uFFFF\u{10000}\u{10FFFF}(!").errors
+      assert_equal ['end pattern with unmatched parenthesis: /\/\u0080\uFFFF\u{10000}\u{10FFFF}(/'], errors.map(&:message)
+    end
+
     def test_depth_limit_nested_character_sets
       assert_depth_limit("[" * 10_000)
     end

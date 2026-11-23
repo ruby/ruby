@@ -44,6 +44,9 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
+    * `Array#index`, `Array#find_index`, and `Array#rindex` accept an
+      `offset` keyword argument to specify where to start searching.
+      [[Feature #17056]]
     * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
       LEB128 encoded integers. [[Feature #21785]]
     * `Array#pack` accepts new formats `x!` and `@!` to align the current
@@ -236,6 +239,12 @@ Note: We're only listing outstanding class updates.
       between Ruby minor versions; use the `prism` gem unless you need the
       parser of the running interpreter.  [[Bug #22379]]
 
+* Shellwords
+
+    * `Shellwords.split` now removes backslash-newline pairs in unquoted and
+      double-quoted text.  A line continuation on its own no longer produces
+      an argument.
+
 ### The following bundled gems are added.
 
 
@@ -304,6 +313,8 @@ They are still available on rubygems.org and can be installed with
   * 5.3.1 to [v5.4.0][psych-v5.4.0], [v5.5.0][psych-v5.5.0]
 * resolv 0.8.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1], [v0.7.2][resolv-v0.7.2], [v0.8.0][resolv-v0.8.0], [v0.8.1][resolv-v0.8.1]
+* shellwords 0.3.0
+  * 0.2.2 to [v0.3.0][shellwords-v0.3.0]
 * stringio 3.2.1.dev
 * strscan 3.1.9.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7], [v3.1.8][strscan-v3.1.8]
@@ -350,7 +361,7 @@ They are still available on rubygems.org and can be installed with
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
 * csv 3.3.7
   * 3.3.5 to [v3.3.6][csv-v3.3.6], [v3.3.7][csv-v3.3.7]
-* repl_type_completor 0.1.17
+* repl_type_completor 0.1.18
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16], [v0.1.17][repl_type_completor-v0.1.17]
 * pstore 0.3.0
   * 0.2.0 to [v0.2.1][pstore-v0.2.1], [v0.3.0][pstore-v0.3.0]
@@ -748,6 +759,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #17056]: https://bugs.ruby-lang.org/issues/17056
 [Feature #17548]: https://bugs.ruby-lang.org/issues/17548
 [Feature #18439]: https://bugs.ruby-lang.org/issues/18439
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
@@ -887,6 +899,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [resolv-v0.7.2]: https://github.com/ruby/resolv/releases/tag/v0.7.2
 [resolv-v0.8.0]: https://github.com/ruby/resolv/releases/tag/v0.8.0
 [resolv-v0.8.1]: https://github.com/ruby/resolv/releases/tag/v0.8.1
+[shellwords-v0.3.0]: https://github.com/ruby/shellwords/releases/tag/v0.3.0
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [strscan-v3.1.8]: https://github.com/ruby/strscan/releases/tag/v3.1.8
 [tempfile-v0.3.2]: https://github.com/ruby/tempfile/releases/tag/v0.3.2

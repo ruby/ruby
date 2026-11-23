@@ -1,0 +1,1 @@
+while class << target; work do end; false; end do break end

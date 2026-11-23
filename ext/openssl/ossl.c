@@ -145,6 +145,87 @@ ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
     }
 }
 
+static ID id_cb_state;
+
+int
+ossl_cb_state_get(void)
+{
+    VALUE val = rb_thread_local_aref(rb_thread_current(), id_cb_state);
+    return FIXNUM_P(val) ? FIX2INT(val) : 0;
+}
+
+static VALUE
+cb_state_set_i(VALUE vstate)
+{
+    rb_thread_local_aset(rb_thread_current(), id_cb_state, vstate);
+    return Qnil;
+}
+
+void
+ossl_cb_state_set(int state)
+{
+    int s;
+    rb_protect(cb_state_set_i, state ? INT2FIX(state) : Qnil, &s);
+    if (s) {
+        /* Thread frozen or malloc failure? As a last resort */
+        rb_set_errinfo(Qnil);
+    }
+}
+
+void
+ossl_cb_state_begin(void)
+{
+    if (ossl_cb_state_get()) {
+        rb_raise(rb_eRuntimeError,
+                 "BUG: ossl_cb_state_begin() called while jump is pending");
+    }
+}
+
+int
+ossl_cb_state_end(void)
+{
+    int state = ossl_cb_state_get();
+    if (state)
+        ossl_cb_state_set(0);
+    return state;
+}
+
+struct suppress_args {
+    VALUE (*func)(VALUE args);
+    VALUE args;
+};
+
+static VALUE
+do_nothing(VALUE unused)
+{
+    return Qnil;
+}
+
+static VALUE
+suppress_i(VALUE args_)
+{
+    struct suppress_args *p = (struct suppress_args *)args_;
+    int state;
+    rb_set_errinfo(Qnil);
+    rb_protect(p->func, p->args, &state);
+    /* Ignoring result and exception, if any */
+    return Qnil;
+}
+
+void
+ossl_suppress(VALUE (*func)(VALUE args), VALUE args)
+{
+    struct suppress_args p = { func, args };
+    if (ossl_cb_state_get()) {
+        int state = ossl_cb_state_end();
+        rb_ensure(do_nothing, Qnil, suppress_i, (VALUE)&p);
+        ossl_cb_state_begin();
+        ossl_cb_state_set(state);
+        return;
+    }
+    rb_ensure(do_nothing, Qnil, suppress_i, (VALUE)&p);
+}
+
 /*
  * our default PEM callback
  */
@@ -275,7 +356,7 @@ ossl_to_der_if_possible(VALUE obj)
  */
 static ID id_i_errors;
 
-static void collect_errors_into(VALUE ary);
+static VALUE collect_errors_into(VALUE ary);
 
 VALUE
 ossl_make_error(VALUE exc, VALUE str)
@@ -326,46 +407,44 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(ossl_make_error(exc, err));
 }
 
-static void
+static VALUE
 collect_errors_into(VALUE ary)
 {
-    if (dOSSL == Qtrue || !NIL_P(ary)) {
-        unsigned long e;
-        const char *file, *data, *func, *lib, *reason;
-        int line, flags;
+    unsigned long e;
+    const char *file, *data, *func, *lib, *reason;
+    int line, flags;
 
 #ifdef HAVE_ERR_GET_ERROR_ALL
-        while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
+    while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
 #else
-        while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
-            func = ERR_func_error_string(e);
+    while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+        func = ERR_func_error_string(e);
 #endif
-            lib = ERR_lib_error_string(e);
-            reason = ERR_reason_error_string(e);
+        lib = ERR_lib_error_string(e);
+        reason = ERR_reason_error_string(e);
 
-            VALUE str = rb_sprintf("error:%08lX:%s:%s:%s", e, lib ? lib : "",
-                                   func ? func : "", reason ? reason : "");
-            if (flags & ERR_TXT_STRING) {
-                if (!data)
-                    data = "(null)";
-                rb_str_catf(str, " (%s)", data);
-            }
-
-            if (dOSSL == Qtrue)
-                rb_warn("error on stack: %"PRIsVALUE, str);
-            if (!NIL_P(ary))
-                rb_ary_push(ary, str);
+        VALUE str = rb_sprintf("error:%08lX:%s:%s:%s", e, lib ? lib : "",
+                               func ? func : "", reason ? reason : "");
+        if (flags & ERR_TXT_STRING) {
+            if (!data)
+                data = "(null)";
+            rb_str_catf(str, " (%s)", data);
         }
+
+        if (dOSSL == Qtrue)
+            rb_warn("error on stack: %"PRIsVALUE, str);
+        if (!NIL_P(ary))
+            rb_ary_push(ary, str);
     }
-    else {
-        ERR_clear_error();
-    }
+    return Qnil;
 }
 
 void
 ossl_clear_error(void)
 {
-    collect_errors_into(Qnil);
+    if (dOSSL == Qtrue)
+        ossl_suppress(collect_errors_into, Qnil);
+    ERR_clear_error();
 }
 
 /*
@@ -1155,6 +1234,7 @@ Init_openssl(void)
      */
     ossl_s_to_der = rb_intern("to_der");
     id_i_errors = rb_intern("@errors");
+    id_cb_state = rb_intern("__ossl_cb_state__");
 
     /*
      * Init components

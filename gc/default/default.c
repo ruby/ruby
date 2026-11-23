@@ -4494,13 +4494,26 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
     }
 }
 
+static inline VALUE
+asan_safe_obj_flags(VALUE obj)
+{
+    GC_ASSERT(!RB_SPECIAL_CONST_P(obj));
+    VALUE flags, type;
+    asan_unpoisoning_object(obj) {
+        flags = RBASIC(obj)->flags;
+        type = RB_BUILTIN_TYPE(obj);
+    }
+    GC_ASSERT(type != RUBY_T_NODE);
+    return flags;
+}
+
 static int
 rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
 {
     VALUE obj = (VALUE)key;
     VALUE table = (VALUE)val;
 
-    GC_ASSERT(RB_FL_TEST(obj, FL_FINALIZE));
+    GC_ASSERT(asan_safe_obj_flags(obj) & FL_FINALIZE);
     GC_ASSERT(RB_BUILTIN_TYPE(val) == T_ARRAY);
 
     rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);

@@ -6,6 +6,7 @@
 #include "prism/compiler/stack.h"
 
 #include "prism/internal/arena.h"
+#include "prism/internal/buffer.h"
 #include "prism/internal/comments.h"
 #include "prism/internal/constant_pool.h"
 #include "prism/internal/encoding.h"
@@ -928,6 +929,9 @@ struct pm_parser_t {
      * is particularly necessary because of escape sequences.
      */
     pm_string_t current_string;
+
+    /* Reusable workspace for rewriting escaped token content. */
+    pm_buffer_t lex_buffer;
 
     /*
      * Where current_string stops lining up with the source, when it is the

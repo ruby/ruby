@@ -18,7 +18,14 @@
  */
 static PRISM_INLINE void
 pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint32_t length) {
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_INVALID_MULTIBYTE_CHARACTER, parser->start[start]);
+    pm_diagnostic_list_append_byte(
+        &parser->metadata_arena,
+        &parser->error_list,
+        start,
+        length,
+        PM_ERR_INVALID_MULTIBYTE_CHARACTER,
+        parser->start[start]
+    );
 }
 
 /**
@@ -27,7 +34,14 @@ pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint
  */
 static PRISM_INLINE void
 pm_strpbrk_invalid_multibyte_char(pm_parser_t *parser, const uint8_t *source) {
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, (uint32_t) (source - parser->start), 1, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
+    pm_diagnostic_list_append_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        (uint32_t) (source - parser->start),
+        1,
+        PM_ERR_INVALID_MULTIBYTE_CHAR,
+        pm_diagnostic_string(parser->encoding->name)
+    );
 }
 
 /**
@@ -41,7 +55,14 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
         } else if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
             // Not okay, we already found a Unicode escape sequence and this
             // conflicts.
-            pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+            pm_diagnostic_list_append_slice(
+                &parser->metadata_arena,
+                &parser->error_list,
+                start,
+                length,
+                PM_ERR_MIXED_ENCODING,
+                pm_diagnostic_string(parser->encoding->name)
+            );
         } else {
             // Should not be anything else.
             PRISM_ASSERT(false && "unreachable");

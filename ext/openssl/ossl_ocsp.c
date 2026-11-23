@@ -378,15 +378,21 @@ ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
     OCSP_REQUEST *req;
     STACK_OF(X509) *x509s;
     X509_STORE *x509st;
-    int flg, result;
+    int flg, result, state;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
     GetOCSPReq(self, req);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     x509s = ossl_x509_ary2sk(certs);
+    ossl_cb_state_begin();
     result = OCSP_request_verify(req, x509s, x509st, flg);
+    state = ossl_cb_state_end();
     sk_X509_pop_free(x509s, X509_free);
+    if (state) {
+        ossl_clear_error();
+        rb_jump_tag(state);
+    }
     if (result <= 0)
         ossl_clear_error();
 
@@ -991,15 +997,21 @@ ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
     OCSP_BASICRESP *bs;
     STACK_OF(X509) *x509s;
     X509_STORE *x509st;
-    int flg, result;
+    int flg, result, state;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
     GetOCSPBasicRes(self, bs);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     x509s = ossl_x509_ary2sk(certs);
+    ossl_cb_state_begin();
     result = OCSP_basic_verify(bs, x509s, x509st, flg);
+    state = ossl_cb_state_end();
     sk_X509_pop_free(x509s, X509_free);
+    if (state) {
+        ossl_clear_error();
+        rb_jump_tag(state);
+    }
     if (result <= 0)
         ossl_clear_error();
 

@@ -777,9 +777,16 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
         sk_X509_pop_free(x509s, X509_free);
         ossl_raise(ePKCS7Error, NULL);
     }
+    ossl_cb_state_begin();
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
+    status = ossl_cb_state_end();
     BIO_free(in);
     sk_X509_pop_free(x509s, X509_free);
+    if (status) {
+        BIO_free(out);
+        ossl_clear_error();
+        rb_jump_tag(status);
+    }
     data = ossl_membio2str(out);
     ossl_pkcs7_set_data(self, data);
     if (ok != 1) {

@@ -41,6 +41,16 @@ module Ruby::Prism
       assert_equal :$F, statement.name
     end
 
+    def test_autosplit_location_covers_parsed_statements
+      io = StringIO.new("# comment\n1\n2\n__END__\ndata\n")
+      result = Ruby::Prism.parse_stream(io, command_line: "pna")
+      split = result.statement.statements.body.first.value
+
+      assert_equal :split, split.name
+      assert_equal "1\n2", split.location.slice
+      assert_equal "data\n", io.read
+    end
+
     def test_command_line_l
       program = Ruby::Prism.parse("1", command_line: "nl").value
       statements = program.statements.body

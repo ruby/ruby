@@ -77,6 +77,34 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('(?-mix:[](?#\x{7FFFFFFF})])', EnvUtil.suppress_warning { re.to_s })
   end
 
+  def test_to_s_escape_in_extended_comment
+    src = "(?x)(?-x:\\p{Alpha}[])]#(\n)#\\u0081)".force_encoding(Encoding::Shift_JIS)
+    re = EnvUtil.suppress_warning { Regexp.new(src) }
+    assert_equal("(?-mix:".force_encoding(Encoding::Shift_JIS) + src + ")", EnvUtil.suppress_warning { re.to_s })
+  end
+
+  def test_to_s_no_warning_from_trial_compilation
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      re = EnvUtil.suppress_warning { Regexp.new("(?:[]a])") }
+      called = 0
+      Warning.singleton_class.class_eval do
+        define_method(:warn) {|*, **| called += 1; raise "warn" }
+      end
+      $VERBOSE = true
+      assert_equal("(?-mix:[]a])", re.to_s)
+      assert_equal(0, called)
+      assert_equal(true, $VERBOSE)
+    end;
+  end
+
+  def test_to_s_wide_char_looks_like_option_prefix
+    [Encoding::UTF_16LE, Encoding::UTF_16BE].each do |enc|
+      src = "(?mi:ab)".force_encoding(enc)
+      assert_equal("(?-mix:".encode(enc) + src + ")".encode(enc), Regexp.new(src).to_s)
+    end
+  end
+
   def test_to_s_under_gc_compact_stress
     EnvUtil.under_gc_compact_stress do
       str = "abcd\u3042"
@@ -577,6 +605,33 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal([2, 3], m.offset(3))
   end
 
+  # Character offsets of a shareable MatchData are computed lazily on first use.
+  # Ractors racing on that first use read the cache before it was filled in and
+  # got 0 instead of the offsets.
+  def test_match_char_offset_shared_across_ractors
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      Warning[:experimental] = false
+      re = /(x)(y)(z)(\u3044+)(q)?(nomatch)?/
+      mk = ->(i) { re.match("\u3042" * (i % 7 + 1) + "xyz" + "\u3044" * 3 + "q") }
+      def read(m) = [m.offset(1), m.offset(4), m.begin(5), m.end(0), m.match_length(4)]
+      want = Ractor.make_shareable(Array.new(200) { |i| read(mk.(i)) })
+
+      10.times do
+        mds = Ractor.make_shareable(Array.new(200) { |i| mk.(i) })
+        rs = Array.new(4) do
+          Ractor.new(mds, want) do |mds, want|
+            Ractor.receive
+            mds.each_index.reject { |i| read(mds[i]) == want[i] }
+          end
+        end
+        rs.each { |r| r.send(nil) }
+        rs.each { |r| assert_equal([], r.value) }
+        assert_equal(want[3], read(mds[3].dup))
+      end
+    end;
+  end
+
   def test_match_byteoffset_begin_end
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal([3, 6], m.byteoffset("x"))
@@ -803,6 +858,44 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_initialize_in_warning_hook
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = true
+      inner = error = re = freeze = nil
+      Warning.singleton_class.class_eval do
+        define_method(:warn) do |*, **|
+          src, inner = inner, nil
+          begin
+            re.send(:initialize, src) if src
+          rescue RegexpError => error
+          end
+          re.freeze if freeze
+        end
+      end
+
+      re = Regexp.allocate
+      inner = "(?<n>a)(b)(c)[b-a]?x{2,3}" * 20
+      re.send(:initialize, "(?<m>x)[]a](y)")
+      assert_kind_of(RegexpError, error)
+      assert_equal("(?<m>x)[]a](y)", re.source)
+      assert_equal(["x"], re.match("xay").captures)
+      assert_equal(["m"], re.names)
+
+      re = Regexp.allocate
+      inner = "(?<n>a)(b)"
+      assert_raise(FrozenError) { re.send(:initialize, "(?<m>x)[]a](y)") }
+      assert_equal("(?<n>a)(b)", re.source)
+      assert_equal(["a"], re.match("ab").captures)
+      assert_equal(["n"], re.names)
+
+      re = Regexp.allocate
+      freeze = true
+      assert_raise(FrozenError) { re.send(:initialize, "(?<m>x)[]a](y)") }
+      assert_raise(TypeError) { re.source }
+    end;
+  end
+
   def test_initialize_bool_warning
     assert_warning(/expected true or false as ignorecase/) do
       Regexp.new("foo", :i)
@@ -932,6 +1025,15 @@ class TestRegexp < Test::Unit::TestCase
     $_ = "abc"; assert_equal(1, ~/bc/)
     $_ = "abc"; assert_nil(~/d/)
     $_ = nil; assert_nil(~/./)
+  end
+
+  def test_match_end_anchor_start_position
+    s = "text\n\n\n"
+    assert_nil(s.match(/\r?\n\r?\n\Z/, 6))
+    assert_nil(s.match(/\r?\n\r?\n\z/, 6))
+    assert_equal(4, s.match(/\r?\n\r?\n\Z/, 4).begin(0))
+    assert_equal(["\n\n"], s.scan(/\r?\n\r?\n\Z/))
+    assert_equal("text-\n", s.gsub(/\r?\n\r?\n\Z/, "-"))
   end
 
   def test_match_under_gc_compact_stress
@@ -2222,6 +2324,27 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_range_repeat
+    pre = ->(n) {"a" * n + "!"}
+    [
+      /(?:a|a){4,}[bc]?\z/,
+      /(?:a+){4,}[bc]?\z/,
+      /(?:a|a){2,100}[bc]?\z/,
+      /(?:a|a){4,}?[bc]?\z/,
+    ].each do |re|
+      assert_linear_performance([10, 29], pre: pre) do |s|
+        assert_no_match(re, s)
+      end
+    end
+  end
+
+  def test_match_cache_with_range_repeat_in_lookaround
+    re = /(?!(?:[^#]+?){3,}\0c?.)/n
+    assert_equal(0, "ab\0c!" =~ re)
+    assert_equal(6, "\0" * 10 =~ re)
+    assert_equal(36, "\0" * 40 =~ re)
+  end
+
   def test_absent
     assert_equal(0, /(?~(a|c)c)/ =~ "abb")
     assert_equal("abb", $&)
@@ -2622,6 +2745,13 @@ class TestRegexp < Test::Unit::TestCase
   def test_bug_20246 # [Bug #20246]
     assert_equal '1.2.3', '1.2.3'[/(\d+)(\.\g<1>){2}/]
     assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
+  end
+
+  def test_search_bol_in_group_after_bounded_prefix
+    assert_equal(16, /\s{0,5}(^end)/ =~ "def foo; bar end\nend\n")
+    assert_equal(11, /(?:\r?\n){0,2}(^--)/ =~ "aaaaaaaa --\n--\n")
+    assert_equal(24, / {0,4}(^abc)/ =~ ("x" * 20) + "abc\nabc\n")
+    assert_equal(24, /\b.{0,3}(^abc)/ =~ ("x" * 20) + "abc\nabc\n")
   end
 
   def test_linear_time_p

@@ -60,9 +60,6 @@ struct RRegexp_and_re_pattern_buffer {
  *            The match is currently in use or may have escaped and can no longer be recycled.
  * 1:     RMATCH_ONIG
  *            TBD.
- * 2:     RMATCH_OFFSETS_EXTERNAL
- *            The match layout isn't fully embedded, offsets are stored in an external buffer,
- *            which will need to be freed during sweep.
  */
 
 #define MATCH_BUSY FL_USER0
@@ -623,7 +620,7 @@ rb_reg_str_with_term(VALUE re, int term)
     const UChar *ptr = (UChar *)RSTRING_PTR(src_str);
     rb_len_t len = RSTRING_LEN(src_str);
   again:
-    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
+    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?' && rb_enc_asciicompat(enc)) {
         int err = 1;
         ptr += 2;
         if ((len -= 2) > 0) {
@@ -668,8 +665,8 @@ rb_reg_str_with_term(VALUE re, int term)
             len -= 2;
             unescaped = rb_reg_preprocess((const char *)ptr, (const char *)ptr + len,
                                           enc, &fixed_enc, errmsg, options);
-            if (!NIL_P(unescaped)) {
-                ruby_verbose = Qfalse;
+            if (!NIL_P(unescaped) && (!fixed_enc || fixed_enc == enc)) {
+                ruby_verbose = Qnil;
                 err = onig_new(&rp, (UChar *)RSTRING_PTR(unescaped),
                                (UChar *)RSTRING_END(unescaped), options,
                                enc, OnigDefaultSyntax, NULL);
@@ -1286,10 +1283,14 @@ pair_byte_cmp(const void *pair1, const void *pair2)
 #endif
 }
 
-static void
-update_char_offset(VALUE match)
+/* A shareable MatchData is read by several Ractors at once, so the offsets are
+ * built privately and published with a CAS; char_offset is NULL until then. */
+static const struct rmatch_offset *
+match_char_offsets(VALUE match)
 {
     struct RMatch *rm = RMATCH(match);
+    struct rmatch_offset *offsets = RUBY_ATOMIC_PTR_LOAD(rm->char_offset);
+    struct rmatch_offset *published;
     int i, num_regs, num_pos;
     rb_len_t c;
     char *s, *p, *q;
@@ -1297,24 +1298,18 @@ update_char_offset(VALUE match)
     pair_t *pairs;
     VALUE pairs_obj = Qnil;
 
-    if (rm->char_offset_num_allocated)
-        return;
+    if (offsets) return offsets;
 
     num_regs = RMATCH_NREGS(match);
-
-    if (rm->char_offset_num_allocated < num_regs) {
-        SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, num_regs, rm->char_offset_num_allocated);
-        rm->char_offset_num_allocated = num_regs;
-        FL_SET_RAW(match, RMATCH_OFFSETS_EXTERNAL);
-    }
-
     enc = rb_enc_get(RMATCH(match)->str);
+
     if (rb_enc_mbmaxlen(enc) == 1) {
+        offsets = ALLOC_N(struct rmatch_offset, num_regs);
         for (i = 0; i < num_regs; i++) {
-            rm->char_offset[i].beg = RMATCH_BEG(match, i);
-            rm->char_offset[i].end = RMATCH_END(match, i);
+            offsets[i].beg = RMATCH_BEG(match, i);
+            offsets[i].end = RMATCH_END(match, i);
         }
-        return;
+        goto publish;
     }
 
     pairs = RB_ALLOCV_N(pair_t, pairs_obj, num_regs * 2);
@@ -1336,24 +1331,34 @@ update_char_offset(VALUE match)
         p = q;
     }
 
+    offsets = ALLOC_N(struct rmatch_offset, num_regs);
     for (i = 0; i < num_regs; i++) {
         pair_t key, *found;
         if (RMATCH_BEG(match, i) < 0) {
-            rm->char_offset[i].beg = -1;
-            rm->char_offset[i].end = -1;
+            offsets[i].beg = -1;
+            offsets[i].end = -1;
             continue;
         }
 
         key.byte_pos = RMATCH_BEG(match, i);
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
-        rm->char_offset[i].beg = found->char_pos;
+        offsets[i].beg = found->char_pos;
 
         key.byte_pos = RMATCH_END(match, i);
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
-        rm->char_offset[i].end = found->char_pos;
+        offsets[i].end = found->char_pos;
     }
 
     RB_ALLOCV_END(pairs_obj);
+
+  publish:
+    published = RUBY_ATOMIC_PTR_CAS(rm->char_offset, NULL, offsets);
+    if (published) {
+        SIZED_FREE_N(offsets, num_regs);
+        return published;
+    }
+    rm->char_offset_num_allocated = num_regs;
+    return offsets;
 }
 
 static VALUE
@@ -1378,14 +1383,13 @@ rb_match_init_copy(VALUE obj, VALUE orig)
 
     match_set_regs(obj, RMATCH_NREGS(orig), RMATCH_BEG_PTR(orig), RMATCH_END_PTR(orig));
 
-    if (RMATCH(orig)->char_offset_num_allocated) {
+    const struct rmatch_offset *orig_offsets = RUBY_ATOMIC_PTR_LOAD(RMATCH(orig)->char_offset);
+    if (orig_offsets) {
         if (rm->char_offset_num_allocated < rm->num_regs) {
             SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, rm->num_regs, rm->char_offset_num_allocated);
             rm->char_offset_num_allocated = rm->num_regs;
-            FL_SET_RAW(obj, RMATCH_OFFSETS_EXTERNAL);
         }
-        MEMCPY(rm->char_offset, RMATCH(orig)->char_offset,
-               struct rmatch_offset, rm->num_regs);
+        MEMCPY(rm->char_offset, orig_offsets, struct rmatch_offset, rm->num_regs);
         RB_GC_GUARD(orig);
     }
 
@@ -1579,9 +1583,8 @@ match_offset(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return rb_assoc_new(Qnil, Qnil);
 
-    update_char_offset(match);
-    return rb_assoc_new(LEN2NUM(RMATCH(match)->char_offset[i].beg),
-                        LEN2NUM(RMATCH(match)->char_offset[i].end));
+    const struct rmatch_offset *ofs = &match_char_offsets(match)[i];
+    return rb_assoc_new(LEN2NUM(ofs->beg), LEN2NUM(ofs->end));
 }
 
 /*
@@ -1818,8 +1821,7 @@ match_begin(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
-    update_char_offset(match);
-    return LEN2NUM(RMATCH(match)->char_offset[i].beg);
+    return LEN2NUM(match_char_offsets(match)[i].beg);
 }
 
 
@@ -1878,8 +1880,7 @@ match_end(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
-    update_char_offset(match);
-    return LEN2NUM(RMATCH(match)->char_offset[i].end);
+    return LEN2NUM(match_char_offsets(match)[i].end);
 }
 
 /*
@@ -2022,9 +2023,7 @@ match_nth_length(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
-    update_char_offset(match);
-    const struct rmatch_offset *const ofs =
-        &RMATCH(match)->char_offset[i];
+    const struct rmatch_offset *const ofs = &match_char_offsets(match)[i];
     return LEN2NUM(ofs->end - ofs->beg);
 }
 
@@ -4109,6 +4108,17 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
        enc = rb_usascii_encoding();
     }
 
+    regex_t reg;
+    bool success = make_regexp(&reg, RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
+                          options & ARG_REG_OPTION_MASK, err,
+                          sourcefile, sourceline);
+    if (!success) return -1;
+    if (OBJ_FROZEN(obj) || FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
+        onig_free_body(&reg);
+        rb_reg_initialize_check(obj);
+    }
+    *RREGEXP_PTR(obj) = reg;
+
     rb_enc_associate((VALUE)re, enc);
     if ((options & ARG_ENCODING_FIXED) || fixed_enc) {
         re->basic.flags |= KCODE_FIXED;
@@ -4116,11 +4126,6 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
     if (options & ARG_ENCODING_NONE) {
         re->basic.flags |= REG_ENCODING_NONE;
     }
-
-    bool success = make_regexp(RREGEXP_PTR(obj), RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
-                          options & ARG_REG_OPTION_MASK, err,
-                          sourcefile, sourceline);
-    if (!success) return -1;
     FL_SET_RAW(obj, RREGEXP_INITIALIZED);
 
     if (RBASIC_CLASS(obj) == rb_cRegexp) {
@@ -4859,6 +4864,9 @@ static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
  *    r = Regexp.new('foo') # => /foo/
  *    r.source              # => "foo"
  *    r.options             # => 0
+ *
+ *  Passing untrusted input as +string+ is generally not recommended;
+ *  see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
  *
  *  Optional argument +options+ is one of the following:
  *

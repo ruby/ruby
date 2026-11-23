@@ -256,6 +256,67 @@ class TestWeakMap < Test::Unit::TestCase
     end;
   end
 
+  def test_compaction_during_each
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately([], <<-'end;')
+      # Immediate keys never move, so compaction reinserts only the objects
+      # without rebuilding the table.
+      wm = ObjectSpace::WeakMap.new
+      objs = 3.times.map { Object.new }
+      objs.each { |o| wm[o] = o }
+      500.times { |i| wm[i] = i }
+      seen = []
+      wm.each do |k, v|
+        GC.verify_compaction_references(expand_heap: true, toward: :empty) if seen.size == 10
+        seen << k
+      end
+      assert_equal(503, seen.size)
+      assert_equal(503, seen.uniq.size)
+
+      # Every key moves, so compaction rebuilds the table.
+      wm = ObjectSpace::WeakMap.new
+      objs = 1000.times.map { Object.new }
+      objs.each { |o| wm[o] = o }
+      seen = []
+      wm.each_key do |k|
+        GC.verify_compaction_references(expand_heap: true, toward: :empty) if seen.size == 500
+        seen << k
+      end
+      assert_equal(1000, seen.size)
+      assert_equal(1000, seen.uniq.size)
+    end;
+  end
+
+  def test_each_delete_current_and_rebuild
+    [4, 100].each do |n|
+      wm = ObjectSpace::WeakMap.new
+      keys = n.times.map { Object.new }
+      keys.each { |k| wm[k] = k }
+      added = []
+      seen = []
+      wm.each do |k, v|
+        seen << k
+        if seen.size == n / 2
+          wm.delete(k)
+          64.times { o = Object.new; added << o; wm[o] = o }
+        end
+      end
+      assert_equal(keys, seen, "with #{n} entries")
+    end
+  end
+
+  def test_each_skips_entries_deleted_during_iteration
+    keys = 10.times.map { Object.new }
+    keys.each { |k| @wm[k] = k }
+    seen = []
+    @wm.each_key do |k|
+      @wm.delete(keys.last) if seen.empty?
+      seen << k
+    end
+    assert_equal(keys[0..-2], seen)
+  end
+
   def test_gc_compact_stress
     EnvUtil.under_gc_compact_stress { ObjectSpace::WeakMap.new }
   end

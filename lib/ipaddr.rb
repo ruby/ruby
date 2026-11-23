@@ -683,6 +683,8 @@ class IPAddr
       @family = family[0]
       if @family == Socket::AF_INET
         @mask_addr &= IN4MASK
+        # zone IDs only exist for IPv6 addresses
+        @zone_id = nil
       end
     end
     return self

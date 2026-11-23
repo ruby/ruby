@@ -358,6 +358,26 @@ nmake install-vcpkg # Install vcpkg from build directory
 ```
 
 
+## Binary packages
+
+`nmake binary-package` installs ruby into a staging directory and packs it into `ruby-<RUBY_VERSION>-<platform>.zip`, which runs wherever it is extracted. `<platform>` is `RUBY_PLATFORM`, such as `x64-mswin64_140` or `arm64-mswin64_140`. It copies the DLLs of the libraries installed by `nmake install-vcpkg`, or of those in the directory given as `VCPKG_INSTALLED`, like `nmake binary-package VCPKG_INSTALLED=C:/vcpkg_installed/x64-windows`. GNU make does not have this target.
+
+The zip holds a single directory named after the zip, which contains `bin`, `include`, `lib`, `share` and `LICENSES`. The vcpkg DLLs are copied into `bin` next to `ruby.exe`. The VC++ runtime is not, so the [Microsoft Visual C++ Redistributable] must be installed. CA certificates are not included either, so verifying TLS peers needs `SSL_CERT_FILE` or `SSL_CERT_DIR`. `LICENSES` holds the license files of ruby and of each vcpkg library. Absolute paths of the build machine are removed from `configure_args` in `rbconfig.rb`, so that gems with C extensions can be built after extraction.
+
+The official packages are made by running the same `tool/binary-package.rb` under the names below, in `https://cache.ruby-lang.org/pub/ruby/binaries/mswin64/`. All of them except `ruby-head` are listed in https://cache.ruby-lang.org/pub/ruby/binaries/index.json and have a `.sha256` file next to them. They are not signed, so Smart App Control can block their DLLs and extension libraries.
+
+```
+ruby-<version>-<platform>.zip                          release and prerelease
+ruby-<version>-<revision>-<platform>.zip               reissued package
+dev/ruby-<version>dev-<date>-<commit>-<platform>.zip   daily build of master
+dev/ruby-head-<platform>.zip                           newest daily build
+```
+
+A release or a prerelease uses the version of its tarball, like `4.0.9` or `4.1.0-preview1`. They are never replaced once published, so one rebuilt later, for example to update a bundled library, gets a revision number starting from 1. A daily build uses `RUBY_VERSION`, the commit date in the committer's time zone and the first 10 hex digits of the commit hash, like `ruby-4.1.0dev-20261117-d60ec057ee-x64-mswin64_140.zip`. The daily builds are made with clang-cl, so building gems with C extensions on them needs clang-cl too. `ruby-head-<platform>.zip` is a copy of the newest daily build, whose directory is renamed to `ruby-head-<platform>`.
+
+[Microsoft Visual C++ Redistributable]: https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist
+
+
 ## Windows Defender Firewall
 
 Some tests listen on all interfaces, and Windows Defender Firewall shows a security alert dialog when an executable at a path it has no rule for does so. If you keep the same build directory, run `win32\firewall.cmd` there once, and the dialog no longer interrupts the tests. It adds rules that block inbound connections to `ruby.exe` and `rubyw.exe` in that directory, so the tests are not exposed to other machines, while connections from the same machine still work.

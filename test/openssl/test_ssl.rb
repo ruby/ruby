@@ -618,20 +618,34 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_client_cert_cb_ignore_error
+  def test_client_cert_cb_error
+    omit "LibreSSL doesn't support client_cert_cb in TLS 1.3" if libressl?
+
     sctx = make_server_context
     sctx.verify_mode =
       OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
-
     start_server(sctx, ignore_listener_error: true) do |port|
+      # Bad return value
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.client_cert_cb = -> ssl {
-        raise "exception in client_cert_cb must be suppressed"
+        assert_kind_of(OpenSSL::SSL::SSLSocket, ssl)
+        [@cli_cert, OpenSSL::PKey.read(@cli_key.public_to_der)]
       }
-      # 1. Exception in client_cert_cb is suppressed
-      # 2. No client certificate will be sent to the server
-      # 3. SSL_VERIFY_FAIL_IF_NO_PEER_CERT causes the handshake to fail
-      assert_raise(OpenSSL::SSL::SSLError) {
+      assert_raise_with_message(ArgumentError, /private key/) {
+        server_connect(port, ctx) { raise "unreachable" }
+      }
+
+      # Exception in callback
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.client_cert_cb = -> ssl { raise "in client_cert_cb" }
+      assert_raise_with_message(RuntimeError, /in client_cert_cb/) {
+        server_connect(port, ctx) { raise "unreachable" }
+      }
+
+      # nil return, rejected due to OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.client_cert_cb = -> ssl { nil }
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /alert number 116/) {
         server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
       }
     end
@@ -748,22 +762,25 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_exception_in_verify_callback_is_ignored
+  def test_exception_in_verify_callback
     start_server(ignore_listener_error: true) { |port|
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.cert_store = OpenSSL::X509::Store.new.add_cert(@ca_cert)
+      called = []
       ctx.verify_callback = Proc.new do |preverify_ok, store_ctx|
         store_ctx.error = OpenSSL::X509::V_OK
-        raise RuntimeError
+        called << store_ctx.current_cert
+        raise "in verify_callback"
       end
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       ssl.sync_close = true
       begin
-        EnvUtil.suppress_warning do
-          # SSLError, not RuntimeError
-          assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
-        end
+        assert_raise_with_message(RuntimeError, "in verify_callback") {
+          ssl.connect
+        }
+        assert_equal([@ca_cert], called)
         assert_equal(OpenSSL::X509::V_ERR_CERT_REJECTED, ssl.verify_result)
       ensure
         ssl.close
@@ -1573,6 +1590,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert_raise(ArgumentError) {
         ctx.min_version = :bogus
       }
+      assert_raise(ArgumentError) {
+        ctx.min_version = "TLS"
+      }
     }
   end
 
@@ -1801,6 +1821,26 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     }
+
+    client_can_close = Thread::Queue.new
+    server_proc = proc do |sock|
+      sctx = make_server_context
+      sctx.renegotiation_cb = -> ssl { raise "in renegotiation_cb" }
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx)
+      assert_raise_with_message(RuntimeError, "in renegotiation_cb") {
+        ssl.accept
+      }
+    ensure
+      client_can_close.close
+    end
+    start_server_proc(server_proc) do |port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.connect_nonblock(exception: false)
+      client_can_close.pop
+    ensure
+      sock.close
+    end
   end
 
   def test_alpn_protocol_selection_ary
@@ -1920,7 +1960,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_close_after_socket_close
-    # The client closes the TCP socket without SSLSocket#stop
+    # The client closes the TCP socket without calling SSLSocket#close
     sctx = make_server_context
     if defined?(OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF)
       sctx.options |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
@@ -1936,6 +1976,29 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.close
       end
     }
+  end
+
+  def test_ssl_shutdown
+    server_can_close = Thread::Queue.new
+    server_proc = proc do |sock|
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, make_server_context).accept
+      str = ssl.gets
+      ssl.puts(str)
+      assert_predicate(ssl, :eof?)
+      server_can_close.pop
+      assert_equal(1, ssl.ssl_shutdown)
+    end
+    start_server_proc(server_proc) do |port|
+      server_connect(port) do |ssl|
+        ssl.puts("abc")
+        assert_equal(0, ssl.ssl_shutdown)
+        assert_equal("abc\n", ssl.gets)
+        assert_equal(:wait_readable, ssl.ssl_shutdown)
+        server_can_close.close
+        ssl.wait_readable
+        assert_equal(1, ssl.ssl_shutdown)
+      end
+    end
   end
 
   def test_sync_close_without_connect

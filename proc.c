@@ -2575,9 +2575,10 @@ find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
         }
 
         VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
-        if (refined_ancestor) {
-            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        if (!refined_ancestor) {
+            refined_ancestor = rb_include_class_new(refined_target, klass);
         }
+        iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
     }
 
     return iclass;
@@ -3572,6 +3573,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             }
             else {
                 klass = rb_include_class_new(methclass, klass);
+                iclass = klass;
             }
         }
         me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);

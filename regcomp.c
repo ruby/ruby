@@ -468,8 +468,12 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
                           regex_t* reg ARG_UNUSED, int ignore_case)
 {
   int len;
-  int op = select_str_opcode(mb_len, byte_len, ignore_case);
+  int op;
 
+  if (byte_len > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+
+  op = select_str_opcode(mb_len, byte_len, ignore_case);
   len = SIZE_OPCODE;
 
   if (op == OP_EXACTMBN)  len += SIZE_LENGTH;
@@ -530,10 +534,15 @@ compile_length_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, sn->end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+      if (r < 0) return r;
       rlen += r;
+      if (rlen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       prev = p;
       blen = len;
       prev_len = len;
@@ -541,6 +550,7 @@ compile_length_string_node(Node* node, regex_t* reg)
     p += len;
   }
   r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+  if (r < 0) return r;
   rlen += r;
   return rlen;
 }
@@ -578,6 +588,8 @@ compile_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string(prev, prev_len, blen, reg, ambig);
@@ -5712,7 +5724,6 @@ onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
   err_p:
     xfree(nreg->exact);
   err:
-    xfree(nreg);
     return ONIGERR_MEMORY;
   }
   return 0;
@@ -5725,7 +5736,12 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
     regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
     if (IS_NULL(reg)) return ONIGERR_MEMORY;
 
-    return onig_reg_copy_body(reg, oreg);
+    int r = onig_reg_copy_body(reg, oreg);
+    if (r != 0) {
+      xfree(reg);
+      *nreg = NULL;
+    }
+    return r;
   }
   return 0;
 }

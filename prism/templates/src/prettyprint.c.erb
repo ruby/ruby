@@ -15,23 +15,34 @@ typedef int pm_prettyprint_unused_t;
 #include "prism/compiler/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"
+#include "prism/internal/double.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/parser.h"
 #include "prism/line_offset_list.h"
 
-#include <inttypes.h>
+static PRISM_INLINE void
+prettyprint_line_column(pm_buffer_t *output_buffer, pm_line_column_t position) {
+    pm_buffer_append_byte(output_buffer, '(');
+    pm_buffer_append_line_number(output_buffer, position.line, 0);
+    pm_buffer_append_byte(output_buffer, ',');
+    pm_buffer_append_decimal(output_buffer, position.column);
+    pm_buffer_append_byte(output_buffer, ')');
+}
 
 static PRISM_INLINE void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_line_offset_list_line_column(&parser->line_offsets, location->start, parser->start_line);
     pm_line_column_t end = pm_line_offset_list_line_column(&parser->line_offsets, location->start + location->length, parser->start_line);
-    pm_buffer_append_format(output_buffer, "(%" PRIi32 ",%" PRIu32 ")-(%" PRIi32 ",%" PRIu32 ")", start.line, start.column, end.line, end.column);
+    prettyprint_line_column(output_buffer, start);
+    pm_buffer_append_byte(output_buffer, '-');
+    prettyprint_line_column(output_buffer, end);
 }
 
 static PRISM_INLINE void
 prettyprint_constant(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_constant_id_t constant_id) {
-    pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
-    pm_buffer_append_format(output_buffer, ":%.*s", (int) constant->length, constant->start);
+    const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
+    pm_buffer_append_byte(output_buffer, ':');
+    pm_buffer_append_bytes(output_buffer, constant->start, constant->length);
 }
 
 static void
@@ -81,7 +92,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_append_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>), PM_BUFFER_ESCAPING_RUBY);
                 PM_BUFFER_APPEND_LITERAL(output_buffer, "\"\n");
             <%- when Ruby::Prism::Template::NodeListField -%>
-                pm_buffer_append_format(output_buffer, " (length: %lu)\n", (unsigned long) (cast-><%= field.name %>.size));
+                PM_BUFFER_APPEND_LITERAL(output_buffer, " (length: ");
+                pm_buffer_append_decimal(output_buffer, cast-><%= field.name %>.size);
+                PM_BUFFER_APPEND_LITERAL(output_buffer, ")\n");
 
                 size_t last_index = cast-><%= field.name %>.size;
                 for (uint32_t index = 0; index < last_index; index++) {
@@ -130,10 +143,10 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     pm_buffer_append_source(output_buffer, parser->start + location->start, (size_t) location->length, PM_BUFFER_ESCAPING_RUBY);
                     PM_BUFFER_APPEND_LITERAL(output_buffer, "\"\n");
                 }
-            <%- when Ruby::Prism::Template::UInt8Field -%>
-                pm_buffer_append_format(output_buffer, " %" PRIu8 "\n", cast-><%= field.name %>);
-            <%- when Ruby::Prism::Template::UInt32Field -%>
-                pm_buffer_append_format(output_buffer, " %" PRIu32 "\n", cast-><%= field.name %>);
+            <%- when Ruby::Prism::Template::UInt8Field, Ruby::Prism::Template::UInt32Field -%>
+                pm_buffer_append_byte(output_buffer, ' ');
+                pm_buffer_append_decimal(output_buffer, cast-><%= field.name %>);
+                pm_buffer_append_byte(output_buffer, '\n');
             <%- when Ruby::Prism::Template::Flags -%>
                 bool found = false;
                 <%- field.values.each do |value| -%>
@@ -151,7 +164,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_integer_string(output_buffer, integer);
                 pm_buffer_append_byte(output_buffer, '\n');
             <%- when Ruby::Prism::Template::DoubleField -%>
-                pm_buffer_append_format(output_buffer, " %f\n", cast-><%= field.name %>);
+                pm_buffer_append_byte(output_buffer, ' ');
+                pm_double_string(output_buffer, cast-><%= field.name %>);
+                pm_buffer_append_byte(output_buffer, '\n');
             <%- else -%>
             <%- raise -%>
             <%- end -%>

@@ -445,6 +445,7 @@ onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
   int result;
 
   key = (st_str_end_key* )xmalloc(sizeof(st_str_end_key));
+  CHECK_NULL_RETURN_MEMERR(key);
   key->s   = (UChar* )str_key;
   key->end = (UChar* )end_key;
   result = onig_st_insert(table, (st_data_t )key, value);
@@ -919,6 +920,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
 # ifdef USE_ST_LIBRARY
     if (IS_NULL(t)) {
       t = onig_st_init_strend_table_with_size(5);
+      CHECK_NULL_RETURN_MEMERR(t);
       reg->name_table = (void* )t;
     }
     e = (NameEntry* )xmalloc(sizeof(NameEntry));
@@ -929,8 +931,12 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
       xfree(e);
       return ONIGERR_MEMORY;
     }
-    onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
-                          (HashDataType )e);
+    if (onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
+                              (HashDataType )e) < 0) {
+      xfree(e->name);
+      xfree(e);
+      return ONIGERR_MEMORY;
+    }
 
     e->name_len   = name_end - name;
     e->back_num   = 0;
@@ -5899,8 +5905,11 @@ create_property_node(Node **np, ScanEnv* env, const char* propname)
   if (IS_NULL(*np)) return ONIGERR_MEMORY;
   cc = NCCLASS(*np);
   r = add_property_to_cc(cc, propname, 0, env);
-  if (r != 0)
+  if (r != 0) {
+    /* *np is a slot of the caller's node array, freed again on error */
     onig_node_free(*np);
+    *np = NULL_NODE;
+  }
   return r;
 }
 
@@ -6180,7 +6189,11 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Control", 0, env));
           R_ERR(add_code_range(&(cc->mbuf), env, 0x000A, 0x000A)); /* CR */
           R_ERR(add_code_range(&(cc->mbuf), env, 0x000D, 0x000D)); /* LF */
-          R_ERR(not_code_range_buf(env->enc, cc->mbuf, &inverted_buf, env));
+          r = not_code_range_buf(env->enc, cc->mbuf, &inverted_buf, env);
+          if (r != 0) {
+            bbuf_free(inverted_buf); /* partly built on failure */
+            goto err;
+          }
           bbuf_free(cc->mbuf);
           cc->mbuf = inverted_buf;
 
@@ -6235,6 +6248,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   tmp = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
   if (IS_NULL(tmp)) goto err;
   NENCLOSE(tmp)->target = top_alt;
+  top_alt = NULL; /* owned by tmp now */
   np1 = tmp;
 
 #ifdef USE_UNICODE_PROPERTIES
@@ -6255,9 +6269,12 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
  err:
   onig_node_free(np1);
+  onig_node_free(top_alt);
   for (i=0; i<NODE_COMMON_SIZE; i++)
     onig_node_free(node_common[i]);
-  return (r == 0) ? ONIGERR_MEMORY : r;
+  /* r may still hold a byte count from ONIGENC_CODE_TO_MBC() when an
+     allocation failed afterward. */
+  return (r < 0) ? r : ONIGERR_MEMORY;
 }
 #undef R_ERR
 
@@ -6342,6 +6359,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
   case TK_EOT:
   end_of_token:
     *np = node_new_empty();
+    CHECK_NULL_RETURN_MEMERR(*np);
     return tok->type;
     break;
 
@@ -6630,8 +6648,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
     if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS)) {
       if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS))
         return ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED;
-      else
+      else {
         *np = node_new_empty();
+        CHECK_NULL_RETURN_MEMERR(*np);
+      }
     }
     else {
       goto tk_byte;
@@ -6673,7 +6693,12 @@ parse_exp(Node** np, OnigToken* tok, int term,
         Node* en;
         en = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
         if (IS_NULL(en)) {
-          onig_node_free(qn);
+          /* When r == 0, qn has taken over the target (or freed it in
+             onig_reduce_nested_quantifier()), so hand qn to the caller. */
+          if (r == 0)
+            *targetp = qn;
+          else
+            onig_node_free(qn);
           return ONIGERR_MEMORY;
         }
         NENCLOSE(en)->target = qn;
@@ -6687,13 +6712,14 @@ parse_exp(Node** np, OnigToken* tok, int term,
         onig_node_free(qn);
       }
       else if (r == 2) { /* split case: /abc+/ */
-        Node *tmp;
+        Node *tmp, *list;
 
-        *targetp = node_new_list(*targetp, NULL);
-        if (IS_NULL(*targetp)) {
+        list = node_new_list(*targetp, NULL);
+        if (IS_NULL(list)) {
           onig_node_free(qn);
           return ONIGERR_MEMORY;
         }
+        *targetp = list;
         tmp = NCDR(*targetp) = node_new_list(qn, NULL);
         if (IS_NULL(tmp)) {
           onig_node_free(qn);
@@ -6727,6 +6753,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
   }
   else {
     *top  = node_new_list(node, NULL);
+    if (IS_NULL(*top)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp = &(NCDR(*top));
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
@@ -6742,6 +6772,11 @@ parse_branch(Node** top, OnigToken* tok, int term,
       }
       else {
         *headp = node_new_list(node, NULL);
+        if (IS_NULL(*headp)) {
+          /* *top is freed by the caller; node is not linked into it yet */
+          onig_node_free(node);
+          return ONIGERR_MEMORY;
+        }
         headp = &(NCDR(*headp));
       }
     }
@@ -6773,6 +6808,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
   }
   else if (r == TK_ALT) {
     topnode = onig_node_new_alt(node, NULL);
+    if (IS_NULL(topnode)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp   = &(NCDR(topnode));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
@@ -6789,6 +6828,11 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       }
 
       *headp = onig_node_new_alt(node, NULL);
+      if (IS_NULL(*headp)) {
+        onig_node_free(node);
+        onig_node_free(topnode);
+        return ONIGERR_MEMORY;
+      }
       headp  = &(NCDR(*headp));
     }
 

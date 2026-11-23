@@ -853,6 +853,18 @@ class TC_Set < Test::Unit::TestCase
     assert_equal 4, set.size
   end
 
+  def test_freeze_initialize
+    set = Set[1,2,3].freeze
+    assert_raise(FrozenError) { set.send(:initialize, [4,5]) }
+    assert_equal(Set[1,2,3], set)
+  end
+
+  def test_freeze_initialize_copy
+    set = Set[1,2,3].freeze
+    assert_raise(FrozenError) { set.send(:initialize_copy, Set[4,5,6]) }
+    assert_equal(Set[1,2,3], set)
+  end
+
   def test_freeze_dup
     set1 = Set[1,2,3]
     set1.freeze
