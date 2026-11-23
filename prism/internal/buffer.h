@@ -38,11 +38,17 @@ void pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value);
 /* Append uppercase hexadecimal digits, padded with zeros to the given width. */
 void pm_buffer_append_hexadecimal(pm_buffer_t *buffer, uint32_t value, uint8_t width);
 
+/* Write both uppercase hexadecimal digits of a byte. */
+void pm_buffer_hexadecimal_byte_digits(uint8_t byte, char digits[2]);
+
 /* Append a byte as a \xHH escape. */
 void pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte);
 
 /* Return the decimal width of a line number, including its sign. */
 uint8_t pm_buffer_line_number_width(int32_t line);
+
+/* Write a line number at the end of digits and return its length. */
+uint8_t pm_buffer_line_number_digits(int32_t line, char digits[11]);
 
 /* Append a line number, padded on the left with spaces to the given width. */
 void pm_buffer_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width);

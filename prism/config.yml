@@ -1,335 +1,702 @@
+# Diagnostic IDs follow the order below in the serialized format.
+# Messages use {format} for substitutions in argument order.
+# Supported formats are slice, byte, hex, hex2 (zero-padded hex byte), and line.
 errors:
-  - ALIAS_ARGUMENT
-  - ALIAS_ARGUMENT_NUMBERED_REFERENCE
-  - AMPAMPEQ_MULTI_ASSIGN
-  - ARGUMENT_AFTER_BLOCK
-  - ARGUMENT_AFTER_FORWARDING_ELLIPSES
-  - ARGUMENT_BARE_HASH
-  - ARGUMENT_BLOCK_MULTI
-  - ARGUMENT_CONFLICT_AMPERSAND
-  - ARGUMENT_CONFLICT_STAR
-  - ARGUMENT_CONFLICT_STAR_STAR
-  - ARGUMENT_FORMAL_CLASS
-  - ARGUMENT_FORMAL_CONSTANT
-  - ARGUMENT_FORMAL_GLOBAL
-  - ARGUMENT_FORMAL_IVAR
-  - ARGUMENT_FORWARDING_UNBOUND
-  - ARGUMENT_NO_FORWARDING_AMPERSAND
-  - ARGUMENT_NO_FORWARDING_ELLIPSES
-  - ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA
-  - ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK
-  - ARGUMENT_NO_FORWARDING_STAR
-  - ARGUMENT_NO_FORWARDING_STAR_STAR
-  - ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT
-  - ARGUMENT_SPLAT_AFTER_SPLAT
-  - ARGUMENT_TERM_PAREN
-  - ARGUMENT_UNEXPECTED_BLOCK
-  - ARRAY_ELEMENT
-  - ARRAY_EXPRESSION
-  - ARRAY_EXPRESSION_AFTER_STAR
-  - ARRAY_SEPARATOR
-  - ARRAY_TERM
-  - BEGIN_LONELY_ELSE
-  - BEGIN_TERM
-  - BEGIN_UPCASE_BRACE
-  - BEGIN_UPCASE_TERM
-  - BEGIN_UPCASE_TOPLEVEL
-  - BLOCK_PARAM_LOCAL_VARIABLE
-  - BLOCK_PARAM_PIPE_TERM
-  - BLOCK_TERM_BRACE
-  - BLOCK_TERM_END
-  - CANNOT_PARSE_EXPRESSION
-  - CANNOT_PARSE_STRING_PART
-  - CASE_EXPRESSION_AFTER_CASE
-  - CASE_EXPRESSION_AFTER_WHEN
-  - CASE_MATCH_MISSING_PREDICATE
-  - CASE_MISSING_CONDITIONS
-  - CASE_TERM
-  - CLASS_IN_METHOD
-  - CLASS_NAME
-  - CLASS_SUPERCLASS
-  - CLASS_TERM
-  - CLASS_UNEXPECTED_END
-  - CLASS_VARIABLE_BARE
-  - CONDITIONAL_ELSIF_PREDICATE
-  - CONDITIONAL_IF_PREDICATE
-  - CONDITIONAL_PREDICATE_TERM
-  - CONDITIONAL_TERM
-  - CONDITIONAL_TERM_ELSE
-  - CONDITIONAL_UNLESS_PREDICATE
-  - CONDITIONAL_UNTIL_PREDICATE
-  - CONDITIONAL_WHILE_PREDICATE
-  - CONSTANT_PATH_COLON_COLON_CONSTANT
-  - DEF_ENDLESS
-  - DEF_ENDLESS_PARAMETERS
-  - DEF_ENDLESS_SETTER
-  - DEF_ENDLESS_DO_BLOCK
-  - DEF_NAME
-  - DEF_PARAMS_TERM
-  - DEF_PARAMS_TERM_PAREN
-  - DEF_RECEIVER
-  - DEF_RECEIVER_SETTER
-  - DEF_RECEIVER_TERM
-  - DEF_TERM
-  - DEFINED_EXPRESSION
-  - EMBDOC_TERM
-  - EMBEXPR_END
-  - EMBVAR_INVALID
-  - END_UPCASE_BRACE
-  - END_UPCASE_TERM
-  - ESCAPE_INVALID_CONTROL
-  - ESCAPE_INVALID_CONTROL_REPEAT
-  - ESCAPE_INVALID_HEXADECIMAL
-  - ESCAPE_INVALID_META
-  - ESCAPE_INVALID_META_REPEAT
-  - ESCAPE_INVALID_UNICODE
-  - ESCAPE_INVALID_UNICODE_CM_FLAGS
-  - ESCAPE_INVALID_UNICODE_LIST
-  - ESCAPE_INVALID_UNICODE_LITERAL
-  - ESCAPE_INVALID_UNICODE_LONG
-  - ESCAPE_INVALID_UNICODE_SHORT
-  - ESCAPE_INVALID_UNICODE_TERM
-  - EXPECT_ARGUMENT
-  - EXPECT_EOL_AFTER_STATEMENT
-  - EXPECT_EXPRESSION_AFTER_AMPAMPEQ
-  - EXPECT_EXPRESSION_AFTER_COMMA
-  - EXPECT_EXPRESSION_AFTER_EQUAL
-  - EXPECT_EXPRESSION_AFTER_LESS_LESS
-  - EXPECT_EXPRESSION_AFTER_LPAREN
-  - EXPECT_EXPRESSION_AFTER_OPERATOR
-  - EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ
-  - EXPECT_EXPRESSION_AFTER_SPLAT
-  - EXPECT_EXPRESSION_AFTER_SPLAT_HASH
-  - EXPECT_EXPRESSION_AFTER_STAR
-  - EXPECT_FOR_DELIMITER
-  - EXPECT_IDENT_REQ_PARAMETER
-  - EXPECT_IN_DELIMITER
-  - EXPECT_LPAREN_AFTER_NOT_LPAREN
-  - EXPECT_LPAREN_AFTER_NOT_OTHER
-  - EXPECT_LPAREN_REQ_PARAMETER
-  - EXPECT_MESSAGE
-  - EXPECT_RBRACKET
-  - EXPECT_RPAREN
-  - EXPECT_RPAREN_AFTER_MULTI
-  - EXPECT_RPAREN_REQ_PARAMETER
-  - EXPECT_SINGLETON_CLASS_DELIMITER
-  - EXPECT_STRING_CONTENT
-  - EXPECT_WHEN_DELIMITER
-  - EXPRESSION_BARE_HASH
-  - EXPRESSION_NOT_WRITABLE
-  - EXPRESSION_NOT_WRITABLE_ENCODING
-  - EXPRESSION_NOT_WRITABLE_FALSE
-  - EXPRESSION_NOT_WRITABLE_FILE
-  - EXPRESSION_NOT_WRITABLE_LINE
-  - EXPRESSION_NOT_WRITABLE_NIL
-  - EXPRESSION_NOT_WRITABLE_NUMBERED
-  - EXPRESSION_NOT_WRITABLE_SELF
-  - EXPRESSION_NOT_WRITABLE_TRUE
-  - FOR_COLLECTION
-  - FOR_IN
-  - FOR_INDEX
-  - FOR_TERM
-  - GLOBAL_VARIABLE_BARE
-  - HASH_EXPRESSION_AFTER_LABEL
-  - HASH_KEY
-  - HASH_ROCKET
-  - HASH_TERM
-  - HASH_VALUE
-  - HEREDOC_IDENTIFIER
-  - HEREDOC_TERM
-  - INCOMPLETE_QUESTION_MARK
-  - INCOMPLETE_VARIABLE_CLASS
-  - INCOMPLETE_VARIABLE_CLASS_3_3
-  - INCOMPLETE_VARIABLE_INSTANCE
-  - INCOMPLETE_VARIABLE_INSTANCE_3_3
-  - INSTANCE_VARIABLE_BARE
-  - INVALID_BLOCK_EXIT
-  - INVALID_CHARACTER
-  - INVALID_COMMA
-  - INVALID_ENCODING_MAGIC_COMMENT
-  - INVALID_ESCAPE_CHARACTER
-  - INVALID_FLOAT_EXPONENT
-  - INVALID_CONSTANT_READ
-  - INVALID_LOCAL_VARIABLE_READ
-  - INVALID_LOCAL_VARIABLE_WRITE
-  - INVALID_MULTIBYTE_CHAR
-  - INVALID_MULTIBYTE_CHARACTER
-  - INVALID_MULTIBYTE_ESCAPE
-  - INVALID_NUMBER_BINARY
-  - INVALID_NUMBER_DECIMAL
-  - INVALID_NUMBER_FRACTION
-  - INVALID_NUMBER_HEXADECIMAL
-  - INVALID_NUMBER_OCTAL
-  - INVALID_NUMBER_UNDERSCORE_INNER
-  - INVALID_NUMBER_UNDERSCORE_TRAILING
-  - INVALID_PERCENT
-  - INVALID_PERCENT_EOF
-  - INVALID_PRINTABLE_CHARACTER
-  - INVALID_RETRY_AFTER_ELSE
-  - INVALID_RETRY_AFTER_ENSURE
-  - INVALID_RETRY_WITHOUT_RESCUE
-  - INVALID_SYMBOL
-  - INVALID_VARIABLE_GLOBAL
-  - INVALID_VARIABLE_GLOBAL_3_3
-  - INVALID_YIELD
-  - IT_NOT_ALLOWED_NUMBERED
-  - IT_NOT_ALLOWED_ORDINARY
-  - LAMBDA_OPEN
-  - LAMBDA_TERM_BRACE
-  - LAMBDA_TERM_END
-  - LIST_I_LOWER_ELEMENT
-  - LIST_I_LOWER_TERM
-  - LIST_I_UPPER_ELEMENT
-  - LIST_I_UPPER_TERM
-  - LIST_W_LOWER_ELEMENT
-  - LIST_W_LOWER_TERM
-  - LIST_W_UPPER_ELEMENT
-  - LIST_W_UPPER_TERM
-  - MALLOC_FAILED
-  - MIXED_ENCODING
-  - MODULE_IN_METHOD
-  - MODULE_NAME
-  - MODULE_TERM
-  - MULTI_ASSIGN_MULTI_SPLATS
-  - MULTI_ASSIGN_UNEXPECTED_REST
-  - NESTING_TOO_DEEP
-  - NO_LOCAL_VARIABLE
-  - NON_ASSOCIATIVE_OPERATOR
-  - NOT_EXPRESSION
-  - NUMBER_LITERAL_UNDERSCORE
-  - NUMBERED_PARAMETER_INNER_BLOCK
-  - NUMBERED_PARAMETER_IT
-  - NUMBERED_PARAMETER_ORDINARY
-  - NUMBERED_PARAMETER_OUTER_BLOCK
-  - OPERATOR_MULTI_ASSIGN
-  - OPERATOR_WRITE_ARGUMENTS
-  - OPERATOR_WRITE_BLOCK
-  - PARAMETER_ASSOC_SPLAT_MULTI
-  - PARAMETER_BLOCK_MULTI
-  - PARAMETER_CIRCULAR
-  - PARAMETER_FORWARDING_AFTER_REST
-  - PARAMETER_METHOD_NAME
-  - PARAMETER_NAME_DUPLICATED
-  - PARAMETER_NO_DEFAULT
-  - PARAMETER_NO_DEFAULT_KW
-  - PARAMETER_NUMBERED_RESERVED
-  - PARAMETER_ORDER
-  - PARAMETER_SPLAT_MULTI
-  - PARAMETER_STAR
-  - PARAMETER_UNEXPECTED_FWD
-  - PARAMETER_UNEXPECTED_NO_KW
-  - PARAMETER_WILD_LOOSE_COMMA
-  - PATTERN_ARRAY_MULTIPLE_RESTS
-  - PATTERN_CAPTURE_DUPLICATE
-  - PATTERN_CAPTURE_IN_ALTERNATIVE
-  - PATTERN_EXPRESSION_AFTER_BRACKET
-  - PATTERN_EXPRESSION_AFTER_COMMA
-  - PATTERN_EXPRESSION_AFTER_HROCKET
-  - PATTERN_EXPRESSION_AFTER_IN
-  - PATTERN_EXPRESSION_AFTER_KEY
-  - PATTERN_EXPRESSION_AFTER_PAREN
-  - PATTERN_EXPRESSION_AFTER_PIN
-  - PATTERN_EXPRESSION_AFTER_PIPE
-  - PATTERN_EXPRESSION_AFTER_RANGE
-  - PATTERN_EXPRESSION_AFTER_REST
-  - PATTERN_FIND_MISSING_INNER
-  - PATTERN_HASH_IMPLICIT
-  - PATTERN_HASH_KEY
-  - PATTERN_HASH_KEY_DUPLICATE
-  - PATTERN_HASH_KEY_INTERPOLATED
-  - PATTERN_HASH_KEY_LABEL
-  - PATTERN_HASH_KEY_LOCALS
-  - PATTERN_IDENT_AFTER_HROCKET
-  - PATTERN_LABEL_AFTER_COMMA
-  - PATTERN_REST
-  - PATTERN_TERM_BRACE
-  - PATTERN_TERM_BRACKET
-  - PATTERN_TERM_PAREN
-  - PIPEPIPEEQ_MULTI_ASSIGN
-  - REGEXP_ENCODING_OPTION_MISMATCH
-  - REGEXP_ESCAPED_NON_ASCII_IN_UTF8
-  - REGEXP_INCOMPAT_CHAR_ENCODING
-  - REGEXP_INVALID_CHAR_PROPERTY
-  - REGEXP_INVALID_UNICODE_RANGE
-  - REGEXP_NON_ESCAPED_MBC
-  - REGEXP_PARSE_ERROR
-  - REGEXP_INTERPOLATION_ENCODING
-  - REGEXP_TERM
-  - REGEXP_UNKNOWN_OPTIONS
-  - REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
-  - RESCUE_EXPRESSION
-  - RESCUE_MODIFIER_VALUE
-  - RESCUE_TERM
-  - RESCUE_VARIABLE
-  - RETURN_INVALID
-  - SCRIPT_NOT_FOUND
-  - SINGLETON_FOR_LITERALS
-  - STACK_EXHAUSTED
-  - STATEMENT_ALIAS
-  - STATEMENT_POSTEXE_END
-  - STATEMENT_PREEXE_BEGIN
-  - STATEMENT_UNDEF
-  - STRING_CONCATENATION
-  - STRING_INTERPOLATED_TERM
-  - STRING_LITERAL_EOF
-  - STRING_LITERAL_TERM
-  - SYMBOL_INVALID
-  - SYMBOL_TERM_DYNAMIC
-  - SYMBOL_TERM_INTERPOLATED
-  - TERNARY_COLON
-  - TERNARY_EXPRESSION_FALSE
-  - TERNARY_EXPRESSION_TRUE
-  - UNARY_DISALLOWED
-  - UNARY_RECEIVER
-  - UNDEF_ARGUMENT
-  - UNEXPECTED_BLOCK_ARGUMENT
-  - UNEXPECTED_INDEX_BLOCK
-  - UNEXPECTED_INDEX_KEYWORDS
-  - UNEXPECTED_LABEL
-  - UNEXPECTED_MULTI_WRITE
-  - UNEXPECTED_PARAMETER_DEFAULT_VALUE
-  - UNEXPECTED_RANGE_OPERATOR
-  - UNEXPECTED_SAFE_NAVIGATION
-  - UNEXPECTED_TOKEN_CLOSE_CONTEXT
-  - UNEXPECTED_TOKEN_IGNORE
-  - UNTIL_TERM
-  - VOID_EXPRESSION
-  - WHILE_TERM
-  - WRITE_TARGET_IN_METHOD
-  - WRITE_TARGET_READONLY
-  - WRITE_TARGET_UNEXPECTED
-  - XSTRING_TERM
+  - name: ALIAS_ARGUMENT
+    message: "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable"
+  - name: ALIAS_ARGUMENT_NUMBERED_REFERENCE
+    message: "invalid argument being passed to `alias`; can't make alias for the number variables"
+  - name: AMPAMPEQ_MULTI_ASSIGN
+    message: "unexpected `&&=` in a multiple assignment"
+  - name: ARGUMENT_AFTER_BLOCK
+    message: "unexpected argument after a block argument"
+  - name: ARGUMENT_AFTER_FORWARDING_ELLIPSES
+    message: "unexpected argument after `...`"
+  - name: ARGUMENT_BARE_HASH
+    message: "unexpected bare hash argument"
+  - name: ARGUMENT_BLOCK_MULTI
+    message: "both block arg and actual block given; only one block is allowed"
+  - name: ARGUMENT_CONFLICT_AMPERSAND
+    message: "unexpected `&`; anonymous block parameter is also used within block"
+  - name: ARGUMENT_CONFLICT_STAR
+    message: "unexpected `*`; anonymous rest parameter is also used within block"
+  - name: ARGUMENT_CONFLICT_STAR_STAR
+    message: "unexpected `**`; anonymous keyword rest parameter is also used within block"
+  - name: ARGUMENT_FORMAL_CLASS
+    message: "invalid formal argument; formal argument cannot be a class variable"
+  - name: ARGUMENT_FORMAL_CONSTANT
+    message: "invalid formal argument; formal argument cannot be a constant"
+  - name: ARGUMENT_FORMAL_GLOBAL
+    message: "invalid formal argument; formal argument cannot be a global variable"
+  - name: ARGUMENT_FORMAL_IVAR
+    message: "invalid formal argument; formal argument cannot be an instance variable"
+  - name: ARGUMENT_FORWARDING_UNBOUND
+    message: "unexpected `...` in an non-parenthesized call"
+  - name: ARGUMENT_NO_FORWARDING_AMPERSAND
+    message: "unexpected `&`; no anonymous block parameter"
+  - name: ARGUMENT_NO_FORWARDING_ELLIPSES
+    message: "unexpected ... when the parent method is not forwarding"
+  - name: ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA
+    message: "unexpected ... in lambda argument"
+  - name: ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK
+    message: "unexpected ... in block argument"
+  - name: ARGUMENT_NO_FORWARDING_STAR
+    message: "unexpected `*`; no anonymous rest parameter"
+  - name: ARGUMENT_NO_FORWARDING_STAR_STAR
+    message: "unexpected `**`; no anonymous keyword rest parameter"
+  - name: ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT
+    message: "unexpected `*` splat argument after a `**` keyword splat argument"
+  - name: ARGUMENT_SPLAT_AFTER_SPLAT
+    message: "unexpected `*` splat argument after a `*` splat argument"
+  - name: ARGUMENT_TERM_PAREN
+    message: "unexpected {slice}; expected a `)` to close the arguments"
+  - name: ARGUMENT_UNEXPECTED_BLOCK
+    message: "unexpected '{' after a method call without parenthesis"
+  - name: ARRAY_ELEMENT
+    message: "expected an element for the array"
+  - name: ARRAY_EXPRESSION
+    message: "expected an expression for the array element"
+  - name: ARRAY_EXPRESSION_AFTER_STAR
+    message: "expected an expression after `*` in the array"
+  - name: ARRAY_SEPARATOR
+    message: "unexpected {slice}; expected a `,` separator for the array elements"
+  - name: ARRAY_TERM
+    message: "unexpected {slice}; expected a `]` to close the array"
+  - name: BEGIN_LONELY_ELSE
+    message: "unexpected `else` in `begin` block; else without rescue is useless"
+  - name: BEGIN_TERM
+    message: "expected an `end` to close the `begin` statement"
+  - name: BEGIN_UPCASE_BRACE
+    message: "expected a `{` after `BEGIN`"
+  - name: BEGIN_UPCASE_TERM
+    message: "expected a `}` to close the `BEGIN` statement"
+  - name: BEGIN_UPCASE_TOPLEVEL
+    message: "BEGIN is permitted only at toplevel"
+  - name: BLOCK_PARAM_LOCAL_VARIABLE
+    message: "expected a local variable name in the block parameters"
+  - name: BLOCK_PARAM_PIPE_TERM
+    message: "expected the block parameters to end with `|`"
+  - name: BLOCK_TERM_BRACE
+    message: "expected a block beginning with `{` to end with `}`"
+  - name: BLOCK_TERM_END
+    message: "expected a block beginning with `do` to end with `end`"
+  - name: CANNOT_PARSE_EXPRESSION
+    message: "cannot parse the expression"
+  - name: CANNOT_PARSE_STRING_PART
+    message: "cannot parse the string part"
+  - name: CASE_EXPRESSION_AFTER_CASE
+    message: "expected an expression after `case`"
+  - name: CASE_EXPRESSION_AFTER_WHEN
+    message: "expected an expression after `when`"
+  - name: CASE_MATCH_MISSING_PREDICATE
+    message: "expected a predicate for a case matching statement"
+  - name: CASE_MISSING_CONDITIONS
+    message: "expected a `when` or `in` clause after `case`"
+  - name: CASE_TERM
+    message: "expected an `end` to close the `case` statement"
+  - name: CLASS_IN_METHOD
+    message: "unexpected class definition in method body"
+  - name: CLASS_NAME
+    message: "unexpected constant path after `class`; class/module name must be CONSTANT"
+  - name: CLASS_SUPERCLASS
+    message: "expected a superclass after `<`"
+  - name: CLASS_TERM
+    message: "expected an `end` to close the `class` statement"
+  - name: CLASS_UNEXPECTED_END
+    message: "unexpected `end`, expecting ';' or '\\n'"
+  - name: CLASS_VARIABLE_BARE
+    message: "'@@' without identifiers is not allowed as a class variable name"
+  - name: CONDITIONAL_ELSIF_PREDICATE
+    message: "expected a predicate expression for the `elsif` statement"
+  - name: CONDITIONAL_IF_PREDICATE
+    message: "expected a predicate expression for the `if` statement"
+  - name: CONDITIONAL_PREDICATE_TERM
+    message: "expected `then` or `;` or '\\n'"
+  - name: CONDITIONAL_TERM
+    message: "expected an `end` to close the conditional clause"
+  - name: CONDITIONAL_TERM_ELSE
+    message: "expected an `end` to close the `else` clause"
+  - name: CONDITIONAL_UNLESS_PREDICATE
+    message: "expected a predicate expression for the `unless` statement"
+  - name: CONDITIONAL_UNTIL_PREDICATE
+    message: "expected a predicate expression for the `until` statement"
+  - name: CONDITIONAL_WHILE_PREDICATE
+    message: "expected a predicate expression for the `while` statement"
+  - name: CONSTANT_PATH_COLON_COLON_CONSTANT
+    message: "expected a constant after the `::` operator"
+  - name: DEF_ENDLESS
+    message: "could not parse the endless method body"
+  - name: DEF_ENDLESS_PARAMETERS
+    message: "could not parse the endless method parameters"
+  - name: DEF_ENDLESS_SETTER
+    message: "invalid method name; a setter method cannot be defined in an endless method definition"
+  - name: DEF_ENDLESS_DO_BLOCK
+    message: "unexpected `do` for block in an endless method definition"
+  - name: DEF_NAME
+    message: "unexpected {slice}; expected a method name"
+  - name: DEF_PARAMS_TERM
+    message: "expected a delimiter to close the parameters"
+  - name: DEF_PARAMS_TERM_PAREN
+    message: "unexpected {slice}; expected a `)` to close the parameters"
+  - name: DEF_RECEIVER
+    message: "expected a receiver for the method definition"
+  - name: DEF_RECEIVER_SETTER
+    message: "setter method name cannot be used as a receiver in a method definition"
+  - name: DEF_RECEIVER_TERM
+    message: "expected a `.` or `::` after the receiver in a method definition"
+  - name: DEF_TERM
+    message: "expected an `end` to close the `def` statement"
+  - name: DEFINED_EXPRESSION
+    message: "expected an expression after `defined?`"
+  - name: EMBDOC_TERM
+    message: "embedded document meets end of file"
+  - name: EMBEXPR_END
+    message: "expected a `}` to close the embedded expression"
+  - name: EMBVAR_INVALID
+    message: "invalid embedded variable"
+  - name: END_UPCASE_BRACE
+    message: "expected a `{` after `END`"
+  - name: END_UPCASE_TERM
+    message: "expected a `}` to close the `END` statement"
+  - name: ESCAPE_INVALID_CONTROL
+    message: "Invalid escape character syntax"
+  - name: ESCAPE_INVALID_CONTROL_REPEAT
+    message: "invalid control escape sequence; control cannot be repeated"
+  - name: ESCAPE_INVALID_HEXADECIMAL
+    message: "invalid hex escape sequence"
+  - name: ESCAPE_INVALID_META
+    message: "Invalid escape character syntax"
+  - name: ESCAPE_INVALID_META_REPEAT
+    message: "invalid meta escape sequence; meta cannot be repeated"
+  - name: ESCAPE_INVALID_UNICODE
+    message: "invalid Unicode escape sequence"
+  - name: ESCAPE_INVALID_UNICODE_CM_FLAGS
+    message: "invalid Unicode escape sequence; Unicode cannot be combined with control or meta flags"
+  - name: ESCAPE_INVALID_UNICODE_LIST
+    message: "invalid Unicode list: {slice}"
+  - name: ESCAPE_INVALID_UNICODE_LITERAL
+    message: "invalid Unicode escape sequence; Multiple codepoints at single character literal are disallowed"
+  - name: ESCAPE_INVALID_UNICODE_LONG
+    message: "invalid Unicode escape sequence; maximum length is 6 digits"
+  - name: ESCAPE_INVALID_UNICODE_SHORT
+    message: "too short escape sequence: {slice}"
+  - name: ESCAPE_INVALID_UNICODE_TERM
+    message: "unterminated Unicode escape"
+  - name: EXPECT_ARGUMENT
+    message: "unexpected {slice}; expected an argument"
+  - name: EXPECT_EOL_AFTER_STATEMENT
+    message: "unexpected {slice}, expecting end-of-input"
+  - name: EXPECT_EXPRESSION_AFTER_AMPAMPEQ
+    message: "expected an expression after `&&=`"
+  - name: EXPECT_EXPRESSION_AFTER_COMMA
+    message: "expected an expression after `,`"
+  - name: EXPECT_EXPRESSION_AFTER_EQUAL
+    message: "expected an expression after `=`"
+  - name: EXPECT_EXPRESSION_AFTER_LESS_LESS
+    message: "expected an expression after `<<`"
+  - name: EXPECT_EXPRESSION_AFTER_LPAREN
+    message: "expected an expression after `(`"
+  - name: EXPECT_EXPRESSION_AFTER_OPERATOR
+    message: "unexpected {slice}; expected an expression after the operator"
+  - name: EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ
+    message: "expected an expression after `||=`"
+  - name: EXPECT_EXPRESSION_AFTER_SPLAT
+    message: "expected an expression after `*` splat in an argument"
+  - name: EXPECT_EXPRESSION_AFTER_SPLAT_HASH
+    message: "expected an expression after `**` in a hash"
+  - name: EXPECT_EXPRESSION_AFTER_STAR
+    message: "expected an expression after `*`"
+  - name: EXPECT_FOR_DELIMITER
+    message: "unexpected {slice}; expected a 'do', newline, or ';' after the 'for' loop collection"
+  - name: EXPECT_IDENT_REQ_PARAMETER
+    message: "expected an identifier for the required parameter"
+  - name: EXPECT_IN_DELIMITER
+    message: "expected a delimiter after the patterns of an `in` clause"
+  - name: EXPECT_LPAREN_AFTER_NOT_LPAREN
+    message: "expected a `(` immediately after `not`"
+  - name: EXPECT_LPAREN_AFTER_NOT_OTHER
+    message: "expected a `(` after `not`"
+  - name: EXPECT_LPAREN_REQ_PARAMETER
+    message: "expected a `(` to start a required parameter"
+  - name: EXPECT_MESSAGE
+    message: "unexpected {slice}; expecting a message to send to the receiver"
+  - name: EXPECT_RBRACKET
+    message: "expected a matching `]`"
+  - name: EXPECT_RPAREN
+    message: "expected a matching `)`"
+  - name: EXPECT_RPAREN_AFTER_MULTI
+    message: "expected a `)` after multiple assignment"
+  - name: EXPECT_RPAREN_REQ_PARAMETER
+    message: "expected a `)` to end a required parameter"
+  - name: EXPECT_SINGLETON_CLASS_DELIMITER
+    message: "unexpected {slice}; expected a newline or a ';' after the singleton class"
+  - name: EXPECT_STRING_CONTENT
+    message: "expected string content after opening string delimiter"
+  - name: EXPECT_WHEN_DELIMITER
+    message: "expected a delimiter after the predicates of a `when` clause"
+  - name: EXPRESSION_BARE_HASH
+    message: "unexpected bare hash in expression"
+  - name: EXPRESSION_NOT_WRITABLE
+    message: "unexpected '='; target cannot be written"
+  - name: EXPRESSION_NOT_WRITABLE_ENCODING
+    message: "Can't assign to __ENCODING__"
+  - name: EXPRESSION_NOT_WRITABLE_FALSE
+    message: "Can't assign to false"
+  - name: EXPRESSION_NOT_WRITABLE_FILE
+    message: "Can't assign to __FILE__"
+  - name: EXPRESSION_NOT_WRITABLE_LINE
+    message: "Can't assign to __LINE__"
+  - name: EXPRESSION_NOT_WRITABLE_NIL
+    message: "Can't assign to nil"
+  - name: EXPRESSION_NOT_WRITABLE_NUMBERED
+    message: "Can't assign to numbered parameter {slice}"
+  - name: EXPRESSION_NOT_WRITABLE_SELF
+    message: "Can't change the value of self"
+  - name: EXPRESSION_NOT_WRITABLE_TRUE
+    message: "Can't assign to true"
+  - name: FOR_COLLECTION
+    message: "expected a collection after the `in` in a `for` statement"
+  - name: FOR_IN
+    message: "expected an `in` after the index in a `for` statement"
+  - name: FOR_INDEX
+    message: "expected an index after `for`"
+  - name: FOR_TERM
+    message: "expected an `end` to close the `for` loop"
+  - name: GLOBAL_VARIABLE_BARE
+    message: "'$' without identifiers is not allowed as a global variable name"
+  - name: HASH_EXPRESSION_AFTER_LABEL
+    message: "expected an expression after the label in a hash"
+  - name: HASH_KEY
+    message: "unexpected {slice}, expecting '}' or a key in the hash literal"
+  - name: HASH_ROCKET
+    message: "expected a `=>` between the hash key and value"
+  - name: HASH_TERM
+    message: "expected a `}` to close the hash literal"
+  - name: HASH_VALUE
+    message: "unexpected {slice}; expected a value in the hash literal"
+  - name: HEREDOC_IDENTIFIER
+    message: "unterminated here document identifier"
+  - name: HEREDOC_TERM
+    message: "unterminated heredoc; can't find string \"{slice}\" anywhere before EOF"
+  - name: INCOMPLETE_QUESTION_MARK
+    message: "incomplete expression at `?`"
+  - name: INCOMPLETE_VARIABLE_CLASS
+    message: "'{slice}' is not allowed as a class variable name"
+  - name: INCOMPLETE_VARIABLE_CLASS_3_3
+    message: "`{slice}' is not allowed as a class variable name"
+  - name: INCOMPLETE_VARIABLE_INSTANCE
+    message: "'{slice}' is not allowed as an instance variable name"
+  - name: INCOMPLETE_VARIABLE_INSTANCE_3_3
+    message: "`{slice}' is not allowed as an instance variable name"
+  - name: INSTANCE_VARIABLE_BARE
+    message: "'@' without identifiers is not allowed as an instance variable name"
+  - name: INVALID_BLOCK_EXIT
+    message: "Invalid {slice}"
+  - name: INVALID_CHARACTER
+    message: "Invalid char '\\x{hex2}' in expression"
+  - name: INVALID_COMMA
+    message: "invalid comma"
+  - name: INVALID_ENCODING_MAGIC_COMMENT
+    level: argument
+    message: "unknown or invalid encoding in the magic comment"
+  - name: INVALID_ESCAPE_CHARACTER
+    message: "Invalid escape character syntax"
+  - name: INVALID_FLOAT_EXPONENT
+    message: "invalid exponent"
+  - name: INVALID_CONSTANT_READ
+    message: "invalid constant name {slice}"
+  - name: INVALID_LOCAL_VARIABLE_READ
+    message: "identifier {slice} is not valid to get"
+  - name: INVALID_LOCAL_VARIABLE_WRITE
+    message: "identifier {slice} is not valid to set"
+  - name: INVALID_MULTIBYTE_CHAR
+    message: "invalid multibyte char ({slice})"
+  - name: INVALID_MULTIBYTE_CHARACTER
+    message: "invalid multibyte character 0x{hex}"
+  - name: INVALID_MULTIBYTE_ESCAPE
+    message: "invalid multibyte escape: /{slice}/{slice}"
+  - name: INVALID_NUMBER_BINARY
+    message: "invalid binary number; numeric literal without digits"
+  - name: INVALID_NUMBER_DECIMAL
+    message: "invalid decimal number; numeric literal without digits"
+  - name: INVALID_NUMBER_FRACTION
+    message: "unexpected fraction part after numeric literal"
+  - name: INVALID_NUMBER_HEXADECIMAL
+    message: "invalid hexadecimal number; numeric literal without digits"
+  - name: INVALID_NUMBER_OCTAL
+    message: "invalid octal number; numeric literal without digits"
+  - name: INVALID_NUMBER_UNDERSCORE_INNER
+    message: "invalid underscore placement in number"
+  - name: INVALID_NUMBER_UNDERSCORE_TRAILING
+    message: "trailing '_' in number"
+  - name: INVALID_PERCENT
+    message: "unknown type of %string"
+  - name: INVALID_PERCENT_EOF
+    message: "unterminated quoted string meets end of file"
+  - name: INVALID_PRINTABLE_CHARACTER
+    message: "invalid character `{byte}`"
+  - name: INVALID_RETRY_AFTER_ELSE
+    message: "Invalid retry after else"
+  - name: INVALID_RETRY_AFTER_ENSURE
+    message: "Invalid retry after ensure"
+  - name: INVALID_RETRY_WITHOUT_RESCUE
+    message: "Invalid retry without rescue"
+  - name: INVALID_SYMBOL
+    message: "invalid symbol"
+  - name: INVALID_VARIABLE_GLOBAL
+    message: "'{slice}' is not allowed as a global variable name"
+  - name: INVALID_VARIABLE_GLOBAL_3_3
+    message: "`{slice}' is not allowed as a global variable name"
+  - name: INVALID_YIELD
+    message: "Invalid yield"
+  - name: IT_NOT_ALLOWED_NUMBERED
+    message: "'it' is not allowed when a numbered parameter is already used"
+  - name: IT_NOT_ALLOWED_ORDINARY
+    message: "'it' is not allowed when an ordinary parameter is defined"
+  - name: LAMBDA_OPEN
+    message: "expected a `do` keyword or a `{` to open the lambda block"
+  - name: LAMBDA_TERM_BRACE
+    message: "expected a lambda block beginning with `{` to end with `}`"
+  - name: LAMBDA_TERM_END
+    message: "expected a lambda block beginning with `do` to end with `end`"
+  - name: LIST_I_LOWER_ELEMENT
+    message: "expected a symbol in a `%i` list"
+  - name: LIST_I_LOWER_TERM
+    message: "unterminated list; expected a closing delimiter for the `%i`"
+  - name: LIST_I_UPPER_ELEMENT
+    message: "expected a symbol in a `%I` list"
+  - name: LIST_I_UPPER_TERM
+    message: "unterminated list; expected a closing delimiter for the `%I`"
+  - name: LIST_W_LOWER_ELEMENT
+    message: "expected a string in a `%w` list"
+  - name: LIST_W_LOWER_TERM
+    message: "unterminated list; expected a closing delimiter for the `%w`"
+  - name: LIST_W_UPPER_ELEMENT
+    message: "expected a string in a `%W` list"
+  - name: LIST_W_UPPER_TERM
+    message: "unterminated list; expected a closing delimiter for the `%W`"
+  - name: MALLOC_FAILED
+    message: "failed to allocate memory"
+  - name: MIXED_ENCODING
+    message: "UTF-8 mixed within {slice} source"
+  - name: MODULE_IN_METHOD
+    message: "unexpected module definition in method body"
+  - name: MODULE_NAME
+    message: "unexpected constant path after `module`; class/module name must be CONSTANT"
+  - name: MODULE_TERM
+    message: "expected an `end` to close the `module` statement"
+  - name: MULTI_ASSIGN_MULTI_SPLATS
+    message: "multiple splats in multiple assignment"
+  - name: MULTI_ASSIGN_UNEXPECTED_REST
+    message: "unexpected '{slice}' resulting in multiple splats in multiple assignment"
+  - name: NESTING_TOO_DEEP
+    message: "nesting too deep"
+  - name: NO_LOCAL_VARIABLE
+    message: "{slice}: no such local variable"
+  - name: NON_ASSOCIATIVE_OPERATOR
+    message: "unexpected {slice}; {slice} is a non-associative operator"
+  - name: NOT_EXPRESSION
+    message: "expected an expression after `not`"
+  - name: NUMBER_LITERAL_UNDERSCORE
+    message: "number literal ending with a `_`"
+  - name: NUMBERED_PARAMETER_INNER_BLOCK
+    message: "numbered parameter is already used in inner block"
+  - name: NUMBERED_PARAMETER_IT
+    message: "numbered parameters are not allowed when 'it' is already used"
+  - name: NUMBERED_PARAMETER_ORDINARY
+    message: "numbered parameters are not allowed when an ordinary parameter is defined"
+  - name: NUMBERED_PARAMETER_OUTER_BLOCK
+    message: "numbered parameter is already used in outer block"
+  - name: OPERATOR_MULTI_ASSIGN
+    message: "unexpected operator for a multiple assignment"
+  - name: OPERATOR_WRITE_ARGUMENTS
+    message: "unexpected operator after a call with arguments"
+  - name: OPERATOR_WRITE_BLOCK
+    message: "unexpected operator after a call with a block"
+  - name: PARAMETER_ASSOC_SPLAT_MULTI
+    message: "unexpected multiple `**` splat parameters"
+  - name: PARAMETER_BLOCK_MULTI
+    message: "multiple block parameters; only one block is allowed"
+  - name: PARAMETER_CIRCULAR
+    message: "circular argument reference - {slice}"
+  - name: PARAMETER_FORWARDING_AFTER_REST
+    message: "... after rest argument"
+  - name: PARAMETER_METHOD_NAME
+    message: "unexpected name for a parameter"
+  - name: PARAMETER_NAME_DUPLICATED
+    message: "duplicated argument name"
+  - name: PARAMETER_NO_DEFAULT
+    message: "expected a default value for the parameter"
+  - name: PARAMETER_NO_DEFAULT_KW
+    message: "expected a default value for the keyword parameter"
+  - name: PARAMETER_NUMBERED_RESERVED
+    message: "{slice} is reserved for numbered parameters"
+  - name: PARAMETER_ORDER
+    message: "unexpected parameter order"
+  - name: PARAMETER_SPLAT_MULTI
+    message: "unexpected multiple `*` splat parameters"
+  - name: PARAMETER_STAR
+    message: "unexpected parameter `*`"
+  - name: PARAMETER_UNEXPECTED_FWD
+    message: "unexpected `...` in parameters"
+  - name: PARAMETER_UNEXPECTED_NO_KW
+    message: "unexpected **nil; no keywords marker disallowed after keywords"
+  - name: PARAMETER_WILD_LOOSE_COMMA
+    message: "unexpected `,` in parameters"
+  - name: PATTERN_ARRAY_MULTIPLE_RESTS
+    message: "unexpected multiple '*' rest patterns in an array pattern"
+  - name: PATTERN_CAPTURE_DUPLICATE
+    message: "duplicated variable name"
+  - name: PATTERN_CAPTURE_IN_ALTERNATIVE
+    message: "variable capture in alternative pattern"
+  - name: PATTERN_EXPRESSION_AFTER_BRACKET
+    message: "expected a pattern expression after the `[` operator"
+  - name: PATTERN_EXPRESSION_AFTER_COMMA
+    message: "expected a pattern expression after `,`"
+  - name: PATTERN_EXPRESSION_AFTER_HROCKET
+    message: "expected a pattern expression after `=>`"
+  - name: PATTERN_EXPRESSION_AFTER_IN
+    message: "expected a pattern expression after the `in` keyword"
+  - name: PATTERN_EXPRESSION_AFTER_KEY
+    message: "expected a pattern expression after the key"
+  - name: PATTERN_EXPRESSION_AFTER_PAREN
+    message: "expected a pattern expression after the `(` operator"
+  - name: PATTERN_EXPRESSION_AFTER_PIN
+    message: "expected a pattern expression after the `^` pin operator"
+  - name: PATTERN_EXPRESSION_AFTER_PIPE
+    message: "expected a pattern expression after the `|` operator"
+  - name: PATTERN_EXPRESSION_AFTER_RANGE
+    message: "expected a pattern expression after the range operator"
+  - name: PATTERN_EXPRESSION_AFTER_REST
+    message: "unexpected pattern expression after the `**` expression"
+  - name: PATTERN_FIND_MISSING_INNER
+    message: "find patterns need at least one required inner pattern"
+  - name: PATTERN_HASH_IMPLICIT
+    message: "unexpected implicit hash in pattern; use '{' to delineate"
+  - name: PATTERN_HASH_KEY
+    message: "unexpected {slice}; expected a key in the hash pattern"
+  - name: PATTERN_HASH_KEY_DUPLICATE
+    message: "duplicated key name"
+  - name: PATTERN_HASH_KEY_INTERPOLATED
+    message: "symbol literal with interpolation is not allowed"
+  - name: PATTERN_HASH_KEY_LABEL
+    message: "expected a label as the key in the hash pattern"
+  - name: PATTERN_HASH_KEY_LOCALS
+    message: "key must be valid as local variables"
+  - name: PATTERN_IDENT_AFTER_HROCKET
+    message: "expected an identifier after the `=>` operator"
+  - name: PATTERN_LABEL_AFTER_COMMA
+    message: "expected a label after the `,` in the hash pattern"
+  - name: PATTERN_REST
+    message: "unexpected rest pattern"
+  - name: PATTERN_TERM_BRACE
+    message: "expected a `}` to close the pattern expression"
+  - name: PATTERN_TERM_BRACKET
+    message: "expected a `]` to close the pattern expression"
+  - name: PATTERN_TERM_PAREN
+    message: "expected a `)` to close the pattern expression"
+  - name: PIPEPIPEEQ_MULTI_ASSIGN
+    message: "unexpected `||=` in a multiple assignment"
+  - name: REGEXP_ENCODING_OPTION_MISMATCH
+    message: "regexp encoding option '{byte}' differs from source encoding '{slice}'"
+  - name: REGEXP_ESCAPED_NON_ASCII_IN_UTF8
+    message: "escaped non ASCII character in UTF-8 regexp: /{slice}/{slice}"
+  - name: REGEXP_INCOMPAT_CHAR_ENCODING
+    message: "incompatible character encoding: /{slice}/{slice}"
+  - name: REGEXP_INVALID_CHAR_PROPERTY
+    message: "invalid character property name {{slice}}: /{slice}/{slice}"
+  - name: REGEXP_INVALID_UNICODE_RANGE
+    message: "invalid Unicode range: /{slice}/{slice}"
+  - name: REGEXP_NON_ESCAPED_MBC
+    message: "/.../n has a non escaped non ASCII character in non ASCII-8BIT script: /{slice}/{slice}"
+  - name: REGEXP_PARSE_ERROR
+    message: "{slice}"
+  - name: REGEXP_INTERPOLATION_ENCODING
+    level: encoding_compatibility
+    message: "incompatible character encodings: {slice} and {slice}"
+  - name: REGEXP_TERM
+    message: "unterminated regexp meets end of file; expected a closing delimiter"
+  - name: REGEXP_UNKNOWN_OPTIONS
+    message: "unknown regexp {slice} - {slice}"
+  - name: REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
+    message: "UTF-8 character in non UTF-8 regexp: /{slice}/{slice}"
+  - name: RESCUE_EXPRESSION
+    message: "expected a rescued expression"
+  - name: RESCUE_MODIFIER_VALUE
+    message: "expected a value after the `rescue` modifier"
+  - name: RESCUE_TERM
+    message: "expected a closing delimiter for the `rescue` clause"
+  - name: RESCUE_VARIABLE
+    message: "expected an exception variable after `=>` in a rescue statement"
+  - name: RETURN_INVALID
+    message: "Invalid return in class/module body"
+  - name: SCRIPT_NOT_FOUND
+    level: load
+    message: "no Ruby script found in input"
+  - name: SINGLETON_FOR_LITERALS
+    message: "cannot define singleton method for literals"
+  - name: STACK_EXHAUSTED
+    level: stack
+    message: "stack level too deep"
+  - name: STATEMENT_ALIAS
+    message: "unexpected an `alias` at a non-statement position"
+  - name: STATEMENT_POSTEXE_END
+    message: "unexpected an `END` at a non-statement position"
+  - name: STATEMENT_PREEXE_BEGIN
+    message: "unexpected a `BEGIN` at a non-statement position"
+  - name: STATEMENT_UNDEF
+    message: "unexpected an `undef` at a non-statement position"
+  - name: STRING_CONCATENATION
+    message: "expected a string for concatenation"
+  - name: STRING_INTERPOLATED_TERM
+    message: "unterminated string; expected a closing delimiter for the interpolated string"
+  - name: STRING_LITERAL_EOF
+    message: "unterminated string meets end of file"
+  - name: STRING_LITERAL_TERM
+    message: "unexpected {slice}, expected a string literal terminator"
+  - name: SYMBOL_INVALID
+    message: "invalid symbol"
+  - name: SYMBOL_TERM_DYNAMIC
+    message: "unterminated quoted string; expected a closing delimiter for the dynamic symbol"
+  - name: SYMBOL_TERM_INTERPOLATED
+    message: "unterminated symbol; expected a closing delimiter for the interpolated symbol"
+  - name: TERNARY_COLON
+    message: "expected a `:` after the true expression of a ternary operator"
+  - name: TERNARY_EXPRESSION_FALSE
+    message: "expected an expression after `:` in the ternary operator"
+  - name: TERNARY_EXPRESSION_TRUE
+    message: "expected an expression after `?` in the ternary operator"
+  - name: UNARY_DISALLOWED
+    message: "unexpected {slice}; unary calls are not allowed in this context"
+  - name: UNARY_RECEIVER
+    message: "unexpected {slice}, expected a receiver for unary `{byte}`"
+  - name: UNDEF_ARGUMENT
+    message: "invalid argument being passed to `undef`; expected a bare word, constant, or symbol argument"
+  - name: UNEXPECTED_BLOCK_ARGUMENT
+    message: "block argument should not be given"
+  - name: UNEXPECTED_INDEX_BLOCK
+    message: "unexpected block arg given in index assignment; blocks are not allowed in index assignment expressions"
+  - name: UNEXPECTED_INDEX_KEYWORDS
+    message: "unexpected keyword arg given in index assignment; keywords are not allowed in index assignment expressions"
+  - name: UNEXPECTED_LABEL
+    message: "unexpected label"
+  - name: UNEXPECTED_MULTI_WRITE
+    message: "unexpected multiple assignment; multiple assignment is not allowed in this context"
+  - name: UNEXPECTED_PARAMETER_DEFAULT_VALUE
+    message: "unexpected {slice}; expected a default value for a parameter"
+  - name: UNEXPECTED_RANGE_OPERATOR
+    message: "unexpected range operator; .. and ... are non-associative and cannot be chained"
+  - name: UNEXPECTED_SAFE_NAVIGATION
+    message: "&. inside multiple assignment destination"
+  - name: UNEXPECTED_TOKEN_CLOSE_CONTEXT
+    message: "unexpected {slice}, assuming it is closing the parent {slice}"
+  - name: UNEXPECTED_TOKEN_IGNORE
+    message: "unexpected {slice}, ignoring it"
+  - name: UNTIL_TERM
+    message: "expected an `end` to close the `until` statement"
+  - name: VOID_EXPRESSION
+    message: "unexpected void value expression"
+  - name: WHILE_TERM
+    message: "expected an `end` to close the `while` statement"
+  - name: WRITE_TARGET_IN_METHOD
+    message: "dynamic constant assignment"
+  - name: WRITE_TARGET_READONLY
+    message: "Can't set variable {slice}"
+  - name: WRITE_TARGET_UNEXPECTED
+    message: "unexpected write target"
+  - name: XSTRING_TERM
+    message: "expected a closing delimiter for the `%x` or backtick string"
 warnings:
-  - AMBIGUOUS_BINARY_OPERATOR
-  - AMBIGUOUS_FIRST_ARGUMENT_MINUS
-  - AMBIGUOUS_FIRST_ARGUMENT_PLUS
-  - AMBIGUOUS_PREFIX_AMPERSAND
-  - AMBIGUOUS_PREFIX_STAR
-  - AMBIGUOUS_PREFIX_STAR_STAR
-  - AMBIGUOUS_SLASH
-  - COMPARISON_AFTER_COMPARISON
-  - DOT_DOT_DOT_EOL
-  - EQUAL_IN_CONDITIONAL
-  - EQUAL_IN_CONDITIONAL_3_3
-  - END_IN_METHOD
-  - DUPLICATED_HASH_KEY
-  - DUPLICATED_WHEN_CLAUSE
-  - FLOAT_OUT_OF_RANGE
-  - IGNORED_FROZEN_STRING_LITERAL
-  - INDENTATION_MISMATCH
-  - INTEGER_IN_FLIP_FLOP
-  - INVALID_CHARACTER
-  - INVALID_MAGIC_COMMENT_VALUE
-  - INVALID_NUMBERED_REFERENCE
-  - KEYWORD_EOL
-  - LITERAL_IN_CONDITION_DEFAULT
-  - LITERAL_IN_CONDITION_VERBOSE
-  - SHAREABLE_CONSTANT_VALUE_LINE
-  - SHEBANG_CARRIAGE_RETURN
-  - UNEXPECTED_CARRIAGE_RETURN
-  - UNREACHABLE_STATEMENT
-  - UNUSED_LOCAL_VARIABLE
-  - VOID_STATEMENT
+  - name: AMBIGUOUS_BINARY_OPERATOR
+    level: verbose
+    message: "'{slice}' after local variable or literal is interpreted as binary operator even though it seems like {slice}"
+  - name: AMBIGUOUS_FIRST_ARGUMENT_MINUS
+    level: verbose
+    message: "ambiguous first argument; put parentheses or a space even after `-` operator"
+  - name: AMBIGUOUS_FIRST_ARGUMENT_PLUS
+    level: verbose
+    message: "ambiguous first argument; put parentheses or a space even after `+` operator"
+  - name: AMBIGUOUS_PREFIX_AMPERSAND
+    level: verbose
+    message: "ambiguous `&` has been interpreted as an argument prefix"
+  - name: AMBIGUOUS_PREFIX_STAR
+    level: verbose
+    message: "ambiguous `*` has been interpreted as an argument prefix"
+  - name: AMBIGUOUS_PREFIX_STAR_STAR
+    level: verbose
+    message: "ambiguous `**` has been interpreted as an argument prefix"
+  - name: AMBIGUOUS_SLASH
+    level: verbose
+    message: "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator"
+  - name: COMPARISON_AFTER_COMPARISON
+    level: verbose
+    message: "comparison '{slice}' after comparison"
+  - name: DOT_DOT_DOT_EOL
+    level: default
+    message: "... at EOL, should be parenthesized?"
+  - name: EQUAL_IN_CONDITIONAL
+    level: default
+    message: "found '= literal' in conditional, should be =="
+  - name: EQUAL_IN_CONDITIONAL_3_3
+    level: default
+    message: "found `= literal' in conditional, should be =="
+  - name: END_IN_METHOD
+    level: default
+    message: "END in method; use at_exit"
+  - name: DUPLICATED_HASH_KEY
+    level: default
+    message: "key {slice} is duplicated and overwritten on line {line}"
+  - name: DUPLICATED_WHEN_CLAUSE
+    level: verbose
+    message: "'when' clause on line {line} duplicates 'when' clause on line {line} and is ignored"
+  - name: FLOAT_OUT_OF_RANGE
+    level: verbose
+    message: "Float {slice}{slice} out of range"
+  - name: IGNORED_FROZEN_STRING_LITERAL
+    level: verbose
+    message: "'frozen_string_literal' is ignored after any tokens"
+  - name: INDENTATION_MISMATCH
+    level: verbose
+    message: "mismatched indentations at '{slice}' with '{slice}' at {line}"
+  - name: INTEGER_IN_FLIP_FLOP
+    level: default
+    message: "integer literal in flip-flop"
+  - name: INVALID_CHARACTER
+    level: default
+    message: "invalid character syntax; use {slice}{slice}{slice}"
+  - name: INVALID_MAGIC_COMMENT_VALUE
+    level: verbose
+    message: "invalid value for {slice}: {slice}"
+  - name: INVALID_NUMBERED_REFERENCE
+    level: default
+    message: "'{slice}' is too big for a number variable, always nil"
+  - name: KEYWORD_EOL
+    level: verbose
+    message: "`{slice}` at the end of line without an expression"
+  - name: LITERAL_IN_CONDITION_DEFAULT
+    level: default
+    message: "{slice}literal in {slice}"
+  - name: LITERAL_IN_CONDITION_VERBOSE
+    level: verbose
+    message: "{slice}literal in {slice}"
+  - name: SHAREABLE_CONSTANT_VALUE_LINE
+    level: verbose
+    message: "'shareable_constant_value' is ignored unless in comment-only line"
+  - name: SHEBANG_CARRIAGE_RETURN
+    level: default
+    message: "shebang line ending with \\r may cause problems"
+  - name: UNEXPECTED_CARRIAGE_RETURN
+    level: default
+    message: "encountered \\r in middle of line, treated as a mere space"
+  - name: UNREACHABLE_STATEMENT
+    level: verbose
+    message: "statement not reached"
+  - name: UNUSED_LOCAL_VARIABLE
+    level: verbose
+    message: "assigned but unused variable - {slice}"
+  - name: VOID_STATEMENT
+    level: verbose
+    message: "possibly useless use of {slice} in void context"
 tokens:
   # The order of the tokens at the beginning is important, because we use them
   # for a lookup table.

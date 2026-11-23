@@ -558,7 +558,14 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
     /* Recovery can report an error for every byte of the pattern. Limit how
      * many diagnostics copy it so the total message size remains linear. */
     if (regexp_parser->quoted_errors == 8) {
-        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, message);
+        pm_diagnostic_list_append_slice(
+            &parser->metadata_arena,
+            &parser->error_list,
+            source_start,
+            source_end - source_start,
+            PM_ERR_REGEXP_PARSE_ERROR,
+            pm_diagnostic_string(message)
+        );
     } else {
         regexp_parser->quoted_errors++;
 
@@ -571,9 +578,15 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
         pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
         pm_buffer_append_byte(&buffer, '/');
         pm_buffer_append_string(&buffer, letters, strlen(letters));
-        pm_buffer_append_byte(&buffer, '\0');
 
-        pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, source_start, source_end - source_start, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
+        pm_diagnostic_list_append_slice(
+            &parser->metadata_arena,
+            &parser->error_list,
+            source_start,
+            source_end - source_start,
+            PM_ERR_REGEXP_PARSE_ERROR,
+            pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length)
+        );
         pm_buffer_cleanup(&buffer);
     }
 }
@@ -2593,9 +2606,15 @@ pm_regexp_error_with_content(const pm_regexp_t *regexp, const char *message) {
     pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
     pm_buffer_append_byte(&buffer, '/');
     pm_buffer_append_string(&buffer, letters, strlen(letters));
-    pm_buffer_append_byte(&buffer, '\0');
 
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_PARSE_ERROR, pm_buffer_value(&buffer));
+    pm_diagnostic_list_append_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        regexp->location.start,
+        regexp->location.length,
+        PM_ERR_REGEXP_PARSE_ERROR,
+        pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length)
+    );
     pm_buffer_cleanup(&buffer);
 }
 
@@ -2612,7 +2631,15 @@ pm_regexp_error_kind_with_content(const pm_regexp_t *regexp, pm_diagnostic_id_t 
 
     pm_buffer_t buffer = { 0 };
     pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, diag_id, (int) buffer.length, pm_buffer_value(&buffer), letters);
+    pm_diagnostic_list_append_slice_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        regexp->location.start,
+        regexp->location.length,
+        diag_id,
+        pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length),
+        pm_diagnostic_string(letters)
+    );
     pm_buffer_cleanup(&buffer);
 }
 
@@ -2719,7 +2746,15 @@ pm_regexp_check_option(const pm_regexp_t *regexp) {
     const pm_encoding_t *read_encoding = pm_regexp_read_encoding(regexp, encoding);
     if (option == '\0' || read_encoding == encoding) return read_encoding;
 
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, option, regexp->encoding->name);
+    pm_diagnostic_list_append_byte_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        regexp->location.start,
+        regexp->location.length,
+        PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH,
+        (uint8_t) option,
+        pm_diagnostic_string(regexp->encoding->name)
+    );
     if (option != 'n') return read_encoding;
 
     pm_regexp_error_kind_with_content(regexp, PM_ERR_REGEXP_NON_ESCAPED_MBC);
@@ -3378,7 +3413,16 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
 
     pm_buffer_t formatted = { 0 };
     pm_regexp_format_for_error(&formatted, regexp->encoding, regexp->source, regexp->size);
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, regexp->location.start, regexp->location.length, PM_ERR_REGEXP_INVALID_CHAR_PROPERTY, (int) length, (const char *) name, (int) formatted.length, (const char *) formatted.value, letters);
+    pm_diagnostic_list_append_slice_slice_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        regexp->location.start,
+        regexp->location.length,
+        PM_ERR_REGEXP_INVALID_CHAR_PROPERTY,
+        pm_diagnostic_slice(name, length),
+        pm_diagnostic_slice(formatted.value, formatted.length),
+        pm_diagnostic_string(letters)
+    );
     pm_buffer_cleanup(&formatted);
 }
 
@@ -3631,7 +3675,15 @@ pm_regexp_join_string_parts(pm_regexp_joined_t *joined, const pm_node_list_t *pa
  */
 static void
 pm_regexp_error_incompatible(pm_parser_t *parser, pm_location_t location, const pm_encoding_t *left, const pm_encoding_t *right) {
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, location.start, location.length, PM_ERR_REGEXP_INTERPOLATION_ENCODING, left->name, right->name);
+    pm_diagnostic_list_append_slice_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        location.start,
+        location.length,
+        PM_ERR_REGEXP_INTERPOLATION_ENCODING,
+        pm_diagnostic_string(left->name),
+        pm_diagnostic_string(right->name)
+    );
 }
 
 /**

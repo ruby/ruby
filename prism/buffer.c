@@ -155,12 +155,20 @@ pm_buffer_append_hexadecimal(pm_buffer_t *buffer, uint32_t value, uint8_t width)
     pm_buffer_append_string(buffer, digits + offset, length);
 }
 
+/** Write both uppercase hexadecimal digits of a byte. */
+void
+pm_buffer_hexadecimal_byte_digits(uint8_t byte, char digits[2]) {
+    digits[0] = pm_buffer_hexadecimal_digits[byte >> 4];
+    digits[1] = pm_buffer_hexadecimal_digits[byte & 0xF];
+}
+
 /**
  * Append a byte as a \xHH escape.
  */
 void
 pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte) {
-    const char escape[] = { '\\', 'x', pm_buffer_hexadecimal_digits[byte >> 4], pm_buffer_hexadecimal_digits[byte & 0xF] };
+    char escape[4] = { '\\', 'x' };
+    pm_buffer_hexadecimal_byte_digits(byte, escape + 2);
     pm_buffer_append_string(buffer, escape, sizeof(escape));
 }
 
@@ -168,7 +176,7 @@ pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte) {
  * Write a signed line number at the end of digits and return its length.
  * The widest possible line number is -2147483648.
  */
-static uint8_t
+uint8_t
 pm_buffer_line_number_digits(int32_t line, char digits[11]) {
     /* Use unsigned arithmetic so that INT32_MIN has a representable magnitude. */
     uint32_t magnitude = (line < 0) ? (0U - (uint32_t) line) : (uint32_t) line;

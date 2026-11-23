@@ -292,18 +292,16 @@ module Ruby::Prism
     end
 
     def test_long_formatted_messages
-      # Messages are formatted into a fixed-size buffer first, so check lengths
-      # on either side of its size to cover both the copy and the reformat.
-      template = "unterminated heredoc; can't find string \"%s\" anywhere before EOF"
-
-      (254..258).each do |length|
-        identifier = "E" * (length - template.length + 2)
-        expected = format(template, identifier)
-        assert_equal length, expected.bytesize
-
+      [1, 255, 256, 4096].each do |length|
+        identifier = "E" * length
         messages = Ruby::Prism.parse("<<#{identifier}\n").errors.map(&:message)
-        assert_includes messages, expected
+        assert_includes messages, "unterminated heredoc; can't find string \"#{identifier}\" anywhere before EOF"
       end
+    end
+
+    def test_heredoc_diagnostic_with_embedded_nul
+      result = Ruby::Prism.parse("<<\"BEFORE\0AFTER\"\n")
+      assert_equal ["unterminated heredoc; can't find string \"BEFORE\" anywhere before EOF"], result.errors.map(&:message)
     end
 
     def test_incomplete_def_closing_loc

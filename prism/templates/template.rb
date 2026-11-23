@@ -31,19 +31,60 @@ module Ruby::Prism
     # so this must be greater than the number of node types.
     LAZY_MARKER = 0xFF
 
-    class Error
-      attr_reader :name
+    # A diagnostic message alternates literal text with positional arguments.
+    class Diagnostic
+      FORMATS = { "slice" => "slice", "byte" => "byte", "hex" => "byte", "hex2" => "byte", "line" => "line" }.freeze
 
-      def initialize(name)
-        @name = name
+      attr_reader :name, :id, :level, :literals, :formats, :signature
+
+      def initialize(config, warning: false)
+        @name = config.fetch("name")
+        @id = "PM_#{warning ? "WARN" : "ERR"}_#{name}"
+        @level = "PM_#{warning ? "WARNING" : "ERROR"}_LEVEL_#{config.fetch("level", warning ? "default" : "syntax").upcase}"
+        parts = config.fetch("message").split(/\{([a-z_][a-z_0-9]*)\}/, -1)
+        @literals = []
+        @formats = []
+        parts.each_slice(2) do |literal, format|
+          @literals << literal
+          @formats << format if format
+        end
+        @signature = formats.map { |format| FORMATS.fetch(format) }
+      end
+
+      # Emit the exact bytes that the literal offsets refer to, including on
+      # compilers with a different execution character set for non-ASCII text.
+      def c_message
+        escaped = literals.join.b.gsub(/["\\?\x00-\x1f\x7f-\xff]/n) do |char|
+          char.ord.between?(32, 126) ? "\\#{char}" : "\\%03o" % char.ord
+        end
+        %("#{escaped}")
+      end
+
+      def literal_ends
+        offset = 0
+        literals.map { |literal| offset += literal.bytesize }
+      end
+
+      def byte_formats
+        formats.select { |format| FORMATS.fetch(format) == "byte" }
       end
     end
 
-    class Warning
-      attr_reader :name
+    class DiagnosticSignature
+      TYPES = { "slice" => "pm_string_t", "byte" => "uint8_t", "line" => "int32_t" }.freeze
 
-      def initialize(name)
-        @name = name
+      attr_reader :types
+
+      def initialize(types)
+        @types = types
+      end
+
+      def name
+        types.join("_")
+      end
+
+      def parameters
+        types.each_with_index.map { |type, index| "#{TYPES.fetch(type)} arg#{index}" }.join(", ")
       end
     end
 
@@ -748,9 +789,15 @@ module Ruby::Prism
               end
             end
 
+            errors = config.fetch("errors").map { |error| Diagnostic.new(error) }
+            warnings = config.fetch("warnings").map { |warning| Diagnostic.new(warning, warning: true) }
+            diagnostics = errors + warnings
+
             {
-              errors: config.fetch("errors").map { |name| Error.new(name) },
-              warnings: config.fetch("warnings").map { |name| Warning.new(name) },
+              errors: errors,
+              warnings: warnings,
+              diagnostics: diagnostics,
+              diagnostic_signatures: diagnostics.map(&:signature).reject(&:empty?).uniq.sort.map { |types| DiagnosticSignature.new(types) },
               nodes: nodes,
               tokens: config.fetch("tokens").map { |token| Token.new(token) },
               flags: flags.values
