@@ -3055,9 +3055,9 @@ set_find_table_bin_ptr_and_reserve(set_table *tab, st_hash_t *hash_value,
 }
 
 /* Find an entry with KEY in table TAB.  Return non-zero if we found
-   it.  */
+   it.  Set up *RESULT to the found table entry key.  */
 int
-set_table_lookup(set_table *tab, st_data_t key)
+set_get_key(set_table *tab, st_data_t key, st_data_t *result)
 {
     st_index_t bin;
     st_hash_t hash = set_do_hash(key, tab);
@@ -3078,7 +3078,17 @@ set_table_lookup(set_table *tab, st_data_t key)
             return 0;
         bin -= ENTRY_BASE;
     }
+    if (result != 0)
+        *result = tab->entries[bin].key;
     return 1;
+}
+
+/* Find an entry with KEY in table TAB.  Return non-zero if we found
+   it.  */
+int
+set_table_lookup(set_table *tab, st_data_t key)
+{
+    return set_get_key(tab, key, NULL);
 }
 
 /* Check the table and rebuild it if it is necessary.  */

@@ -142,7 +142,7 @@ remove_from_constant_cache(ID id, IC ic)
  * Each list is preceded by a refcount. Releasing (from rb_iseq_free, i.e.
  * during GC sweep) only decrements it and never touches the table, because
  * GC can run while the table is being updated (an allocation inside
- * st_update). Entries whose count reached zero stay in the table, can be
+ * set_insert). Entries whose count reached zero stay in the table, can be
  * revived by a later lookup, and are reclaimed by the interning path once
  * they make up a large share of the table.
  */
@@ -151,7 +151,7 @@ struct const_segments_entry {
     ID ids[FLEX_ARY_LEN];
 };
 
-static st_table *const_segments_tbl;
+static set_table *const_segments_tbl;
 static size_t const_segments_reclaim_at = 1024;
 
 static inline struct const_segments_entry *
@@ -195,7 +195,7 @@ static const struct st_hash_type idlist_hash_type = {
 };
 
 static int
-const_segments_reclaim_i(st_data_t key, st_data_t value, st_data_t arg)
+const_segments_reclaim_i(st_data_t key, st_data_t arg)
 {
     struct const_segments_entry *e = const_segments_entry((const ID *)key);
     if (RUBY_ATOMIC_LOAD(e->refcnt) == 0) {
@@ -225,21 +225,21 @@ rb_iseq_intern_const_segments(VALUE arr)
 
     RB_VM_LOCKING() {
         if (!const_segments_tbl) {
-            const_segments_tbl = st_init_table(&idlist_hash_type);
+            const_segments_tbl = set_init_table_with_size(NULL, &idlist_hash_type, 0);
         }
 
         st_data_t existing;
-        if (st_get_key(const_segments_tbl, (st_data_t)fresh->ids, &existing)) {
+        if (set_get_key(const_segments_tbl, (st_data_t)fresh->ids, &existing)) {
             struct const_segments_entry *e = const_segments_entry((const ID *)existing);
             RUBY_ATOMIC_INC(e->refcnt);
             result = e->ids;
         }
         else {
             if (const_segments_tbl->num_entries >= const_segments_reclaim_at) {
-                st_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
+                set_table_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
                 const_segments_reclaim_at = const_segments_tbl->num_entries * 2 + 1024;
             }
-            st_insert(const_segments_tbl, (st_data_t)fresh->ids, 0);
+            set_insert(const_segments_tbl, (st_data_t)fresh->ids);
             result = fresh->ids;
             fresh = NULL;
         }
@@ -262,8 +262,8 @@ void
 rb_iseq_free_const_segments_table(void)
 {
     if (!const_segments_tbl) return;
-    st_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
-    st_free_table(const_segments_tbl);
+    set_table_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
+    set_free_table(const_segments_tbl);
     const_segments_tbl = NULL;
 }
 
