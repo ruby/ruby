@@ -369,6 +369,14 @@ int ruby_rgengc_debug;
 #ifndef GC_PROFILE_DETAIL_MEMORY
 # define GC_PROFILE_DETAIL_MEMORY 0
 #endif
+#ifndef GC_WEAK_REFERENCES_PREFETCH_DISTANCE
+# define GC_WEAK_REFERENCES_PREFETCH_DISTANCE 32
+#endif
+#ifdef __GNUC__
+# define GC_PREFETCH(addr) __builtin_prefetch(addr)
+#else
+# define GC_PREFETCH(addr) ((void)0)
+#endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 # define GC_ENABLE_LAZY_SWEEP   1
 #endif
@@ -7787,15 +7795,20 @@ rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
 static void
 gc_update_weak_references(rb_objspace_t *objspace)
 {
-    VALUE *obj_ptr;
-    rb_darray_foreach(objspace->weak_references, i, obj_ptr) {
-        gc_mark_set_parent(objspace, *obj_ptr);
-        rb_gc_handle_weak_references(objspace, *obj_ptr);
-        gc_mark_set_parent_invalid(objspace);
-    }
-
     size_t capa = rb_darray_capa(objspace->weak_references);
     size_t size = rb_darray_size(objspace->weak_references);
+
+    /* The objects were greyed long ago and are cold now (mostly call caches, which are
+     * many and small), so fetch each one a few iterations before handling it. */
+    for (size_t i = 0; i < size; i++) {
+        if (i + GC_WEAK_REFERENCES_PREFETCH_DISTANCE < size) {
+            GC_PREFETCH((const void *)rb_darray_get(objspace->weak_references, i + GC_WEAK_REFERENCES_PREFETCH_DISTANCE));
+        }
+        VALUE obj = rb_darray_get(objspace->weak_references, i);
+        gc_mark_set_parent(objspace, obj);
+        rb_gc_handle_weak_references(objspace, obj);
+        gc_mark_set_parent_invalid(objspace);
+    }
 
     objspace->profile.weak_references_count = size;
 
