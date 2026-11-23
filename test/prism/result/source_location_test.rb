@@ -250,6 +250,15 @@ module Ruby::Prism
       assert_location(MatchPredicateNode, "case 1 and 1 in 2 in true; 3; end", 11...17) do |node|
         node.predicate.right
       end
+
+      ["1 or not value in P", "(value in P) in Q", "not(value in P) in Q", "value && other in P", "!f x do end"].each do |predicate|
+        result = Ruby::Prism.parse("case #{predicate} in Integer; :body; end")
+        assert_predicate result, :success?, predicate
+        assert_equal predicate, result.statement.predicate.slice
+        assert_equal ["Integer"], result.statement.conditions.map { |clause| clause.pattern.slice }
+      end
+
+      assert_false Ruby::Prism.parse_success?("case !f x do end in P in Q; :body; end")
     end
 
     def test_match_in_case_clause_body
@@ -858,6 +867,19 @@ module Ruby::Prism
 
     def test_MatchPredicateNode
       assert_location(MatchPredicateNode, "foo in bar")
+    end
+
+    def test_match_can_be_followed_by_composition_and_modifiers
+      %w[and or].each do |operator|
+        result = Ruby::Prism.parse("1 in Integer #{operator} 2 in Numeric")
+        assert_predicate result, :success?
+        assert_equal "1 in Integer", result.statement.left.slice
+        assert_equal "2 in Numeric", result.statement.right.slice
+      end
+
+      assert_location(MatchPredicateNode, "1 in Integer if ready", 0...12) do |node|
+        node.statements.body.first
+      end
     end
 
     def test_MatchRequiredNode

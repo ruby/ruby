@@ -13051,8 +13051,18 @@ expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t di
 #define PM_PARSE_ACCEPTS_COMMAND_DEF ((uint8_t) 0x20)
 
 enum pm_reduction_kind {
+    /* Only the node was recorded. This includes ordinary `arg` productions,
+     * statements, and error recovery nodes. */
     PM_REDUCTION_DEFAULT,
-    PM_REDUCTION_COMMAND
+
+    /* A `command_call`, such as `f x` or `yield x`. A prefix `!` uses this
+     * kind to recognize the `! command_call` production. */
+    PM_REDUCTION_COMMAND,
+
+    /* An `expr` built by keyword `and` or `or`, `not expr`, `! command_call`,
+     * or an infix pattern match (`in` or `=>`). Promoting an `arg` or a
+     * `command_call` to `expr` preserves its existing kind. */
+    PM_REDUCTION_EXPRESSION
 };
 
 typedef uint32_t pm_reduction_kind_t;
@@ -20730,13 +20740,14 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t message = parser->current;
     parser_lex(parser);
 
     pm_arguments_t arguments = { 0 };
     pm_node_t *receiver = NULL;
+    enum pm_reduction_kind kind = PM_REDUCTION_DEFAULT;
 
     /* The `not` keyword without parentheses is only valid in contexts where it
      * would be parsed as an expression (i.e., at or below the `not` binding
@@ -20752,7 +20763,7 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
             pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
         }
 
-        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
+        return pm_reduction(UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0)));
     }
 
     bool newline = accept1(parser, PM_TOKEN_NEWLINE);
@@ -20772,20 +20783,19 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
                 arguments.closing_loc = TOK2LOC(parser, &parser->previous);
             }
         }
+    } else if (flags & PM_PARSE_IN_ENDLESS_DEF) {
+        /* Bare not takes an endless_arg or endless_command here. A pattern
+         * after the operand applies to the whole method definition. */
+        uint8_t operand_flags = flags & (PM_PARSE_IN_ENDLESS_DEF | PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK);
+        pm_reduction_t operand = parse_expression(parser, PM_BINDING_POWER_DEFINED, operand_flags, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
+        receiver = operand.node;
+        kind = PM_REDUCTION_KIND(operand);
     } else {
-        /* The operand of `not` may be a command call, except at the start of
-         * an endless method body, where it may be one only if the body may
-         * be: `def f = not foo 1` has a command body, so it is rejected where
-         * that is not accepted (`if def f = not foo 1; end`). A nested `not`
-         * is still at the start of the body, so the operand carries the
-         * endless method context on (`def f = not not foo 1`). */
-        uint8_t operand_flags = (flags & PM_PARSE_IN_ENDLESS_DEF)
-            ? (uint8_t) (flags & (PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_IN_ENDLESS_DEF))
-            : PM_PARSE_ACCEPTS_COMMAND_CALL;
-        receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | operand_flags), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1)).node;
+        receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1)).node;
+        kind = PM_REDUCTION_EXPRESSION;
     }
 
-    return UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
+    return (pm_reduction_t) { .node = UP(pm_call_node_not_create(parser, receiver, &message, &arguments)), .kind = kind };
 }
 
 static pm_pre_execution_node_t *
@@ -21061,7 +21071,7 @@ parse_range(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return pm_range_node_create(parser, NULL, &operator, right);
 }
 
-static pm_call_node_t *
+static pm_reduction_t
 parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     if (binding_power > PM_BINDING_POWER_UNARY) {
         pm_parser_err_prefix(parser, PM_ERR_UNARY_DISALLOWED);
@@ -21070,9 +21080,10 @@ parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags,
     parser_lex(parser);
 
     pm_token_t operator = parser->previous;
-    pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1)).node;
-    pm_conditional_predicate(parser, receiver, PM_CONDITIONAL_PREDICATE_TYPE_NOT);
-    return pm_call_node_unary_create(parser, &operator, receiver, "!", 1);
+    pm_reduction_t receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
+    pm_conditional_predicate(parser, receiver.node, PM_CONDITIONAL_PREDICATE_TYPE_NOT);
+    pm_node_t *node = UP(pm_call_node_unary_create(parser, &operator, receiver.node, "!", 1));
+    return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_KIND(receiver) == PM_REDUCTION_COMMAND ? PM_REDUCTION_EXPRESSION : PM_REDUCTION_DEFAULT };
 }
 
 static pm_call_node_t *
@@ -21218,7 +21229,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_UNDEF:
             return pm_reduction(UP(parse_undef(parser, binding_power, flags, depth)));
         case PM_TOKEN_KEYWORD_NOT:
-            return pm_reduction(parse_not(parser, binding_power, flags, depth));
+            return parse_not(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_UNLESS: {
             size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
@@ -21272,7 +21283,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_USTAR:
             return pm_reduction(parse_unary_star(parser, binding_power, flags, diag_id, depth));
         case PM_TOKEN_BANG:
-            return pm_reduction(UP(parse_bang(parser, binding_power, flags, depth)));
+            return parse_bang(parser, binding_power, flags, depth);
         case PM_TOKEN_TILDE:
             return pm_reduction(UP(parse_tilde(parser, binding_power, flags, depth)));
         case PM_TOKEN_UMINUS:
@@ -22431,18 +22442,24 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         case PM_TOKEN_STAR_EQUAL:
         case PM_TOKEN_STAR_STAR_EQUAL:
             return pm_reduction(parse_operator_equal(parser, node, previous_binding_power, binding_power, flags, depth));
-        case PM_TOKEN_AMPERSAND_AMPERSAND:
-        case PM_TOKEN_KEYWORD_AND: {
+        case PM_TOKEN_AMPERSAND_AMPERSAND: {
             parser_lex(parser);
-
-            pm_node_t *right = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (parser->previous.type == PM_TOKEN_KEYWORD_AND ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+            pm_node_t *right = parse_expression(parser, binding_power, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
             return pm_reduction(UP(pm_and_node_create(parser, node, &token, right)));
         }
-        case PM_TOKEN_KEYWORD_OR:
+        case PM_TOKEN_KEYWORD_AND: {
+            parser_lex(parser);
+            pm_node_t *right = parse_expression(parser, binding_power, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+            return (pm_reduction_t) { .node = UP(pm_and_node_create(parser, node, &token, right)), .kind = PM_REDUCTION_EXPRESSION };
+        }
+        case PM_TOKEN_KEYWORD_OR: {
+            parser_lex(parser);
+            pm_node_t *right = parse_expression(parser, binding_power, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+            return (pm_reduction_t) { .node = UP(pm_or_node_create(parser, node, &token, right)), .kind = PM_REDUCTION_EXPRESSION };
+        }
         case PM_TOKEN_PIPE_PIPE: {
             parser_lex(parser);
-
-            pm_node_t *right = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (parser->previous.type == PM_TOKEN_KEYWORD_OR ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0)), PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+            pm_node_t *right = parse_expression(parser, binding_power, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
             return pm_reduction(UP(pm_or_node_create(parser, node, &token, right)));
         }
         case PM_TOKEN_EQUAL_TILDE:
@@ -22583,7 +22600,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
 
-            return pm_reduction(UP(pm_match_predicate_node_create(parser, node, pattern, &operator)));
+            return (pm_reduction_t) { .node = UP(pm_match_predicate_node_create(parser, node, pattern, &operator)), .kind = PM_REDUCTION_EXPRESSION };
         }
         case PM_TOKEN_EQUAL_GREATER: {
             bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
@@ -22599,7 +22616,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
 
-            return pm_reduction(UP(pm_match_required_node_create(parser, node, pattern, &operator)));
+            return (pm_reduction_t) { .node = UP(pm_match_required_node_create(parser, node, pattern, &operator)), .kind = PM_REDUCTION_EXPRESSION };
         }
         default:
             PRISM_ASSERT(false && "unreachable");
@@ -22616,9 +22633,13 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
  * Check after parsing a prefix and after each infix reduction.
  */
 static bool
-parse_expression_terminator(pm_parser_t *parser, pm_reduction_t reduction) {
-    pm_node_t *node = reduction.node;
+parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
+    pm_node_t *node = reduction->node;
     pm_binding_power_t left = pm_binding_powers[parser->current.type].left;
+
+    /* Pattern matching requires an arg on the left. A completed expr can
+     * still take keyword composition and statement modifiers. */
+    if (left == PM_BINDING_POWER_MATCH && PM_REDUCTION_KIND(*reduction) == PM_REDUCTION_EXPRESSION) return true;
 
     switch (PM_NODE_TYPE(node)) {
         case PM_MULTI_WRITE_NODE:
@@ -22633,37 +22654,25 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t reduction) {
         case PM_INSTANCE_VARIABLE_WRITE_NODE:
         case PM_LOCAL_VARIABLE_WRITE_NODE:
             return PM_NODE_FLAG_P(node, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY) && left > PM_BINDING_POWER_MODIFIER;
-        case PM_CALL_NODE: {
+        case PM_YIELD_NODE:
+            return PM_REDUCTION_KIND(*reduction) == PM_REDUCTION_COMMAND && left > PM_BINDING_POWER_COMPOSITION;
+        case PM_CALL_NODE:
             // Calls with an implicit array on the right-hand side are
             // statements and can only be followed by modifiers.
             if (PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY)) {
                 return left > PM_BINDING_POWER_MODIFIER;
             }
 
-            // Command-style calls (including block commands like
-            // `foo bar do end`) can only be followed by composition
-            // (and/or) and modifier (if/unless/etc.) operators.
-            if (pm_command_call_value_p(parser, node)) {
-                return left > PM_BINDING_POWER_COMPOSITION;
-            }
-
-            // A block call (command with do-block, or any call chained
-            // from one) can only be followed by call chaining (., ::,
-            // &.), composition (and/or), and modifier operators.
-            return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node);
-        }
-        case PM_YIELD_NODE:
-            return PM_REDUCTION_KIND(reduction) == PM_REDUCTION_COMMAND && left > PM_BINDING_POWER_COMPOSITION;
+            PRISM_FALLTHROUGH
         case PM_SUPER_NODE:
-            /* Command-style super can only be followed by composition and
-             * modifier operators. */
-            if (pm_command_call_value_p(parser, node)) {
-                return left > PM_BINDING_POWER_COMPOSITION;
+            /* A command_call admits composition and modifiers. A block call
+             * can also be chained. Preserve the reduction for ! command_call. */
+            if (left <= PM_BINDING_POWER_COMPOSITION) return false;
+            if (pm_command_call_value_p(parser, node) || (left < PM_BINDING_POWER_CALL && pm_block_call_p(node))) {
+                reduction->kind = PM_REDUCTION_COMMAND;
+                return true;
             }
-
-            /* A super carrying a do-block is a block call, so it may also be
-             * followed by call chaining (`.`, `::`, `&.`). */
-            return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node);
+            return false;
         case PM_DEF_NODE:
             // An endless method whose body is a command-style call (e.g.,
             // `def f = foo bar`) is a command write and can only be
@@ -22720,7 +22729,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         case PM_SUPER_NODE:
         case PM_YIELD_NODE:
         case PM_DEF_NODE:
-            if (parse_expression_terminator(parser, left)) {
+            if (parse_expression_terminator(parser, &left)) {
                 return left;
             }
             break;
@@ -22745,7 +22754,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         current_binding_powers.binary
      ) {
         left = parse_expression_infix(parser, left, binding_power, current_binding_powers.right, flags, (uint16_t) (depth + 1));
-        if (parse_expression_terminator(parser, left)) return left;
+        if (parse_expression_terminator(parser, &left)) return left;
 
         // If the operator is nonassoc and we should not be able to parse the
         // upcoming infix operator, break.

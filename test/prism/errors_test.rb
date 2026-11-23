@@ -596,6 +596,32 @@ module Ruby::Prism
       end
     end
 
+    def test_rejects_chained_pattern_matches
+      [
+        "1 in 2 in 3",
+        "def run = not 1 in 2 in 3",
+        "case (1 in 2 in 3); in true; end",
+        "case not(1 in 2 in 3); in true; end",
+        "defined?(1 in 2 in 3)",
+        "case x; in ^(1 in 2 in 3); end",
+        "case x or (1 in 2 in 3); in true; end"
+      ].each do |source|
+        refute_valid_syntax(source)
+        assert_predicate Ruby::Prism.parse(source), :failure?, source
+      end
+    end
+
+    def test_case_required_match_predicate_is_void
+      result = Ruby::Prism.parse("case value => captured in Integer; :body; end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "value => captured", result.errors.first.location.slice
+      assert_equal "Integer", result.statement.conditions.first.pattern.slice
+    end
+
+    def test_case_predicate_rejects_a_nested_command_assignment
+      assert_false Ruby::Prism.parse_success?("case not(a += f x => P) in Q in R; :body; end")
+    end
+
     def test_statement_modifiers_end_after_a_command_predicate
       %w[if unless while until].each do |modifier|
         [["|2", "|"], [" in Integer", "in"], [" => result", "=>"]].each do |suffix, operator|
