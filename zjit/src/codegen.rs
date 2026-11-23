@@ -3642,10 +3642,10 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
                 offset -= VM_ENV_DATA_SIZE as i32;
                 locals_area = true;
             }
-            StackMapEntry::PrevFrame => {
-                // The inlined callee's receiver slot. Like Skip(1), but it also
-                // switches frames on the decoder side.
-                offset -= 1;
+            StackMapEntry::PrevFrame { receiver } => {
+                // The inlined callee's receiver slot, if any. Like Skip(receiver as usize),
+                // but it also switches frames on the decoder side.
+                offset -= receiver as i32;
                 locals_area = false;
             }
             // Only gen_prepare_non_leaf_call() prepends this, and it doesn't spill.
@@ -3705,8 +3705,9 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         let Some(caller) = current_state.caller() else {
             break;
         };
-        stack.push(StackMapEntry::PrevFrame);
-        current_state = function.frame_state(caller);
+        let caller_state = function.frame_state(caller);
+        stack.push(StackMapEntry::PrevFrame { receiver: inlined_frame_has_receiver(&caller_state) });
+        current_state = caller_state;
     }
     stack
 }
@@ -3721,6 +3722,13 @@ enum OperandStack {
     /// this routine, so the stack map only moves the cursor past it. See
     /// [gen_prepare_fallback_call()].
     AlreadySpilled,
+}
+
+/// Whether an inlined frame called from `caller_state` has its receiver in the VM stack slot below
+/// its local table. A method call does, but an inlined block called by `invokeblock` doesn't.
+fn inlined_frame_has_receiver(caller_state: &FrameState) -> bool {
+    let caller_opcode = unsafe { rb_iseq_bare_opcode_at_pc(caller_state.iseq, caller_state.pc) } as u32;
+    caller_opcode != YARVINSN_invokeblock
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.

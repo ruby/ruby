@@ -3093,8 +3093,9 @@ zjit_frame_write_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp
                 break;
               case ZJIT_STACK_MAP_OP_PREV_FRAME:
                 // Move past the inlined callee's receiver slot, which sits below
-                // its local table, and continue decoding in the caller's frame.
-                stack--;
+                // its local table unless the callee is a block, and continue
+                // decoding in the caller's frame.
+                stack -= zjit_stack_map_read_bits(&reader, 1);
                 locals_area = false;
                 env_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(env_cfp);
                 env_escaped = VM_ENV_ESCAPED_P(env_cfp->ep);
