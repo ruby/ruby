@@ -301,6 +301,20 @@ class TestAlias < Test::Unit::TestCase
     assert(C2.new.respond_to?(:system))
   end
 
+  def test_realias_same_original_resets_visibility
+    c = Class.new do
+      def foo = 1
+      alias_method :bar, :foo
+      private :bar
+    end
+    o = c.new
+    call = ->(x) { x.bar }
+    2.times { assert_raise(NoMethodError) { call.(o) } }
+    c.class_eval { alias_method :bar, :foo }
+    assert_send([c, :public_method_defined?, :bar])
+    2.times { assert_equal(1, call.(o)) }
+  end
+
   def test_alias_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
     begin;
