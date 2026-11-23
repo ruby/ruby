@@ -14620,8 +14620,8 @@ parse_parameters_handle_trailing_comma(
             pm_parser_err_previous(parser, PM_ERR_PARAMETER_WILD_LOOSE_COMMA);
         }
     } else {
-        // https://bugs.ruby-lang.org/issues/19107
-        // Allow `def foo(bar,); end`, `def foo(*bar,); end`, etc. but not `def foo(...,); end`
+        /* Ruby 4.1 allows a trailing comma in a method's f_args, except
+         * after a block or forwarding parameter. https://bugs.ruby-lang.org/issues/19107 */
         if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1 || order == PM_PARAMETERS_ORDER_NOTHING_AFTER) {
             pm_parser_err_previous(parser, PM_ERR_PARAMETER_WILD_LOOSE_COMMA);
         }
@@ -19127,13 +19127,11 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
             if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                 params = NULL;
             } else {
-                /* https://bugs.ruby-lang.org/issues/19107 */
-                bool allow_trailing_comma = parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1;
                 params = parse_parameters(
                     parser,
                     PM_BINDING_POWER_DEFINED,
                     true,
-                    allow_trailing_comma,
+                    true,
                     true,
                     true,
                     false,
@@ -19166,7 +19164,7 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
                 parser,
                 PM_BINDING_POWER_DEFINED,
                 false,
-                false,
+                true,
                 true,
                 true,
                 false,

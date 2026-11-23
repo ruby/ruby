@@ -1241,6 +1241,16 @@ module Ruby::Prism
       assert_location(ParametersNode, "def foo(bar, baz); end", 8...16, &:parameters)
     end
 
+    def test_bare_method_parameters_with_a_trailing_comma
+      assert_location(ParametersNode, "def f x,; end", 6...7, version: "4.1") do |node|
+        assert_equal [:x], node.parameters.requireds.map(&:name)
+        assert_nil node.parameters.rest
+        node.parameters
+      end
+
+      assert_location(RestParameterNode, "def self.f *xs,; end", 11...14, version: "4.1") { |node| node.parameters.rest }
+    end
+
     def test_ParenthesesNode
       assert_location(ParenthesesNode, "()")
       assert_location(ParenthesesNode, "(foo)")

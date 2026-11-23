@@ -68,12 +68,19 @@ module Ruby::Prism
 
     def test_bare_method_parameters_allow_trailing_comma_from_ruby_4_1
       ["def f x,; end", "def self.f *xs,; end"].each do |source|
-        assert Ruby::Prism.parse_success?(source, version: "4.1"), source
-        refute Ruby::Prism.parse_success?(source, version: "4.0"), source
+        %w[3.3 3.4 4.0].each do |version|
+          assert_equal [:parameter_wild_loose_comma], Ruby::Prism.parse(source, version: version).errors.map(&:type), source
+        end
       end
 
-      refute Ruby::Prism.parse_success?("def f &block,; end", version: "4.1")
-      refute Ruby::Prism.parse_success?("def f x,\nend", version: "4.1")
+      ["&block", "&", "&nil", "..."].each do |last|
+        source = "def f #{last},; end"
+        result = Ruby::Prism.parse(source, version: "4.1")
+        assert_equal [:parameter_wild_loose_comma], result.errors.map(&:type), source
+        assert_equal ",", result.errors.first.location.slice
+      end
+
+      assert_equal [:def_params_term], Ruby::Prism.parse("def f x,\nend", version: "4.1").errors.map(&:type)
     end
 
     def test_end_block_exits_use_the_loop_inside_the_block
