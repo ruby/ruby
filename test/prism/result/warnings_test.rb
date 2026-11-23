@@ -428,6 +428,11 @@ module Ruby::Prism
       end
     end
 
+    def test_discarded_assignment_in_a_statement_list
+      source = "def f; consume(((discarded = 1); used = 2)); end"
+      assert_warning(source, "assigned but unused variable - discarded", compare: false, version: "4.1")
+    end
+
     def test_unused_local_variable_or_assign_with_begin_node
       assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
         var ||= begin

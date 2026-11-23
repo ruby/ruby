@@ -1064,24 +1064,22 @@ pm_parser_constant_id_token(pm_parser_t *parser, const pm_token_t *token) {
 }
 
 /**
- * This macro allows you to define a case statement for all of the nodes that
- * may result in a void value.
- */
-#define PM_CASE_VOID_VALUE PM_RETURN_NODE: case PM_BREAK_NODE: case PM_NEXT_NODE: \
-    case PM_REDO_NODE: case PM_RETRY_NODE: case PM_MATCH_REQUIRED_NODE
-
-/**
- * Check whether or not the given node is value expression.
- * If the node is value node, it returns NULL.
- * If not, it returns the pointer to the node to be inspected as "void expression".
+ * Return the node to diagnose as a void expression, or NULL if the
+ * expression can produce a value. A local write counts as a read only
+ * when its value is used.
  */
 static pm_node_t *
-pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
+pm_check_value_expression(pm_parser_t *parser, pm_node_t *node, bool value_used) {
     pm_node_t *void_node = NULL;
 
     while (node != NULL) {
         switch (PM_NODE_TYPE(node)) {
-            case PM_CASE_VOID_VALUE:
+            case PM_RETURN_NODE:
+            case PM_BREAK_NODE:
+            case PM_NEXT_NODE:
+            case PM_REDO_NODE:
+            case PM_RETRY_NODE:
+            case PM_MATCH_REQUIRED_NODE:
                 return void_node != NULL ? void_node : node;
             case PM_MATCH_PREDICATE_NODE:
                 return NULL;
@@ -1095,13 +1093,13 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                     /* https://bugs.ruby-lang.org/issues/21669 */
                     if (cast->else_clause == NULL || parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
-                        rescue_void = pm_check_value_expression(parser, UP(cast->statements));
+                        rescue_void = pm_check_value_expression(parser, UP(cast->statements), value_used);
                         if (rescue_void == NULL) break;
                     }
 
                     bool rescue_has_value = false;
                     for (pm_rescue_node_t *rescue_clause = cast->rescue_clause; rescue_clause != NULL; rescue_clause = rescue_clause->subsequent) {
-                        pm_node_t *vn = pm_check_value_expression(parser, UP(rescue_clause->statements));
+                        pm_node_t *vn = pm_check_value_expression(parser, UP(rescue_clause->statements), value_used);
 
                         if (vn == NULL) {
                             rescue_has_value = true;
@@ -1112,7 +1110,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                     if (rescue_has_value && parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) break;
 
                     if (cast->else_clause != NULL) {
-                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->else_clause));
+                        pm_node_t *vn = pm_check_value_expression(parser, UP(cast->else_clause), value_used);
                         if (vn != NULL) {
                             if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1 && !rescue_has_value) {
                                 if (void_node != NULL) return void_node;
@@ -1124,7 +1122,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                         return void_node != NULL ? void_node : rescue_void;
                     }
                 } else if (cast->ensure_clause != NULL) {
-                    pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
+                    pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements), value_used);
                     if (vn != NULL) return vn;
                     node = UP(cast->ensure_clause);
                 } else {
@@ -1148,12 +1146,12 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                     body = inner->expression;
                 }
 
-                pm_node_t *vn = pm_check_value_expression(parser, body);
+                pm_node_t *vn = pm_check_value_expression(parser, body, value_used);
                 if (vn == NULL) return NULL;
                 if (void_node == NULL) void_node = vn;
 
                 for (size_t index = handlers.size; index > 0; index--) {
-                    if (pm_check_value_expression(parser, handlers.nodes[index - 1]) == NULL) return NULL;
+                    if (pm_check_value_expression(parser, handlers.nodes[index - 1], value_used) == NULL) return NULL;
                 }
 
                 node = rescue->rescue_expression;
@@ -1173,7 +1171,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                     PRISM_ASSERT(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
 
                     pm_when_node_t *cast = (pm_when_node_t *) condition;
-                    pm_node_t  *vn = pm_check_value_expression(parser, UP(cast->statements));
+                    pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements), value_used);
                     if (vn == NULL) return NULL;
                     if (void_node == NULL) void_node = vn;
                 }
@@ -1195,7 +1193,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                     PRISM_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
                     pm_in_node_t *cast = (pm_in_node_t *) condition;
-                    pm_node_t  *vn = pm_check_value_expression(parser, UP(cast->statements));
+                    pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements), value_used);
                     if (vn == NULL) return NULL;
                     if (void_node == NULL) void_node = vn;
                 }
@@ -1216,18 +1214,12 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
             case PM_STATEMENTS_NODE: {
                 pm_statements_node_t *cast = (pm_statements_node_t *) node;
 
-                // https://bugs.ruby-lang.org/issues/21669
+                /* Since Ruby 4.1, an earlier void statement makes the whole
+                 * list void. Only the final statement supplies its value. */
                 if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_1) {
-                    pm_node_t *body_part;
-                    PM_NODE_LIST_FOREACH(&cast->body, index, body_part) {
-                        switch (PM_NODE_TYPE(body_part)) {
-                            case PM_CASE_VOID_VALUE:
-                                if (void_node == NULL) {
-                                    void_node = body_part;
-                                }
-                                return void_node;
-                            default: break;
-                        }
+                    for (size_t index = 0; index + 1 < cast->body.size; index++) {
+                        pm_node_t *vn = pm_check_value_expression(parser, cast->body.nodes[index], false);
+                        if (vn != NULL) return vn;
                     }
                 }
 
@@ -1239,7 +1231,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                 if (cast->statements == NULL || cast->subsequent == NULL) {
                     return NULL;
                 }
-                pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
+                pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements), value_used);
                 if (vn == NULL) {
                     return NULL;
                 }
@@ -1254,7 +1246,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                 if (cast->statements == NULL || cast->else_clause == NULL) {
                     return NULL;
                 }
-                pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements));
+                pm_node_t *vn = pm_check_value_expression(parser, UP(cast->statements), value_used);
                 if (vn == NULL) {
                     return NULL;
                 }
@@ -1280,8 +1272,10 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
             case PM_LOCAL_VARIABLE_WRITE_NODE: {
                 pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *) node;
 
-                PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
-                pm_locals_read(parser, cast->name);
+                if (value_used) {
+                    PRISM_ASSERT(pm_parser_local_depth_constant_id(parser, cast->name) == (int) cast->depth);
+                    pm_locals_read(parser, cast->name);
+                }
                 return NULL;
             }
             default:
@@ -1294,7 +1288,7 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
 static PRISM_INLINE void
 pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
-    pm_node_t *void_node = pm_check_value_expression(parser, node);
+    pm_node_t *void_node = pm_check_value_expression(parser, node, true);
     if (void_node != NULL) {
         pm_parser_err_node(parser, void_node, PM_ERR_VOID_EXPRESSION);
     }

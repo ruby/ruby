@@ -928,6 +928,8 @@ module Ruby::Prism
 
     def test_IfNode
       assert_location(IfNode, "if type in 1;elsif type in B;end")
+      assert_location(IfNode, "if ((a => k); x); end", version: "4.0")
+      assert_location(IfNode, "if ((return if flag); x); end", version: "4.1")
     end
 
     def test_ImaginaryNode

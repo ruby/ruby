@@ -381,7 +381,10 @@ module Ruby::Prism
         assert_equal "a => k", result.errors.first.location.slice
       end
 
-      assert Ruby::Prism.parse_success?("if ((a => k); x); end", version: "4.0")
+      source = "def f; consume((if flag; return 1; else; ((return 2); x); end)); end"
+      result = Ruby::Prism.parse(source, version: "4.1")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return 2", result.errors.first.location.slice
     end
 
     def test_command_super_and_grouped_argument_blocks
