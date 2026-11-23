@@ -547,6 +547,27 @@ module GC
   #     For performance reasons, we recommended warming up the application using Process.warmup
   #     before setting this parameter to +false+.
   #
+  # - +:permanent_generation+ (experimental):
+  #   When +true+, Process.warmup makes every old object permanent.  A major \GC then
+  #   neither traverses nor frees permanent objects, except those that may reference
+  #   newer objects, so it only marks what was allocated after boot.  Permanent objects
+  #   that become garbage are reclaimed by a full collection (see below).  Setting it to
+  #   +false+ turns permanent objects back into ordinary old objects.
+  #   Defaults to the +RUBY_GC_PERMANENT_GENERATION+ environment variable.
+  #
+  # - +:permanent_full_mark_interval+ (experimental):
+  #   If nonzero, every Nth major \GC is a full collection that also collects
+  #   permanent objects.  0 (the default) means only on request.  GC.compact, and every
+  #   major while another Ractor's object space exists, are also full collections.
+  #
+  # - +:permanent_promote+ (experimental, write-only):
+  #   Setting it to +true+ adds the objects that are old now to the permanent
+  #   generation, without the full \GC and compaction of Process.warmup (for example
+  #   in each forked worker once its caches are warm).
+  #
+  # - +:permanent_collect+ (experimental, write-only):
+  #   Setting it to +true+ makes the next major \GC a full collection.
+  #
   def self.config hash = nil
     if Primitive.cexpr!("RBOOL(RB_TYPE_P(hash, T_HASH))")
       if hash.include?(:implementation)

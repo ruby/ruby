@@ -797,6 +797,8 @@ typedef struct rb_objspace {
 
     struct {
         bool parent_object_old_p;
+        /* The parent is a WB-protected permanent object not yet in permanent_ref_bits. */
+        bool parent_object_permanent_p;
         VALUE parent_object;
 
         int need_major_gc;
@@ -838,6 +840,24 @@ typedef struct rb_objspace {
 
     rb_darray(VALUE) weak_references;
     rb_postponed_job_handle_t finalize_deferred_pjob;
+
+    /* Permanent generation.  Only the main objspace ever has permanent objects. */
+    struct {
+        size_t objects;              /* live objects with a permanent bit */
+        bool enabled;                /* Process.warmup forms the generation */
+        bool skipping;               /* the current major does not traverse permanent objects */
+        bool collect_next;           /* the next major is a full one (permanent objects too) */
+        bool probing;                /* gc_permanent_weak_probe is running */
+        bool probe_hit;
+        size_t full_mark_interval;   /* every Nth major is full (0: only when requested) */
+        size_t majors_since_full;
+        size_t auto_promote_interval;/* test mode: promote after every Nth major */
+        size_t promote_count;
+        size_t partial_count;
+        size_t full_count;
+        size_t last_roots;           /* objects the last partial major started from */
+        rb_postponed_job_handle_t promote_pjob;
+    } permanent;
 
     /* Partially filled chunk of deferred non-thread-safe T_DATA metadata. */
     struct tdata_unsafe_free_chunk *tdata_unsafe_free_chunk;
@@ -1171,6 +1191,8 @@ struct heap_page {
         unsigned int has_shref_objects : 1;
         unsigned int has_shareable_objects : 1;
         unsigned int body_zeroed : 1;
+        unsigned int has_permanent_objects : 1;
+        unsigned int has_permanent_refs : 1;
     } flags;
 
     rb_heap_t *heap;
@@ -1202,6 +1224,13 @@ struct heap_page {
     /* If set, the object is not movable */
     bits_t pinned_bits[HEAP_PAGE_BITMAP_LIMIT];
     bits_t age_bits[HEAP_PAGE_BITMAP_LIMIT * RVALUE_AGE_BIT_COUNT];
+
+    /* Permanent generation (see gc_permanent_promote).  permanent_bits: the object was
+     * old when the generation was formed; a partial major treats it as marked and does
+     * not traverse it.  permanent_ref_bits: a permanent object that may reference a
+     * non-permanent one (strongly or weakly), so a partial major must traverse it. */
+    bits_t permanent_bits[HEAP_PAGE_BITMAP_LIMIT];
+    bits_t permanent_ref_bits[HEAP_PAGE_BITMAP_LIMIT];
 };
 
 /*
@@ -1635,6 +1664,8 @@ static int garbage_collect(rb_objspace_t *, unsigned int reason);
 
 static int  gc_start(rb_objspace_t *objspace, unsigned int reason);
 static void gc_rest(rb_objspace_t *objspace);
+static void gc_permanent_major_decide(rb_objspace_t *objspace, unsigned int reason);
+static bool gc_permanent_needs_ref_p(rb_objspace_t *objspace, VALUE obj);
 
 /* GC cycle events (ENTER, EXIT, START, END_MARK, END_SWEEP) fire only if the objspace's
  * own Ractor enabled them, so a concurrent local GC never walks the VM-global hook list
@@ -1826,6 +1857,41 @@ RVALUE_UNCOLLECTIBLE(rb_objspace_t *objspace, VALUE obj)
 {
     check_rvalue_consistency(objspace, obj);
     return RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
+}
+
+/* Permanent generation helpers.  gc_permanent_active() gates every extra test on the
+ * write barrier and in marking, so a process that never forms the generation only pays
+ * a load and a branch. */
+static inline size_t
+popcount_bits(bits_t x)
+{
+#if defined(__GNUC__) || defined(__clang__)
+    return (size_t)__builtin_popcountll((unsigned long long)x);
+#else
+    size_t n = 0;
+    while (x) { x &= x - 1; n++; }
+    return n;
+#endif
+}
+
+static inline bool
+gc_permanent_active(const rb_objspace_t *objspace)
+{
+    return RB_UNLIKELY(objspace->permanent.objects != 0);
+}
+
+static inline int
+RVALUE_PERMANENT(VALUE obj)
+{
+    return MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->permanent_bits, obj) != 0;
+}
+
+static inline void
+gc_permanent_ref_set(VALUE obj)
+{
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    _MARK_IN_BITMAP(page->permanent_ref_bits, page, obj);
+    page->flags.has_permanent_refs = TRUE;
 }
 
 #define RVALUE_PAGE_WB_UNPROTECTED(page, obj) MARKED_IN_BITMAP((page)->wb_unprotected_bits, (obj))
@@ -3078,6 +3144,10 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 
     memset(&page->wb_unprotected_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
     memset(&page->age_bits[0], 0, sizeof(page->age_bits));
+    memset(&page->permanent_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+    memset(&page->permanent_ref_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+    page->flags.has_permanent_objects = FALSE;
+    page->flags.has_permanent_refs = FALSE;
 
     asan_unlock_freelist(page);
     asan_unpoison_memory_region(page->body, HEAP_PAGE_SIZE, false);
@@ -5446,6 +5516,30 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
     }
 
+    /* Only a full mark can leave a permanent object unmarked. */
+    if (sweep_page->flags.has_permanent_objects) {
+        bits_t *perm_bits = sweep_page->permanent_bits;
+        bits_t any = 0;
+        size_t freed = 0;
+        for (int i = 0; i < bitmap_plane_count; i++) {
+            bits_t dead = perm_bits[i] & ~bits[i];
+            if (dead) {
+                freed += popcount_bits(dead);
+                perm_bits[i] &= ~dead;
+                sweep_page->permanent_ref_bits[i] &= ~dead;
+            }
+            any |= perm_bits[i];
+        }
+        if (freed) {
+            GC_ASSERT(sweep_page->objspace->permanent.objects >= freed);
+            sweep_page->objspace->permanent.objects -= freed;
+        }
+        if (!any) {
+            sweep_page->flags.has_permanent_objects = FALSE;
+            sweep_page->flags.has_permanent_refs = FALSE;
+        }
+    }
+
 #if GC_SWEEP_DOWNWARDS
     p += (uintptr_t)(bitmap_plane_count * BITS_BITLENGTH - 1) * slot_size;
     for (int i = bitmap_plane_count - 1; i >= 0; i--) {
@@ -6432,6 +6526,12 @@ ALWAYS_INLINE(static void gc_grey(rb_objspace_t *objspace, VALUE obj));
 static void
 rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 {
+    if (RB_UNLIKELY(objspace->rgengc.parent_object_permanent_p)) {
+        if (!RVALUE_PERMANENT(obj)) {
+            gc_permanent_ref_set(objspace->rgengc.parent_object);
+            objspace->rgengc.parent_object_permanent_p = false;
+        }
+    }
     if (objspace->rgengc.parent_object_old_p) {
         if (!RVALUE_OLD_P(objspace, obj)) {
             rgengc_remember(objspace, objspace->rgengc.parent_object);
@@ -6689,14 +6789,29 @@ gc_mark_set_parent_raw(rb_objspace_t *objspace, VALUE obj, bool old_p)
 {
     asan_unpoison_memory_region(&objspace->rgengc.parent_object, sizeof(objspace->rgengc.parent_object), false);
     asan_unpoison_memory_region(&objspace->rgengc.parent_object_old_p, sizeof(objspace->rgengc.parent_object_old_p), false);
+    asan_unpoison_memory_region(&objspace->rgengc.parent_object_permanent_p, sizeof(objspace->rgengc.parent_object_permanent_p), false);
     objspace->rgengc.parent_object = obj;
     objspace->rgengc.parent_object_old_p = old_p;
+    objspace->rgengc.parent_object_permanent_p = false;
 }
 
 static inline void
 gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 {
     gc_mark_set_parent_raw(objspace, obj, RVALUE_OLD_P(objspace, obj));
+
+    /* Re-derive permanent_ref_bits while a WB-protected permanent object is traversed
+     * (rgengc_check_relation sets the bit on the first non-permanent child).  A
+     * WB-unprotected one is scanned by every partial major anyway. */
+    if (gc_permanent_active(objspace)) {
+        struct heap_page *page = GET_HEAP_PAGE(obj);
+        if (page->flags.has_permanent_objects &&
+                _MARKED_IN_BITMAP(page->permanent_bits, page, obj) &&
+                !_MARKED_IN_BITMAP(page->permanent_ref_bits, page, obj) &&
+                !_MARKED_IN_BITMAP(page->wb_unprotected_bits, page, obj)) {
+            objspace->rgengc.parent_object_permanent_p = true;
+        }
+    }
 }
 
 static inline void
@@ -6704,6 +6819,7 @@ gc_mark_set_parent_invalid(rb_objspace_t *objspace)
 {
     asan_poison_memory_region(&objspace->rgengc.parent_object, sizeof(objspace->rgengc.parent_object));
     asan_poison_memory_region(&objspace->rgengc.parent_object_old_p, sizeof(objspace->rgengc.parent_object_old_p));
+    asan_poison_memory_region(&objspace->rgengc.parent_object_permanent_p, sizeof(objspace->rgengc.parent_object_permanent_p));
 }
 
 static void pinned_roots_mark(rb_objspace_t *objspace, rb_heap_t *heap);
@@ -7343,6 +7459,24 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                     rb_gc_verify_shareable(obj);
                 }
 
+                if (RVALUE_PERMANENT(obj)) {
+                    /* A WB-protected permanent object stays old; a demoted one is
+                     * scanned by every partial major whatever its age. */
+                    bool wbun = RVALUE_WB_UNPROTECTED(objspace, obj);
+                    if (!wbun && !RVALUE_OLD_P(objspace, obj)) {
+                        fprintf(stderr, "verify_internal_consistency_i: permanent but not old: %s\n",
+                                rb_obj_info(obj));
+                        data->err_count++;
+                    }
+                    /* permanent_ref bits are drained while a major is marking */
+                    if (!is_marking(objspace) && !wbun &&
+                            !MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->permanent_ref_bits, obj) &&
+                            gc_permanent_needs_ref_p(objspace, obj)) {
+                        fprintf(stderr, "verify_internal_consistency_i: WB miss (P->N) %s\n", rb_obj_info(obj));
+                        data->err_count++;
+                    }
+                }
+
                 if (is_incremental_marking(objspace)) {
                     if (RVALUE_BLACK_P(objspace, obj)) {
                         /* reachable objects from black objects should be black or grey objects */
@@ -7358,6 +7492,11 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 if (BUILTIN_TYPE(obj) == T_NONE && (sh_bit || sr_bit)) {
                     fprintf(stderr, "verify_internal_consistency_i: T_NONE slot carries "
                             "shareable=%d shref=%d bits\n", (int)sh_bit, (int)sr_bit);
+                    data->err_count++;
+                }
+
+                if (BUILTIN_TYPE(obj) == T_NONE && RVALUE_PERMANENT(obj)) {
+                    fprintf(stderr, "verify_internal_consistency_i: T_NONE slot is permanent\n");
                     data->err_count++;
                 }
 
@@ -7577,6 +7716,29 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace, bool world_stopped)
         }
     }
 
+    if (!is_lazy_sweeping(objspace)) {
+        size_t perm = 0;
+        for (int i = 0; i < HEAP_COUNT; i++) {
+            struct heap_page *page = NULL;
+            ccan_list_for_each(&heaps[i].pages, page, page_node) {
+                for (int j = 0; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
+                    perm += popcount_bits(page->permanent_bits[j]);
+                }
+                if (!page->flags.has_permanent_objects) {
+                    for (int j = 0; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
+                        if (page->permanent_bits[j]) {
+                            rb_bug("page %p has permanent objects but not the page flag", (void *)page);
+                        }
+                    }
+                }
+            }
+        }
+        if (perm != objspace->permanent.objects) {
+            rb_bug("inconsistent permanent object number: expect %"PRIuSIZE", but %"PRIuSIZE".",
+                   objspace->permanent.objects, perm);
+        }
+    }
+
     if (!is_marking(objspace)) {
         if (objspace->rgengc.old_objects != data.old_object_count) {
             rb_bug("inconsistent old slot number: expect %"PRIuSIZE", but %"PRIuSIZE".",
@@ -7775,6 +7937,13 @@ rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
      * owner or the global GC decides (a global GC's unified mark is exact). */
     if (gc_skip_foreign_object_p(objspace, obj)) return true;
 
+    if (RB_UNLIKELY(objspace->permanent.probing)) {
+        if (!gc_foreign_object_p(objspace, obj) && !RVALUE_PERMANENT(obj)) {
+            objspace->permanent.probe_hit = true;
+        }
+        return true;
+    }
+
     bool marked = RVALUE_MARKED(objspace, obj);
 
     if (marked) {
@@ -7857,6 +8026,12 @@ gc_marks_finish(rb_objspace_t *objspace)
     }
 
     gc_update_weak_references(objspace);
+
+    if (RB_UNLIKELY(objspace->permanent.auto_promote_interval) && objspace->permanent.enabled &&
+            !objspace->flags.during_minor_gc &&
+            objspace->profile.major_gc_count % objspace->permanent.auto_promote_interval == 0) {
+        rb_postponed_job_trigger(objspace->permanent.promote_pjob);
+    }
 
 #if RGENGC_CHECK_MODE >= 4
     during_gc = FALSE;
@@ -8263,6 +8438,93 @@ pinned_roots_mark(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
+/* Bitmap setup of a partial major: the permanent objects start marked (and old, or
+ * remembered-shady if they were demoted), everything else starts white as in a full
+ * mark.  The remembered bits of permanent objects survive (they are not re-derived
+ * unless the object is traversed); the rest are re-derived by the mark. */
+static void
+gc_permanent_bitmaps_preset(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    struct heap_page *page = 0;
+
+    ccan_list_for_each(&heap->pages, page, page_node) {
+        memset(&page->marking_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+        memset(&page->pinned_bits[0],  0, HEAP_PAGE_BITMAP_SIZE);
+
+        if (!page->flags.has_permanent_objects) {
+            memset(&page->mark_bits[0],          0, HEAP_PAGE_BITMAP_SIZE);
+            memset(&page->uncollectible_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+            memset(&page->remembered_bits[0],    0, HEAP_PAGE_BITMAP_SIZE);
+            page->flags.has_uncollectible_wb_unprotected_objects = FALSE;
+            page->flags.has_remembered_objects = FALSE;
+            continue;
+        }
+
+        int bitmap_plane_count = CEILDIV(page->total_slots, BITS_BITLENGTH);
+        bits_t any_shady = 0, any_remembered = 0;
+        size_t old = 0, shady = 0;
+
+        for (int j = 0; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
+            bits_t perm = j < bitmap_plane_count ? page->permanent_bits[j] : 0;
+            bits_t sh = perm & page->wb_unprotected_bits[j];
+
+            page->mark_bits[j] = perm;
+            page->uncollectible_bits[j] = perm;
+            page->remembered_bits[j] &= perm & ~sh;
+            any_remembered |= page->remembered_bits[j];
+            any_shady |= sh;
+            old += popcount_bits(perm & ~sh);
+            shady += popcount_bits(sh);
+        }
+        page->flags.has_uncollectible_wb_unprotected_objects = any_shady != 0;
+        page->flags.has_remembered_objects = any_remembered != 0;
+
+        objspace->rgengc.old_objects += old;
+        objspace->rgengc.uncollectible_wb_unprotected_objects += shady;
+        objspace->marked_slots += old + shady;
+    }
+}
+
+/* The roots a partial major adds: every permanent object that may reference a
+ * non-permanent one (drained here, re-derived as each is traversed) and every
+ * WB-unprotected permanent object (no barrier tells us what it references). */
+static void
+gc_permanent_roots_mark(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    struct heap_page *page = 0;
+
+    ccan_list_for_each(&heap->pages, page, page_node) {
+        if (!page->flags.has_permanent_objects) continue;
+        bool shady = page->flags.has_uncollectible_wb_unprotected_objects;
+        if (!page->flags.has_permanent_refs && !shady) continue;
+
+        uintptr_t p = page->start;
+        short slot_size = page->slot_size;
+        int bitmap_plane_count = CEILDIV(page->total_slots, BITS_BITLENGTH);
+
+        page->flags.has_permanent_refs = FALSE;
+        for (int j = 0; j < bitmap_plane_count; j++) {
+            bits_t bitset = page->permanent_ref_bits[j];
+            page->permanent_ref_bits[j] = 0;
+            if (shady) bitset |= page->permanent_bits[j] & page->wb_unprotected_bits[j];
+            bitset &= page->permanent_bits[j];
+
+            uintptr_t pp = p;
+            while (bitset) {
+                if (bitset & 1) {
+                    VALUE obj = (VALUE)pp;
+                    GC_ASSERT(RVALUE_MARKED(objspace, obj));
+                    gc_grey(objspace, obj);
+                    objspace->permanent.last_roots++;
+                }
+                pp += slot_size;
+                bitset >>= 1;
+            }
+            p += BITS_BITLENGTH * slot_size;
+        }
+    }
+}
+
 static void
 gc_marks_start(rb_objspace_t *objspace, int full_mark)
 {
@@ -8279,7 +8541,8 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
                        "objspace->rincgc.step_slots: %"PRIdSIZE", \n",
                        objspace->marked_slots, objspace->rincgc.pooled_slots, objspace->rincgc.step_slots);
         objspace->flags.during_minor_gc = FALSE;
-        if (ruby_enable_autocompact && rb_gc_single_objspace_p()) {
+        /* A partial major leaves references from permanent objects unpinned. */
+        if (ruby_enable_autocompact && rb_gc_single_objspace_p() && !objspace->permanent.skipping) {
             objspace->flags.during_compacting |= TRUE;
         }
         objspace->profile.major_gc_count++;
@@ -8288,10 +8551,31 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
         objspace->rgengc.last_major_gc = objspace->profile.count;
         objspace->marked_slots = 0;
 
-        for (int i = 0; i < HEAP_COUNT; i++) {
+        if (objspace->permanent.skipping) {
+            GC_ASSERT(!objspace->flags.during_compacting);
+            objspace->permanent.last_roots = 0;
+            for (int i = 0; i < HEAP_COUNT; i++) {
+                gc_permanent_bitmaps_preset(objspace, &heaps[i]);
+                heap_move_pooled_pages_to_free_pages(&heaps[i]);
+            }
+            gc_mark_set_parent_raw(objspace, Qundef, false);
+            for (int i = 0; i < HEAP_COUNT; i++) {
+                gc_permanent_roots_mark(objspace, &heaps[i]);
+            }
+        }
+        else for (int i = 0; i < HEAP_COUNT; i++) {
             rb_heap_t *heap = &heaps[i];
             gc_bitmaps_clear(objspace, heap, false);
             heap_move_pooled_pages_to_free_pages(heap);
+
+            /* A full mark re-derives every permanent object's permanent_ref bit. */
+            if (gc_permanent_active(objspace)) {
+                struct heap_page *page = NULL;
+                ccan_list_for_each(&heap->pages, page, page_node) {
+                    memset(&page->permanent_ref_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+                    page->flags.has_permanent_refs = FALSE;
+                }
+            }
 
             if (objspace->flags.during_compacting) {
                 struct heap_page *page = NULL;
@@ -8554,6 +8838,11 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
         gc_report(1, objspace, "gc_writebarrier_generational: %s (remembered) -> %s\n", rb_obj_info(a), rb_obj_info(b));
     }
 
+    /* A young b is never permanent. */
+    if (gc_permanent_active(objspace) && RVALUE_PERMANENT(a)) {
+        gc_permanent_ref_set(a);
+    }
+
     check_rvalue_consistency(objspace, a);
     check_rvalue_consistency(objspace, b);
 }
@@ -8577,6 +8866,12 @@ static void
 gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
     gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %p -> %s\n", (void *)a, rb_obj_info(b));
+
+    /* Whatever a's colour: a permanent a still queued for traversal is grey, not black,
+     * and its bit was drained when the partial major started. */
+    if (gc_permanent_active(objspace) && RVALUE_PERMANENT(a) && !RVALUE_PERMANENT(b)) {
+        gc_permanent_ref_set(a);
+    }
 
     if (RVALUE_BLACK_P(objspace, a)) {
         if (RVALUE_WHITE_P(objspace, b)) {
@@ -8630,11 +8925,18 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
          * NOTE: we shouldn't even check the age of `a` or `b` if they are in another
          * objspace, so check locality first. */
         if (gc_foreign_object_p(objspace, a) || gc_foreign_object_p(objspace, b) ||
-                !RVALUE_OLD_P(objspace, a) || RVALUE_OLD_P(objspace, b)) {
+                !RVALUE_OLD_P(objspace, a)) {
             // do nothing
         }
-        else {
+        else if (!RVALUE_OLD_P(objspace, b)) {
             gc_writebarrier_generational(a, b, objspace);
+        }
+        else if (gc_permanent_active(objspace)) {
+            /* old -> old: only the permanent generation cares, about a permanent a
+             * gaining a reference to an object that is old but not permanent. */
+            if (RVALUE_PERMANENT(a) && !RVALUE_PERMANENT(b)) {
+                gc_permanent_ref_set(a);
+            }
         }
     }
     else {
@@ -8738,6 +9040,9 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     // and are only collected during global GC, so not while incremental marking.
     if (RB_LIKELY(!gc_foreign_object_p(objspace, obj))) {
         gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
+        if (gc_permanent_active(objspace) && RVALUE_PERMANENT(obj)) {
+            gc_permanent_ref_set(obj);
+        }
         if (is_incremental_marking(objspace)) {
             if (RVALUE_BLACK_P(objspace, obj)) {
                 gc_grey(objspace, obj);
@@ -8752,7 +9057,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 struct rb_gc_object_metadata_names {
     // Must be ID only
     ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking,
-        ID_marked, ID_pinned, ID_remembered, ID_object_id, ID_shareable;
+        ID_marked, ID_pinned, ID_remembered, ID_object_id, ID_shareable, ID_permanent;
 };
 
 #define RB_GC_OBJECT_METADATA_ENTRY_COUNT (sizeof(struct rb_gc_object_metadata_names) / sizeof(ID))
@@ -8777,6 +9082,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
         I(remembered);
         I(object_id);
         I(shareable);
+        I(permanent);
 #undef I
     }
 
@@ -8797,6 +9103,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     if (RVALUE_REMEMBERED(objspace, obj)) SET_ENTRY(remembered, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
+    if (RVALUE_PERMANENT(obj)) SET_ENTRY(permanent, Qtrue);
 
     object_metadata_entries[n].name = 0;
     object_metadata_entries[n].val = 0;
@@ -9106,6 +9413,11 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
             // compaction is currently global GC only with more than 1 running Ractor
             objspace->flags.during_compacting = FALSE;
         }
+    }
+
+    objspace->permanent.skipping = false;
+    if (do_full_mark && gc_permanent_active(objspace)) {
+        gc_permanent_major_decide(objspace, reason);
     }
 
     if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_incremental) {
@@ -10418,6 +10730,9 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
      * so the absorbed heap should be in a state where a minor GC would also work correctly.
      */
     dst->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_FORCE;
+    /* dst's permanent objects may now reference src's objects without a recorded
+     * permanent_ref (the barrier ignores cross-objspace edges). */
+    dst->permanent.collect_next = true;
 
     /* src's outstanding malloc pressure moves with the xmalloc'd buffers.  Later frees are
      * charged to dst, so without this transfer dst underestimates its own heap and delays
@@ -10524,6 +10839,198 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
     gc_config_full_mark_set(full_marking_p);
 }
 
+/*
+ * Permanent generation
+ * ====================
+ *
+ * After boot (Process.warmup with GC.config(permanent_generation: true)), every old
+ * WB-protected object becomes permanent.  A major GC then runs as a "partial major":
+ * the permanent objects start marked and are not traversed, except
+ *   - those in permanent_ref_bits: a permanent object that may reference a
+ *     non-permanent object, strongly or weakly, and
+ *   - WB-unprotected ones (demoted after promotion): nothing tells us what they hold.
+ * Permanent objects are only reclaimed by a full collection: GC.compact, a second
+ * Process.warmup, GC.config(permanent_collect: true), every permanent_full_mark_interval
+ * majors, and every major while more than one objspace exists.
+ *
+ * permanent_ref_bits are maintained by
+ *   - the write barrier: any store of a non-permanent object into a permanent one
+ *     (old -> young as today, plus old -> old-but-not-permanent), and
+ *     rb_gc_writebarrier_remember on a permanent object;
+ *   - marking: a traversed permanent object gets the bit on its first non-permanent
+ *     child (rgengc_check_relation), and a permanent weak-reference holder on its first
+ *     live non-permanent target (rb_gc_impl_handle_weak_references_alive_p).  A partial
+ *     major drains the bits of the objects it starts from and a full mark clears them
+ *     all, so both re-derive them;
+ *   - gc_permanent_promote, which derives them by walking every permanent object.
+ * The invariant (checked by GC.verify_internal_consistency outside marking): a live
+ * WB-protected permanent object without the bit references only permanent objects,
+ * foreign objects and immediates, and its weak references point at permanent objects.
+ */
+struct gc_permanent_scan {
+    rb_objspace_t *objspace;
+    bool hit;
+};
+
+static void
+gc_permanent_child_i(VALUE child, void *ptr)
+{
+    struct gc_permanent_scan *d = ptr;
+
+    if (d->hit) return;
+    /* A foreign child is kept alive by its owner; a partial major never runs with more
+     * than one objspace, and absorbing one forces a full collection. */
+    if (GET_HEAP_OBJSPACE(child) != d->objspace) return;
+    if (!RVALUE_PERMANENT(child)) d->hit = true;
+}
+
+/* Does obj reference a non-permanent object?  Outside GC only. */
+static bool
+gc_permanent_needs_ref_p(rb_objspace_t *objspace, VALUE obj)
+{
+    struct gc_permanent_scan d = { objspace, false };
+
+    rb_objspace_reachable_objects_from_unlocked(obj, gc_permanent_child_i, &d);
+
+    if (!d.hit && RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE)) {
+        /* Run the weak reference handler with every target reported alive, so it
+         * changes nothing; rb_gc_impl_handle_weak_references_alive_p records whether
+         * any target is not permanent. */
+        objspace->permanent.probing = true;
+        objspace->permanent.probe_hit = false;
+        rb_gc_handle_weak_references(objspace, obj);
+        objspace->permanent.probing = false;
+        d.hit = objspace->permanent.probe_hit;
+    }
+    return d.hit;
+}
+
+/* Make every old WB-protected object permanent and derive permanent_ref_bits.  Returns
+ * the number of objects added. */
+static size_t
+gc_permanent_promote(rb_objspace_t *objspace)
+{
+    if (objspace != global_objspace->main_objspace || !rb_gc_single_objspace_p()) return 0;
+    if (during_gc) return 0;
+
+    gc_rest(objspace);
+
+    size_t added = 0;
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        struct heap_page *page = NULL;
+        ccan_list_for_each(&heaps[i].pages, page, page_node) {
+            int bitmap_plane_count = CEILDIV(page->total_slots, BITS_BITLENGTH);
+            for (int j = 0; j < bitmap_plane_count; j++) {
+                /* uncollectible and WB-protected is exactly "old" */
+                bits_t n = page->uncollectible_bits[j] & ~page->wb_unprotected_bits[j] &
+                           ~page->permanent_bits[j];
+                if (n) {
+                    page->permanent_bits[j] |= n;
+                    /* to be checked by the second pass */
+                    page->permanent_ref_bits[j] |= n;
+                    page->flags.has_permanent_objects = TRUE;
+                    page->flags.has_permanent_refs = TRUE;
+                    added += popcount_bits(n);
+                }
+            }
+        }
+    }
+    objspace->permanent.objects += added;
+    if (!gc_permanent_active(objspace)) return 0;
+
+    /* All bits are in place: derive permanent_ref for the new permanent objects and
+     * re-derive it for those that had it.  A permanent object without it references
+     * only permanent objects, which it still does. */
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        struct heap_page *page = NULL;
+        ccan_list_for_each(&heaps[i].pages, page, page_node) {
+            if (!page->flags.has_permanent_refs) continue;
+            uintptr_t p = page->start;
+            short slot_size = page->slot_size;
+            int bitmap_plane_count = CEILDIV(page->total_slots, BITS_BITLENGTH);
+            bool any_ref = false;
+
+            for (int j = 0; j < bitmap_plane_count; j++) {
+                bits_t bitset = page->permanent_ref_bits[j] & page->permanent_bits[j] &
+                                ~page->wb_unprotected_bits[j];
+                bits_t refs = 0;
+                uintptr_t pp = p;
+                for (int k = 0; bitset; k++, bitset >>= 1, pp += slot_size) {
+                    if (!(bitset & 1)) continue;
+                    VALUE obj = (VALUE)pp;
+                    asan_unpoisoning_object(obj) {
+                        GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE && BUILTIN_TYPE(obj) != T_ZOMBIE &&
+                                  BUILTIN_TYPE(obj) != T_MOVED);
+                        if (gc_permanent_needs_ref_p(objspace, obj)) refs |= (bits_t)1 << k;
+                    }
+                }
+                page->permanent_ref_bits[j] = refs;
+                if (refs) any_ref = true;
+                p += BITS_BITLENGTH * slot_size;
+            }
+            page->flags.has_permanent_refs = any_ref;
+        }
+    }
+
+    objspace->permanent.promote_count++;
+    objspace->permanent.collect_next = false;
+    objspace->permanent.majors_since_full = 0;
+    return added;
+}
+
+/* Drop the generation: every permanent object becomes an ordinary old object.  Safe
+ * outside a GC cycle, as the next major marks everything again. */
+static void
+gc_permanent_dissolve(rb_objspace_t *objspace)
+{
+    gc_rest(objspace);
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        struct heap_page *page = NULL;
+        ccan_list_for_each(&heaps[i].pages, page, page_node) {
+            memset(&page->permanent_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+            memset(&page->permanent_ref_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+            page->flags.has_permanent_objects = FALSE;
+            page->flags.has_permanent_refs = FALSE;
+        }
+    }
+    objspace->permanent.objects = 0;
+}
+
+static void
+gc_permanent_auto_promote(void *unused)
+{
+    rb_objspace_t *objspace = global_objspace->main_objspace;
+    if (objspace && objspace->permanent.enabled) {
+        unsigned int lev = RB_GC_VM_LOCK();
+        gc_permanent_promote(objspace);
+        RB_GC_VM_UNLOCK(lev);
+    }
+}
+
+/* Decide whether this major skips the permanent objects. */
+static void
+gc_permanent_major_decide(rb_objspace_t *objspace, unsigned int reason)
+{
+    size_t interval = objspace->permanent.full_mark_interval;
+    bool full = objspace->permanent.collect_next ||
+                (reason & GPR_FLAG_COMPACT) ||
+                !rb_gc_single_objspace_p() ||
+                (interval && objspace->permanent.majors_since_full + 1 >= interval);
+
+    if (full) {
+        objspace->permanent.collect_next = false;
+        objspace->permanent.majors_since_full = 0;
+        objspace->permanent.full_count++;
+    }
+    else {
+        objspace->permanent.skipping = true;
+        objspace->permanent.majors_since_full++;
+        objspace->permanent.partial_count++;
+        /* Auto-compaction needs every reference pinned or updated: full marks only. */
+        objspace->flags.during_compacting = FALSE;
+    }
+}
+
 void
 rb_gc_impl_prepare_heap(void *objspace_ptr)
 {
@@ -10551,6 +11058,10 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
         heap_allocatable_bytes_expand(objspace, heap, heap->empty_slots, heap->total_slots, heap->slot_size);
+    }
+
+    if (objspace->permanent.enabled) {
+        gc_permanent_promote(objspace);
     }
 
 #if defined(HAVE_MALLOC_TRIM) && !defined(RUBY_ALTERNATIVE_MALLOC_HEADER)
@@ -10640,6 +11151,8 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
      * entry or shref target that another Ractor references. */
     bool shareable = MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(src), src) != 0;
     bool shref = MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(src), src) != 0;
+    bool permanent = RVALUE_PERMANENT(src);
+    bool permanent_ref = MARKED_IN_BITMAP(GET_HEAP_PAGE(src)->permanent_ref_bits, src) != 0;
     age = RVALUE_AGE_GET(src);
 
     /* Clear bits for eventual T_MOVED */
@@ -10649,6 +11162,8 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     CLEAR_IN_BITMAP(GET_HEAP_PAGE(src)->remembered_bits, src);
     CLEAR_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(src), src);
     CLEAR_IN_BITMAP(GET_HEAP_SHREF_BITS(src), src);
+    CLEAR_IN_BITMAP(GET_HEAP_PAGE(src)->permanent_bits, src);
+    CLEAR_IN_BITMAP(GET_HEAP_PAGE(src)->permanent_ref_bits, src);
 
     /* Move the object */
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
@@ -10713,6 +11228,20 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_pa
     }
 
     RVALUE_AGE_SET(dest, age);
+
+    /* Compaction runs only with full marks, which keep the permanent set (minus the
+     * dead), so the bits travel with the object.  Same-objspace move: the count stands. */
+    if (permanent) {
+        struct heap_page *dpage = GET_HEAP_PAGE(dest);
+        MARK_IN_BITMAP(dpage->permanent_bits, dest);
+        dpage->flags.has_permanent_objects = TRUE;
+        /* A re-embedded object now references its former fields_obj's contents. */
+        if (permanent_ref || src_slot_size != slot_size) gc_permanent_ref_set(dest);
+    }
+    else {
+        CLEAR_IN_BITMAP(GET_HEAP_PAGE(dest)->permanent_bits, dest);
+        CLEAR_IN_BITMAP(GET_HEAP_PAGE(dest)->permanent_ref_bits, dest);
+    }
 
     /* A re-embedded object (rb_gc_obj_changed_slot_size) references its
      * former fields_obj's contents directly; the write-barrier history
@@ -11202,6 +11731,11 @@ enum gc_stat_sym {
     gc_stat_sym_remembered_wb_unprotected_objects_limit,
     gc_stat_sym_old_objects,
     gc_stat_sym_old_objects_limit,
+    gc_stat_sym_permanent_objects,
+    gc_stat_sym_permanent_promote_count,
+    gc_stat_sym_permanent_partial_major_count,
+    gc_stat_sym_permanent_full_major_count,
+    gc_stat_sym_permanent_roots,
 #if RGENGC_ESTIMATE_OLDMALLOC
     gc_stat_sym_oldmalloc_increase_bytes,
     gc_stat_sym_oldmalloc_increase_bytes_limit,
@@ -11259,6 +11793,11 @@ setup_gc_stat_symbols(void)
     S(remembered_wb_unprotected_objects_limit);
     S(old_objects);
     S(old_objects_limit);
+    S(permanent_objects);
+    S(permanent_promote_count);
+    S(permanent_partial_major_count);
+    S(permanent_full_major_count);
+    S(permanent_roots);
 #if RGENGC_ESTIMATE_OLDMALLOC
     S(oldmalloc_increase_bytes);
     S(oldmalloc_increase_bytes_limit);
@@ -11424,6 +11963,11 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
     SET(old_objects, objspace->rgengc.old_objects);
     SET(old_objects_limit, objspace->rgengc.old_objects_limit);
+    SET(permanent_objects, objspace->permanent.objects);
+    SET(permanent_promote_count, objspace->permanent.promote_count);
+    SET(permanent_partial_major_count, objspace->permanent.partial_count);
+    SET(permanent_full_major_count, objspace->permanent.full_count);
+    SET(permanent_roots, objspace->permanent.last_roots);
 #if RGENGC_ESTIMATE_OLDMALLOC
     SET(oldmalloc_increase_bytes, gc_oldmalloc_increase_load(objspace));
     SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
@@ -11596,6 +12140,8 @@ rb_gc_impl_config_get(void *objspace_ptr)
     VALUE hash = rb_hash_new();
 
     rb_hash_aset(hash, sym("rgengc_allow_full_mark"), RBOOL(gc_config_full_mark_val));
+    rb_hash_aset(hash, sym("permanent_generation"), RBOOL(objspace->permanent.enabled));
+    rb_hash_aset(hash, sym("permanent_full_mark_interval"), SIZET2NUM(objspace->permanent.full_mark_interval));
 
     return hash;
 }
@@ -11604,9 +12150,31 @@ static int
 gc_config_set_key(VALUE key, VALUE value, VALUE data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
-    if (rb_sym2id(key) == rb_intern("rgengc_allow_full_mark")) {
+    ID id = rb_sym2id(key);
+    if (id == rb_intern("rgengc_allow_full_mark")) {
         gc_rest(objspace);
         gc_config_full_mark_set(RTEST(value));
+    }
+    else if (id == rb_intern("permanent_generation")) {
+        /* The generation lives in the main objspace. */
+        if (objspace == global_objspace->main_objspace) {
+            objspace->permanent.enabled = RTEST(value);
+            if (!objspace->permanent.enabled && gc_permanent_active(objspace)) {
+                gc_permanent_dissolve(objspace);
+            }
+        }
+    }
+    else if (id == rb_intern("permanent_full_mark_interval")) {
+        objspace->permanent.full_mark_interval = NUM2SIZET(value);
+    }
+    else if (id == rb_intern("permanent_promote")) {
+        /* Promote now, without the full GC and compaction of Process.warmup: the
+         * objects that are old at this point join the generation. */
+        if (RTEST(value) && objspace->permanent.enabled) gc_permanent_promote(objspace);
+    }
+    else if (id == rb_intern("permanent_collect")) {
+        /* One-shot: the next major also collects the permanent objects. */
+        if (RTEST(value)) objspace->permanent.collect_next = true;
     }
     return ST_CONTINUE;
 }
@@ -11806,6 +12374,22 @@ rb_gc_impl_set_params(void *objspace_ptr)
         gc_params.malloc_limit_max = SIZE_MAX;
     }
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0, 0.0, FALSE);
+
+    /* Experimental; parsed quietly (get_envparam_size reports to stderr when verbose). */
+    {
+        const char *e;
+        if ((e = getenv("RUBY_GC_PERMANENT_GENERATION")) && *e) {
+            objspace->permanent.enabled = strtoul(e, NULL, 10) != 0;
+        }
+        if ((e = getenv("RUBY_GC_PERMANENT_FULL_MARK_INTERVAL")) && *e) {
+            objspace->permanent.full_mark_interval = strtoul(e, NULL, 10);
+        }
+        /* Test mode: promote after every Nth major, without Process.warmup. */
+        if ((e = getenv("RUBY_GC_PERMANENT_AUTO_PROMOTE")) && *e) {
+            objspace->permanent.auto_promote_interval = strtoul(e, NULL, 10);
+            if (objspace->permanent.auto_promote_interval) objspace->permanent.enabled = true;
+        }
+    }
 
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (get_envparam_size("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0)) {
@@ -13618,6 +14202,8 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     }
 
     gc_tdata_deferred_free_pjob_ensure();
+
+    objspace->permanent.promote_pjob = rb_postponed_job_preregister(0, gc_permanent_auto_promote, NULL);
 
     /* A standard RVALUE (RBasic + embedded VALUEs + debug overhead) must fit
      * in at least one pool.  In debug builds RVALUE_OVERHEAD can push this

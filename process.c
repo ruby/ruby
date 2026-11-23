@@ -8696,6 +8696,8 @@ static VALUE rb_mProcID_Syscall;
  *  * Frees all empty heap pages and increments the allocatable pages counter
  *    by the number of pages freed.
  *  * Invoke +malloc_trim+ if available to free empty malloc pages.
+ *  * With <tt>GC.config(permanent_generation: true)</tt>, makes all old objects
+ *    permanent: later major GCs skip them (see GC.config).
  *  * Eagerly loads the +error_highlight+, +did_you_mean+, and +syntax_suggest+
  *    gems, which are otherwise loaded lazily on the first error display.
  */
