@@ -4,6 +4,7 @@
 #include "prism/compiler/inline.h"
 #include "prism/excludes.h"
 #include "prism/internal/options.h"
+#include "prism/stringy.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -82,6 +83,13 @@ typedef struct {
     /* The length of the encoding name in bytes, excluding the terminator. */
     uint8_t name_length;
 } pm_encoding_t;
+
+/* Return a string view of the encoding name. */
+static PRISM_INLINE pm_string_t
+pm_encoding_string(const pm_encoding_t *encoding) {
+    pm_string_t name = { (const uint8_t *) encoding->name, encoding->name_length };
+    return name;
+}
 
 /*
  * Return true if the encoding is a multibyte encoding. Every kind other than

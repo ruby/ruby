@@ -2731,7 +2731,7 @@ pm_regexp_check_option(const pm_regexp_t *regexp) {
         regexp->location.length,
         PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH,
         (uint8_t) option,
-        pm_diagnostic_string(regexp->encoding->name)
+        pm_encoding_string(regexp->encoding)
     );
     if (option != 'n') return read_encoding;
 
@@ -3659,8 +3659,8 @@ pm_regexp_error_incompatible(pm_parser_t *parser, pm_location_t location, const 
         location.start,
         location.length,
         PM_ERR_REGEXP_INTERPOLATION_ENCODING,
-        pm_diagnostic_string(left->name),
-        pm_diagnostic_string(right->name)
+        pm_encoding_string(left),
+        pm_encoding_string(right)
     );
 }
 
