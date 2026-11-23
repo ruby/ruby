@@ -4001,26 +4001,17 @@ pm_float_node_value(pm_parser_t *parser, const pm_token_t *token) {
     double value = pm_double_parse(token->start, token->end, &out_of_range);
 
     if (out_of_range) {
-        size_t length = PM_TOKEN_LENGTH(token);
-        size_t warn_width;
-        const char *ellipsis;
-
-        if (length > 20) {
-            warn_width = 20;
-            ellipsis = "...";
-        } else {
-            warn_width = length;
-            ellipsis = "";
-        }
+        uint32_t length = PM_TOKEN_LENGTH(token);
+        bool truncated = length > 20;
 
         pm_diagnostic_list_append_slice_slice(
             &parser->metadata_arena,
             &parser->warning_list,
             PM_TOKEN_START(parser, token),
-            PM_TOKEN_LENGTH(token),
+            length,
             PM_WARN_FLOAT_OUT_OF_RANGE,
-            pm_diagnostic_slice(token->start, warn_width),
-            pm_diagnostic_string(ellipsis)
+            pm_diagnostic_slice(token->start, truncated ? 20 : length),
+            pm_diagnostic_slice("...", truncated ? 3 : 0)
         );
     }
 
