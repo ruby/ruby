@@ -21357,6 +21357,14 @@ parse_write_value_comma_check(pm_parser_t *parser, const pm_node_t *value) {
     }
 }
 
+/* A command assignment is a stmt. A nested assignment inherits the outer
+ * assignment's permission to take a command on its right-hand side. */
+static PRISM_INLINE uint8_t
+parse_assignment_command_flag(pm_binding_power_t binding_power, uint8_t flags) {
+    if (binding_power == PM_BINDING_POWER_ASSIGNMENT) return flags & PM_PARSE_ACCEPTS_COMMAND_CALL;
+    return (binding_power < PM_BINDING_POWER_MODIFIER || (flags & PM_PARSE_ACCEPTS_STATEMENT)) ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0;
+}
+
 /**
  * Parse a value that is going to be written to some kind of variable or method
  * call. We need to handle this separately because the rescue modifier is
@@ -21370,9 +21378,7 @@ static pm_node_t *
 parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     /* Where an operator write accepts a command call it also accepts an
      * endless method with a command body (`x += def f = foo 1`). */
-    uint8_t command_flags = (previous_binding_power == PM_BINDING_POWER_ASSIGNMENT)
-        ? (uint8_t) (flags & PM_PARSE_ACCEPTS_COMMAND_CALL)
-        : (previous_binding_power < PM_BINDING_POWER_MATCH ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0);
+    uint8_t command_flags = parse_assignment_command_flag(previous_binding_power, flags);
     if (command_flags) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
 
     pm_node_t *value = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags), diag_id, (uint16_t) (depth + 1));
@@ -21480,12 +21486,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     bool permitted = true;
     if (!statement_level && match1(parser, PM_TOKEN_USTAR)) permitted = false;
 
-    // A command call (e.g. `x = y z`) is permitted as the value when assigning
-    // directly (carrying the caller's flag), or in any statement-level context
-    // — which includes a rescue modifier value via the flag.
-    uint8_t command_call_flag = (previous_binding_power == PM_BINDING_POWER_ASSIGNMENT)
-        ? (uint8_t) (flags & PM_PARSE_ACCEPTS_COMMAND_CALL)
-        : ((previous_binding_power < PM_BINDING_POWER_MODIFIER || statement_level) ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0);
+    uint8_t command_call_flag = parse_assignment_command_flag(previous_binding_power, flags);
 
     /* Where a single-target write accepts a command call it also accepts an
      * endless method with a command body (`x = def f = foo 1`), but a
