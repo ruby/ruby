@@ -9031,27 +9031,34 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t fl
     }
 }
 
-/**
- * Warn about using a whitespace character in an escape, as opposed to using
- * its escaped form. Note that we can quite copy the source because the warning
- * message replaces \\c with \\C.
- */
-static void
-escape_read_warn(pm_parser_t *parser, uint8_t flags, uint8_t flag, const char *type) {
-#define FLAG(value) ((value & PM_ESCAPE_FLAG_CONTROL) ? "\\C-" : (value & PM_ESCAPE_FLAG_META) ? "\\M-" : "")
+/* Write the canonical prefix for a control or meta escape. */
+static size_t
+escape_write_modifier(uint8_t *dest, uint8_t flags) {
+    if ((flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) == 0) return 0;
 
-    pm_diagnostic_list_append_slice_slice_slice(
+    dest[0] = '\\';
+    dest[1] = (flags & PM_ESCAPE_FLAG_CONTROL) ? 'C' : 'M';
+    dest[2] = '-';
+    return 3;
+}
+
+/* Suggest the escaped form of a literal whitespace character. */
+static void
+escape_read_warn(pm_parser_t *parser, uint8_t flags, uint8_t flag, uint8_t letter) {
+    uint8_t suggestion[sizeof("\\C-\\M-\\s") - 1];
+    size_t length = escape_write_modifier(suggestion, flags);
+    length += escape_write_modifier(suggestion + length, flag);
+    suggestion[length++] = '\\';
+    suggestion[length++] = letter;
+
+    pm_diagnostic_list_append_slice(
         &parser->metadata_arena,
         &parser->warning_list,
         PM_TOKEN_START(parser, &parser->current),
         PM_TOKEN_LENGTH(&parser->current),
         PM_WARN_INVALID_CHARACTER,
-        pm_diagnostic_string(FLAG(flags)),
-        pm_diagnostic_string(FLAG(flag)),
-        pm_diagnostic_string(type)
+        (pm_string_t) { .source = suggestion, .length = length }
     );
-
-#undef FLAG
 }
 
 /**
@@ -9073,11 +9080,11 @@ escape_consume_modified_byte(pm_parser_t *parser, uint8_t byte, uint8_t flags, u
     }
 
     switch (byte) {
-        case '\n': escape_read_warn(parser, flags, flag, "\\n"); break;
-        case '\t': escape_read_warn(parser, flags, flag, "\\t"); break;
-        case '\v': escape_read_warn(parser, flags, flag, "\\v"); break;
-        case '\f': escape_read_warn(parser, flags, flag, "\\f"); break;
-        case '\r': escape_read_warn(parser, flags, flag, "\\r"); break;
+        case '\n': escape_read_warn(parser, flags, flag, 'n'); break;
+        case '\t': escape_read_warn(parser, flags, flag, 't'); break;
+        case '\v': escape_read_warn(parser, flags, flag, 'v'); break;
+        case '\f': escape_read_warn(parser, flags, flag, 'f'); break;
+        case '\r': escape_read_warn(parser, flags, flag, 'r'); break;
         default: break;
     }
 
@@ -9405,7 +9412,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     goto escape_read_next;
                 case ' ':
                     parser->current.end++;
-                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, "\\s");
+                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_CONTROL, 's');
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 default: {
@@ -9459,7 +9466,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     goto escape_read_next;
                 case ' ':
                     parser->current.end++;
-                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_META, "\\s");
+                    escape_read_warn(parser, flags, PM_ESCAPE_FLAG_META, 's');
                     escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
                 default:
