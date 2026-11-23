@@ -1095,394 +1095,398 @@ pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdif
 #undef PM_ENCODING_WIDTH_1
 #undef PM_ENCODING_BYTE_IN
 
+#define PM_ENCODING_NAME(name_) .name = "" name_, .name_length = sizeof(name_) - 1
+
 /**
  * This is the table of all of the encodings that prism supports.
  */
 const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_UTF_8] = {
-        .name = "UTF-8",
+        PM_ENCODING_NAME("UTF-8"),
         .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_US_ASCII] = {
-        .name = "US-ASCII",
+        PM_ENCODING_NAME("US-ASCII"),
         .kind = PM_ENCODING_KIND_ASCII
     },
     [PM_ENCODING_ASCII_8BIT] = {
-        .name = "ASCII-8BIT",
+        PM_ENCODING_NAME("ASCII-8BIT"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_EUC_JP] = {
-        .name = "EUC-JP",
+        PM_ENCODING_NAME("EUC-JP"),
         .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_WINDOWS_31J] = {
-        .name = "Windows-31J",
+        PM_ENCODING_NAME("Windows-31J"),
         .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
 
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
     [PM_ENCODING_BIG5] = {
-        .name = "Big5",
+        PM_ENCODING_NAME("Big5"),
         .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_BIG5_HKSCS] = {
-        .name = "Big5-HKSCS",
+        PM_ENCODING_NAME("Big5-HKSCS"),
         .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_BIG5_UAO] = {
-        .name = "Big5-UAO",
+        PM_ENCODING_NAME("Big5-UAO"),
         .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_CESU_8] = {
-        .name = "CESU-8",
+        PM_ENCODING_NAME("CESU-8"),
         .kind = PM_ENCODING_KIND_CESU_8
     },
     [PM_ENCODING_CP51932] = {
-        .name = "CP51932",
+        PM_ENCODING_NAME("CP51932"),
         .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_CP850] = {
-        .name = "CP850",
+        PM_ENCODING_NAME("CP850"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_CP852] = {
-        .name = "CP852",
+        PM_ENCODING_NAME("CP852"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_CP855] = {
-        .name = "CP855",
+        PM_ENCODING_NAME("CP855"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_CP949] = {
-        .name = "CP949",
+        PM_ENCODING_NAME("CP949"),
         .kind = PM_ENCODING_KIND_CP949
     },
     [PM_ENCODING_CP950] = {
-        .name = "CP950",
+        PM_ENCODING_NAME("CP950"),
         .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_CP951] = {
-        .name = "CP951",
+        PM_ENCODING_NAME("CP951"),
         .kind = PM_ENCODING_KIND_BIG5
     },
     [PM_ENCODING_EMACS_MULE] = {
-        .name = "Emacs-Mule",
+        PM_ENCODING_NAME("Emacs-Mule"),
         .kind = PM_ENCODING_KIND_EMACS_MULE
     },
     [PM_ENCODING_EUC_JP_MS] = {
-        .name = "eucJP-ms",
+        PM_ENCODING_NAME("eucJP-ms"),
         .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_EUC_JIS_2004] = {
-        .name = "EUC-JIS-2004",
+        PM_ENCODING_NAME("EUC-JIS-2004"),
         .kind = PM_ENCODING_KIND_EUC_JP
     },
     [PM_ENCODING_EUC_KR] = {
-        .name = "EUC-KR",
+        PM_ENCODING_NAME("EUC-KR"),
         .kind = PM_ENCODING_KIND_EUC_KR
     },
     [PM_ENCODING_EUC_TW] = {
-        .name = "EUC-TW",
+        PM_ENCODING_NAME("EUC-TW"),
         .kind = PM_ENCODING_KIND_EUC_TW
     },
     [PM_ENCODING_GB12345] = {
-        .name = "GB12345",
+        PM_ENCODING_NAME("GB12345"),
         .kind = PM_ENCODING_KIND_EUC_KR
     },
     [PM_ENCODING_GB18030] = {
-        .name = "GB18030",
+        PM_ENCODING_NAME("GB18030"),
         .kind = PM_ENCODING_KIND_GB18030
     },
     [PM_ENCODING_GB1988] = {
-        .name = "GB1988",
+        PM_ENCODING_NAME("GB1988"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_GB2312] = {
-        .name = "GB2312",
+        PM_ENCODING_NAME("GB2312"),
         .kind = PM_ENCODING_KIND_EUC_KR
     },
     [PM_ENCODING_GBK] = {
-        .name = "GBK",
+        PM_ENCODING_NAME("GBK"),
         .kind = PM_ENCODING_KIND_GBK
     },
     [PM_ENCODING_IBM437] = {
-        .name = "IBM437",
+        PM_ENCODING_NAME("IBM437"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM720] = {
-        .name = "IBM720",
+        PM_ENCODING_NAME("IBM720"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM737] = {
-        .name = "IBM737",
+        PM_ENCODING_NAME("IBM737"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM775] = {
-        .name = "IBM775",
+        PM_ENCODING_NAME("IBM775"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM852] = {
-        .name = "IBM852",
+        PM_ENCODING_NAME("IBM852"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM855] = {
-        .name = "IBM855",
+        PM_ENCODING_NAME("IBM855"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM857] = {
-        .name = "IBM857",
+        PM_ENCODING_NAME("IBM857"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM860] = {
-        .name = "IBM860",
+        PM_ENCODING_NAME("IBM860"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM861] = {
-        .name = "IBM861",
+        PM_ENCODING_NAME("IBM861"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM862] = {
-        .name = "IBM862",
+        PM_ENCODING_NAME("IBM862"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM863] = {
-        .name = "IBM863",
+        PM_ENCODING_NAME("IBM863"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM864] = {
-        .name = "IBM864",
+        PM_ENCODING_NAME("IBM864"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM865] = {
-        .name = "IBM865",
+        PM_ENCODING_NAME("IBM865"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM866] = {
-        .name = "IBM866",
+        PM_ENCODING_NAME("IBM866"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_IBM869] = {
-        .name = "IBM869",
+        PM_ENCODING_NAME("IBM869"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_1] = {
-        .name = "ISO-8859-1",
+        PM_ENCODING_NAME("ISO-8859-1"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_1_uppercase
     },
     [PM_ENCODING_ISO_8859_2] = {
-        .name = "ISO-8859-2",
+        PM_ENCODING_NAME("ISO-8859-2"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_2_uppercase
     },
     [PM_ENCODING_ISO_8859_3] = {
-        .name = "ISO-8859-3",
+        PM_ENCODING_NAME("ISO-8859-3"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_3_uppercase
     },
     [PM_ENCODING_ISO_8859_4] = {
-        .name = "ISO-8859-4",
+        PM_ENCODING_NAME("ISO-8859-4"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_4_uppercase
     },
     [PM_ENCODING_ISO_8859_5] = {
-        .name = "ISO-8859-5",
+        PM_ENCODING_NAME("ISO-8859-5"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_5_uppercase
     },
     [PM_ENCODING_ISO_8859_6] = {
-        .name = "ISO-8859-6",
+        PM_ENCODING_NAME("ISO-8859-6"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_7] = {
-        .name = "ISO-8859-7",
+        PM_ENCODING_NAME("ISO-8859-7"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_7_uppercase
     },
     [PM_ENCODING_ISO_8859_8] = {
-        .name = "ISO-8859-8",
+        PM_ENCODING_NAME("ISO-8859-8"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_9] = {
-        .name = "ISO-8859-9",
+        PM_ENCODING_NAME("ISO-8859-9"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_1_uppercase
     },
     [PM_ENCODING_ISO_8859_10] = {
-        .name = "ISO-8859-10",
+        PM_ENCODING_NAME("ISO-8859-10"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_10_uppercase
     },
     [PM_ENCODING_ISO_8859_11] = {
-        .name = "ISO-8859-11",
+        PM_ENCODING_NAME("ISO-8859-11"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_13] = {
-        .name = "ISO-8859-13",
+        PM_ENCODING_NAME("ISO-8859-13"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_13_uppercase
     },
     [PM_ENCODING_ISO_8859_14] = {
-        .name = "ISO-8859-14",
+        PM_ENCODING_NAME("ISO-8859-14"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_14_uppercase
     },
     [PM_ENCODING_ISO_8859_15] = {
-        .name = "ISO-8859-15",
+        PM_ENCODING_NAME("ISO-8859-15"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_15_uppercase
     },
     [PM_ENCODING_ISO_8859_16] = {
-        .name = "ISO-8859-16",
+        PM_ENCODING_NAME("ISO-8859-16"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_16_uppercase
     },
     [PM_ENCODING_KOI8_R] = {
-        .name = "KOI8-R",
+        PM_ENCODING_NAME("KOI8-R"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_koi8_r_uppercase
     },
     [PM_ENCODING_KOI8_U] = {
-        .name = "KOI8-U",
+        PM_ENCODING_NAME("KOI8-U"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_koi8_u_uppercase
     },
     [PM_ENCODING_MAC_CENT_EURO] = {
-        .name = "macCentEuro",
+        PM_ENCODING_NAME("macCentEuro"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_CROATIAN] = {
-        .name = "macCroatian",
+        PM_ENCODING_NAME("macCroatian"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_CYRILLIC] = {
-        .name = "macCyrillic",
+        PM_ENCODING_NAME("macCyrillic"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_GREEK] = {
-        .name = "macGreek",
+        PM_ENCODING_NAME("macGreek"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_ICELAND] = {
-        .name = "macIceland",
+        PM_ENCODING_NAME("macIceland"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_JAPANESE] = {
-        .name = "MacJapanese",
+        PM_ENCODING_NAME("MacJapanese"),
         .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_MAC_ROMAN] = {
-        .name = "macRoman",
+        PM_ENCODING_NAME("macRoman"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_ROMANIA] = {
-        .name = "macRomania",
+        PM_ENCODING_NAME("macRomania"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_THAI] = {
-        .name = "macThai",
+        PM_ENCODING_NAME("macThai"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_TURKISH] = {
-        .name = "macTurkish",
+        PM_ENCODING_NAME("macTurkish"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_MAC_UKRAINE] = {
-        .name = "macUkraine",
+        PM_ENCODING_NAME("macUkraine"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_SHIFT_JIS] = {
-        .name = "Shift_JIS",
+        PM_ENCODING_NAME("Shift_JIS"),
         .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_SJIS_DOCOMO] = {
-        .name = "SJIS-DoCoMo",
+        PM_ENCODING_NAME("SJIS-DoCoMo"),
         .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_SJIS_KDDI] = {
-        .name = "SJIS-KDDI",
+        PM_ENCODING_NAME("SJIS-KDDI"),
         .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_SJIS_SOFTBANK] = {
-        .name = "SJIS-SoftBank",
+        PM_ENCODING_NAME("SJIS-SoftBank"),
         .kind = PM_ENCODING_KIND_SHIFT_JIS
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP] = {
-        .name = "stateless-ISO-2022-JP",
+        PM_ENCODING_NAME("stateless-ISO-2022-JP"),
         .kind = PM_ENCODING_KIND_EMACS_MULE
     },
     [PM_ENCODING_STATELESS_ISO_2022_JP_KDDI] = {
-        .name = "stateless-ISO-2022-JP-KDDI",
+        PM_ENCODING_NAME("stateless-ISO-2022-JP-KDDI"),
         .kind = PM_ENCODING_KIND_EMACS_MULE
     },
     [PM_ENCODING_TIS_620] = {
-        .name = "TIS-620",
+        PM_ENCODING_NAME("TIS-620"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_UTF8_MAC] = {
-        .name = "UTF8-MAC",
+        PM_ENCODING_NAME("UTF8-MAC"),
         .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_UTF8_DOCOMO] = {
-        .name = "UTF8-DoCoMo",
+        PM_ENCODING_NAME("UTF8-DoCoMo"),
         .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_UTF8_KDDI] = {
-        .name = "UTF8-KDDI",
+        PM_ENCODING_NAME("UTF8-KDDI"),
         .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_UTF8_SOFTBANK] = {
-        .name = "UTF8-SoftBank",
+        PM_ENCODING_NAME("UTF8-SoftBank"),
         .kind = PM_ENCODING_KIND_UTF_8
     },
     [PM_ENCODING_WINDOWS_1250] = {
-        .name = "Windows-1250",
+        PM_ENCODING_NAME("Windows-1250"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1250_uppercase
     },
     [PM_ENCODING_WINDOWS_1251] = {
-        .name = "Windows-1251",
+        PM_ENCODING_NAME("Windows-1251"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1251_uppercase
     },
     [PM_ENCODING_WINDOWS_1252] = {
-        .name = "Windows-1252",
+        PM_ENCODING_NAME("Windows-1252"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1252_uppercase
     },
     [PM_ENCODING_WINDOWS_1253] = {
-        .name = "Windows-1253",
+        PM_ENCODING_NAME("Windows-1253"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1253_uppercase
     },
     [PM_ENCODING_WINDOWS_1254] = {
-        .name = "Windows-1254",
+        PM_ENCODING_NAME("Windows-1254"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1254_uppercase
     },
     [PM_ENCODING_WINDOWS_1255] = {
-        .name = "Windows-1255",
+        PM_ENCODING_NAME("Windows-1255"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_1256] = {
-        .name = "Windows-1256",
+        PM_ENCODING_NAME("Windows-1256"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_1257] = {
-        .name = "Windows-1257",
+        PM_ENCODING_NAME("Windows-1257"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_13_uppercase
     },
     [PM_ENCODING_WINDOWS_1258] = {
-        .name = "Windows-1258",
+        PM_ENCODING_NAME("Windows-1258"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_874] = {
-        .name = "Windows-874",
+        PM_ENCODING_NAME("Windows-874"),
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     }
 #endif
 };
+
+#undef PM_ENCODING_NAME
 
 /**
  * Parse the given name of an encoding and return a pointer to the corresponding
