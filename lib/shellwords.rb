@@ -88,8 +88,7 @@ module Shellwords
   #   argv #=> ["here", "are", "two words"]
   def shellsplit(line)
     words = []
-    field = String.new
-    field_started = false
+    field = nil
     line.scan(/\G\s*(?>([^\0\s\\\'\"]+)|'([^\0\']*)'|"((?:[^\0\"\\]|\\[^\0])*)"|(\\[^\0]?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       if garbage
@@ -105,16 +104,15 @@ module Shellwords
       #   characters when considered special:
       #
       #   $ ` " \ <newline>
-      # A backslash-newline outside quotes is a line continuation and is
-      # removed entirely.
+      #
+      # An unquoted line continuation alone does not start a word.
       unless esc == "\\\n"
-        field << (word || sq || (dq && dq.gsub(/\\([$`"\\\n])/) { $1 == "\n" ? "" : $1 }) || esc.gsub(/\\(.)/, '\\1'))
-        field_started = true
+        field ||= String.new
+        field << (word || sq || (dq && dq.gsub(/\\(?:([$`"\\])|\n)/, '\\1')) || esc.gsub(/\\(.)/, '\\1'))
       end
-      if sep && field_started
+      if sep && field
         words << field
-        field = String.new
-        field_started = false
+        field = nil
       end
     end
     words

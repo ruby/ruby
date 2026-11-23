@@ -19,14 +19,18 @@ class TestShellwords < Test::Unit::TestCase
   end
 
   def test_backslash_newline
-    assert_equal(["foobar"], shellwords("foo\\\nbar"))
-    assert_equal(["foo", "bar"], shellwords("foo \\\n bar"))
-    assert_equal(["foo", "bar"], shellwords("foo\\\n bar"))
-    assert_equal(["foo"], shellwords("foo \\\n"))
-    assert_equal([], shellwords("\\\n"))
-    assert_equal(["foobar"], shellwords("\"foo\\\nbar\""))
-    assert_equal(["foo\\\nbar"], shellwords("'foo\\\nbar'"))
+    continuation = "\\\n"
+
+    assert_equal(["foobar"], shellwords("foo#{continuation}bar"))
+    assert_equal(["foo", "bar"], shellwords("foo #{continuation} bar"))
+    assert_equal(["foo", "bar"], shellwords("foo#{continuation} bar"))
+    assert_equal(["foo"], shellwords("foo #{continuation}"))
+    assert_equal([], shellwords(continuation))
+    assert_equal(["foobar"], shellwords("\"foo#{continuation}bar\""))
+    assert_equal(["foo#{continuation}bar"], shellwords("'foo#{continuation}bar'"))
     assert_equal(["foo\nbar"], shellwords("foo'\n'bar"))
+    assert_equal(["foo#{continuation}bar"], shellwords("\"foo\\#{continuation}bar\""))
+    assert_equal([""], shellwords("\"#{continuation}\""))
   end
 
   def test_unmatched_double_quote
