@@ -82,7 +82,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_append_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>), PM_BUFFER_ESCAPING_RUBY);
                 PM_BUFFER_APPEND_LITERAL(output_buffer, "\"\n");
             <%- when Ruby::Prism::Template::NodeListField -%>
-                pm_buffer_append_format(output_buffer, " (length: %lu)\n", (unsigned long) (cast-><%= field.name %>.size));
+                PM_BUFFER_APPEND_LITERAL(output_buffer, " (length: ");
+                pm_buffer_append_decimal(output_buffer, cast-><%= field.name %>.size);
+                PM_BUFFER_APPEND_LITERAL(output_buffer, ")\n");
 
                 size_t last_index = cast-><%= field.name %>.size;
                 for (uint32_t index = 0; index < last_index; index++) {
@@ -131,10 +133,10 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     pm_buffer_append_source(output_buffer, parser->start + location->start, (size_t) location->length, PM_BUFFER_ESCAPING_RUBY);
                     PM_BUFFER_APPEND_LITERAL(output_buffer, "\"\n");
                 }
-            <%- when Ruby::Prism::Template::UInt8Field -%>
-                pm_buffer_append_format(output_buffer, " %" PRIu8 "\n", cast-><%= field.name %>);
-            <%- when Ruby::Prism::Template::UInt32Field -%>
-                pm_buffer_append_format(output_buffer, " %" PRIu32 "\n", cast-><%= field.name %>);
+            <%- when Ruby::Prism::Template::UInt8Field, Ruby::Prism::Template::UInt32Field -%>
+                pm_buffer_append_byte(output_buffer, ' ');
+                pm_buffer_append_decimal(output_buffer, cast-><%= field.name %>);
+                pm_buffer_append_byte(output_buffer, '\n');
             <%- when Ruby::Prism::Template::Flags -%>
                 bool found = false;
                 <%- field.values.each do |value| -%>

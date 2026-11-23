@@ -95,10 +95,8 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             } else {
                 PM_BUFFER_APPEND_LITERAL(buffer, "null");
             }
-            <%- when Ruby::Prism::Template::UInt8Field -%>
-            pm_buffer_append_format(buffer, "%" PRIu8, cast-><%= field.name %>);
-            <%- when Ruby::Prism::Template::UInt32Field -%>
-            pm_buffer_append_format(buffer, "%" PRIu32, cast-><%= field.name %>);
+            <%- when Ruby::Prism::Template::UInt8Field, Ruby::Prism::Template::UInt32Field -%>
+            pm_buffer_append_decimal(buffer, cast-><%= field.name %>);
             <%- when Ruby::Prism::Template::Flags -%>
             size_t flags = 0;
             pm_buffer_append_byte(buffer, '[');

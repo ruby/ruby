@@ -142,6 +142,22 @@ pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
 }
 
 /**
+ * Append the decimal digits of an unsigned integer without leading zeros.
+ */
+void
+pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value) {
+    char digits[20]; /* UINT64_MAX has 20 decimal digits. */
+    size_t offset = sizeof(digits);
+
+    do {
+        digits[--offset] = (char) ('0' + value % 10);
+        value /= 10;
+    } while (value != 0);
+
+    pm_buffer_append_string(buffer, digits + offset, sizeof(digits) - offset);
+}
+
+/**
  * Append a string to the buffer.
  */
 void

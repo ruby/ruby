@@ -37,6 +37,9 @@ void pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length
 /* Append a formatted string to the buffer. */
 void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) PRISM_ATTRIBUTE_FORMAT(2, 3);
 
+/* Append the decimal digits of an unsigned integer without leading zeros. */
+void pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value);
+
 /* Append a string to the buffer. */
 void pm_buffer_append_string(pm_buffer_t *buffer, const char *value, size_t length);
 
