@@ -1465,13 +1465,15 @@ typedef enum {
  */
 static void
 pm_parser_warn_conditional_predicate_literal(pm_parser_t *parser, pm_node_t *node, pm_conditional_predicate_type_t type, pm_diagnostic_id_t diag_id, const char *prefix) {
-    const char *context;
+    pm_string_t context;
     switch (type) {
         case PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL:
-            context = "condition";
+            context.source = (const uint8_t *) "condition";
+            context.length = 9;
             break;
         case PM_CONDITIONAL_PREDICATE_TYPE_FLIP_FLOP:
-            context = "flip-flop";
+            context.source = (const uint8_t *) "flip-flop";
+            context.length = 9;
             break;
         case PM_CONDITIONAL_PREDICATE_TYPE_NOT:
             return;
@@ -1487,7 +1489,7 @@ pm_parser_warn_conditional_predicate_literal(pm_parser_t *parser, pm_node_t *nod
         PM_NODE_LENGTH(node),
         diag_id,
         pm_diagnostic_string(prefix),
-        pm_diagnostic_string(context)
+        context
     );
 }
 
