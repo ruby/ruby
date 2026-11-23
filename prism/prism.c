@@ -435,64 +435,6 @@ lex_state_set(pm_parser_t *parser, pm_lex_state_t state) {
     parser->lex_state = state;
 }
 
-#ifndef PM_DEBUG_LOGGING
-/**
- * Debugging logging will print additional information to stdout whenever the
- * lexer state changes.
- */
-#define PM_DEBUG_LOGGING 0
-#endif
-
-#if PM_DEBUG_LOGGING
-PRISM_UNUSED static void
-debug_state(pm_parser_t *parser) {
-    fprintf(stderr, "STATE: ");
-    bool first = true;
-
-    if (parser->lex_state == PM_LEX_STATE_NONE) {
-        fprintf(stderr, "NONE\n");
-        return;
-    }
-
-#define CHECK_STATE(state) \
-    if (parser->lex_state & state) { \
-        if (!first) fprintf(stderr, "|"); \
-        fprintf(stderr, "%s", #state); \
-        first = false; \
-    }
-
-    CHECK_STATE(PM_LEX_STATE_BEG)
-    CHECK_STATE(PM_LEX_STATE_END)
-    CHECK_STATE(PM_LEX_STATE_ENDARG)
-    CHECK_STATE(PM_LEX_STATE_ENDFN)
-    CHECK_STATE(PM_LEX_STATE_ARG)
-    CHECK_STATE(PM_LEX_STATE_CMDARG)
-    CHECK_STATE(PM_LEX_STATE_MID)
-    CHECK_STATE(PM_LEX_STATE_FNAME)
-    CHECK_STATE(PM_LEX_STATE_DOT)
-    CHECK_STATE(PM_LEX_STATE_CLASS)
-    CHECK_STATE(PM_LEX_STATE_LABEL)
-    CHECK_STATE(PM_LEX_STATE_LABELED)
-    CHECK_STATE(PM_LEX_STATE_FITEM)
-
-#undef CHECK_STATE
-
-    fprintf(stderr, "\n");
-}
-
-static void
-debug_lex_state_set(pm_parser_t *parser, pm_lex_state_t state, char const * caller_name, int line_number) {
-    fprintf(stderr, "Caller: %s:%d\nPrevious: ", caller_name, line_number);
-    debug_state(parser);
-    lex_state_set(parser, state);
-    fprintf(stderr, "Now: ");
-    debug_state(parser);
-    fprintf(stderr, "\n");
-}
-
-#define lex_state_set(parser, state) debug_lex_state_set(parser, state, __func__, __LINE__)
-#endif
-
 /******************************************************************************/
 /* Command-line macro helpers                                                 */
 /******************************************************************************/
