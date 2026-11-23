@@ -663,7 +663,7 @@ warnings:
     message: "integer literal in flip-flop"
   - name: INVALID_CHARACTER
     level: default
-    message: "invalid character syntax; use {slice}{slice}{slice}"
+    message: "invalid character syntax; use {slice}"
   - name: INVALID_MAGIC_COMMENT_VALUE
     level: verbose
     message: "invalid value for {slice}: {slice}"
