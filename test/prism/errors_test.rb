@@ -116,6 +116,19 @@ module Ruby::Prism
       assert_nil splat.expression
     end
 
+    def test_trailing_star_without_an_anonymous_rest_parameter
+      result = Ruby::Prism.parse("def f(*rest) = g *")
+      assert_equal [:argument_no_forwarding_star], result.errors.map(&:type)
+      assert_equal "*", result.errors.first.location.slice
+    end
+
+    def test_trailing_star_with_whitespace_requires_an_operand
+      [" ", "\n"].each do |whitespace|
+        result = Ruby::Prism.parse("def f(*) = g *#{whitespace}")
+        assert_equal :expect_expression_after_operator, result.errors.first.type
+      end
+    end
+
     def test_loop_modifier_owns_only_the_exits_in_its_statement
       %w[break next redo].each do |jump|
         ["while", "until"].each do |modifier|

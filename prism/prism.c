@@ -407,10 +407,9 @@ lex_state_arg_p(pm_parser_t *parser) {
 
 static PRISM_INLINE bool
 lex_state_spcarg_p(pm_parser_t *parser, bool space_seen) {
-    if (parser->current.end >= parser->end) {
-        return false;
-    }
-    return lex_state_arg_p(parser) && space_seen && !pm_char_is_whitespace(*parser->current.end);
+    /* Like parse.y's IS_SPCARG, treat end-of-input as a non-space. */
+    return lex_state_arg_p(parser) && space_seen &&
+        (parser->current.end >= parser->end || !pm_char_is_whitespace(*parser->current.end));
 }
 
 static PRISM_INLINE bool
@@ -15685,23 +15684,16 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
             case PM_TOKEN_USTAR: {
                 parser_lex(parser);
                 pm_token_t operator = parser->previous;
+                pm_node_t *expression = NULL;
 
-                if (match4(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_SEMICOLON, PM_TOKEN_BRACKET_RIGHT)) {
-                    pm_parser_scope_forwarding_positionals_check(parser, &operator);
-                    argument = UP(pm_splat_node_create(parser, &operator, NULL));
-                    if (parsed_bare_hash) {
-                        pm_parser_err_previous(parser, PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
-                    }
+                if (token_begins_expression_p(parser->current.type)) {
+                    expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT, (uint16_t) (depth + 1));
                 } else {
-                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT, (uint16_t) (depth + 1));
-
-                    if (parsed_bare_hash) {
-                        pm_parser_err(parser, PM_TOKEN_START(parser, &operator), PM_NODE_END(expression) - PM_TOKEN_START(parser, &operator), PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
-                    }
-
-                    argument = UP(pm_splat_node_create(parser, &operator, expression));
+                    pm_parser_scope_forwarding_positionals_check(parser, &operator);
                 }
 
+                argument = UP(pm_splat_node_create(parser, &operator, expression));
+                if (parsed_bare_hash) pm_parser_err_node(parser, argument, PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
                 parse_arguments_append(parser, arguments, argument);
                 break;
             }

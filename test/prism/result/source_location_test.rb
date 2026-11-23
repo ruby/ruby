@@ -1370,6 +1370,13 @@ module Ruby::Prism
 
     def test_SplatNode
       assert_location(SplatNode, "*foo = bar", 0...4, &:rest)
+      assert_location(SplatNode, "def f(*) = g *", 13...14) do |definition|
+        call = definition.body.body.first
+        assert_equal :g, call.name
+        splat = call.arguments.arguments.first
+        assert_nil splat.expression
+        splat
+      end
     end
 
     def test_StatementsNode
