@@ -103,8 +103,11 @@ class TestISeq < Test::Unit::TestCase
 
   def test_very_long_constant_path
     path = (["ConstPathLong"] * 300).join("::")
-    insns = RubyVM::InstructionSequence.compile(path).to_a.last.grep(Array).map(&:first)
-    assert_not_include(insns, :opt_getconstant_path)
+    if GC.config[:implementation] == "default"
+      # Too large for a GC slot, so it compiles to uncached lookups.
+      insns = RubyVM::InstructionSequence.compile(path).to_a.last.grep(Array).map(&:first)
+      assert_not_include(insns, :opt_getconstant_path)
+    end
     assert_raise(NameError) { eval(path) }
   end
 

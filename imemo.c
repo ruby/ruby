@@ -732,7 +732,8 @@ rb_imemo_free(VALUE obj)
 
         break;
       case imemo_const_path:
-        /* Its registrations were dropped by rb_iseq_free_const_path. */
+        /* MMTk frees objects without rb_gc_obj_free_vm_weak_references. */
+        rb_iseq_free_const_path(obj);
         RB_DEBUG_COUNTER_INC(obj_imemo_const_path);
 
         break;

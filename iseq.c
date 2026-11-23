@@ -347,7 +347,8 @@ const_path_forget_ic_i(st_data_t ic, st_data_t arg)
 }
 
 /* GC is freeing a path. Its registered ICs belong to ISeqs being freed in the
- * same sweep, so clear their entries to keep those ISeqs from reading it. */
+ * same sweep, so clear their entries to keep those ISeqs from reading it.
+ * Idempotent: called both as a weak-reference hook and from rb_imemo_free. */
 void
 rb_iseq_free_const_path(VALUE obj)
 {
@@ -400,9 +401,7 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
         // segments is NULL if we overallocated an IC but optimizations
         // removed the instruction using it.
         if (ic->entry && ic->segments) {
-            RB_VM_LOCKING() {
-                const_path_unregister_ic(ic);
-            }
+            const_path_unregister_ic(ic);
         }
     }
 }
