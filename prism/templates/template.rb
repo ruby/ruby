@@ -31,6 +31,15 @@ module Ruby::Prism
     # so this must be greater than the number of node types.
     LAZY_MARKER = 0xFF
 
+    # Emit the exact bytes even on compilers with a different execution
+    # character set for non-ASCII text.
+    def self.c_string(string)
+      escaped = string.b.gsub(/["\\?\x00-\x1f\x7f-\xff]/n) do |char|
+        char.ord.between?(32, 126) ? "\\#{char}" : "\\%03o" % char.ord
+      end
+      %("#{escaped}")
+    end
+
     # A diagnostic message alternates literal text with positional arguments.
     class Diagnostic
       FORMATS = { "slice" => "slice", "byte" => "byte", "hex" => "byte", "hex2" => "byte", "line" => "line" }.freeze
@@ -51,13 +60,8 @@ module Ruby::Prism
         @signature = formats.map { |format| FORMATS.fetch(format) }
       end
 
-      # Emit the exact bytes that the literal offsets refer to, including on
-      # compilers with a different execution character set for non-ASCII text.
       def c_message
-        escaped = literals.join.b.gsub(/["\\?\x00-\x1f\x7f-\xff]/n) do |char|
-          char.ord.between?(32, 126) ? "\\#{char}" : "\\%03o" % char.ord
-        end
-        %("#{escaped}")
+        Template.c_string(literals.join)
       end
 
       def literal_ends
@@ -665,12 +669,13 @@ module Ruby::Prism
 
     # This represents a token in the lexer.
     class Token
-      attr_reader :name, :value, :comment
+      attr_reader :name, :value, :comment, :diagnostic_name
 
       def initialize(config)
         @name = config.fetch("name")
         @value = config["value"]
         @comment = config.fetch("comment")
+        @diagnostic_name = config.fetch("diagnostic_name")
       end
     end
 
