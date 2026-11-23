@@ -389,6 +389,22 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def test_utime_out_of_filetime_range
+    # A Windows FILETIME is a 64 bit count of 100ns ticks since 1601-01-01,
+    # and SetFileTime() accepts [0, INT64_MAX], i.e. up to 910692730085 s
+    # after the Unix epoch.  Out-of-range values must fail, not wrap around.
+    t = Time.at(946684800)
+    Tempfile.create("utime") do |file|
+      File.utime(t, t, file.path)
+      [-11644473601, 910692730086, 1833029933771, 2**62, -2**62].each do |sec|
+        assert_raise(Errno::EINVAL, "File.utime with #{sec}") do
+          File.utime(sec, sec, file.path)
+        end
+      end
+      assert_equal(t, File.mtime(file.path))
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def measure_time
     log = []
     30.times do
