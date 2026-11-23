@@ -2059,6 +2059,12 @@ impl Insn {
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 
+    /// Whether this instruction may break an Invariant that a PatchPoint asserts (e.g., by calling
+    /// arbitrary code). PatchPoints can't be deduplicated or hoisted across such instructions.
+    fn may_invalidate_invariants(&self) -> bool {
+        self.effects_of().write_bits().overlaps(abstract_heaps::PatchPoint)
+    }
+
     fn counts_against_inlining_budget(&self) -> bool {
         match self {
             // Don't count metadata-only instructions.
@@ -7641,27 +7647,72 @@ impl Function {
         }
     }
 
-    /// Remove duplicate PatchPoint instructions within each basic block.
-    /// Two PatchPoints are redundant if they assert the same Invariant and no
-    /// intervening instruction could invalidate it (i.e., writes to PatchPoint).
-    fn remove_redundant_patch_points(&mut self) {
+    /// Remove duplicate PatchPoint instructions within each basic block and
+    /// hoist the remaining ones to the start of their span.
+    ///
+    /// A PatchPoint is emitted right before the code that relies on its
+    /// Invariant, but it checks nothing at run time. So, it is just as correct
+    /// at any earlier point that has a valid FrameState, as long as nothing in
+    /// between may invalidate an Invariant.
+    ///
+    /// A span starts at a PatchPoint and ends at the next instruction that may
+    /// invalidate an Invariant. Within a span:
+    ///
+    /// * Two PatchPoints that assert the same Invariant are redundant, so only
+    ///   the first is kept.
+    /// * Every other PatchPoint moves next to the first one and adopts its
+    ///   FrameState, which describes the interpreter state at that point.
+    ///
+    /// A PushInlineFrame outside a span marks the start of a new span as well.
+    /// That span uses the inline frame's `exit_state`, so PatchPoints land just
+    /// before the inline frame push.
+    ///
+    /// Hoisting frees the values that only a PatchPoint's old FrameState kept
+    /// alive. For a PatchPoint in an inlined callee, it also lets
+    /// [`Function::eliminate_empty_inline_frames`] remove the frame.
+    fn optimize_patch_points(&mut self) {
+        // The instructions that follow the current span's PatchPoints.
+        let mut non_patch_points: Vec<InsnId> = Vec::new();
+
         for block_id in self.reverse_post_order() {
             let mut seen = HashSet::new();
+            // The FrameState that the current span's PatchPoints exit with (None when outside a span).
+            let mut span_state: Option<InsnId> = None;
             let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
-                // PatchPoint is never in union-find and it does not have operands, so fake a
-                // ResolvedInsnId.
-                let insn = ResolvedInsnId(insn_id).insn(self);
-                if let Insn::PatchPoint { invariant, .. } = insn {
-                    if !seen.insert(invariant) {
-                        continue;
+                // Read the instruction as stored, without resolving it through union-find.
+                // PatchPoint and PushInlineFrame have no output, so they are never replaced
+                // and there is nothing to resolve. All other instructions are only queried for
+                // their effects and so don't need to be resolved.
+                match &mut self.insns[insn_id] {
+                    Insn::PatchPoint { invariant, state } => {
+                        if !seen.insert(*invariant) {
+                            continue;
+                        }
+                        match span_state {
+                            Some(span_state) => *state = span_state,
+                            None => span_state = Some(*state),
+                        }
+                        new_insns.push(insn_id);
                     }
-                } else if insn.effects_of().write_bits().overlaps(abstract_heaps::PatchPoint) {
-                    seen.clear();
+                    Insn::PushInlineFrame { exit_state, .. } if span_state.is_none() => {
+                        span_state = Some(*exit_state);
+                        non_patch_points.push(insn_id);
+                    }
+                    insn if insn.may_invalidate_invariants() => {
+                        // End the span and complete the hoist by moving its non-PatchPoint
+                        // instructions after the PatchPoint group.
+                        seen.clear();
+                        span_state = None;
+                        new_insns.append(&mut non_patch_points);
+                        new_insns.push(insn_id);
+                    }
+                    _ if span_state.is_some() => non_patch_points.push(insn_id),
+                    _ => new_insns.push(insn_id),
                 }
-                new_insns.push(insn_id);
             }
+            new_insns.append(&mut non_patch_points);
             self.blocks[block_id].insns = new_insns;
         }
     }
@@ -8031,7 +8082,7 @@ impl Function {
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
-            (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
+            (optimize_patch_points) => { Counter::compile_hir_optimize_patch_points_time_ns };
             (remove_duplicate_check_interrupts) => { Counter::compile_hir_remove_duplicate_check_interrupts_time_ns };
             (eliminate_empty_inline_frames) => { Counter::compile_hir_eliminate_empty_inline_frames_time_ns };
             (eliminate_dead_code) => { Counter::compile_hir_eliminate_dead_code_time_ns };
@@ -8085,7 +8136,7 @@ impl Function {
             run_pass!(canonicalize);
             run_pass!(fold_constants);
             run_pass!(clean_cfg);
-            run_pass!(remove_redundant_patch_points);
+            run_pass!(optimize_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
             if has_ever_inlined {
                 run_pass!(eliminate_empty_inline_frames);

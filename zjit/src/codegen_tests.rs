@@ -7090,6 +7090,167 @@ fn test_constant_path_invalidation() {
 }
 
 #[test]
+fn test_hoisted_patch_point_exit_runs_skipped_code_once() {
+    eval("
+        FLAG = :old
+
+        class HoistedPatchPointTest
+          attr_reader :increments
+
+          def initialize = @increments = 0
+
+          def set_flag(value)
+            Object.send(:remove_const, :FLAG)
+            Object.const_set(:FLAG, value)
+          end
+
+          # `FLAG`'s PatchPoint is hoisted from just before the read of `FLAG` to just after the
+          # call to `set_flag`, which puts it ahead of `@increments += 1`.
+          def test(value)
+            set_flag(value)
+            @increments += 1
+            FLAG
+          end
+        end
+
+        $obj = HoistedPatchPointTest.new
+        $obj.test(:old)
+    ");
+
+    // Run the compiled `test` once. Its call to `set_flag` reassigns `FLAG`, which invalidates
+    // `FLAG`'s PatchPoint in `test` while `test` is still in the middle of that call. So, when
+    // `set_flag` returns, `test` leaves the compiled code through that PatchPoint and the
+    // interpreter runs the rest of the method.
+    let flag_exits = || crate::state::ZJITState::get_counters().exit_patchpoint_stable_constant_names;
+    let exits_before = flag_exits();
+    let result = assert_compiles_allowing_exits("
+        increments_before = $obj.increments
+        flag = $obj.test(:new)
+        [flag, $obj.increments - increments_before]
+    ");
+    let exits = flag_exits() - exits_before;
+
+    // Verify the call did take the PatchPoint's exit.
+    assert_eq!(1, exits, "expected test to take FLAG's PatchPoint exit");
+
+    // Verify the call returned the new `FLAG`, and `@increments += 1` ran exactly once.
+    // It would have run zero times or twice if the interpreter had resumed anywhere other
+    // than where the PatchPoint now sits.
+    assert_snapshot!(result, @"[:new, 1]");
+}
+
+#[test]
+fn test_elided_nested_inline_frames_patch_point_reexecutes_send() {
+    with_inlining(|| {
+        // With max_versions == 1, invalidating `FLAG` can't trigger a recompile of `test`,
+        // so the next call takes the PatchPoint's side exit.
+        let old_max_versions = get_option!(max_versions);
+        set_max_versions(1);
+        eval("
+            FLAG = false
+            def inner(x) = FLAG ? x : 0
+            def outer(x) = inner(x)
+            def test(a, x) = outer(x) + a
+            test(1, 5)
+            test(1, 5)
+            test(1, 5)
+        ");
+        let flag_exits = || crate::state::ZJITState::get_counters().exit_patchpoint_stable_constant_names;
+        let exits_before = flag_exits();
+        let result = assert_compiles_allowing_exits("
+            before = test(1, 5)
+            Object.send(:remove_const, :FLAG)
+            FLAG = true
+
+            # This call takes FLAG's `PatchPoint` exit. The `+ a` in `test` only runs if the exit
+            # resumes `test` before its call to `outer`.
+            [before, test(1, 5)]
+        ");
+        let exits = flag_exits() - exits_before;
+        set_max_versions(old_max_versions);
+
+        assert_snapshot!(result, @"[1, 6]");
+        assert_eq!(1, exits, "expected the second call of test to take FLAG's PatchPoint exit");
+    });
+}
+
+#[test]
+fn test_elided_inline_frame_patch_point_exits_into_kept_inline_frame() {
+    with_inlining(|| {
+        // With max_versions == 1, invalidating `FLAG` can't trigger a recompile of `test`,
+        // so the next call takes the PatchPoint's side exit.
+        let old_max_versions = get_option!(max_versions);
+        set_max_versions(1);
+
+        // `inner`'s frame is elided, but `outer`'s is kept, and the call to `concat` before
+        // `inner`'s `PatchPoint` could invalidate it. That keeps the `PatchPoint` in `outer`'s
+        // frame, so the exit lands inside `outer`'s inlined frame, after the call to `concat`.
+        eval("
+            FLAG = false
+            $log = []
+            def inner = FLAG ? 10 : 20
+            def outer(x) = $log.concat([x]).size + inner
+            def test(x) = outer(x)
+            test(1)
+            test(1)
+            test(1)
+        ");
+        let flag_exits = || crate::state::ZJITState::get_counters().exit_patchpoint_stable_constant_names;
+        let exits_before = flag_exits();
+        let result = assert_compiles_allowing_exits("
+            $log = []
+            before = test(1)
+            Object.send(:remove_const, :FLAG)
+            FLAG = true
+
+            # If the exit re-executed the call to `concat`, `$log` would end up with three elements.
+            [before, test(1), $log]
+        ");
+        let exits = flag_exits() - exits_before;
+        set_max_versions(old_max_versions);
+
+        assert_snapshot!(result, @"[21, 12, [1, 1]]");
+        assert_eq!(1, exits, "expected the second call of test to take FLAG's PatchPoint exit");
+    });
+}
+
+#[test]
+fn test_hoisted_patch_point_uses_inline_frame_exit_state() {
+    with_inlining(|| {
+        // With max_versions == 1, redefining `inner_reply` can't trigger a recompile of
+        // `call_kw`, so the next call takes the PatchPoint's side exit.
+        let old_max_versions = get_option!(max_versions);
+        set_max_versions(1);
+
+        // Building the keyword hash for `leaf` ends the span, so `leaf`'s `PushInlineFrame`
+        // starts a new one and `inner_reply`'s `PatchPoint` is hoisted to just before the push.
+        // It exits with the push's `exit_state`, which describes the original send. That has
+        // `x` and `y` on the stack, not the hash they were packed into, and `:prefix` below the
+        // receiver.
+        eval("
+            def inner_reply(h) = h
+            def leaf(h) = inner_reply(h)
+            def call_kw(x, y) = [:prefix, leaf(a: x, b: y)]
+
+            call_kw(1, 2)
+            call_kw(1, 2)
+            call_kw(1, 2)
+        ");
+        let method_exits = || crate::state::ZJITState::get_counters().exit_patchpoint_method_redefined;
+        let exits_before = method_exits();
+        let result = assert_compiles_allowing_exits("
+            def inner_reply(h) = [:changed, h]
+            call_kw(11, 22)
+        ");
+        let exits = method_exits() - exits_before;
+        set_max_versions(old_max_versions);
+
+        assert_snapshot!(result, @"[:prefix, [:changed, {a: 11, b: 22}]]");
+        assert_eq!(1, exits, "expected call_kw to take inner_reply's PatchPoint exit");
+    });
+}
+
+#[test]
 fn test_dupn() {
     eval("
         def test(array) = (array[1, 2] ||= :rhs)
