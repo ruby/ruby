@@ -33,6 +33,19 @@ module Ruby::Prism
       assert_includes error.message, "syntax errors found"
     end
 
+    def test_syntax_error_display_order
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse("case x\nin [1", raise_error: :plain, filepath: "test.rb") }
+      assert_equal(<<~MESSAGE, error.message)
+        test.rb:2: syntax errors found
+        > 1 | case x
+            | ^~~~ expected an `end` to close the `case` statement
+        > 2 | in [1
+            |    ^ expected a `]` to close the pattern expression
+            |      ^ unexpected end-of-input, assuming it is closing the parent top level context
+            |      ^ expected a delimiter after the patterns of an `in` clause
+      MESSAGE
+    end
+
     def test_syntax_error_true
       # The formatting is determined by whether or not $stderr is a terminal
       # and the NO_COLOR environment variable, so only assert that it raises.

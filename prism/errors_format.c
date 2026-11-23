@@ -41,28 +41,7 @@ typedef struct {
     uint32_t line_index;
     uint32_t column_start;
     uint32_t column_end;
-    size_t idx;
 } pm_rich_error_t;
-
-static int
-pm_rich_error_compare(const void *a, const void *b) {
-    const pm_rich_error_t *left = (const pm_rich_error_t *) a;
-    const pm_rich_error_t *right = (const pm_rich_error_t *) b;
-
-    if (left->line_index != right->line_index) {
-        return (left->line_index < right->line_index) ? -1 : 1;
-    }
-
-    if (left->column_start != right->column_start) {
-        return (left->column_start < right->column_start) ? -1 : 1;
-    }
-
-    if (left->idx != right->idx) {
-        return (left->idx < right->idx) ? 1 : -1;
-    }
-
-    return 0;
-}
 
 /**
  * Return the zero-based index of the last line of the source that can be displayed. When
@@ -512,6 +491,7 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
     if (rich_errors == NULL) PRISM_OOM();
 
     size_t rich_errors_idx = 0;
+    uint32_t first_syntax_line_index = 0;
     const pm_diagnostic_t *encoding_error = NULL;
 
     for (pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) parser->error_list.head; diagnostic != NULL; diagnostic = (pm_diagnostic_t *) diagnostic->node.next) {
@@ -519,8 +499,15 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
 
         switch (pm_diagnostic_error_level(diagnostic)) {
           case PM_ERROR_LEVEL_SYNTAX: {
-            pm_rich_error_init(parser, &rich_errors[rich_errors_idx], diagnostic, &location);
-            rich_errors[rich_errors_idx].idx = rich_errors_idx;
+            /* Keep errors in source order. At the same offset, display the newest error first. */
+            size_t position = rich_errors_idx;
+            while (position > 0 && rich_errors[position - 1].diagnostic->location.start >= location.start) {
+                rich_errors[position] = rich_errors[position - 1];
+                position--;
+            }
+
+            pm_rich_error_init(parser, &rich_errors[position], diagnostic, &location);
+            if (rich_errors_idx == 0) first_syntax_line_index = rich_errors[position].line_index;
             rich_errors_idx++;
             break;
           }
@@ -583,14 +570,8 @@ pm_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, pm_errors_forma
 
     nerrors = rich_errors_idx;
 
-    /* The header displays the line of the first error in parse order, which
-     * is the first entry in the array because it has not been sorted yet. */
-    pm_error_append_summary(parser, buffer, rich_errors[0].line_index, (nerrors > 1) ? "syntax errors found\n" : "syntax error found\n");
-
-    /* Sort the errors so that they are in the order that they appear in the
-     * source. This is the order they are displayed in, and it also lets the
-     * UTF-8 check visit each line only once. */
-    qsort(rich_errors, nerrors, sizeof(pm_rich_error_t), pm_rich_error_compare);
+    /* The header displays the line of the first syntax error in parse order. */
+    pm_error_append_summary(parser, buffer, first_syntax_line_index, (nerrors > 1) ? "syntax errors found\n" : "syntax error found\n");
 
     if (rich_errors_are_utf8(parser, nerrors, rich_errors)) {
         /* In here, we have all of the rich diagnostic information and we know
