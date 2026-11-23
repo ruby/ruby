@@ -129,80 +129,89 @@ remove_from_constant_cache(ID id, IC ic)
     }
 }
 
-// When an ISEQ is being freed, all of its associated ICs are going to go away
-// as well. Because of this, we need to iterate over the ICs, and clear them
-// from the VM's constant cache.
 /*
- * Constant path segment lists (IC->segments) are interned: every
- * opt_getconstant_path with the same path (e.g. `Foo::Bar`) shares one
+ * Constant path segment lists (IC->segments) are interned in a prefix tree:
+ * every opt_getconstant_path with the same path (e.g. `Foo::Bar`) shares one
  * 0-terminated ID list. A large app has ~8x more constant references than
- * distinct paths, and most lists are 1-2 IDs, so a malloc each was mostly
- * allocator overhead.
+ * distinct paths, and most lists are 1-4 IDs.
  *
- * Each list is preceded by a refcount. Releasing (from rb_iseq_free, i.e.
- * during GC sweep) only decrements it and never touches the table, because
- * GC can run while the table is being updated (an allocation inside
- * set_insert). Entries whose count reached zero stay in the table, can be
- * revived by a later lookup, and are reclaimed by the interning path once
- * they make up a large share of the table.
+ * Each node stores its full path so IC->segments stays a plain ID list for
+ * the interpreter and the JITs. Nodes are bump-allocated and never freed
+ * (like object shapes), so freeing an ISeq doesn't touch the tree.
  */
-struct const_segments_entry {
-    rb_atomic_t refcnt;
+struct const_path_node {
+    /* 0: no children, a node pointer: one child, or a tagged rb_id_table. */
+    VALUE edges;
     ID ids[FLEX_ARY_LEN];
 };
 
-static set_table *const_segments_tbl;
-static size_t const_segments_reclaim_at = 1024;
+#define CONST_PATH_EDGES_TABLE_P(e) ((e) & 1)
+#define CONST_PATH_EDGES_TABLE(e) ((struct rb_id_table *)((e) & ~(VALUE)1))
 
-static inline struct const_segments_entry *
-const_segments_entry(const ID *ids)
-{
-    return (struct const_segments_entry *)((char *)ids - offsetof(struct const_segments_entry, ids));
-}
-
-static size_t
-idlist_len(const ID *ids)
-{
-    size_t n = 0;
-    while (ids[n]) n++;
-    return n;
-}
-
-static size_t
-const_segments_entry_bytes(size_t len)
-{
-    return offsetof(struct const_segments_entry, ids) + (len + 1) * sizeof(ID);
-}
-
-static st_index_t
-idlist_hash(st_data_t key)
-{
-    const ID *ids = (const ID *)key;
-    return st_hash(ids, idlist_len(ids) * sizeof(ID), 0);
-}
-
-static int
-idlist_cmp(st_data_t a, st_data_t b)
-{
-    const ID *x = (const ID *)a, *y = (const ID *)b;
-    while (*x && *x == *y) { x++; y++; }
-    return *x != *y;
-}
-
-static const struct st_hash_type idlist_hash_type = {
-    idlist_cmp,
-    idlist_hash,
+struct const_path_arena {
+    struct const_path_arena *next;
+    size_t used, capa;
+    char data[FLEX_ARY_LEN];
 };
 
-static int
-const_segments_reclaim_i(st_data_t key, st_data_t arg)
+#define CONST_PATH_ARENA_SIZE (64 * 1024)
+
+/* Roots for relative paths and for `::`-prefixed paths (leading idNULL). */
+static VALUE const_path_roots[2];
+static struct const_path_arena *const_path_arena;
+
+static struct const_path_node *
+const_path_node_alloc(const ID *ids, long len)
 {
-    struct const_segments_entry *e = const_segments_entry((const ID *)key);
-    if (RUBY_ATOMIC_LOAD(e->refcnt) == 0) {
-        ruby_xfree_sized(e, const_segments_entry_bytes(idlist_len(e->ids)));
-        return ST_DELETE;
+    size_t bytes = offsetof(struct const_path_node, ids) + (len + 1) * sizeof(ID);
+    struct const_path_arena *a = const_path_arena;
+    if (!a || a->capa - a->used < bytes) {
+        size_t capa = CONST_PATH_ARENA_SIZE - offsetof(struct const_path_arena, data);
+        if (capa < bytes) capa = bytes;
+        a = ruby_xmalloc(offsetof(struct const_path_arena, data) + capa);
+        a->next = const_path_arena;
+        a->used = 0;
+        a->capa = capa;
+        const_path_arena = a;
     }
-    return ST_CONTINUE;
+    struct const_path_node *node = (struct const_path_node *)(a->data + a->used);
+    a->used += bytes;
+    node->edges = 0;
+    MEMCPY(node->ids, ids, ID, len);
+    node->ids[len] = 0;
+    return node;
+}
+
+/* Children of a node at depth `depth` are keyed by ids[depth]. */
+static struct const_path_node *
+const_path_child(VALUE edges, long depth, ID id)
+{
+    if (!edges) return NULL;
+    if (CONST_PATH_EDGES_TABLE_P(edges)) {
+        VALUE child;
+        if (rb_id_table_lookup(CONST_PATH_EDGES_TABLE(edges), id, &child)) {
+            return (struct const_path_node *)child;
+        }
+        return NULL;
+    }
+    struct const_path_node *child = (struct const_path_node *)edges;
+    return child->ids[depth] == id ? child : NULL;
+}
+
+static void
+const_path_add_child(VALUE *edges, long depth, struct const_path_node *child)
+{
+    if (!*edges) {
+        *edges = (VALUE)child;
+        return;
+    }
+    if (!CONST_PATH_EDGES_TABLE_P(*edges)) {
+        struct const_path_node *only = (struct const_path_node *)*edges;
+        struct rb_id_table *tbl = rb_id_table_create(2);
+        rb_id_table_insert(tbl, only->ids[depth], (VALUE)only);
+        *edges = (VALUE)tbl | 1;
+    }
+    rb_id_table_insert(CONST_PATH_EDGES_TABLE(*edges), child->ids[depth], (VALUE)child);
 }
 
 /* Returns an interned, 0-terminated ID list for an Array of Symbols. */
@@ -211,62 +220,76 @@ rb_iseq_intern_const_segments(VALUE arr)
 {
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
     long len = RARRAY_LEN(arr);
-    size_t bytes = const_segments_entry_bytes(len);
-
-    /* Allocate before taking the lock: allocation can GC. */
-    struct const_segments_entry *fresh = ruby_xmalloc(bytes);
-    fresh->refcnt = 1;
+    VALUE tmp = 0;
+    ID *ids = ALLOCV_N(ID, tmp, len);
     for (long i = 0; i < len; i++) {
-        fresh->ids[i] = SYM2ID(RARRAY_AREF(arr, i));
+        ids[i] = SYM2ID(RARRAY_AREF(arr, i));
     }
-    fresh->ids[len] = 0;
 
-    const ID *result = NULL;
+    long depth = (len > 0 && ids[0] == idNULL) ? 1 : 0;
+    RUBY_ASSERT(depth < len);
+    struct const_path_node *node = NULL;
 
+    /* Allocating here can GC; GC never reads the tree. */
     RB_VM_LOCKING() {
-        if (!const_segments_tbl) {
-            const_segments_tbl = set_init_table_with_size(NULL, &idlist_hash_type, 0);
-        }
-
-        st_data_t existing;
-        if (set_get_key(const_segments_tbl, (st_data_t)fresh->ids, &existing)) {
-            struct const_segments_entry *e = const_segments_entry((const ID *)existing);
-            RUBY_ATOMIC_INC(e->refcnt);
-            result = e->ids;
-        }
-        else {
-            if (const_segments_tbl->num_entries >= const_segments_reclaim_at) {
-                set_table_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
-                const_segments_reclaim_at = const_segments_tbl->num_entries * 2 + 1024;
+        VALUE *edges = &const_path_roots[depth];
+        for (; depth < len; depth++) {
+            struct const_path_node *child = const_path_child(*edges, depth, ids[depth]);
+            if (!child) {
+                child = const_path_node_alloc(ids, depth + 1);
+                const_path_add_child(edges, depth, child);
             }
-            set_insert(const_segments_tbl, (st_data_t)fresh->ids);
-            result = fresh->ids;
-            fresh = NULL;
+            node = child;
+            edges = &node->edges;
         }
     }
 
-    if (fresh) ruby_xfree_sized(fresh, bytes);
-    return result;
+    ALLOCV_END(tmp);
+    return node->ids;
 }
 
 static void
-iseq_release_const_segments(const ID *ids)
+const_path_free_edges(VALUE edges);
+
+static enum rb_id_table_iterator_result
+const_path_free_edges_i(VALUE child, void *data)
 {
-    struct const_segments_entry *e = const_segments_entry(ids);
-    RUBY_ASSERT(RUBY_ATOMIC_LOAD(e->refcnt) > 0);
-    RUBY_ATOMIC_DEC(e->refcnt);
+    const_path_free_edges(((struct const_path_node *)child)->edges);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+const_path_free_edges(VALUE edges)
+{
+    if (!edges) return;
+    if (CONST_PATH_EDGES_TABLE_P(edges)) {
+        struct rb_id_table *tbl = CONST_PATH_EDGES_TABLE(edges);
+        rb_id_table_foreach_values(tbl, const_path_free_edges_i, NULL);
+        rb_id_table_free(tbl);
+    }
+    else {
+        const_path_free_edges(((struct const_path_node *)edges)->edges);
+    }
 }
 
 /* Called at VM teardown after all ISeqs have been freed (RUBY_FREE_AT_EXIT). */
 void
 rb_iseq_free_const_segments_table(void)
 {
-    if (!const_segments_tbl) return;
-    set_table_foreach(const_segments_tbl, const_segments_reclaim_i, 0);
-    set_free_table(const_segments_tbl);
-    const_segments_tbl = NULL;
+    for (int i = 0; i < 2; i++) {
+        const_path_free_edges(const_path_roots[i]);
+        const_path_roots[i] = 0;
+    }
+    while (const_path_arena) {
+        struct const_path_arena *next = const_path_arena->next;
+        ruby_xfree(const_path_arena);
+        const_path_arena = next;
+    }
 }
 
+// When an ISEQ is being freed, all of its associated ICs are going to go away
+// as well. Because of this, we need to iterate over the ICs, and clear them
+// from the VM's constant cache.
 static void
 iseq_clear_ic_references(const rb_iseq_t *iseq)
 {
@@ -295,8 +318,6 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
             if (id == idNULL) continue;
             remove_from_constant_cache(id, ic);
         }
-
-        iseq_release_const_segments(segments);
     }
 }
 
