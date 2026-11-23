@@ -461,6 +461,7 @@ int
 rb_enc_register(const char *name, rb_encoding *encoding)
 {
     int index;
+    bool define_const = false;
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         index = enc_registered(enc_table, name);
@@ -479,9 +480,11 @@ rb_enc_register(const char *name, rb_encoding *encoding)
         }
         else {
             index = enc_register(enc_table, name, encoding);
-            set_encoding_const(name, rb_enc_from_index(index));
+            define_const = true;
         }
     }
+
+    if (define_const) set_encoding_const(name, rb_enc_from_index(index));
     return index;
 }
 
@@ -512,13 +515,16 @@ rb_enc_registered(const char *name)
 void
 rb_encdb_declare(const char *name)
 {
+    int idx;
+
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        int idx = enc_registered(enc_table, name);
+        idx = enc_registered(enc_table, name);
         if (idx < 0) {
             idx = enc_register(enc_table, name, 0);
         }
-        set_encoding_const(name, rb_enc_from_index(idx));
     }
+
+    set_encoding_const(name, rb_enc_from_index(idx));
 }
 
 static void
@@ -577,7 +583,6 @@ enc_replicate(struct enc_table *enc_table, const char *name, rb_encoding *encodi
     idx = enc_register(enc_table, name, encoding);
     if (idx < 0) rb_raise(rb_eArgError, "invalid encoding name: %s", name);
     set_base_encoding(enc_table, idx, encoding);
-    set_encoding_const(name, rb_enc_from_index(idx));
     return idx;
 }
 
@@ -592,7 +597,6 @@ enc_replicate_with_index(struct enc_table *enc_table, const char *name, rb_encod
     }
     if (idx >= 0) {
         set_base_encoding(enc_table, idx, origenc);
-        set_encoding_const(name, rb_enc_from_index(idx));
     }
     else {
         rb_raise(rb_eArgError, "failed to replicate encoding");
@@ -615,6 +619,7 @@ rb_encdb_replicate(const char *name, const char *orig)
         r = enc_replicate_with_index(enc_table, name, rb_enc_from_index(origidx), idx);
     }
 
+    set_encoding_const(name, rb_enc_from_index(r));
     return r;
 }
 
@@ -629,6 +634,7 @@ rb_define_dummy_encoding(const char *name)
         ENC_SET_DUMMY((rb_raw_encoding *)enc);
     }
 
+    set_encoding_const(name, rb_enc_from_index(index));
     return index;
 }
 
@@ -645,6 +651,7 @@ rb_encdb_dummy(const char *name)
         ENC_SET_DUMMY((rb_raw_encoding *)enc);
     }
 
+    set_encoding_const(name, rb_enc_from_index(index));
     return index;
 }
 
@@ -710,12 +717,12 @@ enc_alias_internal(struct enc_table *enc_table, const char *alias, int idx)
                       enc_dup_name);
 }
 
+/* Sets *added when the alias is new; the caller then defines its constant. */
 static int
-enc_alias(struct enc_table *enc_table, const char *alias, int idx)
+enc_alias(struct enc_table *enc_table, const char *alias, int idx, bool *added)
 {
     if (!valid_encoding_name_p(alias)) return -1;
-    if (!enc_alias_internal(enc_table, alias, idx))
-        set_encoding_const(alias, enc_from_index(enc_table, idx));
+    *added = !enc_alias_internal(enc_table, alias, idx);
     return idx;
 }
 
@@ -723,6 +730,8 @@ int
 rb_enc_alias(const char *alias, const char *orig)
 {
     int idx, r;
+    bool added = false;
+
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         enc_check_addable(enc_table, alias); // can raise
     }
@@ -731,26 +740,29 @@ rb_enc_alias(const char *alias, const char *orig)
     if (idx < 0) return -1;
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        r = enc_alias(enc_table, alias, idx);
+        r = enc_alias(enc_table, alias, idx, &added);
     }
 
+    if (added) set_encoding_const(alias, rb_enc_from_index(idx));
     return r;
 }
 
 int
 rb_encdb_alias(const char *alias, const char *orig)
 {
-    int r;
+    int idx, r;
+    bool added = false;
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        int idx = enc_registered(enc_table, orig);
+        idx = enc_registered(enc_table, orig);
 
         if (idx < 0) {
             idx = enc_register(enc_table, orig, 0);
         }
-        r = enc_alias(enc_table, alias, idx);
+        r = enc_alias(enc_table, alias, idx, &added);
     }
 
+    if (added) set_encoding_const(alias, rb_enc_from_index(idx));
     return r;
 }
 
