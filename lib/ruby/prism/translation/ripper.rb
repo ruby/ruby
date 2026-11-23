@@ -1201,10 +1201,7 @@ module Ruby::Prism
           bounds(node.location)
           on_break(on_args_new)
         else
-          arguments = visit(node.arguments)
-
-          bounds(node.location)
-          on_break(arguments)
+          visit_jump_arguments(node) { |arguments| on_break(arguments) }
         end
       end
 
@@ -1404,21 +1401,23 @@ module Ruby::Prism
             end
 
             block = visit(block_node)
+            if node.opening_loc
+              bounds(node.opening_loc)
+              arguments = on_arg_paren(arguments)
+            end
+
+            bounds(node.location)
+            has_arguments = node.arguments || node.block.is_a?(BlockArgumentNode)
+            chained = node.message_loc && (block_node || (!node.opening_loc && has_arguments)) && block_call?(node.receiver)
             call =
-              if node.opening_loc.nil?
-                bounds(node.location)
-
-                if node.arguments.nil? && !node.block.is_a?(BlockArgumentNode)
-                  on_call(receiver, call_operator, message)
-                else
-                  on_command_call(receiver, call_operator, message, arguments)
-                end
-              else
-                bounds(node.opening_loc)
-                arguments = on_arg_paren(arguments)
-
-                bounds(node.location)
+              if (chained && block_node) || constant_brace_command?(node)
+                on_command_call(receiver, call_operator, message, arguments)
+              elsif node.opening_loc || (chained && has_arguments)
                 on_method_add_arg(on_call(receiver, call_operator, message), arguments)
+              elsif has_arguments
+                on_command_call(receiver, call_operator, message, arguments)
+              else
+                on_call(receiver, call_operator, message)
               end
 
             if block_node
@@ -1456,7 +1455,7 @@ module Ruby::Prism
           elsif arguments.any?
             args = visit_arguments(arguments)
 
-            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || command?(arguments.last) || trailing_comma
+            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || (arguments.one? && (command?(arguments.first) || block_call?(arguments.first))) || trailing_comma
               args
             else
               bounds(arguments.first.location)
@@ -1465,6 +1464,48 @@ module Ruby::Prism
           end,
           block,
         ]
+      end
+
+      # A named suffix on a block_call uses the block_call productions in Ripper.
+      private def block_call?(node)
+        while node.is_a?(CallNode) || node.is_a?(SuperNode)
+          return true if node.block.is_a?(BlockNode) && node.block.opening == "do" && command?(node)
+          return false unless node.is_a?(CallNode) && node.call_operator_loc
+          node = node.receiver
+        end
+
+        (node.is_a?(BreakNode) || node.is_a?(NextNode) || node.is_a?(ReturnNode)) && jump_block_argument(node)
+      end
+
+      private def jump_block_argument(node)
+        arguments = node.arguments&.arguments
+        return unless arguments&.one?
+        call = arguments.first
+        if (call.is_a?(CallNode) || call.is_a?(SuperNode)) && call.block.is_a?(BlockNode) && call.block.opening == "do" && command?(call)
+          call
+        end
+      end
+
+      # Ruby::Prism stores the do block on the jump's argument. Ripper emits the
+      # block around the return, break, or next event for `command do_block`.
+      private def visit_jump_arguments(node)
+        if (call = jump_block_argument(node))
+          args = visit_arguments([call.copy(block: nil)])
+          bounds(node.location)
+          jump = yield args
+          block = visit(call.block)
+          bounds(node.location)
+          on_method_add_block(jump, block)
+        else
+          args = visit(node.arguments)
+          bounds(node.location)
+          yield args
+        end
+      end
+
+      private def constant_brace_command?(node)
+        node.block.is_a?(BlockNode) && node.opening_loc.nil? && node.call_operator == "::" &&
+          node.block.opening == "{" && node.message&.match?(/\A[[:upper:]]/)
       end
 
       # Returns true if the given node is a command node.
@@ -1488,8 +1529,8 @@ module Ruby::Prism
         case node
         when CallNode
           node.opening_loc.nil? && node.equal_loc.nil? &&
-            (!node.arguments.nil? || node.block.is_a?(BlockArgumentNode)) &&
-            !BINARY_OPERATORS.include?(node.name)
+            (constant_brace_command?(node) || ((node.arguments || node.block.is_a?(BlockArgumentNode)) &&
+              (node.call_operator_loc || !BINARY_OPERATORS.include?(node.name))))
         when SuperNode
           node.lparen_loc.nil?
         when YieldNode
@@ -3145,10 +3186,7 @@ module Ruby::Prism
           bounds(node.location)
           on_next(on_args_new)
         else
-          arguments = visit(node.arguments)
-
-          bounds(node.location)
-          on_next(arguments)
+          visit_jump_arguments(node) { |arguments| on_next(arguments) }
         end
       end
 
@@ -3553,10 +3591,7 @@ module Ruby::Prism
           bounds(node.location)
           on_return0
         else
-          arguments = visit(node.arguments)
-
-          bounds(node.location)
-          on_return(arguments)
+          visit_jump_arguments(node) { |arguments| on_return(arguments) }
         end
       end
 

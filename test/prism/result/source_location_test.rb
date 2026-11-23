@@ -461,6 +461,21 @@ module Ruby::Prism
       end
     end
 
+    def test_call_on_a_parenthesized_method_in_a_jump_argument
+      %w[return break next].each do |keyword|
+        source = "loop { #{keyword} m(1) do end.g }"
+        assert_location(CallNode, source, source.index("m(1)")...source.index(" }")) do |node|
+          jump = node.block.body.body.first
+          assert_equal keyword, jump.keyword
+          call = jump.arguments.arguments.first
+          assert_equal :g, call.name
+          assert_equal :m, call.receiver.name
+          assert_instance_of BlockNode, call.receiver.block
+          call
+        end
+      end
+    end
+
     def test_shorthand_after_a_constant_named_command_with_a_do_block
       [".", "&.", "::"].each do |operator|
         source = "C::F x do end#{operator}()"

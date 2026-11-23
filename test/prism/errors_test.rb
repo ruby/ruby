@@ -494,6 +494,24 @@ module Ruby::Prism
       assert_instance_of ReturnNode, call.receiver
     end
 
+    def test_comma_after_a_nested_assignment_to_a_jump_block_call
+      result = Ruby::Prism.parse("def f; x = y = return m 1 do end.g, q; end")
+      assert_equal [:invalid_comma], result.errors.map(&:type)
+      assert_equal ",", result.errors.first.location.slice
+    end
+
+    def test_command_argument_jump_leaves_do_for_the_outer_call
+      result = Ruby::Prism.parse("def f; receive return m 1 do end.g; end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return m 1", result.errors.first.location.slice
+    end
+
+    def test_endless_jump_command_before_keyword_composition
+      result = Ruby::Prism.parse("def f = return 1 and ready")
+      assert_equal :expect_eol_after_statement, result.errors.first.type
+      assert_equal "and", result.errors.first.location.slice
+    end
+
     def test_jumps_in_for_targets
       %w[break next redo].each do |jump|
         assert Ruby::Prism.parse_success?("for obj[(#{jump} if done)] in ary; end")

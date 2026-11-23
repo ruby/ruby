@@ -220,6 +220,23 @@ module Ruby::Prism
       end
     end
 
+    def test_block_call_events_after_a_jump
+      %w[return break next].each do |keyword|
+        ["m x do end.tail y", "obj.+ x do end.tail {}", "super x do end.tail(x)", "m(x) do end.tail"].each do |call|
+          assert_ripper_sexp_raw("def f; loop { #{keyword} #{call} }; end")
+        end
+      end
+      assert_ripper_sexp_raw("def f; receive case v; when A; return m 1 do end.g; end; end")
+      [
+        "case m 1 do end.g; when A; x; end",
+        "case x; in A if m 1 do end.g; x; end",
+        "class << m 1 do end.g; end",
+        "def (m 1 do end.g).f; end"
+      ].each do |argument|
+        assert_ripper_sexp_raw("def f; return #{argument}; end")
+      end
+    end
+
     def test_heredoc_string_parts
       [
         "<<~DOC\n\n    \#{value}tail\nDOC\n",
