@@ -38,7 +38,6 @@
 #include "prism/version.h"
 
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 /**
@@ -13852,9 +13851,6 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
             while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON));
             if (context_terminator(context, &parser->current)) break;
         } else if (!accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_EOF)) {
-            // This is an inlined version of accept1 because the error that we
-            // want to add has varargs. If this happens again, we should
-            // probably extract a helper function.
             pm_parser_err_token_string(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
             parser->previous.start = parser->previous.end;
             parser->previous.type = 0;
