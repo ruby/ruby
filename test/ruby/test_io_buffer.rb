@@ -663,6 +663,93 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_for_memory_view
+    # IO::Buffer itself exports a MemoryView, so it can be imported zero-copy.
+    source = IO::Buffer.new(8)
+    source.set_string("abcdefgh")
+
+    result = IO::Buffer.for(source) do |buffer|
+      assert_predicate buffer, :external?
+      refute_predicate buffer, :readonly?
+      assert_equal 8, buffer.size
+      assert_equal "abcdefgh", buffer.get_string
+
+      # Writes go through to the exporting object's memory:
+      buffer.set_string("Z", 0)
+      :result
+    end
+
+    assert_equal :result, result
+    assert_equal "Zbcdefgh", source.get_string
+  end
+
+  def test_for_memory_view_requires_block
+    source = IO::Buffer.new(8)
+
+    assert_raise ArgumentError do
+      IO::Buffer.for(source)
+    end
+  end
+
+  def test_for_memory_view_readonly
+    source = IO::Buffer.for("frozen".freeze)
+
+    IO::Buffer.for(source) do |buffer|
+      assert_predicate buffer, :readonly?
+      assert_equal "frozen", buffer.get_string
+
+      assert_raise IO::Buffer::AccessError do
+        buffer.set_string("x", 0)
+      end
+    end
+  end
+
+  def test_for_memory_view_invalidated_after_block
+    source = IO::Buffer.new(8)
+
+    captured = nil
+    IO::Buffer.for(source) do |buffer|
+      captured = buffer
+    end
+
+    # The zero-copy wrapper cannot outlive the block:
+    assert_predicate captured, :null?
+    refute_predicate source, :locked?
+  end
+
+  def test_for_memory_view_released_on_exception
+    source = IO::Buffer.new(8)
+
+    assert_raise(RuntimeError) do
+      IO::Buffer.for(source) do |buffer|
+        raise "boom"
+      end
+    end
+
+    # The MemoryView is released even when the block raises:
+    refute_predicate source, :locked?
+  end
+
+  def test_for_memory_view_exporter
+    # A non-String, non-IO::Buffer object that exports a MemoryView.
+    exporter = MemoryViewTestUtils::ExportableString.new("abcdef")
+
+    IO::Buffer.for(exporter) do |buffer|
+      assert_predicate buffer, :external?
+      assert_predicate buffer, :readonly? # ExportableString only exports read-only.
+      assert_equal "abcdef", buffer.get_string
+    end
+  end
+
+  def test_for_memory_view_non_contiguous
+    # A 1-dimensional view with a non-unit stride is not contiguous.
+    exporter = MemoryViewTestUtils::MultiDimensionalView.new("\x00\x01\x02\x03\x04\x05\x06\x07", "C", [4], [2])
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.for(exporter) {|buffer| }
+    end
+  end
+
   def test_string
     result = IO::Buffer.string(12) do |buffer|
       buffer.set_string("Hello World!")
