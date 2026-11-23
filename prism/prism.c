@@ -14367,282 +14367,6 @@ pm_block_call_p(const pm_node_t *node) {
 }
 
 /**
- * Parse a list of arguments.
- */
-static void
-parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_forwarding, pm_token_type_t terminator, uint8_t flags, uint16_t depth) {
-    pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
-
-    // First we need to check if the next token is one that could be the start
-    // of an argument. If it's not, then we can just return.
-    if (
-        match2(parser, terminator, PM_TOKEN_EOF) ||
-        (binding_power != PM_BINDING_POWER_UNSET && binding_power < PM_BINDING_POWER_RANGE) ||
-        context_terminator(parser->current_context->context, &parser->current)
-    ) {
-        return;
-    }
-
-    bool parsed_first_argument = false;
-    bool parsed_bare_hash = false;
-    bool parsed_block_argument = false;
-    bool parsed_forwarding_arguments = false;
-
-    while (!match1(parser, PM_TOKEN_EOF)) {
-        if (parsed_forwarding_arguments) {
-            pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES);
-        }
-
-        pm_node_t *argument = NULL;
-
-        switch (parser->current.type) {
-            case PM_TOKEN_USTAR_STAR:
-            case PM_TOKEN_LABEL: {
-                if (parsed_bare_hash) {
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_BARE_HASH);
-                }
-
-                pm_hash_elements_t elements = { 0 };
-                pm_static_literals_t hash_keys = { 0 };
-                bool contains_keyword_splat = parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
-                argument = UP(pm_keyword_hash_node_create(parser, &elements));
-
-                parse_arguments_append(parser, arguments, argument);
-
-                pm_node_flags_t node_flags = PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
-                if (contains_keyword_splat) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
-                arguments->list_flags |= node_flags;
-
-                pm_static_literals_free(&hash_keys);
-                parsed_bare_hash = true;
-
-                break;
-            }
-            case PM_TOKEN_UAMPERSAND: {
-                parser_lex(parser);
-                pm_token_t operator = parser->previous;
-                pm_node_t *expression = NULL;
-
-                if (token_begins_expression_p(parser->current.type)) {
-                    expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
-                } else {
-                    pm_parser_scope_forwarding_block_check(parser, &operator);
-                }
-
-                argument = UP(pm_block_argument_node_create(parser, &operator, expression));
-                if (parsed_block_argument) {
-                    parse_arguments_append(parser, arguments, argument);
-                } else {
-                    arguments->block = argument;
-                }
-
-                if (match1(parser, PM_TOKEN_COMMA)) {
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
-                }
-
-                parsed_block_argument = true;
-                break;
-            }
-            case PM_TOKEN_USTAR: {
-                parser_lex(parser);
-                pm_token_t operator = parser->previous;
-
-                if (match4(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_SEMICOLON, PM_TOKEN_BRACKET_RIGHT)) {
-                    pm_parser_scope_forwarding_positionals_check(parser, &operator);
-                    argument = UP(pm_splat_node_create(parser, &operator, NULL));
-                    if (parsed_bare_hash) {
-                        pm_parser_err_previous(parser, PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
-                    }
-                } else {
-                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT, (uint16_t) (depth + 1));
-
-                    if (parsed_bare_hash) {
-                        pm_parser_err(parser, PM_TOKEN_START(parser, &operator), PM_NODE_END(expression) - PM_TOKEN_START(parser, &operator), PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
-                    }
-
-                    argument = UP(pm_splat_node_create(parser, &operator, expression));
-                }
-
-                parse_arguments_append(parser, arguments, argument);
-                break;
-            }
-            case PM_TOKEN_UDOT_DOT_DOT: {
-                if (accepts_forwarding) {
-                    parser_lex(parser);
-
-                    if (token_begins_expression_p(parser->current.type)) {
-                        // If the token begins an expression then this ... was
-                        // not actually argument forwarding but was instead a
-                        // range.
-                        pm_token_t operator = parser->previous;
-                        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_RANGE, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
-
-                        /* A binary or endless range chains with the outer
-                         * operator. A beginless range is a valid operand. */
-                        if (PM_NODE_TYPE_P(right, PM_RANGE_NODE)) {
-                            pm_range_node_t *range = (pm_range_node_t *) right;
-                            if (range->left != NULL) {
-                                pm_parser_err(parser, range->operator_loc.start, range->operator_loc.length, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
-                            }
-                        }
-
-                        argument = UP(pm_range_node_create(parser, NULL, &operator, right));
-                    } else {
-                        pm_parser_scope_forwarding_all_check(parser, &parser->previous);
-                        if (parsed_first_argument && terminator == PM_TOKEN_EOF) {
-                            pm_parser_err_previous(parser, PM_ERR_ARGUMENT_FORWARDING_UNBOUND);
-                        }
-
-                        argument = UP(pm_forwarding_arguments_node_create(parser, &parser->previous));
-                        parse_arguments_append(parser, arguments, argument);
-                        arguments->list_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_FORWARDING;
-                        arguments->has_forwarding = true;
-                        parsed_forwarding_arguments = true;
-                        break;
-                    }
-                }
-            }
-            PRISM_FALLTHROUGH
-            default: {
-                if (argument == NULL) {
-                    /* The first argument may be a command call, and since Ruby
-                     * 4.0 also an endless method with a command body
-                     * (`private def f = foo 1`), either of which must then be
-                     * the sole argument. */
-                    uint8_t command_flags = 0;
-                    if (!parsed_first_argument) {
-                        command_flags = PM_PARSE_ACCEPTS_COMMAND_CALL;
-                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
-                    }
-
-                    argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
-                }
-
-                bool contains_keywords = false;
-                bool contains_keyword_splat = false;
-
-                if (argument_allowed_for_bare_hash(parser, argument)) {
-                    if (parsed_bare_hash) {
-                        pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
-                    }
-
-                    /* A hash key must be an argument (`arg`). A command call or
-                     * block call (e.g. `Foo::Bar { } => v`, `foo bar do end =>
-                     * v`) is not an argument, so reject it as a key. Plain
-                     * command calls never reach here as a key because they
-                     * absorb the `=>` into their own arguments first.
-                     */
-                    if (pm_command_call_value_p(parser, argument) || pm_block_call_p(argument)) {
-                        pm_parser_err_token_type(parser, &parser->previous, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->previous.type);
-                    }
-
-                    pm_token_t operator = { 0 };
-                    if (parser->previous.type == PM_TOKEN_EQUAL_GREATER) {
-                        operator = parser->previous;
-                    }
-
-                    pm_hash_elements_t elements = { 0 };
-                    contains_keywords = true;
-
-                    // Create the set of static literals for this hash.
-                    pm_static_literals_t hash_keys = { 0 };
-                    pm_hash_key_static_literals_add(parser, &hash_keys, argument);
-
-                    // Finish parsing the one we are part way through.
-                    pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
-                    argument = UP(pm_assoc_node_create(parser, argument, NTOK2PTR(operator), value));
-
-                    pm_hash_elements_append(parser, &elements, argument);
-
-                    // Then parse more if we have a comma
-                    if (accept1(parser, PM_TOKEN_COMMA) && (
-                        token_begins_expression_p(parser->current.type) ||
-                        match2(parser, PM_TOKEN_USTAR_STAR, PM_TOKEN_LABEL)
-                    )) {
-                        contains_keyword_splat = parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
-                    }
-
-                    argument = UP(pm_keyword_hash_node_create(parser, &elements));
-
-                    pm_static_literals_free(&hash_keys);
-                    parsed_bare_hash = true;
-                }
-
-                parse_arguments_append(parser, arguments, argument);
-
-                pm_node_flags_t node_flags = 0;
-                if (contains_keywords) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
-                if (contains_keyword_splat) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
-                arguments->list_flags |= node_flags;
-
-                break;
-            }
-        }
-
-        parsed_first_argument = true;
-
-        // If parsing the argument failed, we need to stop parsing arguments.
-        if (PM_NODE_TYPE_P(argument, PM_ERROR_RECOVERY_NODE) || parser->recovering) break;
-
-        // If the terminator of these arguments is not EOF, then we have a
-        // specific token we're looking for. In that case we can accept a
-        // newline here because it is not functioning as a statement terminator.
-        bool accepted_newline = false;
-        if (terminator != PM_TOKEN_EOF) {
-            accepted_newline = accept1(parser, PM_TOKEN_NEWLINE);
-        }
-
-        if (parser->previous.type == PM_TOKEN_COMMA && parsed_bare_hash) {
-            // If we previously were on a comma and we just parsed a bare hash,
-            // then we want to continue parsing arguments. This is because the
-            // comma was grabbed up by the hash parser.
-        } else if (accept1(parser, PM_TOKEN_COMMA)) {
-            // If there was a comma, then we need to check if we also accepted a
-            // newline. If we did, then this is a syntax error.
-            if (accepted_newline) {
-                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
-            }
-
-            // If this is a command call and an argument takes a block,
-            // there can be no further arguments. For example,
-            // `foo(bar 1 do end, 2)` should be rejected.
-            if (PM_NODE_TYPE_P(argument, PM_CALL_NODE)) {
-                pm_call_node_t *call = (pm_call_node_t *) argument;
-                if (call->opening_loc.length == 0 && call->arguments != NULL && call->block != NULL) {
-                    pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
-                    break;
-                }
-            }
-
-            /* A command can only be the sole argument, as in
-             * `foo Foo::Bar { }, y` or `foo def f = bar 1 rescue z, y`. */
-            if (pm_command_before_comma_p(parser, argument)) {
-                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
-            }
-        } else {
-            // If there is no comma at the end of the argument list then we're
-            // done parsing arguments and can break out of this loop.
-            break;
-        }
-
-        // If we hit the terminator, then that means we have a trailing comma so
-        // we can accept that output as well.
-        if (match1(parser, terminator)) {
-            // A forwarding `...` argument must be the last argument and cannot
-            // be followed by a trailing comma, e.g. `foo(...,)`. A comma
-            // followed by another argument is already rejected at the top of
-            // this loop, so the only case left to reject here is the trailing
-            // one.
-            if (parsed_forwarding_arguments) {
-                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
-            }
-
-            break;
-        }
-    }
-}
-
-/**
  * Required parameters on method, block, and lambda declarations can be
  * destructured using parentheses. This looks like:
  *
@@ -15777,6 +15501,282 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
 
     pm_parser_scope_pop(parser);
     return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
+}
+
+/**
+ * Parse a list of arguments.
+ */
+static void
+parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_forwarding, pm_token_type_t terminator, uint8_t flags, uint16_t depth) {
+    pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
+
+    // First we need to check if the next token is one that could be the start
+    // of an argument. If it's not, then we can just return.
+    if (
+        match2(parser, terminator, PM_TOKEN_EOF) ||
+        (binding_power != PM_BINDING_POWER_UNSET && binding_power < PM_BINDING_POWER_RANGE) ||
+        context_terminator(parser->current_context->context, &parser->current)
+    ) {
+        return;
+    }
+
+    bool parsed_first_argument = false;
+    bool parsed_bare_hash = false;
+    bool parsed_block_argument = false;
+    bool parsed_forwarding_arguments = false;
+
+    while (!match1(parser, PM_TOKEN_EOF)) {
+        if (parsed_forwarding_arguments) {
+            pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES);
+        }
+
+        pm_node_t *argument = NULL;
+
+        switch (parser->current.type) {
+            case PM_TOKEN_USTAR_STAR:
+            case PM_TOKEN_LABEL: {
+                if (parsed_bare_hash) {
+                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_BARE_HASH);
+                }
+
+                pm_hash_elements_t elements = { 0 };
+                pm_static_literals_t hash_keys = { 0 };
+                bool contains_keyword_splat = parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
+                argument = UP(pm_keyword_hash_node_create(parser, &elements));
+
+                parse_arguments_append(parser, arguments, argument);
+
+                pm_node_flags_t node_flags = PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
+                if (contains_keyword_splat) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
+                arguments->list_flags |= node_flags;
+
+                pm_static_literals_free(&hash_keys);
+                parsed_bare_hash = true;
+
+                break;
+            }
+            case PM_TOKEN_UAMPERSAND: {
+                parser_lex(parser);
+                pm_token_t operator = parser->previous;
+                pm_node_t *expression = NULL;
+
+                if (token_begins_expression_p(parser->current.type)) {
+                    expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+                } else {
+                    pm_parser_scope_forwarding_block_check(parser, &operator);
+                }
+
+                argument = UP(pm_block_argument_node_create(parser, &operator, expression));
+                if (parsed_block_argument) {
+                    parse_arguments_append(parser, arguments, argument);
+                } else {
+                    arguments->block = argument;
+                }
+
+                if (match1(parser, PM_TOKEN_COMMA)) {
+                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
+                }
+
+                parsed_block_argument = true;
+                break;
+            }
+            case PM_TOKEN_USTAR: {
+                parser_lex(parser);
+                pm_token_t operator = parser->previous;
+
+                if (match4(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_SEMICOLON, PM_TOKEN_BRACKET_RIGHT)) {
+                    pm_parser_scope_forwarding_positionals_check(parser, &operator);
+                    argument = UP(pm_splat_node_create(parser, &operator, NULL));
+                    if (parsed_bare_hash) {
+                        pm_parser_err_previous(parser, PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
+                    }
+                } else {
+                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT, (uint16_t) (depth + 1));
+
+                    if (parsed_bare_hash) {
+                        pm_parser_err(parser, PM_TOKEN_START(parser, &operator), PM_NODE_END(expression) - PM_TOKEN_START(parser, &operator), PM_ERR_ARGUMENT_SPLAT_AFTER_ASSOC_SPLAT);
+                    }
+
+                    argument = UP(pm_splat_node_create(parser, &operator, expression));
+                }
+
+                parse_arguments_append(parser, arguments, argument);
+                break;
+            }
+            case PM_TOKEN_UDOT_DOT_DOT: {
+                if (accepts_forwarding) {
+                    parser_lex(parser);
+
+                    if (token_begins_expression_p(parser->current.type)) {
+                        // If the token begins an expression then this ... was
+                        // not actually argument forwarding but was instead a
+                        // range.
+                        pm_token_t operator = parser->previous;
+                        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_RANGE, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+
+                        /* A binary or endless range chains with the outer
+                         * operator. A beginless range is a valid operand. */
+                        if (PM_NODE_TYPE_P(right, PM_RANGE_NODE)) {
+                            pm_range_node_t *range = (pm_range_node_t *) right;
+                            if (range->left != NULL) {
+                                pm_parser_err(parser, range->operator_loc.start, range->operator_loc.length, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+                            }
+                        }
+
+                        argument = UP(pm_range_node_create(parser, NULL, &operator, right));
+                    } else {
+                        pm_parser_scope_forwarding_all_check(parser, &parser->previous);
+                        if (parsed_first_argument && terminator == PM_TOKEN_EOF) {
+                            pm_parser_err_previous(parser, PM_ERR_ARGUMENT_FORWARDING_UNBOUND);
+                        }
+
+                        argument = UP(pm_forwarding_arguments_node_create(parser, &parser->previous));
+                        parse_arguments_append(parser, arguments, argument);
+                        arguments->list_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_FORWARDING;
+                        arguments->has_forwarding = true;
+                        parsed_forwarding_arguments = true;
+                        break;
+                    }
+                }
+            }
+            PRISM_FALLTHROUGH
+            default: {
+                if (argument == NULL) {
+                    /* The first argument may be a command call, and since Ruby
+                     * 4.0 also an endless method with a command body
+                     * (`private def f = foo 1`), either of which must then be
+                     * the sole argument. */
+                    uint8_t command_flags = 0;
+                    if (!parsed_first_argument) {
+                        command_flags = PM_PARSE_ACCEPTS_COMMAND_CALL;
+                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
+                    }
+
+                    argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+                }
+
+                bool contains_keywords = false;
+                bool contains_keyword_splat = false;
+
+                if (argument_allowed_for_bare_hash(parser, argument)) {
+                    if (parsed_bare_hash) {
+                        pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
+                    }
+
+                    /* A hash key must be an argument (`arg`). A command call or
+                     * block call (e.g. `Foo::Bar { } => v`, `foo bar do end =>
+                     * v`) is not an argument, so reject it as a key. Plain
+                     * command calls never reach here as a key because they
+                     * absorb the `=>` into their own arguments first.
+                     */
+                    if (pm_command_call_value_p(parser, argument) || pm_block_call_p(argument)) {
+                        pm_parser_err_token_type(parser, &parser->previous, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->previous.type);
+                    }
+
+                    pm_token_t operator = { 0 };
+                    if (parser->previous.type == PM_TOKEN_EQUAL_GREATER) {
+                        operator = parser->previous;
+                    }
+
+                    pm_hash_elements_t elements = { 0 };
+                    contains_keywords = true;
+
+                    // Create the set of static literals for this hash.
+                    pm_static_literals_t hash_keys = { 0 };
+                    pm_hash_key_static_literals_add(parser, &hash_keys, argument);
+
+                    // Finish parsing the one we are part way through.
+                    pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
+                    argument = UP(pm_assoc_node_create(parser, argument, NTOK2PTR(operator), value));
+
+                    pm_hash_elements_append(parser, &elements, argument);
+
+                    // Then parse more if we have a comma
+                    if (accept1(parser, PM_TOKEN_COMMA) && (
+                        token_begins_expression_p(parser->current.type) ||
+                        match2(parser, PM_TOKEN_USTAR_STAR, PM_TOKEN_LABEL)
+                    )) {
+                        contains_keyword_splat = parse_assocs(parser, &hash_keys, &elements, (uint16_t) (depth + 1));
+                    }
+
+                    argument = UP(pm_keyword_hash_node_create(parser, &elements));
+
+                    pm_static_literals_free(&hash_keys);
+                    parsed_bare_hash = true;
+                }
+
+                parse_arguments_append(parser, arguments, argument);
+
+                pm_node_flags_t node_flags = 0;
+                if (contains_keywords) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS;
+                if (contains_keyword_splat) node_flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
+                arguments->list_flags |= node_flags;
+
+                break;
+            }
+        }
+
+        parsed_first_argument = true;
+
+        // If parsing the argument failed, we need to stop parsing arguments.
+        if (PM_NODE_TYPE_P(argument, PM_ERROR_RECOVERY_NODE) || parser->recovering) break;
+
+        // If the terminator of these arguments is not EOF, then we have a
+        // specific token we're looking for. In that case we can accept a
+        // newline here because it is not functioning as a statement terminator.
+        bool accepted_newline = false;
+        if (terminator != PM_TOKEN_EOF) {
+            accepted_newline = accept1(parser, PM_TOKEN_NEWLINE);
+        }
+
+        if (parser->previous.type == PM_TOKEN_COMMA && parsed_bare_hash) {
+            // If we previously were on a comma and we just parsed a bare hash,
+            // then we want to continue parsing arguments. This is because the
+            // comma was grabbed up by the hash parser.
+        } else if (accept1(parser, PM_TOKEN_COMMA)) {
+            // If there was a comma, then we need to check if we also accepted a
+            // newline. If we did, then this is a syntax error.
+            if (accepted_newline) {
+                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+            }
+
+            // If this is a command call and an argument takes a block,
+            // there can be no further arguments. For example,
+            // `foo(bar 1 do end, 2)` should be rejected.
+            if (PM_NODE_TYPE_P(argument, PM_CALL_NODE)) {
+                pm_call_node_t *call = (pm_call_node_t *) argument;
+                if (call->opening_loc.length == 0 && call->arguments != NULL && call->block != NULL) {
+                    pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+                    break;
+                }
+            }
+
+            /* A command can only be the sole argument, as in
+             * `foo Foo::Bar { }, y` or `foo def f = bar 1 rescue z, y`. */
+            if (pm_command_before_comma_p(parser, argument)) {
+                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+            }
+        } else {
+            // If there is no comma at the end of the argument list then we're
+            // done parsing arguments and can break out of this loop.
+            break;
+        }
+
+        // If we hit the terminator, then that means we have a trailing comma so
+        // we can accept that output as well.
+        if (match1(parser, terminator)) {
+            // A forwarding `...` argument must be the last argument and cannot
+            // be followed by a trailing comma, e.g. `foo(...,)`. A comma
+            // followed by another argument is already rejected at the top of
+            // this loop, so the only case left to reject here is the trailing
+            // one.
+            if (parsed_forwarding_arguments) {
+                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+            }
+
+            break;
+        }
+    }
 }
 
 /**
