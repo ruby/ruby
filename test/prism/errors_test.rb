@@ -337,6 +337,31 @@ module Ruby::Prism
       end
     end
 
+    def test_call_after_a_command_brace_block
+      ["f", "obj.f"].each do |callee|
+        source = "#{callee} (x) {}.tail"
+        refute_valid_syntax(source)
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :failure?, source
+        assert_equal ".", result.errors.first.location.slice
+
+        source = "#{callee}(x) {}.tail"
+        assert_valid_syntax(source)
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :success?, source
+        assert_equal :tail, result.statement.name
+        assert_equal "{}", result.statement.receiver.block.slice
+
+        source = "#{callee} x {}.tail"
+        assert_valid_syntax(source)
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :success?, source
+        argument = result.statement.arguments.arguments.first
+        assert_equal :tail, argument.name
+        assert_equal "x {}", argument.receiver.slice
+      end
+    end
+
     def test_do_after_a_command_ending_in_a_brace
       ["outer inner (x) {} do end", "outer super A::B {} do end"].each do |source|
         result = Ruby::Prism.parse(source)
