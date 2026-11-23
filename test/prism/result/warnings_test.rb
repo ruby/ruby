@@ -420,6 +420,14 @@ module Ruby::Prism
       assert_warning(source, *names.map { |name| "assigned but unused variable - #{name}" })
     end
 
+    def test_unused_local_variables_in_rescue_modifier_values
+      ["def f = not (a = 1) rescue (b = 2)", "def f = not return rescue (a = 1) rescue (b = 2)"].each do |source|
+        warnings = Ruby::Prism.parse(source, version: "3.4").warnings
+        assert_equal [:unused_local_variable], warnings.map(&:type)
+        assert_equal "b", warnings.first.location.slice
+      end
+    end
+
     def test_unused_local_variable_or_assign_with_begin_node
       assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
         var ||= begin

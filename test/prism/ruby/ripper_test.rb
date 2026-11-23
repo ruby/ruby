@@ -220,6 +220,11 @@ module Ruby::Prism
       end
     end
 
+    def test_endless_method_argument_with_a_rescued_return
+      assert_ripper_sexp_raw("outer(def f = not return rescue 2)")
+      assert_ripper_sexp_raw("outer(def f = not return v rescue 2)") if RUBY_VERSION >= "4.0"
+    end
+
     def test_block_call_events_after_a_jump
       %w[return break next].each do |keyword|
         ["m x do end.tail y", "obj.+ x do end.tail {}", "super x do end.tail(x)", "m(x) do end.tail"].each do |call|

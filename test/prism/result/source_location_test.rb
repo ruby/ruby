@@ -505,6 +505,21 @@ module Ruby::Prism
       assert_location(RescueModifierNode, "def f = not(a) rescue b", 8...23) do |node|
         node.body.body.first
       end
+
+      source = "def f = not return rescue retry rescue return"
+      assert_location(RescueModifierNode, source, source.index("return")...source.length, version: "3.3") do |node|
+        node.body.body.first.receiver
+      end
+    end
+
+    def test_bare_not_with_a_command_and_rescue_in_an_endless_def
+      source = "def f = not work 1 rescue recover do :ok end"
+      assert_location(RescueModifierNode, source, source.index("work")...source.length) do |node|
+        rescue_node = node.body.body.first.receiver
+        assert_equal "work 1", rescue_node.expression.slice
+        assert_equal "do :ok end", rescue_node.rescue_expression.block.slice
+        rescue_node
+      end
     end
 
     def test_pattern_match_after_endless_def_with_not

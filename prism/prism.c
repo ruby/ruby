@@ -1134,6 +1134,32 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                 break;
             }
+            case PM_RESCUE_MODIFIER_NODE: {
+                if (parser->version < PM_OPTIONS_VERSION_CRUBY_3_4) return NULL;
+
+                /* Checking a value can mark a local write as read, so visit
+                 * branches in source order. Collect the handlers to avoid
+                 * recursing down a left-associated rescue chain. */
+                pm_rescue_modifier_node_t *rescue = (pm_rescue_modifier_node_t *) node;
+                pm_node_t *body = rescue->expression;
+                pm_scratch_node_list_t handlers = { 0 };
+                while (PM_NODE_TYPE_P(body, PM_RESCUE_MODIFIER_NODE)) {
+                    pm_rescue_modifier_node_t *inner = (pm_rescue_modifier_node_t *) body;
+                    pm_scratch_node_list_append(&parser->scratch_arena, &handlers, inner->rescue_expression);
+                    body = inner->expression;
+                }
+
+                pm_node_t *vn = pm_check_value_expression(parser, body);
+                if (vn == NULL) return NULL;
+                if (void_node == NULL) void_node = vn;
+
+                for (size_t index = handlers.size; index > 0; index--) {
+                    if (pm_check_value_expression(parser, handlers.nodes[index - 1]) == NULL) return NULL;
+                }
+
+                node = rescue->rescue_expression;
+                break;
+            }
             case PM_CASE_NODE: {
                 // https://bugs.ruby-lang.org/issues/21669
                 if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
@@ -18924,6 +18950,21 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return UP(pm_class_node_create(parser, &locals, &class_keyword, constant_path, &name, NTOK2PTR(inheritance_operator), superclass, statements, &parser->previous));
 }
 
+/* Both endless_arg and endless_command take a left-associative chain of
+ * rescue modifiers. Each handler is an arg. */
+static pm_node_t *
+parse_endless_rescues(pm_parser_t *parser, pm_node_t *body, uint8_t flags, uint16_t depth) {
+    while (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+        pm_token_t keyword = parser->previous;
+        context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
+        pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1)).node;
+        context_pop(parser);
+        body = UP(pm_rescue_modifier_node_create(parser, body, &keyword, value));
+    }
+
+    return body;
+}
+
 /**
  * Parse a method definition expression (the `def` keyword).
  */
@@ -19205,22 +19246,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         pm_accepts_block_stack_push(parser, true);
         pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1)).node;
 
-        /* Any number of rescue modifiers chain onto the body within the method
-         * definition itself, associating to the left: `def f = a rescue b
-         * rescue c` defines a method whose body is `(a rescue b) rescue c`,
-         * rather than a rescue modifier guarding the definition. */
-        while (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
-            context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
-
-            pm_token_t rescue_keyword = parser->previous;
-
-            /* In the Ruby grammar, the rescue value of an endless method
-             * command excludes and/or and in/=>. */
-            pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_MATCH + 1, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1)).node;
-            context_pop(parser);
-
-            statement = UP(pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value));
-        }
+        statement = parse_endless_rescues(parser, statement, flags, depth);
 
         /* A plain `do` still belongs to the endless method context. A
          * PM_TOKEN_KEYWORD_DO_BLOCK can attach to an enclosing command. */
@@ -20955,7 +20981,7 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
          * after the operand applies to the whole method definition. */
         uint8_t operand_flags = flags & (PM_PARSE_IN_ENDLESS_DEF | PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK);
         pm_reduction_t operand = parse_expression(parser, PM_BINDING_POWER_DEFINED, operand_flags, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
-        receiver = operand.node;
+        receiver = parse_endless_rescues(parser, operand.node, flags, depth);
         kind = PM_REDUCTION_KIND(operand);
     } else {
         receiver = parse_expression(parser, PM_BINDING_POWER_NOT, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1)).node;

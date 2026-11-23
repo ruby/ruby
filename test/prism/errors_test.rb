@@ -240,6 +240,26 @@ module Ruby::Prism
       assert_equal "do end", result.errors.first.location.slice
     end
 
+    def test_missing_rescue_handler_inside_bare_not_in_an_endless_def
+      result = Ruby::Prism.parse("def f = not work rescue; tail")
+      assert_equal [:rescue_modifier_value], result.errors.map(&:type)
+      assert_equal "rescue", result.errors.first.location.slice
+      definition, tail = result.value.statements.body
+      rescue_node = definition.body.body.first.receiver
+      assert_instance_of RescueModifierNode, rescue_node
+      assert_instance_of ErrorRecoveryNode, rescue_node.rescue_expression
+      assert_equal "tail", tail.slice
+    end
+
+    def test_void_rescue_chain_inside_bare_not
+      source = "def f = not return rescue retry rescue return"
+      %w[3.4 4.0 4.1].each do |version|
+        errors = Ruby::Prism.parse(source, version: version).errors
+        assert_equal [:void_expression], errors.map(&:type)
+        assert_equal source.index("return"), errors.first.location.start_offset
+      end
+    end
+
     def test_module_name_rejects_symbol_ending_in_constant_token
       result = Ruby::Prism.parse("module:A; end")
 

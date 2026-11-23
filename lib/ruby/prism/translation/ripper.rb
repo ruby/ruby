@@ -1520,6 +1520,8 @@ module Ruby::Prism
             when CallNode
               break unless node.call_operator_loc.nil? && node.message == "not" && node.opening_loc.nil?
               node = node.receiver
+            when ReturnNode, BreakNode, NextNode
+              return !node.arguments.nil?
             else
               break
             end
