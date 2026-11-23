@@ -331,8 +331,11 @@ rb_str_make_embedded(VALUE str)
 
     if (len > 0) {
         memcpy(RSTRING_PTR(str), buf, len);
-        SIZED_FREE_N(buf, old_capa);
     }
+
+    /* `String#delete!` can leave an empty string with a heap buffer.
+     * Free it even when there's nothing to copy. */
+    SIZED_FREE_N(buf, old_capa);
 
     TERM_FILL(RSTRING(str)->as.embed.ary + len, termlen);
 }
