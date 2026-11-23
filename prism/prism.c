@@ -1743,6 +1743,9 @@ typedef struct {
 
     /** The flag indicating whether this arguments list has forwarding argument. */
     bool has_forwarding;
+
+    /** Whether the arguments were parsed as command_args. */
+    bool command_style;
 } pm_arguments_t;
 
 /**
@@ -13047,14 +13050,24 @@ expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t di
  */
 #define PM_PARSE_ACCEPTS_COMMAND_DEF ((uint8_t) 0x20)
 
+enum pm_reduction_kind {
+    PM_REDUCTION_DEFAULT,
+    PM_REDUCTION_COMMAND
+};
+
+typedef uint32_t pm_reduction_kind_t;
+
 /* The result of a prefix or infix reduction in the Pratt parser. */
 typedef struct {
     pm_node_t *node;
+    pm_reduction_kind_t kind;
 } pm_reduction_t;
+
+#define PM_REDUCTION_KIND(reduction_) ((enum pm_reduction_kind) (reduction_).kind)
 
 static PRISM_INLINE pm_reduction_t
 pm_reduction(pm_node_t *node) {
-    return (pm_reduction_t) { .node = node };
+    return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_DEFAULT };
 }
 
 static pm_reduction_t
@@ -15777,7 +15790,6 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
     }
 
     bool found = false;
-    bool parsed_command_args = false;
 
     if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
         found |= true;
@@ -15808,7 +15820,6 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         }
     } else if ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type) && !match1(parser, PM_TOKEN_BRACE_LEFT)) {
         found |= true;
-        parsed_command_args = true;
 
         /* The command-args frame does not accept blocks, so that a trailing
          * `do` binds to this command rather than to an argument. Mirroring
@@ -15827,6 +15838,10 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         // operator. In this case we assume the subsequent token is part of an
         // argument to this method call.
         parse_arguments(parser, arguments, full_arguments, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
+
+        /* A block argument alone counts for a method or super. Yield
+         * discards it during recovery, leaving a bare yield. */
+        arguments->command_style = arguments->list.size > 0 || (full_arguments && arguments->block != NULL);
 
         // If we have done with the arguments and still not consumed the comma,
         // then we have a trailing comma where we need to check whether it is
@@ -15859,7 +15874,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         } else if (pm_accepts_block_stack_p(parser) && accept1(parser, PM_TOKEN_KEYWORD_DO)) {
             found |= true;
             block = parse_block(parser, (uint16_t) (depth + 1));
-        } else if (parsed_command_args && pm_accepts_block_stack_p(parser) && (flags & PM_PARSE_ACCEPTS_DO_BLOCK) && accept1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
+        } else if (arguments->command_style && pm_accepts_block_stack_p(parser) && (flags & PM_PARSE_ACCEPTS_DO_BLOCK) && accept1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
             found |= true;
             block = parse_block(parser, (uint16_t) (depth + 1));
         }
@@ -20851,7 +20866,7 @@ parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
     return pm_undef_node_create(parser, &keyword, &names);
 }
 
-static pm_yield_node_t *
+static pm_reduction_t
 parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t keyword = parser->current;
     parser_lex(parser);
@@ -20871,7 +20886,7 @@ parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_yield_node_t *node = pm_yield_node_create(parser, &keyword, &arguments.opening_loc, pm_arguments_node_create(parser, &arguments), &arguments.closing_loc);
     if (!parser->parsing_eval && !parser->partial_script) ensure_valid_yield(parser, node);
 
-    return node;
+    return (pm_reduction_t) { .node = UP(node), .kind = arguments.command_style ? PM_REDUCTION_COMMAND : PM_REDUCTION_DEFAULT };
 }
 
 static pm_node_t *
@@ -21176,7 +21191,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_SUPER:
             return pm_reduction(parse_super(parser, flags, depth));
         case PM_TOKEN_KEYWORD_YIELD:
-            return pm_reduction(UP(parse_yield(parser, flags, depth)));
+            return parse_yield(parser, flags, depth);
         case PM_TOKEN_KEYWORD_CLASS:
             return pm_reduction(parse_class(parser, flags, depth));
         case PM_TOKEN_KEYWORD_DEF:
@@ -22596,19 +22611,12 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
 #undef PM_PARSE_PATTERN_MULTI
 
 /**
- * Some nodes act as statements and limit which operators can follow. This
- * function inspects the node and the upcoming token to determine whether the
- * expression loop should stop. It is called both after prefix parsing and after
- * each infix operator.
- *
- * As a side effect, this function also attaches do-blocks to command-style call
- * nodes when appropriate.
- *
- * Returns true if the expression loop should stop (i.e., the next operator
- * should not be consumed).
+ * Return true if the reduction cannot be followed by the current operator.
+ * Check after parsing a prefix and after each infix reduction.
  */
 static bool
-parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
+parse_expression_terminator(pm_parser_t *parser, pm_reduction_t reduction) {
+    pm_node_t *node = reduction.node;
     pm_binding_power_t left = pm_binding_powers[parser->current.type].left;
 
     switch (PM_NODE_TYPE(node)) {
@@ -22643,10 +22651,11 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
             // &.), composition (and/or), and modifier operators.
             return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node);
         }
-        case PM_SUPER_NODE:
         case PM_YIELD_NODE:
-            // Command-style super/yield (without parens) can only be followed
-            // by composition and modifier operators.
+            return PM_REDUCTION_KIND(reduction) == PM_REDUCTION_COMMAND && left > PM_BINDING_POWER_COMPOSITION;
+        case PM_SUPER_NODE:
+            /* Command-style super can only be followed by composition and
+             * modifier operators. */
             if (pm_command_call_value_p(parser, node)) {
                 return left > PM_BINDING_POWER_COMPOSITION;
             }
@@ -22710,7 +22719,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         case PM_SUPER_NODE:
         case PM_YIELD_NODE:
         case PM_DEF_NODE:
-            if (parse_expression_terminator(parser, left.node)) {
+            if (parse_expression_terminator(parser, left)) {
                 return left;
             }
             break;
@@ -22735,7 +22744,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         current_binding_powers.binary
      ) {
         left = parse_expression_infix(parser, left, binding_power, current_binding_powers.right, flags, (uint16_t) (depth + 1));
-        if (parse_expression_terminator(parser, left.node)) return left;
+        if (parse_expression_terminator(parser, left)) return left;
 
         // If the operator is nonassoc and we should not be able to parse the
         // upcoming infix operator, break.

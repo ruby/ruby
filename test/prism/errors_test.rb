@@ -218,6 +218,21 @@ module Ruby::Prism
       assert Ruby::Prism.parse_success?("def f; yield if false; end")
     end
 
+    def test_operators_after_yield
+      ["yield", "yield()", "yield(x)"].each do |body|
+        assert Ruby::Prism.parse_success?("def f; #{body} in Integer; end"), body
+      end
+
+      ["yield x", "yield (x)"].each do |body|
+        result = Ruby::Prism.parse("def f; #{body} in Integer; end")
+        assert_equal "in", result.errors.first.location.slice, body
+        assert Ruby::Prism.parse_success?("def f; #{body} and ready; end"), body
+      end
+
+      result = Ruby::Prism.parse("def f; yield &blk in Integer; end")
+      assert_equal [:unexpected_block_argument], result.errors.map(&:type)
+    end
+
     def test_endless_method_rescue_rejects_unattached_do_block
       result = Ruby::Prism.parse("relay def f = 1 rescue 2 do end")
 
