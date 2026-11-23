@@ -9,12 +9,13 @@
 #include "prism/internal/char.h"
 #include "prism/internal/double.h"
 #include "prism/internal/integer.h"
+#include "prism/internal/line_offset_list.h"
 #include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/xxh3.h"
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -511,7 +512,7 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
             break;
         }
         case PM_SOURCE_LINE_NODE:
-            pm_buffer_append_format(buffer, "%" PRIi32, pm_line_offset_list_line_column(&parser->line_offsets, node->location.start, parser->start_line).line);
+            pm_buffer_append_line_number(buffer, pm_line_offset_list_line(&parser->line_offsets, node->location.start, parser->start_line), 0);
             break;
         case PM_STRING_NODE: {
             const pm_string_t *unescaped = &((const pm_string_node_t *) node)->unescaped;

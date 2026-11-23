@@ -9,8 +9,8 @@
 #include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 
-#include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -154,50 +154,14 @@ typedef struct {
 } pm_error_line_format_t;
 
 /**
- * Write the decimal digits of the given line number, including the sign if it
- * is negative, so that they end at the end of the given buffer. The buffer is
- * large enough for the widest possible line number, -2147483648. Returns the
- * number of characters written.
- */
-static uint8_t
-pm_error_line_digits(int32_t line, char digits[11]) {
-    /* The magnitude is computed in unsigned arithmetic so that negating the
-     * minimum value of a 32-bit integer is well-defined. */
-    uint32_t magnitude = (line < 0) ? (0U - (uint32_t) line) : (uint32_t) line;
-    uint8_t length = 0;
-
-    do {
-        digits[10 - length++] = (char) ('0' + (magnitude % 10));
-        magnitude /= 10;
-    } while (magnitude > 0);
-
-    if (line < 0) digits[10 - length++] = '-';
-    return length;
-}
-
-/**
- * Append the given line number to the buffer, right aligned within the given
- * width.
- */
-static void
-pm_error_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width) {
-    char digits[11];
-    uint8_t length = pm_error_line_digits(line, digits);
-
-    if (width > length) pm_buffer_append_repeated(buffer, ' ', (size_t) (width - length));
-    pm_buffer_append_string(buffer, digits + sizeof(digits) - length, length);
-}
-
-/**
  * Initialize the given line format struct based on whether or not to highlight
  * the line and the first and last line indices that will be displayed. The
  * widest number is at an endpoint or at the signed 32-bit wraparound.
  */
 static void
 pm_error_line_format_init(pm_error_line_format_t *format, pm_errors_format_type_t format_type, const pm_parser_t *parser, uint32_t first_line, uint32_t last_line) {
-    char digits[11];
-    uint8_t first_width = pm_error_line_digits(pm_line_offset_list_line_number(first_line, parser->start_line), digits);
-    uint8_t last_width = pm_error_line_digits(pm_line_offset_list_line_number(last_line, parser->start_line), digits);
+    uint8_t first_width = pm_buffer_line_number_width(pm_line_offset_list_line_number(first_line, parser->start_line));
+    uint8_t last_width = pm_buffer_line_number_width(pm_line_offset_list_line_number(last_line, parser->start_line));
 
     /* The range may cross the signed 32-bit display boundary. */
     uint32_t wrap_index = (uint32_t) INT32_MAX - (uint32_t) parser->start_line;
@@ -216,7 +180,7 @@ pm_error_line_format_init(pm_error_line_format_t *format, pm_errors_format_type_
 static void
 pm_error_line_format_number(const pm_error_line_format_t *format, pm_buffer_t *buffer, int32_t line) {
     if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_GRAY);
-    pm_error_append_line_number(buffer, line, format->width);
+    pm_buffer_append_line_number(buffer, line, format->width);
     PM_BUFFER_APPEND_LITERAL(buffer, " | ");
     if (format->type > PM_ERRORS_FORMAT_PLAIN) PM_BUFFER_APPEND_LITERAL(buffer, COLOR_RESET);
 }
@@ -531,7 +495,7 @@ static void
 pm_error_append_summary(const pm_parser_t *parser, pm_buffer_t *buffer, uint32_t line, const char *message) {
     pm_buffer_append_string(buffer, (const char *) pm_string_source(&parser->filepath), pm_string_length(&parser->filepath));
     pm_buffer_append_byte(buffer, ':');
-    pm_error_append_line_number(buffer, pm_line_offset_list_line_number(line, parser->start_line), 0);
+    pm_buffer_append_line_number(buffer, pm_line_offset_list_line_number(line, parser->start_line), 0);
     PM_BUFFER_APPEND_LITERAL(buffer, ": ");
     pm_buffer_append_string(buffer, message, strlen(message));
 }

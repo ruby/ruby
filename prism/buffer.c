@@ -158,6 +158,46 @@ pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value) {
 }
 
 /**
+ * Write a signed line number at the end of digits and return its length.
+ * The widest possible line number is -2147483648.
+ */
+static uint8_t
+pm_buffer_line_number_digits(int32_t line, char digits[11]) {
+    /* Use unsigned arithmetic so that INT32_MIN has a representable magnitude. */
+    uint32_t magnitude = (line < 0) ? (0U - (uint32_t) line) : (uint32_t) line;
+    uint8_t length = 0;
+
+    do {
+        digits[10 - length++] = (char) ('0' + (magnitude % 10));
+        magnitude /= 10;
+    } while (magnitude > 0);
+
+    if (line < 0) digits[10 - length++] = '-';
+    return length;
+}
+
+/**
+ * Return the decimal width of a line number, including its sign.
+ */
+uint8_t
+pm_buffer_line_number_width(int32_t line) {
+    char digits[11];
+    return pm_buffer_line_number_digits(line, digits);
+}
+
+/**
+ * Append a line number, padded on the left with spaces to the given width.
+ */
+void
+pm_buffer_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width) {
+    char digits[11];
+    uint8_t length = pm_buffer_line_number_digits(line, digits);
+
+    if (width > length) pm_buffer_append_repeated(buffer, ' ', (size_t) (width - length));
+    pm_buffer_append_string(buffer, digits + sizeof(digits) - length, length);
+}
+
+/**
  * Append a string to the buffer.
  */
 void

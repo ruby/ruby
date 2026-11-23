@@ -20,13 +20,22 @@ typedef int pm_prettyprint_unused_t;
 #include "prism/internal/parser.h"
 #include "prism/line_offset_list.h"
 
-#include <inttypes.h>
+static PRISM_INLINE void
+prettyprint_line_column(pm_buffer_t *output_buffer, pm_line_column_t position) {
+    pm_buffer_append_byte(output_buffer, '(');
+    pm_buffer_append_line_number(output_buffer, position.line, 0);
+    pm_buffer_append_byte(output_buffer, ',');
+    pm_buffer_append_decimal(output_buffer, position.column);
+    pm_buffer_append_byte(output_buffer, ')');
+}
 
 static PRISM_INLINE void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_line_offset_list_line_column(&parser->line_offsets, location->start, parser->start_line);
     pm_line_column_t end = pm_line_offset_list_line_column(&parser->line_offsets, location->start + location->length, parser->start_line);
-    pm_buffer_append_format(output_buffer, "(%" PRIi32 ",%" PRIu32 ")-(%" PRIi32 ",%" PRIu32 ")", start.line, start.column, end.line, end.column);
+    prettyprint_line_column(output_buffer, start);
+    pm_buffer_append_byte(output_buffer, '-');
+    prettyprint_line_column(output_buffer, end);
 }
 
 static PRISM_INLINE void

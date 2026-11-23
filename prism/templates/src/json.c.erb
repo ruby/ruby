@@ -11,8 +11,6 @@ typedef int pm_json_unused_t;
 #include "prism/internal/integer.h"
 #include "prism/internal/parser.h"
 
-#include <inttypes.h>
-
 static void
 pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constant_id_t constant_id) {
     const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
@@ -23,7 +21,11 @@ pm_dump_json_constant(pm_buffer_t *buffer, const pm_parser_t *parser, pm_constan
 
 static void
 pm_dump_json_location(pm_buffer_t *buffer, const pm_location_t *location) {
-    pm_buffer_append_format(buffer, "{\"start\":%" PRIu32 ",\"length\":%" PRIu32 "}", location->start, location->length);
+    PM_BUFFER_APPEND_LITERAL(buffer, "{\"start\":");
+    pm_buffer_append_decimal(buffer, location->start);
+    PM_BUFFER_APPEND_LITERAL(buffer, ",\"length\":");
+    pm_buffer_append_decimal(buffer, location->length);
+    pm_buffer_append_byte(buffer, '}');
 }
 
 /**
