@@ -326,6 +326,20 @@ module Ruby::Prism
       end
     end
 
+    def test_empty_parentheses_are_a_jump_argument_before_an_in_clause
+      %w[return break next].each do |keyword|
+        source = "loop { case x; in A; #{keyword}() in B; end }"
+        start = source.index("(")
+        assert_location(ParenthesesNode, source, start...(start + 2)) do |node|
+          case_node = node.block.body.body.first
+          assert_equal 2, case_node.conditions.length
+          jump = case_node.conditions.first.statements.body.first
+          assert_equal keyword, jump.keyword
+          jump.arguments.arguments.first
+        end
+      end
+    end
+
     def test_multiple_assignment_in_rescue_before_case_in_clause
       source = "case x; in 1; f rescue *xs = m 1 in 2; end"
       assert_location(MultiWriteNode, source, 23...32) do |node|

@@ -995,6 +995,14 @@ module Ruby::Prism
       assert_equal :ready, result.statement.right.name
     end
 
+    def test_bare_jump_as_the_value_of_a_pattern_match
+      %w[return break next].each do |keyword|
+        result = Ruby::Prism.parse("loop { case x; in A; #{keyword} in B; end }")
+        assert_equal [:void_expression], result.errors.map(&:type)
+        assert_equal keyword, result.errors.first.location.slice
+      end
+    end
+
     def test_incomplete_def_closing_loc
       statement = Ruby::Prism.parse_statement("def f; 123")
       assert_nil(statement.end_keyword)

@@ -1732,6 +1732,10 @@ enum pm_reduction_kind {
     /* A block_call can take a call operator, as in `f x do end.tail`. */
     PM_REDUCTION_BLOCK_CALL,
 
+    /* A return, break, or next command with call_args. A trailing operator
+     * can still take the jump as a void operand during error recovery. */
+    PM_REDUCTION_JUMP,
+
     /* An `expr` built by keyword `and` or `or`, `not expr`, `! command_call`,
      * or an infix pattern match (`in` or `=>`). Promoting an `arg` or a
      * `command_call` to `expr` preserves its existing kind. */
@@ -20741,7 +20745,7 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
     return pm_array_node_create(parser, &opening, &elements, &closing);
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     parser_lex(parser);
 
@@ -20788,26 +20792,29 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         }
     }
 
+    pm_arguments_node_t *values = pm_arguments_node_create(parser, &arguments);
+    pm_node_t *node;
+
     switch (keyword.type) {
-        case PM_TOKEN_KEYWORD_BREAK: {
-            pm_node_t *node = UP(pm_break_node_create(parser, &keyword, pm_arguments_node_create(parser, &arguments)));
+        case PM_TOKEN_KEYWORD_BREAK:
+            node = UP(pm_break_node_create(parser, &keyword, values));
             if (!parser->partial_script) ensure_valid_jump(parser, node);
-            return node;
-        }
-        case PM_TOKEN_KEYWORD_NEXT: {
-            pm_node_t *node = UP(pm_next_node_create(parser, &keyword, pm_arguments_node_create(parser, &arguments)));
+            break;
+        case PM_TOKEN_KEYWORD_NEXT:
+            node = UP(pm_next_node_create(parser, &keyword, values));
             if (!parser->partial_script) ensure_valid_jump(parser, node);
-            return node;
-        }
-        case PM_TOKEN_KEYWORD_RETURN: {
-            pm_node_t *node = UP(pm_return_node_create(parser, &keyword, pm_arguments_node_create(parser, &arguments)));
+            break;
+        case PM_TOKEN_KEYWORD_RETURN:
+            node = UP(pm_return_node_create(parser, &keyword, values));
             ensure_valid_return(parser, node);
-            return node;
-        }
+            break;
         default:
             PRISM_ASSERT(false && "unreachable");
-            return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
+            return pm_reduction(UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous))));
     }
+
+    /* The bare keyword is a primary. With call_args it reduces to a command. */
+    return (pm_reduction_t) { .node = node, .kind = values == NULL ? PM_REDUCTION_DEFAULT : PM_REDUCTION_JUMP };
 }
 
 static pm_reduction_t
@@ -21162,6 +21169,7 @@ parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags,
         case PM_REDUCTION_COMMAND:
         case PM_REDUCTION_BRACE_COMMAND:
         case PM_REDUCTION_BLOCK_CALL:
+        case PM_REDUCTION_JUMP:
             return pm_logical_expression_reduction(parser, node, binding_power);
         default:
             return pm_reduction(node);
@@ -21280,7 +21288,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_BREAK:
         case PM_TOKEN_KEYWORD_NEXT:
         case PM_TOKEN_KEYWORD_RETURN:
-            return pm_reduction(parse_jump(parser, flags, depth));
+            return parse_jump(parser, flags, depth);
         case PM_TOKEN_KEYWORD_SUPER:
             return parse_super(parser, flags, depth);
         case PM_TOKEN_KEYWORD_YIELD:
@@ -22615,6 +22623,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
         case PM_REDUCTION_COMMAND:
         case PM_REDUCTION_BRACE_COMMAND:
             return left > PM_BINDING_POWER_COMPOSITION;
+        case PM_REDUCTION_JUMP:
         case PM_REDUCTION_EXPRESSION:
             /* A following match belongs to the enclosing construct. */
             return left == PM_BINDING_POWER_MATCH;
@@ -22628,9 +22637,6 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
     switch (PM_NODE_TYPE(node)) {
         case PM_RESCUE_MODIFIER_NODE:
         case PM_MULTI_WRITE_NODE:
-        case PM_RETURN_NODE:
-        case PM_BREAK_NODE:
-        case PM_NEXT_NODE:
             return left > PM_BINDING_POWER_MODIFIER;
         case PM_CLASS_VARIABLE_WRITE_NODE:
         case PM_CONSTANT_PATH_WRITE_NODE:
@@ -22703,6 +22709,9 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                 return left;
             }
             break;
+        case PM_RETURN_NODE:
+        case PM_BREAK_NODE:
+        case PM_NEXT_NODE:
         case PM_CALL_NODE:
         case PM_SUPER_NODE:
         case PM_YIELD_NODE:
