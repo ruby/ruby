@@ -1743,7 +1743,11 @@ enum pm_reduction_kind {
     /* An `expr` built by keyword `and` or `or`, `not expr`, `! command_call`,
      * or an infix pattern match (`in` or `=>`). Promoting an `arg` or a
      * `command_call` to `expr` preserves its existing kind. */
-    PM_REDUCTION_EXPRESSION
+    PM_REDUCTION_EXPRESSION,
+
+    /* A `stmt` built by a statement modifier. Only another statement
+     * modifier can follow it. */
+    PM_REDUCTION_STATEMENT
 };
 
 typedef uint32_t pm_reduction_kind_t;
@@ -13090,6 +13094,11 @@ pm_reduction(pm_node_t *node) {
     return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_DEFAULT };
 }
 
+static PRISM_INLINE pm_reduction_t
+pm_statement_reduction(pm_node_t *node) {
+    return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_STATEMENT };
+}
+
 /* Keyword and/or, bare not, and ! command_call produce an expr. Diagnose a
  * tighter operator if this parse will consume it, as in `!f x do end.tail + y`.
  * A following match belongs to the caller. Assignment diagnoses its target. */
@@ -14350,6 +14359,7 @@ pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node, enum
         case PM_REDUCTION_COMMAND:
         case PM_REDUCTION_JUMP:
         case PM_REDUCTION_EXPRESSION:
+        case PM_REDUCTION_STATEMENT:
             return false;
         case PM_REDUCTION_DEFAULT:
             break;
@@ -22564,28 +22574,28 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
             parser_lex(parser);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_IF_PREDICATE, (uint16_t) (depth + 1));
-            return pm_reduction(UP(pm_if_node_modifier_create(parser, node, &keyword, predicate)));
+            return pm_statement_reduction(UP(pm_if_node_modifier_create(parser, node, &keyword, predicate)));
         }
         case PM_TOKEN_KEYWORD_UNLESS_MODIFIER: {
             pm_token_t keyword = parser->current;
             parser_lex(parser);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_UNLESS_PREDICATE, (uint16_t) (depth + 1));
-            return pm_reduction(UP(pm_unless_node_modifier_create(parser, node, &keyword, predicate)));
+            return pm_statement_reduction(UP(pm_unless_node_modifier_create(parser, node, &keyword, predicate)));
         }
         case PM_TOKEN_KEYWORD_UNTIL_MODIFIER: {
             parser_lex(parser);
             pm_statements_node_t *statements = pm_statements_node_single_create(parser, node, true);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_UNTIL_PREDICATE, (uint16_t) (depth + 1));
-            return pm_reduction(UP(pm_until_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0)));
+            return pm_statement_reduction(UP(pm_until_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0)));
         }
         case PM_TOKEN_KEYWORD_WHILE_MODIFIER: {
             parser_lex(parser);
             pm_statements_node_t *statements = pm_statements_node_single_create(parser, node, true);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_WHILE_PREDICATE, (uint16_t) (depth + 1));
-            return pm_reduction(UP(pm_while_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0)));
+            return pm_statement_reduction(UP(pm_while_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0)));
         }
         case PM_TOKEN_QUESTION_MARK:
             return pm_reduction(UP(parse_ternary(parser, node, flags, depth)));
@@ -22600,7 +22610,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
 
             context_pop(parser);
             parse_rescue_modifier_terminator(parser, value, flags, depth);
-            return pm_reduction(UP(pm_rescue_modifier_node_create(parser, node, &token, value.node)));
+            return pm_statement_reduction(UP(pm_rescue_modifier_node_create(parser, node, &token, value.node)));
         }
         case PM_TOKEN_BRACKET_LEFT:
             return pm_reduction(parse_aref(parser, node, previous_binding_power, flags, depth));
@@ -22667,13 +22677,13 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
             /* A block_call can continue through a call operator. */
             return left > PM_BINDING_POWER_COMPOSITION && left != PM_BINDING_POWER_CALL;
         case PM_REDUCTION_COMMAND_ASSIGNMENT:
+        case PM_REDUCTION_STATEMENT:
             return left > PM_BINDING_POWER_MODIFIER;
         case PM_REDUCTION_DEFAULT:
             break;
     }
 
     switch (PM_NODE_TYPE(node)) {
-        case PM_RESCUE_MODIFIER_NODE:
         case PM_MULTI_WRITE_NODE:
             return left > PM_BINDING_POWER_MODIFIER;
         case PM_CLASS_VARIABLE_WRITE_NODE:
@@ -22881,17 +22891,6 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                 default:
                     flags &= (uint8_t) ~(PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF);
                     break;
-            }
-        }
-
-        if (context_terminator(parser->current_context->context, &parser->current)) {
-            pm_binding_powers_t next_binding_powers = pm_binding_powers[parser->current.type];
-            if (
-                !next_binding_powers.binary ||
-                minimum_binding_power > next_binding_powers.left ||
-                (PM_NODE_TYPE_P(left.node, PM_CALL_NODE) && pm_call_node_command_p((pm_call_node_t *) left.node))
-            ) {
-                return left;
             }
         }
     }

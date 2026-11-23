@@ -290,6 +290,34 @@ module Ruby::Prism
       end
     end
 
+    def test_operator_call_before_an_in_clause
+      source = "case v; in A; lhs + rhs in B in C; tail; end"
+      assert_location(MatchPredicateNode, source, source.index("lhs")...source.index(" in C")) do |node|
+        assert_equal ["A", "C"], node.conditions.map { |clause| clause.pattern.slice }
+        match = node.conditions.first.statements.body.first
+        assert_equal :+, match.value.name
+        match
+      end
+
+      source = "case v; in A; lhs.+ rhs in B then tail; end"
+      assert_location(CallNode, source, source.index("lhs")...source.index(" in B")) do |node|
+        assert_equal ["A", "B"], node.conditions.map { |clause| clause.pattern.slice }
+        call = node.conditions.first.statements.body.first
+        assert_equal :+, call.name
+        call
+      end
+    end
+
+    def test_match_in_a_modifier_predicate_before_an_in_clause
+      %w[if unless while until].each do |modifier|
+        source = "case v; in A; work #{modifier} lhs + rhs in B in C; tail; end"
+        assert_location(MatchPredicateNode, source, source.index("lhs")...source.index(" in C")) do |node|
+          assert_equal ["A", "C"], node.conditions.map { |clause| clause.pattern.slice }
+          node.conditions.first.statements.body.first.predicate
+        end
+      end
+    end
+
     def test_do_block_in_case_clause_inside_command_arguments
       ["when ready then", "value; when ready then", "value; when ready; else", "value; in Integer then", "value; in Integer; else"].each do |clause|
         source = "receive case #{clause} produce do :ok end end"

@@ -606,6 +606,16 @@ module Ruby::Prism
       assert_equal ["First", "Second", "Third"], result.statement.conditions.map { |clause| clause.pattern.slice }
     end
 
+    def test_then_after_a_pattern_match_in_a_case_body
+      source = "case v; in A; lhs + rhs in B then tail; in C; end"
+      result = Ruby::Prism.parse(source)
+      assert_equal :expect_eol_after_statement, result.errors.fetch(0).type
+      assert_equal "then", result.errors.first.location.slice
+      assert_equal ["A", "C"], result.statement.conditions.map { |clause| clause.pattern.slice }
+      assert_instance_of MatchPredicateNode, result.statement.conditions.first.statements.body.first
+      assert_equal "tail", result.statement.conditions.first.statements.body.last.slice
+    end
+
     def test_target_list_after_a_statement_in_parentheses
       result = Ruby::Prism.parse("(work; a, b)")
       assert_equal [:write_target_unexpected], result.errors.map(&:type)
