@@ -1824,8 +1824,8 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                         slashes = 0;
                         break;
                     }
-                    memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1),
-                           sizeof(WCHAR) * (base + len - p));
+                    memmove(p - ((slashes + 1) >> 1), p + (~slashes & 1),
+                            sizeof(WCHAR) * (base + len - p));
                     len -= ((slashes + 1) >> 1) + (~slashes & 1);
                     p -= (slashes + 1) >> 1;
                     if (!(slashes & 1)) {
