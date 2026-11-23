@@ -12299,7 +12299,11 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     else if (split_type == SPLIT_TYPE_CHARS) {
         int n;
 
-        if (result) result = rb_ary_new_capa(RSTRING_LEN(str));
+        if (result) {
+            rb_len_t capa = RSTRING_LEN(str);
+            if (!NIL_P(limit) && lim < capa) capa = lim;
+            result = rb_ary_new_capa(capa);
+        }
         mustnot_broken(str);
         enc = rb_enc_get(str);
         while (ptr < eptr &&

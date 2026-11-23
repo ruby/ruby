@@ -47,6 +47,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator(ObjectSpace.memsize_of(Regexp.new("a")), :>, slot_size)
   end
 
+  def test_memsize_of_split_chars_with_limit
+    ary = ("x" * 10_000).split("", 2)
+    assert_equal(2, ary.size)
+    assert_operator(ObjectSpace.memsize_of(ary), :<, 1_000) # capa of ary should also be 2
+  end
+
   def test_argf_memsize
     size = ObjectSpace.memsize_of(ARGF)
     assert_kind_of(Integer, size)
