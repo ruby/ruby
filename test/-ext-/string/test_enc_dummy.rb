@@ -16,4 +16,17 @@ class Test_StringEncDummy < Test::Unit::TestCase
       assert_equal([[:TEST_ENC_DUMMY, true]], added)
     end;
   end
+
+  def test_errors
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", require: "-test-/string")
+    begin;
+      Bug::String.rb_define_dummy_encoding("TEST_ENC_DUP")
+      assert_raise_with_message(ArgumentError, /already registered/) do
+        Bug::String.rb_define_dummy_encoding("TEST_ENC_DUP")
+      end
+      assert_raise_with_message(EncodingError, /too many encoding/) do
+        1_000.times {|i| Bug::String.rb_define_dummy_encoding("R_#{i}") }
+      end
+    end;
+  end
 end
