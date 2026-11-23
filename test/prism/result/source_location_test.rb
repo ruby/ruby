@@ -577,6 +577,54 @@ module Ruby::Prism
       end
     end
 
+    def test_second_rescue_after_nested_operator_writes
+      source = "x &&= y += f 1 rescue a rescue b and ok"
+      assert_location(RescueModifierNode, source) do |node|
+        assert_equal "x &&= y += f 1 rescue a", node.expression.slice
+        assert_instance_of AndNode, node.rescue_expression
+        assert_equal "b and ok", node.rescue_expression.slice
+        node
+      end
+
+      source = "x &&= (y += f 1 rescue a) rescue b and ok"
+      assert_location(AndNode, source) do |node|
+        assert_instance_of LocalVariableAndWriteNode, node.left
+        assert_equal "(y += f 1 rescue a) rescue b", node.left.value.slice
+        node
+      end
+
+      source = "x = y ||= f 1 rescue a rescue u, v = values"
+      assert_location(MultiWriteNode, source, source.index("u, v")...source.length) do |node|
+        assert_instance_of RescueModifierNode, node
+        node.rescue_expression
+      end
+    end
+
+    def test_match_in_assignment_rescue_before_case_clause
+      source = "case v; in First; x = y = f (v) {} rescue a in Integer in Second; end"
+      assert_location(CaseMatchNode, source) do |node|
+        assert_equal ["First", "Second"], node.conditions.map { |clause| clause.pattern.slice }
+        handler = node.conditions.first.statements.body.first.value.value.rescue_expression
+        assert_instance_of MatchPredicateNode, handler
+        assert_equal "a in Integer", handler.slice
+        node
+      end
+    end
+
+    def test_rescue_after_a_brace_call_in_multiple_assignment
+      assert_location(RescueModifierNode, "a, b = f (v) {} rescue c") do |node|
+        assert_instance_of MultiWriteNode, node.expression
+        assert_equal "f (v) {}", node.expression.value.slice
+        node
+      end
+
+      assert_location(MultiWriteNode, "a, b = f(v) {} rescue c") do |node|
+        assert_instance_of RescueModifierNode, node.value
+        assert_equal "f(v) {}", node.value.expression.slice
+        node
+      end
+    end
+
     def test_ClassNode
       assert_location(ClassNode, "class Foo end")
       assert_location(ClassNode, "class Foo < Bar; end")
