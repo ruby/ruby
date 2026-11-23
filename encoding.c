@@ -347,11 +347,33 @@ rb_find_encoding(VALUE enc)
     return rb_enc_from_index(idx);
 }
 
+/* The table helpers run under the VM lock, where raising is not allowed (creating
+ * the exception calls Ruby code), so they return these and the caller raises with
+ * enc_raise_error() after leaving the locked section. */
+enum {
+    ENC_ERR_INVALID_NAME = -1, /* left to the caller, as handling differs */
+    ENC_ERR_TABLE_FULL = -2,
+    ENC_ERR_ALREADY_REGISTERED = -3,
+};
+
+static void
+enc_raise_error(int err, const char *name)
+{
+    ASSERT_vm_unlocking();
+
+    switch (err) {
+      case ENC_ERR_TABLE_FULL:
+        rb_raise(rb_eEncodingError, "too many encoding (> %d)", ENCODING_LIST_CAPA);
+      case ENC_ERR_ALREADY_REGISTERED:
+        rb_raise(rb_eArgError, "encoding %s is already registered", name);
+    }
+}
+
 static int
 enc_table_expand(struct enc_table *enc_table, int newsize)
 {
     if (newsize > ENCODING_LIST_CAPA) {
-        rb_raise(rb_eEncodingError, "too many encoding (> %d)", ENCODING_LIST_CAPA);
+        return ENC_ERR_TABLE_FULL;
     }
     return newsize;
 }
@@ -429,11 +451,13 @@ enc_register(struct enc_table *enc_table, const char *name, rb_encoding *encodin
 {
     ASSERT_vm_locking();
 
-    if (!valid_encoding_name_p(name)) return -1;
+    if (!valid_encoding_name_p(name)) return ENC_ERR_INVALID_NAME;
 
     int index = enc_table->count;
+    int count = enc_table_expand(enc_table, index + 1);
+    if (count < 0) return count;
 
-    enc_table->count = enc_table_expand(enc_table, index + 1);
+    enc_table->count = count;
     return enc_register_at(enc_table, index, name, encoding);
 }
 
@@ -475,7 +499,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
                 enc_load_from_base(enc_table, index, encoding);
             }
             else {
-                rb_raise(rb_eArgError, "encoding %s is already registered", name);
+                index = ENC_ERR_ALREADY_REGISTERED;
             }
         }
         else {
@@ -484,6 +508,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
         }
     }
 
+    enc_raise_error(index, name);
     if (define_const) set_encoding_const(name, rb_enc_from_index(index));
     return index;
 }
@@ -524,18 +549,20 @@ rb_encdb_declare(const char *name)
         }
     }
 
+    enc_raise_error(idx, name);
     set_encoding_const(name, rb_enc_from_index(idx));
 }
 
-static void
+static int
 enc_check_addable(struct enc_table *enc_table, const char *name)
 {
     if (enc_registered(enc_table, name) >= 0) {
-        rb_raise(rb_eArgError, "encoding %s is already registered", name);
+        return ENC_ERR_ALREADY_REGISTERED;
     }
     else if (!valid_encoding_name_p(name)) {
-        rb_raise(rb_eArgError, "invalid encoding name: %s", name);
+        return ENC_ERR_INVALID_NAME;
     }
+    return 0;
 }
 
 static rb_encoding*
@@ -577,11 +604,12 @@ rb_enc_set_dummy(int index)
 static int
 enc_replicate(struct enc_table *enc_table, const char *name, rb_encoding *encoding)
 {
-    int idx;
+    int idx = enc_check_addable(enc_table, name);
+    if (idx < 0) return idx;
 
-    enc_check_addable(enc_table, name);
     idx = enc_register(enc_table, name, encoding);
-    if (idx < 0) rb_raise(rb_eArgError, "invalid encoding name: %s", name);
+    if (idx < 0) return idx;
+
     set_base_encoding(enc_table, idx, encoding);
     return idx;
 }
@@ -598,9 +626,6 @@ enc_replicate_with_index(struct enc_table *enc_table, const char *name, rb_encod
     if (idx >= 0) {
         set_base_encoding(enc_table, idx, origenc);
     }
-    else {
-        rb_raise(rb_eArgError, "failed to replicate encoding");
-    }
     return idx;
 }
 
@@ -616,9 +641,16 @@ rb_encdb_replicate(const char *name, const char *orig)
         if (origidx < 0) {
             origidx = enc_register(enc_table, orig, 0);
         }
-        r = enc_replicate_with_index(enc_table, name, rb_enc_from_index(origidx), idx);
+        if (origidx < 0) {
+            r = origidx;
+        }
+        else {
+            r = enc_replicate_with_index(enc_table, name, rb_enc_from_index(origidx), idx);
+        }
     }
 
+    enc_raise_error(r, name);
+    if (r < 0) rb_raise(rb_eArgError, "failed to replicate encoding");
     set_encoding_const(name, rb_enc_from_index(r));
     return r;
 }
@@ -630,10 +662,14 @@ rb_define_dummy_encoding(const char *name)
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         index = enc_replicate(enc_table, name, rb_ascii8bit_encoding());
-        rb_encoding *enc = enc_table->list[index].enc;
-        ENC_SET_DUMMY((rb_raw_encoding *)enc);
+        if (index >= 0) {
+            rb_encoding *enc = enc_table->list[index].enc;
+            ENC_SET_DUMMY((rb_raw_encoding *)enc);
+        }
     }
 
+    enc_raise_error(index, name);
+    if (index < 0) rb_raise(rb_eArgError, "invalid encoding name: %s", name);
     set_encoding_const(name, rb_enc_from_index(index));
     return index;
 }
@@ -647,10 +683,14 @@ rb_encdb_dummy(const char *name)
         index = enc_replicate_with_index(enc_table, name,
                                          rb_ascii8bit_encoding(),
                                          enc_registered(enc_table, name));
-        rb_encoding *enc = enc_table->list[index].enc;
-        ENC_SET_DUMMY((rb_raw_encoding *)enc);
+        if (index >= 0) {
+            rb_encoding *enc = enc_table->list[index].enc;
+            ENC_SET_DUMMY((rb_raw_encoding *)enc);
+        }
     }
 
+    enc_raise_error(index, name);
+    if (index < 0) rb_raise(rb_eArgError, "failed to replicate encoding");
     set_encoding_const(name, rb_enc_from_index(index));
     return index;
 }
@@ -721,7 +761,7 @@ enc_alias_internal(struct enc_table *enc_table, const char *alias, int idx)
 static int
 enc_alias(struct enc_table *enc_table, const char *alias, int idx, bool *added)
 {
-    if (!valid_encoding_name_p(alias)) return -1;
+    if (!valid_encoding_name_p(alias)) return ENC_ERR_INVALID_NAME;
     *added = !enc_alias_internal(enc_table, alias, idx);
     return idx;
 }
@@ -733,8 +773,10 @@ rb_enc_alias(const char *alias, const char *orig)
     bool added = false;
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        enc_check_addable(enc_table, alias); // can raise
+        r = enc_check_addable(enc_table, alias);
     }
+    enc_raise_error(r, alias);
+    if (r < 0) rb_raise(rb_eArgError, "invalid encoding name: %s", alias);
 
     idx = rb_enc_find_index(orig);
     if (idx < 0) return -1;
@@ -759,9 +801,15 @@ rb_encdb_alias(const char *alias, const char *orig)
         if (idx < 0) {
             idx = enc_register(enc_table, orig, 0);
         }
-        r = enc_alias(enc_table, alias, idx, &added);
+        if (idx < 0) {
+            r = idx;
+        }
+        else {
+            r = enc_alias(enc_table, alias, idx, &added);
+        }
     }
 
+    enc_raise_error(r, orig);
     if (added) set_encoding_const(alias, rb_enc_from_index(idx));
     return r;
 }
