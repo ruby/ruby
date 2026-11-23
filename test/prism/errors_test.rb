@@ -285,15 +285,26 @@ module Ruby::Prism
         end
       end
 
-      ["defined?(a)", "(defined? a)", "[..1]", "[def f = 1]", "-2", "(-2**2)"].each do |value|
-        assert Ruby::Prism.parse_success?("m { |x = #{value}| x }"), value
-      end
-
       ["x = ", "x: "].each do |parameter|
         result = Ruby::Prism.parse("m { |#{parameter}-2**2| x }")
         assert_equal [:unexpected_parameter_default_value], result.errors.map(&:type)
         assert_equal "**", result.errors.first.location.slice
       end
+    end
+
+    def test_bare_defined_in_a_block_default_preserves_the_next_parameter
+      ["x = defined? a && b, y", "x: defined? (a), y:"].each do |parameters|
+        result = Ruby::Prism.parse("m { |#{parameters}| x }")
+        assert_equal [:unexpected_parameter_default_value], result.errors.map(&:type)
+        assert_equal "defined?", result.errors.first.location.slice
+        assert_equal :y, result.statement.block.parameters.parameters.compact_child_nodes.last.name
+      end
+    end
+
+    def test_invalid_rescue_target_inside_a_block_default
+      result = Ruby::Prism.parse("m { |x = begin; rescue => defined? v; end| x }")
+      assert_equal [:write_target_unexpected], result.errors.map(&:type)
+      assert_equal "defined? v", result.errors.first.location.slice
     end
 
     def test_singleton_method_receiver_with_array_splats

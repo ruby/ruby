@@ -1201,6 +1201,18 @@ module Ruby::Prism
       end
     end
 
+    def test_block_parameter_default_primaries
+      ["defined?(a)", "(defined? a)", "[..1]", "[def f = 1]", "{k: defined? a}", "-2", "(-2**2)"].each do |value|
+        ["x = ", "x: "].each do |parameter|
+          source = "m { |#{parameter}#{value}| x }"
+          result = Ruby::Prism.parse(source)
+          assert_predicate result, :success?, source
+          default = result.statement.block.parameters.parameters.compact_child_nodes.first.value
+          assert_equal value, default.slice
+        end
+      end
+    end
+
     def test_OrNode
       assert_location(OrNode, "foo || bar")
       assert_location(OrNode, "foo or bar")

@@ -18969,7 +18969,7 @@ parse_endless_rescues(pm_parser_t *parser, pm_node_t *body, uint8_t flags, uint1
  * Parse a method definition expression (the `def` keyword).
  */
 static pm_node_t *
-parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth) {
     pm_scratch_node_list_t current_block_exits = { 0 };
     pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
@@ -19211,10 +19211,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         if (!accept_endless_def) {
             pm_parser_err_previous(parser, PM_ERR_DEF_ENDLESS_PARAMETERS);
         }
-        if (
-            parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
-            parser->current_context->prev->context == PM_CONTEXT_BLOCK_PARAMETERS
-        ) {
+        if (block_default) {
             pm_diagnostic_list_append_slice(
                 &parser->metadata_arena,
                 &parser->error_list,
@@ -19922,7 +19919,7 @@ parse_begin(pm_parser_t *parser, uint16_t depth) {
 }
 
 static pm_defined_node_t *
-parse_defined(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+parse_defined(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth) {
     pm_token_t keyword = parser->current;
     parser_lex(parser);
 
@@ -19943,6 +19940,17 @@ parse_defined(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             rparen = parser->previous;
         }
     } else {
+        if (block_default) {
+            pm_diagnostic_list_append_slice(
+                &parser->metadata_arena,
+                &parser->error_list,
+                PM_TOKEN_START(parser, &keyword),
+                PM_TOKEN_LENGTH(&keyword),
+                PM_ERR_UNEXPECTED_PARAMETER_DEFAULT_VALUE,
+                PM_STRING_LITERAL("bare defined?")
+            );
+        }
+
         expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1)).node;
     }
 
@@ -21181,7 +21189,7 @@ parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
 }
 
 static pm_node_t *
-parse_unary_minus_number(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+parse_unary_minus_number(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth) {
     pm_token_t operator = parser->current;
     parser_lex(parser);
 
@@ -21189,6 +21197,17 @@ parse_unary_minus_number(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
     if (accept1(parser, PM_TOKEN_STAR_STAR)) {
         pm_token_t exponent_operator = parser->previous;
+        if (block_default) {
+            pm_diagnostic_list_append_slice(
+                &parser->metadata_arena,
+                &parser->error_list,
+                PM_TOKEN_START(parser, &exponent_operator),
+                PM_TOKEN_LENGTH(&exponent_operator),
+                PM_ERR_UNEXPECTED_PARAMETER_DEFAULT_VALUE,
+                PM_STRING_LITERAL("exponentiation")
+            );
+        }
+
         pm_node_t *exponent = parse_expression(parser, pm_binding_powers[exponent_operator.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1)).node;
         node = UP(pm_call_node_binary_create(parser, node, &exponent_operator, exponent, 0));
         node = UP(pm_call_node_unary_create(parser, &operator, node, "-@", 2));
@@ -21305,6 +21324,18 @@ parse_tilde(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
     return pm_call_node_unary_create(parser, &operator, receiver, "~", 1);
 }
 
+/* Block parameters take a primary_value immediately after '=' or a keyword
+ * label. Nested arguments use their own precedence, even when they share
+ * the parameter context. */
+static bool
+block_parameter_default_p(const pm_parser_t *parser, pm_binding_power_t binding_power) {
+    return (
+        binding_power == PM_BINDING_POWER_INDEX &&
+        parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
+        (parser->previous.type == PM_TOKEN_EQUAL || parser->previous.type == PM_TOKEN_LABEL)
+    );
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -21326,6 +21357,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return parse_constant_path_prefix(parser, binding_power, depth);
         case PM_TOKEN_UDOT_DOT:
         case PM_TOKEN_UDOT_DOT_DOT:
+            if (block_parameter_default_p(parser, binding_power)) {
+                pm_diagnostic_list_append_slice(
+                    &parser->metadata_arena,
+                    &parser->error_list,
+                    PM_TOKEN_START(parser, &parser->current),
+                    PM_TOKEN_LENGTH(&parser->current),
+                    PM_ERR_UNEXPECTED_PARAMETER_DEFAULT_VALUE,
+                    PM_STRING_LITERAL("beginless range")
+                );
+            }
+
             return pm_reduction(UP(parse_range(parser, flags, depth)));
         case PM_TOKEN_FLOAT:
             parser_lex(parser);
@@ -21412,9 +21454,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_CLASS:
             return pm_reduction(parse_class(parser, flags, depth));
         case PM_TOKEN_KEYWORD_DEF:
-            return pm_reduction(parse_def(parser, flags, depth));
+            return pm_reduction(parse_def(parser, block_parameter_default_p(parser, binding_power), flags, depth));
         case PM_TOKEN_KEYWORD_DEFINED:
-            return pm_reduction(UP(parse_defined(parser, flags, depth)));
+            return pm_reduction(UP(parse_defined(parser, block_parameter_default_p(parser, binding_power), flags, depth)));
         case PM_TOKEN_KEYWORD_END_UPCASE:
             return pm_reduction(UP(parse_postexe(parser, binding_power, depth)));
         case PM_TOKEN_KEYWORD_FALSE:
@@ -21495,7 +21537,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_UMINUS:
             return pm_reduction(UP(parse_unary_minus(parser, binding_power, flags, depth)));
         case PM_TOKEN_UMINUS_NUM:
-            return pm_reduction(UP(parse_unary_minus_number(parser, flags, depth)));
+            return pm_reduction(UP(parse_unary_minus_number(parser, block_parameter_default_p(parser, binding_power), flags, depth)));
         case PM_TOKEN_MINUS_GREATER:
             return pm_reduction(UP(parse_lambda(parser, depth)));
         case PM_TOKEN_UPLUS:
