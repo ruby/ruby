@@ -7526,6 +7526,20 @@ parser_magic_comment_key_p(const uint8_t *key, size_t key_length, const char *na
     return true;
 }
 
+/* Report an invalid magic comment value using the canonical spelling of the key. */
+static void
+pm_parser_warn_invalid_magic_comment_value(pm_parser_t *parser, const char *key, size_t key_length, const uint8_t *value_start, uint32_t value_length) {
+    pm_diagnostic_list_append_slice_slice(
+        &parser->metadata_arena,
+        &parser->warning_list,
+        PM_TOKEN_START(parser, &parser->current),
+        PM_TOKEN_LENGTH(&parser->current),
+        PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
+        (pm_string_t) { .source = (const uint8_t *) key, .length = key_length },
+        pm_diagnostic_slice(value_start, value_length)
+    );
+}
+
 /**
  * Parse the current token on the parser to see if it's a magic comment and
  * potentially perform some action based on that. A regular expression that this
@@ -7637,15 +7651,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                 if (parser_magic_comment_key_p(key_start, key_length, "warn_indent")) {
                     switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
                         case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
-                            pm_diagnostic_list_append_slice_slice(
-                                &parser->metadata_arena,
-                                &parser->warning_list,
-                                PM_TOKEN_START(parser, &parser->current),
-                                PM_TOKEN_LENGTH(&parser->current),
-                                PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
-                                pm_diagnostic_string("warn_indent"),
-                                pm_diagnostic_slice(value_start, value_length)
-                            );
+                            pm_parser_warn_invalid_magic_comment_value(parser, "warn_indent", key_length, value_start, value_length);
                             break;
                         case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
                             parser->warn_mismatched_indentation = false;
@@ -7665,15 +7671,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                     } else {
                         switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
                             case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
-                                pm_diagnostic_list_append_slice_slice(
-                                    &parser->metadata_arena,
-                                    &parser->warning_list,
-                                    PM_TOKEN_START(parser, &parser->current),
-                                    PM_TOKEN_LENGTH(&parser->current),
-                                    PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
-                                    pm_diagnostic_string("frozen_string_literal"),
-                                    pm_diagnostic_slice(value_start, value_length)
-                                );
+                                pm_parser_warn_invalid_magic_comment_value(parser, "frozen_string_literal", key_length, value_start, value_length);
                                 break;
                             case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
                                 parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
@@ -7701,15 +7699,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                     } else if (value_length == 17 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_copy", 17) == 0) {
                         pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY);
                     } else {
-                        pm_diagnostic_list_append_slice_slice(
-                            &parser->metadata_arena,
-                            &parser->warning_list,
-                            PM_TOKEN_START(parser, &parser->current),
-                            PM_TOKEN_LENGTH(&parser->current),
-                            PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
-                            pm_diagnostic_string("shareable_constant_value"),
-                            pm_diagnostic_slice(value_start, value_length)
-                        );
+                        pm_parser_warn_invalid_magic_comment_value(parser, "shareable_constant_value", key_length, value_start, value_length);
                     }
                 }
                 break;
