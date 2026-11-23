@@ -423,6 +423,16 @@ module Ruby::Prism
       assert_operator errors.sum { |error| error.message.bytesize }, :<, pattern.bytesize * 50
     end
 
+    def test_nul_in_a_regexp_reference_name
+      reference = "\\k<n\0x>"
+      error = Ruby::Prism.parse("/#{reference}/i").errors.fetch(0)
+      assert_equal "undefined name <n: /\\k<n\\x00x>/i", error.message
+      assert_equal "n\0x", error.location.slice
+
+      errors = Ruby::Prism.parse("/#{")" * 8}#{reference}/i").errors
+      assert_equal "undefined name <n", errors.fetch(8).message
+    end
+
     def test_unicode_escapes_in_regexp_error
       errors = Ruby::Prism.parse("%r!/\u0080\uFFFF\u{10000}\u{10FFFF}(!").errors
       assert_equal ['end pattern with unmatched parenthesis: /\/\u0080\uFFFF\u{10000}\u{10FFFF}(/'], errors.map(&:message)
