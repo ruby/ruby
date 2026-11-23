@@ -152,9 +152,39 @@ pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value) {
     do {
         digits[--offset] = (char) ('0' + value % 10);
         value /= 10;
-    } while (value != 0);
+    } while (value);
 
     pm_buffer_append_string(buffer, digits + offset, sizeof(digits) - offset);
+}
+
+/** The uppercase hexadecimal digits in order of value. */
+static const char pm_buffer_hexadecimal_digits[] = "0123456789ABCDEF";
+
+/**
+ * Append uppercase hexadecimal digits, padded with zeros to the given width.
+ */
+void
+pm_buffer_append_hexadecimal(pm_buffer_t *buffer, uint32_t value, uint8_t width) {
+    char digits[8]; /* UINT32_MAX has eight hexadecimal digits. */
+    size_t offset = sizeof(digits);
+
+    do {
+        digits[--offset] = pm_buffer_hexadecimal_digits[value & 0xF];
+        value >>= 4;
+    } while (value);
+
+    size_t length = sizeof(digits) - offset;
+    if (width > length) pm_buffer_append_repeated(buffer, '0', width - length);
+    pm_buffer_append_string(buffer, digits + offset, length);
+}
+
+/**
+ * Append a byte as a \xHH escape.
+ */
+void
+pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte) {
+    const char escape[] = { '\\', 'x', pm_buffer_hexadecimal_digits[byte >> 4], pm_buffer_hexadecimal_digits[byte & 0xF] };
+    pm_buffer_append_string(buffer, escape, sizeof(escape));
 }
 
 /**
@@ -170,7 +200,7 @@ pm_buffer_line_number_digits(int32_t line, char digits[11]) {
     do {
         digits[10 - length++] = (char) ('0' + (magnitude % 10));
         magnitude /= 10;
-    } while (magnitude > 0);
+    } while (magnitude);
 
     if (line < 0) digits[10 - length++] = '-';
     return length;
@@ -316,9 +346,10 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
 
         if ((byte <= 0x06) || (byte >= 0x0E && byte <= 0x1F) || (byte >= 0x7F)) {
             if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                pm_buffer_append_format(buffer, "\\x%02X", byte);
+                pm_buffer_append_byte_escape(buffer, byte);
             } else {
-                pm_buffer_append_format(buffer, "\\u%04X", byte);
+                PM_BUFFER_APPEND_LITERAL(buffer, "\\u");
+                pm_buffer_append_hexadecimal(buffer, byte, 4);
             }
         } else {
             switch (byte) {
@@ -326,7 +357,7 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
                         PM_BUFFER_APPEND_LITERAL(buffer, "\\a");
                     } else {
-                        pm_buffer_append_format(buffer, "\\u%04X", byte);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\u0007");
                     }
                     break;
                 case '\b':
@@ -342,7 +373,7 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
                         PM_BUFFER_APPEND_LITERAL(buffer, "\\v");
                     } else {
-                        pm_buffer_append_format(buffer, "\\u%04X", byte);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\u000B");
                     }
                     break;
                 case '\f':

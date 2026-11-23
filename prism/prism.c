@@ -8930,7 +8930,7 @@ escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_
 static PRISM_INLINE void
 escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags, uint8_t byte) {
     if (flags & PM_ESCAPE_FLAG_REGEXP) {
-        pm_buffer_append_format(buffer, "\\x%02X", byte);
+        pm_buffer_append_byte_escape(buffer, byte);
     }
 
     escape_write_byte_encoded(parser, buffer, flags, byte);
@@ -9189,7 +9189,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 value = escape_byte(value, flags);
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
                     if (flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) {
-                        pm_buffer_append_format(buffer, "\\x%02X", value);
+                        pm_buffer_append_byte_escape(buffer, value);
                     } else {
                         pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
                     }

@@ -40,6 +40,12 @@ void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) PRISM
 /* Append the decimal digits of an unsigned integer without leading zeros. */
 void pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value);
 
+/* Append uppercase hexadecimal digits, padded with zeros to the given width. */
+void pm_buffer_append_hexadecimal(pm_buffer_t *buffer, uint32_t value, uint8_t width);
+
+/* Append a byte as a \xHH escape. */
+void pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte);
+
 /* Return the decimal width of a line number, including its sign. */
 uint8_t pm_buffer_line_number_width(int32_t line);
 

@@ -90,21 +90,24 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
             size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
 
             if (width == 0) {
-                pm_buffer_append_format(buffer, "\\x%02X", byte);
+                pm_buffer_append_byte_escape(buffer, byte);
                 cursor++;
                 continue;
             }
 
             int32_t codepoint = pm_encoding_unicode_codepoint(encoding, cursor, width);
             if (codepoint >= 0x10000) {
-                pm_buffer_append_format(buffer, "\\u{%X}", (unsigned int) codepoint);
+                PM_BUFFER_APPEND_LITERAL(buffer, "\\u{");
+                pm_buffer_append_hexadecimal(buffer, (uint32_t) codepoint, 0);
+                pm_buffer_append_byte(buffer, '}');
             } else if (codepoint >= 0) {
-                pm_buffer_append_format(buffer, "\\u%04X", (unsigned int) codepoint);
+                PM_BUFFER_APPEND_LITERAL(buffer, "\\u");
+                pm_buffer_append_hexadecimal(buffer, (uint32_t) codepoint, 4);
             } else if (width == 1) {
-                pm_buffer_append_format(buffer, "\\x%02X", byte);
+                pm_buffer_append_byte_escape(buffer, byte);
             } else {
                 pm_buffer_append_string(buffer, "\\x{", 3);
-                for (size_t index = 0; index < width; index++) pm_buffer_append_format(buffer, "%02X", cursor[index]);
+                for (size_t index = 0; index < width; index++) pm_buffer_append_hexadecimal(buffer, cursor[index], 2);
                 pm_buffer_append_byte(buffer, '}');
             }
 
@@ -116,7 +119,7 @@ pm_regexp_format_for_error(pm_buffer_t *buffer, const pm_encoding_t *encoding, c
             pm_buffer_append_byte(buffer, byte);
             cursor++;
         } else {
-            pm_buffer_append_format(buffer, "\\x%02X", byte);
+            pm_buffer_append_byte_escape(buffer, byte);
             cursor++;
         }
     }
@@ -2918,7 +2921,7 @@ pm_regexp_preprocess_code_point(pm_regexp_preprocessor_t *preprocessor, uint32_t
     }
 
     if (value < 0x80) {
-        pm_buffer_append_format(&preprocessor->pattern, "\\x%02X", (unsigned int) value);
+        pm_buffer_append_byte_escape(&preprocessor->pattern, (uint8_t) value);
         return true;
     }
 
