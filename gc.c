@@ -3873,6 +3873,27 @@ rb_gc_move_obj_during_marking(VALUE from, VALUE to)
     }
 }
 
+/* True when rb_gc_mark_children(obj) would mark nothing, so a GC may treat obj as
+ * fully scanned as soon as it is marked.  Only answers true for kinds that are both
+ * numerous and cheap to recognize from the bytes already read to mark obj. */
+bool
+rb_gc_obj_mark_leaf_p(VALUE obj)
+{
+    if (RB_BUILTIN_TYPE(obj) != T_IMEMO) return false;
+
+    switch (imemo_type(obj)) {
+      case imemo_callcache: {
+        /* Mirrors the callcache case of rb_imemo_mark_and_move. */
+        const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+        return UNDEF_P(cc->klass) || !(vm_cc_super_p(cc) || vm_cc_refinement_p(cc));
+      }
+      case imemo_callinfo:
+        return true;
+      default:
+        return false;
+    }
+}
+
 static void
 gc_mark_children_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj)
 {

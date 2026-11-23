@@ -6652,6 +6652,16 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
     }
 
     gc_aging_at(objspace, obj, sb);
+
+    if (rb_gc_obj_mark_leaf_p(obj)) {
+        /* Nothing to scan (mostly call caches, which are a large share of a booted
+         * app's heap): it is black already, so skip the mark stack. */
+        if (RB_UNLIKELY(RB_FL_TEST_RAW(obj, RUBY_FL_WEAK_REFERENCE))) {
+            rb_darray_append_without_gc(&objspace->weak_references, obj);
+        }
+        return;
+    }
+
     gc_grey_at(objspace, obj, sb);
 }
 
