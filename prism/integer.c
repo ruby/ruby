@@ -11,14 +11,9 @@
 #include "prism/internal/buffer.h"
 #include "prism/internal/oom.h"
 
-/* Include sys/types.h before inttypes.h to work around an issue with certain
- * versions of GCC and newlib which causes omission of PRIu64 and the other
- * 64-bit macros. */
-#include <sys/types.h>
-#include <inttypes.h>
-
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -552,6 +547,22 @@ pm_integer_string_convert(pm_bignum_t *result, const uint32_t *words, uint32_t l
 }
 
 /**
+ * Append the decimal digits of an unsigned integer without leading zeros.
+ */
+static void
+pm_integer_string_uint64(pm_buffer_t *buffer, uint64_t value) {
+    char digits[20]; /* UINT64_MAX has 20 decimal digits. */
+    size_t offset = sizeof(digits);
+
+    do {
+        digits[--offset] = (char) ('0' + value % 10);
+        value /= 10;
+    } while (value != 0);
+
+    pm_buffer_append_string(buffer, digits + offset, sizeof(digits) - offset);
+}
+
+/**
  * Convert the words of an integer of more than PM_INTEGER_STRING_THRESHOLD
  * words to a decimal string by divide and conquer. The powers of two that the
  * splits need are computed in base 10**9 by repeated squaring, and the integer
@@ -597,7 +608,7 @@ pm_integer_string_divide(pm_buffer_t *buffer, const uint32_t *words, uint32_t le
 
     /* Every word but the most significant is exactly nine digits, padded with
      * zeros. */
-    pm_buffer_append_format(buffer, "%" PRIu32, result.words[result.length - 1]);
+    pm_integer_string_uint64(buffer, result.words[result.length - 1]);
 
     for (uint32_t index = result.length - 1; index > 0; index--) {
         uint32_t word = result.words[index - 1];
@@ -626,7 +637,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     /* An integer whose words are inline fits in a uint64_t, so it can be
      * appended directly. */
     if (integer->length <= 2) {
-        pm_buffer_append_format(buffer, "%" PRIu64, pm_integer_uint64_value(integer));
+        pm_integer_string_uint64(buffer, pm_integer_uint64_value(integer));
         return;
     }
 
