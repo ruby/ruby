@@ -349,6 +349,31 @@ module Ruby::Prism
       assert_location(CallNode, source, source.index("f y")...source.length, &:rescue_expression)
     end
 
+    def test_pattern_match_in_a_rescue_handler
+      { "in" => MatchPredicateNode, "=>" => MatchRequiredNode }.each do |operator, kind|
+        source = "work rescue value #{operator} Integer"
+        assert_location(kind, source, source.index("value")...source.length, &:rescue_expression)
+
+        source = "x = work rescue value #{operator} Integer"
+        assert_location(kind, source) do |match|
+          assert_instance_of LocalVariableWriteNode, match.value
+          assert_instance_of RescueModifierNode, match.value.value
+          match
+        end
+      end
+    end
+
+    def test_case_clause_after_a_rescue_handler_ending_in_a_match
+      handler = "not value in P"
+      source = "case x; in C; work rescue #{handler} in Q; ok; end"
+      assert_location(CallNode, source, source.index(handler)...source.index(" in Q")) do |node|
+        assert_equal 2, node.conditions.length
+        call = node.conditions.first.statements.body.first.rescue_expression
+        assert_instance_of MatchPredicateNode, call.receiver
+        call
+      end
+    end
+
     def test_in_after_nested_assignment
       assert_location(LocalVariableWriteNode, "case v; in 0; x = y = f 1 in 2; end", 14...25) do |node|
         assert_equal 2, node.conditions.size
@@ -417,6 +442,42 @@ module Ruby::Prism
           assert_equal keyword, jump.keyword
           assert_instance_of BlockNode, jump.arguments.arguments.first.block
           assert_equal :g, call.name
+          call
+        end
+      end
+    end
+
+    def test_shorthand_after_a_constant_named_command_with_a_do_block
+      [".", "&.", "::"].each do |operator|
+        source = "C::F x do end#{operator}()"
+        assert_location(CallNode, source, version: "4.0") do |call|
+          assert_equal :call, call.name
+          assert_equal :F, call.receiver.name
+          assert_equal "do end", call.receiver.block.slice
+          call
+        end
+      end
+    end
+
+    def test_grouping_a_block_call_receiver
+      assert_location(CallNode, "C::F x do end::G") do |call|
+        assert_equal :G, call.name
+        call
+      end
+      assert_location(ConstantPathNode, "(C::F x do end)::G")
+      assert_location(MultiWriteNode, "(C::F x do end).tail, y = z")
+
+      source = "outer(C::F x do end.tail)"
+      assert_location(CallNode, source, source.index("C::F")...source.index(")"), version: "3.4") do |outer|
+        outer.arguments.arguments.fetch(0)
+      end
+    end
+
+    def test_operator_after_a_grouped_expression_ending_in_a_block_call
+      ["!f x do end.tail", "not f x do end.tail", "a and f x do end.tail", "a or f x do end.tail"].each do |expression|
+        assert_location(CallNode, "(#{expression}) + y") do |call|
+          assert_equal :+, call.name
+          assert_instance_of ParenthesesNode, call.receiver
           call
         end
       end

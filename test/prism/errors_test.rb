@@ -438,6 +438,26 @@ module Ruby::Prism
       end
     end
 
+    def test_invalid_chains_after_a_constant_named_command
+      [".", "&.", "::"].each do |operator|
+        refute Ruby::Prism.parse_success?("C::F x do end#{operator}()", version: "3.4"), operator
+        refute Ruby::Prism.parse_success?("C::F {}#{operator}()"), operator
+      end
+
+      refute Ruby::Prism.parse_success?("outer(C::F x do end.tail, y)", version: "3.4")
+      refute Ruby::Prism.parse_success?("C::F x do end.tail, y = z")
+      refute Ruby::Prism.parse_success?("x rescue C::F x do end.tail, y = z")
+    end
+
+    def test_operator_after_an_expression_ending_in_a_block_call
+      ["!f x do end.tail", "not f x do end.tail", "a and f x do end.tail", "a or f x do end.tail"].each do |expression|
+        source = "#{expression} + y"
+        result = Ruby::Prism.parse(source)
+        assert_equal [:expect_eol_after_statement], result.errors.map(&:type), source
+        assert_equal "+", result.errors.first.location.slice
+      end
+    end
+
     def test_pattern_newlines_in_pins_and_guards
       ["x in ^(m k:\nand b)", "case x; in a if m k:\nand b; end"].each do |source|
         assert_false Ruby::Prism.parse_success?(source), source

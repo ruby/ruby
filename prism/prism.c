@@ -13080,6 +13080,25 @@ pm_reduction(pm_node_t *node) {
     return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_DEFAULT };
 }
 
+/* Keyword and/or, bare not, and ! command_call produce an expr. Diagnose a
+ * tighter operator if this parse will consume it, as in `!f x do end.tail + y`.
+ * A following match belongs to the caller. Assignment diagnoses its target. */
+static pm_reduction_t
+pm_logical_expression_reduction(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_power) {
+    pm_binding_powers_t next = pm_binding_powers[parser->current.type];
+
+    if (
+        next.binary &&
+        next.left > PM_BINDING_POWER_MATCH &&
+        next.left >= binding_power &&
+        next.right != PM_BINDING_POWER_ASSIGNMENT
+    ) {
+        pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->current.type);
+    }
+
+    return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_EXPRESSION };
+}
+
 static PRISM_INLINE pm_reduction_t
 pm_call_reduction(pm_node_t *node, const pm_arguments_t *arguments) {
     return (pm_reduction_t) { .node = node, .kind = arguments->kind };
@@ -15542,6 +15561,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
     bool parsed_forwarding_arguments = false;
 
     while (!match1(parser, PM_TOKEN_EOF)) {
+        argument_kind = PM_REDUCTION_DEFAULT;
         if (parsed_forwarding_arguments) {
             pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES);
         }
@@ -15774,9 +15794,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 }
             }
 
-            /* A command can only be the sole argument, as in
-             * `foo Foo::Bar { }, y` or `foo def f = bar 1 rescue z, y`. */
-            if (pm_command_before_comma_p(parser, argument)) {
+            /* A block_call, like any other command, must be the sole argument. */
+            if (argument_kind == PM_REDUCTION_BLOCK_CALL || pm_command_before_comma_p(parser, argument)) {
                 pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
             }
         } else {
@@ -20846,7 +20865,9 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
         kind = PM_REDUCTION_EXPRESSION;
     }
 
-    return (pm_reduction_t) { .node = UP(pm_call_node_not_create(parser, receiver, &message, &arguments)), .kind = kind };
+    pm_node_t *node = UP(pm_call_node_not_create(parser, receiver, &message, &arguments));
+    if (kind == PM_REDUCTION_EXPRESSION) return pm_logical_expression_reduction(parser, node, binding_power);
+    return (pm_reduction_t) { .node = node, .kind = kind };
 }
 
 static pm_pre_execution_node_t *
@@ -21141,7 +21162,7 @@ parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags,
         case PM_REDUCTION_COMMAND:
         case PM_REDUCTION_BRACE_COMMAND:
         case PM_REDUCTION_BLOCK_CALL:
-            return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_EXPRESSION };
+            return pm_logical_expression_reduction(parser, node, binding_power);
         default:
             return pm_reduction(node);
     }
@@ -21398,8 +21419,18 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
     }
 }
 
-static pm_node_t *
-parse_rescue_modifier_value(pm_parser_t *parser, uint8_t flags, bool statement, uint16_t depth);
+/**
+ * A rescue modifier takes a stmt in a statement or command RHS, and an arg in
+ * an ordinary assignment RHS.
+ */
+static pm_reduction_t
+parse_rescue_modifier_value(pm_parser_t *parser, uint8_t flags, bool statement, uint16_t depth) {
+    if (statement) {
+        return parse_expression(parser, PM_BINDING_POWER_STATEMENT, flags | PM_PARSE_NO_STATEMENT_MODIFIERS | PM_PARSE_ACCEPTS_COMMAND_DEF, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+    } else {
+        return parse_expression(parser, PM_BINDING_POWER_DEFINED, flags, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+    }
+}
 
 /**
  * When a `rescue` modifier's handler is itself a statement (a multiple or
@@ -21486,15 +21517,10 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         bool statement_value = pm_command_call_value_p(parser, value) || pm_block_call_p(value);
         uint8_t rescue_flags = (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (statement_value ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0));
 
-        pm_node_t *right = parse_rescue_modifier_value(parser, rescue_flags, statement_value, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_rescue_modifier_value(parser, rescue_flags, statement_value, (uint16_t) (depth + 1)).node;
         context_pop(parser);
 
-        // A pattern-match resbody is a statement, but here the rescue is nested
-        // in an assignment value where parse_expression_terminator cannot see
-        // it, so reject a trailing operator above the modifier level directly.
-        if (PM_NODE_TYPE_P(right, PM_MATCH_REQUIRED_NODE) || PM_NODE_TYPE_P(right, PM_MATCH_PREDICATE_NODE)) {
-            parse_rescue_modifier_terminator(parser, flags, depth);
-        }
+        if (statement_value) parse_rescue_modifier_terminator(parser, flags, depth);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
     }
@@ -21633,45 +21659,15 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         bool statement_value = multiple_assignment || command_value;
         uint8_t rescue_flags = (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (statement_value ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0));
 
-        pm_node_t *right = parse_rescue_modifier_value(parser, rescue_flags, statement_value, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_rescue_modifier_value(parser, rescue_flags, statement_value, (uint16_t) (depth + 1)).node;
         context_pop(parser);
 
-        // A pattern-match resbody is a statement, but here the rescue is nested
-        // in an assignment value where parse_expression_terminator cannot see
-        // it, so reject a trailing operator above the modifier level directly.
-        if (PM_NODE_TYPE_P(right, PM_MATCH_REQUIRED_NODE) || PM_NODE_TYPE_P(right, PM_MATCH_PREDICATE_NODE)) {
-            parse_rescue_modifier_terminator(parser, flags, depth);
-        }
+        if (statement_value) parse_rescue_modifier_terminator(parser, flags, depth);
 
         return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
     }
 
     return value;
-}
-
-/**
- * A rescue modifier takes a stmt in a statement or command RHS, and an arg
- * in an ordinary assignment RHS.
- */
-static pm_node_t *
-parse_rescue_modifier_value(pm_parser_t *parser, uint8_t flags, bool statement, uint16_t depth) {
-    if (statement) {
-        pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_STATEMENT, flags | PM_PARSE_NO_STATEMENT_MODIFIERS | PM_PARSE_ACCEPTS_COMMAND_DEF, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1)).node;
-
-        // Reject a trailing operator that cannot follow a statement resbody.
-        // Pattern-match handlers are statements too, but for the bare statement
-        // form they are reported by parse_expression_terminator instead (which
-        // keeps its existing error-recovery), so they are excluded here.
-        if (!PM_NODE_TYPE_P(value, PM_MATCH_REQUIRED_NODE) && !PM_NODE_TYPE_P(value, PM_MATCH_PREDICATE_NODE)) {
-            parse_rescue_modifier_terminator(parser, flags, depth);
-        }
-
-        return value;
-    }
-
-    // Otherwise the resbody is a plain `arg` (parse.y: `arg modifier_rescue
-    // arg`), parsed above the `and`/`or`/`not` level so those stay outside it.
-    return parse_expression(parser, PM_BINDING_POWER_DEFINED, flags, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1)).node;
 }
 
 /**
@@ -21806,15 +21802,12 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
             pm_reduction_t result;
 
             if (
+                PM_REDUCTION_KIND(receiver) == PM_REDUCTION_BLOCK_CALL ||
                 (parser->current.type == PM_TOKEN_PARENTHESIS_LEFT) ||
                 ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type))
             ) {
-                /* If we have a constant immediately following a '::' operator,
-                 * then this can either be a constant path or a method call,
-                 * depending on what follows the constant.
-                 *
-                 * If we have parentheses, then this is a method call. That
-                 * would look like Foo::Bar(). */
+                /* A block_call takes a method name after ::, even without
+                 * arguments. For a primary receiver the arguments decide. */
                 pm_token_t message = parser->previous;
                 pm_arguments_t arguments = { 0 };
 
@@ -22344,32 +22337,6 @@ parse_call(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t prev
         return parse_call_shorthand(parser, receiver, &operator, (uint16_t) (depth + 1));
     }
 
-    switch (PM_NODE_TYPE(node)) {
-        case PM_RESCUE_MODIFIER_NODE: {
-            pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
-            if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
-                pm_parser_err_token_type(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, operator.type);
-            }
-            break;
-        }
-        case PM_AND_NODE: {
-            pm_and_node_t *cast = (pm_and_node_t *) node;
-            if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                pm_parser_err_token_type(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, operator.type);
-            }
-            break;
-        }
-        case PM_OR_NODE: {
-            pm_or_node_t *cast = (pm_or_node_t *) node;
-            if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                pm_parser_err_token_type(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, operator.type);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-
     pm_token_t message;
 
     switch (parser->current.type) {
@@ -22477,12 +22444,12 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         case PM_TOKEN_KEYWORD_AND: {
             parser_lex(parser);
             pm_node_t *right = parse_expression(parser, binding_power, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
-            return (pm_reduction_t) { .node = UP(pm_and_node_create(parser, node, &token, right)), .kind = PM_REDUCTION_EXPRESSION };
+            return pm_logical_expression_reduction(parser, UP(pm_and_node_create(parser, node, &token, right)), previous_binding_power);
         }
         case PM_TOKEN_KEYWORD_OR: {
             parser_lex(parser);
             pm_node_t *right = parse_expression(parser, binding_power, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
-            return (pm_reduction_t) { .node = UP(pm_or_node_create(parser, node, &token, right)), .kind = PM_REDUCTION_EXPRESSION };
+            return pm_logical_expression_reduction(parser, UP(pm_or_node_create(parser, node, &token, right)), previous_binding_power);
         }
         case PM_TOKEN_PIPE_PIPE: {
             parser_lex(parser);
@@ -22513,33 +22480,6 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         case PM_TOKEN_STAR:
         case PM_TOKEN_STAR_STAR: {
             parser_lex(parser);
-            pm_token_t operator = parser->previous;
-            switch (PM_NODE_TYPE(node)) {
-                case PM_RESCUE_MODIFIER_NODE: {
-                    pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
-                    if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
-                        pm_parser_err_token_type(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, operator.type);
-                    }
-                    break;
-                }
-                case PM_AND_NODE: {
-                    pm_and_node_t *cast = (pm_and_node_t *) node;
-                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        pm_parser_err_token_type(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, operator.type);
-                    }
-                    break;
-                }
-                case PM_OR_NODE: {
-                    pm_or_node_t *cast = (pm_or_node_t *) node;
-                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        pm_parser_err_token_type(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, operator.type);
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-
             pm_node_t *argument = parse_expression(parser, binding_power, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
             return pm_reduction(UP(pm_call_node_binary_create(parser, node, &token, argument, 0)));
         }
@@ -22606,10 +22546,17 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
             parser_lex(parser);
             accept1(parser, PM_TOKEN_NEWLINE);
 
-            pm_node_t *value = parse_rescue_modifier_value(parser, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), previous_binding_power == PM_BINDING_POWER_STATEMENT, (uint16_t) (depth + 1));
-            context_pop(parser);
+            pm_reduction_t value = parse_rescue_modifier_value(parser, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), previous_binding_power == PM_BINDING_POWER_STATEMENT, (uint16_t) (depth + 1));
 
-            return pm_reduction(UP(pm_rescue_modifier_node_create(parser, node, &token, value)));
+            /* A completed expr can leave the next in for an enclosing case.
+             * Keep the existing recovery for a stray operator after a handler
+             * such as the multiple assignment in `a rescue b, c = d and e`. */
+            if (PM_REDUCTION_KIND(value) != PM_REDUCTION_EXPRESSION) {
+                parse_rescue_modifier_terminator(parser, flags, depth);
+            }
+
+            context_pop(parser);
+            return pm_reduction(UP(pm_rescue_modifier_node_create(parser, node, &token, value.node)));
         }
         case PM_TOKEN_BRACKET_LEFT:
             return pm_reduction(parse_aref(parser, node, previous_binding_power, flags, depth));
@@ -22669,16 +22616,17 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
         case PM_REDUCTION_BRACE_COMMAND:
             return left > PM_BINDING_POWER_COMPOSITION;
         case PM_REDUCTION_EXPRESSION:
-            /* Pattern matching requires an arg on the left. A completed expr can
-             * still take keyword composition and statement modifiers. */
-            if (left == PM_BINDING_POWER_MATCH) return true;
-            break;
-        case PM_REDUCTION_DEFAULT:
+            /* A following match belongs to the enclosing construct. */
+            return left == PM_BINDING_POWER_MATCH;
         case PM_REDUCTION_BLOCK_CALL:
+            /* A block_call can continue through a call operator. */
+            return left > PM_BINDING_POWER_COMPOSITION && left != PM_BINDING_POWER_CALL;
+        case PM_REDUCTION_DEFAULT:
             break;
     }
 
     switch (PM_NODE_TYPE(node)) {
+        case PM_RESCUE_MODIFIER_NODE:
         case PM_MULTI_WRITE_NODE:
         case PM_RETURN_NODE:
         case PM_BREAK_NODE:
@@ -22718,16 +22666,6 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
             // `def f = foo bar`) is a command write and can only be
             // followed by modifiers.
             return left > PM_BINDING_POWER_MODIFIER && pm_command_call_value_p(parser, node);
-        case PM_RESCUE_MODIFIER_NODE:
-            // A rescue modifier whose handler is a pattern match (=> or in)
-            // produces a statement and cannot be followed by operators above
-            // the modifier level.
-            if (left > PM_BINDING_POWER_MODIFIER) {
-                pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
-                pm_node_t *rescue_expression = cast->rescue_expression;
-                return PM_NODE_TYPE_P(rescue_expression, PM_MATCH_REQUIRED_NODE) || PM_NODE_TYPE_P(rescue_expression, PM_MATCH_PREDICATE_NODE);
-            }
-            return false;
         default:
             return false;
     }
