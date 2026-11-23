@@ -196,7 +196,7 @@ module Shellwords
   # All elements are joined into a single string with fields separated by a
   # space, where each element is escaped for the Bourne shell and stringified
   # using +to_s+.
-  # See also Shellwords.shellescape.
+  # See {Encoding considerations}[rdoc-ref:Shellwords.shellescape@Encoding+considerations].
   #
   #   ary = ["There's", "a", "time", "and", "place", "for", "everything"]
   #   argv = Shellwords.join(ary)
@@ -219,6 +219,7 @@ module Shellwords
   module_function :shelljoin
 
   class << self
+    # See {Encoding considerations}[rdoc-ref:Shellwords.shellescape@Encoding+considerations].
     alias join shelljoin
   end
 end
