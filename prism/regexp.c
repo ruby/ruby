@@ -1850,13 +1850,30 @@ pm_regexp_class_token_fetch(pm_regexp_parser_t *parser, pm_regexp_class_token_t 
     token->value = pm_regexp_parse_char_value(parser);
 }
 
+#define PM_REGEXP_POSIX_BRACKET_NAME(name_) { .name = name_, .length = sizeof(name_) - 1 }
+typedef struct { char name[7]; uint8_t length; } pm_regexp_posix_bracket_name_t;
+
 /**
  * The names of the POSIX brackets, like [:alpha:].
  */
-static const char *const pm_regexp_posix_bracket_names[] = {
-    "alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower",
-    "print", "punct", "space", "upper", "xdigit", "ascii", "word"
+static const pm_regexp_posix_bracket_name_t pm_regexp_posix_bracket_names[] = {
+    PM_REGEXP_POSIX_BRACKET_NAME("alnum"),
+    PM_REGEXP_POSIX_BRACKET_NAME("alpha"),
+    PM_REGEXP_POSIX_BRACKET_NAME("blank"),
+    PM_REGEXP_POSIX_BRACKET_NAME("cntrl"),
+    PM_REGEXP_POSIX_BRACKET_NAME("digit"),
+    PM_REGEXP_POSIX_BRACKET_NAME("graph"),
+    PM_REGEXP_POSIX_BRACKET_NAME("lower"),
+    PM_REGEXP_POSIX_BRACKET_NAME("print"),
+    PM_REGEXP_POSIX_BRACKET_NAME("punct"),
+    PM_REGEXP_POSIX_BRACKET_NAME("space"),
+    PM_REGEXP_POSIX_BRACKET_NAME("upper"),
+    PM_REGEXP_POSIX_BRACKET_NAME("xdigit"),
+    PM_REGEXP_POSIX_BRACKET_NAME("ascii"),
+    PM_REGEXP_POSIX_BRACKET_NAME("word")
 };
+
+#undef PM_REGEXP_POSIX_BRACKET_NAME
 
 /**
  * The results of reading a POSIX bracket.
@@ -1896,9 +1913,10 @@ pm_regexp_parse_posix_bracket(pm_regexp_parser_t *parser, const uint8_t *start) 
 
     if (characters >= 7) {
         for (size_t index = 0; index < sizeof(pm_regexp_posix_bracket_names) / sizeof(pm_regexp_posix_bracket_names[0]); index++) {
-            const char *name = pm_regexp_posix_bracket_names[index];
-            size_t length = strlen(name);
-            if ((size_t) (end - cursor) < length || !pm_memequal(cursor, name, length)) continue;
+            const pm_regexp_posix_bracket_name_t *bracket_name = pm_regexp_posix_bracket_names + index;
+            uint8_t length = bracket_name->length;
+
+            if ((size_t) (end - cursor) < length || !pm_memequal(cursor, bracket_name->name, length)) continue;
 
             cursor += length;
             if (end - cursor < 2 || cursor[0] != ':' || cursor[1] != ']') {
