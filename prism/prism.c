@@ -531,6 +531,23 @@ pm_parser_err_token_string(pm_parser_t *parser, const pm_token_t *token, pm_diag
     );
 }
 
+/* Consume an unexpected backslash and include any escaped whitespace in the error. */
+static void
+pm_parser_err_unexpected_backslash(pm_parser_t *parser, uint32_t width, const char *description, size_t description_length) {
+    parser->current.end = parser->current.start + width;
+    pm_diagnostic_list_append_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        PM_TOKEN_START(parser, &parser->current),
+        width,
+        PM_ERR_UNEXPECTED_TOKEN_IGNORE,
+        (pm_string_t) { .source = (const uint8_t *) description, .length = description_length }
+    );
+}
+
+#define PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser_, width_, description_) \
+    pm_parser_err_unexpected_backslash((parser_), (width_), "" description_, sizeof(description_) - 1)
+
 /* Use the source at the diagnostic location as its argument. */
 static void
 pm_parser_err_content(pm_parser_t *parser, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
@@ -11401,30 +11418,25 @@ parser_lex(pm_parser_t *parser) {
                             } else if (*parser->current.start == '\\') {
                                 switch (peek_at(parser, parser->current.start + 1)) {
                                     case ' ':
-                                        parser->current.end++;
-                                        pm_parser_err_token_string(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "escaped space");
+                                        PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser, 2, "escaped space");
                                         break;
                                     case '\f':
-                                        parser->current.end++;
-                                        pm_parser_err_token_string(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "escaped form feed");
+                                        PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser, 2, "escaped form feed");
                                         break;
                                     case '\t':
-                                        parser->current.end++;
-                                        pm_parser_err_token_string(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "escaped horizontal tab");
+                                        PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser, 2, "escaped horizontal tab");
                                         break;
                                     case '\v':
-                                        parser->current.end++;
-                                        pm_parser_err_token_string(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "escaped vertical tab");
+                                        PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser, 2, "escaped vertical tab");
                                         break;
                                     case '\r':
                                         if (peek_at(parser, parser->current.start + 2) != '\n') {
-                                            parser->current.end++;
-                                            pm_parser_err_token_string(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "escaped carriage return");
+                                            PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser, 2, "escaped carriage return");
                                             break;
                                         }
                                         PRISM_FALLTHROUGH
                                     default:
-                                        pm_parser_err_token_string(parser, &parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "backslash");
+                                        PM_PARSER_ERR_UNEXPECTED_BACKSLASH(parser, 1, "backslash");
                                         break;
                                 }
                             } else if (char_is_ascii_printable(*parser->current.start)) {
