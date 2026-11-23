@@ -2417,6 +2417,7 @@ unsafe extern "C" {
     pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
+    pub fn rb_const_path_id_at(path: *const rb_const_path, idx: ::std::os::raw::c_long) -> ID;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
@@ -2653,7 +2654,4 @@ unsafe extern "C" {
         length: usize,
     ) -> *const ::std::os::raw::c_void;
     pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
-}
-unsafe extern "C" {
-    pub fn rb_const_path_id_at(path: *const rb_const_path, idx: ::std::os::raw::c_long) -> ID;
 }

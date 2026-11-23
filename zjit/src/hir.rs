@@ -353,7 +353,8 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 )
             }
             Invariant::StableConstantNames { idlist } => {
-                write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(idlist))?;
+                // Mapped as an ID pointer so fake addresses advance as they did for ID lists
+                write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(idlist as *const ID))?;
                 let mut idx = 0;
                 let mut sep = "";
                 loop {

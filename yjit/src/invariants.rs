@@ -249,7 +249,7 @@ pub fn track_stable_constant_names_assumption(uninit_block: BlockRef, idlist: *c
 
 
     for i in 0.. {
-        match unsafe { rb_const_path_id_at(idlist, i) } {
+        match const_path_id_at(idlist, i) {
             0 => break, // End of the path
             id => assume_stable_constant_name(uninit_block, id),
         }

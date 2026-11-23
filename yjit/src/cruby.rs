@@ -282,6 +282,18 @@ pub fn vm_stack_canary() -> u64 {
     0
 }
 
+/// Segment `idx` of a constant path, as rb_const_path_id_at() returns it.
+#[cfg(not(test))]
+pub fn const_path_id_at(path: *const rb_const_path, idx: std::os::raw::c_long) -> ID {
+    unsafe { rb_const_path_id_at(path, idx) }
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn const_path_id_at(_path: *const rb_const_path, _idx: std::os::raw::c_long) -> ID {
+    0
+}
+
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
 pub struct rb_execution_context_struct {

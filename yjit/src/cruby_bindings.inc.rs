@@ -1247,6 +1247,7 @@ extern "C" {
     pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
+    pub fn rb_const_path_id_at(path: *const rb_const_path, idx: ::std::os::raw::c_long) -> ID;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_profile_frames(
@@ -1429,7 +1430,4 @@ extern "C" {
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
-}
-unsafe extern "C" {
-    pub fn rb_const_path_id_at(path: *const rb_const_path, idx: ::std::os::raw::c_long) -> ID;
 }
