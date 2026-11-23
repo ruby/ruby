@@ -701,346 +701,516 @@ tokens:
   # The order of the tokens at the beginning is important, because we use them
   # for a lookup table.
   - name: EOF
+    diagnostic_name: "end-of-input"
     value: 1
     comment: final token in the file
   - name: BRACE_RIGHT
+    diagnostic_name: "'}'"
     comment: "}"
   - name: COMMA
+    diagnostic_name: "','"
     comment: ","
   - name: EMBEXPR_END
+    diagnostic_name: "'}'"
     comment: "}"
   - name: HEREDOC_END
+    diagnostic_name: "heredoc ending"
     comment: "the end of a heredoc"
   - name: KEYWORD_DO
+    diagnostic_name: "'do'"
     comment: "do"
   - name: KEYWORD_ELSE
+    diagnostic_name: "'else'"
     comment: "else"
   - name: KEYWORD_ELSIF
+    diagnostic_name: "'elsif'"
     comment: "elsif"
   - name: KEYWORD_END
+    diagnostic_name: "'end'"
     comment: "end"
   - name: KEYWORD_ENSURE
+    diagnostic_name: "'ensure'"
     comment: "ensure"
   - name: KEYWORD_IN
+    diagnostic_name: "'in'"
     comment: "in"
   - name: KEYWORD_RESCUE
+    diagnostic_name: "'rescue'"
     comment: "rescue"
   - name: KEYWORD_THEN
+    diagnostic_name: "'then'"
     comment: "then"
   - name: KEYWORD_WHEN
+    diagnostic_name: "'when'"
     comment: "when"
   - name: NEWLINE
+    diagnostic_name: "newline"
     comment: "a newline character outside of other tokens"
   - name: NEWLINE_TERMINATOR
+    diagnostic_name: "newline"
     comment: "a newline that terminates a construct where a newline is otherwise insignificant"
   - name: PARENTHESIS_RIGHT
+    diagnostic_name: "')'"
     comment: ")"
   - name: PIPE
+    diagnostic_name: "'|'"
     comment: "|"
   - name: SEMICOLON
+    diagnostic_name: "';'"
     comment: ";"
   # Tokens from here on are not used for lookup, and can be in any order.
   - name: AMPERSAND
+    diagnostic_name: "'&'"
     comment: "&"
   - name: AMPERSAND_AMPERSAND
+    diagnostic_name: "'&&'"
     comment: "&&"
   - name: AMPERSAND_AMPERSAND_EQUAL
+    diagnostic_name: "'&&='"
     comment: "&&="
   - name: AMPERSAND_DOT
+    diagnostic_name: "'&.'"
     comment: "&."
   - name: AMPERSAND_EQUAL
+    diagnostic_name: "'&='"
     comment: "&="
   - name: BACKTICK
+    diagnostic_name: "'`'"
     comment: "` as a method name"
   - name: BACK_REFERENCE
+    diagnostic_name: "back reference"
     comment: "a back reference"
   - name: BANG
+    diagnostic_name: "'!'"
     comment: "! or !@"
   - name: BANG_EQUAL
+    diagnostic_name: "'!='"
     comment: "!="
   - name: BANG_TILDE
+    diagnostic_name: "'!~'"
     comment: "!~"
   - name: BRACE_LEFT
+    diagnostic_name: "'{'"
     comment: "{"
   - name: BRACE_LEFT_ARGUMENT
+    diagnostic_name: "'{'"
     comment: "{ for a block following a parenthesized argument"
   - name: BRACE_LEFT_HASH
+    diagnostic_name: "'{'"
     comment: "{ for a hash literal"
   - name: BRACKET_LEFT
+    diagnostic_name: "'['"
     comment: "["
   - name: BRACKET_LEFT_ARRAY
+    diagnostic_name: "'['"
     comment: "[ for the beginning of an array"
   - name: BRACKET_LEFT_RIGHT
+    diagnostic_name: "'[]'"
     comment: "[]"
   - name: BRACKET_LEFT_RIGHT_EQUAL
+    diagnostic_name: "'[]='"
     comment: "[]="
   - name: BRACKET_RIGHT
+    diagnostic_name: "']'"
     comment: "]"
   - name: CARET
+    diagnostic_name: "'^'"
     comment: "^"
   - name: CARET_EQUAL
+    diagnostic_name: "'^='"
     comment: "^="
   - name: CHARACTER_LITERAL
+    diagnostic_name: "character literal"
     comment: "a character literal"
   - name: CLASS_VARIABLE
+    diagnostic_name: "class variable"
     comment: "a class variable"
   - name: COLON
+    diagnostic_name: "':'"
     comment: ":"
   - name: COLON_COLON
+    diagnostic_name: "'::'"
     comment: "::"
   - name: COMMENT
+    diagnostic_name: "comment"
     comment: "a comment"
   - name: CONSTANT
+    diagnostic_name: "constant"
     comment: "a constant"
   - name: DOT
+    diagnostic_name: "'.'"
     comment: "the . call operator"
   - name: DOT_DOT
+    diagnostic_name: ".."
     comment: "the .. range operator"
   - name: DOT_DOT_DOT
+    diagnostic_name: "..."
     comment: "the ... range operator or forwarding parameter"
   - name: EMBDOC_BEGIN
+    diagnostic_name: "'=begin'"
     comment: "=begin"
   - name: EMBDOC_END
+    diagnostic_name: "'=end'"
     comment: "=end"
   - name: EMBDOC_LINE
+    diagnostic_name: "embedded documentation line"
     comment: "a line inside of embedded documentation"
   - name: EMBEXPR_BEGIN
+    diagnostic_name: "'#{'"
     comment: "#{"
   - name: EMBVAR
+    diagnostic_name: "'#'"
     comment: "#"
   - name: EQUAL
+    diagnostic_name: "'='"
     comment: "="
   - name: EQUAL_EQUAL
+    diagnostic_name: "'=='"
     comment: "=="
   - name: EQUAL_EQUAL_EQUAL
+    diagnostic_name: "'==='"
     comment: "==="
   - name: EQUAL_GREATER
+    diagnostic_name: "'=>'"
     comment: "=>"
   - name: EQUAL_TILDE
+    diagnostic_name: "'=~'"
     comment: "=~"
   - name: FLOAT
+    diagnostic_name: "float"
     comment: "a floating point number"
   - name: FLOAT_IMAGINARY
+    diagnostic_name: "imaginary"
     comment: "a floating pointer number with an imaginary suffix"
   - name: FLOAT_RATIONAL
+    diagnostic_name: "rational"
     comment: "a floating pointer number with a rational suffix"
   - name: FLOAT_RATIONAL_IMAGINARY
+    diagnostic_name: "imaginary"
     comment: "a floating pointer number with a rational and imaginary suffix"
   - name: GLOBAL_VARIABLE
+    diagnostic_name: "global variable"
     comment: "a global variable"
   - name: GREATER
+    diagnostic_name: "'>'"
     comment: ">"
   - name: GREATER_EQUAL
+    diagnostic_name: "'>='"
     comment: ">="
   - name: GREATER_GREATER
+    diagnostic_name: ">>"
     comment: ">>"
   - name: GREATER_GREATER_EQUAL
+    diagnostic_name: ">>="
     comment: ">>="
   - name: HEREDOC_START
+    diagnostic_name: "heredoc beginning"
     comment: "the start of a heredoc"
   - name: IDENTIFIER
+    diagnostic_name: "local variable or method"
     comment: "an identifier"
   - name: IGNORED_NEWLINE
+    diagnostic_name: "ignored newline"
     comment: "an ignored newline"
   - name: INSTANCE_VARIABLE
+    diagnostic_name: "instance variable"
     comment: "an instance variable"
   - name: INTEGER
+    diagnostic_name: "integer"
     comment: "an integer (any base)"
   - name: INTEGER_IMAGINARY
+    diagnostic_name: "imaginary"
     comment: "an integer with an imaginary suffix"
   - name: INTEGER_RATIONAL
+    diagnostic_name: "rational"
     comment: "an integer with a rational suffix"
   - name: INTEGER_RATIONAL_IMAGINARY
+    diagnostic_name: "imaginary"
     comment: "an integer with a rational and imaginary suffix"
   - name: KEYWORD_ALIAS
+    diagnostic_name: "'alias'"
     comment: "alias"
   - name: KEYWORD_AND
+    diagnostic_name: "'and'"
     comment: "and"
   - name: KEYWORD_BEGIN
+    diagnostic_name: "'begin'"
     comment: "begin"
   - name: KEYWORD_BEGIN_UPCASE
+    diagnostic_name: "'BEGIN'"
     comment: "BEGIN"
   - name: KEYWORD_BREAK
+    diagnostic_name: "'break'"
     comment: "break"
   - name: KEYWORD_CASE
+    diagnostic_name: "'case'"
     comment: "case"
   - name: KEYWORD_CLASS
+    diagnostic_name: "'class'"
     comment: "class"
   - name: KEYWORD_DEF
+    diagnostic_name: "'def'"
     comment: "def"
   - name: KEYWORD_DEFINED
+    diagnostic_name: "'defined?'"
     comment: "defined?"
   - name: KEYWORD_DO_BLOCK
+    diagnostic_name: "'do'"
     comment: "do keyword for a block attached to a command"
   - name: KEYWORD_DO_LAMBDA
+    diagnostic_name: "'do'"
     comment: "do keyword that opens the body of a lambda literal"
   - name: KEYWORD_DO_LOOP
+    diagnostic_name: "'do'"
     comment: "do keyword for a predicate in a while, until, or for loop"
   - name: KEYWORD_END_UPCASE
+    diagnostic_name: "'END'"
     comment: "END"
   - name: KEYWORD_FALSE
+    diagnostic_name: "'false'"
     comment: "false"
   - name: KEYWORD_FOR
+    diagnostic_name: "'for'"
     comment: "for"
   - name: KEYWORD_IF
+    diagnostic_name: "'if'"
     comment: "if"
   - name: KEYWORD_IF_MODIFIER
+    diagnostic_name: "'if'"
     comment: "if in the modifier form"
   - name: KEYWORD_MODULE
+    diagnostic_name: "'module'"
     comment: "module"
   - name: KEYWORD_NEXT
+    diagnostic_name: "'next'"
     comment: "next"
   - name: KEYWORD_NIL
+    diagnostic_name: "'nil'"
     comment: "nil"
   - name: KEYWORD_NOT
+    diagnostic_name: "'not'"
     comment: "not"
   - name: KEYWORD_OR
+    diagnostic_name: "'or'"
     comment: "or"
   - name: KEYWORD_REDO
+    diagnostic_name: "'redo'"
     comment: "redo"
   - name: KEYWORD_RESCUE_MODIFIER
+    diagnostic_name: "'rescue' modifier"
     comment: "rescue in the modifier form"
   - name: KEYWORD_RETRY
+    diagnostic_name: "'retry'"
     comment: "retry"
   - name: KEYWORD_RETURN
+    diagnostic_name: "'return'"
     comment: "return"
   - name: KEYWORD_SELF
+    diagnostic_name: "'self'"
     comment: "self"
   - name: KEYWORD_SUPER
+    diagnostic_name: "'super'"
     comment: "super"
   - name: KEYWORD_TRUE
+    diagnostic_name: "'true'"
     comment: "true"
   - name: KEYWORD_UNDEF
+    diagnostic_name: "'undef'"
     comment: "undef"
   - name: KEYWORD_UNLESS
+    diagnostic_name: "'unless'"
     comment: "unless"
   - name: KEYWORD_UNLESS_MODIFIER
+    diagnostic_name: "'unless'"
     comment: "unless in the modifier form"
   - name: KEYWORD_UNTIL
+    diagnostic_name: "'until'"
     comment: "until"
   - name: KEYWORD_UNTIL_MODIFIER
+    diagnostic_name: "'until'"
     comment: "until in the modifier form"
   - name: KEYWORD_WHILE
+    diagnostic_name: "'while'"
     comment: "while"
   - name: KEYWORD_WHILE_MODIFIER
+    diagnostic_name: "'while'"
     comment: "while in the modifier form"
   - name: KEYWORD_YIELD
+    diagnostic_name: "'yield'"
     comment: "yield"
   - name: KEYWORD___ENCODING__
+    diagnostic_name: "'__ENCODING__'"
     comment: "__ENCODING__"
   - name: KEYWORD___FILE__
+    diagnostic_name: "'__FILE__'"
     comment: "__FILE__"
   - name: KEYWORD___LINE__
+    diagnostic_name: "'__LINE__'"
     comment: "__LINE__"
   - name: LABEL
+    diagnostic_name: "label"
     comment: "a label"
   - name: LABEL_END
+    diagnostic_name: "label terminator"
     comment: "the end of a label"
   - name: LAMBDA_BEGIN
+    diagnostic_name: "'{'"
     comment: "{"
   - name: LESS
+    diagnostic_name: "'<'"
     comment: "<"
   - name: LESS_EQUAL
+    diagnostic_name: "'<='"
     comment: "<="
   - name: LESS_EQUAL_GREATER
+    diagnostic_name: "'<=>'"
     comment: "<=>"
   - name: LESS_LESS
+    diagnostic_name: "<<"
     comment: "<<"
   - name: LESS_LESS_EQUAL
+    diagnostic_name: "<<="
     comment: "<<="
   - name: METHOD_NAME
+    diagnostic_name: "method name"
     comment: "a method name"
   - name: MINUS
+    diagnostic_name: "'-'"
     comment: "-"
   - name: MINUS_EQUAL
+    diagnostic_name: "'-='"
     comment: "-="
   - name: MINUS_GREATER
+    diagnostic_name: "'->'"
     comment: "->"
   - name: NUMBERED_REFERENCE
+    diagnostic_name: "numbered reference"
     comment: "a numbered reference to a capture group in the previous regular expression match"
   - name: PARENTHESIS_LEFT
+    diagnostic_name: "'('"
     comment: "("
   - name: PARENTHESIS_LEFT_GROUPING
+    diagnostic_name: "'('"
     comment: "( scanned at the beginning of an expression"
   - name: PARENTHESIS_LEFT_PARENTHESES
+    diagnostic_name: "'('"
     comment: "( for a parentheses node"
   - name: PERCENT
+    diagnostic_name: "'%'"
     comment: "%"
   - name: PERCENT_EQUAL
+    diagnostic_name: "'%='"
     comment: "%="
   - name: PERCENT_LOWER_I
+    diagnostic_name: "'%i'"
     comment: "%i"
   - name: PERCENT_LOWER_W
+    diagnostic_name: "'%w'"
     comment: "%w"
   - name: PERCENT_LOWER_X
+    diagnostic_name: "'%x'"
     comment: "%x"
   - name: PERCENT_UPPER_I
+    diagnostic_name: "'%I'"
     comment: "%I"
   - name: PERCENT_UPPER_W
+    diagnostic_name: "'%W'"
     comment: "%W"
   - name: PIPE_EQUAL
+    diagnostic_name: "'|='"
     comment: "|="
   - name: PIPE_PIPE
+    diagnostic_name: "'||'"
     comment: "||"
   - name: PIPE_PIPE_EQUAL
+    diagnostic_name: "'||='"
     comment: "||="
   - name: PLUS
+    diagnostic_name: "'+'"
     comment: "+"
   - name: PLUS_EQUAL
+    diagnostic_name: "'+='"
     comment: "+="
   - name: QUESTION_MARK
+    diagnostic_name: "'?'"
     comment: "?"
   - name: REGEXP_BEGIN
+    diagnostic_name: "regular expression beginning"
     comment: "the beginning of a regular expression"
   - name: REGEXP_END
+    diagnostic_name: "regular expression ending"
     comment: "the end of a regular expression"
   - name: SLASH
+    diagnostic_name: "'/'"
     comment: "/"
   - name: SLASH_EQUAL
+    diagnostic_name: "'/='"
     comment: "/="
   - name: STAR
+    diagnostic_name: "'*'"
     comment: "*"
   - name: STAR_EQUAL
+    diagnostic_name: "'*='"
     comment: "*="
   - name: STAR_STAR
+    diagnostic_name: "'**'"
     comment: "**"
   - name: STAR_STAR_EQUAL
+    diagnostic_name: "'**='"
     comment: "**="
   - name: STRING_BEGIN
+    diagnostic_name: "string literal"
     comment: "the beginning of a string"
   - name: STRING_CONTENT
+    diagnostic_name: "string content"
     comment: "the contents of a string"
   - name: STRING_END
+    diagnostic_name: "string ending"
     comment: "the end of a string"
   - name: SYMBOL_BEGIN
+    diagnostic_name: "symbol literal"
     comment: "the beginning of a symbol"
   - name: TILDE
+    diagnostic_name: "'~'"
     comment: "~ or ~@"
   - name: UAMPERSAND
+    diagnostic_name: "'&'"
     comment: "unary &"
   - name: UCOLON_COLON
+    diagnostic_name: "'::'"
     comment: "unary ::"
   - name: UDOT_DOT
+    diagnostic_name: "'..'"
     comment: "unary .. operator"
   - name: UDOT_DOT_DOT
+    diagnostic_name: "'...'"
     comment: "unary ... operator"
   - name: UMINUS
+    diagnostic_name: "'-'"
     comment: "-@"
   - name: UMINUS_NUM
+    diagnostic_name: "'-'"
     comment: "-@ for a number"
   - name: UPLUS
+    diagnostic_name: "'+'"
     comment: "+@"
   - name: USTAR
+    diagnostic_name: "*"
     comment: "unary *"
   - name: USTAR_STAR
+    diagnostic_name: "**"
     comment: "unary **"
   - name: WORDS_SEP
+    diagnostic_name: "string separator"
     comment: "a separator between words in a list"
   - name: WORDS_SEP_IMPLICIT
+    diagnostic_name: "string separator"
     comment: "a separator between words in a list that has no source characters"
   - name: XSTRING_BEGIN
+    diagnostic_name: "backtick string literal"
     comment: "the beginning of an execution string"
   - name: __END__
+    diagnostic_name: "'__END__'"
     comment: "marker for the point in the file at which the parser should stop"
 flags:
   - name: ArgumentsNodeFlags

@@ -274,6 +274,15 @@ module Ruby::Prism
       assert_equal [4, 4, 0], result.errors.map { |error| error.location.start_offset }
     end
 
+    def test_missing_unary_receiver_reports_following_token
+      { "+" => "end-of-input", "+ )" => "')'" }.each do |source, name|
+        error = Ruby::Prism.parse(source).errors.first
+        assert_equal :unary_receiver, error.type
+        assert_equal "unexpected #{name}, expected a receiver for unary `+`", error.message
+        assert_equal "+", error.location.slice
+      end
+    end
+
     def test_unexpected_backslash
       {
         "\\ " => "escaped space",
