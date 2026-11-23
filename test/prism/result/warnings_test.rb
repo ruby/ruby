@@ -46,6 +46,10 @@ module Ruby::Prism
         assert_warning("puts 1 #{operator}0", warning)
         assert_warning("puts :a #{operator}0", warning)
         assert_warning("m = 1; puts m #{operator}0", warning)
+
+        diagnostic = Ruby::Prism.parse("puts :é\t#{operator}0").warnings.fetch(0)
+        assert_equal operator.to_s, diagnostic.location.slice
+        assert_equal "'#{operator}' after local variable or literal is interpreted as binary operator even though it seems like #{warning}", diagnostic.message
       end
     end
 
