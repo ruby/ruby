@@ -433,9 +433,8 @@ pm_serialize_diagnostic_list(pm_list_t *list, pm_buffer_t *buffer) {
  */
 void
 pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer) {
-    size_t encoding_length = strlen(encoding->name);
-    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(encoding_length));
-    pm_buffer_append_string(buffer, encoding->name, encoding_length);
+    pm_buffer_append_varuint(buffer, encoding->name_length);
+    pm_buffer_append_string(buffer, encoding->name, encoding->name_length);
 }
 
 static void

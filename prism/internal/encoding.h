@@ -78,6 +78,9 @@ typedef struct {
      * pm_encoding_kind_t stored in a byte to keep the table of encodings small.
      */
     uint8_t kind;
+
+    /* The length of the encoding name in bytes, excluding the terminator. */
+    uint8_t name_length;
 } pm_encoding_t;
 
 /*

@@ -23619,9 +23619,7 @@ pm_serialize_parse_errors_format(pm_buffer_t *buffer, const uint8_t *source, siz
 
     int8_t result = -1;
     if (parser.error_list.size > 0) {
-        const char *encoding_name = parser.encoding->name;
-        pm_buffer_append_string(buffer, encoding_name, strlen(encoding_name));
-        pm_buffer_append_byte(buffer, '\0');
+        pm_buffer_append_string(buffer, parser.encoding->name, parser.encoding->name_length + 1);
 
         result = (int8_t) pm_errors_format(&parser, buffer, format_type);
     }
