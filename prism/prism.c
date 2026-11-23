@@ -15830,6 +15830,30 @@ typedef enum {
     PM_ARGUMENTS_YIELD
 } pm_arguments_kind_t;
 
+/* Parse paren_args after consuming '('. The caller decides whether a
+ * literal block can follow the closing parenthesis. */
+static void
+parse_paren_args(pm_parser_t *parser, pm_arguments_t *arguments, bool full_arguments, uint8_t flags, uint16_t depth) {
+    arguments->opening_loc = TOK2LOC(parser, &parser->previous);
+
+    if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+        parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, parse_delimited_arguments_flags(parser, flags, false), (uint16_t) (depth + 1));
+
+        /* Yield uses call_args, which excludes a trailing comma. */
+        if (!full_arguments && parser->previous.type == PM_TOKEN_COMMA) {
+            pm_parser_err_token_type(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, parser->current.type);
+        }
+
+        if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+            pm_parser_err_token_type(parser, &parser->current, PM_ERR_ARGUMENT_TERM_PAREN, parser->current.type);
+            parser->previous.start = parser->previous.end;
+            parser->previous.type = 0;
+        }
+    }
+
+    arguments->closing_loc = TOK2LOC(parser, &parser->previous);
+}
+
 /**
  * Parse a list of arguments and their surrounding parentheses if they are
  * present. It returns true if it found any pieces of arguments (parentheses,
@@ -15855,32 +15879,8 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, pm_argument
     bool found = false;
 
     if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-        found |= true;
-        arguments->opening_loc = TOK2LOC(parser, &parser->previous);
-
-        if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-            arguments->closing_loc = TOK2LOC(parser, &parser->previous);
-        } else {
-            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, parse_delimited_arguments_flags(parser, flags, false), (uint16_t) (depth + 1));
-
-            // `yield` parses its arguments through the restricted `call_args`
-            // grammar, which (unlike the `opt_call_args` that method calls and
-            // `super` use) permits neither a block argument nor a trailing
-            // comma. `full_arguments` is false only for `yield`, so we use it
-            // to reject the trailing comma in `yield(a,)` that the arguments
-            // parser otherwise accepts before the closing parenthesis.
-            if (!full_arguments && parser->previous.type == PM_TOKEN_COMMA) {
-                pm_parser_err_token_type(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, parser->current.type);
-            }
-
-            if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                pm_parser_err_token_type(parser, &parser->current, PM_ERR_ARGUMENT_TERM_PAREN, parser->current.type);
-                parser->previous.start = parser->previous.end;
-                parser->previous.type = 0;
-            }
-
-            arguments->closing_loc = TOK2LOC(parser, &parser->previous);
-        }
+        parse_paren_args(parser, arguments, full_arguments, flags, depth);
+        found = true;
     } else if ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && token_begins_argument_p(parser->current.type) && !match1(parser, PM_TOKEN_BRACE_LEFT)) {
         found |= true;
 
@@ -21842,6 +21842,25 @@ parse_ternary(pm_parser_t *parser, pm_node_t *node, uint8_t flags, uint16_t dept
 }
 
 static pm_reduction_t
+parse_call_shorthand(pm_parser_t *parser, pm_reduction_t receiver, pm_token_t *operator, uint16_t depth) {
+    pm_arguments_t arguments = { 0 };
+
+    if (PM_REDUCTION_KIND(receiver) == PM_REDUCTION_BLOCK_CALL) {
+        /* Ruby 4.0 added block_call call_op2 paren_args. */
+        if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_0) {
+            pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_MESSAGE, parser->current.type);
+        }
+
+        parser_lex(parser);
+        parse_paren_args(parser, &arguments, true, 0, depth);
+    } else {
+        parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, 0, depth);
+    }
+
+    return pm_chained_call_reduction(receiver, UP(pm_call_node_shorthand_create(parser, receiver.node, operator, &arguments)), &arguments);
+}
+
+static pm_reduction_t
 parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t previous_binding_power, uint8_t flags, uint16_t depth) {
     pm_node_t *node = receiver.node;
     pm_token_t delimiter = parser->current;
@@ -21890,14 +21909,8 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
             pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
             return parse_multi_target(parser, pm_chained_call_reduction(receiver, UP(call), &arguments), previous_binding_power, depth);
         }
-        case PM_TOKEN_PARENTHESIS_LEFT: {
-            /* If we have a parenthesis following a '::' operator, then it is the
-             * method call shorthand. That would look like Foo::(bar). */
-            pm_arguments_t arguments = { 0 };
-            parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, false, (uint16_t) (depth + 1));
-
-            return pm_chained_call_reduction(receiver, UP(pm_call_node_shorthand_create(parser, node, &delimiter, &arguments)), &arguments);
-        }
+        case PM_TOKEN_PARENTHESIS_LEFT:
+            return parse_call_shorthand(parser, receiver, &delimiter, (uint16_t) (depth + 1));
         default:
             expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
             return pm_reduction(UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous)));
@@ -22393,12 +22406,8 @@ parse_call(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t prev
     pm_token_t operator = parser->current;
     parser_lex(parser);
 
-    pm_arguments_t arguments = { 0 };
-
-    // This if statement handles the foo.() syntax.
     if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-        parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, false, (uint16_t) (depth + 1));
-        return pm_chained_call_reduction(receiver, UP(pm_call_node_shorthand_create(parser, node, &operator, &arguments)), &arguments);
+        return parse_call_shorthand(parser, receiver, &operator, (uint16_t) (depth + 1));
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -22445,6 +22454,7 @@ parse_call(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t prev
         }
     }
 
+    pm_arguments_t arguments = { 0 };
     parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
     pm_call_node_t *call = pm_call_node_call_create(parser, node, &operator, &message, &arguments);
 

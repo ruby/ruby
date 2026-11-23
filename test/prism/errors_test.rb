@@ -402,12 +402,23 @@ module Ruby::Prism
       [".", "&.", "::"].each do |operator|
         source = "f x do end#{operator}()"
         assert Ruby::Prism.parse_success?("#{source}.g", version: "4.0"), source
-        refute Ruby::Prism.parse_success?(source, version: "3.4"), source
+        result = Ruby::Prism.parse(source, version: "3.4")
+        assert_equal [:expect_message], result.errors.map(&:type), source
+        assert_equal "(", result.errors.first.location.slice
         refute Ruby::Prism.parse_success?("#{source} do end"), source
         refute Ruby::Prism.parse_success?("#{source} {}"), source
         assert Ruby::Prism.parse_success?("(f x do end)#{operator}() {}"), source
-      end
+        assert Ruby::Prism.parse_success?("f(x) do end#{operator}() {}", version: "3.4"), source
 
+        result = Ruby::Prism.parse("super x do end#{operator}(y)", version: "4.0")
+        assert_predicate result, :success?
+        assert_equal :call, result.statement.name
+        assert_equal "y", result.statement.arguments.arguments.first.slice
+        assert_equal "do end", result.statement.receiver.block.slice
+      end
+    end
+
+    def test_command_brace_block_chained_after_a_command_block
       source = "f x do end.g (y) {}.h"
       result = Ruby::Prism.parse(source, version: "4.1")
       assert_predicate result, :success?
