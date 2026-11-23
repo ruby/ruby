@@ -6,7 +6,6 @@
 #include "prism/internal/char.h"
 #include "prism/internal/oom.h"
 
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -116,28 +115,6 @@ pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length) {
     size_t cursor = buffer->length;
     if (pm_buffer_append_length(buffer, length)) {
         memset(buffer->value + cursor, value, length);
-    }
-}
-
-/**
- * Append a formatted string to the buffer.
- */
-void
-pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
-    va_list arguments;
-    va_start(arguments, format);
-    int result = vsnprintf(NULL, 0, format, arguments);
-    va_end(arguments);
-
-    if (result < 0) return;
-    size_t length = (size_t) (result + 1);
-
-    size_t cursor = buffer->length;
-    if (pm_buffer_append_length(buffer, length)) {
-        va_start(arguments, format);
-        vsnprintf(buffer->value + cursor, length, format, arguments);
-        va_end(arguments);
-        buffer->length--;
     }
 }
 

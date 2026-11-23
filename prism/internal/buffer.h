@@ -1,8 +1,6 @@
 #ifndef PRISM_INTERNAL_BUFFER_H
 #define PRISM_INTERNAL_BUFFER_H
 
-#include "prism/compiler/format.h"
-
 #include "prism/buffer.h"
 
 #include <stdbool.h>
@@ -33,9 +31,6 @@ void pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length);
 
 /* Append the given byte to the buffer the given number of times. */
 void pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length);
-
-/* Append a formatted string to the buffer. */
-void pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) PRISM_ATTRIBUTE_FORMAT(2, 3);
 
 /* Append the decimal digits of an unsigned integer without leading zeros. */
 void pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value);

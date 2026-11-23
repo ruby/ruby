@@ -40,8 +40,9 @@ prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, cons
 
 static PRISM_INLINE void
 prettyprint_constant(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_constant_id_t constant_id) {
-    pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
-    pm_buffer_append_format(output_buffer, ":%.*s", (int) constant->length, constant->start);
+    const pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, constant_id);
+    pm_buffer_append_byte(output_buffer, ':');
+    pm_buffer_append_bytes(output_buffer, constant->start, constant->length);
 }
 
 static void
