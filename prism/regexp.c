@@ -165,17 +165,17 @@ typedef struct {
 } pm_regexp_t;
 
 /**
- * Write the letters of the options that an error shows after the quoted
- * regular expression, the way Ruby writes them: m, i, and x, in that order. The
- * encoding options are not shown.
+ * Write the option letters shown after a quoted regular expression in a
+ * diagnostic and return the number written. Ruby shows m, i, and x in that
+ * order and omits encoding options.
  */
-static void
-pm_regexp_option_letters(pm_node_flags_t flags, char letters[4]) {
+static size_t
+pm_regexp_option_letters(pm_node_flags_t flags, char letters[3]) {
     size_t index = 0;
     if (flags & PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE) letters[index++] = 'm';
     if (flags & PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE) letters[index++] = 'i';
     if (flags & PM_REGULAR_EXPRESSION_FLAGS_EXTENDED) letters[index++] = 'x';
-    letters[index] = '\0';
+    return index;
 }
 
 /**
@@ -570,15 +570,15 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
     } else {
         regexp_parser->quoted_errors++;
 
-        char letters[4];
-        pm_regexp_option_letters(regexp->flags, letters);
+        char letters[3];
+        size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
 
         pm_buffer_t buffer = { 0 };
         pm_buffer_append_string(&buffer, message, strlen(message));
         pm_buffer_append_string(&buffer, ": /", 3);
         pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
         pm_buffer_append_byte(&buffer, '/');
-        pm_buffer_append_string(&buffer, letters, strlen(letters));
+        pm_buffer_append_string(&buffer, letters, letters_length);
 
         pm_diagnostic_list_append_slice(
             &parser->metadata_arena,
@@ -2581,15 +2581,15 @@ static void
 pm_regexp_error_with_content(const pm_regexp_t *regexp, const char *message) {
     pm_parser_t *parser = regexp->parser;
 
-    char letters[4];
-    pm_regexp_option_letters(regexp->flags, letters);
+    char letters[3];
+    size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
 
     pm_buffer_t buffer = { 0 };
     pm_buffer_append_string(&buffer, message, strlen(message));
     pm_buffer_append_string(&buffer, ": /", 3);
     pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
     pm_buffer_append_byte(&buffer, '/');
-    pm_buffer_append_string(&buffer, letters, strlen(letters));
+    pm_buffer_append_string(&buffer, letters, letters_length);
 
     pm_diagnostic_list_append_slice(
         &parser->metadata_arena,
@@ -2610,8 +2610,8 @@ static void
 pm_regexp_error_kind_with_content(const pm_regexp_t *regexp, pm_diagnostic_id_t diag_id) {
     pm_parser_t *parser = regexp->parser;
 
-    char letters[4];
-    pm_regexp_option_letters(regexp->flags, letters);
+    char letters[3];
+    size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
 
     pm_buffer_t buffer = { 0 };
     pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
@@ -2622,7 +2622,7 @@ pm_regexp_error_kind_with_content(const pm_regexp_t *regexp, pm_diagnostic_id_t 
         regexp->location.length,
         diag_id,
         pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length),
-        pm_diagnostic_string(letters)
+        (pm_string_t) { .source = (const uint8_t *) letters, .length = letters_length }
     );
     pm_buffer_cleanup(&buffer);
 }
@@ -3392,8 +3392,8 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
 
     if (name == NULL) return;
 
-    char letters[4];
-    pm_regexp_option_letters(regexp->flags, letters);
+    char letters[3];
+    size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
 
     pm_buffer_t formatted = { 0 };
     pm_regexp_format_for_error(&formatted, regexp->encoding, regexp->source, regexp->size);
@@ -3405,7 +3405,7 @@ pm_regexp_check_properties(const pm_regexp_t *regexp, const pm_regexp_parser_t *
         PM_ERR_REGEXP_INVALID_CHAR_PROPERTY,
         pm_diagnostic_slice(name, length),
         pm_diagnostic_slice(formatted.value, formatted.length),
-        pm_diagnostic_string(letters)
+        (pm_string_t) { .source = (const uint8_t *) letters, .length = letters_length }
     );
     pm_buffer_cleanup(&formatted);
 }
