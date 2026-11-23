@@ -110,6 +110,7 @@
 #include "internal/rational.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
+#include "internal/set_table.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -5241,6 +5242,22 @@ vm_weak_table_sym_set_foreach(VALUE *sym_ptr, void *data)
     return ret;
 }
 
+set_table *rb_iseq_const_path_table(void);
+
+static int
+vm_weak_table_const_path_foreach(st_data_t key, st_data_t data, int error)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+    return iter_data->callback((VALUE)key, iter_data->data);
+}
+
+static int
+vm_weak_table_const_path_update(st_data_t *key, st_data_t data, int existing)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+    return iter_data->update_callback((VALUE *)key, iter_data->data);
+}
+
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
@@ -5428,6 +5445,18 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
             vm_weak_table_frozen_strings_foreach,
             &foreach_data
         );
+        break;
+      }
+      case RB_GC_VM_CONST_PATH_TABLE: {
+        set_table *const_path_table = rb_iseq_const_path_table();
+        if (const_path_table) {
+            set_foreach_with_replace(
+                const_path_table,
+                vm_weak_table_const_path_foreach,
+                vm_weak_table_const_path_update,
+                (st_data_t)&foreach_data
+            );
+        }
         break;
       }
       case RB_GC_VM_WEAK_TABLE_COUNT:

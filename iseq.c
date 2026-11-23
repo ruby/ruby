@@ -33,7 +33,6 @@
 #include "internal/io.h"
 #include "internal/ruby_parser.h"
 #include "internal/sanitizers.h"
-#include "internal/concurrent_set.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -112,7 +111,7 @@ compile_data_free(struct iseq_compile_data *compile_data)
 
 /*
  * Constant path segment lists (IC->segments) are imemo_const_path objects,
- * deduplicated in a weak concurrent set like frozen strings: every
+ * deduplicated in a weak set_table under the VM lock: every
  * opt_getconstant_path with the same path (e.g. `Foo::Bar`) shares one
  * 0-terminated ID list. ISeqs mark (and pin) the paths of their ICs, so a path
  * lives as long as any ISeq that uses it, without a refcount.
@@ -124,7 +123,7 @@ compile_data_free(struct iseq_compile_data *compile_data)
  * freeing an ISeq only reads the paths of ICs with an entry, and a path freed
  * first clears the entries of its registered ICs.
  */
-static VALUE const_path_set;
+static set_table *const_path_table;
 
 static long
 const_path_len(const ID *ids)
@@ -148,43 +147,37 @@ rb_iseq_const_path_fits_p(long len)
     return rb_gc_size_allocatable_p(const_path_bytes(len));
 }
 
-static VALUE
-const_path_hash(VALUE key)
+static st_index_t
+const_path_hash(st_data_t key)
 {
     const ID *ids = ((const struct rb_imemo_const_path *)key)->ids;
-    return (VALUE)st_hash(ids, const_path_len(ids) * sizeof(ID), 0);
+    return st_hash(ids, const_path_len(ids) * sizeof(ID), 0);
 }
 
-static bool
-const_path_cmp(VALUE a, VALUE b)
+static int
+const_path_cmp(st_data_t a, st_data_t b)
 {
     const ID *x = ((const struct rb_imemo_const_path *)a)->ids;
     const ID *y = ((const struct rb_imemo_const_path *)b)->ids;
     while (*x && *x == *y) { x++; y++; }
-    return *x == *y;
+    return *x != *y;
 }
 
-static VALUE
-const_path_create(VALUE key, void *data)
-{
-    long len = *(long *)data;
-    VALUE obj = rb_imemo_new(imemo_const_path, 0, const_path_bytes(len), true);
-    MEMCPY(((struct rb_imemo_const_path *)obj)->ids, ((const struct rb_imemo_const_path *)key)->ids, ID, len + 1);
-    return obj;
-}
-
-static const struct rb_concurrent_set_funcs const_path_set_funcs = {
-    .hash = const_path_hash,
-    .cmp = const_path_cmp,
-    .create = const_path_create,
-    .free = NULL,
+static const struct st_hash_type const_path_hash_type = {
+    const_path_cmp,
+    const_path_hash,
 };
 
 void
 Init_const_path_table(void)
 {
-    const_path_set = rb_concurrent_set_new(&const_path_set_funcs, 1024);
-    rb_gc_register_address(&const_path_set);
+    const_path_table = set_init_table_with_size(NULL, &const_path_hash_type, 1024);
+}
+
+set_table *
+rb_iseq_const_path_table(void)
+{
+    return const_path_table;
 }
 
 /* Returns the interned, 0-terminated ID list for an Array of Symbols, and
@@ -207,7 +200,27 @@ rb_iseq_intern_const_segments(const rb_iseq_t *iseq, VALUE arr)
     }
     key->ids[len] = 0;
 
-    VALUE path = rb_concurrent_set_find_or_insert(&const_path_set, (VALUE)key, &len);
+    VALUE path = 0;
+    RB_VM_LOCKING() {
+        st_data_t existing;
+        if (set_get_key(const_path_table, (st_data_t)key, &existing)) {
+            /* A dead path not yet swept (lazy sweep) must not be revived. */
+            if (rb_objspace_garbage_object_p((VALUE)existing)) {
+                set_table_delete(const_path_table, &existing);
+            }
+            else {
+                path = (VALUE)existing;
+            }
+        }
+        if (!path) {
+            path = rb_imemo_new(imemo_const_path, 0, const_path_bytes(len), true);
+            MEMCPY(((struct rb_imemo_const_path *)path)->ids, key->ids, ID, len + 1);
+            /* A GC during a rehash would sweep paths out of the table mid-insert. */
+            VALUE gc_disabled = rb_gc_disable_no_rest();
+            set_insert(const_path_table, (st_data_t)path);
+            if (gc_disabled == Qfalse) rb_gc_enable();
+        }
+    }
     ALLOCV_END(tmp);
 
     RB_OBJ_WRITTEN((VALUE)iseq, Qundef, path);
@@ -339,7 +352,10 @@ void
 rb_iseq_free_const_path(VALUE obj)
 {
     struct rb_imemo_const_path *path = (struct rb_imemo_const_path *)obj;
-    rb_concurrent_set_delete_by_identity(const_path_set, obj);
+    st_data_t key = (st_data_t)obj, existing;
+    if (const_path_table && set_get_key(const_path_table, key, &existing) && existing == key) {
+        set_table_delete(const_path_table, &key);
+    }
     if (path->ics) {
         set_table_foreach(path->ics, const_path_forget_ic_i, 0);
         const_path_unregister(path, 0);
@@ -360,6 +376,8 @@ rb_iseq_free_constant_cache(rb_vm_t *vm)
     rb_id_table_foreach(&vm->constant_cache, const_path_free_paths_i, NULL);
     rb_id_table_free_items(&vm->constant_cache);
     rb_id_table_init(&vm->constant_cache, 0);
+    set_free_table(const_path_table);
+    const_path_table = NULL;
 }
 
 // When an ISEQ is being freed, all of its associated ICs are going to go away

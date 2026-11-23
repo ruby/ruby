@@ -301,6 +301,7 @@ void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 void Init_const_path_table(void);
+struct set_table *rb_iseq_const_path_table(void);
 bool rb_iseq_const_path_fits_p(long len);
 const ID *rb_iseq_intern_const_segments(const rb_iseq_t *iseq, VALUE arr);
 void rb_iseq_const_path_register_ic(IC ic);
