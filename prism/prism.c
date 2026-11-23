@@ -1732,6 +1732,10 @@ enum pm_reduction_kind {
     /* A block_call can take a call operator, as in `f x do end.tail`. */
     PM_REDUCTION_BLOCK_CALL,
 
+    /* A single-target write with a command_rhs, as in `x = f 1` or
+     * `x = y = f 1 rescue nil`. This reduces to command_asgn, a stmt. */
+    PM_REDUCTION_COMMAND_ASSIGNMENT,
+
     /* A return, break, or next command with call_args. A trailing operator
      * can still take the jump as a void operand during error recovery. */
     PM_REDUCTION_JUMP,
@@ -14333,14 +14337,15 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
 
 /**
  * A command must be the sole argument or the entire RHS of a write. Most
- * commands consume a comma in their own arguments, but a brace command, a
- * block_call, or an endless method with a command body can finish before it.
+ * commands consume a comma in their own arguments. Brace commands, block
+ * calls, nested command assignments and endless methods can finish before it.
  */
 static bool
 pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node, enum pm_reduction_kind kind) {
     switch (kind) {
         case PM_REDUCTION_BRACE_COMMAND:
         case PM_REDUCTION_BLOCK_CALL:
+        case PM_REDUCTION_COMMAND_ASSIGNMENT:
             return true;
         case PM_REDUCTION_COMMAND:
         case PM_REDUCTION_JUMP:
@@ -21531,18 +21536,6 @@ parse_rescue_modifier_terminator(pm_parser_t *parser, uint8_t flags, uint16_t de
     }
 }
 
-/**
- * A command is a complete value of a write: it cannot begin a multi-value
- * right-hand side (`x = Foo::Bar { }, y`), nor stand as the first element of
- * one when nested in another write (`x = y = def f = foo 1 rescue z, w`).
- */
-static void
-parse_write_value_comma_check(pm_parser_t *parser, pm_reduction_t value) {
-    if (match1(parser, PM_TOKEN_COMMA) && pm_command_before_comma_p(parser, value.node, PM_REDUCTION_KIND(value))) {
-        pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
-    }
-}
-
 /* A command assignment is a stmt. A nested assignment inherits the outer
  * assignment's permission to take a command on its right-hand side. */
 static PRISM_INLINE uint8_t
@@ -21574,8 +21567,8 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
     /* An operator write never takes a multi-value right-hand side, so a comma
      * after a statement-level one is already reported by the statement that
      * contains it. */
-    if (previous_binding_power != PM_BINDING_POWER_STATEMENT) {
-        parse_write_value_comma_check(parser, parsed);
+    if (previous_binding_power != PM_BINDING_POWER_STATEMENT && match1(parser, PM_TOKEN_COMMA) && pm_command_before_comma_p(parser, value, PM_REDUCTION_KIND(parsed))) {
+        pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
     }
 
     // Assignments whose value is a command call (e.g., a = b c) can only
@@ -21660,11 +21653,13 @@ parse_assignment_value_local(pm_parser_t *parser, const pm_node_t *node) {
  * the "a" is marked as being used so the parser should not warn on it.
  *
  * Note that this will only be called after an = operator, as that is the only
- * operator that allows multiple values after it.
+ * operator that allows multiple values after it. The returned kind describes
+ * the enclosing assignment.
  */
-static pm_node_t *
+static pm_reduction_t
 parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     bool statement_level = previous_binding_power == PM_BINDING_POWER_STATEMENT;
+    bool multiple_assignment = binding_power == PM_BINDING_POWER_MULTI_ASSIGNMENT + 1;
 
     bool permitted = true;
     if (!statement_level && match1(parser, PM_TOKEN_USTAR)) permitted = false;
@@ -21674,7 +21669,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     /* Where a single-target write accepts a command call it also accepts an
      * endless method with a command body (`x = def f = foo 1`), but a
      * multi-write accepts only the command call. */
-    if (command_call_flag && binding_power != PM_BINDING_POWER_MULTI_ASSIGNMENT + 1) {
+    if (command_call_flag && !multiple_assignment) {
         command_call_flag |= PM_PARSE_ACCEPTS_COMMAND_DEF;
     }
 
@@ -21685,7 +21680,11 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     parse_assignment_value_local(parser, value);
     bool single_value = true;
 
-    parse_write_value_comma_check(parser, parsed);
+    bool command_before_comma = pm_command_before_comma_p(parser, value, PM_REDUCTION_KIND(parsed));
+    /* A nested write leaves the comma for the enclosing argument list or mrhs. */
+    if (statement_level && command_before_comma && match1(parser, PM_TOKEN_COMMA)) {
+        pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
+    }
 
     // Block calls (command call + do block, e.g., `foo bar do end`) cannot
     // be followed by a comma to form a multi-value RHS because each element
@@ -21718,9 +21717,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
     }
 
-    // Contradicting binding powers, the right-hand-side value of the assignment
-    // allows the `rescue` modifier.
-    bool multiple_assignment = (binding_power == (PM_BINDING_POWER_MULTI_ASSIGNMENT + 1));
+    /* The RHS can take a rescue modifier below assignment precedence. */
     if ((single_value || multiple_assignment) && match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
         bool command_value = PM_REDUCTION_KIND(parsed) == PM_REDUCTION_BLOCK_CALL || pm_command_call_value_p(parser, value);
 
@@ -21731,7 +21728,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         // statement-level rescue instead of binding it to the value here. For a
         // non-command value the rescue does bind to the value (parse.y:
         // `mlhs '=' mrhs_arg modifier_rescue stmt`).
-        if (multiple_assignment && command_value) return value;
+        if (multiple_assignment && command_value) return pm_reduction(value);
 
         context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
@@ -21750,10 +21747,17 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
 
         if (statement_value) parse_rescue_modifier_terminator(parser, flags, depth);
 
-        return UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
+        value = UP(pm_rescue_modifier_node_create(parser, value, &rescue, right));
     }
 
-    return value;
+    /* A command_rhs can be a plain command (which consumes its own commas)
+     * or one of the command forms that ends before a comma. A rescue on the
+     * command preserves the form of the write. */
+    bool command_rhs = PM_REDUCTION_KIND(parsed) == PM_REDUCTION_COMMAND || command_before_comma;
+    return (pm_reduction_t) {
+        .node = value,
+        .kind = single_value && !multiple_assignment && command_rhs ? PM_REDUCTION_COMMAND_ASSIGNMENT : PM_REDUCTION_DEFAULT
+    };
 }
 
 /**
@@ -21952,7 +21956,7 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
     return match != NULL && match->receiver == node ? parse_match_write(parser, call, match) : UP(call);
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t operator = parser->current;
 
@@ -21977,13 +21981,14 @@ parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bi
             }
 
             parser_lex(parser);
-            pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
+            pm_reduction_t value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
 
             if (PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) && previous_binding_power != PM_BINDING_POWER_STATEMENT) {
                 pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_MULTI_WRITE);
             }
 
-            return parse_write(parser, node, &operator, value);
+            value.node = parse_write(parser, node, &operator, value.node);
+            return value;
         }
         case PM_SPLAT_NODE: {
             pm_multi_targets_t targets = { 0 };
@@ -21991,8 +21996,8 @@ parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bi
             pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser, &targets, NULL, NULL);
 
             parser_lex(parser);
-            pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_BINDING_POWER_MULTI_ASSIGNMENT + 1, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
-            return parse_write(parser, UP(multi_target), &operator, value);
+            pm_reduction_t value = parse_assignment_values(parser, previous_binding_power, PM_BINDING_POWER_MULTI_ASSIGNMENT + 1, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
+            return pm_reduction(parse_write(parser, UP(multi_target), &operator, value.node));
         }
         case PM_SOURCE_ENCODING_NODE:
         case PM_FALSE_NODE:
@@ -22004,8 +22009,8 @@ parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bi
             // In these special cases, we have specific error messages
             // and we will replace them with local variable writes.
             parser_lex(parser);
-            pm_node_t *value = parse_assignment_values(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
-            return parse_unwriteable_write(parser, node, &operator, value);
+            pm_reduction_t value = parse_assignment_values(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
+            return pm_reduction(parse_unwriteable_write(parser, node, &operator, value.node));
         }
         default:
             // In this case we have an = sign, but we don't know what
@@ -22013,7 +22018,7 @@ parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bi
             // as an error and skip past it.
             parser_lex(parser);
             pm_parser_err_token(parser, &operator, PM_ERR_EXPRESSION_NOT_WRITABLE);
-            return node;
+            return pm_reduction(node);
     }
 }
 
@@ -22504,7 +22509,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
 
     switch (token.type) {
         case PM_TOKEN_EQUAL:
-            return pm_reduction(parse_equal(parser, node, previous_binding_power, binding_power, flags, depth));
+            return parse_equal(parser, node, previous_binding_power, binding_power, flags, depth);
         case PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL:
             return pm_reduction(parse_and_equal(parser, node, previous_binding_power, binding_power, flags, depth));
         case PM_TOKEN_PIPE_PIPE_EQUAL:
@@ -22707,6 +22712,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
         case PM_REDUCTION_BLOCK_CALL:
             /* A block_call can continue through a call operator. */
             return left > PM_BINDING_POWER_COMPOSITION && left != PM_BINDING_POWER_CALL;
+        case PM_REDUCTION_COMMAND_ASSIGNMENT:
         case PM_REDUCTION_DEFAULT:
             break;
     }

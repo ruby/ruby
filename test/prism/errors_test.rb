@@ -640,13 +640,12 @@ module Ruby::Prism
     end
 
     def test_comma_after_nested_command_assignment
-      source = "x = y = f 1 rescue 2, z"
-      errors = Ruby::Prism.parse(source).errors
-      assert_equal [:invalid_comma], errors.map(&:type)
-      assert_equal ",", errors.first.location.slice
-
-      assert Ruby::Prism.parse_success?("x = y = f(1) rescue 2, z")
-      assert Ruby::Prism.parse_success?("x = (y = f 1 rescue 2), z")
+      ["x = y = f 1 rescue 2, z", "x = @y = table[:k] = f 1 rescue 2, z"].each do |source|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal [:invalid_comma], errors.map(&:type), source
+        assert_equal source.index(","), errors.first.location.start_offset, source
+        assert_equal ",", errors.first.location.slice
+      end
     end
 
     def test_composition_after_nested_assignment
