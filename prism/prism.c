@@ -594,17 +594,21 @@ pm_parser_warn_token_content(pm_parser_t *parser, const pm_token_t *token, pm_di
 }
 
 static void
-pm_parser_warn_ambiguous_binary_operator(pm_parser_t *parser, const char *operator_name, const char *interpretation) {
+pm_parser_warn_ambiguous_binary_operator(pm_parser_t *parser, const char *interpretation, size_t interpretation_length) {
+    uint32_t length = PM_TOKEN_LENGTH(&parser->current);
     pm_diagnostic_list_append_slice_slice(
         &parser->metadata_arena,
         &parser->warning_list,
         PM_TOKEN_START(parser, &parser->current),
-        PM_TOKEN_LENGTH(&parser->current),
+        length,
         PM_WARN_AMBIGUOUS_BINARY_OPERATOR,
-        pm_diagnostic_string(operator_name),
-        pm_diagnostic_string(interpretation)
+        (pm_string_t) { .source = parser->current.start, .length = length },
+        (pm_string_t) { .source = (const uint8_t *) interpretation, .length = interpretation_length }
     );
 }
+
+#define PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser_, interpretation_) \
+    pm_parser_warn_ambiguous_binary_operator((parser_), "" interpretation_, sizeof(interpretation_) - 1)
 
 /**
  * Add an error for an expected heredoc terminator. This is a special function
@@ -10603,7 +10607,7 @@ parser_lex(pm_parser_t *parser) {
                         } else if (lex_state_beg_p(parser)) {
                             type = PM_TOKEN_USTAR_STAR;
                         } else if (ambiguous_operator_p(parser, space_seen)) {
-                            pm_parser_warn_ambiguous_binary_operator(parser, "**", "argument prefix");
+                            PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "argument prefix");
                         }
 
                         if (lex_state_operator_p(parser)) {
@@ -10628,7 +10632,7 @@ parser_lex(pm_parser_t *parser) {
                     } else if (lex_state_beg_p(parser)) {
                         type = PM_TOKEN_USTAR;
                     } else if (ambiguous_operator_p(parser, space_seen)) {
-                        pm_parser_warn_ambiguous_binary_operator(parser, "*", "argument prefix");
+                        PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "argument prefix");
                     }
 
                     if (lex_state_operator_p(parser)) {
@@ -10812,7 +10816,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         if (ambiguous_operator_p(parser, space_seen)) {
-                            pm_parser_warn_ambiguous_binary_operator(parser, "<<", "here document");
+                            PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "here document");
                         }
 
                         if (lex_state_operator_p(parser)) {
@@ -10938,7 +10942,7 @@ parser_lex(pm_parser_t *parser) {
                     } else if (lex_state_beg_p(parser)) {
                         type = PM_TOKEN_UAMPERSAND;
                     } else if (ambiguous_operator_p(parser, space_seen)) {
-                        pm_parser_warn_ambiguous_binary_operator(parser, "&", "argument prefix");
+                        PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "argument prefix");
                     }
 
                     if (lex_state_operator_p(parser)) {
@@ -11014,7 +11018,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (ambiguous_operator_p(parser, space_seen)) {
-                        pm_parser_warn_ambiguous_binary_operator(parser, "+", "unary operator");
+                        PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "unary operator");
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -11055,7 +11059,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (ambiguous_operator_p(parser, space_seen)) {
-                        pm_parser_warn_ambiguous_binary_operator(parser, "-", "unary operator");
+                        PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "unary operator");
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -11164,7 +11168,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (ambiguous_operator_p(parser, space_seen)) {
-                        pm_parser_warn_ambiguous_binary_operator(parser, "/", "regexp literal");
+                        PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "regexp literal");
                     }
 
                     if (lex_state_operator_p(parser)) {
@@ -11354,7 +11358,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (ambiguous_operator_p(parser, space_seen)) {
-                        pm_parser_warn_ambiguous_binary_operator(parser, "%", "string literal");
+                        PM_PARSER_WARN_AMBIGUOUS_BINARY_OPERATOR(parser, "string literal");
                     }
 
                     lex_state_set(parser, lex_state_operator_p(parser) ? PM_LEX_STATE_ARG : PM_LEX_STATE_BEG);
