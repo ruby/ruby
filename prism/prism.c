@@ -2195,14 +2195,22 @@ pm_regular_expression_flags_create(pm_parser_t *parser, const pm_token_t *closin
 
         size_t unknown_flags_length = pm_buffer_length(&unknown_flags);
         if (unknown_flags_length != 0) {
-            const char *word = unknown_flags_length >= 2 ? "options" : "option";
+            pm_string_t word;
+            if (unknown_flags_length == 1) {
+                word.source = (const uint8_t *) "option";
+                word.length = 6;
+            } else {
+                word.source = (const uint8_t *) "options";
+                word.length = 7;
+            }
+
             pm_diagnostic_list_append_slice_slice(
                 &parser->metadata_arena,
                 &parser->error_list,
                 PM_TOKEN_START(parser, &parser->previous),
                 PM_TOKEN_LENGTH(&parser->previous),
                 PM_ERR_REGEXP_UNKNOWN_OPTIONS,
-                pm_diagnostic_string(word),
+                word,
                 pm_diagnostic_slice(pm_buffer_value(&unknown_flags), unknown_flags_length)
             );
         }
