@@ -431,7 +431,11 @@ module Ruby::Prism
     end
 
     def test_nested_assignment_as_first_value_of_a_multiple_rhs
-      ["y = f(1) rescue 2", "(y = f 1 rescue 2)", "@y = (table[:k] = f 1 rescue 2)"].each do |first|
+      [
+        "y = f(1) rescue 2", "(y = f 1 rescue 2)", "@y = (table[:k] = f 1 rescue 2)",
+        "y ||= f(1) rescue 2", "(obj.value &&= f 1 rescue 2)", "table[:k] += f(1) rescue 2",
+        "y ||= (@z <<= f 1 rescue 2)"
+      ].each do |first|
         source = "x = #{first}, z"
         assert_location(ArrayNode, source, 4...source.length) do |write|
           assert_equal [first, "z"], write.value.elements.map(&:slice)
