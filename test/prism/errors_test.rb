@@ -273,6 +273,26 @@ module Ruby::Prism
       assert_equal [4, 4, 0], result.errors.map { |error| error.location.start_offset }
     end
 
+    def test_unexpected_backslash
+      {
+        "\\ " => "escaped space",
+        "\\\f" => "escaped form feed",
+        "\\\t" => "escaped horizontal tab",
+        "\\\v" => "escaped vertical tab",
+        "\\\r" => "escaped carriage return",
+        "\\" => "backslash"
+      }.each do |escape, description|
+        result = Ruby::Prism.parse("#{escape}1")
+        assert_equal [:unexpected_token_ignore], result.errors.map(&:type)
+        assert_equal "unexpected #{description}, ignoring it", result.errors.first.message
+        assert_equal escape, result.errors.first.location.slice
+        assert_equal 1, result.value.statements.body.first.value
+      end
+
+      assert_empty Ruby::Prism.parse("\\\n1").errors
+      assert_empty Ruby::Prism.parse("\\\r\n1").errors
+    end
+
     def test_regexp_encoding_option_mismatch_error
       # UTF-8 char with ASCII-8BIT modifier
       result = Ruby::Prism.parse('/Ȃ/n')
