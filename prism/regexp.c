@@ -542,6 +542,32 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
     return pm_regexp_offsets_map(parser->offsets, parser->source_start, content, start);
 }
 
+/** Report a message followed by the quoted regular expression and its options. */
+static void
+pm_regexp_error_with_content(const pm_regexp_t *regexp, uint32_t start, uint32_t length, const char *message, size_t message_length) {
+    pm_parser_t *parser = regexp->parser;
+
+    char letters[3];
+    size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
+
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, message, message_length);
+    pm_buffer_append_string(&buffer, ": /", 3);
+    pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
+    pm_buffer_append_byte(&buffer, '/');
+    pm_buffer_append_string(&buffer, letters, letters_length);
+
+    pm_diagnostic_list_append_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        start,
+        length,
+        PM_ERR_REGEXP_PARSE_ERROR,
+        pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length)
+    );
+    pm_buffer_cleanup(&buffer);
+}
+
 /**
  * Append a syntax error to the parser's error list, at the place in the source
  * of the given range of the content. The first eight messages are followed by
@@ -549,7 +575,7 @@ pm_regexp_source_offset(const pm_regexp_parser_t *parser, const uint8_t *positio
  * parenthesis: /a)/i".
  */
 static void
-pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message) {
+pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, const uint8_t *end, const char *message, size_t message_length) {
     pm_parser_t *parser = regexp_parser->parser;
     const pm_regexp_t *regexp = regexp_parser->regexp;
 
@@ -565,31 +591,52 @@ pm_regexp_parse_error(pm_regexp_parser_t *regexp_parser, const uint8_t *start, c
             source_start,
             source_end - source_start,
             PM_ERR_REGEXP_PARSE_ERROR,
-            pm_diagnostic_string(message)
+            (pm_string_t) { .source = (const uint8_t *) message, .length = message_length }
         );
     } else {
         regexp_parser->quoted_errors++;
-
-        char letters[3];
-        size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
-
-        pm_buffer_t buffer = { 0 };
-        pm_buffer_append_string(&buffer, message, strlen(message));
-        pm_buffer_append_string(&buffer, ": /", 3);
-        pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
-        pm_buffer_append_byte(&buffer, '/');
-        pm_buffer_append_string(&buffer, letters, letters_length);
-
-        pm_diagnostic_list_append_slice(
-            &parser->metadata_arena,
-            &parser->error_list,
-            source_start,
-            source_end - source_start,
-            PM_ERR_REGEXP_PARSE_ERROR,
-            pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length)
-        );
-        pm_buffer_cleanup(&buffer);
+        pm_regexp_error_with_content(regexp, source_start, source_end - source_start, message, message_length);
     }
+}
+
+/* Report a literal message using its compile-time length. */
+#define PM_REGEXP_PARSE_ERROR(parser_, start_, end_, message_) \
+    pm_regexp_parse_error((parser_), (start_), (end_), "" message_, sizeof(message_) - 1)
+
+/** The text around a name quoted in a regular expression error. */
+typedef struct {
+    const char *before;
+    const char *after;
+    uint8_t before_length;
+    uint8_t after_length;
+} pm_regexp_quoted_error_t;
+
+#define PM_REGEXP_QUOTED_ERROR(before_, after_) \
+    { .before = "" before_, .after = "" after_, .before_length = sizeof(before_) - 1, .after_length = sizeof(after_) - 1 }
+
+static const pm_regexp_quoted_error_t pm_regexp_invalid_property_name = PM_REGEXP_QUOTED_ERROR("invalid character property name {", "}");
+static const pm_regexp_quoted_error_t pm_regexp_invalid_group_name = PM_REGEXP_QUOTED_ERROR("invalid group name <", ">");
+static const pm_regexp_quoted_error_t pm_regexp_invalid_char_in_group_name = PM_REGEXP_QUOTED_ERROR("invalid char in group name <", ">");
+static const pm_regexp_quoted_error_t pm_regexp_undefined_group = PM_REGEXP_QUOTED_ERROR("undefined group <", "> reference");
+static const pm_regexp_quoted_error_t pm_regexp_undefined_name = PM_REGEXP_QUOTED_ERROR("undefined name <", "> reference");
+static const pm_regexp_quoted_error_t pm_regexp_multiplex_name = PM_REGEXP_QUOTED_ERROR("multiplex definition name <", "> call");
+
+#undef PM_REGEXP_QUOTED_ERROR
+
+/**
+ * Report an error that quotes a name, like "undefined group <2> reference".
+ */
+static void
+pm_regexp_parse_quoted_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const pm_regexp_quoted_error_t *error) {
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, error->before, error->before_length);
+    pm_buffer_append_bytes(&buffer, start, (size_t) (end - start));
+    pm_buffer_append_string(&buffer, error->after, error->after_length);
+
+    /* A NUL in the name ends the message before the quoted regexp is appended. */
+    pm_string_t message = pm_diagnostic_slice(buffer.value, buffer.length);
+    pm_regexp_parse_error(parser, start, end, buffer.value, message.length);
+    pm_buffer_cleanup(&buffer);
 }
 
 /**
@@ -797,7 +844,7 @@ pm_regexp_parse_interval(pm_regexp_parser_t *parser) {
 
     uint32_t lower;
     if (!pm_regexp_parse_interval_bound(parser, &cursor, &lower)) {
-        pm_regexp_parse_error(parser, start, cursor, "too big number for repeat range");
+        PM_REGEXP_PARSE_ERROR(parser, start, cursor, "too big number for repeat range");
         return PM_REGEXP_INTERVAL_INVALID;
     }
 
@@ -808,7 +855,7 @@ pm_regexp_parse_interval(pm_regexp_parser_t *parser) {
     if (cursor < end && *cursor == ',') {
         const uint8_t *digits = ++cursor;
         if (!pm_regexp_parse_interval_bound(parser, &cursor, &upper)) {
-            pm_regexp_parse_error(parser, start, cursor, "too big number for repeat range");
+            PM_REGEXP_PARSE_ERROR(parser, start, cursor, "too big number for repeat range");
             return PM_REGEXP_INTERVAL_INVALID;
         }
 
@@ -825,7 +872,7 @@ pm_regexp_parse_interval(pm_regexp_parser_t *parser) {
     cursor++;
 
     if (has_upper && lower > upper) {
-        pm_regexp_parse_error(parser, start, cursor, "upper is smaller than lower in repeat range");
+        PM_REGEXP_PARSE_ERROR(parser, start, cursor, "upper is smaller than lower in repeat range");
         return PM_REGEXP_INTERVAL_INVALID;
     }
 
@@ -1021,16 +1068,7 @@ pm_regexp_parse_property_escape(pm_regexp_parser_t *parser) {
         if (byte == '(' || byte == ')' || byte == '{' || byte == '|') break;
     }
 
-    pm_buffer_t buffer = { 0 };
-    const char *message = "invalid character property name {";
-    pm_buffer_append_string(&buffer, message, strlen(message));
-    pm_buffer_append_string(&buffer, (const char *) name_start, (size_t) (previous - name_start));
-    pm_buffer_append_byte(&buffer, '}');
-    pm_buffer_append_byte(&buffer, '\0');
-
-    pm_regexp_parse_error(parser, name_start, previous, pm_buffer_value(&buffer));
-    pm_buffer_cleanup(&buffer);
-
+    pm_regexp_parse_quoted_error(parser, name_start, previous, &pm_regexp_invalid_property_name);
     return true;
 }
 
@@ -1061,23 +1099,6 @@ pm_regexp_parse_hex_escape(pm_regexp_parser_t *parser) {
     for (int index = 0; index < 2 && !pm_regexp_char_is_eof(parser) && pm_char_is_hexadecimal_digit(*parser->cursor); index++) {
         parser->cursor++;
     }
-}
-
-/**
- * Report an error about the name of a group, like "invalid group name <1x>",
- * that quotes the name, which runs from start to end.
- */
-static void
-pm_regexp_parse_name_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *message) {
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, message, strlen(message));
-    pm_buffer_append_string(&buffer, " <", 2);
-    pm_buffer_append_string(&buffer, (const char *) start, (size_t) (end - start));
-    pm_buffer_append_byte(&buffer, '>');
-    pm_buffer_append_byte(&buffer, '\0');
-
-    pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
-    pm_buffer_cleanup(&buffer);
 }
 
 /**
@@ -1143,7 +1164,7 @@ pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_r
     const uint8_t *start = parser->cursor;
 
     if (parser->cursor >= parser->end || *parser->cursor == close) {
-        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        PM_REGEXP_PARSE_ERROR(parser, start, parser->cursor, "group name is empty");
         return false;
     }
 
@@ -1164,7 +1185,7 @@ pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_r
     pm_regexp_skip_char(parser);
 
     const uint8_t *name_end = parser->end;
-    const char *message = NULL;
+    const pm_regexp_quoted_error_t *error = NULL;
     bool closed = false;
 
     while (parser->cursor < parser->end) {
@@ -1175,7 +1196,7 @@ pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_r
             pm_regexp_skip_char(parser);
 
             if (kind == SIGN) {
-                message = "invalid group name";
+                error = &pm_regexp_invalid_group_name;
             } else {
                 closed = (byte == close);
             }
@@ -1189,7 +1210,7 @@ pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_r
                 continue;
             }
 
-            message = pm_regexp_word_char_p(parser) ? "invalid group name" : "invalid char in group name";
+            error = pm_regexp_word_char_p(parser) ? &pm_regexp_invalid_group_name : &pm_regexp_invalid_char_in_group_name;
             pm_regexp_skip_char(parser);
             break;
         }
@@ -1197,7 +1218,7 @@ pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_r
         pm_regexp_skip_char(parser);
     }
 
-    if (message != NULL) {
+    if (error != NULL) {
         /* After an error, the engine still looks for the character that would
          * end the name, to quote the name up to it, or to the end of the
          * pattern when the name runs there. */
@@ -1209,24 +1230,24 @@ pm_regexp_parse_reference(pm_regexp_parser_t *parser, uint8_t close, pm_regexp_r
         }
 
         if (parser->cursor >= parser->end) name_end = parser->end;
-        pm_regexp_parse_name_error(parser, start, name_end, message);
+        pm_regexp_parse_quoted_error(parser, start, name_end, error);
         return false;
     }
 
     if (!closed) {
-        pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+        pm_regexp_parse_quoted_error(parser, start, parser->end, &pm_regexp_invalid_group_name);
         return false;
     }
 
     uint32_t number = 0;
     if (kind != NAME) {
         if (!pm_regexp_reference_number(parser, digits, name_end, &number)) {
-            pm_regexp_parse_error(parser, start, name_end, "too big number");
+            PM_REGEXP_PARSE_ERROR(parser, start, name_end, "too big number");
             return false;
         }
 
         if (number == 0) {
-            pm_regexp_parse_name_error(parser, start, name_end, "invalid group name");
+            pm_regexp_parse_quoted_error(parser, start, name_end, &pm_regexp_invalid_group_name);
             return false;
         }
     }
@@ -1250,7 +1271,7 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
     const uint8_t *start = parser->cursor;
 
     if (parser->cursor >= parser->end || *parser->cursor == close) {
-        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        PM_REGEXP_PARSE_ERROR(parser, start, parser->cursor, "group name is empty");
         return false;
     }
 
@@ -1272,7 +1293,7 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
     pm_regexp_skip_char(parser);
 
     const uint8_t *name_end = parser->end;
-    const char *message = NULL;
+    const pm_regexp_quoted_error_t *error = NULL;
     uint8_t terminator = 0;
 
     while (parser->cursor < parser->end) {
@@ -1282,7 +1303,7 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
         if (byte == close || byte == ')' || byte == '+' || byte == '-') {
             pm_regexp_skip_char(parser);
             terminator = byte;
-            if (kind == SIGN) message = "invalid group name";
+            if (kind == SIGN) error = &pm_regexp_invalid_group_name;
             break;
         }
 
@@ -1294,19 +1315,19 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
             }
 
             /* The rest of the name is still read, as a name. */
-            message = "invalid group name";
+            error = &pm_regexp_invalid_group_name;
             kind = NAME;
         }
 
         pm_regexp_skip_char(parser);
     }
 
-    if (message == NULL && terminator != close) {
+    if (error == NULL && terminator != close) {
         bool valid = false;
 
         if (terminator == '+' || terminator == '-') {
             if (parser->cursor >= parser->end) {
-                pm_regexp_parse_name_error(parser, start, name_end, "invalid char in group name");
+                pm_regexp_parse_quoted_error(parser, start, name_end, &pm_regexp_invalid_char_in_group_name);
                 return false;
             }
 
@@ -1315,7 +1336,7 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
 
                 while (parser->cursor < parser->end && pm_regexp_digit(parser, parser->cursor, &width, &digit)) {
                     if (!pm_regexp_number_append(&level, digit)) {
-                        pm_regexp_parse_error(parser, start, parser->cursor, "too big number");
+                        PM_REGEXP_PARSE_ERROR(parser, start, parser->cursor, "too big number");
                         return false;
                     }
                     parser->cursor += width;
@@ -1330,25 +1351,25 @@ pm_regexp_parse_reference_with_level(pm_regexp_parser_t *parser, uint8_t close, 
         }
 
         if (!valid) {
-            pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+            pm_regexp_parse_quoted_error(parser, start, parser->end, &pm_regexp_invalid_group_name);
             return false;
         }
     }
 
-    if (message != NULL) {
-        pm_regexp_parse_name_error(parser, start, name_end, message);
+    if (error != NULL) {
+        pm_regexp_parse_quoted_error(parser, start, name_end, error);
         return false;
     }
 
     uint32_t number = 0;
     if (kind == NUMBER) {
         if (!pm_regexp_reference_number(parser, digits, name_end, &number)) {
-            pm_regexp_parse_error(parser, start, name_end, "too big number");
+            PM_REGEXP_PARSE_ERROR(parser, start, name_end, "too big number");
             return false;
         }
 
         if (number == 0) {
-            pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+            pm_regexp_parse_quoted_error(parser, start, parser->end, &pm_regexp_invalid_group_name);
             return false;
         }
     }
@@ -1400,19 +1421,12 @@ pm_regexp_check_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_
     if (reference->number == 0) {
         if (pm_regexp_name_count(parser, reference->start, reference->end) > 0) return true;
 
-        pm_buffer_t buffer = { 0 };
-        pm_buffer_append_string(&buffer, "undefined name <", 16);
-        pm_buffer_append_string(&buffer, (const char *) reference->start, (size_t) (reference->end - reference->start));
-        pm_buffer_append_string(&buffer, "> reference", 11);
-        pm_buffer_append_byte(&buffer, '\0');
-
-        pm_regexp_parse_error(parser, reference->start, reference->end, pm_buffer_value(&buffer));
-        pm_buffer_cleanup(&buffer);
+        pm_regexp_parse_quoted_error(parser, reference->start, reference->end, &pm_regexp_undefined_name);
         return false;
     }
 
     if (reference->number < 0 && (int64_t) parser->groups + 1 + reference->number <= 0) {
-        pm_regexp_parse_error(parser, reference->start, reference->end, "invalid backref number/name");
+        PM_REGEXP_PARSE_ERROR(parser, reference->start, reference->end, "invalid backref number/name");
         return false;
     }
 
@@ -1431,7 +1445,7 @@ pm_regexp_check_relative_call(pm_regexp_parser_t *parser, const pm_regexp_refere
     int64_t number = reference->number > 0 ? reference->number - 1 : reference->number;
     if ((int64_t) parser->groups + 1 + number > 0) return true;
 
-    pm_regexp_parse_error(parser, reference->start, reference->end, "invalid backref number/name");
+    PM_REGEXP_PARSE_ERROR(parser, reference->start, reference->end, "invalid backref number/name");
     return false;
 }
 
@@ -1447,22 +1461,6 @@ pm_regexp_defer_reference(pm_regexp_parser_t *parser, const pm_regexp_reference_
     int64_t number = reference->number;
     if (number < 0) number += (int64_t) parser->groups + 1;
     pm_regexp_defer(parser, type, reference->start, reference->end, number);
-}
-
-/**
- * Report an error that quotes a name, like "undefined group <2> reference",
- * with the given text before and after the name.
- */
-static void
-pm_regexp_parse_quoted_error(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, const char *before, const char *after) {
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, before, strlen(before));
-    pm_buffer_append_string(&buffer, (const char *) start, (size_t) (end - start));
-    pm_buffer_append_string(&buffer, after, strlen(after));
-    pm_buffer_append_byte(&buffer, '\0');
-
-    pm_regexp_parse_error(parser, start, end, pm_buffer_value(&buffer));
-    pm_buffer_cleanup(&buffer);
 }
 
 /**
@@ -1488,31 +1486,31 @@ pm_regexp_check_deferreds(pm_regexp_parser_t *parser) {
                 bool remap_error = deferred->type == PM_REGEXP_DEFERRED_CONDITION_NUMBER &&
                     parser->groups > parser->names.size && out_of_range;
                 if (named && !remap_error) {
-                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
+                    PM_REGEXP_PARSE_ERROR(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
                 } else if (out_of_range) {
-                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "invalid backref number/name");
+                    PM_REGEXP_PARSE_ERROR(parser, deferred->start, deferred->end, "invalid backref number/name");
                 }
                 break;
             }
             case PM_REGEXP_DEFERRED_NAMED_NUMBER:
                 if (deferred->number > (int64_t) parser->groups) {
-                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "invalid backref number/name");
+                    PM_REGEXP_PARSE_ERROR(parser, deferred->start, deferred->end, "invalid backref number/name");
                 }
                 break;
             case PM_REGEXP_DEFERRED_CALL_NUMBER:
                 if (named) {
-                    pm_regexp_parse_error(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
+                    PM_REGEXP_PARSE_ERROR(parser, deferred->start, deferred->end, "numbered backref/call is not allowed. (use name)");
                 } else if (deferred->number > (int64_t) parser->groups) {
-                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, "undefined group <", "> reference");
+                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, &pm_regexp_undefined_group);
                 }
                 break;
             case PM_REGEXP_DEFERRED_CALL_NAME: {
                 size_t count = pm_regexp_name_count(parser, deferred->start, deferred->end);
 
                 if (count == 0) {
-                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, "undefined name <", "> reference");
+                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, &pm_regexp_undefined_name);
                 } else if (count > 1) {
-                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, "multiplex definition name <", "> call");
+                    pm_regexp_parse_quoted_error(parser, deferred->start, deferred->end, &pm_regexp_multiplex_name);
                 }
                 break;
             }
@@ -1920,7 +1918,7 @@ pm_regexp_parse_posix_bracket(pm_regexp_parser_t *parser, const uint8_t *start) 
 
             cursor += length;
             if (end - cursor < 2 || cursor[0] != ':' || cursor[1] != ']') {
-                pm_regexp_parse_error(parser, start, cursor, "invalid POSIX bracket type");
+                PM_REGEXP_PARSE_ERROR(parser, start, cursor, "invalid POSIX bracket type");
                 return PM_REGEXP_POSIX_BRACKET_INVALID;
             }
 
@@ -1937,7 +1935,7 @@ pm_regexp_parse_posix_bracket(pm_regexp_parser_t *parser, const uint8_t *start) 
     }
 
     if (end - cursor >= 2 && cursor[0] == ':' && cursor[1] == ']') {
-        pm_regexp_parse_error(parser, start, cursor + 2, "invalid POSIX bracket type");
+        PM_REGEXP_PARSE_ERROR(parser, start, cursor + 2, "invalid POSIX bracket type");
         return PM_REGEXP_POSIX_BRACKET_INVALID;
     }
 
@@ -1987,7 +1985,7 @@ pm_regexp_class_add_char(pm_regexp_parser_t *parser, pm_regexp_class_t *characte
     switch (character_class->state) {
         case PM_REGEXP_CLASS_STATE_RANGE:
             if (character_class->value > value) {
-                pm_regexp_parse_error(parser, character_class->start, parser->cursor, "empty range in char class");
+                PM_REGEXP_PARSE_ERROR(parser, character_class->start, parser->cursor, "empty range in char class");
                 return false;
             }
             character_class->state = PM_REGEXP_CLASS_STATE_COMPLETE;
@@ -2013,7 +2011,7 @@ pm_regexp_class_add_char(pm_regexp_parser_t *parser, pm_regexp_class_t *characte
 static bool
 pm_regexp_class_add_set(pm_regexp_parser_t *parser, pm_regexp_class_t *character_class, const uint8_t *start) {
     if (character_class->state == PM_REGEXP_CLASS_STATE_RANGE) {
-        pm_regexp_parse_error(parser, character_class->start, parser->cursor, "char-class value at end of range");
+        PM_REGEXP_PARSE_ERROR(parser, character_class->start, parser->cursor, "char-class value at end of range");
         return false;
     }
 
@@ -2038,7 +2036,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
     const uint8_t *open = parser->cursor - 1;
 
     if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
-        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        PM_REGEXP_PARSE_ERROR(parser, parser->start, parser->end, "parse depth limit over");
         return false;
     }
 
@@ -2058,7 +2056,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
      * another ] comes later in the pattern. Otherwise the class is empty. */
     if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE) {
         if (pm_memchr_boundary(parser->cursor, ']', (size_t) (parser->end - parser->cursor), parser->encoding) == NULL) {
-            pm_regexp_parse_error(parser, token.start, parser->cursor, "empty char-class");
+            PM_REGEXP_PARSE_ERROR(parser, token.start, parser->cursor, "empty char-class");
             return false;
         }
 
@@ -2073,7 +2071,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
 
         switch (token.type) {
             case PM_REGEXP_CLASS_TOKEN_EOF:
-                pm_regexp_parse_error(parser, open, parser->end, "premature end of char-class");
+                PM_REGEXP_PARSE_ERROR(parser, open, parser->end, "premature end of char-class");
                 return false;
             case PM_REGEXP_CLASS_TOKEN_CHAR:
                 if (!pm_regexp_class_add_char(parser, &character_class, token.value, token.start)) return false;
@@ -2110,7 +2108,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
                         if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE || token.type == PM_REGEXP_CLASS_TOKEN_AND) {
                             if (!pm_regexp_class_add_char(parser, &character_class, '-', range)) return false;
                         } else if (character_class.set) {
-                            pm_regexp_parse_error(parser, character_class.start, parser->cursor, "unmatched range specifier in char-class");
+                            PM_REGEXP_PARSE_ERROR(parser, character_class.start, parser->cursor, "unmatched range specifier in char-class");
                             return false;
                         } else {
                             character_class.state = PM_REGEXP_CLASS_STATE_RANGE;
@@ -2166,12 +2164,12 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
     const uint8_t *start = parser->cursor;
 
     if (parser->cursor >= parser->end) {
-        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        PM_REGEXP_PARSE_ERROR(parser, start, parser->cursor, "group name is empty");
         return false;
     }
 
     if (*parser->cursor == close) {
-        pm_regexp_parse_error(parser, start, parser->cursor, "group name is empty");
+        PM_REGEXP_PARSE_ERROR(parser, start, parser->cursor, "group name is empty");
         parser->cursor++;
         return true;
     }
@@ -2188,7 +2186,7 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
 
     if (invalid) {
         /* The engine quotes the name up to the character that would end it. */
-        pm_regexp_parse_name_error(parser, start, parser->cursor, "invalid group name");
+        pm_regexp_parse_quoted_error(parser, start, parser->cursor, &pm_regexp_invalid_group_name);
         if (parser->cursor >= parser->end || *parser->cursor != close) return false;
 
         parser->groups++;
@@ -2198,7 +2196,7 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
 
     if (parser->cursor >= parser->end || *parser->cursor != close) {
         /* A name that is not closed is quoted to the end of the pattern. */
-        pm_regexp_parse_name_error(parser, start, parser->end, "invalid group name");
+        pm_regexp_parse_quoted_error(parser, start, parser->end, &pm_regexp_invalid_group_name);
         return false;
     }
 
@@ -2217,7 +2215,7 @@ pm_regexp_parse_group_name(pm_regexp_parser_t *parser, uint8_t close) {
 static bool
 pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start) {
     if (pm_regexp_char_is_eof(parser)) {
-        pm_regexp_parse_error(parser, group_start, parser->cursor, "undefined group option");
+        PM_REGEXP_PARSE_ERROR(parser, group_start, parser->cursor, "undefined group option");
         return false;
     }
 
@@ -2240,7 +2238,7 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
 
             /* The name must be followed by the ) that ends the condition. */
             if (parser->cursor >= parser->end || *parser->cursor != ')') {
-                pm_regexp_parse_error(parser, parser->cursor, parser->cursor, "undefined group option");
+                PM_REGEXP_PARSE_ERROR(parser, parser->cursor, parser->cursor, "undefined group option");
                 return false;
             }
 
@@ -2248,7 +2246,7 @@ pm_regexp_parse_condition(pm_regexp_parser_t *parser, const uint8_t *group_start
             return true;
         }
         default:
-            pm_regexp_parse_error(parser, parser->cursor, parser->cursor + 1, "invalid conditional pattern");
+            PM_REGEXP_PARSE_ERROR(parser, parser->cursor, parser->cursor + 1, "invalid conditional pattern");
             return false;
     }
 }
@@ -2306,7 +2304,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
         parser->groups++;
     } else {
         if (pm_regexp_char_is_eof(parser)) {
-            pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
+            PM_REGEXP_PARSE_ERROR(parser, group_start, parser->cursor, "end pattern in group");
             return false;
         }
 
@@ -2325,7 +2323,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
                     if (byte == '\\' && parser->cursor < parser->end) pm_regexp_skip_char(parser);
                 }
 
-                pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
+                PM_REGEXP_PARSE_ERROR(parser, group_start, parser->cursor, "end pattern in group");
                 return false;
             }
             case ':': // non-capturing group
@@ -2338,7 +2336,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
             case '<':
                 parser->cursor++;
                 if (pm_regexp_char_is_eof(parser)) {
-                    pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
+                    PM_REGEXP_PARSE_ERROR(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
                     return false;
                 }
 
@@ -2371,7 +2369,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
 
                 while (true) {
                     if (pm_regexp_char_is_eof(parser)) {
-                        pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern in group");
+                        PM_REGEXP_PARSE_ERROR(parser, group_start, parser->cursor, "end pattern in group");
                         return false;
                     }
 
@@ -2394,7 +2392,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
                             if (!negated) break;
                             PRISM_FALLTHROUGH
                         default:
-                            pm_regexp_parse_error(parser, parser->cursor, parser->cursor + 1, "undefined group option");
+                            PM_REGEXP_PARSE_ERROR(parser, parser->cursor, parser->cursor + 1, "undefined group option");
                             return false;
                     }
 
@@ -2414,7 +2412,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
             }
             default:
                 parser->cursor++;
-                pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "undefined group option");
+                PM_REGEXP_PARSE_ERROR(parser, parser->cursor - 1, parser->cursor, "undefined group option");
                 break;
         }
     }
@@ -2435,7 +2433,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
         }
 
         if (pm_regexp_char_accept(parser, '|') && conditional && ++alternatives == 3) {
-            pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "invalid conditional pattern");
+            PM_REGEXP_PARSE_ERROR(parser, parser->cursor - 1, parser->cursor, "invalid conditional pattern");
         }
     }
 
@@ -2443,7 +2441,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth, bool *options_
     parser->extended_mode = extended_mode;
     if (pm_regexp_char_expect(parser, ')')) return true;
 
-    pm_regexp_parse_error(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
+    PM_REGEXP_PARSE_ERROR(parser, group_start, parser->cursor, "end pattern with unmatched parenthesis");
     return false;
 }
 
@@ -2487,7 +2485,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
         case '?':
         case '+':
             parser->cursor++;
-            pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "target of repeat operator is not specified");
+            PM_REGEXP_PARSE_ERROR(parser, parser->cursor - 1, parser->cursor, "target of repeat operator is not specified");
             return true;
         case '{': {
             const uint8_t *start = parser->cursor++;
@@ -2499,7 +2497,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
                     /* The { is a character. */
                     return pm_regexp_parse_quantifier(parser);
                 case PM_REGEXP_INTERVAL_VALID:
-                    pm_regexp_parse_error(parser, start, parser->cursor, "target of repeat operator is not specified");
+                    PM_REGEXP_PARSE_ERROR(parser, start, parser->cursor, "target of repeat operator is not specified");
                     return true;
             }
 
@@ -2507,7 +2505,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
         }
         case ')':
             parser->cursor++;
-            pm_regexp_parse_error(parser, parser->cursor - 1, parser->cursor, "unmatched close parenthesis");
+            PM_REGEXP_PARSE_ERROR(parser, parser->cursor - 1, parser->cursor, "unmatched close parenthesis");
             return true;
         case '#':
             if (parser->extended_mode) {
@@ -2547,7 +2545,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
 static bool
 pm_regexp_parse_expression(pm_regexp_parser_t *parser, uint16_t depth) {
     if (depth >= PM_REGEXP_PARSE_DEPTH_MAX) {
-        pm_regexp_parse_error(parser, parser->start, parser->end, "parse depth limit over");
+        PM_REGEXP_PARSE_ERROR(parser, parser->start, parser->end, "parse depth limit over");
         return false;
     }
 
@@ -2589,36 +2587,14 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
 // Encoding validation
 // ---------------------------------------------------------------------------
 
-/**
- * Append an error to the regular expression as a whole, followed by its
- * content, which is how errors are reported once its pattern has been read but
- * before it is parsed. The message is written out with the content, since the
- * same error kind holds any of these messages.
- */
+/** Report a preprocessing error at the whole regular expression. */
 static void
-pm_regexp_error_with_content(const pm_regexp_t *regexp, const char *message) {
-    pm_parser_t *parser = regexp->parser;
-
-    char letters[3];
-    size_t letters_length = pm_regexp_option_letters(regexp->flags, letters);
-
-    pm_buffer_t buffer = { 0 };
-    pm_buffer_append_string(&buffer, message, strlen(message));
-    pm_buffer_append_string(&buffer, ": /", 3);
-    pm_regexp_format_for_error(&buffer, regexp->encoding, regexp->source, regexp->size);
-    pm_buffer_append_byte(&buffer, '/');
-    pm_buffer_append_string(&buffer, letters, letters_length);
-
-    pm_diagnostic_list_append_slice(
-        &parser->metadata_arena,
-        &parser->error_list,
-        regexp->location.start,
-        regexp->location.length,
-        PM_ERR_REGEXP_PARSE_ERROR,
-        pm_diagnostic_slice(pm_buffer_value(&buffer), buffer.length)
-    );
-    pm_buffer_cleanup(&buffer);
+pm_regexp_preprocess_error(const pm_regexp_t *regexp, const char *message, size_t message_length) {
+    pm_regexp_error_with_content(regexp, regexp->location.start, regexp->location.length, message, message_length);
 }
+
+#define PM_REGEXP_PREPROCESS_ERROR(regexp_, message_) \
+    pm_regexp_preprocess_error((regexp_), "" message_, sizeof(message_) - 1)
 
 /**
  * Append an error of the given kind to the regular expression as a whole, where
@@ -2861,12 +2837,12 @@ pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const 
     uint32_t length;
 
     if (cursor == end || *cursor++ != '\\') {
-        pm_regexp_error_with_content(preprocessor->regexp, "too short escaped multibyte character");
+        PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "too short escaped multibyte character");
         return -1;
     }
 
     if (cursor == end) {
-        pm_regexp_error_with_content(preprocessor->regexp, "too short escape sequence");
+        PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "too short escape sequence");
         return -1;
     }
 
@@ -2886,18 +2862,18 @@ pm_regexp_preprocess_escaped_byte(pm_regexp_preprocessor_t *preprocessor, const 
         case 'x':
             code = pm_regexp_scan_digits(cursor, end, 2, 16, &length);
             if (length == 0) {
-                pm_regexp_error_with_content(preprocessor->regexp, "invalid hex escape");
+                PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid hex escape");
                 return -1;
             }
             cursor += length;
             break;
         default:
-            pm_regexp_error_with_content(preprocessor->regexp, "unexpected escape sequence");
+            PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "unexpected escape sequence");
             return -1;
     }
 
     if (code > 0xFF) {
-        pm_regexp_error_with_content(preprocessor->regexp, "invalid escape code");
+        PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid escape code");
         return -1;
     }
 
@@ -3010,7 +2986,7 @@ pm_regexp_preprocess_code_point_list(pm_regexp_preprocessor_t *preprocessor, con
     }
 
     if (!has_code_point || cursor == end || *cursor++ != '}') {
-        pm_regexp_error_with_content(preprocessor->regexp, "invalid Unicode list");
+        PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid Unicode list");
         return false;
     }
 
@@ -3115,7 +3091,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
         switch (*cursor++) {
             case '\\': {
                 if (cursor == end) {
-                    pm_regexp_error_with_content(preprocessor->regexp, "too short escape sequence");
+                    PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "too short escape sequence");
                     return false;
                 }
 
@@ -3123,7 +3099,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                     size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
                     if (width == 0) {
                         if (preprocessor->regexp->unlexed) {
-                            pm_regexp_error_with_content(preprocessor->regexp, "invalid multibyte character");
+                            PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid multibyte character");
                             return false;
                         }
 
@@ -3136,7 +3112,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                     if (width > 1) {
                         cursor += width;
                         if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
-                            pm_regexp_error_with_content(preprocessor->regexp, "non ASCII character in UTF-8 regexp");
+                            PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "non ASCII character in UTF-8 regexp");
                             return false;
                         }
                         break;
@@ -3159,7 +3135,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                         break;
                     case 'u':
                         if (cursor == end) {
-                            pm_regexp_error_with_content(preprocessor->regexp, "too short escape sequence");
+                            PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "too short escape sequence");
                             return false;
                         }
 
@@ -3173,7 +3149,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                             uint32_t length;
                             uint32_t value = pm_regexp_scan_digits(cursor, end, 4, 16, &length);
                             if (length != 4) {
-                                pm_regexp_error_with_content(preprocessor->regexp, "invalid Unicode escape");
+                                PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid Unicode escape");
                                 return false;
                             }
 
@@ -3246,7 +3222,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                             if (cursor < end) {
                                 size_t width = pm_encoding_char_width(encoding, cursor, end - cursor);
                                 if (width == 0 && preprocessor->regexp->unlexed) {
-                                    pm_regexp_error_with_content(preprocessor->regexp, "invalid multibyte character");
+                                    PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid multibyte character");
                                     return false;
                                 }
 
@@ -3306,7 +3282,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
                 size_t width = pm_encoding_char_width(encoding, cursor - 1, end - (cursor - 1));
                 if (width == 0) {
                     if (preprocessor->regexp->unlexed) {
-                        pm_regexp_error_with_content(preprocessor->regexp, "invalid multibyte character");
+                        PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "invalid multibyte character");
                         return false;
                     }
 
@@ -3315,7 +3291,7 @@ pm_regexp_preprocess_scan(pm_regexp_preprocessor_t *preprocessor, const uint8_t 
 
                 cursor += width - 1;
                 if (!pm_regexp_preprocess_fix_encoding(preprocessor, encoding)) {
-                    pm_regexp_error_with_content(preprocessor->regexp, "non ASCII character in UTF-8 regexp");
+                    PM_REGEXP_PREPROCESS_ERROR(preprocessor->regexp, "non ASCII character in UTF-8 regexp");
                     return false;
                 }
                 break;
