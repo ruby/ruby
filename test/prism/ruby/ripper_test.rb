@@ -59,24 +59,6 @@ module Ruby::Prism
     omitted_sexp_raw = [
       "bom_leading_space.txt",
       "bom_spaces.txt",
-      "dos_endings.txt",
-      "heredocs_with_fake_newlines.txt",
-      "heredocs_with_ignored_newlines.txt",
-      "seattlerb/block_call_dot_op2_brace_block.txt",
-      "seattlerb/block_command_operation_colon.txt",
-      "seattlerb/block_command_operation_dot.txt",
-      "seattlerb/heredoc__backslash_dos_format.txt",
-      "seattlerb/heredoc_backslash_nl.txt",
-      "seattlerb/heredoc_nested.txt",
-      "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
-      "tilde_heredocs.txt",
-      "unparser/corpus/semantic/dstr.txt",
-      "whitequark/dedenting_heredoc.txt",
-      "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
-      "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
-      "whitequark/ruby_bug_18878.txt",
-      "whitequark/send_block_chain_cmd.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
     ]
 
     omitted_lex = [
@@ -219,6 +201,86 @@ module Ruby::Prism
         prism.parse
         # Check that the same events are emitted, regardless of order
         assert_equal(ripper.events.sort_by(&:inspect), prism.events.sort_by(&:inspect))
+      end
+    end
+
+    def test_command_and_pattern_productions
+      [
+        "m(A::B {})", "m 1 do end.f 2", "m 1 do end.f(2) do end",
+        "loop { break m 1 do end.g }", "loop { break m(1) do end.g }",
+        "def f; return super 1 do end; end", "def f; return super 1 do end.g; end",
+        "def f; yield yield 1; end", "def f; super yield; end",
+        "not()", "not ()", "not(())", "not(a and b) in true",
+        "x in ((y))", "case x; in (y) if z; end",
+        "m(self.a = x)", "matrix[m 1, &block] = x",
+        "->(x: x) { x }", "x = 1; ->(x: x) { x }", "->(x: ->(x) { x }) { x }",
+        "(;x)", "( #;\n x)", "case x; when 1 then; y; end"
+      ].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_heredoc_string_parts
+      [
+        "<<~DOC\n\n    \#{value}tail\nDOC\n",
+        "<<~DOC\n  a\n\#{value}\n  b\nDOC\n",
+        "<<~DOC\n\n  \n\t\nDOC\n",
+        "<<~'DOC'\n  a\nb\nc\nDOC\n",
+        "<<-DOC\nfirst\\\r\nsecond\r\nDOC\r\n",
+        "<<OUTER\n\#{<<INNER}\ninner\nINNER\nouter\nOUTER\n"
+      ].each do |source|
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_for_with_a_single_splat_target
+      ["for *x in ary; end", "for * in ary; end", "for *x[k] in ary; end"].each do |source|
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_colon_colon_in_assignment_targets
+      ["for obj::x in ary; end", "for obj::x, y in ary; end", "begin; rescue => obj::x; end"].each do |source|
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_keyword_method_names_in_assignment_targets
+      ["r.class ||= v", "r::if &&= v", "r&.return += v", "r.class, a = v", "r::class, a = v", "for r::if in xs; end"].each do |source|
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_command_brace_block_ownership
+      sources = ["outer super (x) {}", "outer defined? (x) {}", "outer inner(x) {} do end"]
+      sources << "f x do end.g (y) {}.h" if RUBY_VERSION >= "4.1"
+
+      sources.each do |source|
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_keyword_parameter_registration
+      [
+        "def f(x: x +1); end", "def f(x: x /2); end", "->x: x &() {}",
+        "def f(x: (x +1)); end", "x = 0; ->(x: x +1) {}"
+      ].each do |source|
+        assert_equal Ripper.sexp_raw(source), Translation::Ripper.sexp_raw(source), source
+      end
+    end
+
+    def test_noninterpolated_word_list_spanning_a_heredoc
+      %w[w i].each do |kind|
+        source = "m <<A, %#{kind}[one\\\nbody\nA\ntwo]"
+        assert Ruby::Prism.parse_success?(source), source
+        assert_nil Ripper.sexp(source), source
+        assert_nil Translation::Ripper.sexp(source), source
+        assert_raise(SyntaxError) { Translation::Ripper.sexp_raw(source, raise_errors: true) }
       end
     end
 

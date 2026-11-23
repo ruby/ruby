@@ -6,5 +6,6 @@ t next&&do end&=
   ^~~~ Invalid next
 ''while=
   ^~~~~ expected a predicate expression for the `while` statement
-       ^ unexpected '='; target cannot be written
+       ^ unexpected '=', expecting end-of-input
+       ^ unexpected '=', ignoring it
 

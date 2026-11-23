@@ -238,6 +238,189 @@ module Ruby::Prism
       assert_location(CaseMatchNode, "case foo; in bar; in baz; else; end")
     end
 
+    def test_case_match_predicate_before_in_clause
+      assert_location(MatchPredicateNode, "case 1 in 2 in true; 3; end", 5...11) do |node|
+        node.predicate
+      end
+
+      assert_location(MatchPredicateNode, "case not 1 in 2 in false; 3; end", 9...15) do |node|
+        node.predicate.receiver
+      end
+
+      assert_location(MatchPredicateNode, "case 1 and 1 in 2 in true; 3; end", 11...17) do |node|
+        node.predicate.right
+      end
+    end
+
+    def test_match_in_case_clause_body
+      assert_location(MatchPredicateNode, "case 1; in 1; 2 in 2 in true; 3; end", 14...20) do |node|
+        assert_equal 2, node.conditions.length
+        node.conditions.first.statements.body.first
+      end
+
+      assert_location(MatchPredicateNode, "case 1; in 1; 1 + 2 in 3; end", 14...24) do |node|
+        assert_equal 1, node.conditions.length
+        node.conditions.first.statements.body.first
+      end
+
+      assert_location(MatchPredicateNode, "case 1; in 1; a.b = 1 in 1; end", 14...26) do |node|
+        assert_equal 1, node.conditions.length
+        node.conditions.first.statements.body.first
+      end
+    end
+
+    def test_do_block_in_case_clause_inside_command_arguments
+      ["when ready then", "value; when ready then", "value; when ready; else", "value; in Integer then", "value; in Integer; else"].each do |clause|
+        source = "receive case #{clause} produce do :ok end end"
+        block = "do :ok end"
+        start = source.index(block)
+        assert_location(BlockNode, source, start...(start + block.length)) do |outer|
+          assert_nil outer.block
+          case_node = outer.arguments.arguments.first
+          branch = case_node.else_clause || case_node.conditions.first
+          call = branch.statements.body.first
+          assert_equal :produce, call.name
+          call.block
+        end
+      end
+    end
+
+    def test_return_before_case_in_clause
+      assert_location(ReturnNode, "def f; case 1; in 1; return :empty in 2; :two; end; end", 21...34) do |node|
+        case_node = node.body.body.first
+        assert_equal 2, case_node.conditions.length
+        case_node.conditions.first.statements.body.first
+      end
+    end
+
+    def test_loop_jump_before_case_in_clause
+      { "break" => BreakNode, "next" => NextNode }.each do |keyword, kind|
+        jump = "#{keyword} :empty"
+        source = "loop { case 1; in 1; #{jump} in 2; :two; end }"
+        assert_location(kind, source, source.index(jump)...source.index(" in 2")) do |node|
+          case_node = node.block.body.body.first
+          assert_equal 2, case_node.conditions.length
+          case_node.conditions.first.statements.body.first
+        end
+      end
+    end
+
+    def test_multiple_assignment_in_rescue_before_case_in_clause
+      source = "case x; in 1; f rescue *xs = m 1 in 2; end"
+      assert_location(MultiWriteNode, source, 23...32) do |node|
+        assert_equal 2, node.conditions.size
+        node.conditions.first.statements.body.first.rescue_expression
+      end
+    end
+
+    def test_in_after_nested_assignment
+      assert_location(LocalVariableWriteNode, "case v; in 0; x = y = f 1 in 2; end", 14...25) do |node|
+        assert_equal 2, node.conditions.size
+        node.conditions.first.statements.body.first
+      end
+
+      assert_location(MatchPredicateNode, "case v; in 0; x = y = f(1) in 2; end", 14...31) do |node|
+        assert_equal 1, node.conditions.size
+        node.conditions.first.statements.body.first
+      end
+    end
+
+    def test_nested_command_assignment_registers_targets_before_the_call
+      source = "x = y ||= f x, y if ready"
+      assert_location(CallNode, source, 10...16) do |modifier|
+        assert_instance_of IfNode, modifier
+        write = modifier.statements.body.first
+        assert_instance_of LocalVariableWriteNode, write
+        assert_instance_of LocalVariableOrWriteNode, write.value
+        call = write.value.value
+        assert_equal [:x, :y], call.arguments.arguments.map(&:name)
+        call.arguments.arguments.each { |argument| assert_instance_of LocalVariableReadNode, argument }
+        call
+      end
+    end
+
+    def test_rescue_inside_bare_not_in_endless_def
+      assert_location(RescueModifierNode, "def f = not a rescue b rescue c", 12...31) do |node|
+        receiver = node.body.body.first.receiver
+        assert_instance_of RescueModifierNode, receiver.expression
+        receiver
+      end
+
+      assert_location(RescueModifierNode, "def f = not not a rescue b", 16...26) do |node|
+        node.body.body.first.receiver.receiver
+      end
+
+      assert_location(RescueModifierNode, "def f = not (a) rescue b", 12...24) do |node|
+        node.body.body.first.receiver
+      end
+
+      assert_location(RescueModifierNode, "def f = not(a) rescue b", 8...23) do |node|
+        node.body.body.first
+      end
+    end
+
+    def test_pattern_match_after_endless_def_with_not
+      assert_location(DefNode, "def check = not 1 in 2", 0...17) do |node|
+        assert_instance_of MatchPredicateNode, node
+        node.value
+      end
+
+      assert_location(DefNode, "def tag = not 1 => bound", 0...15) do |node|
+        assert_instance_of MatchRequiredNode, node
+        node.value
+      end
+    end
+
+    def test_call_on_jump_with_command_block
+      %w[return break next].each do |keyword|
+        source = "loop { x = #{keyword} m 1 do end.g }"
+        start = source.index(keyword)
+        assert_location(CallNode, source, start...source.index(" }")) do |node|
+          call = node.block.body.body.first.value
+          jump = call.receiver
+          assert_equal keyword, jump.keyword
+          assert_instance_of BlockNode, jump.arguments.arguments.first.block
+          assert_equal :g, call.name
+          call
+        end
+      end
+    end
+
+    def test_constant_method_after_command_block
+      source = "m case f 1 do end::C in 2; end"
+      assert_location(CallNode, source, source.index("f 1")...source.index(" in")) do |node|
+        predicate = node.arguments.arguments.first.predicate
+        assert_equal :C, predicate.name
+        assert_instance_of BlockNode, predicate.receiver.block
+        predicate
+      end
+    end
+
+    def test_rescue_after_nested_command_assignment
+      source = "targets[:k] = tmp = call_boom 1 rescue nil rescue :outer"
+      assert_location(RescueModifierNode, source) do |node|
+        write = node.expression.arguments.arguments.last
+        assert_instance_of LocalVariableWriteNode, write
+        assert_instance_of RescueModifierNode, write.value
+        node
+      end
+    end
+
+    def test_second_rescue_through_three_assignment_targets
+      source = "x = y = z ||= f(1) rescue a rescue b"
+      assert_location(RescueModifierNode, source, source.index("z ||=")...source.length) do |x_write|
+        rescue_node = x_write.value.value
+        assert_equal "z ||= f(1) rescue a", rescue_node.expression.slice
+        rescue_node
+      end
+
+      source = "x = y = z ||= f 1 rescue a rescue b"
+      assert_location(RescueModifierNode, source) do |rescue_node|
+        assert_equal "x = y = z ||= f 1 rescue a", rescue_node.expression.slice
+        rescue_node
+      end
+    end
+
     def test_ClassNode
       assert_location(ClassNode, "class Foo end")
       assert_location(ClassNode, "class Foo < Bar; end")
@@ -366,6 +549,18 @@ module Ruby::Prism
 
     def test_FlipFlopNode
       assert_location(FlipFlopNode, "if foo..bar; end", 3..11, &:predicate)
+
+      ["f(...x ? 1 : 2)", "f(y, ...x ? 1 : 2)", "super(...x ? 1 : 2)"].each do |source|
+        start = source.index("...")
+        assert_location(FlipFlopNode, source, start...(start + 4)) do |call|
+          conditional = call.arguments.arguments.last
+          assert_kind_of IfNode, conditional
+          assert_nil conditional.predicate.left
+          assert_equal "x", conditional.predicate.right.slice
+          assert_predicate conditional.predicate, :exclude_end?
+          conditional.predicate
+        end
+      end
     end
 
     def test_FloatNode
@@ -378,6 +573,10 @@ module Ruby::Prism
     def test_ForNode
       assert_location(ForNode, "for foo in bar; end")
       assert_location(ForNode, "for foo, bar in baz do end")
+      assert_location(MultiTargetNode, "for *x in ary; end", 4...6) do |node|
+        assert_instance_of LocalVariableTargetNode, node.index.rest.expression
+        node.index
+      end
     end
 
     def test_ForwardingArgumentsNode
@@ -389,6 +588,18 @@ module Ruby::Prism
     def test_ForwardingParameterNode
       assert_location(ForwardingParameterNode, "def foo(...); end", 8...11) do |node|
         node.parameters.keyword_rest
+      end
+
+      [[:first], [:first, :second]].each do |posts|
+        source = "def f(opt = 1, #{posts.join(", ")}, ...) = first"
+        start = source.index("...")
+        assert_location(ForwardingParameterNode, source, start...(start + 3)) do |node|
+          parameters = node.parameters
+          assert_equal [:opt], parameters.optionals.map(&:name)
+          assert_equal posts, parameters.posts.map(&:name)
+          assert_nil parameters.rest
+          parameters.keyword_rest
+        end
       end
     end
 
