@@ -262,7 +262,10 @@ module Ruby::Prism
     end
 
     def test_command_calls_with_blocks_before_in_clause
-      ["f &blk", "obj.f &blk", "obj.f(&blk) in Integer", "obj.f x do end.tail"].each do |predicate|
+      [
+        "f &blk", "obj.f &blk", "obj.f(&blk) in Integer", "obj.f x do end.tail",
+        "super &blk", "super(&blk) in Integer", "super do end in Integer", "super x do end.tail"
+      ].each do |predicate|
         result = Ruby::Prism.parse("case #{predicate} in P; :body; end")
         assert_predicate result, :success?, predicate
         assert_equal predicate, result.statement.predicate.slice

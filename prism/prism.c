@@ -21047,7 +21047,7 @@ parse_unary_star(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
     }
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t keyword = parser->current;
     parser_lex(parser);
@@ -21060,10 +21060,10 @@ parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         arguments.list.size == 0 &&
         ((arguments.block == NULL) || PM_NODE_TYPE_P(arguments.block, PM_BLOCK_NODE))
     ) {
-        return UP(pm_forwarding_super_node_create(parser, &keyword, &arguments));
+        return pm_reduction(UP(pm_forwarding_super_node_create(parser, &keyword, &arguments)));
     }
 
-    return UP(pm_super_node_create(parser, &keyword, &arguments));
+    return pm_call_reduction(UP(pm_super_node_create(parser, &keyword, &arguments)), &arguments);
 }
 
 static pm_range_node_t *
@@ -21212,7 +21212,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_RETURN:
             return pm_reduction(parse_jump(parser, flags, depth));
         case PM_TOKEN_KEYWORD_SUPER:
-            return pm_reduction(parse_super(parser, flags, depth));
+            return parse_super(parser, flags, depth);
         case PM_TOKEN_KEYWORD_YIELD:
             return parse_yield(parser, flags, depth);
         case PM_TOKEN_KEYWORD_CLASS:
@@ -22675,15 +22675,20 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
                 return left > PM_BINDING_POWER_MODIFIER;
             }
 
-            PRISM_FALLTHROUGH
-        case PM_SUPER_NODE:
-            /* A command_call admits composition and modifiers. A block call
-             * can also be chained. Preserve the reduction for ! command_call. */
-            if (left <= PM_BINDING_POWER_COMPOSITION) return false;
-            if (pm_command_call_value_p(parser, node) || (left < PM_BINDING_POWER_CALL && pm_block_call_p(node))) {
+            if (left > PM_BINDING_POWER_COMPOSITION && pm_command_call_value_p(parser, node)) {
+                /* Preserve the command_call reduction for a surrounding `!`. */
                 reduction->kind = PM_REDUCTION_COMMAND;
                 return true;
             }
+
+            PRISM_FALLTHROUGH
+        case PM_SUPER_NODE:
+            /* A block call can still take a call operator. */
+            if (left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL && pm_block_call_p(node)) {
+                reduction->kind = PM_REDUCTION_COMMAND;
+                return true;
+            }
+
             return false;
         case PM_DEF_NODE:
             // An endless method whose body is a command-style call (e.g.,
