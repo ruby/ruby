@@ -335,6 +335,11 @@ module Ruby::Prism
       assert_warning("# Shareable-Constant-Value: maybe\n", "invalid value for shareable_constant_value: maybe")
     end
 
+    def test_magic_comment_invalid_values_with_embedded_nul
+      source = "# -*- Warn-Indent: \"bad\0value\"; Frozen-String-Literal: other -*-"
+      assert_equal ["invalid value for warn_indent: bad", "invalid value for frozen_string_literal: other"], Ruby::Prism.parse(source).warnings.map(&:message)
+    end
+
     def test_string_in_predicate
       assert_warning("if 'foo'; end", "string")
       assert_warning("if \"\#{foo}\"; end", "string")
