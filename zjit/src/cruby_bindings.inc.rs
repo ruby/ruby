@@ -605,9 +605,14 @@ pub struct iseq_inline_constant_cache_entry {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+pub struct rb_const_path {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_constant_cache {
     pub entry: *mut iseq_inline_constant_cache_entry,
-    pub segments: *const ID,
+    pub path: *const rb_const_path,
 }
 #[repr(C)]
 pub struct iseq_inline_iv_cache_entry {
@@ -2648,4 +2653,7 @@ unsafe extern "C" {
         length: usize,
     ) -> *const ::std::os::raw::c_void;
     pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
+}
+unsafe extern "C" {
+    pub fn rb_const_path_id_at(path: *const rb_const_path, idx: ::std::os::raw::c_long) -> ID;
 }

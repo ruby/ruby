@@ -99,7 +99,7 @@ pub struct JITState<'a> {
 
     /// A list of constant expression path segments that must have
     /// not been written to for the block to be valid.
-    pub stable_constant_names_assumption: Option<*const ID>,
+    pub stable_constant_names_assumption: Option<*const rb_const_path>,
 
     /// A list of classes that are not supposed to have a singleton class.
     pub no_singleton_class_assumptions: Vec<VALUE>,
@@ -403,7 +403,7 @@ impl<'a> JITState<'a> {
         unsafe { get_ec_cfp(self.ec) }
     }
 
-    pub fn assume_stable_constant_names(&mut self, asm: &mut Assembler, id: *const ID) -> Option<()> {
+    pub fn assume_stable_constant_names(&mut self, asm: &mut Assembler, id: *const rb_const_path) -> Option<()> {
         jit_ensure_block_entry_exit(self, asm)?;
         self.stable_constant_names_assumption = Some(id);
 
@@ -10545,7 +10545,7 @@ fn gen_opt_getconstant_path(
 ) -> Option<CodegenStatus> {
     let const_cache_as_value = jit.get_arg(0);
     let ic: *const iseq_inline_constant_cache = const_cache_as_value.as_ptr();
-    let idlist: *const ID = unsafe { (*ic).segments };
+    let idlist: *const rb_const_path = unsafe { (*ic).path };
 
     // Make sure there is an exit for this block as the interpreter might want
     // to invalidate this block from yjit_constant_ic_update().

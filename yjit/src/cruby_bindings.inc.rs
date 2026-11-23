@@ -461,9 +461,14 @@ pub struct iseq_inline_constant_cache_entry {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+pub struct rb_const_path {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_constant_cache {
     pub entry: *mut iseq_inline_constant_cache_entry,
-    pub segments: *const ID,
+    pub path: *const rb_const_path,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1424,4 +1429,7 @@ extern "C" {
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
+}
+unsafe extern "C" {
+    pub fn rb_const_path_id_at(path: *const rb_const_path, idx: ::std::os::raw::c_long) -> ID;
 }

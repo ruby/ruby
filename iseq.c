@@ -35,6 +35,7 @@
 #include "internal/sanitizers.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
+#include "symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
@@ -130,93 +131,183 @@ remove_from_constant_cache(ID id, IC ic)
 }
 
 /*
- * Constant path segment lists (IC->segments) are interned in a prefix tree:
- * every opt_getconstant_path with the same path (e.g. `Foo::Bar`) shares one
- * 0-terminated ID list. A large app has ~8x more constant references than
- * distinct paths, and most lists are 1-4 IDs.
+ * Constant paths (IC->path, e.g. `Foo::Bar`) are nodes of a VM-wide prefix
+ * tree, like object shapes: one node per segment, pointing at its parent.
+ * Every opt_getconstant_path with the same path shares the leaf node.
  *
- * Each node stores its full path so IC->segments stays a plain ID list for
- * the interpreter and the JITs. Nodes are bump-allocated and never freed
- * (like object shapes), so freeing an ISeq doesn't touch the tree.
+ * Nodes are 16 bytes, bump-allocated in chunks and never freed, so neither
+ * compiling nor freeing an ISeq allocates or frees anything per constant
+ * reference. Parent and child links are 32-bit node indexes. Node 0 is the
+ * root of relative paths and node 1 the root of `::`-prefixed ones.
+ *
+ * The tree only grows, under the VM lock. Readers walk parent links without
+ * the lock: a node never changes after it is published, and chunks never move.
  */
-struct const_path_node {
-    /* 0: no children, a node pointer: one child, or a tagged rb_id_table. */
-    VALUE edges;
-    ID ids[FLEX_ARY_LEN];
+struct rb_const_path {
+    ID id;
+    uint32_t parent;
+    /* 0: no children. Otherwise the only child's index, or, with
+     * CONST_PATH_EDGES_TABLE set, an index into const_path_edge_tables. */
+    uint32_t edges;
 };
 
-#define CONST_PATH_EDGES_TABLE_P(e) ((e) & 1)
-#define CONST_PATH_EDGES_TABLE(e) ((struct rb_id_table *)((e) & ~(VALUE)1))
+#define CONST_PATH_ROOT 0
+#define CONST_PATH_TOPLEVEL_ROOT 1
+#define CONST_PATH_EDGES_TABLE ((uint32_t)1 << 31)
+#define CONST_PATH_CHUNK_BITS 12
+#define CONST_PATH_CHUNK_LEN ((uint32_t)1 << CONST_PATH_CHUNK_BITS)
+#define CONST_PATH_MAX_NODES CONST_PATH_EDGES_TABLE
 
-struct const_path_arena {
-    struct const_path_arena *next;
-    size_t used, capa;
-    char data[FLEX_ARY_LEN];
+struct const_path_edge {
+    rb_id_serial_t key;
+    uint32_t child;
 };
 
-#define CONST_PATH_ARENA_SIZE (64 * 1024)
+/* Open-addressed child table for nodes with more than one child. */
+struct const_path_edges {
+    uint32_t capa; /* power of two */
+    uint32_t size;
+    struct const_path_edge entries[FLEX_ARY_LEN];
+};
 
-/* Roots for relative paths and for `::`-prefixed paths (leading idNULL). */
-static VALUE const_path_roots[2];
-static struct const_path_arena *const_path_arena;
+/* Chunk pointer arrays are replaced, not reallocated, so a reader holding an
+ * old one still sees valid chunks. Replaced arrays are kept until exit. */
+struct const_path_chunks {
+    struct const_path_chunks *prev;
+    uint32_t capa;
+    struct rb_const_path *chunks[FLEX_ARY_LEN];
+};
 
-static struct const_path_node *
-const_path_node_alloc(const ID *ids, long len)
+static struct const_path_chunks *const_path_chunks;
+static uint32_t const_path_len;
+static struct const_path_edges **const_path_edge_tables;
+static uint32_t const_path_edge_tables_len, const_path_edge_tables_capa;
+
+static inline struct rb_const_path *
+const_path_at(uint32_t idx)
 {
-    size_t bytes = offsetof(struct const_path_node, ids) + (len + 1) * sizeof(ID);
-    struct const_path_arena *a = const_path_arena;
-    if (!a || a->capa - a->used < bytes) {
-        size_t capa = CONST_PATH_ARENA_SIZE - offsetof(struct const_path_arena, data);
-        if (capa < bytes) capa = bytes;
-        a = ruby_xmalloc(offsetof(struct const_path_arena, data) + capa);
-        a->next = const_path_arena;
-        a->used = 0;
-        a->capa = capa;
-        const_path_arena = a;
-    }
-    struct const_path_node *node = (struct const_path_node *)(a->data + a->used);
-    a->used += bytes;
-    node->edges = 0;
-    MEMCPY(node->ids, ids, ID, len);
-    node->ids[len] = 0;
-    return node;
+    struct const_path_chunks *c = RUBY_ATOMIC_PTR_LOAD(const_path_chunks);
+    return &c->chunks[idx >> CONST_PATH_CHUNK_BITS][idx & (CONST_PATH_CHUNK_LEN - 1)];
 }
 
-/* Children of a node at depth `depth` are keyed by ids[depth]. */
-static struct const_path_node *
-const_path_child(VALUE edges, long depth, ID id)
+static uint32_t
+const_path_new_node(uint32_t parent, ID id)
 {
-    if (!edges) return NULL;
-    if (CONST_PATH_EDGES_TABLE_P(edges)) {
-        VALUE child;
-        if (rb_id_table_lookup(CONST_PATH_EDGES_TABLE(edges), id, &child)) {
-            return (struct const_path_node *)child;
-        }
-        return NULL;
+    uint32_t idx = const_path_len;
+    if (idx >= CONST_PATH_MAX_NODES) rb_memerror();
+
+    uint32_t chunk = idx >> CONST_PATH_CHUNK_BITS;
+    struct const_path_chunks *c = const_path_chunks;
+    if (!c || chunk >= c->capa) {
+        uint32_t capa = c ? c->capa * 2 : 4;
+        struct const_path_chunks *n = ruby_xcalloc(1, offsetof(struct const_path_chunks, chunks) + capa * sizeof(n->chunks[0]));
+        n->capa = capa;
+        n->prev = c;
+        if (c) MEMCPY(n->chunks, c->chunks, struct rb_const_path *, c->capa);
+        RUBY_ATOMIC_PTR_SET(const_path_chunks, n);
+        c = n;
     }
-    struct const_path_node *child = (struct const_path_node *)edges;
-    return child->ids[depth] == id ? child : NULL;
+    if (!c->chunks[chunk]) {
+        c->chunks[chunk] = ruby_xmalloc2(CONST_PATH_CHUNK_LEN, sizeof(struct rb_const_path));
+    }
+
+    struct rb_const_path *node = &c->chunks[chunk][idx & (CONST_PATH_CHUNK_LEN - 1)];
+    node->id = id;
+    node->parent = parent;
+    node->edges = 0;
+    const_path_len = idx + 1;
+    return idx;
+}
+
+static inline uint32_t
+const_path_edge_slot(const struct const_path_edges *t, rb_id_serial_t key)
+{
+    return (key * 2654435761u) & (t->capa - 1);
+}
+
+static uint32_t
+const_path_edges_lookup(const struct const_path_edges *t, rb_id_serial_t key)
+{
+    for (uint32_t i = const_path_edge_slot(t, key); ; i = (i + 1) & (t->capa - 1)) {
+        if (t->entries[i].key == key) return t->entries[i].child;
+        if (t->entries[i].key == 0) return 0;
+    }
 }
 
 static void
-const_path_add_child(VALUE *edges, long depth, struct const_path_node *child)
+const_path_edges_insert(struct const_path_edges *t, rb_id_serial_t key, uint32_t child)
 {
-    if (!*edges) {
-        *edges = (VALUE)child;
-        return;
-    }
-    if (!CONST_PATH_EDGES_TABLE_P(*edges)) {
-        struct const_path_node *only = (struct const_path_node *)*edges;
-        struct rb_id_table *tbl = rb_id_table_create(2);
-        rb_id_table_insert(tbl, only->ids[depth], (VALUE)only);
-        *edges = (VALUE)tbl | 1;
-    }
-    rb_id_table_insert(CONST_PATH_EDGES_TABLE(*edges), child->ids[depth], (VALUE)child);
+    uint32_t i = const_path_edge_slot(t, key);
+    while (t->entries[i].key) i = (i + 1) & (t->capa - 1);
+    t->entries[i].key = key;
+    t->entries[i].child = child;
+    t->size++;
 }
 
-/* Returns an interned, 0-terminated ID list for an Array of Symbols. */
-const ID *
-rb_iseq_intern_const_segments(VALUE arr)
+static struct const_path_edges *
+const_path_edges_new(uint32_t capa)
+{
+    struct const_path_edges *t = ruby_xcalloc(1, offsetof(struct const_path_edges, entries) + capa * sizeof(struct const_path_edge));
+    t->capa = capa;
+    return t;
+}
+
+static size_t
+const_path_edges_bytes(const struct const_path_edges *t)
+{
+    return offsetof(struct const_path_edges, entries) + t->capa * sizeof(struct const_path_edge);
+}
+
+static uint32_t
+const_path_child(const struct rb_const_path *node, ID id)
+{
+    uint32_t edges = node->edges;
+    if (!edges) return 0;
+    if (edges & CONST_PATH_EDGES_TABLE) {
+        return const_path_edges_lookup(const_path_edge_tables[edges & ~CONST_PATH_EDGES_TABLE], rb_id_to_serial(id));
+    }
+    return const_path_at(edges)->id == id ? edges : 0;
+}
+
+static void
+const_path_add_child(uint32_t parent_idx, uint32_t child)
+{
+    struct rb_const_path *parent = const_path_at(parent_idx);
+    rb_id_serial_t key = rb_id_to_serial(const_path_at(child)->id);
+    uint32_t edges = parent->edges;
+
+    if (!edges) {
+        parent->edges = child;
+        return;
+    }
+    if (!(edges & CONST_PATH_EDGES_TABLE)) {
+        if (const_path_edge_tables_len == const_path_edge_tables_capa) {
+            uint32_t capa = const_path_edge_tables_capa ? const_path_edge_tables_capa * 2 : 64;
+            SIZED_REALLOC_N(const_path_edge_tables, struct const_path_edges *, capa, const_path_edge_tables_capa);
+            const_path_edge_tables_capa = capa;
+        }
+        struct const_path_edges *t = const_path_edges_new(4);
+        const_path_edges_insert(t, rb_id_to_serial(const_path_at(edges)->id), edges);
+        const_path_edge_tables[const_path_edge_tables_len] = t;
+        edges = parent->edges = CONST_PATH_EDGES_TABLE | const_path_edge_tables_len++;
+    }
+
+    struct const_path_edges **tp = &const_path_edge_tables[edges & ~CONST_PATH_EDGES_TABLE];
+    struct const_path_edges *t = *tp;
+    if ((t->size + 1) * 4 > t->capa * 3) {
+        struct const_path_edges *n = const_path_edges_new(t->capa * 2);
+        for (uint32_t i = 0; i < t->capa; i++) {
+            if (t->entries[i].key) const_path_edges_insert(n, t->entries[i].key, t->entries[i].child);
+        }
+        ruby_xfree_sized(t, const_path_edges_bytes(t));
+        *tp = t = n;
+    }
+    const_path_edges_insert(t, key, child);
+}
+
+/* Returns the interned path for an Array of Symbols (a leading :"" means `::`). */
+const struct rb_const_path *
+rb_iseq_intern_const_path(VALUE arr)
 {
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
     long len = RARRAY_LEN(arr);
@@ -226,65 +317,107 @@ rb_iseq_intern_const_segments(VALUE arr)
         ids[i] = SYM2ID(RARRAY_AREF(arr, i));
     }
 
-    long depth = (len > 0 && ids[0] == idNULL) ? 1 : 0;
-    RUBY_ASSERT(depth < len);
-    struct const_path_node *node = NULL;
+    long i = 0;
+    uint32_t node = CONST_PATH_ROOT;
+    if (len > 0 && ids[0] == idNULL) {
+        node = CONST_PATH_TOPLEVEL_ROOT;
+        i = 1;
+    }
+    RUBY_ASSERT(i < len);
 
     /* Allocating here can GC; GC never reads the tree. */
     RB_VM_LOCKING() {
-        VALUE *edges = &const_path_roots[depth];
-        for (; depth < len; depth++) {
-            struct const_path_node *child = const_path_child(*edges, depth, ids[depth]);
+        if (!const_path_len) {
+            const_path_new_node(0, 0);
+            const_path_new_node(0, 0);
+        }
+        for (; i < len; i++) {
+            uint32_t child = const_path_child(const_path_at(node), ids[i]);
             if (!child) {
-                child = const_path_node_alloc(ids, depth + 1);
-                const_path_add_child(edges, depth, child);
+                child = const_path_new_node(node, ids[i]);
+                const_path_add_child(node, child);
             }
             node = child;
-            edges = &node->edges;
         }
     }
 
     ALLOCV_END(tmp);
-    return node->ids;
+    return const_path_at(node);
 }
 
-static void
-const_path_free_edges(VALUE edges);
-
-static enum rb_id_table_iterator_result
-const_path_free_edges_i(VALUE child, void *data)
+ID
+rb_const_path_id(const struct rb_const_path *path)
 {
-    const_path_free_edges(((struct const_path_node *)child)->edges);
-    return ID_TABLE_CONTINUE;
+    return path->id;
 }
 
-static void
-const_path_free_edges(VALUE edges)
+/* The path without its last segment, or NULL for a one-segment path. */
+const struct rb_const_path *
+rb_const_path_parent(const struct rb_const_path *path)
 {
-    if (!edges) return;
-    if (CONST_PATH_EDGES_TABLE_P(edges)) {
-        struct rb_id_table *tbl = CONST_PATH_EDGES_TABLE(edges);
-        rb_id_table_foreach_values(tbl, const_path_free_edges_i, NULL);
-        rb_id_table_free(tbl);
+    return path->parent > CONST_PATH_TOPLEVEL_ROOT ? const_path_at(path->parent) : NULL;
+}
+
+/* Whether the path starts with `::`. */
+bool
+rb_const_path_toplevel_p(const struct rb_const_path *path)
+{
+    while (path->parent > CONST_PATH_TOPLEVEL_ROOT) path = const_path_at(path->parent);
+    return path->parent == CONST_PATH_TOPLEVEL_ROOT;
+}
+
+/* Segment `idx` counting from the start, with idNULL first for `::` paths;
+ * 0 past the end. The JITs use this to walk a path as an ID list. */
+ID
+rb_const_path_id_at(const struct rb_const_path *path, long idx)
+{
+    long len = rb_const_path_toplevel_p(path);
+    for (const struct rb_const_path *p = path; p; p = rb_const_path_parent(p)) len++;
+    if (idx < 0 || idx >= len) return 0;
+    if (idx == 0 && rb_const_path_toplevel_p(path)) return idNULL;
+    for (long i = len - 1; i > idx; i--) path = const_path_at(path->parent);
+    return path->id;
+}
+
+/* The path as an Array of Symbols, in the form rb_iseq_intern_const_path takes. */
+VALUE
+rb_const_path_to_ary(const struct rb_const_path *path)
+{
+    long len = 0;
+    for (const struct rb_const_path *p = path; p; p = rb_const_path_parent(p)) len++;
+    bool toplevel = rb_const_path_toplevel_p(path);
+    VALUE ary = rb_ary_new_capa(len + toplevel);
+    for (long i = 0; i < len + toplevel; i++) rb_ary_push(ary, Qnil);
+    for (long i = len + toplevel - 1; path; i--, path = rb_const_path_parent(path)) {
+        RARRAY_ASET(ary, i, ID2SYM(path->id));
     }
-    else {
-        const_path_free_edges(((struct const_path_node *)edges)->edges);
-    }
+    if (toplevel) RARRAY_ASET(ary, 0, ID2SYM(idNULL));
+    return ary;
 }
 
 /* Called at VM teardown after all ISeqs have been freed (RUBY_FREE_AT_EXIT). */
 void
 rb_iseq_free_const_segments_table(void)
 {
-    for (int i = 0; i < 2; i++) {
-        const_path_free_edges(const_path_roots[i]);
-        const_path_roots[i] = 0;
+    for (uint32_t i = 0; i < const_path_edge_tables_len; i++) {
+        ruby_xfree_sized(const_path_edge_tables[i], const_path_edges_bytes(const_path_edge_tables[i]));
     }
-    while (const_path_arena) {
-        struct const_path_arena *next = const_path_arena->next;
-        ruby_xfree(const_path_arena);
-        const_path_arena = next;
+    SIZED_FREE_N(const_path_edge_tables, const_path_edge_tables_capa);
+    const_path_edge_tables_len = const_path_edge_tables_capa = 0;
+
+    struct const_path_chunks *c = const_path_chunks;
+    if (c) {
+        for (uint32_t i = 0; i < c->capa; i++) {
+            if (c->chunks[i]) SIZED_FREE_N(c->chunks[i], CONST_PATH_CHUNK_LEN);
+        }
     }
+    while (c) {
+        struct const_path_chunks *prev = c->prev;
+        ruby_xfree_sized(c, offsetof(struct const_path_chunks, chunks) + c->capa * sizeof(c->chunks[0]));
+        c = prev;
+    }
+    const_path_chunks = NULL;
+    const_path_len = 0;
 }
 
 // When an ISEQ is being freed, all of its associated ICs are going to go away
@@ -306,17 +439,10 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
 
         // Iterate over the IC's constant path's segments and clean any references to
         // the ICs out of the VM's constant cache table.
-        const ID *segments = ic->segments;
-
-        // It's possible that segments is NULL if we overallocated an IC but
+        // It's possible that path is NULL if we overallocated an IC but
         // optimizations removed the instruction using it
-        if (segments == NULL)
-            continue;
-
-        for (int i = 0; segments[i]; i++) {
-            ID id = segments[i];
-            if (id == idNULL) continue;
-            remove_from_constant_cache(id, ic);
+        for (const struct rb_const_path *p = ic->path; p; p = rb_const_path_parent(p)) {
+            remove_from_constant_cache(rb_const_path_id(p), ic);
         }
     }
 }
@@ -771,7 +897,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
 
-        /* IC constant segments are interned and shared; not counted here. */
+        /* IC constant paths are interned and shared; not counted here. */
 
         /* body->call_data */
         size += body->ci_size * sizeof(struct rb_call_data);
@@ -2927,10 +3053,9 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
       case TS_IC:
         {
             ret = rb_sprintf("<ic:%"PRIdPTRDIFF" ", (union iseq_inline_storage_entry *)op - ISEQ_BODY(iseq)->is_entries);
-            const ID *segments = ((IC)op)->segments;
-            rb_str_cat2(ret, rb_id2name(*segments++));
-            while (*segments) {
-                rb_str_catf(ret, "::%s", rb_id2name(*segments++));
+            VALUE segments = rb_const_path_to_ary(((IC)op)->path);
+            for (long i = 0; i < RARRAY_LEN(segments); i++) {
+                rb_str_catf(ret, i ? "::%s" : "%s", rb_id2name(SYM2ID(RARRAY_AREF(segments, i))));
             }
             rb_str_cat2(ret, ">");
         }
@@ -3826,12 +3951,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_IC:
                 {
-                    VALUE list = rb_ary_new();
-                    const ID *ids = ((IC)*seq)->segments;
-                    while (*ids) {
-                        rb_ary_push(list, ID2SYM(*ids++));
-                    }
-                    rb_ary_push(ary, list);
+                    rb_ary_push(ary, rb_const_path_to_ary(((IC)*seq)->path));
                 }
                 break;
               case TS_IVC:

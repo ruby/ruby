@@ -224,7 +224,7 @@ pub fn track_single_ractor_assumption(uninit_block: BlockRef) {
 
 /// Track that a block will assume that the name components of a constant path expression
 /// has not changed since the block's full initialization.
-pub fn track_stable_constant_names_assumption(uninit_block: BlockRef, idlist: *const ID) {
+pub fn track_stable_constant_names_assumption(uninit_block: BlockRef, idlist: *const rb_const_path) {
     fn assume_stable_constant_name(
         uninit_block: BlockRef,
         id: ID,
@@ -249,8 +249,8 @@ pub fn track_stable_constant_names_assumption(uninit_block: BlockRef, idlist: *c
 
 
     for i in 0.. {
-        match unsafe { *idlist.offset(i) } {
-            0 => break, // End of NULL terminated list
+        match unsafe { rb_const_path_id_at(idlist, i) } {
+            0 => break, // End of the path
             id => assume_stable_constant_name(uninit_block, id),
         }
     }

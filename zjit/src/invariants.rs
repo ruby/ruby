@@ -5,7 +5,7 @@ use std::{collections::{HashMap, HashSet}, mem};
 use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p, trace_invalidation}, virtualmem::CodePtr};
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
-use crate::cruby::{rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
+use crate::cruby::{rb_const_path, rb_const_path_id_at, rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -308,7 +308,7 @@ pub fn track_cme_assumption(
 
 /// Track a patch point for each constant name in a constant path assumption.
 pub fn track_stable_constant_names_assumption(
-    idlist: *const ID,
+    idlist: *const rb_const_path,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
     version: IseqVersionRef,
@@ -317,7 +317,7 @@ pub fn track_stable_constant_names_assumption(
 
     let mut idx = 0;
     loop {
-        let id = unsafe { *idlist.wrapping_add(idx) };
+        let id = unsafe { rb_const_path_id_at(idlist, idx) };
         if id.0 == 0 {
             break;
         }

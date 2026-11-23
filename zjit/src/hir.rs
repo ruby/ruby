@@ -217,7 +217,7 @@ pub enum Invariant {
     /// A list of constant expression path segments that must have not been written to for the
     /// following code to be valid.
     StableConstantNames {
-        idlist: *const ID,
+        idlist: *const rb_const_path,
     },
     /// TracePoint is not enabled. If TracePoint is enabled, this is invalidated.
     NoTracePoint,
@@ -357,7 +357,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 let mut idx = 0;
                 let mut sep = "";
                 loop {
-                    let id = unsafe { *idlist.wrapping_add(idx) };
+                    let id = unsafe { rb_const_path_id_at(idlist, idx) };
                     if id.0 == 0 {
                         break;
                     }
@@ -10092,7 +10092,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic: *const iseq_inline_constant_cache = get_arg(pc, 0).as_ptr();
-                    let idlist: *const ID = unsafe { (*ic).segments };
+                    let idlist: *const rb_const_path = unsafe { (*ic).path };
                     let ice = unsafe { (*ic).entry };
                     let can_fold = !ice.is_null()
                         && unsafe { (*ice).ic_cref }.is_null()
@@ -10109,14 +10109,12 @@ fn add_iseq_to_hir(
 
                     // Check for `::RubyVM::ZJIT` for directives
                     unsafe {
-                        let mut current_segment = (*ic).segments;
                         let mut segments = [ID(0); 4 /* expected segment length */];
-                        for segment in segments.iter_mut() {
-                            *segment = current_segment.read();
+                        for (idx, segment) in segments.iter_mut().enumerate() {
+                            *segment = rb_const_path_id_at((*ic).path, idx as _);
                             if *segment == ID(0) {
                                 break;
                             }
-                            current_segment = current_segment.add(1);
                         }
                         if [ID!(NULL), ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
                             debug_assert_ne!(ID!(NULL), ID(0));

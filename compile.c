@@ -2664,16 +2664,6 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
     return TRUE;
 }
 
-static VALUE
-idlist_to_array(const ID *ids)
-{
-    VALUE arr = rb_ary_new();
-    while (*ids) {
-        rb_ary_push(arr, ID2SYM(*ids++));
-    }
-    return arr;
-}
-
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -2892,7 +2882,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = rb_iseq_intern_const_segments(operands[j]);
+                            ic->path = rb_iseq_intern_const_path(operands[j]);
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -13257,7 +13247,7 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_IC:
                 {
                     IC ic = (IC)op;
-                    VALUE arr = idlist_to_array(ic->segments);
+                    VALUE arr = rb_const_path_to_ary(ic->path);
                     wv = ibf_dump_object(dump, arr);
                 }
                 break;
@@ -13379,7 +13369,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = rb_iseq_intern_const_segments(arr);
+                    ic->path = rb_iseq_intern_const_path(arr);
 
                     code[code_index] = (VALUE)ic;
                 }
