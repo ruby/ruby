@@ -13080,6 +13080,16 @@ pm_reduction(pm_node_t *node) {
     return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_DEFAULT };
 }
 
+/* A block argument is part of command_args. An attached literal block has
+ * its own grammar rules for which operators may follow the call. */
+static PRISM_INLINE pm_reduction_t
+pm_call_reduction(pm_node_t *node, const pm_arguments_t *arguments) {
+    if (arguments->command_style && (arguments->block == NULL || PM_NODE_TYPE_P(arguments->block, PM_BLOCK_ARGUMENT_NODE))) {
+        return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_COMMAND };
+    }
+    return pm_reduction(node);
+}
+
 static pm_reduction_t
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
@@ -20233,17 +20243,17 @@ parse_xstring(pm_parser_t *parser, uint16_t depth) {
     return UP(pm_interpolated_xstring_node_create(parser, &opening, &parts, &closing));
 }
 
-static pm_node_t *
-parse_multi_target(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_power, uint16_t depth) {
+static pm_reduction_t
+parse_multi_target(pm_parser_t *parser, pm_reduction_t first, pm_binding_power_t binding_power, uint16_t depth) {
     if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
         /* If we get here, then we have a comma immediately following something
          * that could have been a target in a multiple assignment. */
-        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+        return pm_reduction(parse_targets_validate(parser, first.node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1)));
     }
-    return node;
+    return first;
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t identifier = parser->current;
     parser_lex(parser);
@@ -20263,6 +20273,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         node = parse_variable_call(parser);
     }
 
+    pm_reduction_t result = pm_reduction(node);
     if (PM_NODE_TYPE_P(node, PM_CALL_NODE)) {
         // If parse_variable_call returned with a call node, then we
         // know the identifier is not in the local table. In that case
@@ -20287,6 +20298,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             } else {
                 PM_NODE_LENGTH_SET_LOCATION(call, end);
             }
+            result = pm_call_reduction(node, &arguments);
         }
     } else if (followed) {
         // Otherwise, we know the identifier is in the local table. This can
@@ -20313,10 +20325,10 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             pm_locals_unread(parser, cast->name);
         }
 
-        return UP(fcall);
+        return pm_call_reduction(UP(fcall), &arguments);
     }
 
-    return parse_multi_target(parser, node, binding_power, depth);
+    return parse_multi_target(parser, result, binding_power, depth);
 }
 
 static pm_array_node_t *
@@ -20896,7 +20908,7 @@ parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_yield_node_t *node = pm_yield_node_create(parser, &keyword, &arguments.opening_loc, pm_arguments_node_create(parser, &arguments), &arguments.closing_loc);
     if (!parser->parsing_eval && !parser->partial_script) ensure_valid_yield(parser, node);
 
-    return (pm_reduction_t) { .node = UP(node), .kind = arguments.command_style ? PM_REDUCTION_COMMAND : PM_REDUCTION_DEFAULT };
+    return pm_call_reduction(UP(node), &arguments);
 }
 
 static pm_node_t *
@@ -20931,7 +20943,7 @@ parse_char(pm_parser_t *parser, uint16_t depth) {
     return node;
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t constant = parser->current;
     parser_lex(parser);
@@ -20946,19 +20958,19 @@ parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fl
     ) {
         pm_arguments_t arguments = { 0 };
         parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-        return UP(pm_call_node_fcall_create(parser, &constant, &arguments));
+        return pm_call_reduction(UP(pm_call_node_fcall_create(parser, &constant, &arguments)), &arguments);
     }
 
-    return parse_multi_target(parser, UP(pm_constant_read_node_create(parser, &parser->previous)), binding_power, depth);
+    return parse_multi_target(parser, pm_reduction(UP(pm_constant_read_node_create(parser, &parser->previous))), binding_power, depth);
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_constant_path_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
     pm_token_t delimiter = parser->current;
     parser_lex(parser);
 
     expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-    return parse_multi_target(parser, UP(pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous)), binding_power, depth);
+    return parse_multi_target(parser, pm_reduction(UP(pm_constant_path_node_create(parser, NULL, &delimiter, &parser->previous))), binding_power, depth);
 }
 
 static pm_call_node_t *
@@ -21115,9 +21127,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_CHARACTER_LITERAL:
             return pm_reduction(parse_char(parser, depth));
         case PM_TOKEN_CONSTANT:
-            return pm_reduction(parse_constant(parser, binding_power, flags, depth));
+            return parse_constant(parser, binding_power, flags, depth);
         case PM_TOKEN_UCOLON_COLON:
-            return pm_reduction(parse_constant_path_prefix(parser, binding_power, depth));
+            return parse_constant_path_prefix(parser, binding_power, depth);
         case PM_TOKEN_UDOT_DOT:
         case PM_TOKEN_UDOT_DOT_DOT:
             return pm_reduction(UP(parse_range(parser, flags, depth)));
@@ -21135,7 +21147,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return pm_reduction(UP(pm_float_node_rational_imaginary_create(parser, &parser->previous)));
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME:
-            return pm_reduction(parse_identifier(parser, binding_power, flags, depth));
+            return parse_identifier(parser, binding_power, flags, depth);
         case PM_TOKEN_HEREDOC_START: {
             pm_node_t *node = parse_heredoc(parser, depth);
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
@@ -21145,19 +21157,19 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         }
         case PM_TOKEN_CLASS_VARIABLE:
             parser_lex(parser);
-            return pm_reduction(parse_multi_target(parser, UP(pm_class_variable_read_node_create(parser, &parser->previous)), binding_power, depth));
+            return parse_multi_target(parser, pm_reduction(UP(pm_class_variable_read_node_create(parser, &parser->previous))), binding_power, depth);
         case PM_TOKEN_NUMBERED_REFERENCE:
             parser_lex(parser);
-            return pm_reduction(parse_multi_target(parser, UP(pm_numbered_reference_read_node_create(parser, &parser->previous)), binding_power, depth));
+            return parse_multi_target(parser, pm_reduction(UP(pm_numbered_reference_read_node_create(parser, &parser->previous))), binding_power, depth);
         case PM_TOKEN_GLOBAL_VARIABLE:
             parser_lex(parser);
-            return pm_reduction(parse_multi_target(parser, UP(pm_global_variable_read_node_create(parser, &parser->previous)), binding_power, depth));
+            return parse_multi_target(parser, pm_reduction(UP(pm_global_variable_read_node_create(parser, &parser->previous))), binding_power, depth);
         case PM_TOKEN_BACK_REFERENCE:
             parser_lex(parser);
-            return pm_reduction(parse_multi_target(parser, UP(pm_back_reference_read_node_create(parser, &parser->previous)), binding_power, depth));
+            return parse_multi_target(parser, pm_reduction(UP(pm_back_reference_read_node_create(parser, &parser->previous))), binding_power, depth);
         case PM_TOKEN_INSTANCE_VARIABLE:
             parser_lex(parser);
-            return pm_reduction(parse_multi_target(parser, UP(pm_instance_variable_read_node_create(parser, &parser->previous)), binding_power, depth));
+            return parse_multi_target(parser, pm_reduction(UP(pm_instance_variable_read_node_create(parser, &parser->previous))), binding_power, depth);
         case PM_TOKEN_INTEGER: {
             pm_node_flags_t base = parser->integer.base;
             parser_lex(parser);
@@ -21757,7 +21769,7 @@ parse_ternary(pm_parser_t *parser, pm_node_t *node, uint8_t flags, uint16_t dept
     return pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression);
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t delimiter = parser->current;
     parser_lex(parser);
@@ -21765,7 +21777,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power
     switch (parser->current.type) {
         case PM_TOKEN_CONSTANT: {
             parser_lex(parser);
-            pm_node_t *path;
+            pm_reduction_t result;
 
             if (
                 (parser->current.type == PM_TOKEN_PARENTHESIS_LEFT) ||
@@ -21781,14 +21793,14 @@ parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power
                 pm_arguments_t arguments = { 0 };
 
                 parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-                path = UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments));
+                result = pm_call_reduction(UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments)), &arguments);
             } else {
                 /* Otherwise, this is a constant path. That would look like
                  * Foo::Bar. */
-                path = UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous));
+                result = pm_reduction(UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous)));
             }
 
-            return parse_multi_target(parser, path, previous_binding_power, depth);
+            return parse_multi_target(parser, result, previous_binding_power, depth);
         }
         case PM_CASE_OPERATOR:
         case PM_CASE_KEYWORD:
@@ -21803,7 +21815,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power
             parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
 
             pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
-            return parse_multi_target(parser, UP(call), previous_binding_power, depth);
+            return parse_multi_target(parser, pm_call_reduction(UP(call), &arguments), previous_binding_power, depth);
         }
         case PM_TOKEN_PARENTHESIS_LEFT: {
             /* If we have a parenthesis following a '::' operator, then it is the
@@ -21811,11 +21823,11 @@ parse_constant_path_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power
             pm_arguments_t arguments = { 0 };
             parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
 
-            return UP(pm_call_node_shorthand_create(parser, node, &delimiter, &arguments));
+            return pm_reduction(UP(pm_call_node_shorthand_create(parser, node, &delimiter, &arguments)));
         }
         default:
             expect1(parser, PM_TOKEN_CONSTANT, PM_ERR_CONSTANT_PATH_COLON_COLON_CONSTANT);
-            return UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous));
+            return pm_reduction(UP(pm_constant_path_node_create(parser, node, &delimiter, &parser->previous)));
     }
 }
 
@@ -22302,7 +22314,7 @@ parse_operator_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t pr
     }
 }
 
-static pm_node_t *
+static pm_reduction_t
 parse_call(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t operator = parser->current;
     parser_lex(parser);
@@ -22312,7 +22324,7 @@ parse_call(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
     // This if statement handles the foo.() syntax.
     if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
         parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
-        return UP(pm_call_node_shorthand_create(parser, node, &operator, &arguments));
+        return pm_reduction(UP(pm_call_node_shorthand_create(parser, node, &operator, &arguments)));
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -22368,9 +22380,9 @@ parse_call(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_bin
         arguments.opening_loc.length == 0 &&
         match1(parser, PM_TOKEN_COMMA)
     ) {
-        return parse_targets_validate(parser, UP(call), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+        return pm_reduction(parse_targets_validate(parser, UP(call), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1)));
     } else {
-        return UP(call);
+        return pm_call_reduction(UP(call), &arguments);
     }
 }
 
@@ -22530,7 +22542,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         }
         case PM_TOKEN_AMPERSAND_DOT:
         case PM_TOKEN_DOT:
-            return pm_reduction(parse_call(parser, node, previous_binding_power, flags, depth));
+            return parse_call(parser, node, previous_binding_power, flags, depth);
         case PM_TOKEN_DOT_DOT:
         case PM_TOKEN_DOT_DOT_DOT: {
             parser_lex(parser);
@@ -22573,7 +22585,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         case PM_TOKEN_QUESTION_MARK:
             return pm_reduction(UP(parse_ternary(parser, node, flags, depth)));
         case PM_TOKEN_COLON_COLON:
-            return pm_reduction(parse_constant_path_infix(parser, node, previous_binding_power, flags, depth));
+            return parse_constant_path_infix(parser, node, previous_binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_RESCUE_MODIFIER: {
             context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
             parser_lex(parser);
@@ -22637,6 +22649,8 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
     pm_node_t *node = reduction->node;
     pm_binding_power_t left = pm_binding_powers[parser->current.type].left;
 
+    if (PM_REDUCTION_KIND(*reduction) == PM_REDUCTION_COMMAND) return left > PM_BINDING_POWER_COMPOSITION;
+
     /* Pattern matching requires an arg on the left. A completed expr can
      * still take keyword composition and statement modifiers. */
     if (left == PM_BINDING_POWER_MATCH && PM_REDUCTION_KIND(*reduction) == PM_REDUCTION_EXPRESSION) return true;
@@ -22654,8 +22668,6 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
         case PM_INSTANCE_VARIABLE_WRITE_NODE:
         case PM_LOCAL_VARIABLE_WRITE_NODE:
             return PM_NODE_FLAG_P(node, PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY) && left > PM_BINDING_POWER_MODIFIER;
-        case PM_YIELD_NODE:
-            return PM_REDUCTION_KIND(*reduction) == PM_REDUCTION_COMMAND && left > PM_BINDING_POWER_COMPOSITION;
         case PM_CALL_NODE:
             // Calls with an implicit array on the right-hand side are
             // statements and can only be followed by modifiers.

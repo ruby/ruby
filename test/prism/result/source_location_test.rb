@@ -261,6 +261,15 @@ module Ruby::Prism
       assert_false Ruby::Prism.parse_success?("case !f x do end in P in Q; :body; end")
     end
 
+    def test_command_calls_with_blocks_before_in_clause
+      ["f &blk", "obj.f &blk", "obj.f(&blk) in Integer", "obj.f x do end.tail"].each do |predicate|
+        result = Ruby::Prism.parse("case #{predicate} in P; :body; end")
+        assert_predicate result, :success?, predicate
+        assert_equal predicate, result.statement.predicate.slice
+        assert_equal ["P"], result.statement.conditions.map { |clause| clause.pattern.slice }
+      end
+    end
+
     def test_match_in_case_clause_body
       assert_location(MatchPredicateNode, "case 1; in 1; 2 in 2 in true; 3; end", 14...20) do |node|
         assert_equal 2, node.conditions.length
