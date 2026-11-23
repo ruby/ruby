@@ -6,7 +6,6 @@
 #include "prism/internal/node.h"
 #include "prism/internal/parser.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 /* The state used while walking the tree to find the owner of each comment. */
@@ -60,18 +59,10 @@ typedef struct {
     } stack;
 } pm_comments_walk_t;
 
-/* Compare two comments by start offset for qsort. */
-static int
-pm_comments_compare(const void *left, const void *right) {
-    uint32_t left_start = (*(const pm_comment_t *const *) left)->location.start;
-    uint32_t right_start = (*(const pm_comment_t *const *) right)->location.start;
-    return (left_start > right_start) - (left_start < right_start);
-}
-
 /*
- * Copy the linked list of comments from the parser sorted by start offset, and
- * relink the list in that order. Usually comments arrive in source order, but
- * unfortunately because of heredocs they can occasionally be out of order.
+ * Insertion-sort the comments by start offset as we copy them from the list,
+ * then relink the list in source order. Usually only heredoc comments need
+ * to move.
  */
 static const pm_comment_t **
 pm_comments_sort(pm_parser_t *parser, uint32_t size) {
@@ -79,10 +70,14 @@ pm_comments_sort(pm_parser_t *parser, uint32_t size) {
 
     uint32_t index = 0;
     for (pm_list_node_t *node = parser->comment_list.head; node != NULL; node = node->next) {
-        comments[index++] = (pm_comment_t *) node;
+        pm_comment_t *comment = (pm_comment_t *) node;
+        uint32_t position = index++;
+        while (position > 0 && comments[position - 1]->location.start > comment->location.start) {
+            comments[position] = comments[position - 1];
+            position--;
+        }
+        comments[position] = comment;
     }
-
-    qsort((void *) comments, size, sizeof(pm_comment_t *), pm_comments_compare);
 
     for (index = 0; index + 1 < size; index++) {
         comments[index]->node.next = &comments[index + 1]->node;
