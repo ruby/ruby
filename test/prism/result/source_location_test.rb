@@ -334,6 +334,21 @@ module Ruby::Prism
       end
     end
 
+    def test_multiple_assignment_in_rescue_before_if_modifier
+      ["obj.tail", "(f y do end).tail", "obj[0]", "A::B", "(a, b)", "*items"].each do |target|
+        source = "work rescue #{target}, z = values if ready"
+        assert_location(MultiWriteNode, source, source.index(target)...source.index(" if ready")) do |modifier|
+          assert_instance_of IfNode, modifier
+          modifier.statements.body.first.rescue_expression
+        end
+      end
+    end
+
+    def test_block_call_as_rescue_handler
+      source = "work rescue f y do end.tail"
+      assert_location(CallNode, source, source.index("f y")...source.length, &:rescue_expression)
+    end
+
     def test_in_after_nested_assignment
       assert_location(LocalVariableWriteNode, "case v; in 0; x = y = f 1 in 2; end", 14...25) do |node|
         assert_equal 2, node.conditions.size

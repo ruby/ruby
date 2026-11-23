@@ -538,8 +538,15 @@ module Ruby::Prism
       end
     end
 
+    def test_invalid_multiple_assignment_targets_around_rescue
+      call = "f y do end.tail"
+      refute Ruby::Prism.parse_success?("#{call}, z = values")
+      refute Ruby::Prism.parse_success?("work rescue #{call}, z = values")
+      refute Ruby::Prism.parse_success?("x = value rescue a, b = values")
+    end
+
     def test_rescue_handler_requires_a_complete_multiple_assignment
-      ["(work rescue *xs)", "(work rescue x, y)"].each do |source|
+      ["(work rescue *xs)", "(work rescue x, y)", "(work rescue (x, y))"].each do |source|
         assert_equal [:write_target_unexpected], Ruby::Prism.parse(source).errors.map(&:type), source
       end
     end
