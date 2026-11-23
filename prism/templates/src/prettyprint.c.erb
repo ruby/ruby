@@ -15,6 +15,7 @@ typedef int pm_prettyprint_unused_t;
 #include "prism/compiler/inline.h"
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"
+#include "prism/internal/double.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/parser.h"
 #include "prism/line_offset_list.h"
@@ -151,7 +152,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_integer_string(output_buffer, integer);
                 pm_buffer_append_byte(output_buffer, '\n');
             <%- when Ruby::Prism::Template::DoubleField -%>
-                pm_buffer_append_format(output_buffer, " %f\n", cast-><%= field.name %>);
+                pm_buffer_append_byte(output_buffer, ' ');
+                pm_double_string(output_buffer, cast-><%= field.name %>);
+                pm_buffer_append_byte(output_buffer, '\n');
             <%- else -%>
             <%- raise -%>
             <%- end -%>

@@ -7,6 +7,7 @@ typedef int pm_json_unused_t;
 
 #include "prism/internal/buffer.h"
 #include "prism/internal/constant_pool.h"
+#include "prism/internal/double.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/parser.h"
 
@@ -112,7 +113,10 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             <%- when Ruby::Prism::Template::IntegerField -%>
             pm_integer_string(buffer, &cast-><%= field.name %>);
             <%- when Ruby::Prism::Template::DoubleField -%>
-            pm_buffer_append_format(buffer, "%f", cast-><%= field.name %>);
+            bool <%= field.name %>_finite = pm_double_finite_p(cast-><%= field.name %>);
+            if (!<%= field.name %>_finite) pm_buffer_append_byte(buffer, '"');
+            pm_double_string(buffer, cast-><%= field.name %>);
+            if (!<%= field.name %>_finite) pm_buffer_append_byte(buffer, '"');
             <%- else -%>
             <%- raise %>
             <%- end -%>

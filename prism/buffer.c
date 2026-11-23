@@ -3,7 +3,6 @@
 #include "prism/compiler/inline.h"
 
 #include "prism/internal/allocator.h"
-#include "prism/internal/assert.h"
 #include "prism/internal/char.h"
 #include "prism/internal/oom.h"
 
@@ -359,31 +358,6 @@ void
 pm_buffer_rstrip(pm_buffer_t *buffer) {
     while (buffer->length > 0 && pm_char_is_whitespace((uint8_t) buffer->value[buffer->length - 1])) {
         buffer->length--;
-    }
-}
-
-/**
- * Checks if the buffer includes the given value.
- */
-size_t
-pm_buffer_index(const pm_buffer_t *buffer, char value) {
-    const char *first = memchr(buffer->value, value, buffer->length);
-    return (first == NULL) ? SIZE_MAX : (size_t) (first - buffer->value);
-}
-
-/**
- * Insert the given string into the buffer at the given index.
- */
-void
-pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length) {
-    PRISM_ASSERT(index <= buffer->length);
-
-    if (index == buffer->length) {
-        pm_buffer_append_string(buffer, value, length);
-    } else {
-        pm_buffer_append_zeroes(buffer, length);
-        memmove(buffer->value + index + length, buffer->value + index, buffer->length - length - index);
-        memcpy(buffer->value + index, value, length);
     }
 }
 

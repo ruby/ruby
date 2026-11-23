@@ -406,8 +406,6 @@ pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t bas
  */
 void
 pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer_t *denominator, const uint8_t *start, const uint8_t *end) {
-    static const uint32_t powof5[14] = { 1, 5, 25, 125, 625, 3125, 15625, 78125, 390625, 1953125, 9765625, 48828125, 244140625, 1220703125 };
-
     if (*start == '+') start++;
 
     const uint8_t *point = memchr(start, '.', (size_t) (end - start));
@@ -439,7 +437,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
 
         /* 5**13 is the largest power of five that fits in a word, so divide by
          * it while it divides evenly before dividing by five alone. */
-        while (exponent - fives >= 13 && pm_bignum_div_exact(&bignum, powof5[13])) fives += 13;
+        while (exponent - fives >= 13 && pm_bignum_div_exact(&bignum, PM_BIGNUM_POWER5_13)) fives += 13;
         while (fives < exponent && pm_bignum_div_exact(&bignum, 5)) fives++;
 
         if (length <= 2) {
@@ -461,8 +459,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
     };
     bignum.words[0] = 1;
 
-    for (; remaining_fives >= 13; remaining_fives -= 13) pm_bignum_mul_add(&bignum, powof5[13], 0);
-    if (remaining_fives > 0) pm_bignum_mul_add(&bignum, powof5[remaining_fives], 0);
+    pm_bignum_multiply_powof5(&bignum, remaining_fives);
     pm_bignum_shift_left(&bignum, remaining_twos);
 
     PRISM_ASSERT(bignum.length <= capacity);

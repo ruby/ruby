@@ -6,15 +6,15 @@
 #include "prism/internal/allocator.h"
 #include "prism/internal/assert.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/char.h"
+#include "prism/internal/double.h"
 #include "prism/internal/integer.h"
-#include "prism/internal/isinf.h"
 #include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
 #include "prism/internal/xxh3.h"
 
 #include <inttypes.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -63,9 +63,7 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
             double value = cast->value;
             if (value == 0.0) value = 0.0; /* Normalize -0.0 to 0.0. */
 
-            uint64_t bits;
-            memcpy(&bits, &value, sizeof(bits));
-            return key_hash(PM_FLOAT_NODE, bits, 0);
+            return key_hash(PM_FLOAT_NODE, pm_binary64_bits(value), 0);
         }
         case PM_RATIONAL_NODE: {
             const pm_rational_node_t *cast = (const pm_rational_node_t *) node;
@@ -437,7 +435,7 @@ static bool
 pm_static_literal_positive_p(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_FLOAT_NODE:
-            return ((const pm_float_node_t *) node)->value > 0;
+            return !pm_double_negative_p(((const pm_float_node_t *) node)->value);
         case PM_INTEGER_NODE:
             return !((const pm_integer_node_t *) node)->value.negative;
         case PM_RATIONAL_NODE:
@@ -459,40 +457,16 @@ pm_static_literal_inspect(pm_buffer_t *buffer, const pm_parser_t *parser, const 
         case PM_FALSE_NODE:
             PM_BUFFER_APPEND_LITERAL(buffer, "false");
             break;
-        case PM_FLOAT_NODE: {
-            const double value = ((const pm_float_node_t *) node)->value;
-
-            if (PRISM_ISINF(value)) {
-                if (parser->start[node->location.start] == '-') {
-                    pm_buffer_append_byte(buffer, '-');
-                }
-                PM_BUFFER_APPEND_LITERAL(buffer, "Infinity");
-            } else if (value == 0.0) {
-                if (parser->start[node->location.start] == '-') {
-                    pm_buffer_append_byte(buffer, '-');
-                }
-                PM_BUFFER_APPEND_LITERAL(buffer, "0.0");
-            } else {
-                pm_buffer_append_format(buffer, "%g", value);
-
-                /* %g will not insert a .0 for 1e100 (we'll get back 1e+100). So
-                 * we check for the decimal point and add it in here if it's not
-                 * present. */
-                if (pm_buffer_index(buffer, '.') == SIZE_MAX) {
-                    size_t exponent_index = pm_buffer_index(buffer, 'e');
-                    size_t index = exponent_index == SIZE_MAX ? pm_buffer_length(buffer) : exponent_index;
-                    pm_buffer_insert(buffer, index, ".0", 2);
-                }
-            }
-
+        case PM_FLOAT_NODE:
+            pm_double_string(buffer, ((const pm_float_node_t *) node)->value);
             break;
-        }
         case PM_IMAGINARY_NODE: {
             const pm_node_t *numeric = ((const pm_imaginary_node_t *) node)->numeric;
             PM_BUFFER_APPEND_LITERAL(buffer, "(0");
             if (pm_static_literal_positive_p(numeric)) pm_buffer_append_byte(buffer, '+');
             pm_static_literal_inspect(buffer, parser, numeric);
-            if (PM_NODE_TYPE_P(numeric, PM_RATIONAL_NODE)) {
+            /* Rational and non-finite coefficients end in a non-digit. */
+            if (!pm_char_is_decimal_digit((uint8_t) buffer->value[buffer->length - 1])) {
                 pm_buffer_append_byte(buffer, '*');
             }
             PM_BUFFER_APPEND_LITERAL(buffer, "i)");

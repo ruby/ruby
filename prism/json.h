@@ -23,7 +23,8 @@ extern "C" {
 #endif
 
 /**
- * Dump JSON to the given buffer.
+ * Dump JSON to the given buffer. Finite floats are JSON numbers. Non-finite
+ * floats are the strings "Infinity", "-Infinity", or "NaN".
  *
  * @param buffer The buffer to serialize to.
  * @param parser The parser that parsed the node.
