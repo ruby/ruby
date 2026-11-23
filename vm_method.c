@@ -1527,6 +1527,8 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     VALUE orig_klass;
     bool turn_zsuper_to_super = false;
 
+    ASSERT_vm_locking();
+
     if (NIL_P(klass)) {
         klass = rb_cObject;
     }
@@ -1569,7 +1571,21 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         rb_method_entry_t *old_me = (rb_method_entry_t *)data;
         rb_method_definition_t *old_def = old_me->def;
 
-        if (rb_method_definition_eq(old_def, def)) return old_me;
+        if (rb_method_definition_eq(old_def, def)) {
+            /* The existing entry is reused, so a visibility change happens in
+             * place and ccs that still point at it must be invalidated. */
+            bool visi_changed = METHOD_ENTRY_VISI(old_me) != visi;
+            if (visi_changed) {
+                rb_vm_barrier();
+                rb_vm_check_redefinition_opt_method(old_me, klass, &warnings->performance);
+            }
+            old_def->no_redef_warning = TRUE;
+            METHOD_ENTRY_FLAGS_SET(old_me, visi, FALSE);
+            if (visi_changed) {
+                rb_clear_method_cache(klass, mid);
+            }
+            return old_me;
+        }
         rb_vm_check_redefinition_opt_method(old_me, klass, &warnings->performance);
 
         if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
@@ -1845,20 +1861,6 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
     RB_VM_LOCKING() {
         newme = rb_method_entry_make(klass, mid, defined_class, visi,
                 me->def->type, me->def, 0, NULL, &warnings);
-        if (newme == me) {
-            // The existing entry is reused, so a visibility change happens in
-            // place and ccs that still point at it must be invalidated.
-            bool visi_changed = METHOD_ENTRY_VISI(me) != visi;
-            if (visi_changed) {
-                rb_vm_barrier();
-                rb_vm_check_redefinition_opt_method(me, klass, &warnings.performance);
-            }
-            me->def->no_redef_warning = TRUE;
-            METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
-            if (visi_changed) {
-                rb_clear_method_cache(klass, mid);
-            }
-        }
     }
 
     method_entry_warnings_emit(&warnings);
@@ -3077,11 +3079,13 @@ rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_
 
     if (orig_me->defined_class == 0) {
         struct method_entry_warnings warnings = {0};
-        const rb_method_entry_t *alias_me =
-            // TODO: needs vm lock?
-            rb_method_entry_make(target_klass, alias_name, target_klass, visi,
-                                 VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
-                                 (void *)rb_method_entry_clone(orig_me), &warnings);
+        const rb_method_entry_t *alias_me;
+
+        RB_VM_LOCKING() {
+            alias_me = rb_method_entry_make(target_klass, alias_name, target_klass, visi,
+                                            VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
+                                            (void *)rb_method_entry_clone(orig_me), &warnings);
+        }
 
         method_entry_warnings_emit(&warnings);
         method_added(target_klass, alias_name, alias_me);
