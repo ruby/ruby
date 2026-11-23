@@ -239,6 +239,12 @@ Note: We're only listing outstanding class updates.
       between Ruby minor versions; use the `prism` gem unless you need the
       parser of the running interpreter.  [[Bug #22379]]
 
+* Shellwords
+
+    * `Shellwords.split` now removes backslash-newline pairs in unquoted and
+      double-quoted text.  A line continuation on its own no longer produces
+      an argument.
+
 ### The following bundled gems are added.
 
 
@@ -308,6 +314,7 @@ They are still available on rubygems.org and can be installed with
 * resolv 0.8.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1], [v0.7.2][resolv-v0.7.2], [v0.8.0][resolv-v0.8.0], [v0.8.1][resolv-v0.8.1]
 * shellwords 0.3.0
+  * 0.2.2 to [v0.3.0][shellwords-v0.3.0]
 * stringio 3.2.1.dev
 * strscan 3.1.9.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7], [v3.1.8][strscan-v3.1.8]
@@ -892,6 +899,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [resolv-v0.7.2]: https://github.com/ruby/resolv/releases/tag/v0.7.2
 [resolv-v0.8.0]: https://github.com/ruby/resolv/releases/tag/v0.8.0
 [resolv-v0.8.1]: https://github.com/ruby/resolv/releases/tag/v0.8.1
+[shellwords-v0.3.0]: https://github.com/ruby/shellwords/releases/tag/v0.3.0
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [strscan-v3.1.8]: https://github.com/ruby/strscan/releases/tag/v3.1.8
 [tempfile-v0.3.2]: https://github.com/ruby/tempfile/releases/tag/v0.3.2
