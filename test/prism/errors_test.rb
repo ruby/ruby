@@ -419,13 +419,23 @@ module Ruby::Prism
     end
 
     def test_command_brace_block_chained_after_a_command_block
-      source = "f x do end.g (y) {}.h"
-      result = Ruby::Prism.parse(source, version: "4.1")
-      assert_predicate result, :success?
-      assert_equal :h, result.statement.name
-      assert_equal "{}", result.statement.receiver.block.slice
-      assert_equal "do end", result.statement.receiver.receiver.block.slice
-      refute Ruby::Prism.parse_success?(source, version: "4.0")
+      [".", "&.", "::"].each do |operator|
+        source = "f x do end#{operator}g (y) {}.h"
+        result = Ruby::Prism.parse(source, version: "4.1")
+        assert_predicate result, :success?, source
+        assert_equal :h, result.statement.name
+        assert_equal "{}", result.statement.receiver.block.slice
+        assert_equal "do end", result.statement.receiver.receiver.block.slice
+
+        %w[3.3 3.4 4.0].each do |version|
+          result = Ruby::Prism.parse(source, version: version)
+          assert_equal [:argument_unexpected_block], result.errors.map(&:type), source
+          assert_equal "{}", result.errors.first.location.slice
+        end
+
+        assert Ruby::Prism.parse_success?("f x do end#{operator}g(y) {}.h", version: "4.0")
+        assert Ruby::Prism.parse_success?("(f x do end)#{operator}g (y) {}", version: "4.0")
+      end
     end
 
     def test_pattern_newlines_in_pins_and_guards

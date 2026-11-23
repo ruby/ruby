@@ -13093,10 +13093,15 @@ pm_call_reduction(pm_node_t *node, const pm_arguments_t *arguments) {
 }
 
 static pm_reduction_t
-pm_chained_call_reduction(pm_reduction_t receiver, pm_node_t *node, const pm_arguments_t *arguments) {
+pm_chained_call_reduction(pm_parser_t *parser, pm_reduction_t receiver, pm_node_t *node, const pm_arguments_t *arguments) {
     /* block_call call_op2 operation2 command_args completes a command.
      * Parenthesized arguments or an attached block can continue the chain. */
     if (PM_REDUCTION_KIND(receiver) == PM_REDUCTION_BLOCK_CALL && arguments->kind != PM_REDUCTION_COMMAND) {
+        /* Ruby 4.1 added block_call call_op2 operation2 command_args cmd_brace_block. */
+        if (arguments->kind == PM_REDUCTION_BRACE_COMMAND && parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
+            pm_parser_err_node(parser, arguments->block, PM_ERR_ARGUMENT_UNEXPECTED_BLOCK);
+        }
+
         return (pm_reduction_t) { .node = node, .kind = PM_REDUCTION_BLOCK_CALL };
     }
     return pm_call_reduction(node, arguments);
@@ -21857,7 +21862,7 @@ parse_call_shorthand(pm_parser_t *parser, pm_reduction_t receiver, pm_token_t *o
         parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, 0, depth);
     }
 
-    return pm_chained_call_reduction(receiver, UP(pm_call_node_shorthand_create(parser, receiver.node, operator, &arguments)), &arguments);
+    return pm_chained_call_reduction(parser, receiver, UP(pm_call_node_shorthand_create(parser, receiver.node, operator, &arguments)), &arguments);
 }
 
 static pm_reduction_t
@@ -21885,7 +21890,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
                 pm_arguments_t arguments = { 0 };
 
                 parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
-                result = pm_chained_call_reduction(receiver, UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments)), &arguments);
+                result = pm_chained_call_reduction(parser, receiver, UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments)), &arguments);
             } else {
                 /* Otherwise, this is a constant path. That would look like
                  * Foo::Bar. */
@@ -21907,7 +21912,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
             parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
 
             pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
-            return parse_multi_target(parser, pm_chained_call_reduction(receiver, UP(call), &arguments), previous_binding_power, depth);
+            return parse_multi_target(parser, pm_chained_call_reduction(parser, receiver, UP(call), &arguments), previous_binding_power, depth);
         }
         case PM_TOKEN_PARENTHESIS_LEFT:
             return parse_call_shorthand(parser, receiver, &delimiter, (uint16_t) (depth + 1));
@@ -22466,7 +22471,7 @@ parse_call(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t prev
     ) {
         return pm_reduction(parse_targets_validate(parser, UP(call), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1)));
     } else {
-        return pm_chained_call_reduction(receiver, UP(call), &arguments);
+        return pm_chained_call_reduction(parser, receiver, UP(call), &arguments);
     }
 }
 
