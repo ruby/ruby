@@ -884,11 +884,13 @@ sendforward
 
     VALUE bh = vm_caller_setup_fwd_args(ec, GET_CFP(), cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
 
+    // A tailcall replaces this frame, so read the iseq before the call
+    const rb_iseq_t *caller_iseq = GET_ISEQ();
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
     if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+        RB_OBJ_WRITE(caller_iseq, &cd->cc, adjusted_cd.cd.cc);
     }
 
     if (UNDEF_P(val)) {
@@ -1137,12 +1139,14 @@ invokesuper
     };
 
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), adjusted_cd.ci, blockiseq, true);
+    // A tailcall replaces this frame, so read the iseq before the call
+    const rb_iseq_t *caller_iseq = GET_ISEQ();
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
 
     if (original_cc != adjusted_cd.cc && vm_cc_markable(adjusted_cd.cc)) {
         rbimpl_atomic_ptr_store((volatile void **)&cd->cc, (void *)adjusted_cd.cc, RBIMPL_ATOMIC_RELEASE);
-        RB_OBJ_WRITTEN(GET_ISEQ(), Qundef, adjusted_cd.cc);
+        RB_OBJ_WRITTEN(caller_iseq, Qundef, adjusted_cd.cc);
     }
 
     if (UNDEF_P(val)) {
@@ -1165,11 +1169,13 @@ invokesuperforward
 
     VALUE bh = vm_caller_setup_fwd_args(ec, GET_CFP(), cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
 
+    // A tailcall replaces this frame, so read the iseq before the call
+    const rb_iseq_t *caller_iseq = GET_ISEQ();
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
 
     if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+        RB_OBJ_WRITE(caller_iseq, &cd->cc, adjusted_cd.cd.cc);
     }
 
     if (UNDEF_P(val)) {
