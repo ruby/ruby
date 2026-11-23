@@ -256,7 +256,16 @@ module Ruby::Prism
     end
 
     def test_command_brace_block_ownership
-      sources = ["outer super (x) {}", "outer defined? (x) {}", "outer inner(x) {} do end"]
+      sources = [
+        "outer super (x) {}", "outer super(x) {}", "def f; outer yield (x) {}; end",
+        "outer defined? (x) {}", "outer inner(x) {} do end"
+      ]
+      if RUBY_VERSION >= "4.0"
+        sources.concat([
+          "outer def f = super (x) {}", "outer def f = not super (x) {}",
+          "outer def f = super (x) rescue y", "outer def f = obj.x = y"
+        ])
+      end
       sources << "f x do end.g (y) {}.h" if RUBY_VERSION >= "4.1"
 
       sources.each do |source|

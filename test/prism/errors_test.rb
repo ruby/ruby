@@ -325,16 +325,29 @@ module Ruby::Prism
     end
 
     def test_command_super_and_grouped_argument_blocks
+      result = Ruby::Prism.parse("outer super(x) {}")
+      assert_predicate result, :success?
+      assert_nil result.statement.block
+      assert_equal "{}", result.statement.arguments.arguments.first.block.slice
       assert Ruby::Prism.parse_success?("super(1) {}")
       assert Ruby::Prism.parse_success?("m (1) {}")
       assert_equal [:argument_unexpected_block], Ruby::Prism.parse("super (1) {}").errors.map(&:type)
 
-      ["super (x)", "defined? (x)", "defined? (x; y)", "def f = super (x)"].each do |argument|
+      ["super (x)", "super (x; y)", "defined? (x)", "defined? (x; y)", "def f = super (x)"].each do |argument|
         result = Ruby::Prism.parse("outer #{argument} {}", version: "4.1")
         assert_predicate result, :success?, argument
         assert_equal argument, result.statement.arguments.arguments.first.slice
         assert_equal "{}", result.statement.block.slice
       end
+    end
+
+    def test_unexpected_super_block_in_delimited_arguments
+      result = Ruby::Prism.parse("f(super (x) {}, y); tail")
+      assert_equal [:argument_unexpected_block], result.errors.map(&:type)
+      assert_equal "{}", result.errors.first.location.slice
+      call, tail = result.value.statements.body
+      assert_equal ["super (x) {}", "y"], call.arguments.arguments.map(&:slice)
+      assert_equal :tail, tail.name
     end
 
     def test_call_after_a_command_brace_block
@@ -371,6 +384,18 @@ module Ruby::Prism
 
       assert Ruby::Prism.parse_success?("outer inner(x) {} do end")
       assert Ruby::Prism.parse_success?("outer inner A::B {} do end")
+    end
+
+    def test_do_after_nested_super_and_brace_commands
+      ["outer inner super (x) {} do end", "outer super inner (x) {} do end"].each do |source|
+        refute_valid_syntax(source)
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :failure?, source
+        assert_equal "do", result.errors.first.location.slice
+      end
+
+      assert Ruby::Prism.parse_success?("outer inner super(x) {} do end")
+      assert Ruby::Prism.parse_success?("outer inner inner2 (x) {} do end")
     end
 
     def test_shorthand_after_a_command_block

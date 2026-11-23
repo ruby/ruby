@@ -1469,10 +1469,32 @@ module Ruby::Prism
 
       # Returns true if the given node is a command node.
       private def command?(node)
-        node.is_a?(CallNode) &&
-          node.opening_loc.nil? &&
-          (!node.arguments.nil? || node.block.is_a?(BlockArgumentNode)) &&
-          !BINARY_OPERATORS.include?(node.name)
+        if node.is_a?(DefNode) && node.equal_loc
+          # An endless_command keeps the command form through not and rescue.
+          node = node.body.body.first
+          loop do
+            case node
+            when RescueModifierNode
+              node = node.expression
+            when CallNode
+              break unless node.call_operator_loc.nil? && node.message == "not" && node.opening_loc.nil?
+              node = node.receiver
+            else
+              break
+            end
+          end
+        end
+
+        case node
+        when CallNode
+          node.opening_loc.nil? && node.equal_loc.nil? &&
+            (!node.arguments.nil? || node.block.is_a?(BlockArgumentNode)) &&
+            !BINARY_OPERATORS.include?(node.name)
+        when SuperNode
+          node.lparen_loc.nil?
+        when YieldNode
+          node.lparen_loc.nil? && !node.arguments.nil?
+        end
       end
 
       # foo.bar += baz

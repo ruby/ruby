@@ -15503,10 +15503,26 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
 }
 
-/**
- * Parse a list of arguments.
- */
+/* At a statement or delimited argument boundary no enclosing command can
+ * take a remaining cmd_brace_block. Recover its whole body. */
 static void
+parse_unexpected_command_block(pm_parser_t *parser, pm_node_t *node, uint16_t depth) {
+    pm_block_node_t *block = parse_block(parser, depth);
+    pm_parser_err_node(parser, UP(block), PM_ERR_ARGUMENT_UNEXPECTED_BLOCK);
+
+    if (PM_NODE_TYPE_P(node, PM_SUPER_NODE) && ((pm_super_node_t *) node)->block == NULL) {
+        ((pm_super_node_t *) node)->block = UP(block);
+        PM_NODE_LENGTH_SET_NODE(node, block);
+    } else {
+        pm_node_unreference(parser, UP(block));
+    }
+}
+
+/**
+ * Parse a list of arguments. A command can be the sole argument of another
+ * command, in which case the caller also needs its reduction kind.
+ */
+static enum pm_reduction_kind
 parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_forwarding, pm_token_type_t terminator, uint8_t flags, uint16_t depth) {
     pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
 
@@ -15517,9 +15533,10 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
         (binding_power != PM_BINDING_POWER_UNSET && binding_power < PM_BINDING_POWER_RANGE) ||
         context_terminator(parser->current_context->context, &parser->current)
     ) {
-        return;
+        return PM_REDUCTION_DEFAULT;
     }
 
+    enum pm_reduction_kind argument_kind = PM_REDUCTION_DEFAULT;
     bool parsed_first_argument = false;
     bool parsed_bare_hash = false;
     bool parsed_block_argument = false;
@@ -15652,7 +15669,10 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
                     }
 
-                    argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+                    pm_reduction_t parsed = parse_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+                    argument = parsed.node;
+                    pm_assert_value_expression(parser, argument);
+                    argument_kind = PM_REDUCTION_KIND(parsed);
                 }
 
                 bool contains_keywords = false;
@@ -15700,11 +15720,15 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     }
 
                     argument = UP(pm_keyword_hash_node_create(parser, &elements));
+                    argument_kind = PM_REDUCTION_DEFAULT;
 
                     pm_static_literals_free(&hash_keys);
                     parsed_bare_hash = true;
                 }
 
+                if (terminator != PM_TOKEN_EOF && accept1(parser, PM_TOKEN_BRACE_LEFT_ARGUMENT)) {
+                    parse_unexpected_command_block(parser, argument, (uint16_t) (depth + 1));
+                }
                 parse_arguments_append(parser, arguments, argument);
 
                 pm_node_flags_t node_flags = 0;
@@ -15777,6 +15801,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
             break;
         }
     }
+
+    return arguments->list.size == 1 && arguments->block == NULL ? argument_kind : PM_REDUCTION_DEFAULT;
 }
 
 /**
@@ -15798,19 +15824,24 @@ parse_delimited_arguments_flags(const pm_parser_t *parser, uint8_t flags, bool i
     return (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK);
 }
 
+typedef enum {
+    PM_ARGUMENTS_METHOD,
+    PM_ARGUMENTS_SUPER,
+    PM_ARGUMENTS_YIELD
+} pm_arguments_kind_t;
+
 /**
  * Parse a list of arguments and their surrounding parentheses if they are
  * present. It returns true if it found any pieces of arguments (parentheses,
  * arguments, or blocks).
  *
- * When `full_arguments` is true the caller is a method or `super` call, which
- * use the full `opt_call_args` grammar: a block argument, argument forwarding,
- * a trailing block, and a trailing comma are all permitted. When it is false
- * the caller is `yield`, whose restricted `call_args` grammar permits none of
- * these.
+ * Methods and super use opt_call_args inside parentheses. Yield uses
+ * call_args, which excludes argument forwarding, a trailing comma and blocks.
  */
 static bool
-parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_arguments, uint8_t flags, uint16_t depth) {
+parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, pm_arguments_kind_t kind, uint8_t flags, uint16_t depth) {
+    bool full_arguments = kind != PM_ARGUMENTS_YIELD;
+
     /* Fast path: if the current token can't begin an expression and isn't
      * a parenthesis, block opener, or splat/block-pass operator, there are
      * no arguments to parse. */
@@ -15869,7 +15900,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         // If we get here, then the subsequent token cannot be used as an infix
         // operator. In this case we assume the subsequent token is part of an
         // argument to this method call.
-        parse_arguments(parser, arguments, full_arguments, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
+        enum pm_reduction_kind argument_kind = parse_arguments(parser, arguments, full_arguments, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
 
         /* A block argument alone counts for a method or super. Yield
          * discards it during recovery, leaving a bare yield. */
@@ -15891,6 +15922,14 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
         if (lookahead_brace) pm_accepts_block_stack_pop(parser);
         pm_accepts_block_stack_pop(parser);
         if (lookahead_brace) pm_accepts_block_stack_push(parser, true);
+
+        /* A command ending in cmd_brace_block reduces at '}' before looking
+         * for 'do'. With that sole argument this command cannot take a 'do'
+         * block. Super and yield also reduce without looking for a brace. */
+        if (argument_kind == PM_REDUCTION_BRACE_COMMAND && match1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
+            flags &= (uint8_t) ~PM_PARSE_ACCEPTS_DO_BLOCK;
+            if (kind != PM_ARGUMENTS_METHOD) arguments->kind = PM_REDUCTION_BRACE_COMMAND;
+        }
     }
 
     // If we're at the end of the arguments, we can now check if there is a block
@@ -15899,11 +15938,15 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_a
     if (full_arguments) {
         pm_block_node_t *block = NULL;
 
-        if (accept2(parser, PM_TOKEN_BRACE_LEFT, PM_TOKEN_BRACE_LEFT_ARGUMENT)) {
+        /* Only a method command can take a cmd_brace_block. In
+         * `outer super (x) {}` the brace belongs to outer. */
+        if (kind == PM_ARGUMENTS_METHOD && arguments->kind == PM_REDUCTION_COMMAND && accept1(parser, PM_TOKEN_BRACE_LEFT_ARGUMENT)) {
+            found = true;
+            arguments->kind = PM_REDUCTION_BRACE_COMMAND;
+            block = parse_block(parser, (uint16_t) (depth + 1));
+        } else if (accept1(parser, PM_TOKEN_BRACE_LEFT)) {
             found |= true;
-            if (arguments->kind == PM_REDUCTION_COMMAND) {
-                arguments->kind = parser->previous.type == PM_TOKEN_BRACE_LEFT_ARGUMENT ? PM_REDUCTION_BRACE_COMMAND : PM_REDUCTION_DEFAULT;
-            }
+            arguments->kind = PM_REDUCTION_DEFAULT;
             block = parse_block(parser, (uint16_t) (depth + 1));
             pm_arguments_validate_block(parser, arguments, block);
         } else if (pm_accepts_block_stack_p(parser) && accept1(parser, PM_TOKEN_KEYWORD_DO)) {
@@ -19455,6 +19498,10 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     }
 
     context_pop(parser);
+    if (opening.type == PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+        lex_state_set(parser, PM_LEX_STATE_ENDARG);
+    }
+
     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
     pm_statements_node_t *statements = pm_statements_node_create(parser, &body);
 
@@ -20299,7 +20346,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         pm_call_node_t *call = (pm_call_node_t *) node;
         pm_arguments_t arguments = { 0 };
 
-        if (parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1))) {
+        if (parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1))) {
             // Since we found arguments, we need to turn off the
             // variable call bit in the flags.
             pm_node_flag_unset(UP(call), PM_CALL_NODE_FLAGS_VARIABLE_CALL);
@@ -20322,7 +20369,7 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         // still be a method call if it is followed by arguments or a block, so
         // we need to check for that here.
         pm_arguments_t arguments = { 0 };
-        parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+        parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
         pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
 
         if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
@@ -20911,7 +20958,7 @@ parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     parser_lex(parser);
 
     pm_arguments_t arguments = { 0 };
-    parse_arguments_list(parser, &arguments, false, flags, (uint16_t) (depth + 1));
+    parse_arguments_list(parser, &arguments, PM_ARGUMENTS_YIELD, flags, (uint16_t) (depth + 1));
 
     /* It's possible that we've parsed a block argument through our call to
      * parse_arguments_list. If we found one, we should mark it as invalid and
@@ -20974,7 +21021,7 @@ parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fl
         match1(parser, PM_TOKEN_BRACE_LEFT)
     ) {
         pm_arguments_t arguments = { 0 };
-        parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+        parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
         return pm_call_reduction(UP(pm_call_node_fcall_create(parser, &constant, &arguments)), &arguments);
     }
 
@@ -21070,7 +21117,7 @@ parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     parser_lex(parser);
 
     pm_arguments_t arguments = { 0 };
-    parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+    parse_arguments_list(parser, &arguments, PM_ARGUMENTS_SUPER, flags, (uint16_t) (depth + 1));
 
     if (
         arguments.opening_loc.length == 0 &&
@@ -21080,8 +21127,6 @@ parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         return pm_reduction(UP(pm_forwarding_super_node_create(parser, &keyword, &arguments)));
     }
 
-    /* Only a method command has a cmd_brace_block production. */
-    if (arguments.kind == PM_REDUCTION_BRACE_COMMAND) arguments.kind = PM_REDUCTION_DEFAULT;
     return pm_call_reduction(UP(pm_super_node_create(parser, &keyword, &arguments)), &arguments);
 }
 
@@ -21820,7 +21865,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
                 pm_token_t message = parser->previous;
                 pm_arguments_t arguments = { 0 };
 
-                parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+                parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
                 result = pm_chained_call_reduction(receiver, UP(pm_call_node_call_create(parser, node, &delimiter, &message, &arguments)), &arguments);
             } else {
                 /* Otherwise, this is a constant path. That would look like
@@ -21840,7 +21885,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
             /* If we have an identifier following a '::' operator, then it is
              * for sure a method call. */
             pm_arguments_t arguments = { 0 };
-            parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+            parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
 
             pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
             return parse_multi_target(parser, pm_chained_call_reduction(receiver, UP(call), &arguments), previous_binding_power, depth);
@@ -21849,7 +21894,7 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
             /* If we have a parenthesis following a '::' operator, then it is the
              * method call shorthand. That would look like Foo::(bar). */
             pm_arguments_t arguments = { 0 };
-            parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
+            parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, false, (uint16_t) (depth + 1));
 
             return pm_chained_call_reduction(receiver, UP(pm_call_node_shorthand_create(parser, node, &delimiter, &arguments)), &arguments);
         }
@@ -22352,7 +22397,7 @@ parse_call(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t prev
 
     // This if statement handles the foo.() syntax.
     if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-        parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
+        parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, false, (uint16_t) (depth + 1));
         return pm_chained_call_reduction(receiver, UP(pm_call_node_shorthand_create(parser, node, &operator, &arguments)), &arguments);
     }
 
@@ -22400,7 +22445,7 @@ parse_call(pm_parser_t *parser, pm_reduction_t receiver, pm_binding_power_t prev
         }
     }
 
-    parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+    parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
     pm_call_node_t *call = pm_call_node_call_create(parser, node, &operator, &message, &arguments);
 
     if (
@@ -22922,6 +22967,10 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                 return left;
             }
         }
+    }
+
+    if (binding_power == PM_BINDING_POWER_STATEMENT && accept1(parser, PM_TOKEN_BRACE_LEFT_ARGUMENT)) {
+        parse_unexpected_command_block(parser, left.node, (uint16_t) (depth + 1));
     }
 
     return left;
