@@ -334,6 +334,25 @@ module Ruby::Prism
       end
     end
 
+    def test_do_blocks_on_case_branches_and_the_enclosing_command
+      source = "receive case value; in Integer then Produce do :first end; else collect item (x) {} do :second end; end do :outer end"
+      result = Ruby::Prism.parse(source)
+      assert_predicate result, :success?
+
+      receive = result.statement
+      assert_equal "do :outer end", receive.block.slice
+      case_node = receive.arguments.arguments.first
+      produce = case_node.conditions.first.statements.body.first
+      assert_equal :Produce, produce.name
+      assert_equal "do :first end", produce.block.slice
+      collect = case_node.else_clause.statements.body.first
+      assert_equal :collect, collect.name
+      item = collect.arguments.arguments.first
+      assert_equal :item, item.name
+      assert_equal "{}", item.block.slice
+      assert_equal "do :second end", collect.block.slice
+    end
+
     def test_return_before_case_in_clause
       assert_location(ReturnNode, "def f; case 1; in 1; return :empty in 2; :two; end; end", 21...34) do |node|
         case_node = node.body.body.first

@@ -57,6 +57,15 @@ module Ruby::Prism
       end
     end
 
+    def test_do_after_a_parenthesized_or_qualified_call_in_a_case_command_argument
+      ["produce()", "obj.produce"].each do |call|
+        source = "receive case when ready then #{call} do :inner end end"
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :failure?, source
+        assert_equal "do", result.errors.first.location.slice
+      end
+    end
+
     def test_bare_method_parameters_allow_trailing_comma_from_ruby_4_1
       ["def f x,; end", "def self.f *xs,; end"].each do |source|
         assert Ruby::Prism.parse_success?(source, version: "4.1"), source
