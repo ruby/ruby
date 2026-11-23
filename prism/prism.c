@@ -21520,11 +21520,22 @@ parse_rescue_modifier_value(pm_parser_t *parser, uint8_t flags, bool statement, 
     }
 }
 
-/**
- * Recover a stray operator after a rescue handler, as in
- * `a rescue b, c = d and e`. A completed expr can leave the next `in`
- * for an enclosing case clause.
- */
+/* A completed statement in a case clause leaves `in` for the next clause.
+ * Inside a rescue handler, defer that decision until the handler returns. */
+static void
+parse_unexpected_statement_operator(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    if (match1(parser, PM_TOKEN_KEYWORD_IN) && context_p(parser, PM_CONTEXT_CASE_IN)) {
+        pm_context_t context = parser->current_context->context;
+        if (context == PM_CONTEXT_CASE_IN || context == PM_CONTEXT_RESCUE_MODIFIER) return;
+    }
+
+    pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->current.type);
+    parser_lex(parser);
+    parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
+}
+
+/* Recover a stray operator after a rescue handler, as in
+ * `a rescue b, c = d and e`. */
 static void
 parse_rescue_modifier_terminator(pm_parser_t *parser, pm_reduction_t handler, uint8_t flags, uint16_t depth) {
     if (PM_REDUCTION_KIND(handler) == PM_REDUCTION_EXPRESSION) {
@@ -21532,9 +21543,7 @@ parse_rescue_modifier_terminator(pm_parser_t *parser, pm_reduction_t handler, ui
     }
 
     if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
-        pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->current.type);
-        parser_lex(parser);
-        parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
+        parse_unexpected_statement_operator(parser, flags, depth);
     }
 }
 
@@ -21550,6 +21559,10 @@ parse_assignment_command_flag(pm_binding_power_t binding_power, uint8_t flags) {
 static pm_reduction_t
 parse_assignment_rescue(pm_parser_t *parser, pm_reduction_t rhs, bool multiple_assignment, uint8_t flags, uint16_t depth) {
     enum pm_reduction_kind rhs_kind = PM_REDUCTION_KIND(rhs);
+    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (rhs_kind == PM_REDUCTION_BLOCK_CALL || pm_command_call_value_p(parser, rhs.node))) {
+        parse_unexpected_statement_operator(parser, flags, depth);
+    }
+
     bool command_rhs = rhs_kind == PM_REDUCTION_COMMAND || pm_command_before_comma_p(parser, rhs.node, rhs_kind);
 
     pm_reduction_t result = {
@@ -21604,16 +21617,6 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
     pm_reduction_t parsed = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags), diag_id, (uint16_t) (depth + 1));
     pm_node_t *value = parsed.node;
     pm_assert_value_expression(parser, value);
-
-    // Assignments whose value is a command call (e.g., a = b c) can only
-    // be followed by modifiers (if/unless/while/until/rescue) and not by
-    // operators with higher binding power. If we find one, emit an error
-    // and skip the operator and its right-hand side.
-    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (PM_REDUCTION_KIND(parsed) == PM_REDUCTION_BLOCK_CALL || pm_command_call_value_p(parser, value))) {
-        pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->current.type);
-        parser_lex(parser);
-        parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
-    }
 
     return parse_assignment_rescue(parser, parsed, false, flags, depth);
 }
@@ -21715,16 +21718,6 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
         pm_reduction_t values = pm_reduction(UP(pm_array_node_create(parser, NULL, &elements, NULL)));
         if (multiple_assignment) return parse_assignment_rescue(parser, values, true, flags, depth);
         return values;
-    }
-
-    // Assignments whose value is a command call (e.g., a = b c) can only
-    // be followed by modifiers (if/unless/while/until/rescue) and not by
-    // operators with higher binding power. If we find one, emit an error
-    // and skip the operator and its right-hand side.
-    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (PM_REDUCTION_KIND(parsed) == PM_REDUCTION_BLOCK_CALL || pm_command_call_value_p(parser, value))) {
-        pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->current.type);
-        parser_lex(parser);
-        parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
     }
 
     return parse_assignment_rescue(parser, parsed, multiple_assignment, flags, depth);
@@ -22605,9 +22598,8 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
 
             pm_reduction_t value = parse_rescue_modifier_value(parser, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), previous_binding_power == PM_BINDING_POWER_STATEMENT, (uint16_t) (depth + 1));
 
-            parse_rescue_modifier_terminator(parser, value, flags, depth);
-
             context_pop(parser);
+            parse_rescue_modifier_terminator(parser, value, flags, depth);
             return pm_reduction(UP(pm_rescue_modifier_node_create(parser, node, &token, value.node)));
         }
         case PM_TOKEN_BRACKET_LEFT:

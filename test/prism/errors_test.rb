@@ -589,6 +589,23 @@ module Ruby::Prism
       end
     end
 
+    def test_unexpected_in_after_an_assignment_inside_a_case_clause
+      source = "case x; in First; (work rescue u, v = values in Second); tail; in Third; end"
+      result = Ruby::Prism.parse(source)
+      assert_equal [:expect_eol_after_statement], result.errors.map(&:type)
+      assert_equal source.index("in Second"), result.errors.first.location.start_offset
+      assert_equal ["First", "Third"], result.statement.conditions.map { |clause| clause.pattern.slice }
+      assert_equal "tail", result.statement.conditions.first.statements.body.last.slice
+    end
+
+    def test_missing_delimiter_between_in_clauses_after_a_rescue_handler
+      source = "case x; in First; work rescue u, v = values in Second in Third; end"
+      result = Ruby::Prism.parse(source)
+      assert_equal [:expect_in_delimiter], result.errors.map(&:type)
+      assert_equal source.index(" in Third"), result.errors.first.location.start_offset
+      assert_equal ["First", "Second", "Third"], result.statement.conditions.map { |clause| clause.pattern.slice }
+    end
+
     def test_target_list_after_a_statement_in_parentheses
       result = Ruby::Prism.parse("(work; a, b)")
       assert_equal [:write_target_unexpected], result.errors.map(&:type)

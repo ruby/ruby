@@ -346,6 +346,21 @@ module Ruby::Prism
         assert_equal 2, node.conditions.size
         node.conditions.first.statements.body.first.rescue_expression
       end
+
+      ["work", "x = y = f 1 rescue a"].each do |body|
+        source = "case x; in First; #{body} rescue u, v = values in Second; tail; end"
+        assert_location(MultiWriteNode, source, source.index("u, v")...source.index(" in Second")) do |node|
+          assert_equal ["First", "Second"], node.conditions.map { |clause| clause.pattern.slice }
+          assert_equal "tail", node.conditions.last.statements.body.first.slice
+          node.conditions.first.statements.body.first.rescue_expression
+        end
+      end
+
+      source = "case x; in First; work rescue u = values in Second; end"
+      assert_location(MatchPredicateNode, source, source.index("u =")...source.index("; end")) do |node|
+        assert_equal 1, node.conditions.size
+        node.conditions.first.statements.body.first.rescue_expression
+      end
     end
 
     def test_multiple_assignment_in_rescue_before_if_modifier
