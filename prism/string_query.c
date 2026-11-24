@@ -36,14 +36,15 @@ typedef enum {
  * it, and NULL is the latest version.
  */
 static pm_slice_type_t
-pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name, const char *version) {
+pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) {
     // first, get the right encoding object
-    const pm_encoding_t *encoding = pm_encoding_find((const uint8_t *) encoding_name, (const uint8_t *) (encoding_name + strlen(encoding_name)));
+    const uint8_t *name = (const uint8_t *) encoding_name;
+    const pm_encoding_t *encoding = pm_encoding_find(name, name + encoding_length);
     if (encoding == NULL) return PM_SLICE_TYPE_ERROR;
 
     /* Then the version of Ruby, which decides which letters are uppercase. */
     pm_options_version_t target;
-    if (!pm_options_version_parse(version, version == NULL ? 0 : strlen(version), &target)) return PM_SLICE_TYPE_ERROR_VERSION;
+    if (!pm_options_version_parse(version, version_length, &target)) return PM_SLICE_TYPE_ERROR_VERSION;
 
     // check that there is at least one character
     if (length == 0) return PM_SLICE_TYPE_NONE;
@@ -92,8 +93,8 @@ pm_slice_type(const uint8_t *source, size_t length, const char *encoding_name, c
  * Check that the slice is a valid local variable name.
  */
 pm_string_query_t
-pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name, const char *version) {
-    switch (pm_slice_type(source, length, encoding_name, version)) {
+pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) {
+    switch (pm_slice_type(source, length, encoding_name, encoding_length, version, version_length)) {
         case PM_SLICE_TYPE_ERROR_VERSION:
             return PM_STRING_QUERY_ERROR_VERSION;
         case PM_SLICE_TYPE_ERROR:
@@ -114,8 +115,8 @@ pm_string_query_local(const uint8_t *source, size_t length, const char *encoding
  * Check that the slice is a valid constant name.
  */
 pm_string_query_t
-pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name, const char *version) {
-    switch (pm_slice_type(source, length, encoding_name, version)) {
+pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) {
+    switch (pm_slice_type(source, length, encoding_name, encoding_length, version, version_length)) {
         case PM_SLICE_TYPE_ERROR_VERSION:
             return PM_STRING_QUERY_ERROR_VERSION;
         case PM_SLICE_TYPE_ERROR:
@@ -136,13 +137,13 @@ pm_string_query_constant(const uint8_t *source, size_t length, const char *encod
  * Check that the slice is a valid method name.
  */
 pm_string_query_t
-pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name, const char *version) {
+pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) {
 #define B(p) ((p) ? PM_STRING_QUERY_TRUE : PM_STRING_QUERY_FALSE)
 #define C1(c) (*source == c)
 #define C2(s) pm_memequal(source, s, 2)
 #define C3(s) pm_memequal(source, s, 3)
 
-    switch (pm_slice_type(source, length, encoding_name, version)) {
+    switch (pm_slice_type(source, length, encoding_name, encoding_length, version, version_length)) {
         case PM_SLICE_TYPE_ERROR_VERSION:
             return PM_STRING_QUERY_ERROR_VERSION;
         case PM_SLICE_TYPE_ERROR:
@@ -183,12 +184,13 @@ pm_string_query_method_name(const uint8_t *source, size_t length, const char *en
  * be valid.
  */
 pm_string_query_t
-pm_string_query_keyword(const uint8_t *source, size_t length, const char *encoding_name, const char *version) {
-    if (pm_encoding_find((const uint8_t *) encoding_name, (const uint8_t *) (encoding_name + strlen(encoding_name))) == NULL) {
+pm_string_query_keyword(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) {
+    const uint8_t *name = (const uint8_t *) encoding_name;
+    if (pm_encoding_find(name, name + encoding_length) == NULL) {
         return PM_STRING_QUERY_ERROR;
     }
 
-    if (version != NULL && !pm_options_version_supported_p(version, strlen(version))) {
+    if (version != NULL && !pm_options_version_supported_p(version, version_length)) {
         return PM_STRING_QUERY_ERROR_VERSION;
     }
 

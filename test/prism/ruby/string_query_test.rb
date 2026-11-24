@@ -109,6 +109,11 @@ module Ruby::Prism
       end
     end
 
+    def test_invalid_version
+      assert_raise(ArgumentError) { StringQuery.local?("foo", version: "") }
+      assert_raise(ArgumentError) { StringQuery.keyword?("end", version: "3.4\0suffix") }
+    end
+
     # Ruby 3.3 and 3.4 use Unicode 15.0.0, and Ruby 4.0 and 4.1 use Unicode
     # 17.0.0, in which the Garay capital letters are uppercase.
     def test_version

@@ -721,25 +721,33 @@ module Ruby::Prism # :nodoc:
       # Mirrors the C extension's StringQuery::local? method.
       def local?(string, version: nil)
         version = query_version(version)
-        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name, version), version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_local(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       # Mirrors the C extension's StringQuery::constant? method.
       def constant?(string, version: nil)
         version = query_version(version)
-        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name, version), version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_constant(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       # Mirrors the C extension's StringQuery::method_name? method.
       def method_name?(string, version: nil)
         version = query_version(version)
-        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name, version), version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_method_name(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       # Mirrors the C extension's StringQuery::keyword? method.
       def keyword?(string, version: nil)
         version = query_version(version)
-        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name, version), version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_keyword(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       private
@@ -773,8 +781,8 @@ module Ruby::Prism # :nodoc:
         LibRubyParser.pm_options_version_supported_p(RUBY_VERSION, RUBY_VERSION.bytesize)
       end
 
-      # Parse the enum result and return an appropriate boolean.
-      def query(result, version)
+      # Convert a string query result to a Ruby boolean.
+      def query_result(result, version)
         case result
         when :PM_STRING_QUERY_ERROR_VERSION
           raise ArgumentError, "invalid version: #{version}"
