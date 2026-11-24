@@ -88,7 +88,7 @@ main(int argc, const char *argv[])
 
     pm_options_t *options = pm_options_new();
     pm_options_line_set(options, 1);
-    pm_options_filepath_set(options, filepath);
+    pm_options_filepath_set(options, filepath, strlen(filepath));
 
     pm_arena_t *arena = pm_arena_new();
     pm_parser_t *parser = pm_parser_new(arena, pm_source_source(source), pm_source_length(source), options);

@@ -11114,7 +11114,7 @@ VALUE
 pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
 {
     result->node.filepath_encoding = rb_enc_get(filepath);
-    pm_options_filepath_set(result->options, RSTRING_PTR(filepath));
+    pm_options_filepath_set(result->options, RSTRING_PTR(filepath), RSTRING_LEN(filepath));
     RB_GC_GUARD(filepath);
 
     pm_options_version_for_current_ruby_set(result->options);
@@ -11172,10 +11172,11 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
 
     pm_options_frozen_string_literal_init(result->options);
     result->source = pm_source_constant_new((const uint8_t *) RSTRING_PTR(source), (size_t) RSTRING_LEN(source));
-    pm_options_encoding_set(result->options, rb_enc_name(encoding));
+    const char *encoding_name = rb_enc_name(encoding);
+    pm_options_encoding_set(result->options, encoding_name, strlen(encoding_name));
 
     result->node.filepath_encoding = rb_enc_get(filepath);
-    pm_options_filepath_set(result->options, RSTRING_PTR(filepath));
+    pm_options_filepath_set(result->options, RSTRING_PTR(filepath), RSTRING_LEN(filepath));
 
     pm_options_version_for_current_ruby_set(result->options);
     pm_options_stack_budget_init(result->options);
