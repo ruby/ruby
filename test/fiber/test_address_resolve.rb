@@ -283,10 +283,11 @@ class TestAddressResolve < Test::Unit::TestCase
     rescue NotImplementedError
       omit "Socket.getifaddrs not implemented"
     end
-    interface = ifaddrs.find { |ifaddr| ifaddr.addr&.ipv6_loopback? }&.name
-    omit "no IPv6 loopback interface" unless interface
+    loopback = ifaddrs.find { |ifaddr| ifaddr.addr&.ipv6_loopback? }
+    omit "no IPv6 loopback interface" unless loopback
 
-    address = "fe80::1%#{interface}"
+    # A numeric zone, as Windows cannot parse its interface names (loopback_0) as zones.
+    address = "fe80::1%#{loopback.ifindex}"
     expected = Addrinfo.ip(address).ip_address
     resolved = []
 
