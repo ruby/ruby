@@ -629,6 +629,22 @@ module Ruby::Prism
       end
     end
 
+    def test_do_block_after_an_argument_with_a_brace_block
+      ["inner(x) {}", "A::B() {}", "A.B {}", "A::b {}", "inner A::B {}"].each do |argument|
+        assert_location(CallNode, "outer #{argument} do end") do |outer|
+          assert_equal argument, outer.arguments.arguments.first.slice
+          assert_equal "do end", outer.block.slice
+          outer
+        end
+      end
+
+      assert_location(CallNode, "m x do end::B {}.tail") do |call|
+        assert_equal :tail, call.name
+        assert_equal "{}", call.receiver.block.slice
+        call
+      end
+    end
+
     def test_rescue_after_nested_command_assignment
       source = "targets[:k] = tmp = call_boom 1 rescue nil rescue :outer"
       assert_location(RescueModifierNode, source) do |node|

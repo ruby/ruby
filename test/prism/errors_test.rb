@@ -439,14 +439,11 @@ module Ruby::Prism
     end
 
     def test_do_after_a_command_ending_in_a_brace
-      ["outer inner (x) {} do end", "outer super A::B {} do end"].each do |source|
+      ["outer inner (x) {} do end", "outer A::B {} do end", "outer super A::B {} do end"].each do |source|
         result = Ruby::Prism.parse(source)
         assert_predicate result, :failure?, source
         assert_equal "do", result.errors.first.location.slice
       end
-
-      assert Ruby::Prism.parse_success?("outer inner(x) {} do end")
-      assert Ruby::Prism.parse_success?("outer inner A::B {} do end")
     end
 
     def test_do_after_nested_super_and_brace_commands

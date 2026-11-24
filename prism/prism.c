@@ -1744,8 +1744,8 @@ enum pm_reduction_kind {
      * kind to recognize the `! command_call` production. */
     PM_REDUCTION_COMMAND,
 
-    /* A command ending in cmd_brace_block, as in `f (x) {}`. The same
-     * suffix on a block_call receiver is itself a block_call. */
+    /* A command ending in a brace block, as in `f (x) {}` or `A::B {}`.
+     * The same suffix on a block_call receiver is itself a block_call. */
     PM_REDUCTION_BRACE_COMMAND,
 
     /* A block_call can take a call operator, as in `f x do end.tail`. */
@@ -14386,14 +14386,7 @@ pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node, enum
             break;
     }
 
-    switch (PM_NODE_TYPE(node)) {
-        case PM_CALL_NODE:
-            return pm_constant_path_command_call_p(parser, (const pm_call_node_t *) node);
-        case PM_DEF_NODE:
-            return pm_command_call_value_p(parser, node);
-        default:
-            return false;
-    }
+    return PM_NODE_TYPE_P(node, PM_DEF_NODE) && pm_command_call_value_p(parser, node);
 }
 
 /**
@@ -21920,7 +21913,11 @@ parse_constant_path_infix(pm_parser_t *parser, pm_reduction_t receiver, pm_bindi
                 pm_token_t message = parser->previous;
                 pm_arguments_t arguments = { 0 };
 
+                /* primary_value tCOLON2 tCONSTANT '{' brace_body '}' reduces
+                 * to a command as soon as the brace closes. */
+                bool brace_command = match1(parser, PM_TOKEN_BRACE_LEFT) && PM_REDUCTION_KIND(receiver) != PM_REDUCTION_BLOCK_CALL;
                 parse_arguments_list(parser, &arguments, PM_ARGUMENTS_METHOD, flags, (uint16_t) (depth + 1));
+                if (brace_command) arguments.kind = PM_REDUCTION_BRACE_COMMAND;
                 result = pm_chained_call_reduction(parser, receiver, UP(pm_call_node_call_create(parser, receiver, &delimiter, &message, &arguments)), &arguments);
             } else {
                 /* Otherwise, this is a constant path. That would look like
