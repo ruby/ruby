@@ -205,14 +205,13 @@ module Bundler
         end
       end
 
+      # A content-addressed row without a digest is an empty entry, like a
+      # CHECKSUMS line without one, so it is filled only when a remote fetch
+      # can do so (see Definition#empty_checksums_actionable?).
       def missing?(spec)
         return false unless @store[spec.full_name].nil?
 
-        if spec.is_a?(LazySpecification)
-          spec.content_addressed_full_names.all? {|full_name| @store[full_name].nil? }
-        else
-          true
-        end
+        content_addressed_full_names(spec).empty?
       end
 
       def locked?(spec)
@@ -222,7 +221,9 @@ module Bundler
       def empty?(spec)
         return false unless spec.source.is_a?(Bundler::Source::Rubygems)
 
-        @store[spec.full_name]&.empty? || false
+        return true if @store[spec.full_name]&.empty?
+
+        content_addressed_full_names(spec).any? {|full_name| @store[full_name].nil? }
       end
 
       def register(spec, checksum)
@@ -255,6 +256,10 @@ module Bundler
       end
 
       private
+
+      def content_addressed_full_names(spec)
+        spec.is_a?(LazySpecification) ? spec.content_addressed_full_names : []
+      end
 
       def platform_full_name(spec)
         Gem::NameTuple.new(spec.name, spec.version, spec.platform).full_name
