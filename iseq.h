@@ -304,13 +304,13 @@ struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 /*
  * Locals of enclosing scopes that a block (or any block nested in it)
  * reads or writes, plus `yield`. Used for Ractor isolation checks and by
- * ZJIT. Most blocks reference one or two, so this is a small packed array
- * (ids[capa], sorted, followed by one write flag byte per entry) rather
- * than an rb_id_table.
+ * ZJIT. Most blocks reference one or two, so up to 8 are a small packed
+ * array (ids[capa], sorted, followed by one write flag byte per entry);
+ * past that, an rb_id_table.
  */
 struct rb_iseq_outer_variables {
     uint32_t num;
-    uint32_t capa;
+    uint32_t capa;          /* 0 past 8 entries: ids[0] then holds an rb_id_table of ID => write */
     ID ids[FLEX_ARY_LEN];
     /* uint8_t write[capa] follows ids[capa] */
 };
