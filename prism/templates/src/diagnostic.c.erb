@@ -13,10 +13,8 @@
 #include <string.h>
 
 #define PM_DIAGNOSTIC_ID_MAX <%= errors.length + warnings.length %>
-<%- formatted = diagnostics.reject { |diagnostic| diagnostic.signature.empty? } -%>
-<%- format_indices = formatted.each_with_index.to_h { |diagnostic, index| [diagnostic, index + 1] } -%>
-<%- raise if formatted.length > 255 -%>
-<%- raise if formatted.any? { |diagnostic| diagnostic.literal_ends.last > 255 } -%>
+<%- section_counts = diagnostics.map { |diagnostic| diagnostic.literals.length }.uniq.sort -%>
+<%- raise "diagnostic literal length exceeds uint8_t" if diagnostics.any? { |diagnostic| diagnostic.literals.sum(&:bytesize) > 255 } -%>
 
 typedef enum {
     PM_DIAGNOSTIC_SIGNATURE_NONE,
@@ -32,37 +30,29 @@ typedef enum {
 } pm_diagnostic_byte_format_t;
 
 typedef struct {
+    /* The literal pieces concatenated into one NUL-terminated string. */
+    const char *message;
     uint8_t level;
-    uint8_t format_idx; /* Index into diagnostic_formats */
-} pm_diagnostic_metadata_t;
-
-/* Keep message pointers separate so their alignment does not pad every entry. */
-static const char *const diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
-    <%- diagnostics.each do |diagnostic| -%>
-    [<%= diagnostic.id %>] = <%= diagnostic.c_message %>,
-    <%- end -%>
-};
-
-static const pm_diagnostic_metadata_t diagnostic_metadata[PM_DIAGNOSTIC_ID_MAX] = {
-    <%- diagnostics.each do |diagnostic| -%>
-    [<%= diagnostic.id %>] = { <%= diagnostic.level %>, <%= format_indices.fetch(diagnostic, 0) %> },
-    <%- end -%>
-};
-
-typedef struct {
     uint8_t signature;
-    uint8_t literal_ends[<%= formatted.map { |diagnostic| diagnostic.literals.length }.max %>]; /* End offset of each literal piece in a formatted message. */
-    uint8_t byte_formats[<%= formatted.map { |diagnostic| diagnostic.byte_formats.length }.max %>];
-} pm_diagnostic_format_t;
+    uint8_t literal_ends[<%= section_counts.last %>]; /* End offset of each literal piece. */
+    uint8_t byte_formats[<%= diagnostics.map { |diagnostic| diagnostic.byte_formats.length }.max %>];
+} pm_diagnostic_definition_t;
 
-static const pm_diagnostic_format_t diagnostic_formats[] = {
-    {
-        .signature = PM_DIAGNOSTIC_SIGNATURE_NONE
-    },
-    <%- formatted.each do |diagnostic| -%>
-    [<%= format_indices.fetch(diagnostic) %>] = {
-        .signature = PM_DIAGNOSTIC_SIGNATURE_<%= diagnostic.signature.join("_").upcase %>,
-        .literal_ends = { <%= diagnostic.literal_ends.join(", ") %> },
+/* Each end is the size of the concatenated literals through that section, excluding the NUL. */
+<%- section_counts.each do |count| -%>
+<%- parts = (1..count).map { |index| "part#{index}_" } -%>
+<%- ends = (1..count).map { |index| "sizeof(#{parts.first(index).join(" ")}) - 1" } -%>
+#define PM_DIAGNOSTIC_MESSAGE_<%= count %>(<%= parts.join(", ") %>) \
+    .message = <%= parts.join(" ") %>, \
+    .literal_ends = { <%= ends.join(", ") %> }
+<%- end -%>
+
+static const pm_diagnostic_definition_t diagnostic_definitions[PM_DIAGNOSTIC_ID_MAX] = {
+    <%- diagnostics.each do |diagnostic| -%>
+    [<%= diagnostic.id %>] = {
+        PM_DIAGNOSTIC_MESSAGE_<%= diagnostic.literals.length %>(<%= diagnostic.literals.map { |part| Ruby::Prism::Template.c_string(part) }.join(", ") %>),
+        .level = <%= diagnostic.level %>,
+        .signature = PM_DIAGNOSTIC_SIGNATURE_<%= diagnostic.signature.empty? ? "NONE" : diagnostic.signature.join("_").upcase %>,
         <%- unless diagnostic.byte_formats.empty? -%>
         .byte_formats = { <%= diagnostic.byte_formats.map { |format| "PM_DIAGNOSTIC_#{format.upcase}" }.join(", ") %> },
         <%- end -%>
@@ -88,14 +78,14 @@ pm_diagnostic_id_name(pm_diagnostic_id_t diag_id) {
     return "";
 }
 
-static PRISM_INLINE const pm_diagnostic_format_t *
-pm_diagnostic_format(pm_diagnostic_id_t diag_id, PRISM_UNUSED pm_diagnostic_signature_t signature) {
+static PRISM_INLINE const pm_diagnostic_definition_t *
+pm_diagnostic_definition(pm_diagnostic_id_t diag_id, PRISM_UNUSED pm_diagnostic_signature_t signature) {
     PRISM_ASSERT(diag_id < PM_DIAGNOSTIC_ID_MAX);
     PRISM_ASSUME(diag_id < PM_DIAGNOSTIC_ID_MAX);
 
-    const pm_diagnostic_format_t *format = &diagnostic_formats[diagnostic_metadata[diag_id].format_idx];
-    PRISM_ASSERT(format->signature == signature);
-    return format;
+    const pm_diagnostic_definition_t *definition = &diagnostic_definitions[diag_id];
+    PRISM_ASSERT(definition->signature == signature);
+    return definition;
 }
 
 /**
@@ -119,7 +109,12 @@ pm_diagnostic_location(const pm_diagnostic_t *diagnostic) {
  */
 const char *
 pm_diagnostic_message(const pm_diagnostic_t *diagnostic) {
-    return diagnostic->message;
+    return (const char *) diagnostic->message.source;
+}
+
+uint8_t
+pm_diagnostic_level(const pm_diagnostic_t *diagnostic) {
+    return diagnostic_definitions[diagnostic->diag_id].level;
 }
 
 /**
@@ -127,7 +122,7 @@ pm_diagnostic_message(const pm_diagnostic_t *diagnostic) {
  */
 pm_error_level_t
 pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) {
-    return (pm_error_level_t) diagnostic->level;
+    return (pm_error_level_t) pm_diagnostic_level(diagnostic);
 }
 
 /**
@@ -135,7 +130,7 @@ pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) {
  */
 pm_warning_level_t
 pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) {
-    return (pm_warning_level_t) diagnostic->level;
+    return (pm_warning_level_t) pm_diagnostic_level(diagnostic);
 }
 
 /**
@@ -148,14 +143,13 @@ pm_diagnostic_next(const pm_diagnostic_t *diagnostic) {
 
 /* Store a diagnostic whose message is static or already in the arena. */
 static void
-pm_diagnostic_list_append_message(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, const char *message) {
+pm_diagnostic_list_append_message(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, pm_string_t message) {
     pm_diagnostic_t *diagnostic = PM_ARENA_ZALLOC(arena, pm_diagnostic_t);
 
     *diagnostic = (pm_diagnostic_t) {
         .location = { .start = start, .length = length },
         .diag_id = diag_id,
-        .message = message,
-        .level = diagnostic_metadata[diag_id].level
+        .message = message
     };
 
     pm_list_append(list, (pm_list_node_t *) diagnostic);
@@ -164,8 +158,9 @@ pm_diagnostic_list_append_message(pm_arena_t *arena, pm_list_t *list, uint32_t s
 /* A diagnostic without substitutions can refer directly to its static text. */
 void
 pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id) {
-    PRISM_ASSERT(diag_id < PM_DIAGNOSTIC_ID_MAX && diagnostic_metadata[diag_id].format_idx == 0);
-    pm_diagnostic_list_append_message(arena, list, start, length, diag_id, diagnostic_messages[diag_id]);
+    const pm_diagnostic_definition_t *definition = pm_diagnostic_definition(diag_id, PM_DIAGNOSTIC_SIGNATURE_NONE);
+    pm_string_t message = { (const uint8_t *) definition->message, definition->literal_ends[0] };
+    pm_diagnostic_list_append_message(arena, list, start, length, diag_id, message);
 }
 
 /* Render a byte either as a character or as uppercase hexadecimal digits. */
@@ -189,20 +184,21 @@ pm_diagnostic_render_line(int32_t line, char digits[11]) {
 }
 
 /* Interleave the literal pieces with the arguments in one arena allocation. */
-static char *
-pm_diagnostic_render_message(pm_arena_t *arena, const char *literals, const pm_diagnostic_format_t *format, const pm_string_t *args, size_t count) {
-    size_t size = (size_t) format->literal_ends[count] + 1;
+static pm_string_t
+pm_diagnostic_render_message(pm_arena_t *arena, const pm_diagnostic_definition_t *definition, const pm_string_t *args, size_t count) {
+    const char *literals = definition->message;
+    size_t size = (size_t) definition->literal_ends[count] + 1;
     for (size_t index = 0; index < count; index++) {
         if (args[index].length > SIZE_MAX - size) pm_arena_alloc_overflow();
         size += args[index].length;
     }
 
-    char *message = PM_ARENA_ALLOC_ARRAY(arena, char, size);
-    char *cursor = message;
+    uint8_t *message = PM_ARENA_ALLOC_ARRAY(arena, uint8_t, size);
+    uint8_t *cursor = message;
     size_t offset = 0;
 
     for (size_t index = 0; index < count; index++) {
-        size_t end = format->literal_ends[index];
+        size_t end = definition->literal_ends[index];
         memcpy(cursor, literals + offset, end - offset);
 
         cursor += end - offset;
@@ -215,14 +211,14 @@ pm_diagnostic_render_message(pm_arena_t *arena, const char *literals, const pm_d
     }
 
     /* The final literal includes the terminating NUL. */
-    memcpy(cursor, literals + offset, (size_t) format->literal_ends[count] - offset + 1);
-    return message;
+    memcpy(cursor, literals + offset, (size_t) definition->literal_ends[count] - offset + 1);
+    return (pm_string_t) { .source = message, .length = size - 1 };
 }
 <%- diagnostic_signatures.each do |signature| -%>
 
 void
 pm_diagnostic_list_append_<%= signature.name %>(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, <%= signature.parameters %>) {
-    const pm_diagnostic_format_t *format = pm_diagnostic_format(diag_id, PM_DIAGNOSTIC_SIGNATURE_<%= signature.name.upcase %>);
+    const pm_diagnostic_definition_t *definition = pm_diagnostic_definition(diag_id, PM_DIAGNOSTIC_SIGNATURE_<%= signature.name.upcase %>);
 
     <%- signature.types.each_with_index do |type, index| -%>
     <%- if type == "byte" -%>
@@ -239,12 +235,12 @@ pm_diagnostic_list_append_<%= signature.name %>(pm_arena_t *arena, pm_list_t *li
         <%- when "line" -%>
         pm_diagnostic_render_line(arg<%= index %>, digits<%= index %>),
         <%- when "byte" -%>
-        pm_diagnostic_render_byte(format->byte_formats[<%= signature.types.take(index).count("byte") %>], &arg<%= index %>, digits<%= index %>),
+        pm_diagnostic_render_byte(definition->byte_formats[<%= signature.types.take(index).count("byte") %>], &arg<%= index %>, digits<%= index %>),
         <%- end -%>
         <%- end -%>
     };
 
-    char *message = pm_diagnostic_render_message(arena, diagnostic_messages[diag_id], format, args, <%= signature.types.length %>);
+    pm_string_t message = pm_diagnostic_render_message(arena, definition, args, <%= signature.types.length %>);
     pm_diagnostic_list_append_message(arena, list, start, length, diag_id, message);
 }
 <%- end -%>

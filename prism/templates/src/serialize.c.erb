@@ -408,14 +408,12 @@ pm_serialize_diagnostic(pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
     pm_buffer_append_varuint(buffer, (uint32_t) diagnostic->diag_id);
 
     // serialize message
-    size_t message_length = strlen(diagnostic->message);
-    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(message_length));
-    pm_buffer_append_string(buffer, diagnostic->message, message_length);
+    pm_serialize_string(&diagnostic->message, buffer);
 
     // serialize location
     pm_serialize_location(&diagnostic->location, buffer);
 
-    pm_buffer_append_byte(buffer, diagnostic->level);
+    pm_buffer_append_byte(buffer, pm_diagnostic_level(diagnostic));
 }
 
 static void
