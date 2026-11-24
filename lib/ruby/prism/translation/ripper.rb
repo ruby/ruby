@@ -1549,7 +1549,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
@@ -1571,7 +1571,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
@@ -1593,7 +1593,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
@@ -1625,7 +1625,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         if multiple && operator == "::"
