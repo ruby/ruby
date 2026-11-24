@@ -6904,29 +6904,6 @@ pm_unless_node_end_keyword_loc_set(const pm_parser_t *parser, pm_unless_node_t *
 }
 
 /**
- * Loop modifiers could potentially modify an expression that contains block
- * exits. In this case we need to loop through them and remove them from the
- * list of block exits so that they do not later get marked as invalid.
- */
-static void
-pm_loop_modifier_block_exits(pm_parser_t *parser, pm_statements_node_t *statements) {
-    PRISM_ASSERT(parser->current_block_exits != NULL);
-
-    // All of the block exits that we want to remove should be within the
-    // statements, and since we are modifying the statements, we shouldn't have
-    // to check the end location.
-    uint32_t start = statements->base.location.start;
-
-    for (size_t index = parser->current_block_exits->size; index > 0; index--) {
-        pm_node_t *block_exit = parser->current_block_exits->nodes[index - 1];
-        if (block_exit->location.start < start) break;
-
-        // Implicitly remove from the list by lowering the size.
-        parser->current_block_exits->size--;
-    }
-}
-
-/**
  * Allocate a new UntilNode node.
  */
 static pm_until_node_t *
@@ -6952,7 +6929,6 @@ pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
 static pm_until_node_t *
 pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
-    pm_loop_modifier_block_exits(parser, statements);
 
     return pm_until_node_new(
         parser->arena,
@@ -7019,7 +6995,6 @@ pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
 static pm_while_node_t *
 pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
-    pm_loop_modifier_block_exits(parser, statements);
 
     return pm_while_node_new(
         parser->arena,
@@ -13922,6 +13897,26 @@ parse_statements_leading_terminators(pm_parser_t *parser) {
     return flags;
 }
 
+/* A loop modifier can claim every pending exit in this statement. Keep exits
+ * from preceding statements separate, including those in heredoc bodies
+ * that appear later in the source. */
+static PRISM_INLINE pm_node_t *
+parse_statement(pm_parser_t *parser, uint16_t depth) {
+    pm_scratch_node_list_t *outer = parser->current_block_exits;
+    pm_scratch_node_list_t exits = { 0 };
+    bool has_previous_exits = outer->size != 0;
+    if (PRISM_UNLIKELY(has_previous_exits)) parser->current_block_exits = &exits;
+
+    pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, depth).node;
+
+    if (PRISM_UNLIKELY(has_previous_exits)) {
+        pm_scratch_node_list_concat(&parser->scratch_arena, outer, &exits);
+        parser->current_block_exits = outer;
+    }
+
+    return statement;
+}
+
 /**
  * Parse a list of statements separated by newlines or semicolons.
  */
@@ -13937,7 +13932,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
     context_push(parser, context);
 
     while (true) {
-        pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1)).node;
+        pm_node_t *node = parse_statement(parser, (uint16_t) (depth + 1));
         pm_statements_body_append(parser, &body, node, true);
 
         // If we're recovering from a syntax error, then we need to stop parsing
@@ -19382,7 +19377,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_
     /* Otherwise, we're going to parse the first statement in the list of
      * statements within the parentheses. */
     context_push(parser, PM_CONTEXT_PARENS);
-    pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1)).node;
+    pm_node_t *statement = parse_statement(parser, (uint16_t) (depth + 1));
     context_pop(parser);
 
     /* Determine if this statement is followed by a terminator. In the case of a
@@ -19471,7 +19466,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_
 
     /* Parse each statement within the parentheses. */
     while (true) {
-        pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1)).node;
+        pm_node_t *node = parse_statement(parser, (uint16_t) (depth + 1));
         pm_statements_body_append(parser, &body, node, true);
 
         /* If we're recovering from a syntax error, then we need to stop parsing
@@ -22609,6 +22604,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
             pm_statements_node_t *statements = pm_statements_node_single_create(parser, node, true);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_UNTIL_PREDICATE, (uint16_t) (depth + 1));
+            parser->current_block_exits->size = 0;
             return pm_statement_reduction(UP(pm_until_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0)));
         }
         case PM_TOKEN_KEYWORD_WHILE_MODIFIER: {
@@ -22616,6 +22612,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
             pm_statements_node_t *statements = pm_statements_node_single_create(parser, node, true);
 
             pm_node_t *predicate = parse_value_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_CONDITIONAL_WHILE_PREDICATE, (uint16_t) (depth + 1));
+            parser->current_block_exits->size = 0;
             return pm_statement_reduction(UP(pm_while_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0)));
         }
         case PM_TOKEN_QUESTION_MARK:

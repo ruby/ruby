@@ -172,6 +172,22 @@ module Ruby::Prism
       end
     end
 
+    def test_loop_modifier_preserves_exits_in_an_earlier_heredoc
+      source = <<~'RUBY'
+        first = <<A; second = <<B MODIFIER (redo if ready)
+        #{break if ready}
+        A
+        #{next if ready}
+        B
+      RUBY
+
+      %w[while until].each do |modifier|
+        errors = Ruby::Prism.parse(source.sub("MODIFIER", modifier)).errors
+        assert_equal [:invalid_block_exit], errors.map(&:type), modifier
+        assert_equal "break", errors.first.location.slice
+      end
+    end
+
     def test_singleton_class_return_uses_its_enclosing_method
       [
         "-> { class << self; return; end }",
