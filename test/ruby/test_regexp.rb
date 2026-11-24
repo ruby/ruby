@@ -683,6 +683,18 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(9, m.byteend(3))
   end
 
+  def test_match_offset_reuse
+    input = "abcdefgh"
+    big = /(.)(.)(.)(.)(.)(.)(.)(.)/
+    small = /(.)/
+    big =~ input
+    input.split(small, 2) { |s| Regexp.last_match.offset(1) if s.length == 1 }
+    m = big.match(input)
+
+    expected = [[0, 8], [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8]]
+    assert_equal(expected, (0..8).map { |i| m.offset(i) })
+  end
+
   def test_match_to_s
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal("bar", m.to_s)
