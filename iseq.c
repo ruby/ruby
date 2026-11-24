@@ -167,21 +167,10 @@ struct rb_const_path {
 #define CONST_PATH_MAX_CHUNKS 4096
 #define CONST_PATH_MAX_NODES ((uint32_t)CONST_PATH_MAX_CHUNKS << CONST_PATH_CHUNK_BITS)
 
-struct const_path_edge {
-    rb_id_serial_t key;
-    uint32_t child;
-};
-
-/* Open-addressed child table for nodes with more than one child. */
-struct const_path_edges {
-    uint32_t capa; /* power of two */
-    uint32_t size;
-    struct const_path_edge entries[FLEX_ARY_LEN];
-};
-
 static struct rb_const_path *const_path_chunks[CONST_PATH_MAX_CHUNKS];
 static uint32_t const_path_len;
-static struct const_path_edges **const_path_edge_tables;
+/* Child tables (ID => child index) of nodes with more than one child. */
+static struct rb_id_table *const_path_edge_tables;
 static uint32_t const_path_edge_tables_len, const_path_edge_tables_capa;
 
 static inline struct rb_const_path *
@@ -233,52 +222,14 @@ const_path_new_node(uint32_t parent, ID id)
     return idx;
 }
 
-static inline uint32_t
-const_path_edge_slot(const struct const_path_edges *t, rb_id_serial_t key)
-{
-    return (key * 2654435761u) & (t->capa - 1);
-}
-
-static uint32_t
-const_path_edges_lookup(const struct const_path_edges *t, rb_id_serial_t key)
-{
-    for (uint32_t i = const_path_edge_slot(t, key); ; i = (i + 1) & (t->capa - 1)) {
-        if (t->entries[i].key == key) return t->entries[i].child;
-        if (t->entries[i].key == 0) return 0;
-    }
-}
-
-static void
-const_path_edges_insert(struct const_path_edges *t, rb_id_serial_t key, uint32_t child)
-{
-    uint32_t i = const_path_edge_slot(t, key);
-    while (t->entries[i].key) i = (i + 1) & (t->capa - 1);
-    t->entries[i].key = key;
-    t->entries[i].child = child;
-    t->size++;
-}
-
-static struct const_path_edges *
-const_path_edges_new(uint32_t capa)
-{
-    struct const_path_edges *t = ruby_xcalloc(1, offsetof(struct const_path_edges, entries) + capa * sizeof(struct const_path_edge));
-    t->capa = capa;
-    return t;
-}
-
-static size_t
-const_path_edges_bytes(const struct const_path_edges *t)
-{
-    return offsetof(struct const_path_edges, entries) + t->capa * sizeof(struct const_path_edge);
-}
-
 static uint32_t
 const_path_child(const struct rb_const_path *node, ID id)
 {
     uint32_t edges = node->edges;
     if (!edges) return 0;
     if (edges & CONST_PATH_EDGES_TABLE) {
-        return const_path_edges_lookup(const_path_edge_tables[edges & ~CONST_PATH_EDGES_TABLE], rb_id_to_serial(id));
+        VALUE child;
+        return rb_id_table_lookup(&const_path_edge_tables[edges & ~CONST_PATH_EDGES_TABLE], id, &child) ? (uint32_t)child : 0;
     }
     return const_path_at(edges)->id == id ? edges : 0;
 }
@@ -288,7 +239,6 @@ const_path_add_child(uint32_t parent_idx, uint32_t child)
 {
     ASSERT_vm_locking();
     struct rb_const_path *parent = const_path_at(parent_idx);
-    rb_id_serial_t key = rb_id_to_serial(const_path_at(child)->id);
     uint32_t edges = parent->edges;
 
     if (!edges) {
@@ -298,26 +248,14 @@ const_path_add_child(uint32_t parent_idx, uint32_t child)
     if (!(edges & CONST_PATH_EDGES_TABLE)) {
         if (const_path_edge_tables_len == const_path_edge_tables_capa) {
             uint32_t capa = const_path_edge_tables_capa ? const_path_edge_tables_capa * 2 : 64;
-            SIZED_REALLOC_N(const_path_edge_tables, struct const_path_edges *, capa, const_path_edge_tables_capa);
+            SIZED_REALLOC_N(const_path_edge_tables, struct rb_id_table, capa, const_path_edge_tables_capa);
             const_path_edge_tables_capa = capa;
         }
-        struct const_path_edges *t = const_path_edges_new(4);
-        const_path_edges_insert(t, rb_id_to_serial(const_path_at(edges)->id), edges);
-        const_path_edge_tables[const_path_edge_tables_len] = t;
+        struct rb_id_table *t = rb_id_table_init(&const_path_edge_tables[const_path_edge_tables_len], 2);
+        rb_id_table_insert(t, const_path_at(edges)->id, (VALUE)edges);
         edges = parent->edges = CONST_PATH_EDGES_TABLE | const_path_edge_tables_len++;
     }
-
-    struct const_path_edges **tp = &const_path_edge_tables[edges & ~CONST_PATH_EDGES_TABLE];
-    struct const_path_edges *t = *tp;
-    if ((t->size + 1) * 4 > t->capa * 3) {
-        struct const_path_edges *n = const_path_edges_new(t->capa * 2);
-        for (uint32_t i = 0; i < t->capa; i++) {
-            if (t->entries[i].key) const_path_edges_insert(n, t->entries[i].key, t->entries[i].child);
-        }
-        ruby_xfree_sized(t, const_path_edges_bytes(t));
-        *tp = t = n;
-    }
-    const_path_edges_insert(t, key, child);
+    rb_id_table_insert(&const_path_edge_tables[edges & ~CONST_PATH_EDGES_TABLE], const_path_at(child)->id, (VALUE)child);
 }
 
 /* Returns the interned path for an Array of Symbols (a leading :"" means `::`). */
@@ -415,9 +353,10 @@ void
 rb_iseq_free_const_segments_table(void)
 {
     for (uint32_t i = 0; i < const_path_edge_tables_len; i++) {
-        ruby_xfree_sized(const_path_edge_tables[i], const_path_edges_bytes(const_path_edge_tables[i]));
+        rb_id_table_free_items(&const_path_edge_tables[i]);
     }
     SIZED_FREE_N(const_path_edge_tables, const_path_edge_tables_capa);
+    const_path_edge_tables = NULL;
     const_path_edge_tables_len = const_path_edge_tables_capa = 0;
 
     for (uint32_t i = 0; i < CONST_PATH_MAX_CHUNKS && const_path_chunks[i]; i++) {
