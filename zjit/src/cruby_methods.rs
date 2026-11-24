@@ -19,6 +19,7 @@ unsafe extern "C" {
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_ary_last(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_builtin_bool_negate(ec: EcPtr, self_: VALUE, value: VALUE) -> VALUE;
 }
@@ -334,6 +335,7 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_builtin_ary_at, inline_ary_at);
     annotate_builtin!(rb_builtin_ary_at_end, inline_ary_at_end, types::BoolExact);
     annotate_builtin!(rb_builtin_ary_first, inline_ary_first);
+    annotate_builtin!(rb_builtin_ary_last, inline_ary_last);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -1402,6 +1404,16 @@ fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::In
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
     let index = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+    let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length });
+    Some(result)
+}
+
+fn inline_ary_last(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    let last = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(-1) });
+    let index = fun.push_insn(block, hir::Insn::AdjustBounds { index: last, length });
     let result = fun.push_insn(block, hir::Insn::ArrayArefChecked { array: recv, index, length });
     Some(result)
 }

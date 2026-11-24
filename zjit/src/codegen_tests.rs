@@ -6072,6 +6072,24 @@ fn test_empty_array_pop() {
 }
 
 #[test]
+fn test_array_last() {
+    assert_snapshot!(inspect("
+        def test(arr) = arr.last
+        test([32, 33, 42])
+        test([32, 33, 42])
+    "), @"42");
+}
+
+#[test]
+fn test_array_last_empty() {
+    assert_snapshot!(inspect("
+        def test(arr) = arr.last
+        test([])
+        test([])
+    "), @"nil");
+}
+
+#[test]
 fn test_array_pop_no_arg() {
     assert_snapshot!(inspect("
         def test(arr) = arr.pop
