@@ -17,6 +17,33 @@ module Ruby::Prism
       assert_equal [], result.value.statements.body
     end
 
+    def test_statements_leading_semicolon
+      assert_predicate Ruby::Prism.parse(";x").value.statements, :leading_semicolon?
+      assert_predicate Ruby::Prism.parse_statement('"#{;x}"').parts.first.statements, :leading_semicolon?
+      assert_predicate Ruby::Prism.parse_statement("begin; x end").statements, :leading_semicolon?
+      refute_predicate Ruby::Prism.parse_statement("begin x; end").statements, :leading_semicolon?
+
+      # The first semicolon terminates the condition.
+      refute_predicate Ruby::Prism.parse_statement("if x; y end").statements, :leading_semicolon?
+      assert_predicate Ruby::Prism.parse_statement("if x;; y end").statements, :leading_semicolon?
+    end
+
+    def test_parenthesized_statements_leading_semicolon
+      ["(;x)", "(\n; x; y)"].each do |source|
+        group = Ruby::Prism.parse_statement(source)
+        assert_predicate group, :multiple_statements?, source
+        assert_predicate group.body, :leading_semicolon?, source
+      end
+
+      ["(x;)", "(x; y)"].each do |source|
+        group = Ruby::Prism.parse_statement(source)
+        assert_predicate group, :multiple_statements?, source
+        refute_predicate group.body, :leading_semicolon?, source
+      end
+
+      refute_predicate Ruby::Prism.parse_statement("(\nx\n)").body, :leading_semicolon?
+    end
+
     def test_parse_takes_file_path
       filepath = "filepath.rb"
       result = Ruby::Prism.parse("def foo; __FILE__; end", filepath: filepath)

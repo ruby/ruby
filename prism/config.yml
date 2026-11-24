@@ -1330,6 +1330,8 @@ flags:
     values:
       - name: CONTAINS_PRE_EXECUTION
         comment: "the statement list directly contains a `BEGIN` block"
+      - name: LEADING_SEMICOLON
+        comment: "a semicolon precedes the first statement in the list"
     comment: Flags for statement lists.
   - name: StringFlags
     values:

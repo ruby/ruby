@@ -13776,19 +13776,26 @@ parse_targets_validate(pm_parser_t *parser, pm_node_t *first_target, pm_binding_
     return result;
 }
 
+/* Consume optional terminators before a statement list and record whether
+ * they include a leading empty statement. */
+static pm_node_flags_t
+parse_statements_leading_terminators(pm_parser_t *parser) {
+    pm_node_flags_t flags = 0;
+    while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
+        if (parser->previous.type == PM_TOKEN_SEMICOLON) flags = PM_STATEMENTS_FLAGS_LEADING_SEMICOLON;
+    }
+    return flags;
+}
+
 /**
  * Parse a list of statements separated by newlines or semicolons.
  */
 static pm_statements_node_t *
 parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
-    // First, skip past any optional terminators that might be at the beginning
-    // of the statements.
-    while (accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE));
+    pm_statements_t body = { .flags = parse_statements_leading_terminators(parser) };
 
     // If we have a terminator, then we can just return NULL.
     if (context_terminator(context, &parser->current)) return NULL;
-
-    pm_statements_t body = { 0 };
 
     // At this point we know we have at least one statement, and that it
     // immediately follows the current token.
@@ -15369,7 +15376,6 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         opening = &else_keyword;
 
         parser_lex(parser);
-        accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
         pm_statements_node_t *else_statements = NULL;
         if (!match2(parser, PM_TOKEN_KEYWORD_END, PM_TOKEN_KEYWORD_ENSURE)) {
@@ -15406,7 +15412,6 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         pm_token_t ensure_keyword = parser->current;
 
         parser_lex(parser);
-        accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
         pm_statements_node_t *ensure_statements = NULL;
         if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
@@ -18574,7 +18579,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         /* The header uses the enclosing loop context. The body starts a new one. */
         pm_do_loop_stack_push(parser, false);
         pm_parser_scope_push(parser, true);
-        if (!match2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
+        if (!accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
             pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_SINGLETON_CLASS_DELIMITER, parser->current.type);
         }
 
@@ -18630,8 +18635,6 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
     if (inheritance_operator.start != NULL) {
         expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CLASS_UNEXPECTED_END);
-    } else {
-        accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
     }
     pm_node_t *statements = NULL;
 
@@ -19000,8 +19003,6 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
             lex_state_set(parser, PM_LEX_STATE_BEG);
             parser->command_start = true;
             expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_DEF_PARAMS_TERM);
-        } else {
-            accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
         }
 
         pm_accepts_block_stack_push(parser, true);
@@ -19102,7 +19103,6 @@ parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     }
 
     pm_parser_scope_push(parser, true);
-    accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE);
     pm_node_t *statements = NULL;
 
     if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
@@ -19140,19 +19140,13 @@ parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 static pm_node_t *
 parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t opening = parser->current;
-    pm_node_flags_t paren_flags = 0;
 
     pm_scratch_node_list_t current_block_exits = { 0 };
     pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
     parser_lex(parser);
-    while (true) {
-        if (accept1(parser, PM_TOKEN_SEMICOLON)) {
-            paren_flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
-        } else if (!accept1(parser, PM_TOKEN_NEWLINE)) {
-            break;
-        }
-    }
+    pm_node_flags_t statement_flags = parse_statements_leading_terminators(parser);
+    pm_node_flags_t paren_flags = statement_flags ? PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS : 0;
 
     /* If this is the end of the file or we match a right parenthesis, then we
      * have an empty parentheses node, and we can immediately return. */
@@ -19264,6 +19258,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
          * and we didn't return a multiple assignment node, then we can return a
          * regular parentheses node now. */
         pm_statements_node_t *statements = pm_statements_node_single_create(parser, statement, true);
+        pm_node_flag_set(UP(statements), statement_flags);
         return UP(pm_parentheses_node_create(parser, &opening, UP(statements), &parser->previous, paren_flags));
     }
 
@@ -19273,7 +19268,7 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     context_push(parser, PM_CONTEXT_PARENS);
     paren_flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
 
-    pm_statements_t body = { 0 };
+    pm_statements_t body = { .flags = statement_flags };
     pm_statements_body_append(parser, &body, statement, true);
 
     /* If we didn't find a terminator and we didn't find a right parenthesis,
@@ -19649,8 +19644,6 @@ parse_begin(pm_parser_t *parser, uint16_t depth) {
     size_t opening_newline_index = token_newline_index(parser);
     parser_lex(parser);
 
-    accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-
     pm_scratch_node_list_t current_block_exits = { 0 };
     pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
     pm_statements_node_t *begin_statements = NULL;
@@ -19740,7 +19733,7 @@ parse_for(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
         do_keyword = parser->previous;
     } else {
-        if (!match2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE)) {
+        if (!accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE)) {
             pm_parser_err_token_type(parser, &parser->current, PM_ERR_EXPECT_FOR_DELIMITER, parser->current.type);
         }
     }
