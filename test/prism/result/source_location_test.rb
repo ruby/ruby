@@ -1034,6 +1034,18 @@ module Ruby::Prism
       end
     end
 
+    def test_label_newline_ends_a_pattern_guard
+      %w[if unless].each do |keyword|
+        source = "case x; in {} #{keyword} m k:\nwork value:\nnext_value; end"
+        assert_location(CaseMatchNode, source) do |node|
+          clause = node.conditions.first
+          assert_equal "m k:", clause.pattern.predicate.slice
+          assert_equal ["work value:\nnext_value"], clause.statements.body.map(&:slice)
+          node
+        end
+      end
+    end
+
     def test_IndexAndWriteNode
       assert_location(IndexAndWriteNode, "foo[foo] &&= bar")
     end
@@ -1323,6 +1335,16 @@ module Ruby::Prism
 
     def test_PinnedExpressionNode
       assert_location(PinnedExpressionNode, "foo in ^(bar)", 7...13, &:pattern)
+    end
+
+    def test_braced_hash_pattern_allows_a_multiline_label_value_in_a_pin
+      pin = "^(m k:\nvalue)"
+      source = "def f opt: (x in {key: #{pin}}); end"
+      start = source.index(pin)
+      assert_location(PinnedExpressionNode, source, start...(start + pin.bytesize)) do |definition|
+        match = definition.parameters.keywords.first.value.body.body.first
+        match.pattern.elements.first.value
+      end
     end
 
     def test_PinnedVariableNode

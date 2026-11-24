@@ -531,10 +531,23 @@ module Ruby::Prism
     end
 
     def test_pattern_newlines_in_pins_and_guards
-      ["x in ^(m k:\nand b)", "case x; in a if m k:\nand b; end"].each do |source|
+      [
+        "x in ^(m k:\nand b)",
+        "x => [^(m k:\nand b)]",
+        "case x; in a if m k:\nand b; end",
+        "case x; in {} unless m k:\nand b; end",
+        "case x; in a if m \"key\":\n::C; end"
+      ].each do |source|
         assert_false Ruby::Prism.parse_success?(source), source
         assert Ruby::Prism.parse_success?(source.tr("\n", " ")), source
       end
+    end
+
+    def test_label_newline_in_a_bare_optional_parameter
+      source = "def f opt = m(k:\nvalue); end"
+      error = Ruby::Prism.parse(source).errors.first
+      assert_equal :argument_term_paren, error.type
+      assert_equal "value", error.location.slice
     end
 
     def test_range_patterns_require_literal_bounds

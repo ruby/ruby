@@ -1076,13 +1076,8 @@ struct pm_parser_t {
      */
     bool encoding_changed;
 
-    /*
-     * This flag indicates that we are currently parsing a pattern matching
-     * expression and impacts that calculation of newlines.
-     */
-    bool pattern_matching_newlines;
-
-    /* This flag indicates that we are currently parsing a keyword argument. */
+    /* In bare method parameters and patterns, a newline after a label
+     * terminates the expression. Braced hash patterns clear this flag. */
     bool in_keyword_arg;
 
     /*

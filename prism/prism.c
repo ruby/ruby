@@ -379,7 +379,7 @@ lex_state_p(const pm_parser_t *parser, pm_lex_state_t state) {
 typedef enum {
     PM_IGNORED_NEWLINE_NONE = 0,
     PM_IGNORED_NEWLINE_ALL,
-    PM_IGNORED_NEWLINE_PATTERN
+    PM_IGNORED_NEWLINE_LABELED
 } pm_ignored_newline_type_t;
 
 static PRISM_INLINE pm_ignored_newline_type_t
@@ -389,7 +389,7 @@ lex_state_ignored_p(pm_parser_t *parser) {
     if (ignored) {
         return PM_IGNORED_NEWLINE_ALL;
     } else if ((parser->lex_state & ~((unsigned int) PM_LEX_STATE_LABEL)) == (PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED)) {
-        return PM_IGNORED_NEWLINE_PATTERN;
+        return PM_IGNORED_NEWLINE_LABELED;
     } else {
         return PM_IGNORED_NEWLINE_NONE;
     }
@@ -10357,8 +10357,8 @@ parser_lex(pm_parser_t *parser) {
                     switch (lex_state_ignored_p(parser)) {
                         case PM_IGNORED_NEWLINE_NONE:
                             break;
-                        case PM_IGNORED_NEWLINE_PATTERN:
-                            if (parser->pattern_matching_newlines || parser->in_keyword_arg) {
+                        case PM_IGNORED_NEWLINE_LABELED:
+                            if (parser->in_keyword_arg) {
                                 if (!lexed_comment) {
                                     parser->current.type = PM_TOKEN_NEWLINE_TERMINATOR;
                                     parser_lex_callback(parser);
@@ -14783,7 +14783,6 @@ parse_parameters(
                 break;
             }
             case PM_TOKEN_LABEL: {
-                if (!uses_parentheses && !in_block) parser->in_keyword_arg = true;
                 update_parameter_state(parser, &parser->current, &order);
 
                 context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
@@ -14872,7 +14871,6 @@ parse_parameters(
                     }
                 }
 
-                parser->in_keyword_arg = false;
                 break;
             }
             case PM_TOKEN_USTAR:
@@ -17854,8 +17852,8 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
             return UP(pm_array_pattern_node_bracket_create(parser, &opening, inner, &closing));
         }
         case PM_TOKEN_BRACE_LEFT_HASH: {
-            bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
-            parser->pattern_matching_newlines = false;
+            bool previous_in_keyword_arg = parser->in_keyword_arg;
+            parser->in_keyword_arg = false;
 
             pm_hash_pattern_node_t *node;
             pm_token_t opening = parser->current;
@@ -17901,7 +17899,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
                 node->closing_loc = TOK2LOC(parser, &closing);
             }
 
-            parser->pattern_matching_newlines = previous_pattern_matching_newlines;
+            parser->in_keyword_arg = previous_in_keyword_arg;
             return UP(node);
         }
         case PM_TOKEN_UDOT_DOT:
@@ -17991,15 +17989,10 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
                     return UP(pm_pinned_variable_node_create(parser, &operator, variable));
                 }
                 case PM_TOKEN_PARENTHESIS_LEFT_GROUPING: {
-                    bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
-                    parser->pattern_matching_newlines = false;
-
                     pm_token_t lparen = parser->current;
                     parser_lex(parser);
 
                     pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_PATTERN_EXPRESSION_AFTER_PIN, (uint16_t) (depth + 1));
-                    parser->pattern_matching_newlines = previous_pattern_matching_newlines;
-
                     accept1(parser, PM_TOKEN_NEWLINE);
                     expect1_opening(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN, &lparen);
                     return UP(pm_pinned_expression_node_create(parser, expression, &operator, &lparen, &parser->previous));
@@ -18716,8 +18709,8 @@ parse_case(pm_parser_t *parser, uint16_t depth) {
         while (match1(parser, PM_TOKEN_KEYWORD_IN)) {
             parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false, true);
 
-            bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
-            parser->pattern_matching_newlines = true;
+            bool previous_in_keyword_arg = parser->in_keyword_arg;
+            parser->in_keyword_arg = true;
 
             lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
             parser->command_start = false;
@@ -18730,7 +18723,6 @@ parse_case(pm_parser_t *parser, uint16_t depth) {
             pm_statements_node_t *statements = NULL;
 
             pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_IN, (uint16_t) (depth + 1));
-            parser->pattern_matching_newlines = previous_pattern_matching_newlines;
 
             /* Since we're in the top-level of the case-in node we need to check
              * for guard clauses in the form of `if` or `unless` statements. */
@@ -18744,6 +18736,8 @@ parse_case(pm_parser_t *parser, uint16_t depth) {
                 pattern = UP(pm_unless_node_modifier_create(parser, pattern, &keyword, predicate));
             }
 
+            /* The guard is part of p_top_expr and inherits its newline handling. */
+            parser->in_keyword_arg = previous_in_keyword_arg;
             if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
                 if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
                     then_keyword = parser->previous;
@@ -19127,8 +19121,11 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
             break;
         }
         case PM_CASE_PARAMETER: {
-            /* If we're about to lex a label, we need to add the label state to
-             * make sure the next newline is ignored. */
+            /* Bare f_arglist enables keyword-argument newlines throughout f_args. */
+            bool previous_in_keyword_arg = parser->in_keyword_arg;
+            parser->in_keyword_arg = true;
+
+            /* The first label has already been lexed. */
             if (parser->current.type == PM_TOKEN_LABEL) {
                 lex_state_set(parser, parser->lex_state | PM_LEX_STATE_LABEL);
             }
@@ -19144,6 +19141,7 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
                 PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
                 (uint16_t) (depth + 1)
             );
+            parser->in_keyword_arg = previous_in_keyword_arg;
 
             /* Reject `def * = 1` and similar. We have to specifically check for
              * them because they create ambiguity with optional arguments. */
@@ -22663,8 +22661,8 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         case PM_TOKEN_BRACKET_LEFT:
             return pm_reduction(parse_aref(parser, node, previous_binding_power, flags, depth));
         case PM_TOKEN_KEYWORD_IN: {
-            bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
-            parser->pattern_matching_newlines = true;
+            bool previous_in_keyword_arg = parser->in_keyword_arg;
+            parser->in_keyword_arg = true;
 
             pm_token_t operator = parser->current;
             parser->command_start = false;
@@ -22674,13 +22672,13 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
             pm_constant_id_set_t captures = { 0 };
             pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_IN, (uint16_t) (depth + 1));
 
-            parser->pattern_matching_newlines = previous_pattern_matching_newlines;
+            parser->in_keyword_arg = previous_in_keyword_arg;
 
             return (pm_reduction_t) { .node = UP(pm_match_predicate_node_create(parser, node, pattern, &operator)), .kind = PM_REDUCTION_EXPRESSION };
         }
         case PM_TOKEN_EQUAL_GREATER: {
-            bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
-            parser->pattern_matching_newlines = true;
+            bool previous_in_keyword_arg = parser->in_keyword_arg;
+            parser->in_keyword_arg = true;
 
             pm_token_t operator = parser->current;
             parser->command_start = false;
@@ -22690,7 +22688,7 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
             pm_constant_id_set_t captures = { 0 };
             pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_HROCKET, (uint16_t) (depth + 1));
 
-            parser->pattern_matching_newlines = previous_pattern_matching_newlines;
+            parser->in_keyword_arg = previous_in_keyword_arg;
 
             return (pm_reduction_t) { .node = UP(pm_match_required_node_create(parser, node, pattern, &operator)), .kind = PM_REDUCTION_EXPRESSION };
         }
@@ -23233,7 +23231,6 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .continuable = true,
         .encoding_locked = false,
         .encoding_changed = false,
-        .pattern_matching_newlines = false,
         .in_keyword_arg = false,
         .current_block_exits = NULL,
         .stack_base = 0,
