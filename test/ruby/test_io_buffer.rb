@@ -2160,6 +2160,29 @@ class TestIOBuffer < Test::Unit::TestCase
     omit "Fork/shared memory is not supported."
   end
 
+  def test_readonly_private_file_mapping
+    Tempfile.create do |file|
+      file.write("test")
+      file.flush
+
+      File.open(file.path, "rb") do |input|
+        buffer = IO::Buffer.map(input, nil, 0, IO::Buffer::READONLY | IO::Buffer::PRIVATE)
+        begin
+          assert_predicate buffer, :private?
+          assert_predicate buffer, :readonly?
+          assert_equal "test", buffer.get_string
+          assert_raise(IO::Buffer::AccessError) { buffer.set_string("X") }
+        ensure
+          buffer.free
+        end
+
+        assert_predicate buffer, :null?
+        assert_equal 0, buffer.size
+        assert_raise(ArgumentError) { buffer.get_value(:U8, 0) }
+      end
+    end
+  end
+
   def test_private
     Tempfile.create(%w"buffer .txt") do |file|
       file.write("Hello World")
@@ -2170,6 +2193,7 @@ class TestIOBuffer < Test::Unit::TestCase
         refute_predicate buffer, :readonly?
 
         buffer.set_string("J")
+        assert_equal "Jello World", buffer.get_string
 
         # It was not changed because the mapping was private:
         file.seek(0)

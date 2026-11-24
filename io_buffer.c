@@ -153,8 +153,11 @@ io_buffer_storage_map_file(struct rb_io_buffer_storage *storage, int descriptor,
     }
 
     if (flags & RB_IO_BUFFER_PRIVATE) {
-        protect = PAGE_WRITECOPY;
-        access = FILE_MAP_COPY;
+        if (!(flags & RB_IO_BUFFER_READONLY)) {
+            // A copy-on-write view reserves commit for every page.
+            protect = PAGE_WRITECOPY;
+            access = FILE_MAP_COPY;
+        }
         buffer->flags |= RB_IO_BUFFER_PRIVATE;
     }
     else {
