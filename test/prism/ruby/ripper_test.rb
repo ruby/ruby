@@ -288,6 +288,14 @@ module Ruby::Prism
       end
     end
 
+    def test_dedenting_blank_lines_in_heredocs
+      ["\n", " \n", "\r\n", "\t\n"].each do |blank_line|
+        source = "<<~DOC\n  first\n#{blank_line}DOC\n"
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
     def test_heredoc_string_parts
       [
         "<<~DOC\n\n    \#{value}tail\nDOC\n",

@@ -4304,7 +4304,7 @@ module Ruby::Prism
         whitespace = 0
         cursor = 0
 
-        while cursor < string.length && string[cursor].match?(/\s/) && whitespace < width
+        while cursor < string.length && string[cursor].match?(/[ \t]/) && whitespace < width
           if string[cursor] == "\t"
             whitespace = ((whitespace / 8 + 1) * 8)
             break if whitespace > width
