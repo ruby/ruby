@@ -166,6 +166,16 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_shareable_proc_argument_forward
+    assert_ractor(<<~'RUBY')
+      def foo(*a) = a
+      def bar(...) = Ractor.shareable_proc { foo(...) }
+
+      pr = bar(1, 2)
+      assert_equal([1, 2], pr.call)
+    RUBY
+  end
+
   def test_shareability_error_uses_inspect
     x = (+"").instance_exec { method(:to_s) }
     def x.to_s
