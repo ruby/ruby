@@ -10,6 +10,8 @@
 
 **********************************************************************/
 
+#include "ruby/internal/has/attribute.h"
+
 /* Compile options.
  * You can change these options at runtime by VM::CompileOption.
  * Following definitions are default values.
@@ -32,14 +34,22 @@
  * 0: direct (using labeled goto using GCC special)
  * 1: token (switch/case)
  * 2: call (function call for each insn dispatch)
+ * 3: tailcall (musttail call for each insn dispatch)
  */
 #ifndef OPT_THREADED_CODE
+/* Clang can't musttail through a function pointer on wasm or ppc64le, and
+ * doesn't support preserve_none on most other targets. */
+#if RBIMPL_HAS_ATTRIBUTE(musttail) && (defined(__x86_64__) || defined(__aarch64__))
+#define OPT_THREADED_CODE 3
+#else
 #define OPT_THREADED_CODE 0
+#endif
 #endif
 
 #define OPT_DIRECT_THREADED_CODE (OPT_THREADED_CODE == 0)
 #define OPT_TOKEN_THREADED_CODE  (OPT_THREADED_CODE == 1)
 #define OPT_CALL_THREADED_CODE   (OPT_THREADED_CODE == 2)
+#define OPT_TAILCALL_THREADED_CODE (OPT_THREADED_CODE == 3)
 
 /* VM running option */
 #define OPT_CHECKED_RUN              1
