@@ -1251,7 +1251,7 @@ module Ruby::Prism
               if arguments.any?
                 args = visit_arguments(arguments)
 
-                if !node.block.nil?
+                if node.block || (arguments.one? && command?(arguments.first))
                   args
                 else
                   bounds(arguments.first.location)

@@ -212,7 +212,7 @@ module Ruby::Prism
         "def f; yield yield 1; end", "def f; super yield; end",
         "not(a and b) in true",
         "x in ((y))", "case x; in (y) if z; end",
-        "m(self.a = x)", "matrix[m 1, &block] = x",
+        "m(self.a = x)",
         "->(x: x) { x }", "x = 1; ->(x: x) { x }", "->(x: ->(x) { x }) { x }",
         "(;x)", "( #;\n x)", "case x; when 1 then; y; end"
       ].each do |source|
@@ -222,6 +222,12 @@ module Ruby::Prism
 
     def test_not_with_empty_parentheses
       ["not()", "not ()", "not(())", "not(\n)", "not\n()"].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_command_as_an_index_write_argument
+      ["matrix[m 1] = x", "matrix[m 1, &block] = x", "matrix[m(1)] = x", "matrix[m(1), 2] = x"].each do |source|
         assert_ripper_sexp_raw(source)
       end
     end
