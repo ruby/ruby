@@ -52,6 +52,10 @@
 #include "insns_info.inc"
 #include "zjit.h"
 
+#ifdef HAVE_MMAP
+#include <sys/mman.h>
+#endif
+
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
 static const rb_iseq_t *iseqw_check(VALUE iseqw);
@@ -135,13 +139,15 @@ remove_from_constant_cache(ID id, IC ic)
  * tree, like object shapes: one node per segment, pointing at its parent.
  * Every opt_getconstant_path with the same path shares the leaf node.
  *
- * Nodes are 16 bytes, bump-allocated in chunks and never freed, so neither
- * compiling nor freeing an ISeq allocates or frees anything per constant
- * reference. Parent and child links are 32-bit node indexes. Node 0 is the
- * root of relative paths and node 1 the root of `::`-prefixed ones.
+ * Nodes are 16 bytes, bump-allocated in 1 MiB chunks (mmap'd when
+ * available) and never freed, so neither compiling nor freeing an ISeq
+ * allocates or frees anything per constant reference. Parent and child links
+ * are 32-bit node indexes. Node 0 is the root of relative paths and node 1
+ * the root of `::`-prefixed ones.
  *
- * The tree only grows, under the VM lock. Readers walk parent links without
- * the lock: a node never changes after it is published, and chunks never move.
+ * The tree only grows, under the VM lock, which every Ractor takes to insert.
+ * Readers walk parent links without the lock: a node's id and parent never
+ * change once published, and chunks never move or get freed before exit.
  */
 struct rb_const_path {
     ID id;
@@ -154,9 +160,12 @@ struct rb_const_path {
 #define CONST_PATH_ROOT 0
 #define CONST_PATH_TOPLEVEL_ROOT 1
 #define CONST_PATH_EDGES_TABLE ((uint32_t)1 << 31)
-#define CONST_PATH_CHUNK_BITS 12
+#define CONST_PATH_CHUNK_BITS 16
 #define CONST_PATH_CHUNK_LEN ((uint32_t)1 << CONST_PATH_CHUNK_BITS)
-#define CONST_PATH_MAX_NODES CONST_PATH_EDGES_TABLE
+#define CONST_PATH_CHUNK_BYTES (CONST_PATH_CHUNK_LEN * sizeof(struct rb_const_path))
+/* 2^28 nodes (4 GiB of them) keeps the fixed chunk table at 32 KiB. */
+#define CONST_PATH_MAX_CHUNKS 4096
+#define CONST_PATH_MAX_NODES ((uint32_t)CONST_PATH_MAX_CHUNKS << CONST_PATH_CHUNK_BITS)
 
 struct const_path_edge {
     rb_id_serial_t key;
@@ -170,15 +179,7 @@ struct const_path_edges {
     struct const_path_edge entries[FLEX_ARY_LEN];
 };
 
-/* Chunk pointer arrays are replaced, not reallocated, so a reader holding an
- * old one still sees valid chunks. Replaced arrays are kept until exit. */
-struct const_path_chunks {
-    struct const_path_chunks *prev;
-    uint32_t capa;
-    struct rb_const_path *chunks[FLEX_ARY_LEN];
-};
-
-static struct const_path_chunks *const_path_chunks;
+static struct rb_const_path *const_path_chunks[CONST_PATH_MAX_CHUNKS];
 static uint32_t const_path_len;
 static struct const_path_edges **const_path_edge_tables;
 static uint32_t const_path_edge_tables_len, const_path_edge_tables_capa;
@@ -186,32 +187,45 @@ static uint32_t const_path_edge_tables_len, const_path_edge_tables_capa;
 static inline struct rb_const_path *
 const_path_at(uint32_t idx)
 {
-    struct const_path_chunks *c = RUBY_ATOMIC_PTR_LOAD(const_path_chunks);
-    return &c->chunks[idx >> CONST_PATH_CHUNK_BITS][idx & (CONST_PATH_CHUNK_LEN - 1)];
+    return &const_path_chunks[idx >> CONST_PATH_CHUNK_BITS][idx & (CONST_PATH_CHUNK_LEN - 1)];
+}
+
+static struct rb_const_path *
+const_path_chunk_alloc(void)
+{
+#ifdef HAVE_MMAP
+    void *p = mmap(NULL, CONST_PATH_CHUNK_BYTES, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED) rb_memerror();
+    ruby_annotate_mmap(p, CONST_PATH_CHUNK_BYTES, "Ruby:const_path_chunk");
+    return p;
+#else
+    return ruby_xmalloc(CONST_PATH_CHUNK_BYTES);
+#endif
+}
+
+static void
+const_path_chunk_free(struct rb_const_path *chunk)
+{
+#ifdef HAVE_MMAP
+    munmap(chunk, CONST_PATH_CHUNK_BYTES);
+#else
+    ruby_xfree_sized(chunk, CONST_PATH_CHUNK_BYTES);
+#endif
 }
 
 static uint32_t
 const_path_new_node(uint32_t parent, ID id)
 {
+    ASSERT_vm_locking();
     uint32_t idx = const_path_len;
     if (idx >= CONST_PATH_MAX_NODES) rb_memerror();
 
     uint32_t chunk = idx >> CONST_PATH_CHUNK_BITS;
-    struct const_path_chunks *c = const_path_chunks;
-    if (!c || chunk >= c->capa) {
-        uint32_t capa = c ? c->capa * 2 : 4;
-        struct const_path_chunks *n = ruby_xcalloc(1, offsetof(struct const_path_chunks, chunks) + capa * sizeof(n->chunks[0]));
-        n->capa = capa;
-        n->prev = c;
-        if (c) MEMCPY(n->chunks, c->chunks, struct rb_const_path *, c->capa);
-        RUBY_ATOMIC_PTR_SET(const_path_chunks, n);
-        c = n;
-    }
-    if (!c->chunks[chunk]) {
-        c->chunks[chunk] = ruby_xmalloc2(CONST_PATH_CHUNK_LEN, sizeof(struct rb_const_path));
+    if (!const_path_chunks[chunk]) {
+        RUBY_ATOMIC_PTR_SET(const_path_chunks[chunk], const_path_chunk_alloc());
     }
 
-    struct rb_const_path *node = &c->chunks[chunk][idx & (CONST_PATH_CHUNK_LEN - 1)];
+    struct rb_const_path *node = &const_path_chunks[chunk][idx & (CONST_PATH_CHUNK_LEN - 1)];
     node->id = id;
     node->parent = parent;
     node->edges = 0;
@@ -272,6 +286,7 @@ const_path_child(const struct rb_const_path *node, ID id)
 static void
 const_path_add_child(uint32_t parent_idx, uint32_t child)
 {
+    ASSERT_vm_locking();
     struct rb_const_path *parent = const_path_at(parent_idx);
     rb_id_serial_t key = rb_id_to_serial(const_path_at(child)->id);
     uint32_t edges = parent->edges;
@@ -405,18 +420,10 @@ rb_iseq_free_const_segments_table(void)
     SIZED_FREE_N(const_path_edge_tables, const_path_edge_tables_capa);
     const_path_edge_tables_len = const_path_edge_tables_capa = 0;
 
-    struct const_path_chunks *c = const_path_chunks;
-    if (c) {
-        for (uint32_t i = 0; i < c->capa; i++) {
-            if (c->chunks[i]) SIZED_FREE_N(c->chunks[i], CONST_PATH_CHUNK_LEN);
-        }
+    for (uint32_t i = 0; i < CONST_PATH_MAX_CHUNKS && const_path_chunks[i]; i++) {
+        const_path_chunk_free(const_path_chunks[i]);
+        const_path_chunks[i] = NULL;
     }
-    while (c) {
-        struct const_path_chunks *prev = c->prev;
-        ruby_xfree_sized(c, offsetof(struct const_path_chunks, chunks) + c->capa * sizeof(c->chunks[0]));
-        c = prev;
-    }
-    const_path_chunks = NULL;
     const_path_len = 0;
 }
 
