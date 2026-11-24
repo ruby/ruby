@@ -22536,12 +22536,12 @@ parse_expression_infix(pm_parser_t *parser, pm_reduction_t left, pm_binding_powe
         }
         case PM_TOKEN_KEYWORD_AND: {
             parser_lex(parser);
-            pm_node_t *right = parse_expression(parser, binding_power, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+            pm_node_t *right = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
             return pm_logical_expression_reduction(parser, UP(pm_and_node_create(parser, node, &token, right)), previous_binding_power);
         }
         case PM_TOKEN_KEYWORD_OR: {
             parser_lex(parser);
-            pm_node_t *right = parse_expression(parser, binding_power, (flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+            pm_node_t *right = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
             return pm_logical_expression_reduction(parser, UP(pm_or_node_create(parser, node, &token, right)), previous_binding_power);
         }
         case PM_TOKEN_PIPE_PIPE: {
