@@ -35,6 +35,14 @@ str_coderange_scan(VALUE str)
     return coderange_int2sym(rb_enc_str_coderange(str));
 }
 
+/* return rb_str_subseq and its coderange without scan */
+static VALUE
+str_subseq_coderange(VALUE str, VALUE beg, VALUE len)
+{
+    VALUE sub = rb_str_subseq(str, NUM2LONG(beg), NUM2LONG(len));
+    return rb_assoc_new(sub, coderange_int2sym(ENC_CODERANGE(sub)));
+}
+
 void
 Init_string_coderange(VALUE klass)
 {
@@ -44,4 +52,5 @@ Init_string_coderange(VALUE klass)
     sym_broken = ID2SYM(rb_intern_const("broken"));
     rb_define_method(klass, "coderange", str_coderange, 0);
     rb_define_method(klass, "coderange_scan", str_coderange_scan, 0);
+    rb_define_method(klass, "subseq_coderange", str_subseq_coderange, 2);
 }

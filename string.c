@@ -3297,6 +3297,11 @@ VALUE
 rb_str_subseq(VALUE str, rb_len_t beg, rb_len_t len)
 {
     VALUE str2 = str_subseq(str, beg, len);
+    if (len > 0 && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+        str_enc_copy(str2, str);
+        ENC_CODERANGE_CLEAR(str2);
+        return str2;
+    }
     rb_enc_cr_str_copy_for_substr(str2, str);
     return str2;
 }
