@@ -1,9 +1,11 @@
 #include "prism/internal/constant_pool.h"
 
 #include "prism/compiler/align.h"
+#include "prism/compiler/force_inline.h"
 #include "prism/compiler/inline.h"
 #include "prism/internal/arena.h"
 #include "prism/internal/assert.h"
+#include "prism/internal/memequal.h"
 
 #include <stdbool.h>
 
@@ -199,14 +201,14 @@ pm_constant_pool_constants_capacity(uint32_t capacity) {
 /**
  * Return whether the given bucket holds the given string. The stored hash is
  * compared first, so that probe collisions are rejected without reading the
- * constant or calling memcmp.
+ * constant or comparing its bytes.
  */
-static PRISM_INLINE bool
+static PRISM_FORCE_INLINE bool
 pm_constant_pool_bucket_match(const pm_constant_pool_t *pool, const pm_constant_pool_bucket_t *bucket, uint32_t hash, const uint8_t *start, size_t length) {
     if (bucket->hash != hash) return false;
 
     const pm_constant_t *constant = &pool->constants[bucket->id - 1];
-    return constant->length == length && memcmp(constant->start, start, length) == 0;
+    return constant->length == length && pm_memequal(constant->start, start, length);
 }
 
 /**

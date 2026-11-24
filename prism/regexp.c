@@ -10,6 +10,7 @@
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
 #include "prism/internal/memchr.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/node.h"
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
@@ -377,7 +378,7 @@ pm_regexp_name_binding(const pm_regexp_names_t *names, pm_regexp_name_t name, ui
     while (names->bindings[index].capture != 0) {
         pm_regexp_name_binding_t *binding = &names->bindings[index];
         const pm_regexp_name_t *capture = &names->values[binding->capture - 1];
-        if (binding->hash == hash && capture->length == name.length && memcmp(capture->start, name.start, name.length) == 0) return binding;
+        if (binding->hash == hash && capture->length == name.length && pm_memequal(capture->start, name.start, name.length)) return binding;
         index = (index + 1) & mask;
     }
 
@@ -1389,7 +1390,7 @@ pm_regexp_name_count(pm_regexp_parser_t *parser, const uint8_t *start, const uin
         size_t count = 0;
         for (size_t index = 0; index < names->size; index++) {
             const pm_regexp_name_t *name = &names->values[index];
-            if (name->length == length && memcmp(name->start, start, length) == 0) count++;
+            if (name->length == length && pm_memequal(name->start, start, length)) count++;
         }
         return count;
     }
@@ -1915,7 +1916,7 @@ pm_regexp_parse_posix_bracket(pm_regexp_parser_t *parser, const uint8_t *start) 
         for (size_t index = 0; index < sizeof(pm_regexp_posix_bracket_names) / sizeof(pm_regexp_posix_bracket_names[0]); index++) {
             const char *name = pm_regexp_posix_bracket_names[index];
             size_t length = strlen(name);
-            if ((size_t) (end - cursor) < length || memcmp(cursor, name, length) != 0) continue;
+            if ((size_t) (end - cursor) < length || !pm_memequal(cursor, name, length)) continue;
 
             cursor += length;
             if (end - cursor < 2 || cursor[0] != ':' || cursor[1] != ']') {

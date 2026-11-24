@@ -3,6 +3,7 @@
 #include "prism/internal/assert.h"
 #include "prism/internal/char.h"
 #include "prism/internal/encoding.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/options.h"
 #include "prism/internal/parser.h"
 
@@ -138,8 +139,8 @@ pm_string_query_t
 pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name, const char *version) {
 #define B(p) ((p) ? PM_STRING_QUERY_TRUE : PM_STRING_QUERY_FALSE)
 #define C1(c) (*source == c)
-#define C2(s) (memcmp(source, s, 2) == 0)
-#define C3(s) (memcmp(source, s, 3) == 0)
+#define C2(s) pm_memequal(source, s, 2)
+#define C3(s) pm_memequal(source, s, 3)
 
     switch (pm_slice_type(source, length, encoding_name, version)) {
         case PM_SLICE_TYPE_ERROR_VERSION:
