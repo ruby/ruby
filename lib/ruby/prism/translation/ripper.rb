@@ -740,7 +740,7 @@ module Ruby::Prism
         if node.is_a?(ParenthesesNode)
           bounds(node.opening_loc)
           on_lparen("(")
-          result = visit(node.body)
+          result = visit_pattern_node(node.body)
           bounds(node.closing_loc)
           on_rparen(")")
 
@@ -952,7 +952,7 @@ module Ruby::Prism
           node.opening == "[" ? on_lbracket("[") : on_lparen("(")
         end
 
-        requireds = visit_all(node.requireds) if node.requireds.any?
+        requireds = node.requireds.map { |part| visit_pattern_node(part) } if node.requireds.any?
         rest =
           if (rest_node = node.rest).is_a?(SplatNode)
             bounds(rest_node.operator_loc)
@@ -966,7 +966,7 @@ module Ruby::Prism
             end
           end
 
-        posts = visit_all(node.posts) if node.posts.any?
+        posts = node.posts.map { |part| visit_pattern_node(part) } if node.posts.any?
 
         if node.closing_loc
           bounds(node.closing_loc)
@@ -1638,7 +1638,7 @@ module Ruby::Prism
       # foo => bar => baz
       #        ^^^^^^^^^^
       def visit_capture_pattern_node(node)
-        value = visit(node.value)
+        value = visit_pattern_node(node.value)
 
         bounds(node.operator_loc)
         on_op("=>")
@@ -2174,7 +2174,7 @@ module Ruby::Prism
             visit(node.left.expression)
           end
 
-        requireds = visit_all(node.requireds) if node.requireds.any?
+        requireds = node.requireds.map { |part| visit_pattern_node(part) } if node.requireds.any?
 
         bounds(node.right.operator_loc)
         on_op("*")
@@ -2403,7 +2403,7 @@ module Ruby::Prism
                     on_string_add(on_string_content, on_tstring_content(value))
                   end
                 end,
-                visit(element.value)
+                visit_pattern_node(element.value)
               ]
             end
           end
