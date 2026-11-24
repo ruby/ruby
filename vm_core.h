@@ -425,6 +425,7 @@ enum lvar_state {
     lvar_uninitialized,
     lvar_initialized,
     lvar_reassigned,
+    lvar_read_uninitialized, /* read from a block before any assignment */
 };
 
 /* Lazily-allocated per-iseq variable data. NULL when unused (the common case:
@@ -1118,6 +1119,7 @@ struct rb_execution_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
+    VALUE isolated_svar; /* special variables of shareable (isolated) Procs */
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;
@@ -1402,6 +1404,7 @@ const rb_cref_t *rb_proc_refinements_cref_for_call(VALUE procval);
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
+VALUE rb_proc_ractor_try_make_shareable(VALUE proc, VALUE replace_self);
 
 typedef struct {
     VALUE flags; /* imemo header */

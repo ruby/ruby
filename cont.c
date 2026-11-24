@@ -1878,6 +1878,7 @@ cont_restore_thread(rb_context_t *cont)
         th->ec->tag = sec->tag;
         th->ec->root_lep = sec->root_lep;
         th->ec->root_svar = sec->root_svar;
+        th->ec->isolated_svar = sec->isolated_svar;
         th->ec->errinfo = sec->errinfo;
 
         VM_ASSERT(th->ec->vm_stack != NULL);
@@ -2816,6 +2817,7 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
         th->ec->errinfo = Qnil;
         th->ec->root_lep = rb_vm_proc_local_ep(fiber->first_proc);
         th->ec->root_svar = Qfalse;
+        th->ec->isolated_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
         const rb_cref_t *cref = rb_proc_refinements_cref_for_call(fiber->first_proc);

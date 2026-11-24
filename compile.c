@@ -1879,19 +1879,8 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
 }
 
 static void
-access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
+record_outer_variable(const rb_iseq_t *iseq, int level, ID id, bool write)
 {
-    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
-
-    if (isolated_depth && level >= isolated_depth) {
-        if (id == rb_intern("yield")) {
-            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc");
-        }
-        else {
-            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable '%s' from isolated Proc", rb_id2name(id));
-        }
-    }
-
     for (int i=0; i<level; i++) {
         VALUE val;
         struct rb_id_table *ovs = ISEQ_BODY(iseq)->outer_variables;
@@ -1913,6 +1902,60 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
     }
 }
 
+static void
+access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
+{
+    int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
+
+    if (isolated_depth && level >= isolated_depth) {
+        if (id == rb_intern("yield")) {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not yield from isolated Proc");
+        }
+        else {
+            COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq), "can not access variable '%s' from isolated Proc", rb_id2name(id));
+        }
+    }
+
+    record_outer_variable(iseq, level, id, write);
+}
+
+static int
+iseq_local_level(const rb_iseq_t *iseq)
+{
+    int level = 0;
+    for (; iseq != ISEQ_BODY(iseq)->local_iseq; level++) {
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+    return level;
+}
+
+/* block_given?, defined?(yield) and super passing the block implicitly in a
+ * block use the block of the method, like yield, so the block cannot be made
+ * shareable either. Outside a method there is no block. */
+static void
+access_outer_block(const rb_iseq_t *iseq, const char *use)
+{
+    if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->type != ISEQ_TYPE_METHOD) return;
+
+    int level = iseq_local_level(iseq);
+    if (level > 0) record_outer_variable(iseq, level, rb_intern(use), false);
+}
+
+static void
+access_outer_block_by_call(const rb_iseq_t *iseq, ID mid)
+{
+    ID id_block_given_p, id_iterator_p;
+    CONST_ID(id_block_given_p, "block_given?");
+    CONST_ID(id_iterator_p, "iterator?");
+
+    if (mid == id_block_given_p) {
+        access_outer_block(iseq, "block_given?");
+    }
+    else if (mid == id_iterator_p) {
+        access_outer_block(iseq, "iterator?");
+    }
+}
+
 static ID
 iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
 {
@@ -1928,17 +1971,32 @@ iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
 static void
 update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
 {
+    /* An assignment from a block, which may be called many times, in a loop or
+     * in a block using redo may be executed more than once for the same
+     * variable. Assignments from rescue/ensure clauses (also level > 0) are
+     * conservatively treated the same way. */
+    bool repeated = level > 0 ||
+        ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth > 0 ||
+        ISEQ_COMPILE_DATA(iseq)->lvar_redo;
+
     for (int i=0; i<level; i++) {
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 
     uint8_t *states = iseq_lvar_states(ISEQ_BODY(iseq));
     int table_idx = ISEQ_BODY(iseq)->local_table_size - idx;
+    if (repeated) {
+        iseq_lvar_state_set(states, table_idx, lvar_reassigned);
+        return;
+    }
     switch (iseq_lvar_state_get(states, table_idx)) {
       case lvar_uninitialized:
         iseq_lvar_state_set(states, table_idx, lvar_initialized);
         break;
       case lvar_initialized:
+      case lvar_read_uninitialized:
+        /* A block read the variable before this assignment (e.g. in the right-hand
+         * side of the assignment), when it was still nil. */
         iseq_lvar_state_set(states, table_idx, lvar_reassigned);
         break;
       case lvar_reassigned:
@@ -1949,19 +2007,57 @@ update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
     }
 }
 
+/* redo in a block reruns its body in the same frame, so every assignment in
+ * the block, before or after the redo, may be executed repeatedly. */
+static void
+iseq_set_lvar_redo(const rb_iseq_t *block_iseq)
+{
+    if (ISEQ_COMPILE_DATA(block_iseq)->lvar_redo) return;
+    ISEQ_COMPILE_DATA(block_iseq)->lvar_redo = true;
+
+    uint8_t *states = iseq_lvar_states(ISEQ_BODY(block_iseq));
+    for (unsigned int i=0; i<ISEQ_BODY(block_iseq)->local_table_size; i++) {
+        if (iseq_lvar_state_get(states, i) == lvar_initialized) {
+            iseq_lvar_state_set(states, i, lvar_reassigned);
+        }
+    }
+}
+
+/* retry in a rescue iseq reruns the begin body of its parent iseq. */
+static void
+iseq_set_rescue_has_retry(const rb_iseq_t *rescue_iseq)
+{
+    ISEQ_COMPILE_DATA(ISEQ_BODY(rescue_iseq)->parent_iseq)->rescue_has_retry = true;
+}
+
+/* Called when a block reads an outer variable (level > 0) */
+static void
+update_lvar_state_for_read(const rb_iseq_t *iseq, int level, int idx)
+{
+    for (int i=0; i<level; i++) {
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    uint8_t *states = iseq_lvar_states(ISEQ_BODY(iseq));
+    int table_idx = ISEQ_BODY(iseq)->local_table_size - idx;
+    if (iseq_lvar_state_get(states, table_idx) == lvar_uninitialized) {
+        iseq_lvar_state_set(states, table_idx, lvar_read_uninitialized);
+    }
+}
+
 static int
 iseq_set_parameters_lvar_state(const rb_iseq_t *iseq)
 {
     uint8_t *states = iseq_lvar_states(ISEQ_BODY(iseq));
+    unsigned int opt_start = ISEQ_BODY(iseq)->param.lead_num;
+    unsigned int opt_end = opt_start + ISEQ_BODY(iseq)->param.opt_num;
 
+    /* Optional parameters are assigned by the code of their default value, unless
+     * passed, so their state is that of compiling this code.  It is compiled after
+     * this with prism, but before with compile.c, so do not overwrite it. */
     for (unsigned int i=0; i<ISEQ_BODY(iseq)->param.size; i++) {
+        if (opt_start <= i && i < opt_end) continue;
         iseq_lvar_state_set(states, i, lvar_initialized);
-    }
-
-    int lead_num = ISEQ_BODY(iseq)->param.lead_num;
-    int opt_num = ISEQ_BODY(iseq)->param.opt_num;
-    for (int i=0; i<opt_num; i++) {
-        iseq_lvar_state_set(states, lead_num + i, lvar_uninitialized);
     }
 
     return COMPILE_OK;
@@ -1976,7 +2072,10 @@ iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const lin
     else {
         ADD_INSN2(seq, line_node, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
-    if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    if (level > 0) {
+        update_lvar_state_for_read(iseq, level, idx);
+        access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
+    }
 }
 
 static void
@@ -6596,6 +6695,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_YIELD), 0,
                   PUSH_VAL(DEFINED_YIELD));
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "defined?(yield)");
         return;
 
       case NODE_BACK_REF:
@@ -8637,6 +8737,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     LABEL *tmp_label = NULL;
 
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
     push_ensure_entry(iseq, &enl, NULL, NULL);
 
     if (RNODE_WHILE(node)->nd_state == 1) {
@@ -8708,6 +8809,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
+    ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
     return COMPILE_OK;
 }
@@ -8956,6 +9058,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         LABEL *splabel = NEW_LABEL(0);
 
         debugs("redo in block");
+        iseq_set_lvar_redo(iseq);
         ADD_LABEL(ret, splabel);
         add_ensure_iseq(ret, iseq, 0);
         ADD_ADJUST(ret, line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
@@ -8989,6 +9092,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             ip = ISEQ_BODY(ip)->parent_iseq;
         }
         if (ip != 0) {
+            if (ISEQ_COMPILE_DATA(ip)->redo_label == 0) iseq_set_lvar_redo(ip);
             ADD_INSN(ret, line_node, putnil);
             ADD_INSN1(ret, line_node, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
 
@@ -9010,6 +9114,7 @@ compile_retry(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     const NODE *line_node = node;
 
     if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
+        iseq_set_rescue_has_retry(iseq);
         ADD_INSN(ret, line_node, putnil);
         ADD_INSN1(ret, line_node, throw, INT2FIX(TAG_RETRY));
 
@@ -9032,10 +9137,14 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     LABEL *lstart = NEW_LABEL(line);
     LABEL *lend = NEW_LABEL(line);
     LABEL *lcont = NEW_LABEL(line);
+    bool prev_rescue_has_retry = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = false;
     const rb_iseq_t *rescue = NEW_CHILD_ISEQ(RNODE_RESCUE(node)->nd_resq,
                                              rb_str_concat(rb_str_new2("rescue in "),
                                                            ISEQ_BODY(iseq)->location.label),
                                              ISEQ_TYPE_RESCUE, line);
+    bool retried = ISEQ_COMPILE_DATA(iseq)->rescue_has_retry;
+    ISEQ_COMPILE_DATA(iseq)->rescue_has_retry = prev_rescue_has_retry;
 
     lstart->rescued = LABEL_RESCUE_BEG;
     lend->rescued = LABEL_RESCUE_END;
@@ -9043,9 +9152,11 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
     bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth++;
     {
         CHECK(COMPILE(ret, "rescue head", RNODE_RESCUE(node)->nd_head));
     }
+    if (retried) ISEQ_COMPILE_DATA(iseq)->lvar_loop_depth--;
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
 
     ADD_LABEL(ret, lend);
@@ -9757,6 +9868,10 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
 
+    if (type == NODE_FCALL || type == NODE_VCALL) {
+        access_outer_block_by_call(iseq, mid);
+    }
+
 #if OPT_SUPPORT_JOKE
     if (nd_type_p(node, NODE_VCALL)) {
         ID id_bitblt;
@@ -9824,6 +9939,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
                 nd_type_p(get_nd_recv(node), NODE_LVAR) &&
                 iseq_block_param_id_p(iseq, RNODE_LVAR(get_nd_recv(node))->nd_vid, &idx, &level)) {
                 ADD_INSN2(recv, get_nd_recv(node), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+                if (level > 0) access_outer_variables(iseq, level, RNODE_LVAR(get_nd_recv(node))->nd_vid, false);
             }
             else if (private_recv_p(node)) {
                 ADD_INSN(recv, node, putself);
@@ -10421,6 +10537,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 
     if (use_block && parent_block == NULL) {
         iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        access_outer_block(iseq, "super");
     }
 
     flag |= VM_CALL_SUPER | VM_CALL_FCALL;
@@ -10478,11 +10595,7 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         ADD_INSN(ret, node, pop);
     }
 
-    int level = 0;
-    const rb_iseq_t *tmp_iseq = iseq;
-    for (; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++ ) {
-        tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
-    }
+    int level = iseq_local_level(iseq);
     if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
 
     return COMPILE_OK;
