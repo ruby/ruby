@@ -16933,12 +16933,23 @@ typedef struct {
 
 /* Check each join as its right operand is appended, in source order. */
 static PRISM_INLINE void
-pm_string_parts_append(pm_parser_t *parser, pm_string_parts_t *parts, pm_node_t *part) {
-    if (parser->encoding_changed && !pm_string_concat_encoding(parser, part, &parts->encoding)) {
-        parts->invalid_encoding = true;
+pm_string_parts_append_operand(pm_parser_t *parser, pm_string_parts_t *parts, pm_node_t *part, const pm_node_t *first, const pm_node_t *last) {
+    if (parser->encoding_changed) {
+        if (first != NULL && !pm_string_concat_encoding(parser, first, &parts->encoding)) {
+            parts->invalid_encoding = true;
+        } else if (first == NULL || first != last) {
+            /* Interpolation separates the leading text from the trailing text. */
+            parts->encoding = NULL;
+            if (last != NULL) pm_string_concat_encoding(parser, last, &parts->encoding);
+        }
     }
 
     pm_node_list_open_append(&parser->node_chunks, &parts->list, part);
+}
+
+static PRISM_INLINE void
+pm_string_parts_append(pm_parser_t *parser, pm_string_parts_t *parts, pm_node_t *part) {
+    pm_string_parts_append_operand(parser, parts, part, part, part);
 }
 
 static pm_node_t *
@@ -16963,6 +16974,7 @@ static PRISM_INLINE pm_node_t *
 parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint16_t depth) {
     PRISM_ASSERT(parser->current.type == PM_TOKEN_STRING_BEGIN);
     pm_string_parts_t container = { 0 };
+    const pm_node_t *current_tail = current;
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
         pm_node_t *node = NULL;
@@ -17090,6 +17102,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             }
         }
 
+        const pm_node_t *last_part = node;
         if (node == NULL) {
             /* Interpolated strings can start with literal text or with an interpolation. */
             pm_string_parts_t parts = { 0 };
@@ -17098,6 +17111,13 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
                 if (part != NULL) pm_string_parts_append(parser, &parts, part);
+            }
+
+            /* An incompatible pair discarded the leading text during recovery. */
+            if (parts.invalid_encoding) first_part = NULL;
+            if (parts.encoding != NULL && parts.list.size > 0) {
+                const pm_node_t *last = pm_node_list_open_last(&parts.list);
+                if (PM_NODE_TYPE_P(last, PM_STRING_NODE)) last_part = last;
             }
 
             if (accept1(parser, PM_TOKEN_LABEL_END)) {
@@ -17111,6 +17131,8 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
                 node = pm_string_parts_to_string(parser, &opening, &parts, &parser->previous);
             }
+        } else {
+            first_part = node;
         }
 
         if (current == NULL) {
@@ -17124,12 +17146,15 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             // If we don't already have a node, then it's fine and we can just
             // set the result to be the node we just parsed.
             current = node;
+            current_tail = last_part;
         } else {
             // Otherwise we need to check the type of the node we just parsed.
             // If it cannot be concatenated with the previous node, then we'll
             // need to add a syntax error.
             if (!PM_NODE_TYPE_P(node, PM_STRING_NODE) && !PM_NODE_TYPE_P(node, PM_INTERPOLATED_STRING_NODE)) {
                 pm_parser_err_node(parser, node, PM_ERR_STRING_CONCATENATION);
+                first_part = NULL;
+                last_part = NULL;
             }
 
             // If we haven't already started the parts of our container for
@@ -17139,10 +17164,10 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
                     pm_parser_err_node(parser, current, PM_ERR_STRING_CONCATENATION);
                 }
 
-                pm_string_parts_append(parser, &container, current);
+                pm_string_parts_append_operand(parser, &container, current, current_tail, current_tail);
             }
 
-            pm_string_parts_append(parser, &container, node);
+            pm_string_parts_append_operand(parser, &container, node, first_part, last_part);
         }
     }
 
