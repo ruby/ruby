@@ -954,7 +954,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     package.extract_tar_gz tgz_io, @destination
 
     dirpath = File.join @destination, "lib"
-    assert_equal 0o40755.to_s(8), File.stat(dirpath).mode.to_s(8)
+    mode = 0o40755 & ~File.umask
+    assert_equal mode.to_s(8), File.stat(dirpath).mode.to_s(8)
 
     filepath = File.join @destination, "lib/foo.rb"
     mode = 0o100644 & ~File.umask
@@ -963,6 +964,26 @@ class TestGemPackage < Gem::Package::TarTestCase
     filepath = File.join @destination, "bin/foo"
     mode = 0o100755 & ~File.umask
     assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
+  end
+
+  def test_extract_tar_gz_directory_mode_respects_umask
+    pend "chmod not supported" if Gem.win_platform?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir "lib", 0o777
+    end
+
+    umask = File.umask(0o022)
+    begin
+      package.extract_tar_gz tgz_io, @destination
+    ensure
+      File.umask(umask)
+    end
+
+    dirpath = File.join @destination, "lib"
+    assert_equal 0o40755.to_s(8), File.stat(dirpath).mode.to_s(8)
   end
 
   def test_extract_tar_gz_absolute
@@ -1056,6 +1077,28 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     refute File.exist?(escaped), "must not write outside extraction root via symlink"
+  end
+
+  def test_extract_tar_gz_rejects_preexisting_symlink_escape_without_creating_directory
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir "lib/sub", 0o755
+    end
+
+    escape_dir = File.join(@tempdir, "escape")
+    FileUtils.mkdir_p escape_dir
+
+    FileUtils.rm_rf File.join(@destination, "lib")
+    File.symlink escape_dir, File.join(@destination, "lib")
+
+    assert_raise Gem::Package::PathError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    assert_path_not_exist File.join(escape_dir, "sub")
   end
 
   def test_extract_tar_gz_rejects_preexisting_leaf_symlink

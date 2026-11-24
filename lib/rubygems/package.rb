@@ -513,6 +513,10 @@ EOM
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
     destination_dir = File.realpath(destination_dir)
+    # File.umask sets the process umask to 0 while reading it, so read it once
+    # instead of per file to keep other threads' files from being created
+    # world-writable.
+    umask = File.umask
 
     directories = []
     symlinks = []
@@ -546,12 +550,12 @@ EOM
             File.dirname destination
           end
 
+        verify_extraction_dir mkdir, destination_dir
+
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 if entry.directory?)
+          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 & ~umask if entry.directory?)
           directories << mkdir
         end
-
-        verify_extraction_dir mkdir, destination_dir
 
         if entry.file?
           raise Gem::Package::PathError.new(destination, destination_dir) if
@@ -563,7 +567,7 @@ EOM
             # in the IO buffer that needs to be written, and that could be
             # written after the chmod (on close) which would mess up the perms
             out.flush
-            out.chmod file_mode(entry.header.mode) & ~File.umask
+            out.chmod file_mode(entry.header.mode) & ~umask
           end
         end
 
@@ -851,10 +855,13 @@ EOM
 
   ##
   # Raises an exception unless +dir+, with symlinks resolved, is
-  # +destination_dir+ or a directory inside it.  +destination_dir+ must
-  # already be resolved with File.realpath by the caller.
+  # +destination_dir+ or a directory inside it.  When +dir+ does not exist
+  # yet, its nearest existing ancestor is checked instead, so this can run
+  # before +dir+ is created.  +destination_dir+ must already be resolved with
+  # File.realpath by the caller.
 
   def verify_extraction_dir(dir, destination_dir) # :nodoc:
+    dir = File.dirname(dir) until File.exist?(dir)
     real_dir = File.realpath(dir)
 
     return if real_dir == destination_dir ||
