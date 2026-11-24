@@ -723,6 +723,30 @@ module Ruby::Prism
       assert_false Ruby::Prism.parse_success?("f(a, def g = obj.fetch x)", version: "4.0")
     end
 
+    def test_comma_after_an_endless_definition_with_a_brace_command_body
+      [
+        "outer def f = g (x) {}, z",
+        "outer(def self.f = obj.g (x) {}, z)",
+        "outer def f = g (x) {} rescue a do end, z",
+        "outer def f = not g (x) {} rescue a rescue b do end, z"
+      ].each do |source|
+        errors = Ruby::Prism.parse(source, version: "4.0").errors
+        assert_equal [:invalid_comma], errors.map(&:type), source
+        assert_equal ",", errors.first.location.slice
+      end
+    end
+
+    def test_operators_after_an_endless_definition_with_a_brace_command_body
+      {
+        "outer def f = g (x) {} => key" => "=>",
+        "x = def f = g (x) {} and ready" => "and"
+      }.each do |source, operator|
+        errors = Ruby::Prism.parse(source, version: "4.0").errors
+        assert_equal [:expect_eol_after_statement], errors.map(&:type), source
+        assert_equal operator, errors.first.location.slice
+      end
+    end
+
     def test_command_rhs_of_operator_assignment
       assert Ruby::Prism.parse_success?("a += f x")
       assert Ruby::Prism.parse_success?("a = b += f x")

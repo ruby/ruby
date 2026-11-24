@@ -663,6 +663,33 @@ module Ruby::Prism
       end
     end
 
+    def test_endless_definitions_with_braced_calls_as_arguments
+      assert_location(CallNode, "outer def f = g (x) {}", version: "4.0") do |outer|
+        assert_equal ["def f = g (x) {}"], outer.arguments.arguments.map(&:slice)
+        outer
+      end
+
+      source = "outer def f = g(x) {} rescue a do end, z"
+      assert_location(CallNode, source, version: "4.0") do |outer|
+        definition, tail = outer.arguments.arguments
+        body = definition.body.body.first
+        assert_equal "g(x) {}", body.expression.slice
+        assert_equal "do end", body.rescue_expression.block.slice
+        assert_equal "z", tail.slice
+        outer
+      end
+    end
+
+    def test_case_clause_after_an_endless_definition_with_a_brace_command_body
+      source = "case v; in 0; def f = g (x) {} in Integer; end"
+      assert_location(CaseMatchNode, source) do |node|
+        first, second = node.conditions
+        assert_equal "def f = g (x) {}", first.statements.body.first.slice
+        assert_equal "Integer", second.pattern.slice
+        node
+      end
+    end
+
     def test_rescue_after_nested_command_assignment
       source = "targets[:k] = tmp = call_boom 1 rescue nil rescue :outer"
       assert_location(RescueModifierNode, source) do |node|

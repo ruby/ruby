@@ -1751,8 +1751,8 @@ enum pm_reduction_kind {
     /* A block_call can take a call operator, as in `f x do end.tail`. */
     PM_REDUCTION_BLOCK_CALL,
 
-    /* A single-target write with a command_rhs, as in `x = f 1` or
-     * `x = y = f 1 rescue nil`. This reduces to command_asgn, a stmt. */
+    /* A command_asgn is a single-target write with a command_rhs, as in
+     * `x = f 1`, or an endless method with an endless_command body. */
     PM_REDUCTION_COMMAND_ASSIGNMENT,
 
     /* A return, break, or next command with call_args. A trailing operator
@@ -14352,17 +14352,6 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
         }
         case PM_RESCUE_MODIFIER_NODE:
             return pm_command_call_value_p(parser, ((const pm_rescue_modifier_node_t *) node)->expression);
-        case PM_DEF_NODE: {
-            const pm_def_node_t *cast = (const pm_def_node_t *) node;
-            if (cast->equal_loc.length > 0 && cast->body != NULL) {
-                const pm_node_t *body = cast->body;
-                if (PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE)) {
-                    body = ((const pm_statements_node_t *) body)->body.nodes[((const pm_statements_node_t *) body)->body.size - 1];
-                }
-                return pm_command_call_value_p(parser, body);
-            }
-            return false;
-        }
         default:
             return false;
     }
@@ -14374,22 +14363,15 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
  * calls, nested command assignments and endless methods can finish before it.
  */
 static bool
-pm_command_before_comma_p(const pm_parser_t *parser, const pm_node_t *node, enum pm_reduction_kind kind) {
+pm_command_before_comma_p(enum pm_reduction_kind kind) {
     switch (kind) {
         case PM_REDUCTION_BRACE_COMMAND:
         case PM_REDUCTION_BLOCK_CALL:
         case PM_REDUCTION_COMMAND_ASSIGNMENT:
             return true;
-        case PM_REDUCTION_COMMAND:
-        case PM_REDUCTION_JUMP:
-        case PM_REDUCTION_EXPRESSION:
-        case PM_REDUCTION_STATEMENT:
+        default:
             return false;
-        case PM_REDUCTION_DEFAULT:
-            break;
     }
-
-    return PM_NODE_TYPE_P(node, PM_DEF_NODE) && pm_command_call_value_p(parser, node);
 }
 
 /**
@@ -15758,7 +15740,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                      * command calls never reach here as a key because they
                      * absorb the `=>` into their own arguments first.
                      */
-                    if (argument_kind == PM_REDUCTION_BLOCK_CALL || pm_command_call_value_p(parser, argument)) {
+                    if (pm_command_before_comma_p(argument_kind) || pm_command_call_value_p(parser, argument)) {
                         pm_parser_err_token_type(parser, &parser->previous, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->previous.type);
                     }
 
@@ -15844,7 +15826,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 }
             }
 
-            if (pm_command_before_comma_p(parser, argument, argument_kind)) {
+            if (pm_command_before_comma_p(argument_kind)) {
                 pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
             }
         } else {
@@ -18947,7 +18929,7 @@ parse_endless_rescues(pm_parser_t *parser, pm_node_t *body, uint8_t flags, uint1
 /**
  * Parse a method definition expression (the `def` keyword).
  */
-static pm_node_t *
+static pm_reduction_t
 parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth) {
     pm_scratch_node_list_t current_block_exits = { 0 };
     pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
@@ -19177,6 +19159,7 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
         }
     }
 
+    enum pm_reduction_kind kind = PM_REDUCTION_DEFAULT;
     pm_node_t *statements = NULL;
     pm_token_t equal = { 0 };
     pm_token_t end_keyword = { 0 };
@@ -19233,18 +19216,27 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
 
         pm_accepts_block_stack_pop(parser);
 
-        /* A nested endless def whose body is a command call (e.g.,
-         * `def f = def g = foo bar`) is a command write and cannot appear
-         * as a def body. */
-        if (PM_NODE_TYPE_P(statement, PM_DEF_NODE) && pm_command_call_value_p(parser, statement)) {
-            pm_diagnostic_list_append_slice(
-                &parser->metadata_arena,
-                &parser->error_list,
-                PM_NODE_START(statement),
-                PM_NODE_LENGTH(statement),
-                PM_ERR_EXPECT_EOL_AFTER_STATEMENT,
-                pm_token_string(parser->current.type)
-            );
+        /* Rescue modifiers preserve the body's endless_arg or endless_command
+         * production. Only an endless_command makes the definition a command_asgn. */
+        switch (PM_REDUCTION_KIND(body)) {
+            case PM_REDUCTION_COMMAND:
+            case PM_REDUCTION_BRACE_COMMAND:
+            case PM_REDUCTION_JUMP:
+                kind = PM_REDUCTION_COMMAND_ASSIGNMENT;
+                break;
+            case PM_REDUCTION_COMMAND_ASSIGNMENT:
+                /* A command_asgn cannot itself be an endless method body. */
+                pm_diagnostic_list_append_slice(
+                    &parser->metadata_arena,
+                    &parser->error_list,
+                    PM_NODE_START(body.node),
+                    PM_NODE_LENGTH(body.node),
+                    PM_ERR_EXPECT_EOL_AFTER_STATEMENT,
+                    pm_token_string(parser->current.type)
+                );
+                break;
+            default:
+                break;
         }
 
         statements = UP(pm_statements_node_single_create(parser, statement, false));
@@ -19293,7 +19285,7 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
 
     flush_block_exits(parser, previous_block_exits);
 
-    return UP(pm_def_node_create(
+    pm_def_node_t *node = pm_def_node_create(
         parser,
         name_id,
         &name,
@@ -19307,7 +19299,9 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
         NTOK2PTR(rparen),
         NTOK2PTR(equal),
         NTOK2PTR(end_keyword)
-    ));
+    );
+
+    return (pm_reduction_t) { .node = UP(node), .kind = kind };
 }
 
 /**
@@ -21437,7 +21431,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_CLASS:
             return pm_reduction(parse_class(parser, flags, depth));
         case PM_TOKEN_KEYWORD_DEF:
-            return pm_reduction(parse_def(parser, block_parameter_default_p(parser, binding_power), flags, depth));
+            return parse_def(parser, block_parameter_default_p(parser, binding_power), flags, depth);
         case PM_TOKEN_KEYWORD_DEFINED:
             return pm_reduction(UP(parse_defined(parser, block_parameter_default_p(parser, binding_power), flags, depth)));
         case PM_TOKEN_KEYWORD_END_UPCASE:
@@ -21620,11 +21614,10 @@ parse_assignment_command_flag(pm_binding_power_t binding_power, uint8_t flags) {
 static pm_reduction_t
 parse_assignment_rescue(pm_parser_t *parser, pm_reduction_t rhs, bool multiple_assignment, uint8_t flags, uint16_t depth) {
     enum pm_reduction_kind rhs_kind = PM_REDUCTION_KIND(rhs);
-    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (rhs_kind == PM_REDUCTION_BLOCK_CALL || pm_command_call_value_p(parser, rhs.node))) {
+    bool command_rhs = rhs_kind == PM_REDUCTION_COMMAND || pm_command_before_comma_p(rhs_kind);
+    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (command_rhs || pm_command_call_value_p(parser, rhs.node))) {
         parse_unexpected_statement_operator(parser, flags, depth);
     }
-
-    bool command_rhs = rhs_kind == PM_REDUCTION_COMMAND || pm_command_before_comma_p(parser, rhs.node, rhs_kind);
 
     pm_reduction_t result = {
         .node = rhs.node,
@@ -21756,7 +21749,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     parse_assignment_value_local(parser, value);
 
     /* A nested write leaves the comma for the enclosing argument list or mrhs. */
-    if (statement_level && match1(parser, PM_TOKEN_COMMA) && pm_command_before_comma_p(parser, value, PM_REDUCTION_KIND(parsed))) {
+    if (statement_level && match1(parser, PM_TOKEN_COMMA) && pm_command_before_comma_p(PM_REDUCTION_KIND(parsed))) {
         pm_parser_err_current(parser, PM_ERR_INVALID_COMMA);
     }
 
@@ -22770,11 +22763,6 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
             }
 
             return false;
-        case PM_DEF_NODE:
-            // An endless method whose body is a command-style call (e.g.,
-            // `def f = foo bar`) is a command write and can only be
-            // followed by modifiers.
-            return left > PM_BINDING_POWER_MODIFIER && pm_command_call_value_p(parser, node);
         default:
             return false;
     }
