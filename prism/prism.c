@@ -7884,75 +7884,67 @@ context_def_p(const pm_parser_t *parser) {
     return false;
 }
 
-/**
- * Returns a human readable string for the given context, used in error
- * messages.
- */
-static const char *
-context_human(pm_context_t context) {
-    switch (context) {
-        case PM_CONTEXT_NONE:
-        case PM_CONTEXT_MAXIMUM:
-            PRISM_ASSERT(false && "unreachable");
-            return "";
-        case PM_CONTEXT_BEGIN: return "begin statement";
-        case PM_CONTEXT_BLOCK_BRACES: return "'{'..'}' block";
-        case PM_CONTEXT_BLOCK_KEYWORDS: return "'do'..'end' block";
-        case PM_CONTEXT_BLOCK_PARAMETERS: return "'|'..'|' block parameter";
-        case PM_CONTEXT_CASE_WHEN: return "'when' clause";
-        case PM_CONTEXT_CASE_IN: return "'in' clause";
-        case PM_CONTEXT_CLASS: return "class definition";
-        case PM_CONTEXT_DEF: return "method definition";
-        case PM_CONTEXT_DEF_PARAMS: return "method parameters";
-        case PM_CONTEXT_DEFAULT_PARAMS: return "parameter default value";
-        case PM_CONTEXT_DEFINED: return "'defined?' expression";
-        case PM_CONTEXT_ELSE:
-        case PM_CONTEXT_BEGIN_ELSE:
-        case PM_CONTEXT_BLOCK_ELSE:
-        case PM_CONTEXT_CLASS_ELSE:
-        case PM_CONTEXT_DEF_ELSE:
-        case PM_CONTEXT_LAMBDA_ELSE:
-        case PM_CONTEXT_MODULE_ELSE:
-        case PM_CONTEXT_SCLASS_ELSE: return "'else' clause";
-        case PM_CONTEXT_ELSIF: return "'elsif' clause";
-        case PM_CONTEXT_EMBEXPR: return "embedded expression";
-        case PM_CONTEXT_BEGIN_ENSURE:
-        case PM_CONTEXT_BLOCK_ENSURE:
-        case PM_CONTEXT_CLASS_ENSURE:
-        case PM_CONTEXT_DEF_ENSURE:
-        case PM_CONTEXT_LAMBDA_ENSURE:
-        case PM_CONTEXT_MODULE_ENSURE:
-        case PM_CONTEXT_SCLASS_ENSURE: return "'ensure' clause";
-        case PM_CONTEXT_FOR: return "for loop";
-        case PM_CONTEXT_FOR_INDEX: return "for loop index";
-        case PM_CONTEXT_IF: return "if statement";
-        case PM_CONTEXT_LAMBDA_BRACES: return "'{'..'}' lambda block";
-        case PM_CONTEXT_LAMBDA_DO_END: return "'do'..'end' lambda block";
-        case PM_CONTEXT_LOOP_PREDICATE: return "loop predicate";
-        case PM_CONTEXT_MAIN: return "top level context";
-        case PM_CONTEXT_MODULE: return "module definition";
-        case PM_CONTEXT_MULTI_TARGET: return "multiple targets";
-        case PM_CONTEXT_PARENS: return "parentheses";
-        case PM_CONTEXT_POSTEXE: return "'END' block";
-        case PM_CONTEXT_PREDICATE: return "predicate";
-        case PM_CONTEXT_PREEXE: return "'BEGIN' block";
-        case PM_CONTEXT_BEGIN_RESCUE:
-        case PM_CONTEXT_BLOCK_RESCUE:
-        case PM_CONTEXT_CLASS_RESCUE:
-        case PM_CONTEXT_DEF_RESCUE:
-        case PM_CONTEXT_LAMBDA_RESCUE:
-        case PM_CONTEXT_MODULE_RESCUE:
-        case PM_CONTEXT_RESCUE_MODIFIER:
-        case PM_CONTEXT_SCLASS_RESCUE: return "'rescue' clause";
-        case PM_CONTEXT_SCLASS: return "singleton class definition";
-        case PM_CONTEXT_TERNARY: return "ternary expression";
-        case PM_CONTEXT_UNLESS: return "unless statement";
-        case PM_CONTEXT_UNTIL: return "until statement";
-        case PM_CONTEXT_WHILE: return "while statement";
+/* Return the name used for a parent context in recovery diagnostics. */
+static pm_string_t
+pm_context_string(pm_context_t context) {
+#define PM_CONTEXT_NAME(context_, name_) [PM_CONTEXT_##context_] = { (const uint8_t *) ("" name_), sizeof(name_) - 1 }
+#define PM_CONTEXT_CLAUSE_NAMES(context_) \
+    PM_CONTEXT_NAME(context_##_ELSE, "'else' clause"), \
+    PM_CONTEXT_NAME(context_##_ENSURE, "'ensure' clause"), \
+    PM_CONTEXT_NAME(context_##_RESCUE, "'rescue' clause")
+
+    static const pm_string_t names[PM_CONTEXT_MAXIMUM] = {
+        PM_CONTEXT_NAME(BEGIN, "begin statement"),
+        PM_CONTEXT_CLAUSE_NAMES(BEGIN),
+        PM_CONTEXT_NAME(BLOCK_BRACES, "'{'..'}' block"),
+        PM_CONTEXT_NAME(BLOCK_KEYWORDS, "'do'..'end' block"),
+        PM_CONTEXT_CLAUSE_NAMES(BLOCK),
+        PM_CONTEXT_NAME(BLOCK_PARAMETERS, "'|'..'|' block parameter"),
+        PM_CONTEXT_NAME(CASE_WHEN, "'when' clause"),
+        PM_CONTEXT_NAME(CASE_IN, "'in' clause"),
+        PM_CONTEXT_NAME(CLASS, "class definition"),
+        PM_CONTEXT_CLAUSE_NAMES(CLASS),
+        PM_CONTEXT_NAME(DEF, "method definition"),
+        PM_CONTEXT_CLAUSE_NAMES(DEF),
+        PM_CONTEXT_NAME(DEF_PARAMS, "method parameters"),
+        PM_CONTEXT_NAME(DEFINED, "'defined?' expression"),
+        PM_CONTEXT_NAME(DEFAULT_PARAMS, "parameter default value"),
+        PM_CONTEXT_NAME(ELSE, "'else' clause"),
+        PM_CONTEXT_NAME(ELSIF, "'elsif' clause"),
+        PM_CONTEXT_NAME(EMBEXPR, "embedded expression"),
+        PM_CONTEXT_NAME(FOR, "for loop"),
+        PM_CONTEXT_NAME(FOR_INDEX, "for loop index"),
+        PM_CONTEXT_NAME(IF, "if statement"),
+        PM_CONTEXT_NAME(LAMBDA_BRACES, "'{'..'}' lambda block"),
+        PM_CONTEXT_NAME(LAMBDA_DO_END, "'do'..'end' lambda block"),
+        PM_CONTEXT_CLAUSE_NAMES(LAMBDA),
+        PM_CONTEXT_NAME(LOOP_PREDICATE, "loop predicate"),
+        PM_CONTEXT_NAME(MAIN, "top level context"),
+        PM_CONTEXT_NAME(MODULE, "module definition"),
+        PM_CONTEXT_CLAUSE_NAMES(MODULE),
+        PM_CONTEXT_NAME(MULTI_TARGET, "multiple targets"),
+        PM_CONTEXT_NAME(PARENS, "parentheses"),
+        PM_CONTEXT_NAME(POSTEXE, "'END' block"),
+        PM_CONTEXT_NAME(PREDICATE, "predicate"),
+        PM_CONTEXT_NAME(PREEXE, "'BEGIN' block"),
+        PM_CONTEXT_NAME(RESCUE_MODIFIER, "'rescue' clause"),
+        PM_CONTEXT_NAME(SCLASS, "singleton class definition"),
+        PM_CONTEXT_CLAUSE_NAMES(SCLASS),
+        PM_CONTEXT_NAME(TERNARY, "ternary expression"),
+        PM_CONTEXT_NAME(UNLESS, "unless statement"),
+        PM_CONTEXT_NAME(UNTIL, "until statement"),
+        PM_CONTEXT_NAME(WHILE, "while statement"),
+    };
+
+#undef PM_CONTEXT_CLAUSE_NAMES
+#undef PM_CONTEXT_NAME
+
+    if (context <= PM_CONTEXT_NONE || context >= PM_CONTEXT_MAXIMUM) {
+        PRISM_ASSERT(false && "unreachable");
+        return PM_STRING_EMPTY;
     }
 
-    PRISM_ASSERT(false && "unreachable");
-    return "";
+    return names[context];
 }
 
 /******************************************************************************/
@@ -21220,7 +21212,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     PM_TOKEN_LENGTH(&parser->current),
                     PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT,
                     pm_token_string(parser->current.type),
-                    pm_diagnostic_string(context_human(recoverable))
+                    pm_context_string(recoverable)
                 );
             } else if (diag_id == PM_ERR_CANNOT_PARSE_EXPRESSION) {
                 // We're going to make a special case here, because "cannot
