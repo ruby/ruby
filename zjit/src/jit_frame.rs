@@ -209,11 +209,12 @@ impl StackMapWriter {
         self.write_op(ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA);
     }
 
-    /// ZJIT_STACK_MAP_OP_PREV_FRAME. Moves the cursor past an inlined callee's
-    /// receiver slot and continues decoding in the caller's control frame, leaving
-    /// the locals area.
-    pub fn prev_frame(&mut self) {
+    /// ZJIT_STACK_MAP_OP_PREV_FRAME. Operand: one bit, whether the inlined callee has a
+    /// receiver slot below its local table. Moves the cursor past that slot if any and
+    /// continues decoding in the caller's control frame, leaving the locals area.
+    pub fn prev_frame(&mut self, receiver: bool) {
         self.write_op(ZJIT_STACK_MAP_OP_PREV_FRAME);
+        self.write_bits(receiver.into(), 1);
     }
 
     /// Terminate the stream with ZJIT_STACK_MAP_OP_END and return its bytes.

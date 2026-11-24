@@ -1807,9 +1807,10 @@ pub enum StackMapEntry {
     /// which already lives in VM stack memory, and start the frame's locals area.
     SkipVmEnvData,
     /// Boundary between two control frames that one stack map describes, emitted
-    /// by `build_stack_map()` between an inlined callee and its caller. Resets
-    /// the cursor to be not in the locals area.
-    PrevFrame,
+    /// by `build_stack_map()` between an inlined callee and its caller. Moves the
+    /// cursor past the callee's receiver slot if `receiver`, and resets the cursor
+    /// to be not in the locals area. An inlined block has no receiver slot.
+    PrevFrame { receiver: bool },
 }
 
 /// Initial capacity for asm.insns vector
@@ -2692,7 +2693,7 @@ impl Assembler
                                 StackMapEntry::Skip(size) => writer.skip(size),
                                 StackMapEntry::BasePtr { slot_index, stack_size } => writer.base_ptr(slot_index, stack_size),
                                 StackMapEntry::SkipVmEnvData => writer.skip_vm_env_data(),
-                                StackMapEntry::PrevFrame => writer.prev_frame(),
+                                StackMapEntry::PrevFrame { receiver } => writer.prev_frame(receiver),
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) => {
@@ -3019,7 +3020,7 @@ impl Assembler
                         unreachable!("no BasePtr stackmap code in side-exit for now");
                     }
                     StackMapEntry::SkipVmEnvData => writer.skip_vm_env_data(),
-                    StackMapEntry::PrevFrame => writer.prev_frame(),
+                    StackMapEntry::PrevFrame { receiver } => writer.prev_frame(receiver),
                     StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
                         writer.vreg(asm.stack_state.stack_map_index_for_spill(stack_idx.to_usize(), *frame_depth));
