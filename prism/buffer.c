@@ -53,7 +53,7 @@ pm_buffer_length(const pm_buffer_t *buffer) {
  * Append the given amount of space to the buffer. Returns false when there is
  * nothing to write because the length is zero. A zero-initialized buffer has a
  * NULL value until its first allocation, and passing NULL to
- * memcpy/memset/memmove is undefined behavior even for zero bytes, so callers
+ * memcpy or memset is undefined behavior even for zero bytes, so callers
  * must not write in the zero case.
  *
  * The value and capacity are only updated together once the allocation has
@@ -389,18 +389,6 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
                     break;
             }
         }
-    }
-}
-
-/**
- * Prepend the given string to the buffer.
- */
-void
-pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length) {
-    size_t cursor = buffer->length;
-    if (pm_buffer_append_length(buffer, length)) {
-        memmove(buffer->value + length, buffer->value, cursor);
-        memcpy(buffer->value, value, length);
     }
 }
 

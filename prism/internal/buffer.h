@@ -96,9 +96,6 @@ typedef enum {
 /* Append a slice of source code to the buffer. */
 void pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t length, pm_buffer_escaping_t escaping);
 
-/* Prepend the given string to the buffer. */
-void pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length);
-
 /* Concatenate one buffer onto another. */
 void pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source);
 
