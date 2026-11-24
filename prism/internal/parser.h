@@ -420,6 +420,9 @@ typedef enum {
     /* a rescue else statement within a lambda expression */
     PM_CONTEXT_LAMBDA_ELSE,
 
+    /* expressions in lambda parameters */
+    PM_CONTEXT_LAMBDA_PARAMETERS,
+
     /* a rescue statement within a lambda expression */
     PM_CONTEXT_LAMBDA_RESCUE,
 

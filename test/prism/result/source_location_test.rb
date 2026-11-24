@@ -1191,6 +1191,20 @@ module Ruby::Prism
       assert_location(LambdaNode, "-> do foo end")
     end
 
+    def test_jumps_in_lambda_parameter_defaults
+      [
+        ["->(x = (break if ready)) { x }", BreakNode, "break"],
+        ["-> x: (next if ready) do x end", NextNode, "next"],
+        ["def f(x = ->(v = (redo if ready)) {}); end", RedoNode, "redo"],
+        ["class C; ->(x: (return if ready)) { x }; end", ReturnNode, "return"]
+      ].each do |source, kind, keyword|
+        start = source.index(keyword)
+        assert_location(kind, source, start...(start + keyword.length)) do |node|
+          node.breadth_first_search { |child| child.is_a?(kind) }
+        end
+      end
+    end
+
     def test_LocalVariableAndWriteNode
       assert_location(LocalVariableAndWriteNode, "foo &&= bar")
       assert_location(LocalVariableAndWriteNode, "foo = 1; foo &&= bar", 9...20)

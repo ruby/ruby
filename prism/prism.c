@@ -7853,6 +7853,7 @@ static const uint32_t context_terminators[] = {
     [PM_CONTEXT_LAMBDA_DO_END] = (1U << PM_TOKEN_KEYWORD_END) | (1U << PM_TOKEN_KEYWORD_RESCUE) | (1U << PM_TOKEN_KEYWORD_ENSURE),
     [PM_CONTEXT_LAMBDA_ENSURE] = (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_LAMBDA_ELSE] = (1U << PM_TOKEN_KEYWORD_ENSURE) | (1U << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_PARAMETERS] = (1U << PM_TOKEN_PARENTHESIS_RIGHT),
     [PM_CONTEXT_LAMBDA_RESCUE] = (1U << PM_TOKEN_KEYWORD_ENSURE) | (1U << PM_TOKEN_KEYWORD_RESCUE) | (1U << PM_TOKEN_KEYWORD_ELSE) | (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_LOOP_PREDICATE] = (1U << PM_TOKEN_KEYWORD_DO) | (1U << PM_TOKEN_KEYWORD_THEN),
     [PM_CONTEXT_MAIN] = (1U << PM_TOKEN_EOF),
@@ -7997,6 +7998,7 @@ pm_context_string(pm_context_t context) {
         PM_CONTEXT_NAME(LAMBDA_BRACES, "'{'..'}' lambda block"),
         PM_CONTEXT_NAME(LAMBDA_DO_END, "'do'..'end' lambda block"),
         PM_CONTEXT_CLAUSE_NAMES(LAMBDA),
+        PM_CONTEXT_NAME(LAMBDA_PARAMETERS, "lambda parameters"),
         PM_CONTEXT_NAME(LOOP_PREDICATE, "loop predicate"),
         PM_CONTEXT_NAME(MAIN, "top level context"),
         PM_CONTEXT_NAME(MODULE, "module definition"),
@@ -15325,9 +15327,8 @@ parse_block_parameters(
 ) {
     pm_parameters_node_t *parameters = NULL;
     if (!match1(parser, PM_TOKEN_SEMICOLON)) {
-        if (!is_lambda_literal) {
-            context_push(parser, PM_CONTEXT_BLOCK_PARAMETERS);
-        }
+        /* parse.y enters the lambda's block-exit scope before f_larglist. */
+        context_push(parser, is_lambda_literal ? PM_CONTEXT_LAMBDA_PARAMETERS : PM_CONTEXT_BLOCK_PARAMETERS);
         parameters = parse_parameters(
             parser,
             is_lambda_literal ? PM_BINDING_POWER_DEFINED : PM_BINDING_POWER_INDEX,
@@ -15339,9 +15340,7 @@ parse_block_parameters(
             is_lambda_literal ? PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_LAMBDA : PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES_BLOCK,
             (uint16_t) (depth + 1)
         );
-        if (!is_lambda_literal) {
-            context_pop(parser);
-        }
+        context_pop(parser);
     }
 
     pm_node_list_t locals = { 0 };
@@ -16097,6 +16096,7 @@ ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_LAMBDA_DO_END:
             case PM_CONTEXT_LAMBDA_ELSE:
             case PM_CONTEXT_LAMBDA_ENSURE:
+            case PM_CONTEXT_LAMBDA_PARAMETERS:
             case PM_CONTEXT_LAMBDA_RESCUE:
                 // These contexts are valid for a return, and we should not
                 // continue to loop.
@@ -16130,6 +16130,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_LAMBDA_DO_END:
             case PM_CONTEXT_LAMBDA_ELSE:
             case PM_CONTEXT_LAMBDA_ENSURE:
+            case PM_CONTEXT_LAMBDA_PARAMETERS:
             case PM_CONTEXT_LAMBDA_RESCUE:
             case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_UNTIL:
@@ -18488,6 +18489,7 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_IF:
             case PM_CONTEXT_LAMBDA_BRACES:
             case PM_CONTEXT_LAMBDA_DO_END:
+            case PM_CONTEXT_LAMBDA_PARAMETERS:
             case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_MULTI_TARGET:
             case PM_CONTEXT_PARENS:
@@ -18573,6 +18575,7 @@ ensure_valid_yield(pm_parser_t *parser, const pm_yield_node_t *node) {
             case PM_CONTEXT_LAMBDA_DO_END:
             case PM_CONTEXT_LAMBDA_ELSE:
             case PM_CONTEXT_LAMBDA_ENSURE:
+            case PM_CONTEXT_LAMBDA_PARAMETERS:
             case PM_CONTEXT_LAMBDA_RESCUE:
             case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_MULTI_TARGET:

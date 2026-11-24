@@ -571,6 +571,18 @@ module Ruby::Prism
       assert_false Ruby::Prism.parse_success?("m { def f = break }")
     end
 
+    def test_invalid_jumps_in_parameter_defaults
+      [
+        ["->(x = break) {}", :void_expression, "break"],
+        ["def f(x = (next if ready)); end", :invalid_block_exit, "next"],
+        ["->(x = (def inner = break)) {}", :invalid_block_exit, "break"]
+      ].each do |source, type, keyword|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal [type], errors.map(&:type), source
+        assert_equal keyword, errors.first.location.slice
+      end
+    end
+
     def test_jump_with_command_arguments_in_a_term
       result = Ruby::Prism.parse("def f; x && return m 1 do end.g; end")
       assert_equal [:expect_eol_after_statement], result.errors.map(&:type)
