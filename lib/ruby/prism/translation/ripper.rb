@@ -1609,27 +1609,28 @@ module Ruby::Prism
       # foo.bar, = 1
       # ^^^^^^^
       def visit_call_target_node(node)
-        if node.call_operator == "::"
-          receiver = visit(node.receiver)
+        visit_call_target(node, true)
+      end
 
-          bounds(node.call_operator_loc)
-          on_op("::")
+      # A single for target and a rescue variable use the lhs production.
+      private def visit_target(node)
+        node.is_a?(CallTargetNode) ? visit_call_target(node, false) : visit(node)
+      end
 
-          bounds(node.message_loc)
-          message = visit_token(node.message)
+      private def visit_call_target(node, multiple)
+        receiver = visit(node.receiver)
 
-          bounds(node.location)
+        bounds(node.call_operator_loc)
+        operator = node.call_operator
+        call_operator = visit_call_operator(operator)
+
+        bounds(node.message_loc)
+        message = visit_token(node.message)
+
+        bounds(node.location)
+        if multiple && operator == "::"
           on_const_path_field(receiver, message)
         else
-          receiver = visit(node.receiver)
-
-          bounds(node.call_operator_loc)
-          call_operator = visit_call_operator(node.call_operator)
-
-          bounds(node.message_loc)
-          message = visit_token(node.message)
-
-          bounds(node.location)
           on_field(receiver, call_operator, message)
         end
       end
@@ -2224,7 +2225,7 @@ module Ruby::Prism
         bounds(node.for_keyword_loc)
         on_kw("for")
 
-        index = visit(node.index)
+        index = visit_target(node.index)
         bounds(node.in_keyword_loc)
         on_kw("in")
 
@@ -3539,7 +3540,7 @@ module Ruby::Prism
           on_op("=>")
         end
 
-        reference = visit(node.reference)
+        reference = visit_target(node.reference)
         statements =
           if node.statements.nil?
             bounds(node.location)
