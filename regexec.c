@@ -4214,6 +4214,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           }
           OnigPosition r = init_cache_opcodes(reg, cache_opcodes, &msa->num_cache_points);
           if (r < 0) {
+            xfree(cache_opcodes);
             if (r == ONIGERR_MEMORY) goto memory_error;
             if (r == ONIGERR_UNEXPECTED_BYTECODE) goto unexpected_bytecode_error;
             else goto bytecode_error;
