@@ -178,6 +178,16 @@ class TestVariable < Test::Unit::TestCase
     assert_match(/class variable @@x of .+ is overtaken by .+/, error.message)
   end
 
+  def test_cvar_cache_invalidated_by_remove_class_variable
+    c = Class.new do
+      class_variable_set(:@@x, 1)
+      class_eval "def self.x; @@x; end"
+    end
+    assert_equal 1, c.x # warm cache
+    assert_equal 1, c.remove_class_variable(:@@x)
+    assert_raise_with_message(NameError, /uninitialized class variable @@x/) { c.x }
+  end
+
   def test_cvar_overtaken_by_module
     error = eval <<~EORB
       class ParentForModule
