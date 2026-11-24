@@ -13904,6 +13904,8 @@ ibf_load_outer_variables(const struct ibf_load * load, ibf_offset_t outer_variab
     ibf_offset_t reading_pos = outer_variables_offset;
 
     size_t table_size = (size_t)ibf_load_small_value(load, &reading_pos);
+    if (table_size > UINT32_MAX) rb_raise(rb_eRuntimeError, "invalid byte sequence");
+    rb_iseq_outer_variables_reserve(body, (uint32_t)table_size);
 
     for (size_t i = 0; i < table_size; i++) {
         ID key = ibf_load_id(load, (ID)ibf_load_small_value(load, &reading_pos));

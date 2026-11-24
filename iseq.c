@@ -232,7 +232,8 @@ rb_iseq_outer_variables_add(struct rb_iseq_constant_body *body, ID id, bool writ
 
     if (!ovs || ovs->num == ovs->capa) {
         uint32_t old_capa = ovs ? ovs->capa : 0;
-        uint32_t new_capa = old_capa ? old_capa * 2 : 1;
+        /* 2 to start: 1 and 2 entries (17 and 26 bytes) share a 32-byte size class on macOS */
+        uint32_t new_capa = old_capa ? old_capa * 2 : 2;
         if (new_capa < old_capa) rb_fatal("too many outer variables");
         struct rb_iseq_outer_variables *grown = ruby_xmalloc(outer_variables_bytes(new_capa));
         grown->num = 0;
@@ -252,6 +253,18 @@ rb_iseq_outer_variables_add(struct rb_iseq_constant_body *body, ID id, bool writ
     ovs->ids[pos] = id;
     writes[pos] = write ? 1 : 0;
     ovs->num++;
+}
+
+/* For loaders that know the entry count: avoids growing one add at a time. */
+void
+rb_iseq_outer_variables_reserve(struct rb_iseq_constant_body *body, uint32_t capa)
+{
+    RUBY_ASSERT(!body->outer_variables);
+    if (!capa) return;
+    struct rb_iseq_outer_variables *ovs = ruby_xmalloc(outer_variables_bytes(capa));
+    ovs->num = 0;
+    ovs->capa = capa;
+    body->outer_variables = ovs;
 }
 
 /* Same contract as rb_id_table_lookup: nonzero if present, *write = Qtrue/Qfalse. */

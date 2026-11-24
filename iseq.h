@@ -316,6 +316,7 @@ struct rb_iseq_outer_variables {
 };
 
 void rb_iseq_outer_variables_add(struct rb_iseq_constant_body *body, ID id, bool write);
+void rb_iseq_outer_variables_reserve(struct rb_iseq_constant_body *body, uint32_t capa);
 int rb_iseq_outer_variables_lookup(const struct rb_iseq_outer_variables *ovs, ID id, VALUE *write);
 size_t rb_iseq_outer_variables_size(const struct rb_iseq_outer_variables *ovs);
 void rb_iseq_outer_variables_foreach(const struct rb_iseq_outer_variables *ovs,
