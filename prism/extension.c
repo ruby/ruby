@@ -191,8 +191,8 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
             // Add the local to the scope.
             pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
-            const char *name = rb_id2name(SYM2ID(local));
-            pm_string_init(scope_local, (const uint8_t *) name, strlen(name));
+            VALUE name = rb_id2str(SYM2ID(local));
+            pm_string_init(scope_local, (const uint8_t *) RSTRING_PTR(name), RSTRING_LEN(name));
         }
 
         // Now set the forwarding options.
