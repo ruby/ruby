@@ -800,7 +800,10 @@ class TestFileExhaustive < Test::Unit::TestCase
     t = Time.utc(2000)
     assert_equal(1, File.utime(t, t, @dir + '/'))
     assert_equal(t, File.mtime(@dir))
-    assert_raise(Errno::ENOTDIR) { File.utime(t, t, regular_file + '/') }
+    path = regular_file
+    mtime = File.mtime(path)
+    assert_raise(Errno::ENOTDIR, Errno::EINVAL) { File.utime(t, t, path + '/') }
+    assert_equal(mtime, File.mtime(path))
     assert_raise(Errno::ENOENT) { File.utime(t, t, @dir + '/...') }
   end if NTFS
 
