@@ -8,6 +8,7 @@
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/memequal.h"
 #include "prism/internal/parser.h"
 
@@ -129,7 +130,7 @@ pm_strpbrk_contains(const pm_parser_t *parser, PRISM_UNUSED const uint8_t *chars
 
 static PRISM_INLINE bool
 pm_strpbrk_contains(PRISM_UNUSED const pm_parser_t *parser, const uint8_t *charset, uint8_t byte) {
-    return memchr(charset, byte, PM_STRPBRK_CACHE_SIZE) != NULL;
+    return pm_memchr(charset, byte, PM_STRPBRK_CACHE_SIZE) != NULL;
 }
 
 #endif

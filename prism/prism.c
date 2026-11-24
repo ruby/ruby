@@ -7345,16 +7345,14 @@ match_eol(pm_parser_t *parser) {
 }
 
 /**
- * Skip to the next newline character or NUL byte.
+ * Find the next newline. Every supported encoding uses the newline byte
+ * only for a newline character.
  */
 static PRISM_INLINE const uint8_t *
 next_newline(const uint8_t *cursor, ptrdiff_t length) {
     PRISM_ASSERT(length >= 0);
 
-    // Note that it's okay for us to use memchr here to look for \n because none
-    // of the encodings that we support have \n as a component of a multi-byte
-    // character.
-    return memchr(cursor, '\n', (size_t) length);
+    return pm_memchr(cursor, '\n', (size_t) length);
 }
 
 /**
@@ -7495,9 +7493,9 @@ pm_char_is_magic_comment_key_delimiter(const uint8_t b) {
 static PRISM_INLINE const uint8_t *
 parser_lex_magic_comment_emacs_marker(const uint8_t *cursor, const uint8_t *end) {
     // Scan for '*' as the middle character, since it is rarer than '-' in
-    // typical comments and avoids repeated memchr calls for '-' that hit
+    // typical comments and avoids repeated searches for '-' that hit
     // dashes in words like "foo-bar".
-    while (end - cursor >= 3 && (cursor = memchr(cursor + 1, '*', (size_t) (end - cursor - 1))) != NULL) {
+    while (end - cursor >= 3 && (cursor = pm_memchr(cursor + 1, '*', (size_t) (end - cursor - 1))) != NULL) {
         if (cursor[-1] == '-' && cursor + 1 < end && cursor[1] == '-') {
             return cursor - 1;
         }
@@ -7563,7 +7561,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
          * controls the fallback encoding scan. Other comments without a colon
          * cannot contain a magic directive, so reject them early. */
         if ((parser->current.start != parser->encoding_comment_start || parser->encoding_locked) &&
-            memchr(start, ':', (size_t) (end - start)) == NULL) {
+            pm_memchr(start, ':', (size_t) (end - start)) == NULL) {
             return false;
         }
 
@@ -16865,7 +16863,7 @@ static PRISM_INLINE bool
 heredoc_dedent_discard_string_node(pm_parser_t *parser, pm_string_node_t *string_node) {
     if (string_node->unescaped.length == 0) {
         const uint8_t *cursor = parser->start + PM_LOCATION_START(&string_node->content_loc);
-        return pm_memchr(cursor, '\\', string_node->content_loc.length, parser->encoding) == NULL;
+        return pm_memchr_boundary(cursor, '\\', string_node->content_loc.length, parser->encoding) == NULL;
     }
     return false;
 }

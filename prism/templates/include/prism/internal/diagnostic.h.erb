@@ -3,6 +3,7 @@
 
 #include "prism/compiler/inline.h"
 #include "prism/internal/list.h"
+#include "prism/internal/memchr.h"
 
 #include "prism/arena.h"
 #include "prism/diagnostic.h"
@@ -59,7 +60,7 @@ void pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t star
 static PRISM_INLINE pm_string_t
 pm_diagnostic_slice(const void *source, size_t length) {
     const uint8_t *bytes = (const uint8_t *) source;
-    const uint8_t *nul = length ? (const uint8_t *) memchr(bytes, '\0', length) : NULL;
+    const uint8_t *nul = length ? pm_memchr(bytes, '\0', length) : NULL;
     pm_string_t slice = { bytes, nul ? (size_t) (nul - bytes) : length };
     return slice;
 }

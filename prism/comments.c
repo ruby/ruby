@@ -3,6 +3,7 @@
 #include "prism/internal/arena.h"
 #include "prism/internal/assert.h"
 #include "prism/internal/char.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
 #include "prism/internal/parser.h"
 
@@ -283,7 +284,7 @@ pm_comments_visit(pm_comments_walk_t *walk, const pm_node_t *node) {
     ) {
         uint32_t comment_start = walk->starts[after];
 
-        if (memchr(walk->source + end, '\n', comment_start - end) == NULL) {
+        if (pm_memchr(walk->source + end, '\n', comment_start - end) == NULL) {
             const pm_node_t *attached = walk->attached[after];
             uint32_t attached_end = attached == NULL ? 0 : PM_LOCATION_END(&attached->location);
 

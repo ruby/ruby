@@ -9,6 +9,7 @@
 #include "prism/internal/bignum.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/oom.h"
 
 #include <stdbool.h>
@@ -403,7 +404,7 @@ void
 pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer_t *denominator, const uint8_t *start, const uint8_t *end) {
     if (*start == '+') start++;
 
-    const uint8_t *point = memchr(start, '.', (size_t) (end - start));
+    const uint8_t *point = pm_memchr(start, '.', (size_t) (end - start));
     PRISM_ASSERT(point != NULL);
 
     /* Each trailing zero after the decimal point divides both sides by 10, so

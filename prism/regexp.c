@@ -2039,7 +2039,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
     /* A ] right after the [ or [^ is a character of the class, as long as
      * another ] comes later in the pattern. Otherwise the class is empty. */
     if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE) {
-        if (pm_memchr(parser->cursor, ']', (size_t) (parser->end - parser->cursor), parser->encoding) == NULL) {
+        if (pm_memchr_boundary(parser->cursor, ']', (size_t) (parser->end - parser->cursor), parser->encoding) == NULL) {
             pm_regexp_parse_error(parser, token.start, parser->cursor, "empty char-class");
             return false;
         }
@@ -2493,7 +2493,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             return true;
         case '#':
             if (parser->extended_mode) {
-                const uint8_t *newline = memchr(parser->cursor, '\n', (size_t) (parser->end - parser->cursor));
+                const uint8_t *newline = pm_memchr(parser->cursor, '\n', (size_t) (parser->end - parser->cursor));
                 parser->cursor = newline != NULL ? newline + 1 : parser->end;
                 return true;
             }
