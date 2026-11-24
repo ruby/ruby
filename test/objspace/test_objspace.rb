@@ -954,6 +954,43 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_with_to_int_closing_output
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      [
+        ->(io, n) { ObjectSpace.dump_all(output: io, since: n) },
+        ->(io, n) { ObjectSpace.dump_all(output: io, shapes: n) },
+        ->(io, n) { ObjectSpace.dump_shapes(output: io, since: n) },
+      ].each do |dump|
+        File.open(File::NULL, "w") do |io|
+          closer = Object.new
+          closer.define_singleton_method(:to_int) { io.close; 0 }
+          assert_raise_with_message(IOError, /closed stream/) { dump.(io, closer) }
+        end
+      end
+    end;
+  end
+
+  def test_dump_all_to_full_pipe
+    omit "no non-blocking pipes on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    assert_separately(%w[-robjspace -rio/nonblock], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      _r, w = IO.pipe
+      w.nonblock = true
+      # Nothing reads the pipe, so the dump overflows the pipe buffer.
+      assert_raise_with_message(IOError, "full buffer") do
+        ObjectSpace.dump_all(output: w)
+      end
+
+      # The error must not leave the VM lock held.
+      assert_kind_of(String, ObjectSpace.dump_all(output: :string))
+
+      # Not closing the pipe: the stdio buffer behind w still holds unwritten
+      # bytes, so closing would fail with EAGAIN/EPIPE. Process exit cleans up.
+    end;
+  end
+
   def test_dump_all_with_ractors
     assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
     begin;
