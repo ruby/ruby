@@ -13826,8 +13826,8 @@ parse_unwriteable_write(pm_parser_t *parser, pm_node_t *target, const pm_token_t
  *     for foo, bar in baz
  *         ^^^^^^^^
  *
- * The targets are `foo` and `bar`. This function will either return a single
- * target node or a multi-target node.
+ * The targets are `foo` and `bar`. A multi-target node can also contain
+ * just a rest target, as in `for *foo in baz`.
  */
 static pm_node_t *
 parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t binding_power, uint16_t depth) {
@@ -19905,8 +19905,8 @@ parse_for(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_node_t *index;
     context_push(parser, PM_CONTEXT_FOR_INDEX);
 
-    // First, parse out the first index expression.
-    if (accept1(parser, PM_TOKEN_USTAR)) {
+    bool leading_splat = accept1(parser, PM_TOKEN_USTAR);
+    if (leading_splat) {
         index = parse_splat(parser, flags, depth);
     } else if (token_begins_expression_p(parser->current.type)) {
         index = parse_expression(parser, PM_BINDING_POWER_INDEX, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1)).node;
@@ -19915,8 +19915,8 @@ parse_for(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         index = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &for_keyword), PM_TOKEN_LENGTH(&for_keyword)));
     }
 
-    // Now, if there are multiple index expressions, parse them out.
-    if (match1(parser, PM_TOKEN_COMMA)) {
+    /* A leading splat is an mlhs even when it is the only target. */
+    if (leading_splat || match1(parser, PM_TOKEN_COMMA)) {
         index = parse_targets(parser, index, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
     } else {
         index = parse_target(parser, index, false, false);

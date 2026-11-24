@@ -915,6 +915,7 @@ module Ruby::Prism
     def test_ForNode
       assert_location(ForNode, "for foo in bar; end")
       assert_location(ForNode, "for foo, bar in baz do end")
+      assert_location(CallTargetNode, "for obj&.attr in ary; end", 4...13, &:index)
       assert_location(MultiTargetNode, "for *x in ary; end", 4...6) do |node|
         assert_instance_of LocalVariableTargetNode, node.index.rest.expression
         node.index

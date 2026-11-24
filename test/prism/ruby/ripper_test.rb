@@ -257,7 +257,7 @@ module Ruby::Prism
     end
 
     def test_for_with_a_single_splat_target
-      ["for *x in ary; end", "for * in ary; end", "for *x[k] in ary; end"].each do |source|
+      ["for *x in ary; end", "for * in ary; end", "for *x[k] in ary; end", "for *obj&.attr[k] in ary; end"].each do |source|
         assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
         assert_ripper_sexp_raw(source)
       end
