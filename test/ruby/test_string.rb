@@ -2439,6 +2439,35 @@ class TestString < Test::Unit::TestCase
     assert_nil(s.slice!(/l+$/, obj))
   end
 
+  def test_slice_bang_middle_updates_coderange
+    # Removing bytes after the start kept the receiver's old coderange, so an
+    # ASCII-only result was not eql?-consistent with its hash.
+    [["é"], [1], [1, 1], [1..], [/é/]].each do |args|
+      s = S("aé")
+      s.valid_encoding?
+      s.slice!(*args)
+      assert_equal(S("a"), s, args.inspect)
+      assert_predicate(s, :ascii_only?, args.inspect)
+      assert_equal("a".b.hash, s.hash, args.inspect)
+      assert_equal(1, {"a".b => 1}[s], args.inspect)
+    end
+
+    s = S("a\xFFb")
+    s.valid_encoding?
+    s.slice!(1)
+    assert_predicate(s, :valid_encoding?)
+
+    s = S("aaaaaa")
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("abcあ")
+      2
+    end
+    s.slice!(/(aaaa)(aa)/, obj)
+    assert_equal("abc\xE3".b, s.b)
+    assert_not_predicate(s, :valid_encoding?)
+  end
+
   def test_split
     fs, $; = $;, nil
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split)
