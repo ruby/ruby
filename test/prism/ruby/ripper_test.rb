@@ -232,6 +232,22 @@ module Ruby::Prism
       end
     end
 
+    def test_index_writes_without_a_trailing_comma
+      ["matrix[1, 2] = x, y", "matrix[1 # ,\n] = x", "matrix[<<DOC\n,\nDOC\n] = x"].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_trailing_comma_in_index_writes
+      omit("Ruby::Prism's Ripper translation emits an extra args_add_block for a trailing comma in an index write")
+      [
+        "matrix[1,] = x", "matrix[1, 2,] = x, y", "matrix[*args,] = x",
+        "matrix[1, # comment\n] = x", "matrix[1.. # comment\n,] = x", "matrix[<<DOC,\n,\nDOC\n] = x"
+      ].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
     def test_endless_method_argument_with_a_rescued_return
       assert_ripper_sexp_raw("outer(def f = not return rescue 2)")
       assert_ripper_sexp_raw("outer(def f = not return v rescue 2)") if RUBY_VERSION >= "4.0"
