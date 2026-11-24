@@ -283,6 +283,19 @@ module Ruby::Prism
       end
     end
 
+    def test_recovery_names_the_enclosing_clause
+      {
+        "begin; rescue; 1 + end" => "'rescue' clause",
+        "def f; ensure; 1 + end" => "'ensure' clause",
+        "if x; else; 1 + end" => "'else' clause"
+      }.each do |source, name|
+        error = Ruby::Prism.parse(source).errors.find { |diagnostic| diagnostic.type == :unexpected_token_close_context }
+        assert_not_nil error, source
+        assert_equal "unexpected 'end', assuming it is closing the parent #{name}", error.message
+        assert_equal "end", error.location.slice
+      end
+    end
+
     def test_unexpected_backslash
       {
         "\\ " => "escaped space",
