@@ -211,7 +211,6 @@ module Ruby::Prism
         "def f; return super 1 do end; end", "def f; return super 1 do end.g; end",
         "def f; yield yield 1; end", "def f; super yield; end",
         "not(a and b) in true",
-        "case x; in (y) if z; end",
         "m(self.a = x)",
         "->(x: x) { x }", "x = 1; ->(x: x) { x }", "->(x: ->(x) { x }) { x }",
         "(;x)", "( #;\n x)", "case x; when 1 then; y; end"
@@ -224,6 +223,16 @@ module Ruby::Prism
       [
         "x in ((y))", "x => [(1), *, (2)]", "x in [*, (1), *]", "x in {key: (1)}",
         "x in ((1) => y)", "x in ((1) | (2))", "x in ^((y))"
+      ].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_parenthesized_patterns_with_guards
+      [
+        "case x; in (y) if z; end",
+        "case x; in ((y)) unless (y); end",
+        "case x; in (a) if (a) then a; in (b) unless (b) then b; end"
       ].each do |source|
         assert_ripper_sexp_raw(source)
       end

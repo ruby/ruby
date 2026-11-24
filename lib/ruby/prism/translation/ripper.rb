@@ -2520,7 +2520,20 @@ module Ruby::Prism
         bounds(node.in_keyword_loc)
         on_kw("in")
 
-        pattern = visit_pattern_node(node.pattern)
+        guard = node.pattern
+        pattern =
+          if guard.is_a?(IfNode) || guard.is_a?(UnlessNode)
+            body = visit_pattern_node(guard.statements.body.first)
+            keyword = guard.is_a?(IfNode) ? guard.if_keyword_loc : guard.unless_keyword_loc
+            bounds(keyword)
+            on_kw(keyword.slice)
+            predicate = visit(guard.predicate)
+            bounds(guard.location)
+            guard.is_a?(IfNode) ? on_if_mod(predicate, body) : on_unless_mod(predicate, body)
+          else
+            visit_pattern_node(guard)
+          end
+
         if node.then_keyword_loc
           bounds(node.then_keyword_loc)
           on_kw("then")
