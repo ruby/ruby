@@ -8,3 +8,8 @@ END {
   ^~~~ Invalid next
 }
 
+END {
+  redo
+  ^~~~ Invalid redo
+}
+
