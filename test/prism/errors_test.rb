@@ -150,11 +150,17 @@ module Ruby::Prism
     end
 
     def test_singleton_class_return_uses_its_enclosing_method
-      source = "-> { class << self; return; end }"
-      assert Ruby::Prism.parse_success?(source, version: "3.3")
-      assert_equal [:return_invalid], Ruby::Prism.parse(source, version: "3.4").errors.map(&:type)
-      assert Ruby::Prism.parse_success?("def f; #{source}; end")
-      refute Ruby::Prism.parse_success?("def f; class << self; class << self; return; end; end; end")
+      [
+        "-> { class << self; return; end }",
+        "m { class << self; x; rescue; return; end }",
+        "def f; class << self; class << self; return; end; end; end"
+      ].each do |source|
+        %w[3.4 4.1].each do |version|
+          errors = Ruby::Prism.parse(source, version: version).errors
+          assert_equal [:return_invalid], errors.map(&:type), source
+          assert_equal "return", errors.first.location.slice
+        end
+      end
     end
 
     def test_class_header_starts_a_new_rescue_context

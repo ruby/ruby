@@ -7933,9 +7933,7 @@ context_p(const pm_parser_t *parser, pm_context_t context) {
 }
 
 static bool
-context_def_p(const pm_parser_t *parser) {
-    pm_context_node_t *context_node = parser->current_context;
-
+context_def_p(const pm_context_node_t *context_node) {
     while (context_node != NULL) {
         switch (context_node->context) {
             case PM_CONTEXT_DEF:
@@ -13491,7 +13489,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             target->type = PM_CLASS_VARIABLE_TARGET_NODE;
             return target;
         case PM_CONSTANT_PATH_NODE:
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
@@ -13500,7 +13498,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
 
             return target;
         case PM_CONSTANT_READ_NODE:
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, target, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
@@ -13662,7 +13660,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
         case PM_CONSTANT_PATH_NODE: {
             pm_node_t *node = UP(pm_constant_path_write_node_create(parser, (pm_constant_path_node_t *) target, operator, value));
 
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
@@ -13671,7 +13669,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
         case PM_CONSTANT_READ_NODE: {
             pm_node_t *node = UP(pm_constant_write_node_create(parser, (pm_constant_read_node_t *) target, operator, value));
 
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
@@ -16032,7 +16030,6 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, pm_argument
  */
 static void
 ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
-    bool in_sclass = false;
     for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
         switch (context_node->context) {
             case PM_CONTEXT_BEGIN_ELSE:
@@ -16068,8 +16065,12 @@ ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_SCLASS_ENSURE:
             case PM_CONTEXT_SCLASS_RESCUE:
             case PM_CONTEXT_SCLASS:
-                in_sclass = true;
-                continue;
+                /* Since Ruby 3.4, a singleton class permits return when it
+                 * opens in a method. Its body starts a fresh class scope. */
+                if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4 && !context_def_p(context_node->prev)) {
+                    pm_parser_err_node(parser, node, PM_ERR_RETURN_INVALID);
+                }
+                return;
             case PM_CONTEXT_CLASS_ELSE:
             case PM_CONTEXT_CLASS_ENSURE:
             case PM_CONTEXT_CLASS_RESCUE:
@@ -16106,9 +16107,6 @@ ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
                 PRISM_ASSERT(false && "unreachable");
                 break;
         }
-    }
-    if (in_sclass && parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) {
-        pm_parser_err_node(parser, node, PM_ERR_RETURN_INVALID);
     }
 }
 
@@ -18888,7 +18886,7 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_do_loop_stack_pop(parser);
     expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM, &class_keyword);
 
-    if (context_def_p(parser)) {
+    if (context_def_p(parser->current_context)) {
         pm_parser_err_token(parser, &class_keyword, PM_ERR_CLASS_IN_METHOD);
     }
 
@@ -19371,7 +19369,7 @@ parse_module(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_parser_scope_pop(parser);
     expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_MODULE_TERM, &module_keyword);
 
-    if (context_def_p(parser)) {
+    if (context_def_p(parser->current_context)) {
         pm_parser_err_token(parser, &module_keyword, PM_ERR_MODULE_IN_METHOD);
     }
 
@@ -21015,7 +21013,7 @@ parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t de
     pm_token_t keyword = parser->current;
     parser_lex(parser);
 
-    if (context_def_p(parser)) {
+    if (context_def_p(parser->current_context)) {
         pm_parser_warn_token(parser, &keyword, PM_WARN_END_IN_METHOD);
     }
 
@@ -22082,7 +22080,7 @@ parse_and_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previou
             pm_reduction_t value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ, (uint16_t) (depth + 1));
             pm_node_t *write = UP(pm_constant_and_write_node_create(parser, (pm_constant_read_node_t *) node, &operator, value.node));
 
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, write, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
@@ -22215,7 +22213,7 @@ parse_or_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous
             pm_reduction_t value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ, (uint16_t) (depth + 1));
             pm_node_t *write = UP(pm_constant_or_write_node_create(parser, (pm_constant_read_node_t *) node, &operator, value.node));
 
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, write, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 
@@ -22347,7 +22345,7 @@ parse_operator_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t pr
             pm_reduction_t value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
             pm_node_t *write = UP(pm_constant_operator_write_node_create(parser, (pm_constant_read_node_t *) node, &operator, value.node));
 
-            if (context_def_p(parser)) {
+            if (context_def_p(parser->current_context)) {
                 pm_parser_err_node(parser, write, PM_ERR_WRITE_TARGET_IN_METHOD);
             }
 

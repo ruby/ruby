@@ -1446,6 +1446,20 @@ module Ruby::Prism
       assert_location(ReturnNode, "return(foo)")
     end
 
+    def test_return_in_a_singleton_class_body
+      [
+        ["-> { class << self; return; end }", "3.3"],
+        ["class C; class << self; return; end; end", "3.3"],
+        ["def f; -> { class << self; return; end }; end", "4.1"],
+        ["class << self; -> { return }; end", "4.1"]
+      ].each do |source, version|
+        start = source.index("return")
+        assert_location(ReturnNode, source, start...(start + 6), version: version) do |node|
+          node.breadth_first_search { |child| child.is_a?(ReturnNode) }
+        end
+      end
+    end
+
     def test_SelfNode
       assert_location(SelfNode, "self")
     end
