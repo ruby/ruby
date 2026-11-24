@@ -992,6 +992,17 @@ match_alloc(VALUE klass)
     return (VALUE)match;
 }
 
+static void
+match_reuse(VALUE match)
+{
+    onig_region_free(&RMATCH_EXT(match)->regs, false);
+    if (RMATCH_EXT(match)->char_offset_num_allocated) {
+        RMATCH_EXT(match)->char_offset_num_allocated = 0;
+        xfree(RMATCH_EXT(match)->char_offset);
+        RMATCH_EXT(match)->char_offset = NULL;
+    }
+}
+
 int
 rb_reg_region_copy(struct re_registers *to, const struct re_registers *from)
 {
@@ -1841,7 +1852,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         match = match_alloc(rb_cMatch);
     }
     else {
-        onig_region_free(&RMATCH_EXT(match)->regs, false);
+        match_reuse(match);
     }
 
     rb_matchext_t *rm = RMATCH_EXT(match);
