@@ -334,22 +334,9 @@ cfunc_proc_inline_env_p(const rb_proc_t *proc)
 }
 
 static size_t
-proc_memsize(const void *ptr)
+cfunc_proc_memsize(const void *ptr)
 {
-    const rb_proc_t *proc = ptr;
-    switch (proc->block.type) {
-      case block_type_iseq:
-      case block_type_ifunc:
-        if (proc->block.as.captured.ep == ((const cfunc_proc_t *)ptr)->env+1)
-            return sizeof(cfunc_proc_t);
-        return sizeof(rb_proc_captured_t);
-      case block_type_symbol:
-        return sizeof(rb_proc_symbol_t);
-      case block_type_proc:
-        return sizeof(rb_proc_proc_t);
-    }
-    VM_UNREACHABLE(proc_memsize);
-    return 0;
+    return sizeof(cfunc_proc_t);
 }
 
 const rb_data_type_t ruby_proc_data_type = {
@@ -357,13 +344,25 @@ const rb_data_type_t ruby_proc_data_type = {
     {
         proc_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
-        proc_memsize,
+        NULL, // No external memory to report
         proc_mark_and_move,
     },
-    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 #define proc_data_type ruby_proc_data_type
+
+/* Not embeddable: captured.ep points into env[] below, and frames running the proc hold it. */
+static const rb_data_type_t cfunc_proc_data_type = {
+    "proc",
+    {
+        proc_mark_and_move,
+        RUBY_TYPED_DEFAULT_FREE,
+        cfunc_proc_memsize,
+        proc_mark_and_move,
+    },
+    &ruby_proc_data_type, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
+};
 
 VALUE
 rb_proc_alloc(VALUE klass, enum rb_block_type block_type)
@@ -1414,7 +1413,7 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 {
     rb_proc_t *proc;
     cfunc_proc_t *sproc;
-    VALUE procval = TypedData_Make_Struct(klass, cfunc_proc_t, &proc_data_type, sproc);
+    VALUE procval = TypedData_Make_Struct(klass, cfunc_proc_t, &cfunc_proc_data_type, sproc);
     VALUE *ep;
 
     proc = &sproc->basic;
@@ -1435,14 +1434,14 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 VALUE
 rb_func_proc_dup(VALUE src_obj)
 {
-    RUBY_ASSERT(rb_typeddata_is_instance_of(src_obj, &proc_data_type));
+    RUBY_ASSERT(rb_obj_is_proc(src_obj));
 
     rb_proc_t *src_proc;
     GetProcPtr(src_obj, src_proc);
     RUBY_ASSERT(vm_block_type(&src_proc->block) == block_type_ifunc);
 
     cfunc_proc_t *proc;
-    VALUE proc_obj = TypedData_Make_Struct(rb_obj_class(src_obj), cfunc_proc_t, &proc_data_type, proc);
+    VALUE proc_obj = TypedData_Make_Struct(rb_obj_class(src_obj), cfunc_proc_t, &cfunc_proc_data_type, proc);
 
     memcpy(&proc->basic, src_proc, sizeof(rb_proc_t));
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.self);

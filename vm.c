@@ -1384,7 +1384,7 @@ vm_proc_create_from_captured(VALUE klass,
                              int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass, block_type);
-    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    rb_proc_t *proc = RTYPEDDATA_GET_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
@@ -1424,7 +1424,7 @@ static VALUE
 proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass, block->type);
-    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    rb_proc_t *proc = RTYPEDDATA_GET_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
@@ -1671,7 +1671,7 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
-        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_GET_DATA(self);
 
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
@@ -1926,6 +1926,8 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
                        int kw_splat, VALUE passed_block_handler, const rb_cref_t *cref,
                        int is_lambda, int force_blockarg)
 {
+    struct rb_block proc_block;
+
   again:
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
@@ -1951,7 +1953,9 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
             if (force_blockarg == FALSE) {
                 is_lambda = po->header.is_lambda;
             }
-            block_handler = vm_block_to_block_handler(&po->block);
+            /* Copy: argument setup can compact and move embedded Proc data; a Proc's ep never changes. */
+            proc_block = po->block;
+            block_handler = vm_block_to_block_handler(&proc_block);
             goto again;
         }
     }
@@ -2014,7 +2018,9 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
                          const rb_cref_t *cref,
                          const rb_callable_method_entry_t *me)
 {
-    const struct rb_block *block = &proc->block;
+    /* Copy: argument setup can compact and move embedded Proc data; a Proc's ep never changes. */
+    struct rb_block block_copy = proc->block;
+    const struct rb_block *block = &block_copy;
 
   again:
     switch (vm_block_type(block)) {
@@ -2039,7 +2045,7 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
         return vm_yield_with_symbol(ec, block->as.symbol, argc, argv, kw_splat, passed_block_handler);
       case block_type_proc:
         is_lambda = block_proc_is_lambda(block->as.proc);
-        block = vm_proc_block(block->as.proc);
+        block_copy = *vm_proc_block(block->as.proc);
         goto again;
     }
     VM_UNREACHABLE(invoke_block_from_c_proc);
