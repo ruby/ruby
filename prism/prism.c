@@ -13148,7 +13148,10 @@ static pm_reduction_t
 pm_chained_call_reduction(pm_parser_t *parser, pm_reduction_t receiver, pm_node_t *node, const pm_arguments_t *arguments) {
     /* block_call call_op2 operation2 command_args completes a command.
      * Parenthesized arguments or an attached block can continue the chain. */
-    if (PM_REDUCTION_KIND(receiver) == PM_REDUCTION_BLOCK_CALL && arguments->kind != PM_REDUCTION_COMMAND) {
+    if (
+        PM_REDUCTION_KIND(receiver) == PM_REDUCTION_BLOCK_CALL &&
+        (arguments->kind == PM_REDUCTION_DEFAULT || (arguments->block != NULL && PM_NODE_TYPE_P(arguments->block, PM_BLOCK_NODE)))
+    ) {
         /* Ruby 4.1 added block_call call_op2 operation2 command_args cmd_brace_block. */
         if (arguments->kind == PM_REDUCTION_BRACE_COMMAND && parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
             pm_parser_err_node(parser, arguments->block, PM_ERR_ARGUMENT_UNEXPECTED_BLOCK);
@@ -15990,8 +15993,9 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, pm_argument
          * lexes 'do'. Only an enclosing command_args frame makes that 'do'
          * a command block. Super and yield also reduce without lookahead. */
         if (argument_kind == PM_REDUCTION_BRACE_COMMAND && match1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
-            if (pm_accepts_block_stack_p(parser)) flags &= (uint8_t) ~PM_PARSE_ACCEPTS_DO_BLOCK;
-            if (kind != PM_ARGUMENTS_METHOD) arguments->kind = PM_REDUCTION_BRACE_COMMAND;
+            bool accepts_block = pm_accepts_block_stack_p(parser);
+            if (accepts_block) flags &= (uint8_t) ~PM_PARSE_ACCEPTS_DO_BLOCK;
+            if (accepts_block || kind != PM_ARGUMENTS_METHOD) arguments->kind = PM_REDUCTION_BRACE_COMMAND;
         }
     }
 
@@ -19214,13 +19218,15 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
          * `baz def f = a rescue z do end` lexes as a plain keyword that
          * attaches to `z` rather than to `baz`. */
         pm_accepts_block_stack_push(parser, true);
-        pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1)).node;
+        pm_reduction_t body = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 
-        statement = parse_endless_rescues(parser, statement, flags, depth);
+        /* parse.y reduces the sole brace-command argument in `super A::B {}`
+         * before reading `do`. Prism already has that token as lookahead. */
+        bool brace_command_do = PM_REDUCTION_KIND(body) == PM_REDUCTION_BRACE_COMMAND && match1(parser, PM_TOKEN_KEYWORD_DO_BLOCK);
+        pm_node_t *statement = parse_endless_rescues(parser, body.node, flags, depth);
 
-        /* A plain `do` still belongs to the endless method context. A
-         * PM_TOKEN_KEYWORD_DO_BLOCK can attach to an enclosing command. */
-        if (accept1(parser, PM_TOKEN_KEYWORD_DO)) {
+        if (brace_command_do || match1(parser, PM_TOKEN_KEYWORD_DO)) {
+            parser_lex(parser);
             pm_block_node_t *block = parse_block(parser, (uint16_t) (depth + 1));
             pm_parser_err_node(parser, UP(block), PM_ERR_DEF_ENDLESS_DO_BLOCK);
         }
@@ -20862,6 +20868,12 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
                 }
             }
             pm_accepts_block_stack_pop(parser);
+
+            /* Like super and yield, a jump can reduce with its sole command
+             * argument before an endless method's trailing `do` is read. */
+            if (argument_kind == PM_REDUCTION_BRACE_COMMAND && match1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
+                kind = PM_REDUCTION_BRACE_COMMAND;
+            }
 
             // Reject `foo && return bar`.
             if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.list.size > 0) {

@@ -269,6 +269,18 @@ module Ruby::Prism
       assert_equal "do end", result.errors.first.location.slice
     end
 
+    def test_do_after_a_brace_command_in_an_endless_method_argument
+      ["super A::B {}", "inner g (x) {}", "yield g (x) {}", "not super A::B {}", "return inner A::B {}"].each do |body|
+        source = "outer def f = #{body} do end; tail"
+        result = Ruby::Prism.parse(source, version: "4.0")
+        assert_equal [:def_endless_do_block], result.errors.map(&:type), source
+        assert_equal "do end", result.errors.first.location.slice
+        outer, tail = result.value.statements.body
+        assert_nil outer.block
+        assert_equal :tail, tail.name
+      end
+    end
+
     def test_missing_rescue_handler_inside_bare_not_in_an_endless_def
       result = Ruby::Prism.parse("def f = not work rescue; tail")
       assert_equal [:rescue_modifier_value], result.errors.map(&:type)

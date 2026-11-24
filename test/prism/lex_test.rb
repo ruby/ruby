@@ -30,6 +30,19 @@ module Ruby::Prism
       assert_equal 5, tokens.length
     end
 
+    def test_do_after_a_command_with_a_brace_block
+      {
+        "outer def f = super A::B() {} do end" => :KEYWORD_DO_BLOCK,
+        "outer def f = super A::B {} rescue fallback do end" => :KEYWORD_DO,
+        "outer inner f (x) {} do end" => :KEYWORD_DO_BLOCK,
+        "outer inner super super A::B { other super B::C {} } do end" => :KEYWORD_DO_BLOCK,
+        "while super A::B {} do end" => :KEYWORD_DO_LOOP
+      }.each do |source, expected|
+        tokens = Ruby::Prism.lex(source, version: "4.0").value
+        assert_equal [expected], tokens.select { |token| token.value == "do" }.map(&:type), source
+      end
+    end
+
     def test_parse_lex_file
       node, tokens = Ruby::Prism.parse_lex_file(__FILE__).value
 

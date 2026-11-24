@@ -645,6 +645,24 @@ module Ruby::Prism
       end
     end
 
+    def test_do_block_on_a_call_with_an_endless_method_argument
+      ["super A::B() {}", "inner mid g (x) {}", "return inner A::B() {}"].each do |body|
+        assert_location(CallNode, "outer def f = #{body} do end", version: "4.0") do |outer|
+          assert_equal "do end", outer.block.slice
+          assert_equal body, outer.arguments.arguments.first.body.body.first.slice
+          outer
+        end
+      end
+
+      source = "outer def f = super A::B {} rescue fallback do end"
+      assert_location(CallNode, source, version: "4.0") do |outer|
+        assert_nil outer.block
+        rescue_modifier = outer.arguments.arguments.first.body.body.first
+        assert_equal "do end", rescue_modifier.rescue_expression.block.slice
+        outer
+      end
+    end
+
     def test_rescue_after_nested_command_assignment
       source = "targets[:k] = tmp = call_boom 1 rescue nil rescue :outer"
       assert_location(RescueModifierNode, source) do |node|
