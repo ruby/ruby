@@ -278,7 +278,12 @@ class TestAddressResolve < Test::Unit::TestCase
 
   # The hook can only return addresses without a zone, so a scoped literal must not reach it.
   def test_addrinfo_ip_ipv6_link_local_with_zone
-    interface = Socket.getifaddrs.find { |ifaddr| ifaddr.addr&.ipv6_loopback? }&.name
+    begin
+      ifaddrs = Socket.getifaddrs
+    rescue NotImplementedError
+      omit "Socket.getifaddrs not implemented"
+    end
+    interface = ifaddrs.find { |ifaddr| ifaddr.addr&.ipv6_loopback? }&.name
     omit "no IPv6 loopback interface" unless interface
 
     address = "fe80::1%#{interface}"
