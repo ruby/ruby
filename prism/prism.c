@@ -13225,8 +13225,25 @@ parse_starred_expression(pm_parser_t *parser, pm_binding_power_t binding_power, 
     return parse_value_expression(parser, binding_power, flags, diag_id, depth);
 }
 
+/* Block-exit validation and implicit-parameter diagnostics depend on the order
+ * of the remaining nodes. */
+static void
+pm_scratch_node_list_remove(pm_scratch_node_list_t *list, const pm_node_t *node) {
+    for (uint32_t index = 0; index < list->size; index++) {
+        if (list->nodes[index] == node) {
+            list->size--;
+            for (; index < list->size; index++) {
+                list->nodes[index] = list->nodes[index + 1];
+            }
+            return;
+        }
+    }
+}
+
 static pm_visit_result_t
 pm_node_unreference_each(const pm_node_t *node, void *data) {
+    pm_parser_t *parser = (pm_parser_t *) data;
+
     switch (PM_NODE_TYPE(node)) {
         /* When we are about to destroy a set of nodes that could potentially
          * contain block exits for the current scope, we need to check if they
@@ -13234,57 +13251,17 @@ pm_node_unreference_each(const pm_node_t *node, void *data) {
          */
         case PM_BREAK_NODE:
         case PM_NEXT_NODE:
-        case PM_REDO_NODE: {
-            pm_parser_t *parser = (pm_parser_t *) data;
-            size_t index = 0;
-
-            while (index < parser->current_block_exits->size) {
-                pm_node_t *block_exit = parser->current_block_exits->nodes[index];
-
-                if (block_exit == node) {
-                    if (index + 1 < parser->current_block_exits->size) {
-                        memmove(
-                            &parser->current_block_exits->nodes[index],
-                            &parser->current_block_exits->nodes[index + 1],
-                            (parser->current_block_exits->size - index - 1) * sizeof(pm_node_t *)
-                        );
-                    }
-                    parser->current_block_exits->size--;
-
-                    /* Note descending here because these nodes could have
-                     * arguments that are themselves block exits. */
-                    return PM_VISIT_DESCEND;
-                }
-
-                index++;
-            }
-
+        case PM_REDO_NODE:
+            pm_scratch_node_list_remove(parser->current_block_exits, node);
+            /* The arguments can themselves contain block exits. */
             return PM_VISIT_DESCEND;
-        }
         /* When an implicit local variable is written to or targeted, it becomes
          * a regular, named local variable. This branch removes it from the list
          * of implicit parameters when that happens. */
         case PM_LOCAL_VARIABLE_READ_NODE:
-        case PM_IT_LOCAL_VARIABLE_READ_NODE: {
-            pm_parser_t *parser = (pm_parser_t *) data;
-            pm_scratch_node_list_t *implicit_parameters = &parser->current_scope->implicit_parameters;
-
-            for (size_t index = 0; index < implicit_parameters->size; index++) {
-                if (implicit_parameters->nodes[index] == node) {
-                    /* If the node is not the last one in the list, we need to
-                     * shift the remaining nodes down to fill the gap. This is
-                     * extremely unlikely to happen. */
-                    if (index != implicit_parameters->size - 1) {
-                        memmove(&implicit_parameters->nodes[index], &implicit_parameters->nodes[index + 1], (implicit_parameters->size - index - 1) * sizeof(pm_node_t *));
-                    }
-
-                    implicit_parameters->size--;
-                    break;
-                }
-            }
-
+        case PM_IT_LOCAL_VARIABLE_READ_NODE:
+            pm_scratch_node_list_remove(&parser->current_scope->implicit_parameters, node);
             return PM_VISIT_SKIP;
-        }
         default:
             return PM_VISIT_DESCEND;
     }
