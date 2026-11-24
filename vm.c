@@ -1538,6 +1538,21 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
+static void
+env_copy_check_shareable(VALUE v, ID id)
+{
+    if (!rb_ractor_shareable_p(v)) {
+        VALUE name = rb_id2str(id);
+        VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
+                               " unshareable object %+" PRIsVALUE " from ", v);
+        if (name)
+            rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
+        else
+            rb_str_cat_cstr(msg, "a hidden variable");
+        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+    }
+}
+
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
@@ -1547,6 +1562,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
     VALUE *ep = &env_body[src_env->env_size - 2];
     const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+    VALUE block_handler = VM_BLOCK_HANDLER_NONE;
 
     // Copy after allocations above, since they can move objects in src_ep.
     VALUE svar_val = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
@@ -1568,10 +1584,17 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     }
 
     if (read_only_variables) {
+        const struct rb_iseq_constant_body *body = ISEQ_BODY(src_env->iseq);
+
+        const bool forwardable = body->param.flags.forwardable && VM_ENV_LOCAL_P(src_ep);
+        const unsigned int local_offset =
+            src_env->env_size - 1 /* envval */ - VM_ENV_DATA_SIZE - body->local_table_size;
+        VM_ASSERT(src_env->env_size >= body->local_table_size + VM_ENV_DATA_SIZE + 1);
+        VM_ASSERT(forwardable || local_offset == 0);
+
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
             ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
 
-            const struct rb_iseq_constant_body *body = ISEQ_BODY(src_env->iseq);
             for (unsigned int j=0; j<body->local_table_size; j++) {
                 if (id == body->local_table[j]) {
                     // check reassignment
@@ -1583,18 +1606,23 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                     }
 
                     // check shareable
-                    VALUE v = src_env->env[j];
-                    if (!rb_ractor_shareable_p(v)) {
-                        VALUE name = rb_id2str(id);
-                        VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
-                                               " unshareable object %+" PRIsVALUE " from ", v);
-                        if (name)
-                            rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
-                        else
-                            rb_str_cat_cstr(msg, "a hidden variable");
-                        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+                    VALUE v = src_env->env[local_offset + j];
+                    env_copy_check_shareable(v, id);
+                    RB_OBJ_WRITE((VALUE)copied_env, &env_body[local_offset + j], v);
+
+                    if (forwardable && j == body->param.size - 1) {
+                        for (unsigned int k = 0; k < local_offset; k++) {
+                            VALUE arg = src_env->env[k];
+                            env_copy_check_shareable(arg, id);
+                            RB_OBJ_WRITE((VALUE)copied_env, &env_body[k], arg);
+                        }
+
+                        block_handler = VM_ENV_BLOCK_HANDLER(src_ep);
+                        if (block_handler != VM_BLOCK_HANDLER_NONE) {
+                            env_copy_check_shareable(block_handler, id);
+                        }
                     }
-                    RB_OBJ_WRITE((VALUE)copied_env, &env_body[j], v);
+
                     rb_ary_delete_at(read_only_variables, i);
                     break;
                 }
@@ -1617,7 +1645,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
     }
     else {
-        ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
+        RB_OBJ_WRITE(copied_env, &ep[VM_ENV_DATA_INDEX_SPECVAL], block_handler);
     }
 
     RB_OBJ_SET_SHAREABLE((VALUE)copied_env);
