@@ -12817,7 +12817,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 12
+#define IBF_DEVEL_VERSION 13
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13229,7 +13229,7 @@ ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
 }
 
 static ibf_offset_t
-ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
+ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq, bool *needs_mark_bits, unsigned int *ic_segments_len)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     const int iseq_size = body->iseq_size;
@@ -13255,15 +13255,19 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
             switch (types[op_index]) {
               case TS_CDHASH:
               case TS_VALUE:
+                /* the same tests as ibf_load_code() uses to set mark bits */
+                if (types[op_index] == TS_CDHASH || !SPECIAL_CONST_P(op)) *needs_mark_bits = true;
                 wv = ibf_dump_object(dump, op);
                 break;
               case TS_ISEQ:
+                if (op) *needs_mark_bits = true;
                 wv = (VALUE)ibf_dump_iseq(dump, (const rb_iseq_t *)op);
                 break;
               case TS_IC:
                 {
                     IC ic = (IC)op;
                     VALUE arr = idlist_to_array(ic->segments);
+                    *ic_segments_len += (unsigned int)RARRAY_LEN(arr) + 1;
                     wv = ibf_dump_object(dump, arr);
                 }
                 break;
@@ -13301,20 +13305,21 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
+/* Fills arrays already allocated by rb_iseq_alloc_packed(); IC segment lists go to [segments, segments_end). */
 static VALUE *
-ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
+ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size,
+              ID *segments, const ID *segments_end)
 {
     VALUE iseqv = (VALUE)iseq;
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
-    VALUE *code = ZALLOC_N(VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
+    VALUE *code = load_body->iseq_encoded;
     struct rb_call_data *cd_entries = load_body->call_data;
     int ic_index = 0;
 
-    load_body->iseq_encoded = code;
-    load_body->iseq_size = iseq_size;
+    RUBY_ASSERT(load_body->iseq_size == iseq_size);
 
     iseq_bits_t * mark_offset_bits;
     if (ISEQ_MBITS_BUFLEN(iseq_size) == 1) {
@@ -13322,10 +13327,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         mark_offset_bits = &load_body->mark_bits.single;
     }
     else {
-        load_body->mark_bits.list = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
         mark_offset_bits = load_body->mark_bits.list;
     }
-    bool needs_bitmap = false;
+    /* the dump said no operand needs marking; a corrupt binary may disagree */
+#define IBF_MBITS_SET(i) do { \
+        if (!mark_offset_bits) rb_raise(rb_eRuntimeError, "invalid byte sequence"); \
+        ISEQ_MBITS_SET(mark_offset_bits, (i)); \
+    } while (0)
 
     for (code_index=0; code_index<iseq_size;) {
         /* opcode */
@@ -13346,8 +13354,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
                         RB_OBJ_WRITTEN(iseqv, Qundef, v);
-                        ISEQ_MBITS_SET(mark_offset_bits, code_index);
-                        needs_bitmap = true;
+                        IBF_MBITS_SET(code_index);
                     }
                     break;
                 }
@@ -13362,9 +13369,8 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     pinned_list_store(load->current_buffer->obj_list, (long)op, v);
 
                     code[code_index] = v;
-                    ISEQ_MBITS_SET(mark_offset_bits, code_index);
+                    IBF_MBITS_SET(code_index);
                     RB_OBJ_WRITTEN(iseqv, Qundef, v);
-                    needs_bitmap = true;
                     break;
                 }
               case TS_ISEQ:
@@ -13374,8 +13380,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     code[code_index] = v;
                     if (!SPECIAL_CONST_P(v)) {
                         RB_OBJ_WRITTEN(iseqv, Qundef, v);
-                        ISEQ_MBITS_SET(mark_offset_bits, code_index);
-                        needs_bitmap = true;
+                        IBF_MBITS_SET(code_index);
                     }
                     break;
                 }
@@ -13385,7 +13390,15 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = array_to_idlist(arr);
+                    if (!RB_TYPE_P(arr, T_ARRAY) || RARRAY_LEN(arr) >= segments_end - segments) {
+                        rb_raise(rb_eRuntimeError, "invalid byte sequence");
+                    }
+                    for (rb_len_t i = 0; i < RARRAY_LEN(arr); i++) {
+                        segments[i] = SYM2ID(RARRAY_AREF(arr, i));
+                    }
+                    segments[RARRAY_LEN(arr)] = 0;
+                    ic->segments = segments;
+                    segments += RARRAY_LEN(arr) + 1;
 
                     code[code_index] = (VALUE)ic;
                 }
@@ -13442,10 +13455,8 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
     }
 
-    if (!needs_bitmap) {
-        SIZED_FREE_N(load_body->mark_bits.list, ISEQ_MBITS_BUFLEN(iseq_size));
-        load_body->mark_bits.list = NULL;
-    }
+#undef IBF_MBITS_SET
+    if (segments != segments_end) rb_raise(rb_eRuntimeError, "invalid byte sequence");
 
     RUBY_ASSERT(code_index == iseq_size);
     RUBY_ASSERT(reading_pos == bytecode_offset + bytecode_size);
@@ -13466,16 +13477,11 @@ ibf_dump_param_opt_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     }
 }
 
-static VALUE *
-ibf_load_param_opt_table(const struct ibf_load *load, ibf_offset_t opt_table_offset, int opt_num)
+static void
+ibf_load_param_opt_table(const struct ibf_load *load, ibf_offset_t opt_table_offset, int opt_num, VALUE *table)
 {
     if (opt_num > 0) {
-        VALUE *table = ALLOC_N(VALUE, opt_num+1);
         MEMCPY(table, load->current_buffer->buff + opt_table_offset, VALUE, opt_num+1);
-        return table;
-    }
-    else {
-        return NULL;
     }
 }
 
@@ -13504,13 +13510,27 @@ ibf_dump_param_keyword(struct ibf_dump *dump, const rb_iseq_t *iseq)
     }
 }
 
-static const struct rb_iseq_param_keyword *
-ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_offset)
+static int
+ibf_load_param_keyword_default_num(const struct ibf_load *load, ibf_offset_t param_keyword_offset)
+{
+    struct rb_iseq_param_keyword kw;
+    ibf_offset_t pos = param_keyword_offset;
+    memcpy(&kw, ibf_load_ptr(load, &pos, sizeof(kw)), sizeof(kw));
+    if (kw.num < kw.required_num || kw.required_num < 0) rb_raise(rb_eRuntimeError, "invalid byte sequence");
+    return kw.num - kw.required_num;
+}
+
+static void
+ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_offset, struct rb_iseq_param_keyword *kw)
 {
     if (param_keyword_offset) {
-        struct rb_iseq_param_keyword *kw = IBF_R(param_keyword_offset, struct rb_iseq_param_keyword, 1);
+        VALUE *dvs = (VALUE *)kw->default_values;
+        ibf_offset_t pos = param_keyword_offset;
+        memcpy(kw, ibf_load_ptr(load, &pos, sizeof(*kw)), sizeof(*kw));
         int dv_num = kw->num - kw->required_num;
-        VALUE *dvs = dv_num ? IBF_R(kw->default_values, VALUE, dv_num) : NULL;
+        if (dv_num) {
+            MEMCPY(dvs, load->current_buffer->buff + IBF_OFFSET(kw->default_values), VALUE, dv_num);
+        }
 
         int i;
         for (i=0; i<dv_num; i++) {
@@ -13521,10 +13541,6 @@ ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_o
         kw->table = NULL;
 
         kw->default_values = dvs;
-        return kw;
-    }
-    else {
-        return NULL;
     }
 }
 
@@ -13552,15 +13568,27 @@ ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
+static unsigned int
+ibf_load_insns_info_node_ids_size(const struct ibf_load *load, ibf_offset_t body_offset)
+{
+#ifdef USE_ISEQ_NODE_ID
+    ibf_offset_t reading_pos = body_offset;
+    return (unsigned int)ibf_load_small_value(load, &reading_pos);
+#else
+    return 0;
+#endif
+}
+
 static void
 ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, unsigned int size,
                          struct rb_iseq_constant_body *load_body)
 {
     ibf_offset_t reading_pos = body_offset;
-    struct iseq_insn_info_entry *entries = ALLOC_N(struct iseq_insn_info_entry, size);
+    struct iseq_insn_info_entry *entries = load_body->insns_info.body;
 
 #ifdef USE_ISEQ_NODE_ID
     const unsigned int node_ids_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    RUBY_ASSERT(node_ids_size == load_body->insns_info.node_ids_size);
 #endif
     unsigned int i;
     for (i = 0; i < size; i++) {
@@ -13572,13 +13600,9 @@ ibf_load_insns_info_body(const struct ibf_load *load, ibf_offset_t body_offset, 
         if (node_ids_size > load->current_buffer->size - reading_pos) {
             rb_raise(rb_eRuntimeError, "invalid byte sequence");
         }
-        uint8_t *node_ids = ALLOC_N(uint8_t, node_ids_size);
-        memcpy(node_ids, load->current_buffer->buff + reading_pos, node_ids_size);
-        load_body->insns_info.node_ids = node_ids;
-        load_body->insns_info.node_ids_size = node_ids_size;
+        memcpy((uint8_t *)load_body->insns_info.node_ids, load->current_buffer->buff + reading_pos, node_ids_size);
     }
 #endif
-    load_body->insns_info.body = entries;
 }
 
 static ibf_offset_t
@@ -13596,11 +13620,10 @@ ibf_dump_insns_info_positions(struct ibf_dump *dump, const unsigned int *positio
     return offset;
 }
 
-static unsigned int *
-ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t positions_offset, unsigned int size)
+static void
+ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t positions_offset, unsigned int size, unsigned int *positions)
 {
     ibf_offset_t reading_pos = positions_offset;
-    unsigned int *positions = ALLOC_N(unsigned int, size);
 
     unsigned int last = 0;
     unsigned int i;
@@ -13608,8 +13631,6 @@ ibf_load_insns_info_positions(const struct ibf_load *load, ibf_offset_t position
         positions[i] = last + (unsigned int)ibf_load_small_value(load, &reading_pos);
         last = positions[i];
     }
-
-    return positions;
 }
 
 static ibf_offset_t
@@ -13633,24 +13654,28 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return ibf_dump_write(dump, table, sizeof(ID) * size);
 }
 
+static bool
+ibf_load_local_table_shared_p(const struct ibf_load *load, ibf_offset_t local_table_offset, int size)
+{
+    if (size != 1) return false;
+    ID id;
+    memcpy(&id, load->current_buffer->buff + local_table_offset, sizeof(id));
+    return ibf_load_id(load, id) == idERROR_INFO;
+}
+
 static const ID *
-ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offset, int size)
+ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offset, int size, ID *table)
 {
     if (size > 0) {
-        ID *table = IBF_R(local_table_offset, ID, size);
+        if (!table) return rb_iseq_shared_exc_local_tbl;
+
+        MEMCPY(table, load->current_buffer->buff + local_table_offset, ID, size);
         int i;
 
         for (i=0; i<size; i++) {
             table[i] = ibf_load_id(load, table[i]);
         }
-
-        if (size == 1 && table[0] == idERROR_INFO) {
-            ruby_xfree_sized(table, sizeof(ID) * size);
-            return rb_iseq_shared_exc_local_tbl;
-        }
-        else {
-            return table;
-        }
+        return table;
     }
     else {
         return NULL;
@@ -13722,9 +13747,8 @@ static void
 ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size, const rb_iseq_t *parent_iseq)
 {
     if (size) {
-        struct iseq_catch_table *table = ruby_xcalloc(1, iseq_catch_table_bytes(size));
-        table->size = size;
-        ISEQ_BODY(parent_iseq)->catch_table = table;
+        struct iseq_catch_table *table = ISEQ_BODY(parent_iseq)->catch_table;
+        RUBY_ASSERT(table && table->size == size);
 
         ibf_offset_t reading_pos = catch_table_offset;
 
@@ -13740,9 +13764,6 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
             rb_iseq_t *catch_iseq = (rb_iseq_t *)ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
             RB_OBJ_WRITE(parent_iseq, UNALIGNED_MEMBER_PTR(&table->entries[i], iseq), catch_iseq);
         }
-    }
-    else {
-        ISEQ_BODY(parent_iseq)->catch_table = NULL;
     }
 }
 
@@ -13946,7 +13967,9 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump->current_buffer = &buffer;
 #endif
 
-    const ibf_offset_t bytecode_offset =        ibf_dump_code(dump, iseq);
+    bool needs_mark_bits = false;
+    unsigned int ic_segments_len = 0;
+    const ibf_offset_t bytecode_offset =        ibf_dump_code(dump, iseq, &needs_mark_bits, &ic_segments_len);
     const ibf_offset_t bytecode_size =          ibf_dump_pos(dump) - bytecode_offset;
     const ibf_offset_t param_opt_table_offset = ibf_dump_param_opt_table(dump, iseq);
     const ibf_offset_t param_keyword_offset =   ibf_dump_param_keyword(dump, iseq);
@@ -14049,6 +14072,9 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->stack_max);
     ibf_dump_write_small_value(dump, body->builtin_attrs);
     ibf_dump_write_small_value(dump, body->prism ? 1 : 0);
+    /* so the loader can size the packed block before loading into it */
+    ibf_dump_write_small_value(dump, needs_mark_bits);
+    ibf_dump_write_small_value(dump, ic_segments_len);
 
 #undef IBF_BODY_OFFSET
 
@@ -14166,6 +14192,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int builtin_attrs = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const bool prism = (bool)ibf_load_small_value(load, &reading_pos);
+    const bool needs_mark_bits = (bool)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ic_segments_len = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
     // setup fname and dummy frame
     VALUE path = ibf_load_object(load, location_pathobj_index);
@@ -14254,15 +14282,32 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->ise_size             = ise_size;
     load_body->ic_size              = ic_size;
 
+    load_body->iseq_size            = iseq_size;
+
+    /* sized before rb_iseq_alloc_packed(), as reading them may allocate */
+    const bool shared_local_table = ibf_load_local_table_shared_p(load, local_table_offset, local_table_size);
+    const struct rb_iseq_pack_sizes pack_sizes = {
+        .own_local_table = local_table_size > 0 && !shared_local_table,
+        .mark_bits = needs_mark_bits && ISEQ_MBITS_BUFLEN(iseq_size) > 1,
+        .keyword = param_keyword_offset != 0,
+        .keyword_default_num = param_keyword_offset ? ibf_load_param_keyword_default_num(load, param_keyword_offset) : 0,
+        .catch_table_size = catch_table_size,
+        .ic_segments_len = ic_segments_len,
+        .node_ids_size = ibf_load_insns_info_node_ids_size(load, insns_info_body_offset),
+    };
+    VALUE positions_buf = 0;
+    unsigned int *positions = ALLOCV_N(unsigned int, positions_buf, insns_info_size);
+
     rb_iseq_alloc_inline_storage(load_body);
+    ID *segments = rb_iseq_alloc_packed(iseq, &pack_sizes);
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, load_body->call_data);
     load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
-    load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
-    load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
+                                      ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num, load_body->param.opt_table);
+                                      ibf_load_param_keyword(load, param_keyword_offset, (struct rb_iseq_param_keyword *)load_body->param.keyword);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
                                       ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size, load_body);
-    load_body->insns_info.positions_or_succ_index_table.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
-    load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
+                                      ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size, positions);
+    load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size, (ID *)load_body->local_table);
     ibf_load_lvar_states(load, load_body, lvar_states_offset, local_table_size, load_body->local_table);
     ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
 
@@ -14276,15 +14321,18 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
 
     // This must be done after the local table is loaded.
     if (load_body->param.keyword != NULL) {
-        RUBY_ASSERT(load_body->local_table);
         struct rb_iseq_param_keyword *keyword = (struct rb_iseq_param_keyword *) load_body->param.keyword;
+        /* the table must lie inside the local table, which is packed with it */
+        if (!pack_sizes.own_local_table || keyword->num < 0 || keyword->bits_start < keyword->num ||
+            (unsigned int)keyword->bits_start > local_table_size) {
+            rb_raise(rb_eRuntimeError, "invalid byte sequence");
+        }
         keyword->table = &load_body->local_table[keyword->bits_start - keyword->num];
     }
 
-    ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    rb_iseq_insns_info_encode_positions(iseq);
-#endif
+    ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size, segments, segments + ic_segments_len);
+    rb_iseq_insns_info_encode_positions_packed(iseq, positions);
+    ALLOCV_END(positions_buf);
 
     rb_iseq_translate_threaded_code(iseq);
 
@@ -14298,7 +14346,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load->current_buffer = saved_buffer;
 #endif
     verify_call_cache(iseq);
-    rb_iseq_pack_body(iseq);
 
     RB_GC_GUARD(dummy_frame);
     rb_vm_pop_frame_no_int(ec);

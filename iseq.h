@@ -303,6 +303,20 @@ void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
 void rb_iseq_alloc_inline_storage(struct rb_iseq_constant_body *body);
 void rb_iseq_pack_body(rb_iseq_t *iseq);
 
+/* What rb_iseq_alloc_packed() needs beyond the sizes already in the body
+ * (iseq_size, insns_info.size, local_table_size, param.opt_num). */
+struct rb_iseq_pack_sizes {
+    bool own_local_table;         /* false for none or rb_iseq_shared_exc_local_tbl */
+    bool mark_bits;               /* mark_bits.list is needed (more than one word) */
+    bool keyword;
+    int keyword_default_num;
+    unsigned int catch_table_size;
+    unsigned int ic_segments_len; /* IDs in all IC segment lists, terminators included */
+    unsigned int node_ids_size;
+};
+ID *rb_iseq_alloc_packed(rb_iseq_t *iseq, const struct rb_iseq_pack_sizes *sizes);
+void rb_iseq_insns_info_encode_positions_packed(const rb_iseq_t *iseq, const unsigned int *positions);
+
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);

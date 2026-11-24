@@ -60,6 +60,7 @@ static struct succ_index_table *succ_index_table_create(int max_pos, int *data, 
 static unsigned int *succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size);
 static int succ_index_lookup(const struct succ_index_table *sd, int x);
 static size_t succ_index_table_bytes(int max_pos);
+static void succ_index_table_fill(struct succ_index_table *sd, int max_pos, const int *data, int size);
 #endif
 static size_t iseq_packed_bytes(const struct rb_iseq_constant_body *body);
 static size_t iseq_inline_storage_bytes(const struct rb_iseq_constant_body *body);
@@ -207,7 +208,12 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (rb_zjit_enabled_p) rb_zjit_iseq_free(iseq);
 #endif
         if (FL_TEST_RAW((VALUE)iseq, ISEQ_PACKED)) {
-            ruby_xfree_sized(body->iseq_encoded, iseq_packed_bytes(body));
+            if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
+                ruby_xfree(body->iseq_encoded); /* load failed part way: iseq_packed_bytes() can't be trusted */
+            }
+            else {
+                ruby_xfree_sized(body->iseq_encoded, iseq_packed_bytes(body));
+            }
         }
         else {
             SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
@@ -881,6 +887,19 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
 #endif
 }
 
+/* For rb_iseq_alloc_packed() ISeqs: fills the table already in the block; positions stay the caller's. */
+void
+rb_iseq_insns_info_encode_positions_packed(const rb_iseq_t *iseq, const unsigned int *positions)
+{
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    succ_index_table_fill(body->insns_info.positions_or_succ_index_table.succ_index_table,
+                          body->iseq_size, (const int *)positions, body->insns_info.size);
+#else
+    MEMCPY(body->insns_info.positions_or_succ_index_table.positions, positions, unsigned int, body->insns_info.size);
+#endif
+}
+
 /*
  * An ISeq's arrays are allocated one by one while it is compiled or loaded,
  * which costs ~8 malloc chunks per ISeq. Once the ISeq is complete, they are
@@ -1082,6 +1101,82 @@ rb_iseq_pack_body(rb_iseq_t *iseq)
     }
 
     FL_SET_RAW((VALUE)iseq, ISEQ_PACKED);
+}
+
+/* Carve out one piece of the packed block, in iseq_pack_walk() order. */
+static void *
+iseq_carve_piece(char *buf, size_t *pos, size_t bytes)
+{
+    if (!bytes) return NULL;
+    void *p = buf + *pos;
+    *pos += ISEQ_PACK_ALIGN(bytes);
+    return p;
+}
+
+/*
+ * Allocate the zeroed read-only block up front and point the body's arrays
+ * into it, for the binary loader to fill in place. Sets catch_table->size,
+ * node_ids_size and keyword->default_values; returns where the IC segment
+ * lists go, back to back in IC order. The ISeq is ISEQ_PACKED from here on.
+ */
+ID *
+rb_iseq_alloc_packed(rb_iseq_t *iseq, const struct rb_iseq_pack_sizes *s)
+{
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    const size_t catch_bytes = s->catch_table_size ? iseq_catch_table_bytes(s->catch_table_size) : 0;
+    const size_t kw_bytes = s->keyword ? sizeof(struct rb_iseq_param_keyword) : 0;
+    const size_t sizes[] = {
+        body->iseq_size * sizeof(VALUE),
+#if VM_INSN_INFO_TABLE_IMPL == 2
+        succ_index_table_bytes(body->iseq_size),
+#else
+        body->insns_info.size * sizeof(unsigned int),
+#endif
+        s->own_local_table ? body->local_table_size * sizeof(ID) : 0,
+        s->mark_bits ? ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE : 0,
+        body->param.opt_num > 0 ? (body->param.opt_num + 1) * sizeof(VALUE) : 0,
+        kw_bytes,
+        s->keyword ? s->keyword_default_num * sizeof(VALUE) : 0,
+        catch_bytes,
+        s->ic_segments_len * sizeof(ID),
+        body->insns_info.size * sizeof(struct iseq_insn_info_entry),
+        s->node_ids_size,
+    };
+    size_t total = 0;
+    for (size_t i = 0; i < numberof(sizes); i++) total += ISEQ_PACK_ALIGN(sizes[i]);
+
+    char *buf = ZALLOC_N(char, total);
+    size_t pos = 0, i = 0;
+
+    body->iseq_encoded = iseq_carve_piece(buf, &pos, sizes[i++]);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    body->insns_info.positions_or_succ_index_table.succ_index_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+#else
+    body->insns_info.positions_or_succ_index_table.positions = iseq_carve_piece(buf, &pos, sizes[i++]);
+#endif
+    ID *local_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (s->own_local_table) body->local_table = local_table;
+    iseq_bits_t *mark_bits = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1) body->mark_bits.list = mark_bits;
+    body->param.opt_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+    struct rb_iseq_param_keyword *kw = iseq_carve_piece(buf, &pos, sizes[i++]);
+    VALUE *default_values = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (kw) kw->default_values = default_values;
+    body->param.keyword = kw;
+    body->catch_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (body->catch_table) body->catch_table->size = s->catch_table_size;
+    ID *segments = iseq_carve_piece(buf, &pos, sizes[i++]);
+    body->insns_info.body = iseq_carve_piece(buf, &pos, sizes[i++]);
+#ifdef USE_ISEQ_NODE_ID
+    body->insns_info.node_ids = iseq_carve_piece(buf, &pos, sizes[i++]);
+    body->insns_info.node_ids_size = s->node_ids_size;
+#else
+    i++;
+#endif
+    RUBY_ASSERT(i == numberof(sizes) && pos == total);
+
+    FL_SET_RAW((VALUE)iseq, ISEQ_PACKED);
+    return segments;
 }
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
@@ -4807,15 +4902,12 @@ succ_index_table_bytes(int max_pos)
     return imm_size * sizeof(uint64_t) + succ_size * sizeof(struct succ_dict_block);
 }
 
-static struct succ_index_table *
-succ_index_table_create(int max_pos, int *data, int size)
+/* sd must be zeroed and succ_index_table_bytes(max_pos) long. */
+static void
+succ_index_table_fill(struct succ_index_table *sd, int max_pos, const int *data, int size)
 {
     const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
     const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
-    struct succ_index_table *sd =
-        rb_xcalloc_mul_add_mul(
-            imm_size, sizeof(uint64_t),
-            succ_size, sizeof(struct succ_dict_block));
     int i, j, k, r;
 
     r = 0;
@@ -4842,6 +4934,18 @@ succ_index_table_create(int max_pos, int *data, int size)
             small_rank += rb_popcount64(bits);
         }
     }
+}
+
+static struct succ_index_table *
+succ_index_table_create(int max_pos, int *data, int size)
+{
+    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
+    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
+    struct succ_index_table *sd =
+        rb_xcalloc_mul_add_mul(
+            imm_size, sizeof(uint64_t),
+            succ_size, sizeof(struct succ_dict_block));
+    succ_index_table_fill(sd, max_pos, data, size);
     return sd;
 }
 
