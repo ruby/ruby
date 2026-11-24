@@ -186,15 +186,6 @@ module Ruby::Prism
       end
     end
 
-    def test_class_header_starts_a_new_rescue_context
-      ["class << (retry if x); end", "class C < (retry if x); end"].each do |header|
-        assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse("x rescue #{header}").errors.map(&:type)
-      end
-      assert Ruby::Prism.parse_success?("class << (x rescue (retry if b)); end")
-      source = "begin; rescue; class << f { retry }; end; end"
-      assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse(source).errors.map(&:type)
-    end
-
     def test_defined_validates_jumps_in_evaluated_receivers
       assert Ruby::Prism.parse_success?("defined?(f { retry })")
       assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse("defined?(f { retry }.g)").errors.map(&:type)
@@ -211,8 +202,14 @@ module Ruby::Prism
     def test_retry_must_target_a_rescue_in_its_own_scope
       [
         "x rescue f { retry }",
+        "x rescue f { |a = (retry if ready)| a }",
         "x rescue -> { retry }",
+        "x rescue ->(a = (retry if ready)) { a }",
         "x rescue (for i in xs; retry; end)",
+        "x rescue (for obj[(retry if ready)] in xs; end)",
+        "begin; work; rescue f { retry }; end",
+        "begin; rescue; class << f { retry }; end; end",
+        "begin; rescue; class C; retry; end; end",
         "if false; x rescue f { retry }; end"
       ].each do |source|
         result = Ruby::Prism.parse(source)
@@ -220,8 +217,14 @@ module Ruby::Prism
         assert_equal "retry", result.errors.first.location.slice
       end
 
-      ["f { x rescue retry }", "x rescue (while b; retry; end)", "x rescue (for i in (retry if b); end)"].each do |source|
-        assert Ruby::Prism.parse_success?(source), source
+      [
+        ["x rescue (begin; ensure; retry; end)", :invalid_retry_after_ensure],
+        ["x rescue f do; ensure; retry; end", :invalid_retry_after_ensure],
+        ["x rescue f do; x; rescue; x; else; retry; end", :invalid_retry_after_else]
+      ].each do |source, type|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal [type], errors.map(&:type), source
+        assert_equal "retry", errors.first.location.slice
       end
     end
 

@@ -155,6 +155,19 @@ module Ruby::Prism
       end
     end
 
+    def test_retry_in_the_enclosing_rescue_handler
+      [
+        "f { x rescue retry }",
+        "-> do; work; rescue; retry; end",
+        "x rescue (while b; retry; end)",
+        "x rescue (for i in (retry if b); end)",
+        "x rescue (begin; work; rescue; x; else; retry; end)",
+        "f { begin; work; rescue (retry if b); end }",
+        "begin; work; rescue StandardError => obj[(retry if b)]; end",
+        "defined?(f { retry })"
+      ].each { |source| assert Ruby::Prism.parse_success?(source), source }
+    end
+
     def test_partial_script
       assert Ruby::Prism.parse_failure?("break")
       assert Ruby::Prism.parse_success?("break", partial_script: true)

@@ -459,6 +459,9 @@ typedef enum {
     /* a BEGIN block */
     PM_CONTEXT_PREEXE,
 
+    /* the exception list and assignment target of a rescue clause */
+    PM_CONTEXT_RESCUE_HEADER,
+
     /* a modifier rescue clause */
     PM_CONTEXT_RESCUE_MODIFIER,
 

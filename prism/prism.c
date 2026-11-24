@@ -7866,6 +7866,7 @@ static const uint32_t context_terminators[] = {
     [PM_CONTEXT_POSTEXE] = (1U << PM_TOKEN_BRACE_RIGHT),
     [PM_CONTEXT_PREDICATE] = (1U << PM_TOKEN_KEYWORD_THEN) | (1U << PM_TOKEN_NEWLINE) | (1U << PM_TOKEN_SEMICOLON),
     [PM_CONTEXT_PREEXE] = (1U << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_RESCUE_HEADER] = 0, /* parse_rescues consumes the clause delimiter */
     [PM_CONTEXT_RESCUE_MODIFIER] = (1U << PM_TOKEN_EOF),
     [PM_CONTEXT_SCLASS] = (1U << PM_TOKEN_KEYWORD_END) | (1U << PM_TOKEN_KEYWORD_RESCUE) | (1U << PM_TOKEN_KEYWORD_ENSURE),
     [PM_CONTEXT_SCLASS_ENSURE] = (1U << PM_TOKEN_KEYWORD_END),
@@ -8008,6 +8009,7 @@ pm_context_string(pm_context_t context) {
         PM_CONTEXT_NAME(POSTEXE, "'END' block"),
         PM_CONTEXT_NAME(PREDICATE, "predicate"),
         PM_CONTEXT_NAME(PREEXE, "'BEGIN' block"),
+        PM_CONTEXT_NAME(RESCUE_HEADER, "rescue clause header"),
         PM_CONTEXT_NAME(RESCUE_MODIFIER, "'rescue' clause"),
         PM_CONTEXT_NAME(SCLASS, "singleton class definition"),
         PM_CONTEXT_CLAUSE_NAMES(SCLASS),
@@ -15119,49 +15121,22 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         pm_token_t then_keyword = { 0 };
         pm_statements_node_t *statements = NULL;
 
-        switch (parser->current.type) {
-            case PM_TOKEN_EQUAL_GREATER: {
-                // Here we have an immediate => after the rescue keyword, in which case
-                // we're going to have an empty list of exceptions to rescue (which
-                // implies StandardError).
-                parser_lex(parser);
-                operator = parser->previous;
+        /* Exception expressions and the assignment target run in the rescue handler. */
+        if (!match3(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_THEN)) {
+            context_push(parser, PM_CONTEXT_RESCUE_HEADER);
+            if (token_begins_expression_p(parser->current.type) || match1(parser, PM_TOKEN_USTAR)) {
+                do {
+                    pm_node_t *expression = parse_starred_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_RESCUE_EXPRESSION, (uint16_t) (depth + 1)).node;
+                    pm_node_list_open_append(&parser->node_chunks, &exceptions, expression);
+                } while (accept1(parser, PM_TOKEN_COMMA));
+            }
 
+            if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
+                operator = parser->previous;
                 reference = parse_expression(parser, PM_BINDING_POWER_INDEX, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_VARIABLE, (uint16_t) (depth + 1)).node;
                 reference = parse_target(parser, reference, false, false);
-                break;
             }
-            case PM_TOKEN_NEWLINE:
-            case PM_TOKEN_SEMICOLON:
-            case PM_TOKEN_KEYWORD_THEN:
-                // Here we have a terminator for the rescue keyword, in which
-                // case we're going to just continue on.
-                break;
-            default: {
-                if (token_begins_expression_p(parser->current.type) || match1(parser, PM_TOKEN_USTAR)) {
-                    // Here we have something that could be an exception expression, so
-                    // we'll attempt to parse it here and any others delimited by commas.
-
-                    do {
-                        pm_node_t *expression = parse_starred_expression(parser, PM_BINDING_POWER_DEFINED, false, PM_ERR_RESCUE_EXPRESSION, (uint16_t) (depth + 1)).node;
-                        pm_node_list_open_append(&parser->node_chunks, &exceptions, expression);
-
-                        // If we hit a newline, then this is the end of the rescue expression. We
-                        // can continue on to parse the statements.
-                        if (match3(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_THEN)) break;
-
-                        // If we hit a `=>` then we're going to parse the exception variable. Once
-                        // we've done that, we'll break out of the loop and parse the statements.
-                        if (accept1(parser, PM_TOKEN_EQUAL_GREATER)) {
-                            operator = parser->previous;
-
-                            reference = parse_expression(parser, PM_BINDING_POWER_INDEX, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_RESCUE_VARIABLE, (uint16_t) (depth + 1)).node;
-                            reference = parse_target(parser, reference, false, false);
-                            break;
-                        }
-                    } while (accept1(parser, PM_TOKEN_COMMA));
-                }
-            }
+            context_pop(parser);
         }
 
         if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
@@ -16052,6 +16027,7 @@ ensure_valid_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
             case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_RESCUE_HEADER:
             case PM_CONTEXT_RESCUE_MODIFIER:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:
@@ -16188,6 +16164,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_MULTI_TARGET:
             case PM_CONTEXT_PARENS:
             case PM_CONTEXT_PREDICATE:
+            case PM_CONTEXT_RESCUE_HEADER:
             case PM_CONTEXT_RESCUE_MODIFIER:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:
@@ -18406,14 +18383,10 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
  */
 static void
 ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
-#define CONTEXT_NONE 0
-#define CONTEXT_THROUGH_ENSURE 1
-#define CONTEXT_THROUGH_ELSE 2
+    pm_diagnostic_id_t diagnostic = PM_ERR_INVALID_RETRY_WITHOUT_RESCUE;
+    bool same_scope = true;
 
-    pm_context_node_t *context_node = parser->current_context;
-    int context = CONTEXT_NONE;
-
-    while (context_node != NULL) {
+    for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
         switch (context_node->context) {
             case PM_CONTEXT_BEGIN_RESCUE:
             case PM_CONTEXT_BLOCK_RESCUE:
@@ -18422,9 +18395,13 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_LAMBDA_RESCUE:
             case PM_CONTEXT_MODULE_RESCUE:
             case PM_CONTEXT_SCLASS_RESCUE:
-            case PM_CONTEXT_DEFINED:
+            case PM_CONTEXT_RESCUE_HEADER:
             case PM_CONTEXT_RESCUE_MODIFIER:
-                // These are the good cases. We're allowed to have a retry here.
+                if (!same_scope && !context_p(parser, PM_CONTEXT_DEFINED)) {
+                    pm_parser_err_node(parser, node, diagnostic);
+                }
+                return;
+            case PM_CONTEXT_DEFINED:
                 return;
             case PM_CONTEXT_POSTEXE:
                 /* k_END starts a fresh rescue context. Inside defined?,
@@ -18438,26 +18415,18 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_MODULE:
             case PM_CONTEXT_PREEXE:
             case PM_CONTEXT_SCLASS:
-                // These are the bad cases. We're not allowed to have a retry in
-                // these contexts.
-                if (context == CONTEXT_NONE) {
-                    pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
-                } else if (context == CONTEXT_THROUGH_ENSURE) {
-                    pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ENSURE);
-                } else if (context == CONTEXT_THROUGH_ELSE) {
-                    pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ELSE);
-                }
+                pm_parser_err_node(parser, node, diagnostic);
                 return;
-            case PM_CONTEXT_BEGIN_ELSE:
             case PM_CONTEXT_BLOCK_ELSE:
             case PM_CONTEXT_CLASS_ELSE:
             case PM_CONTEXT_DEF_ELSE:
             case PM_CONTEXT_LAMBDA_ELSE:
             case PM_CONTEXT_MODULE_ELSE:
             case PM_CONTEXT_SCLASS_ELSE:
-                // These are also bad cases, but with a more specific error
-                // message indicating the else.
-                context = CONTEXT_THROUGH_ELSE;
+                same_scope = false;
+                PRISM_FALLTHROUGH
+            case PM_CONTEXT_BEGIN_ELSE:
+                diagnostic = PM_ERR_INVALID_RETRY_AFTER_ELSE;
                 break;
             case PM_CONTEXT_BEGIN_ENSURE:
             case PM_CONTEXT_BLOCK_ENSURE:
@@ -18466,31 +18435,35 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_LAMBDA_ENSURE:
             case PM_CONTEXT_MODULE_ENSURE:
             case PM_CONTEXT_SCLASS_ENSURE:
-                // These are also bad cases, but with a more specific error
-                // message indicating the ensure.
-                context = CONTEXT_THROUGH_ENSURE;
+                /* An ensure handler has its own instruction sequence. */
+                same_scope = false;
+                diagnostic = PM_ERR_INVALID_RETRY_AFTER_ENSURE;
                 break;
             case PM_CONTEXT_NONE:
             case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
                 PRISM_ASSERT(false && "unreachable");
                 break;
-            case PM_CONTEXT_BEGIN:
             case PM_CONTEXT_BLOCK_BRACES:
             case PM_CONTEXT_BLOCK_KEYWORDS:
             case PM_CONTEXT_BLOCK_PARAMETERS:
+            case PM_CONTEXT_FOR:
+            case PM_CONTEXT_FOR_INDEX:
+            case PM_CONTEXT_LAMBDA_BRACES:
+            case PM_CONTEXT_LAMBDA_DO_END:
+            case PM_CONTEXT_LAMBDA_PARAMETERS:
+                /* These execute in a block instruction sequence. Keep looking
+                 * outward for parse.y's lexical retry diagnostic. */
+                same_scope = false;
+                break;
+            case PM_CONTEXT_BEGIN:
             case PM_CONTEXT_CASE_IN:
             case PM_CONTEXT_CASE_WHEN:
             case PM_CONTEXT_DEFAULT_PARAMS:
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
-            case PM_CONTEXT_FOR_INDEX:
-            case PM_CONTEXT_FOR:
             case PM_CONTEXT_IF:
-            case PM_CONTEXT_LAMBDA_BRACES:
-            case PM_CONTEXT_LAMBDA_DO_END:
-            case PM_CONTEXT_LAMBDA_PARAMETERS:
             case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_MULTI_TARGET:
             case PM_CONTEXT_PARENS:
@@ -18503,13 +18476,7 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
                 // contexts.
                 break;
         }
-
-        context_node = context_node->prev;
     }
-
-#undef CONTEXT_NONE
-#undef CONTEXT_ENSURE
-#undef CONTEXT_ELSE
 }
 
 /**
@@ -18583,6 +18550,7 @@ ensure_valid_yield(pm_parser_t *parser, const pm_yield_node_t *node) {
             case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
             case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_RESCUE_HEADER:
             case PM_CONTEXT_RESCUE_MODIFIER:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:

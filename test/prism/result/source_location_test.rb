@@ -1394,6 +1394,23 @@ module Ruby::Prism
       end
     end
 
+    def test_class_and_module_headers_can_retry_the_enclosing_rescue
+      [
+        "work rescue class << (retry if b); end",
+        "work rescue class C < (retry if b); end",
+        "work rescue class (retry if b)::C; end",
+        "work rescue module (retry if b)::M; end",
+        "class << (x rescue (retry if b)); end",
+        "defined?(m { class << (retry if b); end })",
+        "begin; rescue; class C; end; retry; end"
+      ].each do |source|
+        start = source.index("retry")
+        assert_location(RetryNode, source, start...(start + 5)) do |node|
+          node.breadth_first_search { |child| child.is_a?(RetryNode) }
+        end
+      end
+    end
+
     def test_PreExecutionNode
       assert_location(PreExecutionNode, "BEGIN {}")
       assert_location(PreExecutionNode, "BEGIN { foo }")
