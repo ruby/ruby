@@ -19,6 +19,7 @@
 #include "prism/internal/list.h"
 #include "prism/internal/magic_comments.h"
 #include "prism/internal/memchr.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/node.h"
 #include "prism/internal/oom.h"
 #include "prism/internal/options.h"
@@ -1318,7 +1319,7 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
                     }
                     break;
                 case 3:
-                    if (memcmp(message->start, "<=>", 3) == 0) {
+                    if (pm_memequal(message->start, "<=>", 3)) {
                         type = "<=>";
                         length = 3;
                     }
@@ -2040,7 +2041,7 @@ token_is_setter_name(pm_token_t *token) {
  */
 static bool
 pm_local_is_keyword(const char *source, size_t length) {
-#define KEYWORD(name) if (memcmp(source, name, length) == 0) return true
+#define KEYWORD(name) if (pm_memequal(source, name, length)) return true
 
     switch (length) {
         case 2:
@@ -8449,7 +8450,10 @@ pm_keyword_find(const uint8_t *start, const uint8_t *end) {
     uint32_t packed = PM_KEYWORD_PACK(start[0], start[uwidth >> 1], start[uwidth - 1], uwidth);
 
     const pm_keyword_t *keyword = &pm_keywords[PM_KEYWORD_SLOT(packed)];
-    return (keyword->packed == packed && memcmp(start + 1, keyword->name + 1, uwidth - 2) == 0) ? keyword : NULL;
+    if (keyword->packed != packed) return NULL;
+
+    // The packed value covers every byte of two- and three-byte keywords.
+    return (uwidth <= 3 || pm_memequal(start, keyword->name, uwidth)) ? keyword : NULL;
 }
 
 /**
@@ -9695,7 +9699,7 @@ lex_embdoc(pm_parser_t *parser) {
         // that token here.
         if (
             (parser->end - parser->current.end >= 4) &&
-            (memcmp(parser->current.end, "=end", 4) == 0) &&
+            pm_memequal(parser->current.end, "=end", 4) &&
             (
                 (parser->current.end + 4 == parser->end) || // end of file
                 pm_char_is_whitespace(parser->current.end[4]) || // whitespace
@@ -10647,7 +10651,7 @@ parser_lex(pm_parser_t *parser) {
                     if (
                         current_token_starts_line(parser) &&
                         (parser->current.end + 5 <= parser->end) &&
-                        memcmp(parser->current.end, "begin", 5) == 0 &&
+                        pm_memequal(parser->current.end, "begin", 5) &&
                         (
                             pm_char_is_whitespace(peek_offset(parser, 5)) ||
                             (peek_offset(parser, 5) == '\0') ||
@@ -11443,7 +11447,7 @@ parser_lex(pm_parser_t *parser) {
                     if (
                         ((parser->current.end - parser->current.start) == 7) &&
                         current_token_starts_line(parser) &&
-                        (memcmp(parser->current.start, "__END__", 7) == 0) &&
+                        pm_memequal(parser->current.start, "__END__", 7) &&
                         (parser->current.end == parser->end || match_eol(parser))
                     ) {
                         // Since we know we're about to add an __END__ comment,
@@ -12343,10 +12347,7 @@ parser_lex(pm_parser_t *parser) {
                             }
                         }
 
-                        if (
-                            (cursor == terminator_start) &&
-                            (memcmp(terminator_start, ident_start, ident_length) == 0)
-                        ) {
+                        if (cursor == terminator_start && pm_memequal(terminator_start, ident_start, ident_length)) {
                             if (newline != NULL) {
                                 pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
                             }
@@ -12460,10 +12461,7 @@ parser_lex(pm_parser_t *parser) {
                                     }
                                 }
 
-                                if (
-                                    cursor == terminator_start &&
-                                    (memcmp(terminator_start, ident_start, ident_length) == 0)
-                                ) {
+                                if (cursor == terminator_start && pm_memequal(terminator_start, ident_start, ident_length)) {
                                     parser->current.end = breakpoint + 1;
                                     pm_token_buffer_flush(parser, token_cursor);
                                     LEX(PM_TOKEN_STRING_CONTENT);
@@ -21602,7 +21600,7 @@ parse_match_write(pm_parser_t *parser, pm_call_node_t *call, const pm_regexp_mat
         const uint8_t *end = start + capture->location.length;
         pm_constant_id_t id;
 
-        if (length == capture->location.length && (name == start || memcmp(name, start, length) == 0)) {
+        if (length == capture->location.length && (name == start || pm_memequal(name, start, length))) {
             id = pm_parser_constant_id_raw(parser, start, end);
         } else {
             uint8_t *copy = PM_ARENA_ALLOC_ARRAY(parser->arena, uint8_t, length);
@@ -22935,7 +22933,7 @@ pm_strnstr(const char *big, const char *little, size_t big_length) {
     size_t little_length = strlen(little);
 
     for (const char *max = big + big_length - little_length; big <= max; big++) {
-        if (*big == *little && memcmp(big, little, little_length) == 0) return big;
+        if (*big == *little && pm_memequal(big, little, little_length)) return big;
     }
 
     return NULL;

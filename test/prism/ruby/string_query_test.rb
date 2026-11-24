@@ -93,6 +93,12 @@ module Ruby::Prism
       end
     end
 
+    def test_keyword_variants_with_matching_first_middle_and_last_bytes
+      %w[cose reburn __ENCODINX__].each do |name|
+        refute StringQuery.keyword?(name), "unexpected keyword #{name.inspect}"
+      end
+    end
+
     def test_invalid_encoding
       assert_raise ArgumentError do
         StringQuery.new("A".encode("UTF-16LE")).local?

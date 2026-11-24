@@ -2,6 +2,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/oom.h"
 
 #include <stdlib.h>
@@ -427,21 +428,21 @@ pm_source_stream_read(pm_source_t *source) {
          */
         switch (length) {
             case 7:
-                if (memcmp(line, "__END__", 7) == 0) {
+                if (pm_memequal(line, "__END__", 7)) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
                 }
                 break;
             case 8:
-                if (memcmp(line, "__END__\n", 8) == 0) {
+                if (pm_memequal(line, "__END__\n", 8)) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;
                 }
                 break;
             case 9:
-                if (memcmp(line, "__END__\r\n", 9) == 0) {
+                if (pm_memequal(line, "__END__\r\n", 9)) {
                     source->source = (const uint8_t *) pm_buffer_value(buffer);
                     source->length = pm_buffer_length(buffer);
                     return false;

@@ -4,6 +4,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/char.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/oom.h"
 #include "prism/internal/stringy.h"
 
@@ -134,22 +135,22 @@ pm_options_version_parse(const char *version, size_t length, pm_options_version_
     }
 
     if (length == 3) {
-        if (memcmp(version, "3.3", 3) == 0) {
+        if (pm_memequal(version, "3.3", 3)) {
             *result = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
-        if (memcmp(version, "3.4", 3) == 0) {
+        if (pm_memequal(version, "3.4", 3)) {
             *result = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
-        if (memcmp(version, "3.5", 3) == 0 || memcmp(version, "4.0", 3) == 0) {
+        if (pm_memequal(version, "3.5", 3) || pm_memequal(version, "4.0", 3)) {
             *result = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
 
-        if (memcmp(version, "4.1", 3) == 0) {
+        if (pm_memequal(version, "4.1", 3)) {
             *result = PM_OPTIONS_VERSION_CRUBY_4_1;
             return true;
         }
@@ -158,29 +159,29 @@ pm_options_version_parse(const char *version, size_t length, pm_options_version_
     }
 
     if (length >= 4 && is_number(version + 4, length - 4)) {
-        if (memcmp(version, "3.3.", 4) == 0) {
+        if (pm_memequal(version, "3.3.", 4)) {
             *result = PM_OPTIONS_VERSION_CRUBY_3_3;
             return true;
         }
 
-        if (memcmp(version, "3.4.", 4) == 0) {
+        if (pm_memequal(version, "3.4.", 4)) {
             *result = PM_OPTIONS_VERSION_CRUBY_3_4;
             return true;
         }
 
-        if (memcmp(version, "3.5.", 4) == 0 || memcmp(version, "4.0.", 4) == 0) {
+        if (pm_memequal(version, "3.5.", 4) || pm_memequal(version, "4.0.", 4)) {
             *result = PM_OPTIONS_VERSION_CRUBY_4_0;
             return true;
         }
 
-        if (memcmp(version, "4.1.", 4) == 0) {
+        if (pm_memequal(version, "4.1.", 4)) {
             *result = PM_OPTIONS_VERSION_CRUBY_4_1;
             return true;
         }
     }
 
     if (length == 6) {
-        if (memcmp(version, "latest", 6) == 0) {
+        if (pm_memequal(version, "latest", 6)) {
             *result = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
