@@ -136,6 +136,25 @@ module Ruby::Prism
       assert_kind_of Errno::EISDIR, error
     end
 
+    def test_end_block_jumps_by_version
+      ["break", "break 1", "next", "next 1", "redo"].each do |jump|
+        %w[while until].each do |modifier|
+          source = "END { #{jump} } #{modifier} ready"
+          %w[3.3 3.4 4.0].each { |version| assert Ruby::Prism.parse_success?(source, version: version), source }
+
+          [
+            "END { #{jump} #{modifier} ready }",
+            "END { begin; #{jump}; work; end #{modifier} ready }"
+          ].each { |source| assert Ruby::Prism.parse_success?(source, version: "4.1"), source }
+        end
+
+        [
+          "defined?(m { END { #{jump} } })",
+          "END { for obj[(#{jump} if ready)] in items; end }"
+        ].each { |source| assert Ruby::Prism.parse_success?(source, version: "4.1"), source }
+      end
+    end
+
     def test_partial_script
       assert Ruby::Prism.parse_failure?("break")
       assert Ruby::Prism.parse_success?("break", partial_script: true)

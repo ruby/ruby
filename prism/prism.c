@@ -16126,6 +16126,7 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_BLOCK_RESCUE:
             case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_FOR:
+            case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_LAMBDA_BRACES:
             case PM_CONTEXT_LAMBDA_DO_END:
             case PM_CONTEXT_LAMBDA_ELSE:
@@ -16139,12 +16140,8 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
                 // in these contexts.
                 return;
             case PM_CONTEXT_POSTEXE:
-                // https://bugs.ruby-lang.org/issues/20409
-                if (context_node->context == PM_CONTEXT_POSTEXE) {
-                    if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
-                        return;
-                    }
-                }
+                /* Ruby 4.1 checks jumps in END unless it occurs inside defined?. */
+                if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1 || context_p(parser, PM_CONTEXT_DEFINED)) return;
             PRISM_FALLTHROUGH
             case PM_CONTEXT_DEF:
             case PM_CONTEXT_DEF_PARAMS:
@@ -16183,7 +16180,6 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
             case PM_CONTEXT_EMBEXPR:
-            case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_IF:
             case PM_CONTEXT_MODULE_ELSE:
             case PM_CONTEXT_MODULE_ENSURE:
@@ -18430,6 +18426,11 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_RESCUE_MODIFIER:
                 // These are the good cases. We're allowed to have a retry here.
                 return;
+            case PM_CONTEXT_POSTEXE:
+                /* k_END starts a fresh rescue context. Inside defined?,
+                 * parse.y suppresses this lexical check on retry. */
+                if (context_p(parser, PM_CONTEXT_DEFINED)) break;
+                PRISM_FALLTHROUGH
             case PM_CONTEXT_CLASS:
             case PM_CONTEXT_DEF:
             case PM_CONTEXT_DEF_PARAMS:
@@ -18493,7 +18494,6 @@ ensure_valid_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_LOOP_PREDICATE:
             case PM_CONTEXT_MULTI_TARGET:
             case PM_CONTEXT_PARENS:
-            case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_PREDICATE:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:
@@ -21022,9 +21022,12 @@ parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t de
 
     expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_END_UPCASE_BRACE);
     pm_token_t opening = parser->previous;
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_POSTEXE, (uint16_t) (depth + 1));
 
     expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_END_UPCASE_TERM, &opening);
+    flush_block_exits(parser, previous_block_exits);
     return pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
 }
 

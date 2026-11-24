@@ -1385,6 +1385,15 @@ module Ruby::Prism
       assert_location(PostExecutionNode, "END { foo }")
     end
 
+    def test_retry_inside_an_end_block
+      ["END { x rescue retry }", "defined?(m { END { retry } })"].each do |source|
+        start = source.index("retry")
+        assert_location(RetryNode, source, start...(start + 5)) do |node|
+          node.breadth_first_search { |child| child.is_a?(RetryNode) }
+        end
+      end
+    end
+
     def test_PreExecutionNode
       assert_location(PreExecutionNode, "BEGIN {}")
       assert_location(PreExecutionNode, "BEGIN { foo }")

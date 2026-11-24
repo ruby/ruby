@@ -86,11 +86,24 @@ module Ruby::Prism
     def test_end_block_exits_use_the_loop_inside_the_block
       ["break", "break 1", "next", "next 1", "redo"].each do |jump|
         %w[while until].each do |modifier|
-          source = "END { #{jump} } #{modifier} ready"
-          assert_equal [:invalid_block_exit], Ruby::Prism.parse(source, version: "4.1").errors.map(&:type), source
-          assert Ruby::Prism.parse_success?(source, version: "4.0"), source
-          assert Ruby::Prism.parse_success?("END { #{jump} #{modifier} ready }", version: "4.1"), jump
+          ["END { #{jump} } #{modifier} ready", "END { #{jump}; work #{modifier} ready }"].each do |source|
+            errors = Ruby::Prism.parse(source, version: "4.1").errors
+            assert_equal [:invalid_block_exit], errors.map(&:type), source
+            assert_equal jump, errors.first.location.slice
+          end
         end
+      end
+
+      {
+        "END { break; next while ready; redo }" => %w[break redo],
+        "END { next; END { work while ready } }" => %w[next],
+        "END { while active; END { redo }; end }" => %w[redo],
+        "END { for item in (break if ready); end }" => %w[break],
+        "begin; break; END { next while ready }; end" => %w[break]
+      }.each do |source, jumps|
+        errors = Ruby::Prism.parse(source, version: "4.1").errors
+        assert_equal jumps.map { :invalid_block_exit }, errors.map(&:type), source
+        assert_equal jumps, errors.map { |error| error.location.slice }, source
       end
     end
 
@@ -99,7 +112,17 @@ module Ruby::Prism
         source = "#{body} rescue END { retry }"
         assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse(source).errors.map(&:type), source
       end
-      assert Ruby::Prism.parse_success?("END { x rescue retry }")
+
+      [
+        ["END { x rescue END { retry } }", :invalid_retry_without_rescue],
+        ["begin; ensure; END { retry }; end", :invalid_retry_without_rescue],
+        ["x rescue END { begin; ensure; retry; end }", :invalid_retry_after_ensure],
+        ["x rescue END { begin; x; rescue; x; else; retry; end }", :invalid_retry_after_else]
+      ].each do |source, type|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal [type], errors.map(&:type), source
+        assert_equal "retry", errors.first.location.slice
+      end
     end
 
     def test_anonymous_splat_at_the_end_of_command_arguments
