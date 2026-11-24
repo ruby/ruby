@@ -16913,17 +16913,29 @@ pm_string_concat_encoding(pm_parser_t *parser, const pm_node_t *part, const pm_e
     return false;
 }
 
+typedef struct {
+    pm_node_list_t list;
+    const pm_encoding_t *encoding;
+    bool invalid_encoding;
+} pm_string_parts_t;
+
+/* Check each join as its right operand is appended, in source order. */
+static PRISM_INLINE void
+pm_string_parts_append(pm_parser_t *parser, pm_string_parts_t *parts, pm_node_t *part) {
+    if (parser->encoding_changed && !pm_string_concat_encoding(parser, part, &parts->encoding)) {
+        parts->invalid_encoding = true;
+    }
+
+    pm_node_list_open_append(&parser->node_chunks, &parts->list, part);
+}
+
 /**
  * Parse a set of strings that could be concatenated together.
  */
 static PRISM_INLINE pm_node_t *
 parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint16_t depth) {
     PRISM_ASSERT(parser->current.type == PM_TOKEN_STRING_BEGIN);
-    bool concating = false;
-    bool valid_encoding = true;
-
-    const pm_encoding_t *encoding = NULL;
-    pm_node_list_t container = { 0 };
+    pm_string_parts_t container = { 0 };
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
         pm_node_t *node = NULL;
@@ -17115,30 +17127,21 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
 
             // If we haven't already started the parts of our container for
             // concatenation, we'll do that now.
-            if (!concating) {
+            if (container.list.size == 0) {
                 if (!PM_NODE_TYPE_P(current, PM_STRING_NODE) && !PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
                     pm_parser_err_node(parser, current, PM_ERR_STRING_CONCATENATION);
                 }
 
-                concating = true;
-                if (parser->encoding_changed) {
-                    pm_string_concat_encoding(parser, current, &encoding);
-                }
-
-                pm_node_list_open_append(&parser->node_chunks, &container, current);
+                pm_string_parts_append(parser, &container, current);
             }
 
-            if (parser->encoding_changed && !pm_string_concat_encoding(parser, node, &encoding)) {
-                valid_encoding = false;
-            }
-
-            pm_node_list_open_append(&parser->node_chunks, &container, node);
+            pm_string_parts_append(parser, &container, node);
         }
     }
 
-    if (concating) {
-        pm_node_t *node = UP(pm_interpolated_string_node_create(parser, NULL, &container, NULL));
-        if (!valid_encoding) {
+    if (container.list.size > 0) {
+        pm_node_t *node = UP(pm_interpolated_string_node_create(parser, NULL, &container.list, NULL));
+        if (container.invalid_encoding) {
             pm_node_flag_unset(
                 node,
                 PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE |
