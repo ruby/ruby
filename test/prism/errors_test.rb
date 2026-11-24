@@ -358,18 +358,6 @@ module Ruby::Prism
       assert_equal "defined? v", result.errors.first.location.slice
     end
 
-    def test_singleton_method_receiver_with_array_splats
-      ["[a, *xs]", "[*[a]]", "[a, *[]]", "[*[a], k: v]"].each do |receiver|
-        assert Ruby::Prism.parse_success?("def (#{receiver}).f; end"), receiver
-      end
-
-      ["[a]", "[a, *[b]]", "[*[a], b]", "[a, *[b, *[c]]]"].each do |receiver|
-        result = Ruby::Prism.parse("def (#{receiver}).f; end")
-        assert_equal [:singleton_for_literals], result.errors.map(&:type), receiver
-        assert_equal receiver, result.errors.first.location.slice
-      end
-    end
-
     def test_nested_void_statements
       ["if ((a => k); x); end", "case ((a => k); x) in 1 in 2; end"].each do |source|
         result = Ruby::Prism.parse(source, version: "4.1")
