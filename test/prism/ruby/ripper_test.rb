@@ -141,6 +141,20 @@ module Ruby::Prism
       define_method("#{fixture.test_name}_lex") { assert_ripper_lex(fixture.read) }
     end
 
+    def test_leading_void_stmt
+      [
+        ";;x; y;",
+        "(;x)",
+        "(\nx;)",
+        '"#{;x}"',
+        "if x; y end",
+        "if x;; y end",
+        "foo { # ;\n x }",
+        "class C < D; x end",
+        "class C\n x; rescue; y; else\n z end"
+      ].each { |source| assert_ripper_sexp_raw(source) }
+    end
+
     def test_lex_ignored_missing_heredoc_end
       ["", "-", "~"].each do |type|
         source = "<<#{type}FOO\n"

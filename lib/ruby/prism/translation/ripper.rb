@@ -1029,7 +1029,7 @@ module Ruby::Prism
           on_kw("begin")
         end
 
-        clauses = visit_begin_node_clauses(node.begin_keyword_loc, node, false)
+        clauses = visit_begin_node_clauses(node)
 
         if node.end_keyword_loc
           bounds(node.end_keyword_loc)
@@ -1041,17 +1041,9 @@ module Ruby::Prism
       end
 
       # Visit the clauses of a begin node to form an on_bodystmt call.
-      private def visit_begin_node_clauses(location, node, allow_newline)
-        statements =
-          if node.statements.nil?
-            on_stmts_add(on_stmts_new, on_void_stmt)
-          else
-            body = node.statements.body
-            body = [nil, *body] if void_stmt?(location, node.statements.body[0].location, allow_newline)
-
-            bounds(node.statements.location)
-            visit_statements_node_body(body)
-          end
+      private def visit_begin_node_clauses(node, class_name_loc = nil)
+        bounds(node.statements.location) if node.statements
+        statements = visit_statements_node_body(node.statements, class_name_loc)
 
         rescue_clause = visit(node.rescue_clause)
         else_clause =
@@ -1059,17 +1051,8 @@ module Ruby::Prism
             bounds(else_clause_node.else_keyword_loc)
             on_kw("else")
 
-            else_statements =
-              if else_clause_node.statements.nil?
-                [nil]
-              else
-                body = else_clause_node.statements.body
-                body = [nil, *body] if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location, allow_newline)
-                body
-              end
-
             bounds(else_clause_node.location)
-            visit_statements_node_body(else_statements)
+            visit_statements_node_body(else_clause_node.statements)
           end
         ensure_clause = visit(node.ensure_clause)
 
@@ -1080,19 +1063,19 @@ module Ruby::Prism
       # Visit the body of a structure that can have either a set of statements
       # or statements wrapped in rescue/else/ensure.
       private def visit_body_node(location, node, allow_newline = false)
+        class_name_loc = location if allow_newline
+
         case node
         when nil
           bounds(location)
-          on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+          on_bodystmt(visit_statements_node_body(nil), nil, nil, nil)
         when StatementsNode
-          body = [*node.body]
-          body = [nil, *body] if void_stmt?(location, body[0].location, allow_newline)
-          stmts = visit_statements_node_body(body)
+          stmts = visit_statements_node_body(node, class_name_loc)
 
           bounds(node.body.first.location)
           on_bodystmt(stmts, nil, nil, nil)
         when BeginNode
-          visit_begin_node_clauses(location, node, allow_newline)
+          visit_begin_node_clauses(node, class_name_loc)
         else
           raise
         end
@@ -1134,9 +1117,7 @@ module Ruby::Prism
             bounds(node.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
-            stmts = node.body.body
-            stmts = [nil, *stmts] if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
-            stmts = visit_statements_node_body(stmts)
+            stmts = visit_statements_node_body(node.body)
 
             bounds(node.body.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
@@ -2048,16 +2029,7 @@ module Ruby::Prism
         bounds(node.else_keyword_loc)
         on_kw("else")
 
-        statements =
-          if node.statements.nil?
-            [nil]
-          else
-            body = node.statements.body
-            body = [nil, *body] if void_stmt?(node.else_keyword_loc, node.statements.body[0].location, false)
-            body
-          end
-
-        else_statements = visit_statements_node_body(statements)
+        else_statements = visit_statements_node_body(node.statements)
 
         bounds(node.end_keyword_loc)
         on_kw("end")
@@ -2103,16 +2075,7 @@ module Ruby::Prism
         bounds(node.ensure_keyword_loc)
         on_kw("ensure")
 
-        statements =
-          if node.statements.nil?
-            [nil]
-          else
-            body = node.statements.body
-            body = [nil, *body] if void_stmt?(node.ensure_keyword_loc, body[0].location, false)
-            body
-          end
-
-        statements = visit_statements_node_body(statements)
+        statements = visit_statements_node_body(node.statements)
 
         bounds(node.location)
         on_ensure(statements)
@@ -2887,9 +2850,7 @@ module Ruby::Prism
             bounds(node.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
-            stmts = node.body.body
-            stmts = [nil, *stmts] if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
-            stmts = visit_statements_node_body(stmts)
+            stmts = visit_statements_node_body(node.body)
 
             bounds(node.body.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
@@ -3381,9 +3342,7 @@ module Ruby::Prism
 
       # The top-level program node.
       def visit_program_node(node)
-        body = node.statements.body
-        body = [nil] if body.empty?
-        statements = visit_statements_node_body(body)
+        statements = visit_statements_node_body(node.statements)
 
         bounds(node.location)
         on_program(statements)
@@ -3647,17 +3606,20 @@ module Ruby::Prism
       # A list of statements.
       def visit_statements_node(node)
         bounds(node.location)
-        visit_statements_node_body(node.body)
+        visit_statements_node_body(node)
       end
 
-      # Visit the list of statements of a statements node. We support nil
-      # statements in the list. This would normally not be allowed by the
-      # structure of the prism parse tree, but we manually add them here so that
-      # we can mirror Ripper's void stmt.
-      private def visit_statements_node_body(body)
-        body.inject(on_stmts_new) do |stmts, stmt|
-          on_stmts_add(stmts, stmt.nil? ? on_void_stmt : visit(stmt))
+      # Ripper emits one void_stmt for an empty list or a leading semicolon.
+      # A newline after a class or module name can also produce a void_stmt.
+      private def visit_statements_node_body(node, class_name_loc = nil)
+        stmts = on_stmts_new
+        return on_stmts_add(stmts, on_void_stmt) if node.nil? || node.body.empty?
+
+        if node.leading_semicolon? || (class_name_loc && class_name_loc.end_line < node.start_line)
+          stmts = on_stmts_add(stmts, on_void_stmt)
         end
+
+        node.body.inject(stmts) { |list, stmt| on_stmts_add(list, visit(stmt)) }
       end
 
       # "foo"
@@ -4120,12 +4082,6 @@ module Ruby::Prism
       # Returns true if there is a comma between the two locations.
       def trailing_comma?(left, right)
         source.byteslice(left.end_offset...right.start_offset).include?(",")
-      end
-
-      # Returns true if there is a semicolon between the two locations.
-      def void_stmt?(left, right, allow_newline)
-        pattern = allow_newline ? /[;\n]/ : /;/
-        source.byteslice(left.end_offset...right.start_offset).match?(pattern)
       end
 
       # Visit the string content of a particular node. This method is used to
