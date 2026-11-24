@@ -159,12 +159,20 @@ module Ruby::Prism
       end
     end
 
-    def test_loop_modifier_owns_only_the_exits_in_its_statement
+    def test_loop_modifier_outside_an_endless_method
       %w[break next redo].each do |jump|
-        ["while", "until"].each do |modifier|
+        %w[while until].each do |modifier|
           source = "def f = (#{jump}) #{modifier} x"
-          assert_equal [:invalid_block_exit], Ruby::Prism.parse(source).errors.map(&:type), source
-          assert Ruby::Prism.parse_success?("def f = (#{jump} #{modifier} x)")
+          errors = Ruby::Prism.parse(source).errors
+          assert_equal [:invalid_block_exit], errors.map(&:type), source
+          assert_equal jump, errors.first.location.slice
+        end
+      end
+    end
+
+    def test_loop_modifier_around_a_class
+      %w[break next redo].each do |jump|
+        %w[while until].each do |modifier|
           assert Ruby::Prism.parse_success?("class << (#{jump} if x); end #{modifier} y")
           assert Ruby::Prism.parse_success?("class C < (#{jump} if x); end #{modifier} y")
           refute Ruby::Prism.parse_success?("class << self; #{jump}; end #{modifier} y")

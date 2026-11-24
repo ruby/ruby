@@ -16223,31 +16223,12 @@ flush_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_ex
     parser->current_block_exits = previous_block_exits;
 }
 
-/**
- * Pop the current level of block exits from the parser, and add errors to the
- * parser if any of them are deemed to be invalid.
- */
+/* Carry pending jumps into the enclosing expression. Only the parser that
+ * consumes a loop modifier can tell which statement it applies to. */
 static void
 pop_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
-    if (match2(parser, PM_TOKEN_KEYWORD_WHILE_MODIFIER, PM_TOKEN_KEYWORD_UNTIL_MODIFIER)) {
-        // If we matched a trailing while/until, then all of the block exits in
-        // the contained list are valid. In this case we do not need to do
-        // anything.
-        parser->current_block_exits = previous_block_exits;
-    } else if (previous_block_exits != NULL) {
-        // If we did not matching a trailing while/until, then all of the block
-        // exits contained in the list are invalid for this specific context.
-        // However, they could still become valid in a higher level context if
-        // there is another list above this one. In this case we'll push all of
-        // the block exits up to the previous list.
-        pm_scratch_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
-        parser->current_block_exits = previous_block_exits;
-    } else {
-        // If we did not match a trailing while/until and this was the last
-        // chance to do so, then all of the block exits in the list are invalid
-        // and we need to add an error for each of them.
-        flush_block_exits(parser, previous_block_exits);
-    }
+    pm_scratch_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
+    parser->current_block_exits = previous_block_exits;
 }
 
 static PRISM_INLINE pm_node_t *

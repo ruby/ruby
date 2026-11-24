@@ -59,6 +59,12 @@ module Ruby::Prism
       assert Ruby::Prism.parse_success?("(; a, b = values).c, x = values")
     end
 
+    def test_loop_modifier_inside_an_endless_method
+      %w[break next redo].product(%w[while until]).each do |jump, modifier|
+        assert Ruby::Prism.parse_success?("def f = (#{jump} #{modifier} x)")
+      end
+    end
+
     def test_parse_takes_file_path
       filepath = "filepath.rb"
       result = Ruby::Prism.parse("def foo; __FILE__; end", filepath: filepath)
