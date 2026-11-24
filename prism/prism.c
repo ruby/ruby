@@ -16891,6 +16891,28 @@ parse_strings_empty_content(const uint8_t *location) {
     return (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = location, .end = location };
 }
 
+/* Check one operand in a run of adjacent plain string literals. */
+static bool
+pm_string_concat_encoding(pm_parser_t *parser, const pm_node_t *part, const pm_encoding_t **left) {
+    if (!PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
+        *left = NULL;
+        return true;
+    }
+
+    const pm_string_node_t *string = (const pm_string_node_t *) part;
+    const pm_encoding_t *right = pm_string_node_encoding(string, parser->encoding);
+    if (*left == right || pm_string_ascii_only_p(&string->unescaped) || pm_encoding_concat(left, right)) return true;
+
+    pm_diagnostic_list_append_slice_slice(
+        &parser->metadata_arena, &parser->error_list, part->location.start, part->location.length,
+        PM_ERR_STRING_CONCATENATION_ENCODING, pm_encoding_string(*left), pm_encoding_string(right)
+    );
+
+    /* The next operand starts a fresh run after an incompatible pair. */
+    *left = NULL;
+    return false;
+}
+
 /**
  * Parse a set of strings that could be concatenated together.
  */
@@ -16898,6 +16920,9 @@ static PRISM_INLINE pm_node_t *
 parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint16_t depth) {
     PRISM_ASSERT(parser->current.type == PM_TOKEN_STRING_BEGIN);
     bool concating = false;
+    bool valid_encoding = true;
+
+    const pm_encoding_t *encoding = NULL;
     pm_node_list_t container = { 0 };
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
@@ -17096,7 +17121,15 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
                 }
 
                 concating = true;
+                if (parser->encoding_changed) {
+                    pm_string_concat_encoding(parser, current, &encoding);
+                }
+
                 pm_node_list_open_append(&parser->node_chunks, &container, current);
+            }
+
+            if (parser->encoding_changed && !pm_string_concat_encoding(parser, node, &encoding)) {
+                valid_encoding = false;
             }
 
             pm_node_list_open_append(&parser->node_chunks, &container, node);
@@ -17104,7 +17137,16 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
     }
 
     if (concating) {
-        return UP(pm_interpolated_string_node_create(parser, NULL, &container, NULL));
+        pm_node_t *node = UP(pm_interpolated_string_node_create(parser, NULL, &container, NULL));
+        if (!valid_encoding) {
+            pm_node_flag_unset(
+                node,
+                PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE |
+                PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE
+            );
+        }
+
+        return node;
     }
 
     return current;

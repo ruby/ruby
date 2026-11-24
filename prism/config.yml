@@ -548,6 +548,8 @@ errors:
     message: "unexpected an `undef` at a non-statement position"
   - name: STRING_CONCATENATION
     message: "expected a string for concatenation"
+  - name: STRING_CONCATENATION_ENCODING
+    message: "string literal encodings differ ({slice} / {slice})"
   - name: STRING_INTERPOLATED_TERM
     message: "unterminated string; expected a closing delimiter for the interpolated string"
   - name: STRING_LITERAL_EOF

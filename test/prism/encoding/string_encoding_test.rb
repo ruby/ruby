@@ -60,6 +60,42 @@ module Ruby::Prism
       assert_equal Encoding::ASCII_8BIT, encoding
     end
 
+    def test_adjacent_literals_with_incompatible_encodings
+      source = "# coding: binary\nif false\n" + '"\u3042" "\xD4"' + "\nend"
+      message = "string literal encodings differ (UTF-8 / ASCII-8BIT)"
+      errors = Ruby::Prism.parse(source).errors
+
+      assert_equal [:string_concatenation_encoding], errors.map(&:type)
+      assert_equal :syntax, errors.first.level
+      assert_equal message, errors.first.message
+      assert_equal '"\xD4"', errors.first.location.slice
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain) }
+      assert_include error.message, message
+    end
+
+    def test_incompatible_adjacent_literals_inside_a_regexp
+      [true, false].each do |frozen|
+        result = Ruby::Prism.parse('/#{"\u3042" "\xD4"}/', encoding: "ASCII-8BIT", frozen_string_literal: frozen)
+        assert_equal [:string_concatenation_encoding], result.errors.map(&:type)
+
+        string = result.statement.parts.first.statements.body.first
+        refute_predicate string, :static_literal?
+        refute_predicate string, :frozen?
+        refute_predicate string, :mutable?
+      end
+    end
+
+    def test_adjacent_literals_use_the_encoding_of_the_non_ascii_bytes
+      ['?\xD4 "ascii" "" "\u3042"', '"\xD4" "\u3042"', "<<~END \"\\u3042\"\n  \\xD4\nEND"].each do |source|
+        errors = Ruby::Prism.parse(source, encoding: "US-ASCII").errors
+        assert_equal ["string literal encodings differ (ASCII-8BIT / UTF-8)"], errors.map(&:message)
+      end
+
+      ['?\u0061 "\xD4"', '"\u3042" "ascii"', '"ascii" "\u3042"', '"\xD4" "\xFF"'].each do |source|
+        assert_predicate Ruby::Prism.parse(source, encoding: "ASCII-8BIT"), :success?, source
+      end
+    end
+
     # The part of a literal after an interpolation is in the source encoding,
     # whatever encoding the literals inside the interpolation fixed.
     def test_part_after_interpolation
