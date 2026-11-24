@@ -96,6 +96,37 @@ module Ruby::Prism
       end
     end
 
+    def test_incompatible_encodings_in_string_interpolation
+      [
+        '"\u3042#{"\xD4"}"',
+        '"#{"\u3042"}#{"\xD4";}"',
+        '"\u3042#{begin "\xD4" end}"',
+        '/#{"\u3042#{"\xD4"}"}/',
+        '{"\u3042#{"\xD4"}": 1}'
+      ].each do |source|
+        errors = Ruby::Prism.parse(source, encoding: "ASCII-8BIT").errors
+        assert_equal [:string_concatenation_encoding], errors.map(&:type), source
+      end
+
+      errors = Ruby::Prism.parse('"#{"\xD4"}\u3042"', encoding: "ASCII-8BIT").errors
+      assert_equal ["string literal encodings differ (ASCII-8BIT / UTF-8)"], errors.map(&:message)
+      assert_equal '\u3042', errors.first.location.slice
+    end
+
+    def test_interpolation_encoding_errors_in_source_order
+      errors = Ruby::Prism.parse('"\u3042#{"\xD4"}#{"\xD4" "\u3042"}"', encoding: "ASCII-8BIT").errors
+      assert_equal ["string literal encodings differ (UTF-8 / ASCII-8BIT)", "string literal encodings differ (ASCII-8BIT / UTF-8)"], errors.map(&:message)
+    end
+
+    def test_dynamic_interpolation_separates_literal_encodings
+      ['"\u3042#{; "\xD4"}"', '"\u3042#{x}#{"\xD4"}"', '"\u3042#$x#{"\xD4"}"'].each do |source|
+        assert_predicate Ruby::Prism.parse(source, encoding: "ASCII-8BIT"), :success?, source
+      end
+
+      errors = Ruby::Prism.parse('"#{x}#{"\u3042"}#{"\xD4"}"', encoding: "ASCII-8BIT").errors
+      assert_equal [:string_concatenation_encoding], errors.map(&:type)
+    end
+
     # The part of a literal after an interpolation is in the source encoding,
     # whatever encoding the literals inside the interpolation fixed.
     def test_part_after_interpolation

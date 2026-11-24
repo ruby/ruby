@@ -16891,15 +16891,27 @@ parse_strings_empty_content(const uint8_t *location) {
     return (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = location, .end = location };
 }
 
-/* Check one operand in a run of adjacent plain string literals. */
+/* Check one operand in a run of literal string parts. */
 static bool
 pm_string_concat_encoding(pm_parser_t *parser, const pm_node_t *part, const pm_encoding_t **left) {
-    if (!PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
+    const pm_node_t *value = part;
+    if (PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE)) {
+        value = pm_statements_node_single_expression(((const pm_embedded_statements_node_t *) part)->statements);
+
+        /* A plain begin/end around a literal also folds into the string. */
+        while (value != NULL && PM_NODE_TYPE_P(value, PM_BEGIN_NODE)) {
+            const pm_begin_node_t *begin = (const pm_begin_node_t *) value;
+            if (begin->rescue_clause != NULL || begin->else_clause != NULL || begin->ensure_clause != NULL) break;
+            value = pm_statements_node_single_expression(begin->statements);
+        }
+    }
+
+    if (value == NULL || !PM_NODE_TYPE_P(value, PM_STRING_NODE)) {
         *left = NULL;
         return true;
     }
 
-    const pm_string_node_t *string = (const pm_string_node_t *) part;
+    const pm_string_node_t *string = (const pm_string_node_t *) value;
     const pm_encoding_t *right = pm_string_node_encoding(string, parser->encoding);
     if (*left == right || pm_string_ascii_only_p(&string->unescaped) || pm_encoding_concat(left, right)) return true;
 
@@ -16929,6 +16941,21 @@ pm_string_parts_append(pm_parser_t *parser, pm_string_parts_t *parts, pm_node_t 
     pm_node_list_open_append(&parser->node_chunks, &parts->list, part);
 }
 
+static pm_node_t *
+pm_string_parts_to_string(pm_parser_t *parser, const pm_token_t *opening, pm_string_parts_t *parts, const pm_token_t *closing) {
+    pm_node_t *node = UP(pm_interpolated_string_node_create(parser, opening, &parts->list, closing));
+
+    if (parts->invalid_encoding) {
+        pm_node_flag_unset(
+            node,
+            PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE |
+            PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE
+        );
+    }
+
+    return node;
+}
+
 /**
  * Parse a set of strings that could be concatenated together.
  */
@@ -16939,6 +16966,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
         pm_node_t *node = NULL;
+        pm_node_t *first_part = NULL;
 
         // Here we have found a string literal. We'll parse it and add it to
         // the list of strings.
@@ -17057,52 +17085,31 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
                 node = UP(pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, explicit_encoding, &content, &unescaped, true)));
                 if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
             } else {
-                // If we get here, then we have interpolation so we'll need
-                // to create a string or symbol node with interpolation.
-                pm_node_list_t parts = { 0 };
-                pm_node_t *part = UP(pm_string_node_create_unescaped(parser, NULL, &parser->previous, NULL, &unescaped));
-                pm_node_flag_set(part, parse_unescaped_encoding(parser, explicit_encoding));
-                pm_node_list_open_append(&parser->node_chunks, &parts, part);
-
-                while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
-                    if ((part = parse_string_part(parser, (uint16_t) (depth + 1))) != NULL) {
-                        pm_node_list_open_append(&parser->node_chunks, &parts, part);
-                    }
-                }
-
-                if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                    node = UP(pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous));
-                    if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
-                } else if (match1(parser, PM_TOKEN_EOF)) {
-                    pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
-                    node = UP(pm_interpolated_string_node_create(parser, &opening, &parts, &parser->current));
-                } else {
-                    expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
-                    node = UP(pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous));
-                }
+                first_part = UP(pm_string_node_create_unescaped(parser, NULL, &parser->previous, NULL, &unescaped));
+                pm_node_flag_set(first_part, parse_unescaped_encoding(parser, explicit_encoding));
             }
-        } else {
-            // If we get here, then the first part of the string is not plain
-            // string content, in which case we need to parse the string as an
-            // interpolated string.
-            pm_node_list_t parts = { 0 };
-            pm_node_t *part;
+        }
+
+        if (node == NULL) {
+            /* Interpolated strings can start with literal text or with an interpolation. */
+            pm_string_parts_t parts = { 0 };
+            if (first_part != NULL) pm_string_parts_append(parser, &parts, first_part);
 
             while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
-                if ((part = parse_string_part(parser, (uint16_t) (depth + 1))) != NULL) {
-                    pm_node_list_open_append(&parser->node_chunks, &parts, part);
-                }
+                pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
+                if (part != NULL) pm_string_parts_append(parser, &parts, part);
             }
 
             if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = UP(pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous));
+                node = UP(pm_interpolated_symbol_node_create(parser, &opening, &parts.list, &parser->previous));
+                if (parts.invalid_encoding) pm_node_flag_unset(node, PM_NODE_FLAG_STATIC_LITERAL);
                 if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
             } else if (match1(parser, PM_TOKEN_EOF)) {
                 pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
-                node = UP(pm_interpolated_string_node_create(parser, &opening, &parts, &parser->current));
+                node = pm_string_parts_to_string(parser, &opening, &parts, &parser->current);
             } else {
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_INTERPOLATED_TERM);
-                node = UP(pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous));
+                node = pm_string_parts_to_string(parser, &opening, &parts, &parser->previous);
             }
         }
 
@@ -17140,16 +17147,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
     }
 
     if (container.list.size > 0) {
-        pm_node_t *node = UP(pm_interpolated_string_node_create(parser, NULL, &container.list, NULL));
-        if (container.invalid_encoding) {
-            pm_node_flag_unset(
-                node,
-                PM_NODE_FLAG_STATIC_LITERAL | PM_INTERPOLATED_STRING_NODE_FLAGS_STATIC_VALUE |
-                PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN | PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE
-            );
-        }
-
-        return node;
+        return pm_string_parts_to_string(parser, NULL, &container, NULL);
     }
 
     return current;
