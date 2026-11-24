@@ -65,13 +65,6 @@ pm_diagnostic_slice(const void *source, size_t length) {
     return slice;
 }
 
-/* A diagnostic argument from a NUL-terminated string. */
-static PRISM_INLINE pm_string_t
-pm_diagnostic_string(const char *source) {
-    pm_string_t slice = { (const uint8_t *) source, strlen(source) };
-    return slice;
-}
-
 /* Append a diagnostic with the arguments required by its message. */
 <%- diagnostic_signatures.each do |signature| -%>
 void pm_diagnostic_list_append_<%= signature.name %>(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, <%= signature.parameters %>);
