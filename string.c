@@ -11111,6 +11111,9 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     for (size_t index = 0; index < pairs_count; index++) {
         struct tr_pair *pair = &pairs[index];
 
+        mustnot_broken(pair->search);
+        mustnot_broken(pair->replace);
+
         if (RSTRING_LEN(pair->search) != 1 && str_strlen(pair->search, NULL) != 1) {
             rb_raise(rb_eArgError, "keys must be of size 1"); // TODO: better error message
         }
