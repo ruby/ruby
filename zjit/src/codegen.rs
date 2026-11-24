@@ -3645,7 +3645,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
             StackMapEntry::PrevFrame { receiver } => {
                 // The inlined callee's receiver slot, if any. Like Skip(receiver as usize),
                 // but it also switches frames on the decoder side.
-                offset -= receiver as i32;
+                offset -= i32::from(receiver);
                 locals_area = false;
             }
             // Only gen_prepare_non_leaf_call() prepends this, and it doesn't spill.
