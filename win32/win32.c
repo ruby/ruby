@@ -7760,13 +7760,24 @@ timespec_to_filetime(const struct timespec *ts, FILETIME *ft)
 }
 
 /* License: Ruby's */
+static DWORD
+set_file_times(HANDLE file, const FILETIME *atime, const FILETIME *mtime)
+{
+    DWORD error = SetFileTime(file, NULL, atime, mtime) ? ERROR_SUCCESS : GetLastError();
+    CloseHandle(file);
+    return error;
+}
+
+/* License: Ruby's */
 static int
 wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags)
 {
-    HANDLE hFile;
+    HANDLE file;
     FILETIME atime, mtime;
     struct stati128 stat;
-    int ret = 0;
+    DWORD error;
+    size_t len;
+    bool checked_path, invalid_times;
 
     /* TODO: When path is absolute, dirfd should be ignored. */
     if (dirfd != AT_FDCWD) {
@@ -7779,44 +7790,46 @@ wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags
         return -1;
     }
 
-    if (wstati128(path, &stat, FALSE)) {
+    invalid_times = times && (timespec_to_filetime(&times[0], &atime) ||
+                              timespec_to_filetime(&times[1], &mtime));
+    len = wcslen(path);
+    /* Preserve stat's path checks and its precedence over EINVAL. */
+    checked_path = invalid_times || !len || wcschr(L"/\\\"", path[len - 1]) ||
+                   wcsstr(path, L"...");
+    if (checked_path && wstati128(path, &stat, FALSE)) return -1;
+    if (invalid_times) {
+        errno = EINVAL;
         return -1;
     }
-
-    if (times) {
-        if (timespec_to_filetime(&times[0], &atime)) {
-            return -1;
-        }
-        if (timespec_to_filetime(&times[1], &mtime)) {
-            return -1;
-        }
-    }
-    else {
+    if (!times) {
         GetSystemTimePreciseAsFileTime(&atime);
         mtime = atime;
     }
 
-    RUBY_CRITICAL {
-        const DWORD attr = GetFileAttributesW(path);
-        if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
-            SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
-        hFile = open_special(path, GENERIC_WRITE, 0);
-        if (hFile == INVALID_HANDLE_VALUE) {
-            errno = map_errno(GetLastError());
-            ret = -1;
-        }
-        else {
-            if (!SetFileTime(hFile, NULL, &atime, &mtime)) {
-                errno = map_errno(GetLastError());
-                ret = -1;
-            }
-            CloseHandle(hFile);
-        }
-        if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
-            SetFileAttributesW(path, attr);
+    file = open_special(path, FILE_WRITE_ATTRIBUTES, 0);
+    if (file == INVALID_HANDLE_VALUE) {
+        error = GetLastError();
+        if (!checked_path && wstati128(path, &stat, FALSE)) return -1;
+    }
+    else {
+        error = set_file_times(file, &atime, &mtime);
     }
 
-    return ret;
+    if (error == ERROR_ACCESS_DENIED) {
+        RUBY_CRITICAL {
+            DWORD attr = GetFileAttributesW(path);
+            if (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_READONLY) &&
+                SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY)) {
+                file = open_special(path, FILE_WRITE_ATTRIBUTES, 0);
+                error = file == INVALID_HANDLE_VALUE ? GetLastError() : set_file_times(file, &atime, &mtime);
+                SetFileAttributesW(path, attr);
+            }
+        }
+    }
+
+    if (error == ERROR_SUCCESS) return 0;
+    errno = map_errno(error);
+    return -1;
 }
 
 /* License: Ruby's */
