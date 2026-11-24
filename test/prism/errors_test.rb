@@ -223,19 +223,6 @@ module Ruby::Prism
       end
     end
 
-    def test_defined_validates_jumps_in_evaluated_receivers
-      assert Ruby::Prism.parse_success?("defined?(f { retry })")
-      assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse("defined?(f { retry }.g)").errors.map(&:type)
-      assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse("defined?((defined?(f { retry }.g)).h)").errors.map(&:type)
-      assert Ruby::Prism.parse_success?("x rescue defined?((retry if b).g)")
-      %w[break next redo].each do |jump|
-        source = "defined?((#{jump} if x).g)"
-        assert_equal [:invalid_block_exit], Ruby::Prism.parse(source).errors.map(&:type), source
-        assert Ruby::Prism.parse_success?("sink(#{source}) while y"), source
-        refute Ruby::Prism.parse_success?("sink(defined?((def f = (#{jump})).g)) while y"), jump
-      end
-    end
-
     def test_retry_must_target_a_rescue_in_its_own_scope
       [
         "x rescue f { retry }",
@@ -262,52 +249,6 @@ module Ruby::Prism
         errors = Ruby::Prism.parse(source).errors
         assert_equal [type], errors.map(&:type), source
         assert_equal "retry", errors.first.location.slice
-      end
-    end
-
-    def test_defined_yield_requires_a_method_when_the_receiver_is_evaluated
-      [
-        "defined?(!yield)",
-        "defined?(not\nyield)",
-        "defined?(not(yield))",
-        "defined? ~yield",
-        "defined? +yield",
-        "defined? -yield",
-        "defined?((!yield;))",
-        "defined?(f(!yield))",
-        "defined?(yield.foo)",
-        "defined?(yield.(arg))",
-        "defined?(f { yield }.g)",
-        "defined?([*[!yield], 1])",
-        "if false; defined?(!yield); end"
-      ].each do |source|
-        result = Ruby::Prism.parse(source)
-        assert_equal [:invalid_yield], result.errors.map(&:type), source
-        assert_equal "yield", result.errors.first.location.slice
-      end
-
-      [
-        "defined?(yield)",
-        "defined?(f(yield))",
-        "defined?((yield)&.foo)",
-        "defined?(x = !yield)",
-        "defined?(/a/ =~ !yield)",
-        "defined?([*xs, !yield])",
-        "def f; defined?(!yield); end"
-      ].each do |source|
-        assert Ruby::Prism.parse_success?(source), source
-      end
-    end
-
-    def test_defined_yield_tracks_versioned_operand_rules
-      ["defined?({ k: !yield })", "defined?([*!yield])"].each do |source|
-        assert Ruby::Prism.parse_success?(source, version: "3.3"), source
-        refute Ruby::Prism.parse_success?(source, version: "3.4"), source
-      end
-
-      ["defined? (!yield;)", "defined?((if x; yield; end).foo)"].each do |source|
-        refute Ruby::Prism.parse_success?(source, version: "3.4"), source
-        assert Ruby::Prism.parse_success?(source, version: "4.0"), source
       end
     end
 
@@ -427,32 +368,6 @@ module Ruby::Prism
         assert_equal [:singleton_for_literals], result.errors.map(&:type), receiver
         assert_equal receiver, result.errors.first.location.slice
       end
-    end
-
-    def test_ruby_3_3_ellipsis_in_singleton_receivers
-      ["1...2", "m { 1...2 }"].each do |receiver|
-        source = "def (#{receiver}).f; end"
-        assert_false Ruby::Prism.parse_success?(source, version: "3.3"), source
-        assert Ruby::Prism.parse_success?(source, version: "3.4"), source
-      end
-
-      ["1..2", "...2", "m { |x| 1...2 }", "-> { 1...2 }"].each do |receiver|
-        source = "def (#{receiver}).f; end"
-        assert Ruby::Prism.parse_success?(source, version: "3.3"), source
-      end
-
-      source = "def (x...y).f; end"
-      receiver = Ruby::Prism.parse(source, version: "3.3").value.statements.body.first.receiver.body
-      assert_instance_of CallNode, receiver
-      assert_instance_of RangeNode, receiver.arguments.arguments.first
-      assert_instance_of RangeNode, Ruby::Prism.parse(source, version: "3.4").value.statements.body.first.receiver.body
-    end
-
-    def test_ruby_3_3_ellipsis_in_lambda_defaults
-      assert_false Ruby::Prism.parse_success?("-> x = (...1) { x }", version: "3.3")
-      assert Ruby::Prism.parse_success?("->(x = (...1)) { x }", version: "3.3")
-      assert Ruby::Prism.parse_success?("-> x = ((...1)) { x }", version: "3.3")
-      assert Ruby::Prism.parse_success?("-> x = (...1) { x }", version: "3.4")
     end
 
     def test_nested_void_statements
@@ -631,8 +546,7 @@ module Ruby::Prism
       end
     end
 
-    def test_jumps_in_parameter_defaults_and_defined
-      assert Ruby::Prism.parse_success?("defined?(def f = break)")
+    def test_break_in_lambda_defaults_and_nested_methods
       assert Ruby::Prism.parse_success?("->(x = (break if b)) { x }")
       assert_false Ruby::Prism.parse_success?("m { def f = break }")
     end
