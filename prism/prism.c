@@ -16055,13 +16055,12 @@ static void
 flush_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
     pm_node_t *block_exit;
     PM_NODE_LIST_FOREACH(parser->current_block_exits, index, block_exit) {
-        const char *type;
-
+        pm_location_t keyword_loc;
         switch (PM_NODE_TYPE(block_exit)) {
-            case PM_BREAK_NODE: type = "break"; break;
-            case PM_NEXT_NODE: type = "next"; break;
-            case PM_REDO_NODE: type = "redo"; break;
-            default: PRISM_ASSERT(false && "unreachable"); type = ""; break;
+            case PM_BREAK_NODE: keyword_loc = ((const pm_break_node_t *) block_exit)->keyword_loc; break;
+            case PM_NEXT_NODE: keyword_loc = ((const pm_next_node_t *) block_exit)->keyword_loc; break;
+            case PM_REDO_NODE: keyword_loc = block_exit->location; break;
+            default: PRISM_ASSERT(false && "unreachable"); continue;
         }
 
         pm_diagnostic_list_append_slice(
@@ -16070,7 +16069,7 @@ flush_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_ex
             PM_NODE_START(block_exit),
             PM_NODE_LENGTH(block_exit),
             PM_ERR_INVALID_BLOCK_EXIT,
-            pm_diagnostic_string(type)
+            (pm_string_t) { .source = parser->start + keyword_loc.start, .length = keyword_loc.length }
         );
     }
 
