@@ -16815,44 +16815,29 @@ parse_method_definition_name(pm_parser_t *parser) {
 
 static void
 parse_heredoc_dedent_string(pm_arena_t *arena, pm_string_t *string, size_t common_whitespace) {
-    // Make a writable copy of the string in the arena, since strings only view
-    // their bytes. We keep a mutable pointer to the arena memory so we can
-    // memmove into it below without casting away const from the string's
-    // source field.
+    const uint8_t *source = pm_string_source(string);
     size_t length = pm_string_length(string);
-    uint8_t *writable = (uint8_t *) pm_arena_memdup(arena, pm_string_source(string), length, PRISM_ALIGNOF(uint8_t));
-    pm_string_init(string, writable, length);
-
-    // Now get the bounds of the existing string. We'll use this as a
-    // destination to move bytes into. We'll also use it for bounds checking
-    // since we don't require that these strings be null terminated.
-    size_t dest_length = pm_string_length(string);
-    const uint8_t *source_cursor = writable;
-    const uint8_t *source_end = source_cursor + dest_length;
-
-    // We're going to move bytes backward in the string when we get leading
-    // whitespace, so we'll maintain a pointer to the current position in the
-    // string that we're writing to.
     size_t trimmed_whitespace = 0;
 
-    // While we haven't reached the amount of common whitespace that we need to
-    // trim and we haven't reached the end of the string, we'll keep trimming
-    // whitespace. Trimming in this context means skipping over these bytes such
-    // that they aren't copied into the new string.
-    while ((source_cursor < source_end) && pm_char_is_inline_whitespace(*source_cursor) && trimmed_whitespace < common_whitespace) {
-        if (*source_cursor == '\t') {
+    while (length && trimmed_whitespace < common_whitespace && pm_char_is_inline_whitespace(*source)) {
+        if (*source == '\t') {
+            // Keep a tab that would extend past the common indentation.
             trimmed_whitespace = (trimmed_whitespace / PM_TAB_WHITESPACE_SIZE + 1) * PM_TAB_WHITESPACE_SIZE;
             if (trimmed_whitespace > common_whitespace) break;
         } else {
             trimmed_whitespace++;
         }
 
-        source_cursor++;
-        dest_length--;
+        source++;
+        length--;
     }
 
-    memmove(writable, source_cursor, (size_t) (source_end - source_cursor));
-    string->length = dest_length;
+    if (length) {
+        const uint8_t *dedented = pm_arena_memdup(arena, source, length, PRISM_ALIGNOF(uint8_t));
+        pm_string_init(string, dedented, length);
+    } else {
+        *string = PM_STRING_EMPTY;
+    }
 }
 
 /**
