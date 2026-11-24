@@ -1481,16 +1481,14 @@ typedef enum {
  * Add a warning to the parser if the predicate of a conditional is a literal.
  */
 static void
-pm_parser_warn_conditional_predicate_literal(pm_parser_t *parser, pm_node_t *node, pm_conditional_predicate_type_t type, pm_diagnostic_id_t diag_id, const char *prefix) {
+pm_parser_warn_conditional_predicate_literal(pm_parser_t *parser, pm_node_t *node, pm_conditional_predicate_type_t type, pm_diagnostic_id_t diag_id, pm_string_t prefix) {
     pm_string_t context;
     switch (type) {
         case PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL:
-            context.source = (const uint8_t *) "condition";
-            context.length = 9;
+            context = PM_STRING_LITERAL("condition");
             break;
         case PM_CONDITIONAL_PREDICATE_TYPE_FLIP_FLOP:
-            context.source = (const uint8_t *) "flip-flop";
-            context.length = 9;
+            context = PM_STRING_LITERAL("flip-flop");
             break;
         case PM_CONDITIONAL_PREDICATE_TYPE_NOT:
             return;
@@ -1505,7 +1503,7 @@ pm_parser_warn_conditional_predicate_literal(pm_parser_t *parser, pm_node_t *nod
         PM_NODE_START(node),
         PM_NODE_LENGTH(node),
         diag_id,
-        pm_diagnostic_string(prefix),
+        prefix,
         context
     );
 }
@@ -1640,7 +1638,7 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             node->type = PM_MATCH_LAST_LINE_NODE;
 
             if (!PM_PARSER_COMMAND_LINE_OPTION_E(parser)) {
-                pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_DEFAULT, "regex ");
+                pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_DEFAULT, PM_STRING_LITERAL("regex "));
             }
 
             break;
@@ -1652,34 +1650,33 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             node->type = PM_INTERPOLATED_MATCH_LAST_LINE_NODE;
 
             if (!PM_PARSER_COMMAND_LINE_OPTION_E(parser)) {
-                pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, "regex ");
+                pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, PM_STRING_LITERAL("regex "));
             }
 
+            break;
+        case PM_STRING_NODE:
+        case PM_SOURCE_FILE_NODE:
+        case PM_INTERPOLATED_STRING_NODE:
+            pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_DEFAULT, PM_STRING_LITERAL("string "));
+            break;
+        case PM_SYMBOL_NODE:
+        case PM_INTERPOLATED_SYMBOL_NODE:
+            pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, PM_STRING_LITERAL("symbol "));
             break;
         case PM_INTEGER_NODE:
             if (type == PM_CONDITIONAL_PREDICATE_TYPE_FLIP_FLOP) {
                 if (!PM_PARSER_COMMAND_LINE_OPTION_E(parser)) {
                     pm_parser_warn_node(parser, node, PM_WARN_INTEGER_IN_FLIP_FLOP);
                 }
-            } else {
-                pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, "");
+                break;
             }
-            break;
-        case PM_STRING_NODE:
-        case PM_SOURCE_FILE_NODE:
-        case PM_INTERPOLATED_STRING_NODE:
-            pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_DEFAULT, "string ");
-            break;
-        case PM_SYMBOL_NODE:
-        case PM_INTERPOLATED_SYMBOL_NODE:
-            pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, "symbol ");
-            break;
+            PRISM_FALLTHROUGH
         case PM_SOURCE_LINE_NODE:
         case PM_SOURCE_ENCODING_NODE:
         case PM_FLOAT_NODE:
         case PM_RATIONAL_NODE:
         case PM_IMAGINARY_NODE:
-            pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, "");
+            pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, PM_STRING_EMPTY);
             break;
         case PM_CLASS_VARIABLE_WRITE_NODE:
             pm_conditional_predicate_warn_write_literal(parser, ((pm_class_variable_write_node_t *) node)->value);
@@ -18929,7 +18926,7 @@ parse_def(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
                 PM_TOKEN_START(parser, &def_keyword),
                 PM_TOKENS_LENGTH(&def_keyword, &parser->previous),
                 PM_ERR_UNEXPECTED_PARAMETER_DEFAULT_VALUE,
-                pm_diagnostic_string("endless method definition")
+                PM_STRING_LITERAL("endless method definition")
             );
         }
         equal = parser->previous;

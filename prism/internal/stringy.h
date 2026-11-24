@@ -16,6 +16,9 @@ static const uint8_t empty_source[] = "";
  */
 #define PM_STRING_EMPTY ((pm_string_t) { .source = empty_source, .length = 0 })
 
+/* View a string literal without its terminating NUL. */
+#define PM_STRING_LITERAL(name_) ((pm_string_t) { .source = (const uint8_t *) ("" name_), .length = sizeof(name_) - 1 })
+
 /*
  * Initialize a shared string that is based on initial input.
  */
