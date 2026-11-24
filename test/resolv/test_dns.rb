@@ -4,36 +4,6 @@ require 'resolv'
 require 'socket'
 require 'tempfile'
 
-class Object # :nodoc:
-  def stub name, val_or_callable, &block
-    new_name = "__minitest_stub__#{name}"
-
-    metaclass = class << self; self; end
-
-    if respond_to? name and not methods.map(&:to_s).include? name.to_s then
-      metaclass.send :define_method, name do |*args|
-        super(*args)
-      end
-    end
-
-    metaclass.send :alias_method, new_name, name
-
-    metaclass.send :define_method, name do |*args|
-      if val_or_callable.respond_to? :call then
-        val_or_callable.call(*args)
-      else
-        val_or_callable
-      end
-    end
-
-    yield self
-  ensure
-    metaclass.send :undef_method, name
-    metaclass.send :alias_method, name, new_name
-    metaclass.send :undef_method, new_name
-  end unless method_defined?(:stub) # lib/rubygems/test_case.rb also has the same method definition
-end
-
 class TestResolvDNS < Test::Unit::TestCase
   def setup
     @save_do_not_reverse_lookup = BasicSocket.do_not_reverse_lookup
@@ -886,10 +856,16 @@ class TestResolvDNS < Test::Unit::TestCase
   end
 
   def assert_no_fd_leak
-    socket = assert_throw(self) do |tag|
-      Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
-        yield.getname("8.8.8.8")
-      end
+    test = self
+    dns = Resolv::DNS.singleton_class
+    dns.alias_method(:__orig_bind_random_port, :bind_random_port)
+    dns.define_method(:bind_random_port) {|s, *| throw(test, s)}
+    begin
+      socket = assert_throw(self) {yield.getname("8.8.8.8")}
+    ensure
+      dns.remove_method(:bind_random_port)
+      dns.alias_method(:bind_random_port, :__orig_bind_random_port)
+      dns.remove_method(:__orig_bind_random_port)
     end
 
     assert_predicate(socket, :closed?, "file descriptor leaked")
