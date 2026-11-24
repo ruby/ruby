@@ -1114,6 +1114,16 @@ module Ruby::Prism
       assert_equal :tail, tail.name
     end
 
+    def test_unexpected_undef_preserves_its_names
+      result = Ruby::Prism.parse("f(undef a, b)")
+      assert_equal [:statement_undef], result.errors.map(&:type)
+
+      argument = result.statement.arguments.arguments.fetch(0)
+      assert_instance_of ErrorRecoveryNode, argument
+      assert_instance_of UndefNode, argument.unexpected
+      assert_equal %w[a b], argument.unexpected.names.map(&:slice)
+    end
+
     def test_unexpected_statement_as_array_element
       result = Ruby::Prism.parse("[END {}, 1]; tail")
       assert_equal [:statement_postexe_end], result.errors.map(&:type)
@@ -1139,6 +1149,23 @@ module Ruby::Prism
       assert_instance_of ErrorRecoveryNode, rescue_modifier.rescue_expression
       assert_instance_of PreExecutionNode, rescue_modifier.rescue_expression.unexpected
       assert_equal :tail, tail.name
+    end
+
+    def test_unexpected_statement_preserves_the_following_list_element
+      assignment = Ruby::Prism.parse("x = 1, END {}, y")
+      assert_equal [:statement_postexe_end], assignment.errors.map(&:type)
+      _, unexpected, sibling = assignment.statement.value.elements
+      assert_instance_of PostExecutionNode, unexpected.unexpected
+      assert_equal :y, sibling.name
+
+      ["END {}", "*END {}"].each do |condition|
+        result = Ruby::Prism.parse("case x; when #{condition}, y; end")
+        assert_equal [:statement_postexe_end], result.errors.map(&:type)
+        first, sibling = result.statement.conditions.first.conditions
+        first = first.expression if first.is_a?(SplatNode)
+        assert_instance_of PostExecutionNode, first.unexpected
+        assert_equal :y, sibling.name
+      end
     end
 
     def test_void_jump_receiver_preserves_the_enclosing_expression

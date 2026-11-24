@@ -2354,6 +2354,12 @@ pm_error_recovery_node_create_unexpected(pm_parser_t *parser, pm_node_t *unexpec
     );
 }
 
+/* A list can continue after consuming an unexpected element. */
+static bool
+pm_error_recovery_node_missing_p(const pm_node_t *node) {
+    return PM_NODE_TYPE_P(node, PM_ERROR_RECOVERY_NODE) && ((const pm_error_recovery_node_t *) node)->unexpected == NULL;
+}
+
 /**
  * Allocate and initialize a new AliasGlobalVariableNode node.
  */
@@ -15780,7 +15786,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
         parsed_first_argument = true;
 
         // If parsing the argument failed, we need to stop parsing arguments.
-        if (PM_NODE_TYPE_P(argument, PM_ERROR_RECOVERY_NODE) || parser->recovering) break;
+        if (pm_error_recovery_node_missing_p(argument) || parser->recovering) break;
 
         // If the terminator of these arguments is not EOF, then we have a
         // specific token we're looking for. In that case we can accept a
@@ -18618,14 +18624,14 @@ parse_case(pm_parser_t *parser, uint16_t depth) {
                     pm_splat_node_t *splat_node = pm_splat_node_create(parser, &operator, expression);
                     pm_node_list_open_append(&parser->node_chunks, &when_conditions, UP(splat_node));
 
-                    if (PM_NODE_TYPE_P(expression, PM_ERROR_RECOVERY_NODE)) break;
+                    if (pm_error_recovery_node_missing_p(expression)) break;
                 } else {
                     pm_node_t *condition = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CASE_EXPRESSION_AFTER_WHEN, (uint16_t) (depth + 1));
                     pm_node_list_open_append(&parser->node_chunks, &when_conditions, condition);
 
                     /* If we found a missing node, then this is a syntax error
                      * and we should stop looping. */
-                    if (PM_NODE_TYPE_P(condition, PM_ERROR_RECOVERY_NODE)) break;
+                    if (pm_error_recovery_node_missing_p(condition)) break;
 
                     /* If this is a string node, then we need to mark it as
                      * frozen because when clause strings are frozen. */
@@ -19667,7 +19673,7 @@ parse_array(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         }
 
         pm_array_elements_append(parser, &elements, element);
-        if (PM_NODE_TYPE_P(element, PM_ERROR_RECOVERY_NODE)) break;
+        if (pm_error_recovery_node_missing_p(element)) break;
     }
 
     accept1(parser, PM_TOKEN_NEWLINE);
@@ -20145,7 +20151,8 @@ parse_regexp(pm_parser_t *parser, uint16_t depth) {
 
 static pm_node_t *
 parse_alias(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
-    if (binding_power != PM_BINDING_POWER_STATEMENT) {
+    bool misplaced = binding_power != PM_BINDING_POWER_STATEMENT;
+    if (misplaced) {
         pm_parser_err_current(parser, PM_ERR_STATEMENT_ALIAS);
     }
 
@@ -20154,6 +20161,7 @@ parse_alias(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t dept
 
     pm_node_t *new_name = parse_alias_argument(parser, true, (uint16_t) (depth + 1));
     pm_node_t *old_name = parse_alias_argument(parser, false, (uint16_t) (depth + 1));
+    pm_node_t *node;
 
     switch (PM_NODE_TYPE(new_name)) {
         case PM_BACK_REFERENCE_READ_NODE:
@@ -20168,7 +20176,8 @@ parse_alias(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t dept
                 old_name = UP(pm_error_recovery_node_create_unexpected(parser, old_name));
             }
 
-            return UP(pm_alias_global_variable_node_create(parser, &keyword, new_name, old_name));
+            node = UP(pm_alias_global_variable_node_create(parser, &keyword, new_name, old_name));
+            break;
         }
         case PM_SYMBOL_NODE:
         case PM_INTERPOLATED_SYMBOL_NODE: {
@@ -20179,8 +20188,11 @@ parse_alias(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t dept
         }
         PRISM_FALLTHROUGH
         default:
-            return UP(pm_alias_method_node_create(parser, &keyword, new_name, old_name));
+            node = UP(pm_alias_method_node_create(parser, &keyword, new_name, old_name));
+            break;
     }
+
+    return misplaced ? UP(pm_error_recovery_node_create_unexpected(parser, node)) : node;
 }
 
 static pm_until_node_t *
@@ -20973,9 +20985,10 @@ parse_preexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t dep
     return pm_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
 }
 
-static pm_post_execution_node_t *
+static pm_node_t *
 parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
-    if (binding_power != PM_BINDING_POWER_STATEMENT) {
+    bool misplaced = binding_power != PM_BINDING_POWER_STATEMENT;
+    if (misplaced) {
         pm_parser_err_current(parser, PM_ERR_STATEMENT_POSTEXE_END);
     }
 
@@ -20994,12 +21007,14 @@ parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t de
 
     expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_END_UPCASE_TERM, &opening);
     flush_block_exits(parser, previous_block_exits);
-    return pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
+    pm_node_t *node = UP(pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous));
+    return misplaced ? UP(pm_error_recovery_node_create_unexpected(parser, node)) : node;
 }
 
-static pm_undef_node_t *
+static pm_node_t *
 parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
-    if (binding_power != PM_BINDING_POWER_STATEMENT) {
+    bool misplaced = binding_power != PM_BINDING_POWER_STATEMENT;
+    if (misplaced) {
         pm_parser_err_current(parser, PM_ERR_STATEMENT_UNDEF);
     }
 
@@ -21025,7 +21040,8 @@ parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t dept
         }
     }
 
-    return pm_undef_node_create(parser, &keyword, &names);
+    pm_node_t *node = UP(pm_undef_node_create(parser, &keyword, &names));
+    return misplaced ? UP(pm_error_recovery_node_create_unexpected(parser, node)) : node;
 }
 
 static pm_reduction_t
@@ -21393,7 +21409,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_DEFINED:
             return pm_reduction(UP(parse_defined(parser, block_parameter_default_p(parser, binding_power), flags, depth)));
         case PM_TOKEN_KEYWORD_END_UPCASE:
-            return pm_reduction(UP(parse_postexe(parser, binding_power, depth)));
+            return pm_reduction(parse_postexe(parser, binding_power, depth));
         case PM_TOKEN_KEYWORD_FALSE:
             parser_lex(parser);
             return pm_reduction(UP(pm_false_node_create(parser, &parser->previous)));
@@ -21410,7 +21426,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return pm_reduction(parse_conditional(parser, PM_CONTEXT_IF, opening_newline_index, if_after_else, (uint16_t) (depth + 1)));
         case PM_TOKEN_KEYWORD_UNDEF:
-            return pm_reduction(UP(parse_undef(parser, binding_power, depth)));
+            return pm_reduction(parse_undef(parser, binding_power, depth));
         case PM_TOKEN_KEYWORD_NOT:
             return parse_not(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_UNLESS: {
@@ -21722,7 +21738,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
             pm_node_t *element = parse_starred_expression(parser, binding_power, false, PM_ERR_ARRAY_ELEMENT, (uint16_t) (depth + 1)).node;
 
             pm_array_elements_append(parser, &elements, element);
-            if (PM_NODE_TYPE_P(element, PM_ERROR_RECOVERY_NODE)) break;
+            if (pm_error_recovery_node_missing_p(element)) break;
 
             parse_assignment_value_local(parser, element);
         }
