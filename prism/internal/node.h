@@ -32,6 +32,16 @@ pm_location_join(pm_location_t left, pm_location_t right) {
     return location;
 }
 
+/*
+ * Return the sole expression in a statements node, if there is one.
+ * A leading semicolon introduces an empty statement before the expression.
+ */
+static PRISM_INLINE pm_node_t *
+pm_statements_node_single_expression(const pm_statements_node_t *node) {
+    if (node == NULL || node->body.size != 1 || PM_NODE_FLAG_P(node, PM_STATEMENTS_FLAGS_LEADING_SEMICOLON)) return NULL;
+    return node->body.nodes[0];
+}
+
 /* A string literal uses the source encoding unless an escape forced one. */
 static PRISM_INLINE const pm_encoding_t *
 pm_string_node_encoding(const pm_string_node_t *node, const pm_encoding_t *source_encoding) {

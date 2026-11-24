@@ -21,6 +21,15 @@ module Ruby::Prism
       end
     end
 
+    def test_statement_separators_in_interpolation
+      assert_static_literal(false, '"#{; "x"}"')
+      assert_static_literal(false, ':"#{; "x"}"')
+      assert_static_literal(false, '/#{; "x"}/')
+      assert_static_literal(false, '/#{"#{; "x"}"}/')
+      assert_static_literal(true, '"#{"x";}"')
+      assert_static_literal(true, '"#{' + "\n" + '"x"}"')
+    end
+
     private
 
     def assert_static_literal(expected, source)

@@ -4822,7 +4822,7 @@ pm_interpolated_part_flags(pm_node_flags_t *flags, pm_node_t *part) {
             break;
         case PM_EMBEDDED_STATEMENTS_NODE: {
             pm_embedded_statements_node_t *cast = (pm_embedded_statements_node_t *) part;
-            pm_node_t *embedded = (cast->statements != NULL && cast->statements->body.size == 1) ? cast->statements->body.nodes[0] : NULL;
+            pm_node_t *embedded = pm_statements_node_single_expression(cast->statements);
 
             if (embedded == NULL) {
                 // If there are no statements or more than one statement, then
@@ -4980,11 +4980,11 @@ pm_interpolated_string_node_create(pm_parser_t *parser, const pm_token_t *openin
                 break;
             case PM_EMBEDDED_STATEMENTS_NODE: {
                 pm_embedded_statements_node_t *cast = (pm_embedded_statements_node_t *) part;
-                pm_node_t *embedded = (cast->statements != NULL && cast->statements->body.size == 1) ? cast->statements->body.nodes[0] : NULL;
+                pm_node_t *embedded = pm_statements_node_single_expression(cast->statements);
 
                 if (embedded == NULL) {
                     // If we're embedding multiple statements or no statements, then
-                    // the string is not longer a static literal.
+                    // the string is no longer a static literal.
                     CLEAR_FLAGS();
                 } else if (PM_NODE_TYPE_P(embedded, PM_STRING_NODE)) {
                     // If the embedded statement is a string, then we can make that

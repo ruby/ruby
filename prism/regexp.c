@@ -3682,10 +3682,8 @@ pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t
      * it interpolates yet. */
     bool unlexed = false;
     if (PM_NODE_TYPE_P(node, PM_EMBEDDED_STATEMENTS_NODE)) {
-        const pm_statements_node_t *statements = ((const pm_embedded_statements_node_t *) node)->statements;
-        if (statements == NULL || statements->body.size != 1) return false;
-
-        node = statements->body.nodes[0];
+        node = pm_statements_node_single_expression(((const pm_embedded_statements_node_t *) node)->statements);
+        if (node == NULL) return false;
         unlexed = true;
     }
 
