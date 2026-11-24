@@ -3256,6 +3256,22 @@ class TestString < Test::Unit::TestCase
     assert_equal("\u{1F600}", str)
   end
 
+  def test_tr_hash_non_ascii_replacement_clears_7bit
+    # Non-UTF-8 encodings kept an ASCII-only receiver's cached coderange after
+    # a non-ASCII replacement, so the result could be concatenated with UTF-8.
+    %w[EUC-JP Shift_JIS Windows-31J GBK].each do |enc|
+      a = "あ".encode(enc)
+      result = S("abc".encode(enc)).tr("a" => a)
+      assert_equal(a + "bc".encode(enc), result)
+      assert_not_predicate(result, :ascii_only?, enc)
+      assert_raise(Encoding::CompatibilityError, enc) { result + "é" }
+
+      str = S("abc".encode(enc))
+      str.tr!("a" => a)
+      assert_not_predicate(str, :ascii_only?, enc)
+    end
+  end
+
   def test_tr_hash_no_match_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
     begin;
