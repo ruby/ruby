@@ -274,6 +274,13 @@ module Ruby::Prism
       refute_warning("if !:s; end")
     end
 
+    def test_grouped_predicate_warnings
+      assert_warning('if (setup; "s"); end', "string literal in condition", compare: RUBY_VERSION >= "3.3")
+      warnings = Ruby::Prism.parse("if (setup; /r/)..(setup; 1); end").warnings
+      assert_equal ["regex literal in flip-flop", "literal in flip-flop"], warnings.map(&:message)
+      refute_warning("if (; 1..2); end")
+    end
+
     def test_literal_in_conditionals
       sources = [
         "if (a = 2); a; end",

@@ -33,13 +33,18 @@ pm_location_join(pm_location_t left, pm_location_t right) {
 }
 
 /*
- * Return the sole expression in a statements node, if there is one.
+ * Return true if a statements node contains exactly one expression.
  * A leading semicolon introduces an empty statement before the expression.
  */
+static PRISM_INLINE bool
+pm_statements_node_single_expression_p(const pm_statements_node_t *node) {
+    return node != NULL && node->body.size == 1 && !PM_NODE_FLAG_P(node, PM_STATEMENTS_FLAGS_LEADING_SEMICOLON);
+}
+
+/* Return the sole expression in a statements node, if there is one. */
 static PRISM_INLINE pm_node_t *
 pm_statements_node_single_expression(const pm_statements_node_t *node) {
-    if (node == NULL || node->body.size != 1 || PM_NODE_FLAG_P(node, PM_STATEMENTS_FLAGS_LEADING_SEMICOLON)) return NULL;
-    return node->body.nodes[0];
+    return pm_statements_node_single_expression_p(node) ? node->body.nodes[0] : NULL;
 }
 
 /* A string literal uses the source encoding unless an escape forced one. */

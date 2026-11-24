@@ -1569,6 +1569,26 @@ pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, const pm_node_t
     }
 }
 
+/* Return the statements of a group whose last expression supplies the predicate. */
+static const pm_statements_node_t *
+pm_conditional_predicate_statements(const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_PARENTHESES_NODE: {
+            const pm_node_t *body = ((const pm_parentheses_node_t *) node)->body;
+            if (body != NULL && PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE)) return (const pm_statements_node_t *) body;
+            break;
+        }
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+            if (cast->rescue_clause == NULL && cast->else_clause == NULL && cast->ensure_clause == NULL) return cast->statements;
+            break;
+        }
+        default:
+            break;
+    }
+    return NULL;
+}
+
 /**
  * The predicate of conditional nodes can change what would otherwise be regular
  * nodes into specialized nodes. For example:
@@ -1582,7 +1602,18 @@ pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, const pm_node_t
  * predicate or writing a static literal as the predicate.
  */
 static void
-pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_predicate_type_t type) {
+pm_conditional_predicate(pm_parser_t *parser, pm_node_t *predicate, pm_conditional_predicate_type_t type) {
+    pm_node_t *node = predicate;
+    bool allow_flip_flop = true;
+    const pm_statements_node_t *statements;
+
+    while ((statements = pm_conditional_predicate_statements(node)) != NULL) {
+        /* A direct range becomes a flip-flop only when it is the sole
+         * expression in every enclosing group. Logical operands start fresh. */
+        if (!pm_statements_node_single_expression_p(statements)) allow_flip_flop = false;
+        node = statements->body.nodes[statements->body.size - 1];
+    }
+
     switch (PM_NODE_TYPE(node)) {
         case PM_AND_NODE: {
             pm_and_node_t *cast = (pm_and_node_t *) node;
@@ -1596,25 +1627,8 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             pm_conditional_predicate(parser, cast->right, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
             break;
         }
-        case PM_PARENTHESES_NODE: {
-            pm_parentheses_node_t *cast = (pm_parentheses_node_t *) node;
-
-            if ((cast->body != NULL) && PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE)) {
-                pm_statements_node_t *statements = (pm_statements_node_t *) cast->body;
-                if (statements->body.size == 1) pm_conditional_predicate(parser, statements->body.nodes[0], type);
-            }
-
-            break;
-        }
-        case PM_BEGIN_NODE: {
-            pm_begin_node_t *cast = (pm_begin_node_t *) node;
-            if (cast->statements != NULL) {
-                pm_statements_node_t *statements = cast->statements;
-                if (statements->body.size == 1) pm_conditional_predicate(parser, statements->body.nodes[0], type);
-            }
-            break;
-        }
         case PM_RANGE_NODE: {
+            if (!allow_flip_flop) break;
             pm_range_node_t *cast = (pm_range_node_t *) node;
 
             if (cast->left != NULL) pm_conditional_predicate(parser, cast->left, PM_CONDITIONAL_PREDICATE_TYPE_FLIP_FLOP);
@@ -1664,7 +1678,8 @@ pm_conditional_predicate(pm_parser_t *parser, pm_node_t *node, pm_conditional_pr
             pm_parser_warn_conditional_predicate_literal(parser, node, type, PM_WARN_LITERAL_IN_CONDITION_VERBOSE, PM_STRING_LITERAL("symbol "));
             break;
         case PM_INTEGER_NODE:
-            if (type == PM_CONDITIONAL_PREDICATE_TYPE_FLIP_FLOP) {
+            /* Only a bare integer endpoint is compared with the line number. */
+            if (type == PM_CONDITIONAL_PREDICATE_TYPE_FLIP_FLOP && node == predicate) {
                 if (!PM_PARSER_COMMAND_LINE_OPTION_E(parser)) {
                     pm_parser_warn_node(parser, node, PM_WARN_INTEGER_IN_FLIP_FLOP);
                 }
