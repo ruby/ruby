@@ -10,6 +10,8 @@
   ^~~~~~~ invalid POSIX bracket type: /[[:foo:]]/
 /[^]/
    ^ empty char-class: /[^]/
+/[]\x81\x5d/s
+  ^ empty char-class: /[]\x81\x5d/
 /(?<>a)[b-a]/
     ^ group name is empty: /(?<>a)[b-a]/
         ^~~ empty range in char class: /(?<>a)[b-a]/

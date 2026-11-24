@@ -673,24 +673,6 @@ pm_regexp_skip_char(pm_regexp_parser_t *parser) {
 }
 
 /**
- * This advances the current token to the next instance of the given character.
- */
-static bool
-pm_regexp_char_find(pm_regexp_parser_t *parser, uint8_t value) {
-    if (pm_regexp_char_is_eof(parser)) {
-        return false;
-    }
-
-    const uint8_t *end = (const uint8_t *) pm_memchr(parser->cursor, value, (size_t) (parser->end - parser->cursor), parser->encoding_changed, parser->encoding);
-    if (end == NULL) {
-        return false;
-    }
-
-    parser->cursor = end + 1;
-    return true;
-}
-
-/**
  * Parse a hex digit character and return its value, or -1 if not a hex digit.
  */
 static PRISM_INLINE int
@@ -2057,7 +2039,7 @@ pm_regexp_parse_character_class(pm_regexp_parser_t *parser, uint16_t depth) {
     /* A ] right after the [ or [^ is a character of the class, as long as
      * another ] comes later in the pattern. Otherwise the class is empty. */
     if (token.type == PM_REGEXP_CLASS_TOKEN_CLOSE) {
-        if (pm_memchr(parser->cursor, ']', (size_t) (parser->end - parser->cursor), parser->encoding_changed, parser->encoding) == NULL) {
+        if (pm_memchr(parser->cursor, ']', (size_t) (parser->end - parser->cursor), parser->encoding) == NULL) {
             pm_regexp_parse_error(parser, token.start, parser->cursor, "empty char-class");
             return false;
         }
@@ -2511,7 +2493,8 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
             return true;
         case '#':
             if (parser->extended_mode) {
-                if (!pm_regexp_char_find(parser, '\n')) parser->cursor = parser->end;
+                const uint8_t *newline = memchr(parser->cursor, '\n', (size_t) (parser->end - parser->cursor));
+                parser->cursor = newline != NULL ? newline + 1 : parser->end;
                 return true;
             }
         PRISM_FALLTHROUGH

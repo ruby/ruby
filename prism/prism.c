@@ -7493,11 +7493,11 @@ pm_char_is_magic_comment_key_delimiter(const uint8_t b) {
  * NULL.
  */
 static PRISM_INLINE const uint8_t *
-parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor, const uint8_t *end) {
+parser_lex_magic_comment_emacs_marker(const uint8_t *cursor, const uint8_t *end) {
     // Scan for '*' as the middle character, since it is rarer than '-' in
     // typical comments and avoids repeated memchr calls for '-' that hit
     // dashes in words like "foo-bar".
-    while ((cursor + 3 <= end) && (cursor = pm_memchr(cursor + 1, '*', (size_t) (end - cursor - 1), parser->encoding_changed, parser->encoding)) != NULL) {
+    while (end - cursor >= 3 && (cursor = memchr(cursor + 1, '*', (size_t) (end - cursor - 1))) != NULL) {
         if (cursor[-1] == '-' && cursor + 1 < end && cursor[1] == '-') {
             return cursor - 1;
         }
@@ -7545,10 +7545,10 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
     const uint8_t *cursor;
     bool indicator = false;
 
-    if ((cursor = parser_lex_magic_comment_emacs_marker(parser, start, end)) != NULL) {
+    if ((cursor = parser_lex_magic_comment_emacs_marker(start, end)) != NULL) {
         start = cursor + 3;
 
-        if ((cursor = parser_lex_magic_comment_emacs_marker(parser, start, end)) != NULL) {
+        if ((cursor = parser_lex_magic_comment_emacs_marker(start, end)) != NULL) {
             end = cursor;
             indicator = true;
         } else {
@@ -7563,7 +7563,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
          * controls the fallback encoding scan. Other comments without a colon
          * cannot contain a magic directive, so reject them early. */
         if ((parser->current.start != parser->encoding_comment_start || parser->encoding_locked) &&
-            pm_memchr(start, ':', (size_t) (end - start), parser->encoding_changed, parser->encoding) == NULL) {
+            memchr(start, ':', (size_t) (end - start)) == NULL) {
             return false;
         }
 
@@ -16865,7 +16865,7 @@ static PRISM_INLINE bool
 heredoc_dedent_discard_string_node(pm_parser_t *parser, pm_string_node_t *string_node) {
     if (string_node->unescaped.length == 0) {
         const uint8_t *cursor = parser->start + PM_LOCATION_START(&string_node->content_loc);
-        return pm_memchr(cursor, '\\', string_node->content_loc.length, parser->encoding_changed, parser->encoding) == NULL;
+        return pm_memchr(cursor, '\\', string_node->content_loc.length, parser->encoding) == NULL;
     }
     return false;
 }
