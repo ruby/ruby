@@ -481,6 +481,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n",
                       ["\"\u3042\""], warning,
                       encoding: Encoding::UTF_8)
+    assert_in_out_err([{'RUBYOPT' => nil}, '-EUTF-8'], "#!ruby -Ke\nputs __ENCODING__, Encoding.default_external\n",
+                      ["EUC-JP", "UTF-8"], [])
 
     bug4118 = '[ruby-dev:42680]'
     assert_in_out_err(%w[], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
