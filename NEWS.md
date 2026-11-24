@@ -340,7 +340,7 @@ They are still available on rubygems.org and can be installed with
 * rake 13.4.2
   * 13.3.1 to [v13.4.0][rake-v13.4.0], [v13.4.1][rake-v13.4.1], [v13.4.2][rake-v13.4.2]
 * test-unit 3.7.9
-  * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8]
+  * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8], [3.7.9][test-unit-3.7.9]
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
 * net-imap 0.6.8
@@ -916,6 +916,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [test-unit-3.7.6]: https://github.com/test-unit/test-unit/releases/tag/3.7.6
 [test-unit-3.7.7]: https://github.com/test-unit/test-unit/releases/tag/3.7.7
 [test-unit-3.7.8]: https://github.com/test-unit/test-unit/releases/tag/3.7.8
+[test-unit-3.7.9]: https://github.com/test-unit/test-unit/releases/tag/3.7.9
 [rss-0.3.3]: https://github.com/ruby/rss/releases/tag/0.3.3
 [net-imap-v0.6.3]: https://github.com/ruby/net-imap/releases/tag/v0.6.3
 [net-imap-v0.6.4]: https://github.com/ruby/net-imap/releases/tag/v0.6.4
