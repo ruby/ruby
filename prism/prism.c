@@ -14520,8 +14520,8 @@ static pm_parameters_order_t parameters_ordering[PM_TOKEN_MAXIMUM] = {
     [PM_TOKEN_PARENTHESIS_LEFT_GROUPING] = PM_PARAMETERS_ORDER_NAMED,
     [PM_TOKEN_EQUAL] = PM_PARAMETERS_ORDER_OPTIONAL,
     [PM_TOKEN_LABEL] = PM_PARAMETERS_ORDER_KEYWORDS,
-    [PM_TOKEN_USTAR] = PM_PARAMETERS_ORDER_AFTER_OPTIONAL,
-    [PM_TOKEN_STAR] = PM_PARAMETERS_ORDER_AFTER_OPTIONAL,
+    [PM_TOKEN_USTAR] = PM_PARAMETERS_ORDER_REST,
+    [PM_TOKEN_STAR] = PM_PARAMETERS_ORDER_REST,
     [PM_TOKEN_USTAR_STAR] = PM_PARAMETERS_ORDER_KEYWORDS_REST,
     [PM_TOKEN_STAR_STAR] = PM_PARAMETERS_ORDER_KEYWORDS_REST
 };
@@ -14538,20 +14538,23 @@ update_parameter_state(pm_parser_t *parser, pm_token_t *token, pm_parameters_ord
     pm_parameters_order_t state = parameters_ordering[token->type];
     if (state == PM_PARAMETERS_NO_CHANGE) return true;
 
-    // If we see another ordered argument after a optional argument
-    // we only continue parsing ordered arguments until we stop seeing ordered arguments.
+    /* Required positional parameters after an optional or rest parameter are
+     * posts. Remember whether there was a rest parameter for a later `...`. */
     if (*current == PM_PARAMETERS_ORDER_OPTIONAL && state == PM_PARAMETERS_ORDER_NAMED) {
         *current = PM_PARAMETERS_ORDER_AFTER_OPTIONAL;
         return true;
-    } else if (*current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL && state == PM_PARAMETERS_ORDER_NAMED) {
-        return true;
     }
 
-    if (token->type == PM_TOKEN_USTAR && *current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL) {
-        pm_parser_err_token(parser, token, PM_ERR_PARAMETER_STAR);
-        return false;
-    } else if (token->type == PM_TOKEN_UDOT_DOT_DOT && (*current >= PM_PARAMETERS_ORDER_KEYWORDS_REST && *current <= PM_PARAMETERS_ORDER_AFTER_OPTIONAL)) {
-        pm_parser_err_token(parser, token, *current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL ? PM_ERR_PARAMETER_FORWARDING_AFTER_REST : PM_ERR_PARAMETER_ORDER);
+    if (*current == PM_PARAMETERS_ORDER_AFTER_OPTIONAL || *current == PM_PARAMETERS_ORDER_REST) {
+        if (state == PM_PARAMETERS_ORDER_NAMED) return true;
+        if (state == PM_PARAMETERS_ORDER_REST) {
+            pm_parser_err_token(parser, token, PM_ERR_PARAMETER_STAR);
+            return false;
+        }
+    }
+
+    if (token->type == PM_TOKEN_UDOT_DOT_DOT && (*current >= PM_PARAMETERS_ORDER_KEYWORDS_REST && *current <= PM_PARAMETERS_ORDER_REST)) {
+        pm_parser_err_token(parser, token, *current == PM_PARAMETERS_ORDER_REST ? PM_ERR_PARAMETER_FORWARDING_AFTER_REST : PM_ERR_PARAMETER_ORDER);
         return false;
     } else if (*current == PM_PARAMETERS_ORDER_NOTHING_AFTER || state > *current) {
         // We know what transition we failed on, so we can provide a better error here.

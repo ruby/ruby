@@ -945,6 +945,18 @@ module Ruby::Prism
       end
     end
 
+    def test_forwarding_after_a_destructured_post_parameter
+      source = "def self.f opt = 1, (head, *tail), ...; target(...); end"
+      start = source.index("...")
+      assert_location(ForwardingParameterNode, source, start...(start + 3)) do |definition|
+        parameters = definition.parameters
+        assert_nil parameters.rest
+        assert_equal "(head, *tail)", parameters.posts.fetch(0).slice
+        assert_instance_of ForwardingArgumentsNode, definition.body.body.first.arguments.arguments.first
+        parameters.keyword_rest
+      end
+    end
+
     def test_ForwardingSuperNode
       assert_location(ForwardingSuperNode, "super")
       assert_location(ForwardingSuperNode, "super {}")

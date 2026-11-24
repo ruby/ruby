@@ -897,8 +897,15 @@ module Ruby::Prism
     end
 
     def test_forwarding_after_a_rest_parameter
-      source = "def f(opt = 1, *rest, ...) = rest"
-      assert_equal [:parameter_forwarding_after_rest], Ruby::Prism.parse(source).errors.map(&:type)
+      [
+        "def f(opt = 1, *rest, ...) = rest",
+        "def f(*, post, ...); end",
+        "def f(opt = 1, *rest, (first, last), ...); end"
+      ].each do |source|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal [:parameter_forwarding_after_rest], errors.map(&:type), source
+        assert_equal "...", errors.first.location.slice
+      end
     end
 
     def test_keyword_not_is_not_a_write_target
