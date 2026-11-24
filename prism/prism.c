@@ -18749,14 +18749,13 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
     pm_token_t class_keyword = parser->previous;
 
-    pm_scratch_node_list_t current_block_exits = { 0 };
-    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
-
     if (accept1(parser, PM_TOKEN_LESS_LESS)) {
         pm_token_t operator = parser->previous;
         pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_COMMAND_CALL, PM_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS, (uint16_t) (depth + 1));
 
         /* The header uses the enclosing loop context. The body starts a new one. */
+        pm_scratch_node_list_t current_block_exits = { 0 };
+        pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
         pm_do_loop_stack_push(parser, false);
         pm_parser_scope_push(parser, true);
         if (!accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
@@ -18789,6 +18788,8 @@ parse_class(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         return UP(pm_singleton_class_node_create(parser, &locals, &class_keyword, &operator, expression, statements, &parser->previous));
     }
 
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
     pm_node_t *constant_path = parse_expression(parser, PM_BINDING_POWER_INDEX, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CLASS_NAME, (uint16_t) (depth + 1)).node;
     pm_token_t name = parser->previous;
     if (name.type != PM_TOKEN_CONSTANT) {
