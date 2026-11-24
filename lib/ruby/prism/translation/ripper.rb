@@ -1288,7 +1288,7 @@ module Ruby::Prism
               end
 
               receiver =
-                if node.receiver.is_a?(ParenthesesNode) && node.receiver.body.nil?
+                if node.receiver.is_a?(ParenthesesNode) && node.receiver.body.nil? && node.message_loc.end_offset == node.receiver.location.start_offset
                   # The parens in `not()` just emit parens and nothing else.
                   bounds(node.receiver.opening_loc)
                   on_lparen("(")

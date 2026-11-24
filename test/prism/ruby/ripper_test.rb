@@ -210,12 +210,18 @@ module Ruby::Prism
         "loop { break m 1 do end.g }", "loop { break m(1) do end.g }",
         "def f; return super 1 do end; end", "def f; return super 1 do end.g; end",
         "def f; yield yield 1; end", "def f; super yield; end",
-        "not()", "not ()", "not(())", "not(a and b) in true",
+        "not(a and b) in true",
         "x in ((y))", "case x; in (y) if z; end",
         "m(self.a = x)", "matrix[m 1, &block] = x",
         "->(x: x) { x }", "x = 1; ->(x: x) { x }", "->(x: ->(x) { x }) { x }",
         "(;x)", "( #;\n x)", "case x; when 1 then; y; end"
       ].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_not_with_empty_parentheses
+      ["not()", "not ()", "not(())", "not(\n)", "not\n()"].each do |source|
         assert_ripper_sexp_raw(source)
       end
     end
