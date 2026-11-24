@@ -583,6 +583,22 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_negative_precision_int_min
+    int_min = RbConfig::LIMITS["INT_MIN"]
+    assert_equal("..f", sprintf("%.*x", int_min, -1))
+    assert_equal("..7", sprintf("%.*o", int_min, -1))
+    assert_equal("..1", sprintf("%.*b", int_min, -1))
+    assert_equal("-1", sprintf("%.*d", int_min, -1))
+    assert_equal("1.000000", sprintf("%.*f", int_min, 1))
+  end
+
+  def test_integer_float_precision_too_big
+    omit "for 32-bit platforms" unless RbConfig::SIZEOF["void*"] == 4
+    assert_raise(ArgumentError) { sprintf("%.*f", 2147483646, 1) }
+    assert_raise(ArgumentError) { sprintf("%.*f", 2147483647, 1) }
+    assert_raise(ArgumentError) { sprintf("%-.2147483646f", 1) }
+  end
+
   def test_binary_format_coderange
     1.upto(500) do |i|
       str = sprintf("%*s".b, i, "\xe2".b)

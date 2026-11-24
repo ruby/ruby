@@ -459,6 +459,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 GETASTER(prec);
                 if (prec < 0) {	/* ignore negative precision */
                     flags &= ~FPREC;
+                    prec = -1;
                 }
                 p++;
                 goto retry;
@@ -859,6 +860,8 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     zero = prec;
                 }
                 val = rb_int2str(num, 10);
+                if (prec > RB_LEN_MAX - 3 || RSTRING_LEN(val) > RB_LEN_MAX - 2 - zero)
+                    rb_raise(rb_eArgError, "precision too big");
                 len = RSTRING_LEN(val) + zero;
                 if (prec >= len) len = prec + 1; /* integer part 0 */
                 if (sign || (flags&FSPACE)) ++len;
