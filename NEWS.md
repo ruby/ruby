@@ -339,7 +339,7 @@ They are still available on rubygems.org and can be installed with
   * 3.0.1 to [v3.1.0][power_assert-v3.1.0]
 * rake 13.4.2
   * 13.3.1 to [v13.4.0][rake-v13.4.0], [v13.4.1][rake-v13.4.1], [v13.4.2][rake-v13.4.2]
-* test-unit 3.7.8
+* test-unit 3.7.9
   * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8]
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
