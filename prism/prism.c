@@ -17903,12 +17903,6 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
             // If we found a label, we need to immediately return to the caller.
             if (pm_symbol_node_label_p(parser, node)) return node;
 
-            // Call nodes (arithmetic operations) are not allowed in patterns
-            if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
-                pm_parser_err_node(parser, node, diag_id);
-                return UP(pm_error_recovery_node_create_unexpected(parser, node));
-            }
-
             // Now that we have a primitive, we need to check if it's part of a range.
             if (accept2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
                 pm_token_t operator = parser->previous;
@@ -21139,14 +21133,29 @@ parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     return pm_call_node_unary_create(parser, &operator, receiver, "-@", 2);
 }
 
+/* Block parameters take a primary_value immediately after '=' or a keyword
+ * label. Nested arguments use their own precedence, even when they share
+ * the parameter context. */
+static bool
+block_parameter_default_p(const pm_parser_t *parser, pm_binding_power_t binding_power) {
+    return (
+        binding_power == PM_BINDING_POWER_INDEX &&
+        parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
+        (parser->previous.type == PM_TOKEN_EQUAL || parser->previous.type == PM_TOKEN_LABEL)
+    );
+}
+
 static pm_node_t *
-parse_unary_minus_number(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth) {
+parse_unary_minus_number(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    bool block_default = block_parameter_default_p(parser, binding_power);
     pm_token_t operator = parser->current;
     parser_lex(parser);
 
     pm_node_t *node = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1)).node;
 
-    if (accept1(parser, PM_TOKEN_STAR_STAR)) {
+    /* At MAX the caller takes a literal, including its sign. Otherwise
+     * -2**3 is parsed as -(2**3), even as the operand of another unary operator. */
+    if (binding_power != PM_BINDING_POWER_MAX && accept1(parser, PM_TOKEN_STAR_STAR)) {
         pm_token_t exponent_operator = parser->previous;
         if (block_default) {
             pm_diagnostic_list_append_slice(
@@ -21273,18 +21282,6 @@ parse_tilde(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
     pm_token_t operator = parser->previous;
     pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1)).node;
     return pm_call_node_unary_create(parser, &operator, receiver, "~", 1);
-}
-
-/* Block parameters take a primary_value immediately after '=' or a keyword
- * label. Nested arguments use their own precedence, even when they share
- * the parameter context. */
-static bool
-block_parameter_default_p(const pm_parser_t *parser, pm_binding_power_t binding_power) {
-    return (
-        binding_power == PM_BINDING_POWER_INDEX &&
-        parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
-        (parser->previous.type == PM_TOKEN_EQUAL || parser->previous.type == PM_TOKEN_LABEL)
-    );
 }
 
 /**
@@ -21488,7 +21485,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_UMINUS:
             return pm_reduction(UP(parse_unary_minus(parser, binding_power, flags, depth)));
         case PM_TOKEN_UMINUS_NUM:
-            return pm_reduction(UP(parse_unary_minus_number(parser, block_parameter_default_p(parser, binding_power), flags, depth)));
+            return pm_reduction(UP(parse_unary_minus_number(parser, binding_power, flags, depth)));
         case PM_TOKEN_MINUS_GREATER:
             return pm_reduction(UP(parse_lambda(parser, depth)));
         case PM_TOKEN_UPLUS:

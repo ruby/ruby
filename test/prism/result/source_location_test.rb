@@ -1361,6 +1361,7 @@ module Ruby::Prism
 
     def test_PinnedExpressionNode
       assert_location(PinnedExpressionNode, "foo in ^(bar)", 7...13, &:pattern)
+      assert_location(CallNode, "x in ^(!-2**2)", 9...13) { |node| node.pattern.expression.receiver.receiver }
     end
 
     def test_braced_hash_pattern_allows_a_multiline_label_value_in_a_pin
@@ -1425,6 +1426,11 @@ module Ruby::Prism
 
       assert_location(RangeNode, "1..")
       assert_location(RangeNode, "1...")
+
+      %w[.. ... 1.. 1...].each do |range|
+        source = "x in #{range}-2"
+        assert_location(IntegerNode, source, (source.length - 2)...source.length) { |node| node.pattern.right }
+      end
     end
 
     def test_RationalNode

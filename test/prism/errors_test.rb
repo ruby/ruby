@@ -599,11 +599,14 @@ module Ruby::Prism
     end
 
     def test_range_patterns_require_literal_bounds
-      ["..", "1.."].each do |range|
+      %w[.. ... 1.. 1...].each do |range|
         result = Ruby::Prism.parse("case x; in #{range}-2**2; end")
-        assert_equal [:pattern_expression_after_range], result.errors.map(&:type)
-        assert_equal "-2**2", result.errors.first.location.slice
-        assert Ruby::Prism.parse_success?("case x; in #{range}-2; end")
+        assert_equal [:expect_in_delimiter, :unexpected_token_ignore], result.errors.map(&:type)
+        assert_equal "**", result.errors.last.location.slice
+
+        right = result.statement.conditions.first.pattern.right
+        assert_instance_of IntegerNode, right
+        assert_equal(-2, right.value)
       end
     end
 
