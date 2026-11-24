@@ -202,6 +202,9 @@ module Spec
         "spec/commands/prune_spec.rb",
         "spec/install/gemfile/git_sparse_checkout_spec.rb",
         "spec/install/gems/default_gems_spec.rb",
+        "spec/bundler/lockfile_generator_spec.rb",
+        "spec/bundler/self_manager_spec.rb",
+        "spec/install/gemfile/content_addressable_spec.rb",
       ],
     }.freeze
   end
