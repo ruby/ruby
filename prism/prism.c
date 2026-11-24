@@ -13151,6 +13151,9 @@ pm_chained_call_reduction(pm_parser_t *parser, pm_reduction_t receiver, pm_node_
     return pm_call_reduction(node, arguments);
 }
 
+static pm_statements_node_t *
+parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth);
+
 static pm_reduction_t
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
@@ -13913,11 +13916,94 @@ parse_statements_leading_terminators(pm_parser_t *parser) {
     return flags;
 }
 
+/**
+ * When we hit an expression that could contain block exits, we need to stash
+ * the previous set and create a new one.
+ */
+static pm_scratch_node_list_t *
+push_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *current_block_exits) {
+    pm_scratch_node_list_t *previous_block_exits = parser->current_block_exits;
+    parser->current_block_exits = current_block_exits;
+    return previous_block_exits;
+}
+
+/**
+ * If we did not match a trailing while/until and this was the last chance to do
+ * so, then all of the block exits in the list are invalid and we need to add an
+ * error for each of them.
+ */
+static void
+flush_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
+    pm_node_t *block_exit;
+    PM_NODE_LIST_FOREACH(parser->current_block_exits, index, block_exit) {
+        pm_location_t keyword_loc;
+        switch (PM_NODE_TYPE(block_exit)) {
+            case PM_BREAK_NODE: keyword_loc = ((const pm_break_node_t *) block_exit)->keyword_loc; break;
+            case PM_NEXT_NODE: keyword_loc = ((const pm_next_node_t *) block_exit)->keyword_loc; break;
+            case PM_REDO_NODE: keyword_loc = block_exit->location; break;
+            default: PRISM_ASSERT(false && "unreachable"); continue;
+        }
+
+        pm_diagnostic_list_append_slice(
+            &parser->metadata_arena,
+            &parser->error_list,
+            PM_NODE_START(block_exit),
+            PM_NODE_LENGTH(block_exit),
+            PM_ERR_INVALID_BLOCK_EXIT,
+            (pm_string_t) { .source = parser->start + keyword_loc.start, .length = keyword_loc.length }
+        );
+    }
+
+    parser->current_block_exits = previous_block_exits;
+}
+
+/* Carry pending jumps into the enclosing expression. Only the parser that
+ * consumes a loop modifier can tell which statement it applies to. */
+static void
+pop_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
+    pm_scratch_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
+    parser->current_block_exits = previous_block_exits;
+}
+
+static pm_node_t *
+parse_preexe(pm_parser_t *parser, bool statement_list, uint16_t depth) {
+    pm_scratch_node_list_t current_block_exits = { 0 };
+    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+
+    pm_context_t context = parser->current_context->context;
+    if (context != PM_CONTEXT_MAIN && context != PM_CONTEXT_PREEXE) {
+        pm_parser_err_current(parser, PM_ERR_BEGIN_UPCASE_TOPLEVEL);
+    } else if (!statement_list) {
+        pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
+    }
+
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_BEGIN_UPCASE_BRACE);
+    pm_token_t opening = parser->previous;
+    pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_PREEXE, (uint16_t) (depth + 1));
+
+    expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BEGIN_UPCASE_TERM, &opening);
+
+    flush_block_exits(parser, previous_block_exits);
+    pm_node_t *node = UP(pm_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous));
+    return statement_list ? node : UP(pm_error_recovery_node_create_unexpected(parser, node));
+}
+
 /* A loop modifier can claim every pending exit in this statement. Keep exits
  * from preceding statements separate, including those in heredoc bodies
  * that appear later in the source. */
 static PRISM_INLINE pm_node_t *
 parse_statement(pm_parser_t *parser, uint16_t depth) {
+    /* BEGIN belongs to a statement list and has its own scope for block exits. */
+    if (match1(parser, PM_TOKEN_KEYWORD_BEGIN_UPCASE)) {
+        if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM || pm_parser_stack_exhausted(parser))) {
+            return parse_resource_recovery(parser, depth);
+        }
+        return parse_preexe(parser, true, depth);
+    }
+
     pm_scratch_node_list_t *outer = parser->current_block_exits;
     pm_scratch_node_list_t exits = { 0 };
     bool has_previous_exits = outer->size != 0;
@@ -16197,55 +16283,6 @@ ensure_valid_jump(pm_parser_t *parser, pm_node_t *node) {
                 break;
         }
     }
-}
-
-/**
- * When we hit an expression that could contain block exits, we need to stash
- * the previous set and create a new one.
- */
-static pm_scratch_node_list_t *
-push_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *current_block_exits) {
-    pm_scratch_node_list_t *previous_block_exits = parser->current_block_exits;
-    parser->current_block_exits = current_block_exits;
-    return previous_block_exits;
-}
-
-/**
- * If we did not match a trailing while/until and this was the last chance to do
- * so, then all of the block exits in the list are invalid and we need to add an
- * error for each of them.
- */
-static void
-flush_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
-    pm_node_t *block_exit;
-    PM_NODE_LIST_FOREACH(parser->current_block_exits, index, block_exit) {
-        pm_location_t keyword_loc;
-        switch (PM_NODE_TYPE(block_exit)) {
-            case PM_BREAK_NODE: keyword_loc = ((const pm_break_node_t *) block_exit)->keyword_loc; break;
-            case PM_NEXT_NODE: keyword_loc = ((const pm_next_node_t *) block_exit)->keyword_loc; break;
-            case PM_REDO_NODE: keyword_loc = block_exit->location; break;
-            default: PRISM_ASSERT(false && "unreachable"); continue;
-        }
-
-        pm_diagnostic_list_append_slice(
-            &parser->metadata_arena,
-            &parser->error_list,
-            PM_NODE_START(block_exit),
-            PM_NODE_LENGTH(block_exit),
-            PM_ERR_INVALID_BLOCK_EXIT,
-            (pm_string_t) { .source = parser->start + keyword_loc.start, .length = keyword_loc.length }
-        );
-    }
-
-    parser->current_block_exits = previous_block_exits;
-}
-
-/* Carry pending jumps into the enclosing expression. Only the parser that
- * consumes a loop modifier can tell which statement it applies to. */
-static void
-pop_block_exits(pm_parser_t *parser, pm_scratch_node_list_t *previous_block_exits) {
-    pm_scratch_node_list_concat(&parser->scratch_arena, previous_block_exits, parser->current_block_exits);
-    parser->current_block_exits = previous_block_exits;
 }
 
 static PRISM_INLINE pm_node_t *
@@ -20959,32 +20996,6 @@ parse_not(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
     return (pm_reduction_t) { .node = node, .kind = kind };
 }
 
-static pm_pre_execution_node_t *
-parse_preexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
-    pm_scratch_node_list_t current_block_exits = { 0 };
-    pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
-
-    if (binding_power != PM_BINDING_POWER_STATEMENT) {
-        pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
-    }
-
-    pm_token_t keyword = parser->current;
-    parser_lex(parser);
-
-    expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_BEGIN_UPCASE_BRACE);
-    pm_token_t opening = parser->previous;
-    pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_PREEXE, (uint16_t) (depth + 1));
-
-    expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BEGIN_UPCASE_TERM, &opening);
-    pm_context_t context = parser->current_context->context;
-    if ((context != PM_CONTEXT_MAIN) && (context != PM_CONTEXT_PREEXE)) {
-        pm_parser_err_token(parser, &keyword, PM_ERR_BEGIN_UPCASE_TOPLEVEL);
-    }
-
-    flush_block_exits(parser, previous_block_exits);
-    return pm_pre_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
-}
-
 static pm_node_t *
 parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_t depth) {
     bool misplaced = binding_power != PM_BINDING_POWER_STATEMENT;
@@ -21393,7 +21404,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_BEGIN:
             return pm_reduction(UP(parse_begin(parser, depth)));
         case PM_TOKEN_KEYWORD_BEGIN_UPCASE:
-            return pm_reduction(UP(parse_preexe(parser, binding_power, depth)));
+            return pm_reduction(parse_preexe(parser, false, depth));
         case PM_TOKEN_KEYWORD_BREAK:
         case PM_TOKEN_KEYWORD_NEXT:
         case PM_TOKEN_KEYWORD_RETURN:
@@ -22765,8 +22776,6 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
     // here before entering the infix loop.
     switch (PM_NODE_TYPE(left.node)) {
         case PM_ERROR_RECOVERY_NODE:
-            return left;
-        case PM_PRE_EXECUTION_NODE:
             return left;
         case PM_POST_EXECUTION_NODE:
         case PM_ALIAS_GLOBAL_VARIABLE_NODE:
