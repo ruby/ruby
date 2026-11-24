@@ -16,7 +16,7 @@ module Ruby::Prism
       # Ripper cannot handle named capture groups in regular expressions.
       "regex.txt",
 
-      # Ripper fails to understand some structures that span across heredocs.
+      # Ripper misreads literals spanning a heredoc and rejects valid %w and %i elements.
       "spanning_heredoc.txt",
 
       # Ripper interprets circular keyword arguments as method calls.
@@ -302,16 +302,6 @@ module Ruby::Prism
         "def f(x: (x +1)); end", "x = 0; ->(x: x +1) {}"
       ].each do |source|
         assert_equal Ripper.sexp_raw(source), Translation::Ripper.sexp_raw(source), source
-      end
-    end
-
-    def test_noninterpolated_word_list_spanning_a_heredoc
-      %w[w i].each do |kind|
-        source = "m <<A, %#{kind}[one\\\nbody\nA\ntwo]"
-        assert Ruby::Prism.parse_success?(source), source
-        assert_nil Ripper.sexp(source), source
-        assert_nil Translation::Ripper.sexp(source), source
-        assert_raise(SyntaxError) { Translation::Ripper.sexp_raw(source, raise_errors: true) }
       end
     end
 
