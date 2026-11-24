@@ -111,7 +111,8 @@ module Ruby::Prism
 
     def test_invalid_version
       assert_raise(ArgumentError) { StringQuery.local?("foo", version: "") }
-      assert_raise(ArgumentError) { StringQuery.keyword?("end", version: "3.4\0suffix") }
+      error = assert_raise(ArgumentError) { StringQuery.keyword?("end", version: "3.4\0suffix") }
+      assert_equal "string contains null byte", error.message
     end
 
     # Ruby 3.3 and 3.4 use Unicode 15.0.0, and Ruby 4.0 and 4.1 use Unicode

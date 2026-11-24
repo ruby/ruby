@@ -1644,7 +1644,7 @@ string_query_version(VALUE *value, size_t *length) {
         return string_query_nearest_version(length);
     }
 
-    const char *version = StringValueCStr(*value);
+    const char *version = StringValuePtr(*value);
     *length = RSTRING_LEN(*value);
 
     if (*length != 7) {
@@ -1699,7 +1699,7 @@ static VALUE
 string_query_result(pm_string_query_t result, VALUE version) {
     switch (result) {
         case PM_STRING_QUERY_ERROR_VERSION:
-            rb_raise(rb_eArgError, "invalid version: %s", RSTRING_PTR(version));
+            rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, version);
             return Qfalse;
         case PM_STRING_QUERY_ERROR:
             rb_raise(rb_eArgError, "Invalid or non ascii-compatible encoding");
