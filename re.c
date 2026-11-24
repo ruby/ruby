@@ -1368,6 +1368,21 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
     rm->num_regs = num_regs;
 }
 
+static void
+match_reuse(VALUE match)
+{
+    struct RMatch *rm = RMATCH(match);
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        onig_region_free(&rm->as.onig, 0);
+        memset(&rm->as.onig, 0, sizeof(rm->as.onig));
+        FL_UNSET_RAW(match, RMATCH_ONIG);
+    }
+    if (rm->char_offset) {
+        ruby_xfree(rm->char_offset);
+        rm->char_offset = NULL;
+        rm->char_offset_num_allocated = 0;
+    }
+}
 /* Helpers for carrying a MatchData to another objspace via Ractor#send(move:).  The match's
  * registers are written out to an onig-independent blob so the original malloc'd area can be
  * freed, leaving an empty shell behind, and rebuilt from the blob on the receiving side. */
@@ -1390,16 +1405,7 @@ rb_match_blob_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs
 
     /* A copy leaves the source usable; only a move takes its internals apart. */
     if (release_source) {
-        if (FL_TEST_RAW(match, RMATCH_ONIG)) {
-            onig_region_free(&rm->as.onig, 0);
-            memset(&rm->as.onig, 0, sizeof(rm->as.onig));
-            FL_UNSET_RAW(match, RMATCH_ONIG);
-        }
-        if (rm->char_offset) {
-            ruby_xfree(rm->char_offset);
-            rm->char_offset = NULL;
-            rm->char_offset_num_allocated = 0;
-        }
+        match_reuse(match);
     }
     return blob;
 }
@@ -2225,6 +2231,7 @@ match_alloc_or_reuse(VALUE existing, int num_regs)
         RB_TYPE_P(existing, T_MATCH) &&
         !FL_TEST(existing, MATCH_BUSY) &&
         RMATCH(existing)->capa >= num_regs * 2) {
+        match_reuse(existing);
         return existing;
     }
     return match_alloc_n(rb_cMatch, num_regs);
