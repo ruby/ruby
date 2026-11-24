@@ -3242,6 +3242,12 @@ pm_call_node_writable_p(const pm_parser_t *parser, const pm_call_node_t *node) {
     );
 }
 
+/* An index read can become an assignment target. A completed []= call cannot. */
+static PRISM_INLINE bool
+pm_call_node_index_target_p(const pm_call_node_t *node) {
+    return (PM_NODE_FLAGS(node) & (PM_CALL_NODE_FLAGS_INDEX | PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) == PM_CALL_NODE_FLAGS_INDEX;
+}
+
 /**
  * Initialize the read name by reading the write name and chopping off the '='.
  */
@@ -13571,7 +13577,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_INDEX)) {
+            if (pm_call_node_index_target_p(call)) {
                 return UP(pm_index_target_node_create(parser, call));
             }
         }
@@ -13751,7 +13757,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (PM_NODE_FLAG_P(call, PM_CALL_NODE_FLAGS_INDEX)) {
+            if (pm_call_node_index_target_p(call)) {
                 call->arguments = pm_arguments_node_extend(parser, call->arguments, value);
                 PM_NODE_LENGTH_SET_NODE(target, value);
 
@@ -22109,7 +22115,7 @@ parse_and_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previou
             // If there is no call operator and the message is "[]" then
             // this is an aref expression, and we can transform it into
             // an aset expression.
-            if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_INDEX)) {
+            if (pm_call_node_index_target_p(cast)) {
                 pm_reduction_t value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ, (uint16_t) (depth + 1));
                 value.node = UP(pm_index_and_write_node_create(parser, cast, &operator, value.node));
                 return value;
@@ -22242,7 +22248,7 @@ parse_or_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous
             // If there is no call operator and the message is "[]" then
             // this is an aref expression, and we can transform it into
             // an aset expression.
-            if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_INDEX)) {
+            if (pm_call_node_index_target_p(cast)) {
                 pm_reduction_t value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ, (uint16_t) (depth + 1));
                 value.node = UP(pm_index_or_write_node_create(parser, cast, &operator, value.node));
                 return value;
@@ -22370,7 +22376,7 @@ parse_operator_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t pr
             // If there is no call operator and the message is "[]" then
             // this is an aref expression, and we can transform it into
             // an aset expression.
-            if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_INDEX)) {
+            if (pm_call_node_index_target_p(cast)) {
                 pm_reduction_t value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
                 value.node = UP(pm_index_operator_write_node_create(parser, cast, &operator, value.node));
                 return value;

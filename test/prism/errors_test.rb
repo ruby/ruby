@@ -682,9 +682,16 @@ module Ruby::Prism
       end
     end
 
-    def test_assignments_after_block_call_or_index_write
-      ["m 1 do end.f, y = z", "m 1 do end::C = z", "self[k] = x.. += y"].each do |source|
+    def test_assignments_after_block_call
+      ["m 1 do end.f, y = z", "m 1 do end::C = z"].each do |source|
         assert_false Ruby::Prism.parse_success?(source), source
+      end
+    end
+
+    def test_index_write_as_assignment_target
+      %w[= += &&= ||=].each do |operator|
+        source = "self[k] = x.. #{operator} y"
+        assert_include Ruby::Prism.parse(source).errors.map(&:type), :write_target_unexpected, source
       end
     end
 
