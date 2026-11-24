@@ -877,6 +877,12 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[1,2,3], set)
   end
 
+  def test_initialize_copy_non_set
+    set = Set[1,2,3]
+    assert_raise(TypeError) { set.send(:initialize_copy, [4,5,6]) }
+    assert_equal(Set[1,2,3], set)
+  end
+
   def test_freeze_dup
     set1 = Set[1,2,3]
     set1.freeze

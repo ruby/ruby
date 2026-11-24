@@ -595,8 +595,9 @@ set_i_initialize_copy(VALUE set, VALUE other)
     struct set_object *sobj;
     TypedData_Get_Struct(set, struct set_object, &set_data_type, sobj);
 
+    set_table *other_table = RSET_TABLE(other);
     set_free_embedded_table(&sobj->table);
-    set_copy(&sobj->table, RSET_TABLE(other));
+    set_copy(&sobj->table, other_table);
     RB_GC_GUARD(other);
     rb_gc_writebarrier_remember(set);
 
