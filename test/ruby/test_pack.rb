@@ -1117,6 +1117,16 @@ EXPECTED
     assert_equal("\x81\x80\x7f", [-0x3fff].pack("r"))
     assert_equal("\x80\x80\x7f", [-0x4000].pack("r"))
 
+    # -2**(7*n-1) fits in n bytes like 2**(7*n-1)-1, but 2**(7*n-1) does not
+    assert_equal("\x3f", [63].pack("r"))
+    assert_equal("\x40", [-64].pack("r"))
+    assert_equal("\xc0\x00", [64].pack("r"))
+    assert_equal("\xbf\x7f", [-65].pack("r"))
+    assert_equal("\x80\x40", [-0x2000].pack("r"))
+    assert_equal("\xff\xbf\x7f", [-0x2001].pack("r"))
+    assert_equal("\x80\x80\x80\x80\x80\x80\x80\x80\x40", [-(2**62)].pack("r"))
+    assert_equal("\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x40", [-(2**90)].pack("r"))
+
     # Very large numbers
     assert_equal("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x1F", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
     assert_equal("\x81\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80`", [-0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
@@ -1139,6 +1149,8 @@ EXPECTED
     assert_equal([0x4000], "\x80\x80\x01".unpack("r"))
     assert_equal([-0x3fff], "\x81\x80\x7f".unpack("r"))
     assert_equal([-0x4000], "\x80\x80\x7f".unpack("r"))
+    assert_equal([-64], "\x40".unpack("r"))
+    assert_equal([-0x2000], "\x80\x40".unpack("r"))
 
     # Very large numbers
     assert_equal("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x1f", [0xffff_ffff_ffff_ffff_ffff_ffff].pack("r"))
@@ -1148,7 +1160,7 @@ EXPECTED
     assert_equal([0, 1, -1], "\x00\x01\x7f".unpack("r*"))
 
     # Round-trip test
-    values = [0, 1, -1, 127, -127, 128, -128, 0x3fff, -0x3fff, 0x4000, -0x4000]
+    values = [0, 1, -1, 127, -127, 128, -128, 0x3fff, -0x3fff, 0x4000, -0x4000, -64, -0x2000, -(2**62), -(2**90)]
     assert_equal(values, values.pack("r*").unpack("r*"))
   end
 end
