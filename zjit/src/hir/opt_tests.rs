@@ -17588,7 +17588,7 @@ mod hir_opt_tests {
           v32:String = GuardType v13, String recompile
           v33:CUInt64 = LoadField v31, :RBASIC_FLAGS@0x1040
           v34:CUInt64 = LoadField v32, :RBASIC_FLAGS@0x1040
-          v35:StringExact = StringAppend v31, v32, recv_flags: v33, other_flags: v34
+          v35:String = StringAppend v31, v32, recv_flags: v33, other_flags: v34
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -17621,7 +17621,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v31:StringExact = GuardType v12, StringExact recompile
           v32:Fixnum = GuardType v13, Fixnum recompile
-          v33:StringExact = StringAppendCodepoint v31, v32
+          StringAppendCodepoint v31, v32
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -17658,7 +17658,7 @@ mod hir_opt_tests {
           v32:String = GuardType v13, String recompile
           v33:CUInt64 = LoadField v31, :RBASIC_FLAGS@0x1040
           v34:CUInt64 = LoadField v32, :RBASIC_FLAGS@0x1040
-          v35:StringExact = StringAppend v31, v32, recv_flags: v33, other_flags: v34
+          v35:String = StringAppend v31, v32, recv_flags: v33, other_flags: v34
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -20601,7 +20601,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v50:CUInt64 = LoadField v17, :RBASIC_FLAGS@0x1040
           v51:CUInt64 = LoadField v28, :RBASIC_FLAGS@0x1040
-          v52:StringExact = StringAppend v17, v28, recv_flags: v50, other_flags: v51
+          v52:String = StringAppend v17, v28, recv_flags: v50, other_flags: v51
           PatchPoint NoEPEscape(test)
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1041, cme:0x1048)
