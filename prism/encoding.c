@@ -1492,19 +1492,8 @@ const pm_encoding_t *
 pm_encoding_find(const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
 
-    // First, we're going to check for UTF-8. This is the most common encoding.
-    // UTF-8 can contain extra information at the end about the platform it is
-    // encoded on, such as UTF-8-MAC or UTF-8-UNIX. We'll ignore those suffixes.
-    if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "UTF-8", 5) == 0)) {
-#ifndef PRISM_ENCODING_EXCLUDE_FULL
-        // We need to explicitly handle UTF-8-HFS, as that one needs to switch
-        // over to being UTF8-MAC.
-        if (width == 9 && (pm_strncasecmp(start + 5, (const uint8_t *) "-HFS", 4) == 0)) {
-            return &pm_encodings[PM_ENCODING_UTF8_MAC];
-        }
-#endif
-
-        // Otherwise we'll return the default UTF-8 encoding.
+    /* Check UTF-8 first as it is the most common encoding. */
+    if (width == 5 && pm_strncasecmp(start, (const uint8_t *) "UTF-8", 5) == 0) {
         return PM_ENCODING_UTF_8_ENTRY;
     }
 
@@ -1667,6 +1656,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("US-ASCII", PM_ENCODING_US_ASCII);
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
                 ENCODING2("UTF8-MAC", "UTF-8-HFS", PM_ENCODING_UTF8_MAC);
+                ENCODING1("UTF-8-MAC", PM_ENCODING_UTF8_MAC);
                 ENCODING1("UTF8-DoCoMo", PM_ENCODING_UTF8_DOCOMO);
                 ENCODING1("UTF8-KDDI", PM_ENCODING_UTF8_KDDI);
                 ENCODING1("UTF8-SoftBank", PM_ENCODING_UTF8_SOFTBANK);

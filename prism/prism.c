@@ -7366,11 +7366,10 @@ ambiguous_operator_p(const pm_parser_t *parser, bool space_seen) {
 }
 
 /**
- * Here we're going to check if this is a "magic" comment, and perform whatever
- * actions are necessary for it here.
+ * Set the source encoding from an encoding name or alias.
  */
 static bool
-parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+parser_encoding_set(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     const pm_encoding_t *encoding = pm_encoding_find(start, end);
 
     if (encoding != NULL) {
@@ -7384,6 +7383,25 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     }
 
     return false;
+}
+
+/**
+ * Strip one Emacs line-ending suffix before looking up the encoding, as
+ * parser_encode_length in parse.y does. UTF8-MAC is itself an encoding name.
+ */
+static bool
+parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
+    size_t length = (size_t) (end - start);
+
+    if (length > 5 && pm_strncasecmp(end - 5, (const uint8_t *) "-unix", 5) == 0) {
+        end -= 5;
+    } else if (length > 4 && (pm_strncasecmp(end - 4, (const uint8_t *) "-dos", 4) == 0 || pm_strncasecmp(end - 4, (const uint8_t *) "-mac", 4) == 0)) {
+        if (length != 8 || pm_strncasecmp(start, (const uint8_t *) "utf8-mac", 8) != 0) {
+            end -= 4;
+        }
+    }
+
+    return parser_encoding_set(parser, start, end);
 }
 
 /**
@@ -7430,9 +7448,9 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
         cursor++;
     }
 
-    /* The name of an encoding is made of ASCII letters, digits, - and _. */
+    /* Keep NUL bytes in the name so the encoding lookup rejects it. */
     const uint8_t *value_start = cursor;
-    while ((*cursor == '-' || *cursor == '_' || pm_encoding_ascii_alnum_p(*cursor)) && ++cursor < end);
+    while ((*cursor == '-' || *cursor == '_' || *cursor == '\0' || pm_encoding_ascii_alnum_p(*cursor)) && ++cursor < end);
 
     if (!parser_lex_magic_comment_encoding_value(parser, value_start, cursor)) {
         // If we were unable to parse the encoding value, then we've got an
@@ -22975,7 +22993,7 @@ pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const c
     size_t encoding_length;
     if ((encoding_length = pm_string_length(&next_options.encoding)) > 0) {
         const uint8_t *encoding_source = pm_string_source(&next_options.encoding);
-        parser_lex_magic_comment_encoding_value(parser, encoding_source, encoding_source + encoding_length);
+        parser_encoding_set(parser, encoding_source, encoding_source + encoding_length);
     }
 
     parser->command_line = next_options.command_line;
@@ -23139,7 +23157,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         size_t encoding_length = pm_string_length(&options->encoding);
         if (encoding_length > 0) {
             const uint8_t *encoding_source = pm_string_source(&options->encoding);
-            parser_lex_magic_comment_encoding_value(parser, encoding_source, encoding_source + encoding_length);
+            parser_encoding_set(parser, encoding_source, encoding_source + encoding_length);
         }
 
         // encoding_locked option

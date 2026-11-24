@@ -25,24 +25,34 @@ module Ruby::Prism
       assert_equal Encoding::UTF_8, actual
     end
 
-    def test_utf_8_unix
-      actual = Ruby::Prism.parse_statement("# coding: utf-8-unix\n'string'").unescaped.encoding
-      assert_equal Encoding::UTF_8, actual
+    def test_line_ending_suffixes
+      ["UTF-8", "US-ASCII", "BINARY"].each do |name|
+        %w[UnIx DoS MaC].each do |suffix|
+          ["# coding: #{name}-#{suffix}", "# -*- encoding: #{name}-#{suffix} -*-", "# vim: set fileencoding=#{name}-#{suffix} ts=2"].each do |comment|
+            result = Ruby::Prism.parse("#{comment}\n'string'")
+            assert_predicate result, :success?, comment
+            assert_equal Encoding.find(name), result.statement.unescaped.encoding, comment
+          end
+        end
+      end
     end
 
-    def test_utf_8_dos
-      actual = Ruby::Prism.parse_statement("# coding: utf-8-dos\n'string'").unescaped.encoding
-      assert_equal Encoding::UTF_8, actual
+    def test_invalid_encoding_suffixes
+      %w[UTF-8-* UTF-8garbage UTF-8-garbage UTF-8-DOS-UNIX].each do |name|
+        result = Ruby::Prism.parse("# coding: #{name}\n")
+        assert_equal [:invalid_encoding_magic_comment], result.errors.map(&:type), name
+        assert_equal name, result.errors.first.location.slice
+      end
     end
 
-    def test_utf_8_mac
-      actual = Ruby::Prism.parse_statement("# coding: utf-8-mac\n'string'").unescaped.encoding
-      assert_equal Encoding::UTF_8, actual
-    end
-
-    def test_utf_8_star
-      actual = Ruby::Prism.parse_statement("# coding: utf-8-*\n'string'").unescaped.encoding
-      assert_equal Encoding::UTF_8, actual
+    def test_encoding_comment_with_nul
+      ["BINARY\0ignored-unix", "BINARY-unix\0ignored", "UTF-8\0", "\0UTF-8"].each do |name|
+        ["# coding: #{name}", "# -*- encoding: \"#{name}\" -*-", "# vim: set fileencoding=#{name} ts=2"].each do |comment|
+          result = Ruby::Prism.parse(comment)
+          assert_equal [:invalid_encoding_magic_comment], result.errors.map(&:type), comment.inspect
+          assert_equal name, result.errors.first.location.slice
+        end
+      end
     end
 
     def test_first_lexed_token
@@ -60,6 +70,16 @@ module Ruby::Prism
     end
 
     if !ENV["PRISM_BUILD_MINIMAL"]
+      def test_utf8_mac_encoding_names
+        %w[uTf8-mAc UTF-8-HFS UTF-8-MAC-DOS].each do |name|
+          result = Ruby::Prism.parse("# coding: #{name}\n'string'")
+          assert_predicate result, :success?, name
+          assert_equal Encoding::UTF8_MAC, result.statement.unescaped.encoding, name
+        end
+
+        assert_equal Encoding::UTF8_MAC, Ruby::Prism.parse("", encoding: "UTF-8-MAC").encoding
+      end
+
       # This test may be a little confusing. Basically when we use our strpbrk,
       # it takes into account the encoding of the file.
       def test_strpbrk_multibyte
