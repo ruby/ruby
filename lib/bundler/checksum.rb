@@ -215,6 +215,10 @@ module Bundler
         end
       end
 
+      def locked?(spec)
+        @store[spec.full_name]&.each_value&.any? {|checksum| checksum.sources.any? {|source| source.type == :lock } } || false
+      end
+
       def empty?(spec)
         return false unless spec.source.is_a?(Bundler::Source::Rubygems)
 

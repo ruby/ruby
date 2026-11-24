@@ -63,7 +63,7 @@ module Spec
       lockfile.scan(/^  #{Regexp.escape("#{name} (#{version}-#{platform})")} ([0-9a-f]+)(?: abi=(\d+\.\d+))?(?: sha\d+=\S+)?$/).to_h
     end
 
-    def lockfile_with_content_addresses(content_addresses = {}, name: "mygem", version: "1.0", platform: "x86_64-linux", ruby_gem: false, checksums: false, ruby_abis: nil, ruby_version: nil, bundled_with: Bundler::VERSION)
+    def lockfile_with_content_addresses(content_addresses = {}, name: "mygem", version: "1.0", platform: "x86_64-linux", ruby_gem: false, checksums: false, platform_checksum: checksums, ruby_abis: nil, ruby_version: nil, bundled_with: Bundler::VERSION)
       lock_name = "#{name} (#{version}-#{platform})"
       rows = content_addresses.map do |address, ruby_abi|
         row = "#{lock_name} #{address}"
@@ -84,7 +84,7 @@ module Spec
         DEPENDENCIES
           #{name}
         #{"\nCONTENT ADDRESSES\n#{rows.map {|row| "  #{row}\n" }.join}" if rows.any?}
-        #{"\nCHECKSUMS\n  #{lock_name} sha256=#{checksum_digest(gem_repo2, name, version, platform)}\n" if checksums}
+        #{"\nCHECKSUMS\n#{"  #{lock_name} sha256=#{checksum_digest(gem_repo2, name, version, platform)}\n" if platform_checksum}" if checksums}
         #{"\nRUBY ABIS\n#{ruby_abis.map {|ruby_abi| "  #{ruby_abi}\n" }.join}" if ruby_abis}
         #{"\nRUBY VERSION\n   #{ruby_version}\n" if ruby_version}
         BUNDLED WITH

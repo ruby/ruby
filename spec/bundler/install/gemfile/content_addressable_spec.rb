@@ -497,6 +497,52 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       end
     end
 
+    it "falls back to the platform gem in frozen mode under a Ruby ABI the lockfile does not cover when the lockfile has its checksum" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi], checksums: true)
+        original_lockfile = lockfile
+
+        bundle_config "frozen true"
+        bundle_with_content_addressed_gems "install"
+
+        expect(the_bundle).to include_gems "mygem 1.0 not_content_addressed"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
+    it "does not fall back in frozen mode to a platform gem the lockfile has no checksum for" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi], checksums: true, platform_checksum: false)
+        original_lockfile = lockfile
+
+        bundle_config "frozen true"
+        bundle_with_content_addressed_gems "install", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Your lockfile has no checksum for mygem-1.0-x86_64-linux")
+        expect(out).not_to include("Fetching mygem")
+        expect(the_bundle).not_to include_gems "mygem 1.0"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
+    it "does not fall back in frozen mode to a cached platform gem the lockfile has no checksum for" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi], checksums: true, platform_checksum: false)
+        original_lockfile = lockfile
+        FileUtils.mkdir_p bundled_app("vendor/cache")
+        FileUtils.cp gem_repo2("gems", "mygem-1.0-x86_64-linux.gem"), bundled_app("vendor/cache")
+
+        bundle_config "frozen true"
+        bundle_with_content_addressed_gems "install --local", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Your lockfile has no checksum for mygem-1.0-x86_64-linux")
+        expect(the_bundle).not_to include_gems "mygem 1.0"
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
     it "drops an untagged locked content address the source no longer offers on an online resolution, but keeps it offline" do
       simulate_platform "x86_64-linux" do
         lockfile_with_content_addresses({ "0000000000000000" => nil }.merge(addresses(current_abi)), ruby_abis: [current_abi])
@@ -706,6 +752,29 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
       expect(err).not_to include("platform specific gems are getting installed")
       expect(the_bundle).to include_gems "mygem 1.0"
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
+  it "does not fall back to a ruby gem the lockfile does not lock in frozen mode under a Ruby ABI the lockfile does not cover" do
+    simulate_platform "x86_64-linux" do
+      build_repo2_with_content_addressed_gems(platform_gem: false)
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+
+      lockfile_with_content_addresses(addresses(mismatched_abi), ruby_abis: [mismatched_abi])
+      original_lockfile = lockfile
+
+      bundle_config "frozen true"
+      bundle_with_content_addressed_gems "install", raise_on_error: false
+
+      expect(last_command).to be_failure
+      expect(err).to include("mygem-1.0-#{mismatched_address} requires ruby version ~> #{mismatched_abi}.0")
+      expect(the_bundle).not_to include_gems "mygem 1.0"
       expect(lockfile).to eq(original_lockfile)
     end
   end

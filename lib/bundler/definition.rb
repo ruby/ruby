@@ -846,6 +846,8 @@ module Bundler
         incomplete_specs = still_incomplete_specs
       end
 
+      check_content_address_fallback_checksums!(specs)
+
       insecurely_materialized_specs = resolve.insecurely_materialized_specs
 
       if insecurely_materialized_specs.any?
@@ -859,6 +861,26 @@ module Bundler
       specs["bundler"] = bundler
 
       specs
+    end
+
+    # The lockfile writes no CHECKSUMS entry for a platform gem it locks only
+    # content-addressed gems of, so nothing would verify the platform gem a
+    # frozen bundle falls back to under a Ruby ABI the lockfile does not cover.
+    def check_content_address_fallback_checksums!(specs)
+      return unless Bundler.frozen_bundle? && @locked_checksums
+
+      unchecksummed_specs = specs.select do |spec|
+        !spec.is_a?(StubSpecification) &&
+          !Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false) &&
+          resolve[spec.name].any? {|locked_spec| locked_spec.content_addresses.any? } &&
+          !spec.source.checksum_store.locked?(spec)
+      end
+      return if unchecksummed_specs.empty?
+
+      raise ProductionError, "Your lockfile has no checksum for #{unchecksummed_specs.map(&:full_name).join(", ")}, " \
+                             "which would be installed in place of the content-addressed gems it locks, " \
+                             "but frozen mode is set.\n\n" \
+                             "Run `bundle install` elsewhere and add the updated Gemfile.lock to version control."
     end
 
     def reresolve_without(incomplete_specs)
