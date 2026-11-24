@@ -1,0 +1,11 @@
+targets[:k] = tmp = call_boom 1 rescue nil rescue :outer
+
+x = y = z ||= f(1) rescue a rescue b
+
+x = y = z ||= f 1 rescue a rescue b
+
+x &&= y += f 1 rescue a rescue b and ok
+
+x &&= (y += f 1 rescue a) rescue b and ok
+
+x = y ||= f 1 rescue a rescue u, v = values

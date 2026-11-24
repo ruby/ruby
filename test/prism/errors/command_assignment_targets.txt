@@ -1,0 +1,35 @@
+m 1 do end.f, y = z
+            ^ unexpected ',', expecting end-of-input
+            ^ unexpected ',', ignoring it
+
+m 1 do end::C = z
+              ^ unexpected '=', expecting end-of-input
+              ^ unexpected '=', ignoring it
+
+self[k] = x.. = y
+              ^ unexpected write target
+
+self[k] = x.. += y
+^~~~~~~~~~~~~ unexpected write target
+              ^~ unexpected operator after a call with arguments
+
+self[k] = x.. &&= y
+^~~~~~~~~~~~~ unexpected write target
+              ^~~ unexpected operator after a call with arguments
+
+self[k] = x.. ||= y
+^~~~~~~~~~~~~ unexpected write target
+              ^~~ unexpected operator after a call with arguments
+
+f y do end.tail, z = values
+               ^ unexpected ',', expecting end-of-input
+               ^ unexpected ',', ignoring it
+
+work rescue f y do end.tail, z = values
+                           ^ unexpected ',', expecting end-of-input
+                           ^ unexpected ',', ignoring it
+
+x = value rescue a, b = values
+                  ^ unexpected ',', expecting end-of-input
+                  ^ unexpected ',', ignoring it
+

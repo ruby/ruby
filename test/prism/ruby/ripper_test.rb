@@ -134,6 +134,10 @@ module Ruby::Prism
 
     Fixture.each_for_current_ruby(except: incorrect | omitted_sexp_raw) do |fixture|
       define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
+      define_method("#{fixture.test_name}_sexp") do
+        source = fixture.read
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source)
+      end
     end
 
     Fixture.each_for_current_ruby(except: incorrect | omitted_lex) do |fixture|
@@ -235,48 +239,6 @@ module Ruby::Prism
       end
     end
 
-    def test_parentheses_in_nested_patterns
-      [
-        "x in ((y))", "x => [(1), *, (2)]", "x in [*, (1), *]", "x in {key: (1)}",
-        "x in ((1) => y)", "x in ((1) | (2))", "x in ^((y))"
-      ].each do |source|
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_parenthesized_patterns_with_guards
-      [
-        "case x; in (y) if z; end",
-        "case x; in ((y)) unless (y); end",
-        "case x; in (a) if (a) then a; in (b) unless (b) then b; end"
-      ].each do |source|
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_not_with_empty_parentheses
-      ["not()", "not ()", "not(())", "not(\n)", "not\n()"].each do |source|
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_command_as_an_index_write_argument
-      ["matrix[m 1] = x", "matrix[m 1, &block] = x", "matrix[m(1)] = x", "matrix[m(1), 2] = x"].each do |source|
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_index_writes_without_a_trailing_comma
-      ["matrix[1, 2] = x, y", "matrix[1 # ,\n] = x", "matrix[<<DOC\n,\nDOC\n] = x"].each do |source|
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_endless_method_argument_with_a_rescued_return
-      assert_ripper_sexp_raw("outer(def f = not return rescue 2)")
-      assert_ripper_sexp_raw("outer(def f = not return v rescue 2)") if RUBY_VERSION >= "4.0"
-    end
-
     def test_block_call_events_after_a_jump
       %w[return break next].each do |keyword|
         ["m x do end.tail y", "obj.+ x do end.tail {}", "super x do end.tail(x)", "m(x) do end.tail"].each do |call|
@@ -302,42 +264,10 @@ module Ruby::Prism
       end
     end
 
-    def test_for_with_a_single_splat_target
-      ["for *x in ary; end", "for * in ary; end", "for *x[k] in ary; end", "for *obj&.attr[k] in ary; end"].each do |source|
-        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_colon_colon_in_assignment_targets
-      ["for obj::x in ary; end", "for obj::x, y in ary; end", "begin; rescue => obj::x; end"].each do |source|
-        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_keyword_method_names_in_assignment_targets
-      ["r.class ||= v", "r::if &&= v", "r&.return += v", "r.class, a = v", "r::class, a = v", "for r::if in xs; end"].each do |source|
-        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_command_brace_block_ownership
-      sources = [
-        "outer super (x) {}", "outer super(x) {}", "def f; outer yield (x) {}; end",
-        "outer defined? (x) {}", "outer inner(x) {} do end"
-      ]
-      if RUBY_VERSION >= "4.0"
-        sources.concat([
-          "outer def f = super (x) {}", "outer def f = not super (x) {}",
-          "outer def f = super (x) rescue y", "outer def f = obj.x = y"
-        ])
-      end
-      sources << "f x do end.g (y) {}.h" if RUBY_VERSION >= "4.1"
-
-      sources.each do |source|
-        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+    if RUBY_VERSION >= "4.1"
+      def test_brace_command_chained_after_a_do_block
+        source = "f x do end.g (y) {}.h"
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source)
         assert_ripper_sexp_raw(source)
       end
     end

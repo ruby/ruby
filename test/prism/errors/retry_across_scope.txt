@@ -1,0 +1,36 @@
+x rescue f { retry }
+             ^~~~~ Invalid retry without rescue
+
+x rescue f { |a = (retry if ready)| a }
+                   ^~~~~ Invalid retry without rescue
+
+x rescue -> { retry }
+              ^~~~~ Invalid retry without rescue
+
+x rescue ->(a = (retry if ready)) { a }
+                 ^~~~~ Invalid retry without rescue
+
+x rescue (for i in xs; retry; end)
+                       ^~~~~ Invalid retry without rescue
+
+x rescue (for obj[(retry if ready)] in xs; end)
+                   ^~~~~ Invalid retry without rescue
+
+begin; work; rescue f { retry }; end
+                        ^~~~~ Invalid retry without rescue
+
+begin; rescue; class << f { retry }; end; end
+                            ^~~~~ Invalid retry without rescue
+
+begin; rescue; class C; retry; end; end
+                        ^~~~~ Invalid retry without rescue
+
+x rescue (begin; ensure; retry; end)
+                         ^~~~~ Invalid retry after ensure
+
+x rescue f do; ensure; retry; end
+                       ^~~~~ Invalid retry after ensure
+
+x rescue f do; x; rescue; x; else; retry; end
+                                   ^~~~~ Invalid retry after else
+

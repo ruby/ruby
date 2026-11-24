@@ -1,0 +1,21 @@
+x rescue END { retry }
+               ^~~~~ Invalid retry without rescue
+
+x = f arg rescue END { retry }
+                       ^~~~~ Invalid retry without rescue
+
+* = value rescue END { retry }
+                       ^~~~~ Invalid retry without rescue
+
+END { x rescue END { retry } }
+                     ^~~~~ Invalid retry without rescue
+
+begin; ensure; END { retry }; end
+                     ^~~~~ Invalid retry without rescue
+
+x rescue END { begin; ensure; retry; end }
+                              ^~~~~ Invalid retry after ensure
+
+x rescue END { begin; x; rescue; x; else; retry; end }
+                                          ^~~~~ Invalid retry after else
+

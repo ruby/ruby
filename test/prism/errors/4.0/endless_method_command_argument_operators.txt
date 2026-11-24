@@ -1,0 +1,15 @@
+outer def f = g (x) {}, z
+                      ^ invalid comma
+
+outer(def self.f = obj.g (x) {}, z)
+                               ^ invalid comma
+
+outer def f = g (x) {} rescue a do end, z
+                                      ^ invalid comma
+
+outer def f = not g (x) {} rescue a rescue b do end, z
+                                                   ^ invalid comma
+
+outer def f = g (x) {} => key
+                       ^~ unexpected '=>', expecting end-of-input
+

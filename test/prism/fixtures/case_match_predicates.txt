@@ -1,0 +1,49 @@
+case 1 in 2 in true; 3; end
+
+case not 1 in 2 in false; 3; end
+
+case 1 and 1 in 2 in true; 3; end
+
+case 1 or not value in P in Integer; :body; end
+
+case (value in P) in Q in Integer; :body; end
+
+case not(value in P) in Q in Integer; :body; end
+
+case value && other in P in Integer; :body; end
+
+case !f x do end in Integer; :body; end
+
+case f &blk in P; :body; end
+
+case obj.f &blk in P; :body; end
+
+case obj.f(&blk) in Integer in P; :body; end
+
+case obj.f x do end.tail in P; :body; end
+
+case super &blk in P; :body; end
+
+case super(&blk) in Integer in P; :body; end
+
+case super do end in Integer in P; :body; end
+
+case super x do end.tail in P; :body; end
+
+case 1; in 1; 2 in 2 in true; 3; end
+
+case 1; in 1; 1 + 2 in 3; end
+
+case 1; in 1; a.b = 1 in 1; end
+
+case v; in A; lhs + rhs in B in C; tail; end
+
+case v; in A; lhs.+ rhs in B then tail; end
+
+case v; in A; work if lhs + rhs in B in C; tail; end
+
+case v; in A; work unless lhs + rhs in B in C; tail; end
+
+case v; in A; work while lhs + rhs in B in C; tail; end
+
+case v; in A; work until lhs + rhs in B in C; tail; end

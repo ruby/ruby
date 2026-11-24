@@ -1,0 +1,48 @@
+value if lookup key:|2
+                    ^ unexpected '|', expecting end-of-input
+                    ^ unexpected '|', ignoring it
+
+value if lookup key: in Integer
+                     ^~ unexpected 'in', expecting end-of-input
+                     ^~ unexpected 'in', ignoring it
+
+value if lookup key: => result
+                     ^~ unexpected '=>', expecting end-of-input
+                     ^~ unexpected '=>', ignoring it
+
+value unless lookup key:|2
+                        ^ unexpected '|', expecting end-of-input
+                        ^ unexpected '|', ignoring it
+
+value unless lookup key: in Integer
+                         ^~ unexpected 'in', expecting end-of-input
+                         ^~ unexpected 'in', ignoring it
+
+value unless lookup key: => result
+                         ^~ unexpected '=>', expecting end-of-input
+                         ^~ unexpected '=>', ignoring it
+
+value while lookup key:|2
+                       ^ unexpected '|', expecting end-of-input
+                       ^ unexpected '|', ignoring it
+
+value while lookup key: in Integer
+                        ^~ unexpected 'in', expecting end-of-input
+                        ^~ unexpected 'in', ignoring it
+
+value while lookup key: => result
+                        ^~ unexpected '=>', expecting end-of-input
+                        ^~ unexpected '=>', ignoring it
+
+value until lookup key:|2
+                       ^ unexpected '|', expecting end-of-input
+                       ^ unexpected '|', ignoring it
+
+value until lookup key: in Integer
+                        ^~ unexpected 'in', expecting end-of-input
+                        ^~ unexpected 'in', ignoring it
+
+value until lookup key: => result
+                        ^~ unexpected '=>', expecting end-of-input
+                        ^~ unexpected '=>', ignoring it
+

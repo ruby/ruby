@@ -1,0 +1,22 @@
+def f; x && return m 1 do end.g; end
+                   ^ unexpected local variable or method, expecting end-of-input
+
+def f; x = y = return m 1 do end.g, q; end
+                                  ^ invalid comma
+
+def f; receive return m 1 do end.g; end
+               ^~~~~~~~~~ unexpected void value expression
+
+def f = return 1 and ready
+                 ^~~ unexpected 'and', expecting end-of-input
+                 ^~~ unexpected 'and', ignoring it
+
+loop { case x; in A; return in B; end }
+                     ^~~~~~ unexpected void value expression
+
+loop { case x; in A; break in B; end }
+                     ^~~~~ unexpected void value expression
+
+loop { case x; in A; next in B; end }
+                     ^~~~ unexpected void value expression
+

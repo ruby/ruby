@@ -1,0 +1,12 @@
+receive case when ready then produce() do :inner end end
+                                       ^~ unexpected 'do', expecting end-of-input
+                                       ^~ unexpected 'do', ignoring it
+                                                     ^~~ unexpected 'end', expecting end-of-input
+                                                     ^~~ unexpected 'end', ignoring it
+
+receive case when ready then obj.produce do :inner end end
+                                         ^~ unexpected 'do', expecting end-of-input
+                                         ^~ unexpected 'do', ignoring it
+                                                       ^~~ unexpected 'end', expecting end-of-input
+                                                       ^~~ unexpected 'end', ignoring it
+

@@ -1,0 +1,11 @@
+def f; yield x in Integer; end
+               ^~ unexpected 'in', expecting end-of-input
+               ^~ unexpected 'in', ignoring it
+
+def f; yield (x) in Integer; end
+                 ^~ unexpected 'in', expecting end-of-input
+                 ^~ unexpected 'in', ignoring it
+
+def f; yield &blk in Integer; end
+             ^~~~ block argument should not be given
+

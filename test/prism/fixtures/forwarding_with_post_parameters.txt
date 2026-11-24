@@ -1,0 +1,1 @@
+def self.f opt = 1, (head, *tail), ...; target(...); end

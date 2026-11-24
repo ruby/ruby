@@ -1,0 +1,9 @@
+def f; yield in Integer; end
+
+def f; yield() in Integer; end
+
+def f; yield(x) in Integer; end
+
+def f; yield x and ready; end
+
+def f; yield (x) and ready; end

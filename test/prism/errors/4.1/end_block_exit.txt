@@ -13,3 +13,79 @@ END {
   ^~~~ Invalid redo
 }
 
+END { break } while ready
+      ^~~~~ Invalid break
+
+END { break; work while ready }
+      ^~~~~ Invalid break
+
+END { break } until ready
+      ^~~~~ Invalid break
+
+END { break; work until ready }
+      ^~~~~ Invalid break
+
+END { break 1 } while ready
+      ^~~~~~~ Invalid break
+
+END { break 1; work while ready }
+      ^~~~~~~ Invalid break
+
+END { break 1 } until ready
+      ^~~~~~~ Invalid break
+
+END { break 1; work until ready }
+      ^~~~~~~ Invalid break
+
+END { next } while ready
+      ^~~~ Invalid next
+
+END { next; work while ready }
+      ^~~~ Invalid next
+
+END { next } until ready
+      ^~~~ Invalid next
+
+END { next; work until ready }
+      ^~~~ Invalid next
+
+END { next 1 } while ready
+      ^~~~~~ Invalid next
+
+END { next 1; work while ready }
+      ^~~~~~ Invalid next
+
+END { next 1 } until ready
+      ^~~~~~ Invalid next
+
+END { next 1; work until ready }
+      ^~~~~~ Invalid next
+
+END { redo } while ready
+      ^~~~ Invalid redo
+
+END { redo; work while ready }
+      ^~~~ Invalid redo
+
+END { redo } until ready
+      ^~~~ Invalid redo
+
+END { redo; work until ready }
+      ^~~~ Invalid redo
+
+END { break; next while ready; redo }
+      ^~~~~ Invalid break
+                               ^~~~ Invalid redo
+
+END { next; END { work while ready } }
+      ^~~~ Invalid next
+
+END { while active; END { redo }; end }
+                          ^~~~ Invalid redo
+
+END { for item in (break if ready); end }
+                   ^~~~~ Invalid break
+
+begin; break; END { next while ready }; end
+       ^~~~~ Invalid break
+

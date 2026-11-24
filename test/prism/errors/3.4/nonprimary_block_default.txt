@@ -1,0 +1,24 @@
+m { |x = defined? a| x }
+         ^~~~~~~~ unexpected bare defined?; expected a default value for a parameter
+                      ^ expected the block parameters to end with `|`
+
+m { |x: defined? a| x }
+        ^~~~~~~~ unexpected bare defined?; expected a default value for a parameter
+                     ^ expected the block parameters to end with `|`
+
+m { |x = defined? (a)| x }
+         ^~~~~~~~ unexpected bare defined?; expected a default value for a parameter
+                        ^ expected the block parameters to end with `|`
+
+m { |x: defined? (a)| x }
+        ^~~~~~~~ unexpected bare defined?; expected a default value for a parameter
+                       ^ expected the block parameters to end with `|`
+
+m { |x = ..1| x }
+         ^~ unexpected beginless range; expected a default value for a parameter
+               ^ expected the block parameters to end with `|`
+
+m { |x: ..1| x }
+        ^~ unexpected beginless range; expected a default value for a parameter
+              ^ expected the block parameters to end with `|`
+

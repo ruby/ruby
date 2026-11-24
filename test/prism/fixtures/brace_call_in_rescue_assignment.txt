@@ -1,0 +1,3 @@
+a, b = f (v) {} rescue c
+
+a, b = f(v) {} rescue c

@@ -1,0 +1,6 @@
+def f x,; end
+       ^ unexpected `,` in parameters
+
+def self.f *xs,; end
+              ^ unexpected `,` in parameters
+

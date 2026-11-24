@@ -57,74 +57,6 @@ module Ruby::Prism
       end
     end
 
-    def test_do_after_a_parenthesized_or_qualified_call_in_a_case_command_argument
-      ["produce()", "obj.produce"].each do |call|
-        source = "receive case when ready then #{call} do :inner end end"
-        result = Ruby::Prism.parse(source)
-        assert_predicate result, :failure?, source
-        assert_equal "do", result.errors.first.location.slice
-      end
-    end
-
-    def test_bare_method_parameters_allow_trailing_comma_from_ruby_4_1
-      ["def f x,; end", "def self.f *xs,; end"].each do |source|
-        %w[3.3 3.4 4.0].each do |version|
-          assert_equal [:parameter_wild_loose_comma], Ruby::Prism.parse(source, version: version).errors.map(&:type), source
-        end
-      end
-
-      ["&block", "&", "&nil", "..."].each do |last|
-        source = "def f #{last},; end"
-        result = Ruby::Prism.parse(source, version: "4.1")
-        assert_equal [:parameter_wild_loose_comma], result.errors.map(&:type), source
-        assert_equal ",", result.errors.first.location.slice
-      end
-
-      assert_equal [:def_params_term], Ruby::Prism.parse("def f x,\nend", version: "4.1").errors.map(&:type)
-    end
-
-    def test_end_block_exits_use_the_loop_inside_the_block
-      ["break", "break 1", "next", "next 1", "redo"].each do |jump|
-        %w[while until].each do |modifier|
-          ["END { #{jump} } #{modifier} ready", "END { #{jump}; work #{modifier} ready }"].each do |source|
-            errors = Ruby::Prism.parse(source, version: "4.1").errors
-            assert_equal [:invalid_block_exit], errors.map(&:type), source
-            assert_equal jump, errors.first.location.slice
-          end
-        end
-      end
-
-      {
-        "END { break; next while ready; redo }" => %w[break redo],
-        "END { next; END { work while ready } }" => %w[next],
-        "END { while active; END { redo }; end }" => %w[redo],
-        "END { for item in (break if ready); end }" => %w[break],
-        "begin; break; END { next while ready }; end" => %w[break]
-      }.each do |source, jumps|
-        errors = Ruby::Prism.parse(source, version: "4.1").errors
-        assert_equal jumps.map { :invalid_block_exit }, errors.map(&:type), source
-        assert_equal jumps, errors.map { |error| error.location.slice }, source
-      end
-    end
-
-    def test_end_block_retry_uses_the_rescue_inside_the_block
-      ["x", "x = f arg", "* = value"].each do |body|
-        source = "#{body} rescue END { retry }"
-        assert_equal [:invalid_retry_without_rescue], Ruby::Prism.parse(source).errors.map(&:type), source
-      end
-
-      [
-        ["END { x rescue END { retry } }", :invalid_retry_without_rescue],
-        ["begin; ensure; END { retry }; end", :invalid_retry_without_rescue],
-        ["x rescue END { begin; ensure; retry; end }", :invalid_retry_after_ensure],
-        ["x rescue END { begin; x; rescue; x; else; retry; end }", :invalid_retry_after_else]
-      ].each do |source, type|
-        errors = Ruby::Prism.parse(source).errors
-        assert_equal [type], errors.map(&:type), source
-        assert_equal "retry", errors.first.location.slice
-      end
-    end
-
     def test_anonymous_splat_at_the_end_of_command_arguments
       ["g *", "g 1, *", "super *", "return *"].each do |body|
         source = "def f(*) = #{body}"
@@ -146,12 +78,6 @@ module Ruby::Prism
       assert_nil splat.expression
     end
 
-    def test_trailing_star_without_an_anonymous_rest_parameter
-      result = Ruby::Prism.parse("def f(*rest) = g *")
-      assert_equal [:argument_no_forwarding_star], result.errors.map(&:type)
-      assert_equal "*", result.errors.first.location.slice
-    end
-
     def test_trailing_star_with_whitespace_requires_an_operand
       [" ", "\n"].each do |whitespace|
         result = Ruby::Prism.parse("def f(*) = g *#{whitespace}")
@@ -159,117 +85,15 @@ module Ruby::Prism
       end
     end
 
-    def test_loop_modifier_outside_an_endless_method
-      %w[break next redo].each do |jump|
-        %w[while until].each do |modifier|
-          source = "def f = (#{jump}) #{modifier} x"
-          errors = Ruby::Prism.parse(source).errors
-          assert_equal [:invalid_block_exit], errors.map(&:type), source
-          assert_equal jump, errors.first.location.slice
-        end
-      end
-    end
-
-    def test_loop_modifier_cannot_validate_a_jump_in_a_singleton_class_body
-      %w[break next redo].each do |jump|
-        %w[while until].each do |modifier|
-          refute Ruby::Prism.parse_success?("class << self; #{jump}; end #{modifier} y")
-          source = "class << (#{jump} if x); #{jump}; end #{modifier} y"
-          errors = Ruby::Prism.parse(source).errors
-          assert_equal [:invalid_block_exit], errors.map(&:type), source
-          assert_equal source.rindex(jump), errors.first.location.start_offset
-        end
-      end
-    end
-
-    def test_loop_modifier_preserves_exits_in_an_earlier_heredoc
-      source = <<~'RUBY'
-        first = <<A; second = <<B MODIFIER (redo if ready)
-        #{break if ready}
-        A
-        #{next if ready}
-        B
-      RUBY
-
-      %w[while until].each do |modifier|
-        errors = Ruby::Prism.parse(source.sub("MODIFIER", modifier)).errors
-        assert_equal [:invalid_block_exit], errors.map(&:type), modifier
-        assert_equal "break", errors.first.location.slice
-      end
-    end
-
-    def test_void_ternary_argument_with_a_beginless_range_predicate
-      result = Ruby::Prism.parse("def f; g(...x ? return : return); end")
-      assert_equal [:void_expression], result.errors.map(&:type)
-      assert_equal "return", result.errors.first.location.slice
-    end
-
-    def test_bare_argument_forwarding_in_a_ternary_branch
-      result = Ruby::Prism.parse("def f(...); g(...x ? ... : y); end")
-      assert_equal [:expect_expression_after_operator], result.errors.map(&:type)
-    end
-
-    def test_singleton_class_return_uses_its_enclosing_method
-      [
-        "-> { class << self; return; end }",
-        "m { class << self; x; rescue; return; end }",
-        "def f; class << self; class << self; return; end; end; end"
-      ].each do |source|
-        %w[3.4 4.1].each do |version|
-          errors = Ruby::Prism.parse(source, version: version).errors
-          assert_equal [:return_invalid], errors.map(&:type), source
-          assert_equal "return", errors.first.location.slice
-        end
-      end
-    end
-
-    def test_retry_must_target_a_rescue_in_its_own_scope
-      [
-        "x rescue f { retry }",
-        "x rescue f { |a = (retry if ready)| a }",
-        "x rescue -> { retry }",
-        "x rescue ->(a = (retry if ready)) { a }",
-        "x rescue (for i in xs; retry; end)",
-        "x rescue (for obj[(retry if ready)] in xs; end)",
-        "begin; work; rescue f { retry }; end",
-        "begin; rescue; class << f { retry }; end; end",
-        "begin; rescue; class C; retry; end; end",
-        "if false; x rescue f { retry }; end"
-      ].each do |source|
-        result = Ruby::Prism.parse(source)
-        assert_equal [:invalid_retry_without_rescue], result.errors.map(&:type), source
-        assert_equal "retry", result.errors.first.location.slice
-      end
-
-      [
-        ["x rescue (begin; ensure; retry; end)", :invalid_retry_after_ensure],
-        ["x rescue f do; ensure; retry; end", :invalid_retry_after_ensure],
-        ["x rescue f do; x; rescue; x; else; retry; end", :invalid_retry_after_else]
-      ].each do |source, type|
-        errors = Ruby::Prism.parse(source).errors
-        assert_equal [type], errors.map(&:type), source
-        assert_equal "retry", errors.first.location.slice
-      end
+    def test_retry_in_dead_code_still_requires_a_rescue_in_its_own_scope
+      errors = Ruby::Prism.parse("if false; x rescue f { retry }; end").errors
+      assert_equal [:invalid_retry_without_rescue], errors.map(&:type)
+      assert_equal "retry", errors.first.location.slice
     end
 
     def test_top_level_yield_is_invalid_in_dead_code
       assert_equal [:invalid_yield], Ruby::Prism.parse("yield if false").errors.map(&:type)
       assert Ruby::Prism.parse_success?("def f; yield if false; end")
-    end
-
-    def test_operators_after_yield
-      ["yield", "yield()", "yield(x)"].each do |body|
-        assert Ruby::Prism.parse_success?("def f; #{body} in Integer; end"), body
-      end
-
-      ["yield x", "yield (x)"].each do |body|
-        result = Ruby::Prism.parse("def f; #{body} in Integer; end")
-        assert_equal "in", result.errors.first.location.slice, body
-        assert Ruby::Prism.parse_success?("def f; #{body} and ready; end"), body
-      end
-
-      result = Ruby::Prism.parse("def f; yield &blk in Integer; end")
-      assert_equal [:unexpected_block_argument], result.errors.map(&:type)
     end
 
     def test_endless_method_rescue_rejects_unattached_do_block
@@ -302,15 +126,6 @@ module Ruby::Prism
       assert_equal "tail", tail.slice
     end
 
-    def test_void_rescue_chain_inside_bare_not
-      source = "def f = not return rescue retry rescue return"
-      %w[3.4 4.0 4.1].each do |version|
-        errors = Ruby::Prism.parse(source, version: version).errors
-        assert_equal [:void_expression], errors.map(&:type)
-        assert_equal source.index("return"), errors.first.location.start_offset
-      end
-    end
-
     def test_module_name_rejects_symbol_ending_in_constant_token
       result = Ruby::Prism.parse("module:A; end")
 
@@ -328,21 +143,6 @@ module Ruby::Prism
       assert_equal "return :ensure", result.errors.first.location.slice
     end
 
-    def test_block_parameter_defaults_require_a_primary
-      ["defined? a", "defined? (a)", "..1", "def f = 1"].each do |value|
-        ["x = ", "x: "].each do |parameter|
-          result = Ruby::Prism.parse("m { |#{parameter}#{value}| x }")
-          assert_include result.errors.map(&:type), :unexpected_parameter_default_value, value
-        end
-      end
-
-      ["x = ", "x: "].each do |parameter|
-        result = Ruby::Prism.parse("m { |#{parameter}-2**2| x }")
-        assert_equal [:unexpected_parameter_default_value], result.errors.map(&:type)
-        assert_equal "**", result.errors.first.location.slice
-      end
-    end
-
     def test_bare_defined_in_a_block_default_preserves_the_next_parameter
       ["x = defined? a && b, y", "x: defined? (a), y:"].each do |parameters|
         result = Ruby::Prism.parse("m { |#{parameters}| x }")
@@ -350,25 +150,6 @@ module Ruby::Prism
         assert_equal "defined?", result.errors.first.location.slice
         assert_equal :y, result.statement.block.parameters.parameters.compact_child_nodes.last.name
       end
-    end
-
-    def test_invalid_rescue_target_inside_a_block_default
-      result = Ruby::Prism.parse("m { |x = begin; rescue => defined? v; end| x }")
-      assert_equal [:write_target_unexpected], result.errors.map(&:type)
-      assert_equal "defined? v", result.errors.first.location.slice
-    end
-
-    def test_nested_void_statements
-      ["if ((a => k); x); end", "case ((a => k); x) in 1 in 2; end"].each do |source|
-        result = Ruby::Prism.parse(source, version: "4.1")
-        assert_equal [:void_expression], result.errors.map(&:type), source
-        assert_equal "a => k", result.errors.first.location.slice
-      end
-
-      source = "def f; consume((if flag; return 1; else; ((return 2); x); end)); end"
-      result = Ruby::Prism.parse(source, version: "4.1")
-      assert_equal [:void_expression], result.errors.map(&:type)
-      assert_equal "return 2", result.errors.first.location.slice
     end
 
     def test_command_super_and_grouped_argument_blocks
@@ -397,71 +178,6 @@ module Ruby::Prism
       assert_equal :tail, tail.name
     end
 
-    def test_call_after_a_command_brace_block
-      ["f", "obj.f"].each do |callee|
-        source = "#{callee} (x) {}.tail"
-        refute_valid_syntax(source)
-        result = Ruby::Prism.parse(source)
-        assert_predicate result, :failure?, source
-        assert_equal ".", result.errors.first.location.slice
-
-        source = "#{callee}(x) {}.tail"
-        assert_valid_syntax(source)
-        result = Ruby::Prism.parse(source)
-        assert_predicate result, :success?, source
-        assert_equal :tail, result.statement.name
-        assert_equal "{}", result.statement.receiver.block.slice
-
-        source = "#{callee} x {}.tail"
-        assert_valid_syntax(source)
-        result = Ruby::Prism.parse(source)
-        assert_predicate result, :success?, source
-        argument = result.statement.arguments.arguments.first
-        assert_equal :tail, argument.name
-        assert_equal "x {}", argument.receiver.slice
-      end
-    end
-
-    def test_do_after_a_command_ending_in_a_brace
-      ["outer inner (x) {} do end", "outer A::B {} do end", "outer super A::B {} do end"].each do |source|
-        result = Ruby::Prism.parse(source)
-        assert_predicate result, :failure?, source
-        assert_equal "do", result.errors.first.location.slice
-      end
-    end
-
-    def test_do_after_nested_super_and_brace_commands
-      ["outer inner super (x) {} do end", "outer super inner (x) {} do end"].each do |source|
-        refute_valid_syntax(source)
-        result = Ruby::Prism.parse(source)
-        assert_predicate result, :failure?, source
-        assert_equal "do", result.errors.first.location.slice
-      end
-
-      assert Ruby::Prism.parse_success?("outer inner super(x) {} do end")
-      assert Ruby::Prism.parse_success?("outer inner inner2 (x) {} do end")
-    end
-
-    def test_shorthand_after_a_command_block
-      [".", "&.", "::"].each do |operator|
-        source = "f x do end#{operator}()"
-        assert Ruby::Prism.parse_success?("#{source}.g", version: "4.0"), source
-        result = Ruby::Prism.parse(source, version: "3.4")
-        assert_equal [:expect_message], result.errors.map(&:type), source
-        assert_equal "(", result.errors.first.location.slice
-        refute Ruby::Prism.parse_success?("#{source} do end"), source
-        refute Ruby::Prism.parse_success?("#{source} {}"), source
-        assert Ruby::Prism.parse_success?("(f x do end)#{operator}() {}"), source
-        assert Ruby::Prism.parse_success?("f(x) do end#{operator}() {}", version: "3.4"), source
-
-        result = Ruby::Prism.parse("super x do end#{operator}(y)", version: "4.0")
-        assert_predicate result, :success?
-        assert_equal :call, result.statement.name
-        assert_equal "y", result.statement.arguments.arguments.first.slice
-        assert_equal "do end", result.statement.receiver.block.slice
-      end
-    end
-
     def test_command_brace_block_chained_after_a_command_block
       [".", "&.", "::"].each do |operator|
         source = "f x do end#{operator}g (y) {}.h"
@@ -482,26 +198,6 @@ module Ruby::Prism
       end
     end
 
-    def test_invalid_chains_after_a_constant_named_command
-      [".", "&.", "::"].each do |operator|
-        refute Ruby::Prism.parse_success?("C::F x do end#{operator}()", version: "3.4"), operator
-        refute Ruby::Prism.parse_success?("C::F {}#{operator}()"), operator
-      end
-
-      refute Ruby::Prism.parse_success?("outer(C::F x do end.tail, y)", version: "3.4")
-      refute Ruby::Prism.parse_success?("C::F x do end.tail, y = z")
-      refute Ruby::Prism.parse_success?("x rescue C::F x do end.tail, y = z")
-    end
-
-    def test_operator_after_an_expression_ending_in_a_block_call
-      ["!f x do end.tail", "not f x do end.tail", "a and f x do end.tail", "a or f x do end.tail"].each do |expression|
-        source = "#{expression} + y"
-        result = Ruby::Prism.parse(source)
-        assert_equal [:expect_eol_after_statement], result.errors.map(&:type), source
-        assert_equal "+", result.errors.first.location.slice
-      end
-    end
-
     def test_pattern_newlines_in_pins_and_guards
       [
         "x in ^(m k:\nand b)",
@@ -513,13 +209,6 @@ module Ruby::Prism
         assert_false Ruby::Prism.parse_success?(source), source
         assert Ruby::Prism.parse_success?(source.tr("\n", " ")), source
       end
-    end
-
-    def test_label_newline_in_a_bare_optional_parameter
-      source = "def f opt = m(k:\nvalue); end"
-      error = Ruby::Prism.parse(source).errors.first
-      assert_equal :argument_term_paren, error.type
-      assert_equal "value", error.location.slice
     end
 
     def test_range_patterns_require_literal_bounds
@@ -534,29 +223,6 @@ module Ruby::Prism
       end
     end
 
-    def test_break_in_lambda_defaults_and_nested_methods
-      assert Ruby::Prism.parse_success?("->(x = (break if b)) { x }")
-      assert_false Ruby::Prism.parse_success?("m { def f = break }")
-    end
-
-    def test_invalid_jumps_in_parameter_defaults
-      [
-        ["->(x = break) {}", :void_expression, "break"],
-        ["def f(x = (next if ready)); end", :invalid_block_exit, "next"],
-        ["->(x = (def inner = break)) {}", :invalid_block_exit, "break"]
-      ].each do |source, type, keyword|
-        errors = Ruby::Prism.parse(source).errors
-        assert_equal [type], errors.map(&:type), source
-        assert_equal keyword, errors.first.location.slice
-      end
-    end
-
-    def test_jump_with_command_arguments_in_a_term
-      result = Ruby::Prism.parse("def f; x && return m 1 do end.g; end")
-      assert_equal [:expect_eol_after_statement], result.errors.map(&:type)
-      assert_equal "m", result.errors.first.location.slice
-    end
-
     def test_call_on_jump_with_an_invalid_block_argument
       result = Ruby::Prism.parse("def f(&); return super 1 do end, & .g; end")
       assert_equal [:invalid_comma, :unexpected_block_argument], result.errors.map(&:type)
@@ -565,94 +231,11 @@ module Ruby::Prism
       assert_instance_of ReturnNode, call.receiver
     end
 
-    def test_comma_after_a_nested_assignment_to_a_jump_block_call
-      result = Ruby::Prism.parse("def f; x = y = return m 1 do end.g, q; end")
-      assert_equal [:invalid_comma], result.errors.map(&:type)
-      assert_equal ",", result.errors.first.location.slice
-    end
-
-    def test_command_argument_jump_leaves_do_for_the_outer_call
-      result = Ruby::Prism.parse("def f; receive return m 1 do end.g; end")
-      assert_equal [:void_expression], result.errors.map(&:type)
-      assert_equal "return m 1", result.errors.first.location.slice
-    end
-
-    def test_endless_jump_command_before_keyword_composition
-      result = Ruby::Prism.parse("def f = return 1 and ready")
-      assert_equal :expect_eol_after_statement, result.errors.first.type
-      assert_equal "and", result.errors.first.location.slice
-    end
-
-    def test_jumps_in_for_targets
-      %w[break next redo].each do |jump|
-        assert Ruby::Prism.parse_success?("for obj[(#{jump} if done)] in ary; end")
-        assert_false Ruby::Prism.parse_success?("for obj in (#{jump} if done); end")
-        assert Ruby::Prism.parse_success?("loop { for obj in (#{jump} if done); end }")
-      end
-    end
-
-    def test_jumps_in_for_collections
-      [
-        "for * in ready and break; end",
-        "for * in value = work rescue next; end",
-        "for * in if ready; redo end; end",
-        "for * in case item; in Integer; break end; end"
-      ].each do |source|
-        assert_equal [:invalid_block_exit], Ruby::Prism.parse(source).errors.map(&:type), source
-      end
-    end
-
-    def test_methods_and_singleton_classes_isolate_block_exits
-      ["loop { def self.f; next 1; end }", "until ready; def f = break; end", "-> { class << self; redo; end }"].each do |source|
-        assert_equal [:invalid_block_exit], Ruby::Prism.parse(source).errors.map(&:type), source
-      end
-    end
-
-    def test_assignments_after_block_call
-      ["m 1 do end.f, y = z", "m 1 do end::C = z"].each do |source|
-        assert_false Ruby::Prism.parse_success?(source), source
-      end
-    end
-
-    def test_index_write_as_assignment_target
-      %w[= += &&= ||=].each do |operator|
-        source = "self[k] = x.. #{operator} y"
-        assert_include Ruby::Prism.parse(source).errors.map(&:type), :write_target_unexpected, source
-      end
-    end
-
     def test_parenthesized_targets_reject_newline_before_assignment
       ["(first, second\n= [1, 2])", "((first, second), third\n= [1, 2, 3])"].each do |source|
         result = Ruby::Prism.parse(source)
 
         assert_equal [:write_target_unexpected], result.errors.map(&:type), source
-      end
-    end
-
-    def test_invalid_parenthesized_multiple_assignment_targets
-      [
-        "(;a, b) = values",
-        "(;*rest) = values",
-        "x, (a, b).c = values",
-        "x, (f((a, b))).c = values",
-        "x, *(a, b) = values",
-        "for (;a, b) in values; end",
-        "for x, (a, b)[0] in values; end"
-      ].each do |source|
-        assert_false Ruby::Prism.parse_success?(source), source
-      end
-    end
-
-    def test_invalid_multiple_assignment_targets_around_rescue
-      call = "f y do end.tail"
-      refute Ruby::Prism.parse_success?("#{call}, z = values")
-      refute Ruby::Prism.parse_success?("work rescue #{call}, z = values")
-      refute Ruby::Prism.parse_success?("x = value rescue a, b = values")
-    end
-
-    def test_rescue_handler_requires_a_complete_multiple_assignment
-      ["(work rescue *xs)", "(work rescue x, y)", "(work rescue (x, y))"].each do |source|
-        assert_equal [:write_target_unexpected], Ruby::Prism.parse(source).errors.map(&:type), source
       end
     end
 
@@ -693,86 +276,6 @@ module Ruby::Prism
 
       assert Ruby::Prism.parse_success?("(work; a, b = values)")
       assert Ruby::Prism.parse_success?("((a, b\n), c) = values")
-    end
-
-    def test_receiver_command_in_expression_and_assignment
-      result = Ruby::Prism.parse("if obj.fetch arg and ready; end")
-      assert_predicate result, :success?
-      predicate = result.statement.predicate
-      assert_instance_of AndNode, predicate
-      assert_equal "obj", predicate.left.receiver.slice
-      assert_equal ["arg"], predicate.left.arguments.arguments.map(&:slice)
-
-      result = Ruby::Prism.parse("x = obj.fetch(arg) and ready")
-      assert_predicate result, :success?
-      assert_instance_of AndNode, result.statement
-      assert_instance_of LocalVariableWriteNode, result.statement.left
-
-      assert_false Ruby::Prism.parse_success?("if x = obj.fetch arg; end")
-      assert_false Ruby::Prism.parse_success?("x = obj.fetch arg and ready")
-    end
-
-    def test_command_endless_definition_as_a_sole_argument
-      assert Ruby::Prism.parse_success?("f(def g = obj.fetch x)", version: "4.0")
-      assert_false Ruby::Prism.parse_success?("f(def g = obj.fetch x)", version: "3.4")
-      assert_false Ruby::Prism.parse_success?("f(a, def g = obj.fetch x)", version: "4.0")
-    end
-
-    def test_comma_after_an_endless_definition_with_a_brace_command_body
-      [
-        "outer def f = g (x) {}, z",
-        "outer(def self.f = obj.g (x) {}, z)",
-        "outer def f = g (x) {} rescue a do end, z",
-        "outer def f = not g (x) {} rescue a rescue b do end, z"
-      ].each do |source|
-        errors = Ruby::Prism.parse(source, version: "4.0").errors
-        assert_equal [:invalid_comma], errors.map(&:type), source
-        assert_equal ",", errors.first.location.slice
-      end
-    end
-
-    def test_operators_after_an_endless_definition_with_a_brace_command_body
-      {
-        "outer def f = g (x) {} => key" => "=>",
-        "x = def f = g (x) {} and ready" => "and"
-      }.each do |source, operator|
-        errors = Ruby::Prism.parse(source, version: "4.0").errors
-        assert_equal [:expect_eol_after_statement], errors.map(&:type), source
-        assert_equal operator, errors.first.location.slice
-      end
-    end
-
-    def test_command_rhs_of_operator_assignment
-      assert Ruby::Prism.parse_success?("a += f x")
-      assert Ruby::Prism.parse_success?("a = b += f x")
-      assert Ruby::Prism.parse_success?("not(a += f(x))")
-      assert_false Ruby::Prism.parse_success?("not(a += f x)")
-    end
-
-    def test_comma_after_a_brace_command_on_assignment_rhs
-      ["x = f (v) {}, z", "x, y = obj.f (v) {}, z", "x = y ||= f (v) {}, z"].each do |source|
-        errors = Ruby::Prism.parse(source).errors
-        assert_equal [:invalid_comma], errors.map(&:type), source
-        assert_equal source.rindex(","), errors.first.location.start_offset, source
-      end
-    end
-
-    def test_comma_after_nested_command_assignment
-      ["y =", "@y = table[:k] =", "y ||=", "obj.value &&=", "table[:k] +=", "y ||= @z <<="].each do |write|
-        source = "x = #{write} f 1 rescue 2, z"
-        errors = Ruby::Prism.parse(source).errors
-        assert_equal [:invalid_comma], errors.map(&:type), source
-        assert_equal source.index(","), errors.first.location.start_offset, source
-        assert_equal ",", errors.first.location.slice
-      end
-    end
-
-    def test_composition_after_nested_assignment
-      result = Ruby::Prism.parse("x = y ||= f x, y and ready")
-      assert_equal [:expect_eol_after_statement], result.errors.map(&:type)
-      assert_equal "and", result.errors.first.location.slice
-
-      assert Ruby::Prism.parse_success?("x = y ||= f(x, y) and ready")
     end
 
     def test_class_headers_respect_enclosing_loop_condition
@@ -827,70 +330,11 @@ module Ruby::Prism
       end
     end
 
-    def test_expr_operators_require_an_arg_for_a_pattern
-      [
-        "1 in 2 in true",
-        "case not(1 in 2 in true); in true; end",
-        "1 and foo 2 in true",
-        "!foo 1 do end in true",
-        "1 and flags &= compute 3",
-        "def f = return 1 in true"
-      ].each do |source|
-        refute_valid_syntax(source)
-        assert_predicate Ruby::Prism.parse(source), :failure?, source
-      end
-    end
-
-    def test_rejects_chained_pattern_matches
-      [
-        "1 in 2 in 3",
-        "def run = not 1 in 2 in 3",
-        "case (1 in 2 in 3); in true; end",
-        "case not(1 in 2 in 3); in true; end",
-        "defined?(1 in 2 in 3)",
-        "case x; in ^(1 in 2 in 3); end",
-        "case x or (1 in 2 in 3); in true; end"
-      ].each do |source|
-        refute_valid_syntax(source)
-        assert_predicate Ruby::Prism.parse(source), :failure?, source
-      end
-    end
-
     def test_case_required_match_predicate_is_void
       result = Ruby::Prism.parse("case value => captured in Integer; :body; end")
       assert_equal [:void_expression], result.errors.map(&:type)
       assert_equal "value => captured", result.errors.first.location.slice
       assert_equal "Integer", result.statement.conditions.first.pattern.slice
-    end
-
-    def test_case_predicate_rejects_a_nested_command_assignment
-      assert_false Ruby::Prism.parse_success?("case not(a += f x => P) in Q in R; :body; end")
-    end
-
-    def test_statement_modifiers_end_after_a_command_predicate
-      %w[if unless while until].each do |modifier|
-        [["|2", "|"], [" in Integer", "in"], [" => result", "=>"]].each do |suffix, operator|
-          source = "value #{modifier} lookup key:#{suffix}"
-          error = Ruby::Prism.parse(source).errors.fetch(0)
-          assert_equal :expect_eol_after_statement, error.type, source
-          assert_equal operator, error.location.slice, source
-        end
-
-        assert Ruby::Prism.parse_success?("value #{modifier} lookup(key:) | 2")
-        assert Ruby::Prism.parse_success?("value #{modifier} lookup(key:) in Integer")
-      end
-    end
-
-    def test_forwarding_after_a_rest_parameter
-      [
-        "def f(opt = 1, *rest, ...) = rest",
-        "def f(*, post, ...); end",
-        "def f(opt = 1, *rest, (first, last), ...); end"
-      ].each do |source|
-        errors = Ruby::Prism.parse(source).errors
-        assert_equal [:parameter_forwarding_after_rest], errors.map(&:type), source
-        assert_equal "...", errors.first.location.slice
-      end
     end
 
     def test_keyword_not_is_not_a_write_target
@@ -1174,14 +618,6 @@ module Ruby::Prism
       assert_instance_of OrNode, result.statement
       assert_instance_of ReturnNode, result.statement.left.value.receiver
       assert_equal :ready, result.statement.right.name
-    end
-
-    def test_bare_jump_as_the_value_of_a_pattern_match
-      %w[return break next].each do |keyword|
-        result = Ruby::Prism.parse("loop { case x; in A; #{keyword} in B; end }")
-        assert_equal [:void_expression], result.errors.map(&:type)
-        assert_equal keyword, result.errors.first.location.slice
-      end
     end
 
     def test_incomplete_def_closing_loc

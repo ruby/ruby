@@ -1,0 +1,9 @@
+def f &block,; end
+            ^ unexpected `,` in parameters
+
+def f &,; end
+       ^ unexpected `,` in parameters
+
+def f ...,; end
+         ^ unexpected `,` in parameters
+
