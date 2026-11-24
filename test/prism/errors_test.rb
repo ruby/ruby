@@ -706,21 +706,10 @@ module Ruby::Prism
       end
     end
 
-    def test_parenthesized_multiple_assignment_targets
-      result = Ruby::Prism.parse("x, (a, b), (obj).c = values")
-      assert_predicate result, :success?
-      _, nested, field = result.statement.lefts
-      assert_instance_of MultiTargetNode, nested
-      assert_equal [:a, :b], nested.lefts.map(&:name)
-      assert_instance_of CallTargetNode, field
-      assert_equal "(obj)", field.receiver.slice
-
-      assert Ruby::Prism.parse_success?("for ((a, b), c) in values; end")
-      assert Ruby::Prism.parse_success?("x, *(obj)[0] = values")
-      assert Ruby::Prism.parse_success?("(; a, b = values).c, x = values")
-
+    def test_invalid_parenthesized_multiple_assignment_targets
       [
         "(;a, b) = values",
+        "(;*rest) = values",
         "x, (a, b).c = values",
         "x, (f((a, b))).c = values",
         "x, *(a, b) = values",

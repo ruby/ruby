@@ -13597,8 +13597,9 @@ parse_target_terminator(pm_parser_t *parser, pm_node_t *target, bool statement) 
 
     switch (parser->current_context->context) {
         case PM_CONTEXT_MULTI_TARGET:
-            /* The enclosing target list validates its terminator. */
-            return;
+            /* A grouped target can end a list or be followed by another item. */
+            if (match5(parser, PM_TOKEN_COMMA, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_EQUAL, PM_TOKEN_KEYWORD_IN)) return;
+            break;
         case PM_CONTEXT_FOR_INDEX:
             if (match2(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_IN)) return;
             break;
@@ -19379,6 +19380,15 @@ parse_parentheses(pm_parser_t *parser, pm_binding_power_t binding_power, uint16_
     context_push(parser, PM_CONTEXT_PARENS);
     pm_node_t *statement = parse_statement(parser, (uint16_t) (depth + 1));
     context_pop(parser);
+
+    /* A leading semicolon introduces a statement list, where a multiple
+     * assignment target needs an assignment. */
+    if (
+        (paren_flags & PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS) &&
+        (PM_NODE_TYPE_P(statement, PM_MULTI_TARGET_NODE) || PM_NODE_TYPE_P(statement, PM_SPLAT_NODE))
+    ) {
+        pm_parser_err_node(parser, statement, PM_ERR_WRITE_TARGET_UNEXPECTED);
+    }
 
     /* Determine if this statement is followed by a terminator. In the case of a
      * single statement, this is fine. But in the case of multiple statements
