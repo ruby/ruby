@@ -11,6 +11,7 @@ use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, get_option};
 use crate::payload::IseqVersionRef;
+use crate::jit_frame::PendingJITFrame;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label, LabelName};
@@ -631,9 +632,18 @@ pub struct SideExit {
     pub vm_stack_size: usize,
     pub iseq: IseqPtr,
     /// Stack map for the top-most frame and any inlined frames below.
-    pub stack_map: StackMap,
+    pub stack_map: SideExitStackMap,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
+}
+
+/// A version of [StackMap] that instead uses [PendingJITFrame] to delay allocating an address for the
+/// `JITFrame` until after side-exit deduplication.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct SideExitStackMap {
+    pub stack: Vec<StackMapEntry>,
+    pub frame_depth: usize,
+    pub jit_frame: PendingJITFrame,
 }
 
 /// Metadata for the recompile callback on side exit.
@@ -990,7 +1000,7 @@ macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
             Target::SideExit(data) => {
-                let StackMap { stack, .. } = $reborrow!(data.exit.stack_map);
+                let SideExitStackMap { stack, .. } = $reborrow!(data.exit.stack_map);
                 for entry in stack {
                     if let StackMapEntry::Opnd(opnd) = entry {
                         visit_one!(opnd);
@@ -1771,7 +1781,8 @@ impl StackState {
 }
 
 /// Stack map to materialize Ruby stack slots from JIT-kept values.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+/// Friend to keep in sync: [SideExitStackMap].
+#[derive(Clone, Debug)]
 pub struct StackMap {
     /// Ruby stack slots to reconstruct if this frame is materialized.
     stack: Vec<StackMapEntry>,
@@ -3000,10 +3011,9 @@ impl Assembler
             asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
         }
 
-        fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
-            let StackMap { stack, jit_frame, frame_depth } = stack_map;
-            let jit_frame = *jit_frame;
-            let mut writer = unsafe { &*jit_frame }.stack_map_writer();
+        fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &SideExitStackMap) {
+            let SideExitStackMap { stack, frame_depth, jit_frame } = stack_map;
+            let mut writer = jit_frame.stack_map_writer();
 
             let mut capture_idx = 0;
             for stack_entry in stack.iter() {
@@ -3030,7 +3040,7 @@ impl Assembler
                     StackMapEntry::Opnd(_) => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
                 }
             }
-            unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
+            let jit_frame = jit_frame.alloc(writer);
 
             assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
             asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
