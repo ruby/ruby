@@ -3152,6 +3152,24 @@ class TestString < Test::Unit::TestCase
     end
   end
 
+  def test_tr_hash_broken_pairs
+    # A broken key used to match inside valid characters, and a broken key or
+    # value produced a broken result cached as valid.
+    assert_raise(ArgumentError) { S("あい").tr("\x81" => "X") }
+    assert_raise(ArgumentError) { S("abc").tr("a" => "\xFF") }
+
+    eucjp = ->(s) { s.b.force_encoding("EUC-JP") }
+    assert_raise(ArgumentError) { S(eucjp["a\xA4\xA2"]).tr(eucjp["\xA2"] => eucjp["X"]) }
+    assert_raise(ArgumentError) { S(eucjp["abc"]).tr(eucjp["a"] => eucjp["\xA4"]) }
+
+    utf16 = "aAb".encode("UTF-16LE")
+    assert_raise(ArgumentError) { S(utf16).tr("\x41".b.force_encoding("UTF-16LE") => "X".encode("UTF-16LE")) }
+
+    str = S("abc")
+    assert_raise(ArgumentError) { str.tr!("a" => "\xFF") }
+    assert_equal(S("abc"), str)
+  end
+
   def test_tr_hash_modify
     replacements = {}
     obj = Object.new
