@@ -91,6 +91,15 @@ pm_encoding_string(const pm_encoding_t *encoding) {
     return name;
 }
 
+/* Join the encodings of two strings' non-ASCII bytes. NULL means all ASCII. */
+static PRISM_INLINE bool
+pm_encoding_concat(const pm_encoding_t **left, const pm_encoding_t *right) {
+    if (right == NULL) return true;
+    if (*left != NULL && *left != right) return false;
+    *left = right;
+    return true;
+}
+
 /*
  * Return true if the encoding is a multibyte encoding. Every kind other than
  * single-byte and ASCII has characters that span more than one byte.

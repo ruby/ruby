@@ -3571,11 +3571,11 @@ typedef struct {
     /** The bytes of the content. */
     pm_buffer_t buffer;
 
-    /** The encoding of the content so far, or NULL before its first string. */
-    const pm_encoding_t *encoding;
+    /** The first part determines the encoding while every part is ASCII. */
+    const pm_encoding_t *first_encoding;
 
-    /** Whether the content so far is all ASCII. */
-    bool ascii_only;
+    /** The encoding of the non-ASCII bytes encountered so far. */
+    const pm_encoding_t *encoding;
 
     /**
      * The encoding of the first string that is not ASCII and is in another
@@ -3585,15 +3585,11 @@ typedef struct {
     const pm_encoding_t *incompatible;
 } pm_regexp_joined_t;
 
-/**
- * Return the encoding of a string node. That is UTF-8 or binary if the string
- * forces one, and the source encoding otherwise.
- */
 static const pm_encoding_t *
-pm_regexp_string_encoding(const pm_parser_t *parser, const pm_string_node_t *node) {
-    if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_UTF8_ENCODING)) return PM_ENCODING_UTF_8_ENTRY;
-    if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FORCED_BINARY_ENCODING)) return PM_ENCODING_ASCII_8BIT_ENTRY;
-    return parser->encoding;
+pm_regexp_joined_encoding(const pm_regexp_joined_t *joined) {
+    if (joined->encoding != NULL) return joined->encoding;
+    if (joined->first_encoding != NULL) return joined->first_encoding;
+    return joined->parser->encoding;
 }
 
 /**
@@ -3603,18 +3599,9 @@ static void
 pm_regexp_join(pm_regexp_joined_t *joined, const uint8_t *source, size_t size, const pm_encoding_t *encoding) {
     pm_string_t content;
     pm_string_shared_init(&content, source, source + size);
-    bool ascii_only = pm_string_ascii_only_p(&content);
-
-    if (joined->encoding == NULL) {
-        joined->encoding = encoding;
-        joined->ascii_only = ascii_only;
-    } else if (!ascii_only) {
-        if (joined->ascii_only) {
-            joined->encoding = encoding;
-            joined->ascii_only = false;
-        } else if (encoding != joined->encoding && joined->incompatible == NULL) {
-            joined->incompatible = encoding;
-        }
+    if (joined->first_encoding == NULL) joined->first_encoding = encoding;
+    if (joined->encoding != encoding && joined->incompatible == NULL && !pm_string_ascii_only_p(&content)) {
+        if (!pm_encoding_concat(&joined->encoding, encoding)) joined->incompatible = encoding;
     }
 
     pm_buffer_append_string(&joined->buffer, (const char *) source, size);
@@ -3632,7 +3619,7 @@ pm_regexp_join_string_parts(pm_regexp_joined_t *joined, const pm_node_list_t *pa
         switch (PM_NODE_TYPE(part)) {
             case PM_STRING_NODE: {
                 const pm_string_node_t *string = (const pm_string_node_t *) part;
-                pm_regexp_join(joined, pm_string_source(&string->unescaped), pm_string_length(&string->unescaped), pm_regexp_string_encoding(joined->parser, string));
+                pm_regexp_join(joined, pm_string_source(&string->unescaped), pm_string_length(&string->unescaped), pm_string_node_encoding(string, joined->parser->encoding));
                 break;
             }
             case PM_INTERPOLATED_STRING_NODE:
@@ -3688,7 +3675,7 @@ typedef struct {
  */
 static bool
 pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t flags, const pm_node_t *node) {
-    part->joined = (pm_regexp_joined_t) { .parser = parser, .buffer = { 0 }, .encoding = NULL, .ascii_only = true, .incompatible = NULL };
+    part->joined = (pm_regexp_joined_t) { .parser = parser };
 
     /* The lexer already reported invalid characters in the regular
      * expression's own text. Nothing has checked the value of a string that
@@ -3711,7 +3698,7 @@ pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t
             const pm_string_node_t *string = (const pm_string_node_t *) node;
             source = pm_string_source(&string->unescaped);
             size = pm_string_length(&string->unescaped);
-            encoding = pm_regexp_string_encoding(parser, string);
+            encoding = pm_string_node_encoding(string, parser->encoding);
             break;
         }
         case PM_INTERPOLATED_STRING_NODE: {
@@ -3720,7 +3707,7 @@ pm_regexp_part_init(pm_regexp_part_t *part, pm_parser_t *parser, pm_node_flags_t
 
             source = (const uint8_t *) pm_buffer_value(&part->joined.buffer);
             size = pm_buffer_length(&part->joined.buffer);
-            encoding = (part->joined.encoding == NULL) ? parser->encoding : part->joined.encoding;
+            encoding = pm_regexp_joined_encoding(&part->joined);
             break;
         }
         default:
@@ -3815,7 +3802,7 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
     const pm_encoding_t *option_encoding;
     bool check_option = !is_static && pm_regexp_encoding_option(flags, &option_encoding) != '\0';
 
-    pm_regexp_joined_t joined = { .parser = parser, .buffer = { 0 }, .encoding = NULL, .ascii_only = true, .incompatible = NULL };
+    pm_regexp_joined_t joined = { .parser = parser };
     bool valid = true;
 
     for (size_t index = 0; index < parts->size && (valid || check_option); index++) {
@@ -3852,7 +3839,7 @@ pm_regexp_parse_interpolated(pm_parser_t *parser, const pm_interpolated_regular_
                 .parser = parser,
                 .source = (const uint8_t *) pm_buffer_value(&joined.buffer),
                 .size = pm_buffer_length(&joined.buffer),
-                .encoding = (joined.encoding == NULL) ? parser->encoding : joined.encoding,
+                .encoding = pm_regexp_joined_encoding(&joined),
                 .flags = flags,
                 .location = node->base.location,
                 .unlexed = false
