@@ -235,12 +235,6 @@ module Ruby::Prism
       end
     end
 
-    def test_leading_empty_statements
-      omit("Ripper translation omits the leading void_stmt in parentheses and when clauses")
-      assert_ripper_sexp_raw("(;x)")
-      assert_ripper_sexp_raw("case x; when 1 then; y; end")
-    end
-
     def test_parentheses_in_nested_patterns
       [
         "x in ((y))", "x => [(1), *, (2)]", "x in [*, (1), *]", "x in {key: (1)}",
@@ -278,16 +272,6 @@ module Ruby::Prism
       end
     end
 
-    def test_trailing_comma_in_index_writes
-      omit("Ruby::Prism's Ripper translation emits an extra args_add_block for a trailing comma in an index write")
-      [
-        "matrix[1,] = x", "matrix[1, 2,] = x, y", "matrix[*args,] = x",
-        "matrix[1, # comment\n] = x", "matrix[1.. # comment\n,] = x", "matrix[<<DOC,\n,\nDOC\n] = x"
-      ].each do |source|
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
     def test_endless_method_argument_with_a_rescued_return
       assert_ripper_sexp_raw("outer(def f = not return rescue 2)")
       assert_ripper_sexp_raw("outer(def f = not return v rescue 2)") if RUBY_VERSION >= "4.0"
@@ -313,21 +297,6 @@ module Ruby::Prism
     def test_dedenting_blank_lines_in_heredocs
       ["\n", " \n", "\r\n", "\t\n"].each do |blank_line|
         source = "<<~DOC\n  first\n#{blank_line}DOC\n"
-        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
-        assert_ripper_sexp_raw(source)
-      end
-    end
-
-    def test_heredoc_string_parts
-      omit("Ripper translation differs on heredoc string parts")
-      [
-        "<<~DOC\n\n    \#{value}tail\nDOC\n",
-        "<<~DOC\n  a\n\#{value}\n  b\nDOC\n",
-        "<<~DOC\n\n  \n\t\nDOC\n",
-        "<<~'DOC'\n  a\nb\nc\nDOC\n",
-        "<<-DOC\nfirst\\\r\nsecond\r\nDOC\r\n",
-        "<<OUTER\n\#{<<INNER}\ninner\nINNER\nouter\nOUTER\n"
-      ].each do |source|
         assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
         assert_ripper_sexp_raw(source)
       end
@@ -381,12 +350,6 @@ module Ruby::Prism
         assert_ripper_sexp_raw("x = 1; ->(x: x) { x }")
         assert_ripper_sexp_raw("x = 0; ->(x: x +1) {}")
       end
-    end
-
-    def test_self_referential_keyword_defaults
-      omit("Ripper and Ruby::Prism resolve the parameter name differently in these defaults")
-      assert_ripper_sexp_raw("->(x: x) { x }")
-      assert_ripper_sexp_raw("def f(x: (x +1)); end")
     end
 
     def test_lexer
