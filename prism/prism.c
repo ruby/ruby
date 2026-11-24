@@ -13148,6 +13148,9 @@ pm_chained_call_reduction(pm_parser_t *parser, pm_reduction_t receiver, pm_node_
 static pm_reduction_t
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
+static pm_reduction_t
+parse_expression_infixes(pm_parser_t *parser, pm_reduction_t left, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth);
+
 static pm_node_t *
 parse_heredoc(pm_parser_t *parser, uint16_t depth);
 
@@ -15548,6 +15551,23 @@ parse_unexpected_command_block(pm_parser_t *parser, pm_node_t *node, uint16_t de
     }
 }
 
+/* Parse a beginless range after consuming its operator. */
+static pm_range_node_t *
+parse_range(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t operator = parser->previous;
+
+    pm_node_t *right = parse_expression(parser, pm_binding_powers[operator.type].left, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
+
+    /* Unary .. and ... are special because these are non-associative operators
+     * that can also be unary operators. In this case we need to explicitly
+     * reject code that has a .. or ... that follows this expression. */
+    if (match2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
+        pm_parser_err_current(parser, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+    }
+
+    return pm_range_node_create(parser, NULL, &operator, right);
+}
+
 /**
  * Parse a list of arguments. A command can be the sole argument of another
  * command, in which case the caller also needs its reduction kind.
@@ -15648,24 +15668,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 if (accepts_forwarding) {
                     parser_lex(parser);
 
-                    if (token_begins_expression_p(parser->current.type)) {
-                        // If the token begins an expression then this ... was
-                        // not actually argument forwarding but was instead a
-                        // range.
-                        pm_token_t operator = parser->previous;
-                        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_RANGE, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
-
-                        /* A binary or endless range chains with the outer
-                         * operator. A beginless range is a valid operand. */
-                        if (PM_NODE_TYPE_P(right, PM_RANGE_NODE)) {
-                            pm_range_node_t *range = (pm_range_node_t *) right;
-                            if (range->left != NULL) {
-                                pm_parser_err(parser, range->operator_loc.start, range->operator_loc.length, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
-                            }
-                        }
-
-                        argument = UP(pm_range_node_create(parser, NULL, &operator, right));
-                    } else {
+                    if (!token_begins_expression_p(parser->current.type)) {
                         pm_parser_scope_forwarding_all_check(parser, &parser->previous);
                         if (parsed_first_argument && terminator == PM_TOKEN_EOF) {
                             pm_parser_err_previous(parser, PM_ERR_ARGUMENT_FORWARDING_UNBOUND);
@@ -15678,6 +15681,13 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         parsed_forwarding_arguments = true;
                         break;
                     }
+
+                    /* With a right operand, ... begins an ordinary range argument. */
+                    uint8_t range_flags = flags & PM_PARSE_ACCEPTS_DO_BLOCK;
+                    pm_reduction_t range = pm_reduction(UP(parse_range(parser, range_flags, (uint16_t) (depth + 1))));
+                    pm_reduction_t parsed = parse_expression_infixes(parser, range, PM_BINDING_POWER_DEFINED, range_flags, (uint16_t) (depth + 1));
+                    argument = parsed.node;
+                    argument_kind = PM_REDUCTION_KIND(parsed);
                 }
             }
             PRISM_FALLTHROUGH
@@ -15697,9 +15707,10 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                     pm_reduction_t parsed = parse_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) (do_block | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
                     argument = parsed.node;
-                    pm_assert_value_expression(parser, argument);
                     argument_kind = PM_REDUCTION_KIND(parsed);
                 }
+
+                pm_assert_value_expression(parser, argument);
 
                 bool contains_keywords = false;
                 bool contains_keyword_splat = false;
@@ -21222,23 +21233,6 @@ parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return pm_call_reduction(UP(pm_super_node_create(parser, &keyword, &arguments)), &arguments);
 }
 
-static pm_range_node_t *
-parse_range(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
-    pm_token_t operator = parser->current;
-    parser_lex(parser);
-
-    pm_node_t *right = parse_expression(parser, pm_binding_powers[operator.type].left, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1)).node;
-
-    /* Unary .. and ... are special because these are non-associative operators
-     * that can also be unary operators. In this case we need to explicitly
-     * reject code that has a .. or ... that follows this expression. */
-    if (match2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
-        pm_parser_err_current(parser, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
-    }
-
-    return pm_range_node_create(parser, NULL, &operator, right);
-}
-
 static pm_reduction_t
 parse_bang(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     if (binding_power > PM_BINDING_POWER_UNARY) {
@@ -21308,6 +21302,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                 );
             }
 
+            parser_lex(parser);
             return pm_reduction(UP(parse_range(parser, flags, depth)));
         case PM_TOKEN_FLOAT:
             parser_lex(parser);
@@ -22785,6 +22780,12 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             break;
     }
 
+    return parse_expression_infixes(parser, left, binding_power, flags, depth);
+}
+
+/* Continue an expression from its parsed prefix at the caller's binding power. */
+static pm_reduction_t
+parse_expression_infixes(pm_parser_t *parser, pm_reduction_t left, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     // Look and see if the next token can be parsed as an infix operator. If it
     // can, then we'll parse it using parse_expression_infix.
     pm_binding_power_t minimum_binding_power = (flags & PM_PARSE_NO_STATEMENT_MODIFIERS) ? pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right : binding_power;

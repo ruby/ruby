@@ -72,6 +72,15 @@ module Ruby::Prism
       end
     end
 
+    def test_beginless_range_predicate_and_argument_forwarding
+      result = Ruby::Prism.parse("def f(...); g(...x ? h(...) : b, ...); end")
+      assert_predicate result, :success?
+      conditional, forwarding = result.statement.body.body.first.arguments.arguments
+      assert_instance_of FlipFlopNode, conditional.predicate
+      assert_instance_of ForwardingArgumentsNode, conditional.statements.body.first.arguments.arguments.first
+      assert_instance_of ForwardingArgumentsNode, forwarding
+    end
+
     def test_parse_takes_file_path
       filepath = "filepath.rb"
       result = Ruby::Prism.parse("def foo; __FILE__; end", filepath: filepath)

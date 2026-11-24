@@ -198,6 +198,17 @@ module Ruby::Prism
       end
     end
 
+    def test_void_ternary_argument_with_a_beginless_range_predicate
+      result = Ruby::Prism.parse("def f; g(...x ? return : return); end")
+      assert_equal [:void_expression], result.errors.map(&:type)
+      assert_equal "return", result.errors.first.location.slice
+    end
+
+    def test_bare_argument_forwarding_in_a_ternary_branch
+      result = Ruby::Prism.parse("def f(...); g(...x ? ... : y); end")
+      assert_equal [:expect_expression_after_operator], result.errors.map(&:type)
+    end
+
     def test_singleton_class_return_uses_its_enclosing_method
       [
         "-> { class << self; return; end }",
@@ -900,6 +911,9 @@ module Ruby::Prism
 
     def test_beginless_range_rejects_unparenthesized_binary_range_operand
       assert_equal [:unexpected_range_operator], Ruby::Prism.parse("p(...1..2)").errors.map(&:type)
+      errors = Ruby::Prism.parse("f(...x.. && y)").errors
+      assert_equal [:unexpected_range_operator], errors.map(&:type)
+      assert_equal "..", errors.first.location.slice
     end
 
     def test_leading_logical_label_does_not_turn_following_keyword_into_symbol
