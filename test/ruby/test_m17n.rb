@@ -1051,6 +1051,19 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\u3044\u3046\u3044\u3046", a)
   end
 
+  def test_lone_caret_charset_in_wide_encoding
+    # A lone "^" is a literal caret, not negation. It used to be treated as
+    # negation when "^" encodes to more than one byte.
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      caret = "^".encode(enc)
+      assert_equal(1, "a^b".encode(enc).count(caret), enc)
+      assert_equal("ab".encode(enc), "a^b".encode(enc).delete(caret), enc)
+      assert_equal("aab".encode(enc), "aab".encode(enc).squeeze(caret), enc)
+      assert_equal("a^b".encode(enc), "a^^b".encode(enc).squeeze(caret), enc)
+      assert_equal(2, "a^b".encode(enc).count("^a".encode(enc)), enc)
+    end
+  end
+
   def test_include?
     assert_equal(false, e("\xa1\xa2\xa3\xa4").include?(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")

@@ -11372,7 +11372,9 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
     tr.p = RSTRING_PTR(str); tr.pend = tr.p + RSTRING_LEN(str);
     tr.gen = tr.now = tr.max = 0;
 
-    if (RSTRING_LEN(str) > 1 && rb_enc_ascget(tr.p, tr.pend, &l, enc) == '^') {
+    if (RSTRING_LEN(str) > 1 &&
+        rb_enc_ascget(tr.p, tr.pend, &l, enc) == '^' &&
+        tr.p + l < tr.pend) {
         cflag = 1;
         tr.p += l;
     }
