@@ -4295,22 +4295,22 @@ str2guid(const char *str, GUID *guid)
 int
 getifaddrs(struct ifaddrs **ifap)
 {
-    ULONG size = 0;
-    ULONG ret;
+    /* Use the initial buffer size recommended for GetAdaptersAddresses. */
+    ULONG size = 15000;
     IP_ADAPTER_ADDRESSES *root, *addr;
     struct ifaddrs *prev;
 
-    ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &size);
-    if (ret != ERROR_BUFFER_OVERFLOW) {
-        errno = map_errno(ret);
-        return -1;
-    }
-    root = ruby_xmalloc(size);
-    ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, root, &size);
-    if (ret != ERROR_SUCCESS) {
-        errno = map_errno(ret);
+    for (int attempt = 1; ; attempt++) {
+        ULONG capacity = size;
+        root = ruby_xmalloc(capacity);
+        ULONG ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, root, &size);
+        if (ret == ERROR_SUCCESS) break;
+
         ruby_xfree(root);
-        return -1;
+        if (ret != ERROR_BUFFER_OVERFLOW || size <= capacity || attempt == 3) {
+            errno = ret == ERROR_BUFFER_OVERFLOW ? ENOBUFS : map_errno(ret);
+            return -1;
+        }
     }
 
     for (prev = NULL, addr = root; addr; addr = addr->Next) {
