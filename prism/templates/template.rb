@@ -60,15 +60,6 @@ module Ruby::Prism
         @signature = formats.map { |format| FORMATS.fetch(format) }
       end
 
-      def c_message
-        Template.c_string(literals.join)
-      end
-
-      def literal_ends
-        offset = 0
-        literals.map { |literal| offset += literal.bytesize }
-      end
-
       def byte_formats
         formats.select { |format| FORMATS.fetch(format) == "byte" }
       end
