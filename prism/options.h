@@ -150,8 +150,9 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_filepath(const pm_options
  *
  * @param options The options struct to set the filepath on.
  * @param filepath The filepath to set.
+ * @param length The length of the filepath in bytes.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath) PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath, size_t length) PRISM_NONNULL(1);
 
 /**
  * Set the line option on the given options struct.
@@ -166,8 +167,9 @@ PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t 
  *
  * @param options The options struct to set the encoding on.
  * @param encoding The encoding to set.
+ * @param length The length of the encoding name in bytes.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding) PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding, size_t length) PRISM_NONNULL(1);
 
 /**
  * Set the encoding_locked option on the given options struct.

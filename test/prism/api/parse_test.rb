@@ -24,6 +24,11 @@ module Ruby::Prism
       assert_equal filepath, find_source_file_node(result.value).filepath
     end
 
+    def test_parse_preserves_embedded_nul_in_filepath
+      filepath = "a\0b.rb"
+      assert_equal filepath, Ruby::Prism.parse_statement("__FILE__", filepath: filepath).filepath
+    end
+
     def test_parse_takes_line
       line = 4
       result = Ruby::Prism.parse("def foo\n __FILE__\nend", line: line)

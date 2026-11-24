@@ -235,13 +235,17 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
     ID key_id = SYM2ID(key);
 
     if (key_id == rb_id_option_filepath) {
-        if (!NIL_P(value)) pm_options_filepath_set(options, check_string(value));
+        if (!NIL_P(value)) {
+            const char *filepath = check_string(value);
+            pm_options_filepath_set(options, filepath, RSTRING_LEN(value));
+        }
     } else if (key_id == rb_id_option_encoding) {
         if (!NIL_P(value)) {
             if (value == Qfalse) {
                 pm_options_encoding_locked_set(options, true);
             } else {
-                pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
+                const char *name = rb_enc_name(rb_to_encoding(value));
+                pm_options_encoding_set(options, name, strlen(name));
             }
         }
     } else if (key_id == rb_id_option_line) {
@@ -385,7 +389,7 @@ extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
             rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
         }
 
-        pm_options_filepath_set(options, RSTRING_PTR(filepath));
+        pm_options_filepath_set(options, RSTRING_PTR(filepath), RSTRING_LEN(filepath));
     }
 }
 
