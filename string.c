@@ -11225,7 +11225,8 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                 modify = true;
             }
 
-            if (cr == ENC_CODERANGE_7BIT && !rb_isascii(c)) {
+            if (cr == ENC_CODERANGE_7BIT && !NIL_P(replacement) &&
+                rb_enc_str_coderange(replacement) != ENC_CODERANGE_7BIT) {
                 cr = ENC_CODERANGE_VALID;
             }
 
