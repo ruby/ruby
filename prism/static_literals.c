@@ -1,7 +1,6 @@
 #include "prism/internal/static_literals.h"
 
 #include "prism/compiler/inline.h"
-#include "prism/compiler/unused.h"
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/assert.h"
@@ -10,6 +9,7 @@
 #include "prism/internal/double.h"
 #include "prism/internal/integer.h"
 #include "prism/internal/line_offset_list.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/oom.h"
 #include "prism/internal/parser.h"
 #include "prism/internal/stringy.h"
@@ -110,11 +110,6 @@ node_hash(const pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
- * Compare two values that can be compared with a simple numeric comparison.
- */
-#define COMPARE(left_, right_) (((left_) < (right_)) ? -1 : ((left_) > (right_)) ? 1 : 0)
-
-/**
  * Return the integer value of the given node as an int64_t.
  */
 static int64_t
@@ -136,26 +131,17 @@ int64_value(const pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
- * A comparison function for comparing two IntegerNode or SourceLineNode
- * instances.
+ * Return whether two IntegerNode or SourceLineNode instances have equal values.
  */
-static int
-compare_integer_nodes(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
+static bool
+integer_nodes_equal(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
     if (PM_NODE_TYPE_P(left, PM_SOURCE_LINE_NODE) || PM_NODE_TYPE_P(right, PM_SOURCE_LINE_NODE)) {
-        return COMPARE(int64_value(parser, left), int64_value(parser, right));
+        return int64_value(parser, left) == int64_value(parser, right);
     }
 
     const pm_integer_t *left_integer = &((const pm_integer_node_t *) left)->value;
     const pm_integer_t *right_integer = &((const pm_integer_node_t *) right)->value;
-    return pm_integer_compare(left_integer, right_integer);
-}
-
-/**
- * A comparison function for comparing two FloatNode instances.
- */
-static int
-compare_float_nodes(PRISM_UNUSED const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
-    return COMPARE(((const pm_float_node_t *) left)->value, ((const pm_float_node_t *) right)->value);
+    return !pm_integer_compare(left_integer, right_integer);
 }
 
 /**
@@ -164,6 +150,8 @@ compare_float_nodes(PRISM_UNUSED const pm_parser_t *parser, const pm_node_t *lef
 static const pm_string_t *
 string_value(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
+        case PM_REGULAR_EXPRESSION_NODE:
+            return &((const pm_regular_expression_node_t *) node)->unescaped;
         case PM_STRING_NODE:
             return &((const pm_string_node_t *) node)->unescaped;
         case PM_SOURCE_FILE_NODE:
@@ -177,8 +165,7 @@ string_value(const pm_node_t *node) {
 }
 
 /**
- * A comparison function for comparing two nodes that have attached strings.
- * Only the flags in the given mask take part in the comparison.
+ * Return whether two nodes have equal string bytes and flags under the mask.
  *
  * The FORCED_* flags record how a literal was written. An escape that locks the
  * encoding to UTF-8 (a `\u` escape above U+007F, or any `\u` in a character
@@ -188,37 +175,13 @@ string_value(const pm_node_t *node) {
  * to compare equally. A source file node never carries a FORCED_* flag, because
  * every instance of __FILE__ in a parse resolves to the same encoding.
  */
-static int
-compare_string_nodes(const pm_node_t *left, const pm_node_t *right, pm_node_flags_t mask) {
+static bool
+string_nodes_equal(const pm_node_t *left, const pm_node_t *right, pm_node_flags_t mask) {
+    if ((left->flags & mask) != (right->flags & mask)) return false;
+
     const pm_string_t *left_string = string_value(left);
     const pm_string_t *right_string = string_value(right);
-
-    int result = pm_string_compare(left_string, right_string);
-    if (result != 0) return result;
-
-    /*
-     * Equal bytes are not enough. In a binary source file the two bytes written
-     * as `"\xC3\xA9"` stay BINARY while a `"\u00E9"` escape is forced to UTF-8,
-     * so those are distinct keys even though the bytes match.
-     */
-    return COMPARE(left->flags & mask, right->flags & mask);
-}
-
-/**
- * A comparison function for comparing two RegularExpressionNode instances. The
- * once flag is left out because it only controls how many times an
- * interpolated regular expression is compiled, not its value.
- */
-static int
-compare_regular_expression_nodes(PRISM_UNUSED const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
-    const pm_regular_expression_node_t *left_regexp = (const pm_regular_expression_node_t *) left;
-    const pm_regular_expression_node_t *right_regexp = (const pm_regular_expression_node_t *) right;
-
-    int result = pm_string_compare(&left_regexp->unescaped, &right_regexp->unescaped);
-    if (result != 0) return result;
-
-    pm_node_flags_t mask = (pm_node_flags_t) ~PM_REGULAR_EXPRESSION_FLAGS_ONCE;
-    return COMPARE(left->flags & mask, right->flags & mask);
+    return left_string->length == right_string->length && pm_memequal(left_string->source, right_string->source, left_string->length);
 }
 
 /**
@@ -239,55 +202,51 @@ static_literal_type(const pm_node_t *node) {
 }
 
 /**
- * A comparison function for comparing any two static literal nodes. Nodes that
- * are compared as different types are never equal.
+ * Return whether two nodes represent the same static literal.
  */
-static int
-compare_nodes(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
+static bool
+nodes_equal(const pm_parser_t *parser, const pm_node_t *left, const pm_node_t *right) {
     enum pm_node_type left_type = static_literal_type(left);
     enum pm_node_type right_type = static_literal_type(right);
-    if (left_type != right_type) return COMPARE(left_type, right_type);
+    if (left_type != right_type) return false;
 
     switch (left_type) {
         case PM_INTEGER_NODE:
-            return compare_integer_nodes(parser, left, right);
+            return integer_nodes_equal(parser, left, right);
         case PM_FLOAT_NODE:
-            return compare_float_nodes(parser, left, right);
+            return ((const pm_float_node_t *) left)->value == ((const pm_float_node_t *) right)->value;
         case PM_IMAGINARY_NODE:
-            return compare_nodes(parser, ((const pm_imaginary_node_t *) left)->numeric, ((const pm_imaginary_node_t *) right)->numeric);
+            return nodes_equal(parser, ((const pm_imaginary_node_t *) left)->numeric, ((const pm_imaginary_node_t *) right)->numeric);
         case PM_RATIONAL_NODE: {
             const pm_rational_node_t *left_rational = (const pm_rational_node_t *) left;
             const pm_rational_node_t *right_rational = (const pm_rational_node_t *) right;
 
-            int result = pm_integer_compare(&left_rational->denominator, &right_rational->denominator);
-            if (result != 0) return result;
-
-            return pm_integer_compare(&left_rational->numerator, &right_rational->numerator);
+            return !pm_integer_compare(&left_rational->denominator, &right_rational->denominator) &&
+                   !pm_integer_compare(&left_rational->numerator, &right_rational->numerator);
         }
         case PM_STRING_NODE: {
             pm_node_flags_t mask = PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
             if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
-            return compare_string_nodes(left, right, mask);
+            return string_nodes_equal(left, right, mask);
         }
         case PM_SYMBOL_NODE: {
             pm_node_flags_t mask = PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING | PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING;
             if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) mask |= PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING;
-            return compare_string_nodes(left, right, mask);
+            return string_nodes_equal(left, right, mask);
         }
         case PM_REGULAR_EXPRESSION_NODE:
-            return compare_regular_expression_nodes(parser, left, right);
+            /* The once flag only controls how often the regexp is compiled. */
+            return string_nodes_equal(left, right, (pm_node_flags_t) ~PM_REGULAR_EXPRESSION_FLAGS_ONCE);
         case PM_FALSE_NODE:
         case PM_NIL_NODE:
         case PM_SOURCE_ENCODING_NODE:
         case PM_TRUE_NODE:
-            return 0;
+            return true;
         default:
             PRISM_ASSERT(false && "unreachable");
-            return 0;
+            return false;
     }
 }
-
-#undef COMPARE
 
 /**
  * Place an entry into a hash table that is known not to hold an equal node, so
@@ -370,7 +329,7 @@ pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals
         for (uint32_t index = 0; index < literals->size; index++) {
             pm_node_t *existing = literals->nodes[index];
 
-            if (compare_nodes(parser, existing, node) == 0) {
+            if (nodes_equal(parser, existing, node)) {
                 if (replace) literals->nodes[index] = node;
                 return existing;
             }
@@ -401,7 +360,7 @@ pm_static_literals_add(const pm_parser_t *parser, pm_static_literals_t *literals
      * be equal, so only entries with a matching hash are compared. */
     while (literals->entries[index].node != NULL) {
         const pm_static_literals_entry_t *entry = &literals->entries[index];
-        if (entry->hash == hash && compare_nodes(parser, entry->node, node) == 0) break;
+        if (entry->hash == hash && nodes_equal(parser, entry->node, node)) break;
         index = (index + 1) & mask;
     }
 
