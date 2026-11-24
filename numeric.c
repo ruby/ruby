@@ -3487,6 +3487,9 @@ rb_uint128_t
 rb_numeric_to_uint128(VALUE x)
 {
     rb_uint128_t result = {0};
+    if (!RB_INTEGER_TYPE_P(x)) {
+        x = rb_to_int(x);
+    }
     if (RB_FIXNUM_P(x)) {
         long value = RB_FIX2LONG(x);
         if (value < 0) {
@@ -3533,6 +3536,9 @@ rb_int128_t
 rb_numeric_to_int128(VALUE x)
 {
     rb_int128_t result = {0};
+    if (!RB_INTEGER_TYPE_P(x)) {
+        x = rb_to_int(x);
+    }
     if (RB_FIXNUM_P(x)) {
         long value = RB_FIX2LONG(x);
 #ifdef HAVE_UINT128_T
