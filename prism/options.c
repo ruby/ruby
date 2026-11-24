@@ -70,16 +70,16 @@ pm_options_filepath(const pm_options_t *options) {
  * Set the filepath option on the given options struct.
  */
 void
-pm_options_filepath_set(pm_options_t *options, const char *filepath) {
-    pm_string_init(&options->filepath, (const uint8_t *) filepath, strlen(filepath));
+pm_options_filepath_set(pm_options_t *options, const char *filepath, size_t length) {
+    pm_string_init(&options->filepath, (const uint8_t *) filepath, length);
 }
 
 /**
  * Set the encoding option on the given options struct.
  */
 void
-pm_options_encoding_set(pm_options_t *options, const char *encoding) {
-    pm_string_init(&options->encoding, (const uint8_t *) encoding, strlen(encoding));
+pm_options_encoding_set(pm_options_t *options, const char *encoding, size_t length) {
+    pm_string_init(&options->encoding, (const uint8_t *) encoding, length);
 }
 
 /**
