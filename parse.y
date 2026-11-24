@@ -1701,6 +1701,7 @@ restore_defun(struct parser_params *p, rb_node_def_temp_t *temp)
     p->ctxt.in_def = ctxt.in_def;
     p->ctxt.shareable_constant_value = ctxt.shareable_constant_value;
     p->ctxt.in_rescue = ctxt.in_rescue;
+    p->ctxt.cant_return = ctxt.cant_return;
     p->max_numparam = temp->save.max_numparam;
     numparam_pop(p, temp->save.numparam_save);
     clear_block_exit(p, true);
