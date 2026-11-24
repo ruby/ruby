@@ -266,18 +266,19 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) build_options_scopes(options, value);
     } else if (key_id == rb_id_option_command_line) {
         if (!NIL_P(value)) {
-            const char *string = check_string(value);
+            const char *flags = check_string(value);
+            long length = RSTRING_LEN(value);
             uint8_t command_line = 0;
 
-            for (size_t index = 0; index < strlen(string); index++) {
-                switch (string[index]) {
+            for (long index = 0; index < length; index++) {
+                switch (flags[index]) {
                     case 'a': command_line |= PM_OPTIONS_COMMAND_LINE_A; break;
                     case 'e': command_line |= PM_OPTIONS_COMMAND_LINE_E; break;
                     case 'l': command_line |= PM_OPTIONS_COMMAND_LINE_L; break;
                     case 'n': command_line |= PM_OPTIONS_COMMAND_LINE_N; break;
                     case 'p': command_line |= PM_OPTIONS_COMMAND_LINE_P; break;
                     case 'x': command_line |= PM_OPTIONS_COMMAND_LINE_X; break;
-                    default: rb_raise(rb_eArgError, "invalid command line flag: '%c'", string[index]); break;
+                    default: rb_raise(rb_eArgError, "invalid command line flag: '%c'", flags[index]); break;
                 }
             }
 

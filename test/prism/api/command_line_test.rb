@@ -79,6 +79,10 @@ module Ruby::Prism
       assert_equal 0, result.warnings.length
     end
 
+    def test_command_line_rejects_embedded_nul
+      assert_raise(ArgumentError) { Ruby::Prism.parse("1", command_line: "e\0n") }
+    end
+
     def test_command_line_x_implicit
       result = Ruby::Prism.parse_statement(<<~RUBY, main_script: true)
         #!/bin/bash
