@@ -506,6 +506,12 @@ class TestStringIO < Test::Unit::TestCase
     assert_nothing_raised { f.pos }
   end
 
+  def test_pos_to_int
+    f = StringIO.new("foo")
+    f.pos = 1.0
+    assert_equal(1, f.pos)
+  end
+
   def test_reopen
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal("foo\n", f.gets)
