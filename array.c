@@ -303,7 +303,7 @@ VALUE *
 rb_ary_ptr_use_start(VALUE ary)
 {
 #if ARRAY_DEBUG
-    FL_SET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
+    if (!OBJ_FROZEN(ary)) FL_SET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
 #endif
     return (VALUE *)RARRAY_CONST_PTR(ary);
 }
@@ -312,7 +312,7 @@ void
 rb_ary_ptr_use_end(VALUE ary)
 {
 #if ARRAY_DEBUG
-    FL_UNSET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
+    if (!OBJ_FROZEN(ary)) FL_UNSET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
 #endif
 }
 
