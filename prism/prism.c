@@ -6791,6 +6791,9 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
             break;
     }
 
+    if (PM_NODE_FLAG_P(node, PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING)) flags |= PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
+    if (PM_NODE_FLAG_P(node, PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING)) flags |= PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
+
     pm_string_node_t *new_node = pm_string_node_new(
         parser->arena,
         ++parser->node_id,
@@ -17139,6 +17142,13 @@ pm_string_parts_to_string(pm_parser_t *parser, const pm_token_t *opening, pm_str
     return node;
 }
 
+static pm_node_t *
+pm_string_parts_to_symbol(pm_parser_t *parser, const pm_token_t *opening, pm_string_parts_t *parts, const pm_token_t *closing) {
+    pm_node_t *node = UP(pm_interpolated_symbol_node_create(parser, opening, &parts->list, closing));
+    if (parts->invalid_encoding) pm_node_flag_unset(node, PM_NODE_FLAG_STATIC_LITERAL);
+    return node;
+}
+
 /**
  * Parse a set of strings that could be concatenated together.
  */
@@ -17293,8 +17303,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             }
 
             if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = UP(pm_interpolated_symbol_node_create(parser, &opening, &parts.list, &parser->previous));
-                if (parts.invalid_encoding) pm_node_flag_unset(node, PM_NODE_FLAG_STATIC_LITERAL);
+                node = pm_string_parts_to_symbol(parser, &opening, &parts, &parser->previous);
                 if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
             } else if (match1(parser, PM_TOKEN_EOF)) {
                 pm_parser_err_token(parser, &opening, PM_ERR_STRING_INTERPOLATED_TERM);
@@ -20548,7 +20557,7 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
      * once it needs more than one part, the open list of parts of an
      * interpolated symbol. */
     pm_node_t *current = NULL;
-    pm_node_list_t parts = { 0 };
+    pm_string_parts_t parts = { 0 };
 
     while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
         switch (parser->current.type) {
@@ -20559,9 +20568,9 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
 
                 /* If we hit a separator after we've hit content, then we need
                  * to append that content to the list and reset the element. */
-                if (parts.size > 0) {
-                    pm_array_elements_append(parser, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
-                    parts = (pm_node_list_t) { 0 };
+                if (parts.list.size > 0) {
+                    pm_array_elements_append(parser, &elements, pm_string_parts_to_symbol(parser, NULL, &parts, NULL));
+                    parts = (pm_string_parts_t) { 0 };
                 } else if (current != NULL) {
                     parse_interpolated_symbol_array_element(parser, &elements, current);
                     current = NULL;
@@ -20570,56 +20579,23 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
                 parser_lex(parser);
                 break;
             }
-            case PM_TOKEN_STRING_CONTENT: {
-                if (parts.size > 0) {
-                    /* If we hit string content and the element is already
-                     * interpolated, then we need to append the string content
-                     * to its parts. */
-                    pm_node_t *string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
-                    parser_lex(parser);
-
-                    pm_node_list_open_append(&parser->node_chunks, &parts, string);
-                } else if (current == NULL) {
-                    /* If we hit content and there is no element yet, then this
-                     * is the first string content we've seen. In that case
-                     * we're going to create a new symbol node for it. */
+            case PM_TOKEN_STRING_CONTENT:
+                /* A single literal part can use a plain symbol node. */
+                if (parts.list.size == 0 && current == NULL) {
                     current = UP(pm_symbol_node_create_current_string(parser, NULL, &parser->current, NULL));
                     parser_lex(parser);
-                } else {
-                    /* If we hit string content and the element is a symbol
-                     * node, then we need to turn the element into the parts of
-                     * an interpolated symbol and add the string content to
-                     * them. */
-                    pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
-                    pm_token_t content = {
-                        .type = PM_TOKEN_STRING_CONTENT,
-                        .start = parser->start + cast->content_loc.start,
-                        .end = parser->start + cast->content_loc.start + cast->content_loc.length
-                    };
-
-                    pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
-                    pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
-                    parser_lex(parser);
-
-                    pm_node_list_open_append(&parser->node_chunks, &parts, first_string);
-                    pm_node_list_open_append(&parser->node_chunks, &parts, second_string);
-                    current = NULL;
+                    break;
                 }
-
-                break;
-            }
+                PRISM_FALLTHROUGH
             case PM_TOKEN_EMBVAR:
             case PM_TOKEN_EMBEXPR_BEGIN: {
-                /* If we hit an embedded variable or expression and the element
-                 * is a symbol node, then we'll turn the element into the parts
-                 * of an interpolated symbol, starting with its string. */
                 if (current != NULL) {
-                    pm_node_list_open_append(&parser->node_chunks, &parts, UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current)));
+                    pm_string_parts_append(parser, &parts, UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current)));
                     current = NULL;
                 }
 
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
-                pm_node_list_open_append(&parser->node_chunks, &parts, part);
+                pm_string_parts_append(parser, &parts, part);
                 break;
             }
             default:
@@ -20630,8 +20606,8 @@ parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
     }
 
     /* If we have an element, then we need to append it to the list. */
-    if (parts.size > 0) {
-        pm_array_elements_append(parser, &elements, UP(pm_interpolated_symbol_node_create(parser, NULL, &parts, NULL)));
+    if (parts.list.size > 0) {
+        pm_array_elements_append(parser, &elements, pm_string_parts_to_symbol(parser, NULL, &parts, NULL));
     } else if (current != NULL) {
         parse_interpolated_symbol_array_element(parser, &elements, current);
     }
@@ -20715,7 +20691,7 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
      * once it needs more than one part, the open list of parts of an
      * interpolated string. */
     pm_node_t *current = NULL;
-    pm_node_list_t parts = { 0 };
+    pm_string_parts_t parts = { 0 };
 
     while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
         switch (parser->current.type) {
@@ -20726,9 +20702,9 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
 
                 /* If we hit a separator after we've hit content, then we need
                  * to append that content to the list and reset the element. */
-                if (parts.size > 0) {
-                    pm_array_elements_append(parser, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
-                    parts = (pm_node_list_t) { 0 };
+                if (parts.list.size > 0) {
+                    pm_array_elements_append(parser, &elements, pm_string_parts_to_string(parser, NULL, &parts, NULL));
+                    parts = (pm_string_parts_t) { 0 };
                 } else if (current != NULL) {
                     pm_array_elements_append(parser, &elements, current);
                     current = NULL;
@@ -20737,45 +20713,22 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
                 parser_lex(parser);
                 break;
             }
-            case PM_TOKEN_STRING_CONTENT: {
-                pm_node_t *string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
-                pm_node_flag_set(string, parse_unescaped_encoding(parser, parser->explicit_encoding));
-                parser_lex(parser);
-
-                if (parts.size > 0) {
-                    /* If we hit string content and the element is already
-                     * interpolated, then we need to append the string content
-                     * to its parts. */
-                    pm_node_list_open_append(&parser->node_chunks, &parts, string);
-                } else if (current == NULL) {
-                    /* If we hit content and there is no element yet, then this
-                     * is the first string content we've seen, and it becomes
-                     * the element. */
-                    current = string;
-                } else {
-                    /* If we hit string content and the element is a string
-                     * node, then we need to turn the element into the parts of
-                     * an interpolated string and add the string content to
-                     * them. */
-                    pm_node_list_open_append(&parser->node_chunks, &parts, current);
-                    pm_node_list_open_append(&parser->node_chunks, &parts, string);
-                    current = NULL;
+            case PM_TOKEN_STRING_CONTENT:
+                /* A single literal part can use a plain string node. */
+                if (parts.list.size == 0 && current == NULL) {
+                    current = parse_string_part(parser, (uint16_t) (depth + 1));
+                    break;
                 }
-
-                break;
-            }
+                PRISM_FALLTHROUGH
             case PM_TOKEN_EMBVAR:
             case PM_TOKEN_EMBEXPR_BEGIN: {
-                /* If we hit an embedded variable or expression and the element
-                 * is a string node, then we'll turn the element into the parts
-                 * of an interpolated string, starting with that string. */
                 if (current != NULL) {
-                    pm_node_list_open_append(&parser->node_chunks, &parts, current);
+                    pm_string_parts_append(parser, &parts, current);
                     current = NULL;
                 }
 
                 pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
-                pm_node_list_open_append(&parser->node_chunks, &parts, part);
+                pm_string_parts_append(parser, &parts, part);
                 break;
             }
             default:
@@ -20786,8 +20739,8 @@ parse_interpolated_string_array(pm_parser_t *parser, uint16_t depth) {
     }
 
     /* If we have an element, then we need to append it to the list. */
-    if (parts.size > 0) {
-        pm_array_elements_append(parser, &elements, UP(pm_interpolated_string_node_create(parser, NULL, &parts, NULL)));
+    if (parts.list.size > 0) {
+        pm_array_elements_append(parser, &elements, pm_string_parts_to_string(parser, NULL, &parts, NULL));
     } else if (current != NULL) {
         pm_array_elements_append(parser, &elements, current);
     }

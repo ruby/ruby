@@ -130,6 +130,31 @@ module Ruby::Prism
       assert_equal ["string literal encodings differ (UTF-8 / ASCII-8BIT)", "string literal encodings differ (ASCII-8BIT / UTF-8)"], errors.map(&:message)
     end
 
+    def test_incompatible_encodings_within_word_and_symbol_array_elements
+      %w[W I].each do |kind|
+        [
+          ['#{"\u3042"}' + "\xD4".b, "UTF-8 / ASCII-8BIT", "\xD4".b],
+          ['\u3042#{"\xD4"} next', "UTF-8 / ASCII-8BIT", '#{"\xD4"}'],
+          ['#{"\xD4"}\u3042', "ASCII-8BIT / UTF-8", '\u3042']
+        ].each do |words, encodings, location|
+          source = "%#{kind}[#{words}]"
+          result = Ruby::Prism.parse(source, encoding: "ASCII-8BIT")
+          assert_equal ["string literal encodings differ (#{encodings})"], result.errors.map(&:message), source
+          assert_equal location, result.errors.first.location.slice
+          refute_predicate result.statement.elements.first, :static_literal?
+        end
+      end
+    end
+
+    def test_independent_encodings_in_word_and_symbol_arrays
+      %w[W I].each do |kind|
+        ['#{"\u3042"}a \xD4#{"\xD4"}', '\u3042#{x}\xD4'].each do |words|
+          source = "%#{kind}[#{words}]"
+          assert_predicate Ruby::Prism.parse(source, encoding: "ASCII-8BIT"), :success?, source
+        end
+      end
+    end
+
     def test_dynamic_interpolation_separates_literal_encodings
       ['"\u3042#{; "\xD4"}"', '"\u3042#{x}#{"\xD4"}"', '"\u3042#$x#{"\xD4"}"'].each do |source|
         assert_predicate Ruby::Prism.parse(source, encoding: "ASCII-8BIT"), :success?, source
