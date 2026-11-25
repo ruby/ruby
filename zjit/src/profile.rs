@@ -306,6 +306,8 @@ impl Flags {
     pub fn is_ifunc_block_handler(self) -> bool { (self.0 & Self::IS_IFUNC_BLOCK_HANDLER) != 0 }
     pub fn is_proc_block_handler(self) -> bool { (self.0 & Self::IS_PROC_BLOCK_HANDLER) != 0 }
     pub fn is_shape_only(self) -> bool { (self.0 & Self::IS_SHAPE_ONLY) != 0 }
+    /// Whether the flags are the same except for IS_EMBEDDED
+    pub fn eq_ignoring_embedded(self, other: Self) -> bool { (self.0 & !Self::IS_EMBEDDED) == (other.0 & !Self::IS_EMBEDDED) }
 }
 
 /// opt_send_without_block/opt_plus/... should store:

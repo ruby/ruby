@@ -4685,7 +4685,9 @@ impl Function {
         let recv = self.chase_insn(recv);
         for (entry_insn, entry_type_summary) in entries {
             if self.chase_insn(*entry_insn) == recv {
-                if entry_type_summary.is_polymorphic() || entry_type_summary.is_skewed_polymorphic() {
+                // Don't split a send by receiver types that resolve methods by the same class
+                if (entry_type_summary.is_polymorphic() || entry_type_summary.is_skewed_polymorphic())
+                    && Self::single_class_ignoring_embedded(entry_type_summary.buckets()).is_none() {
                     return Some(entry_type_summary.clone());
                 }
                 return None;
@@ -4769,6 +4771,13 @@ impl Function {
 
         for (entry_insn, entry_type_summary) in entries {
             if self.chase_insn(*entry_insn) == recv {
+                // Method lookup depends only on the class. Strings, Arrays, and Hashes of one class can be profiled
+                // as different types when the IS_EMBEDDED flag differs, but we don't need to split them.
+                if entry_type_summary.is_polymorphic() || entry_type_summary.is_skewed_polymorphic() {
+                    if let Some(profiled_type) = Self::single_class_ignoring_embedded(entry_type_summary.buckets()) {
+                        return ReceiverTypeResolution::Monomorphic { profiled_type };
+                    }
+                }
                 if entry_type_summary.is_monomorphic() {
                     let profiled_type = entry_type_summary.bucket(0);
                     return ReceiverTypeResolution::Monomorphic { profiled_type };
@@ -4787,6 +4796,19 @@ impl Function {
         }
 
         ReceiverTypeResolution::NoProfile
+    }
+
+    /// If every profiled type is a String, Array, or Hash of the same class, differing
+    /// only in its shape ID and whether the object is embedded, return the first one.
+    fn single_class_ignoring_embedded(buckets: &[ProfiledType]) -> Option<ProfiledType> {
+        let mut types = buckets.iter().filter(|profiled_type| !profiled_type.is_empty());
+        let first = *types.next()?;
+        if first.flags().is_immediate() || first.flags().is_t_object()
+            || !Type::from_profiled_type(first).is_subtype(types::String.union(types::Array).union(types::Hash)) {
+            return None;
+        }
+        types.all(|other| other.class() == first.class() && other.flags().eq_ignoring_embedded(first.flags()))
+            .then_some(first)
     }
 
     pub fn assume_expected_cfunc(&mut self, block: BlockId, class: VALUE, method_id: ID, cfunc: *mut c_void, state: InsnId) -> bool {
