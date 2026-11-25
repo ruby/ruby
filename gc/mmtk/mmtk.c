@@ -970,8 +970,11 @@ obj_can_parallel_free_p(VALUE obj)
       case T_ARRAY:
       case T_BIGNUM:
       case T_COMPLEX:
+      case T_FILE:
       case T_FLOAT:
       case T_HASH:
+      case T_ICLASS:
+      case T_MATCH:
       case T_OBJECT:
       case T_RATIONAL:
       case T_REGEXP:
