@@ -1837,6 +1837,17 @@ eom
     assert_valid_syntax('while class Foo a = tap do end; end; break; end')
   end
 
+  def test_lambda_in_cond
+    [
+      'while -> do tap do end end; break; end',
+      'until -> do tap do end end do end',
+      'for x in -> do tap do end end do end',
+      'while -> a = -> do tap do end end do end; break; end',
+    ].each do |src|
+      assert_nothing_raised(SyntaxError, src) {RubyVM::InstructionSequence.compile_parsey(src)}
+    end
+  end
+
   def test_while_until_conditional_bug_22002
     @foo = 123 until defined?(@foo)
     assert_equal(123, @foo)
