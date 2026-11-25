@@ -302,6 +302,11 @@ if defined? Zlib
   end
 
   class TestZlibInflate < Test::Unit::TestCase
+    def test_avail_out_negative
+      z = Zlib::Inflate.new
+      assert_raise_with_message(ArgumentError, "negative size") { z.avail_out = -1 }
+    end
+
     def test_class_inflate_dictionary
       assert_raise(Zlib::NeedDict) do
         Zlib::Inflate.inflate([0x08,0x3C,0x0,0x0,0x0,0x0].pack("c*"))
