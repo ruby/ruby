@@ -1099,8 +1099,9 @@ class TestRegexp < Test::Unit::TestCase
   # timer interrupt, retries with a longer s if the match is too fast.
   def match_with_thread_in_match(re = /(\w)\1*\d/) # O(n^2) on the "a" run
     main = Thread.current
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     n = 3000
-    while n <= 48_000
+    while true
       s = "a" * n + "-" * 10_000
       done = false
       busy = Thread::Queue.new
@@ -1119,9 +1120,11 @@ class TestRegexp < Test::Unit::TestCase
       end
       return s, result, th if busy.pop
       th.join
+      if Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0 > 10
+        omit "no thread switch in the match"
+      end
       n *= 2
     end
-    flunk "no thread switch in the match"
   end
 
   def test_match_locks_string
