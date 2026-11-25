@@ -858,7 +858,7 @@ strio_binmode(VALUE self)
     rb_encoding *enc = rb_ascii8bit_encoding();
 
     ptr->enc = enc;
-    if (WRITABLE(self)) {
+    if (WRITABLE(self) && !NIL_P(ptr->string)) {
 	rb_enc_associate(ptr->string, enc);
     }
     return self;

@@ -75,6 +75,19 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate io, :eof?
   end
 
+  def test_each_null
+    io = StringIO.new(nil)
+    assert_equal([], io.each_line.to_a)
+    assert_equal([], io.readlines)
+    assert_equal([], io.each_byte.to_a)
+    assert_equal([], io.each_codepoint.to_a)
+  end
+
+  def test_binmode_null
+    io = StringIO.new(nil)
+    assert_same(io, io.binmode)
+  end
+
   def test_pread_null
     io = StringIO.new(nil)
     assert_raise(EOFError) { io.pread(1, 0) }
