@@ -381,6 +381,216 @@ class TestSuper < Test::Unit::TestCase
     end
   end
 
+  def test_super_in_kernel_eval
+    # `Kernel.eval` with an explicit receiver runs the string with
+    # `self` set to `Kernel`, so it switches `self` like instance_exec.
+    klass = Class.new(Array) do
+      def first
+        ::Kernel.eval("super()")
+      end
+    end
+    assert_raise_with_message(TypeError, /Module \(expected #<Class:/) do
+      klass.new.first
+    end
+
+    mod = Module.new do
+      def first
+        ::Kernel.eval("super()")
+      end
+
+      def itself
+        ::Kernel.eval("super()")
+      end
+    end
+    assert_raise_with_message(TypeError, /Module \(expected Array\)/) do
+      mod.instance_method(:first).bind_call([])
+    end
+
+    # Control: Kernel is an Object, so Object methods are fine to run on it
+    assert_same(Kernel, mod.instance_method(:itself).bind_call(Object.new))
+  end
+
+  def test_super_in_instance_eval_string
+    mod = Module.new do
+      def first
+        $block_self.instance_eval("super()")
+      end
+    end
+
+    $block_self = 0x6f56
+    assert_raise_with_message(TypeError, /Integer \(expected Array\)/) do
+      mod.instance_method(:first).bind_call([])
+    end
+
+    klass = Class.new(Array) { include mod }
+    assert_raise_with_message(TypeError, /Integer \(expected #<Class:/) do
+      klass.new.first
+    end
+
+    # Control: `self` switched to an array subclass instance
+    $block_self = Class.new(Array).new.push(:elem)
+    assert_equal(:elem, mod.instance_method(:first).bind_call([]))
+  ensure
+    $block_self = nil
+  end
+
+  def test_super_in_instance_exec_in_bound_module_method
+    mod = Module.new do
+      def first
+        0x6f56.instance_exec { super }
+      end
+
+      def itself
+        proc { super }
+      end
+    end
+
+    # [Bug #22562]
+    assert_raise_with_message(TypeError, /Integer \(expected Array\)/) do
+      mod.instance_method(:first).bind_call([])
+    end
+
+    # `super` lands in Kernel#itself, which any object can run
+    array = []
+    itself_super = mod.instance_method(:itself).bind_call(array)
+    obj = Object.new
+    assert_same(obj, obj.instance_exec(&itself_super))
+
+    # Control: no self switching
+    assert_same(array, itself_super.call)
+
+    # Control: `self` switched to an array subclass instance
+    array_sub_instance = Class.new(Array).new
+    assert_same(array_sub_instance, array_sub_instance.instance_exec(&itself_super))
+  end
+
+  def test_super_in_instance_exec_in_included_module_method
+    mod = Module.new do
+      attr_accessor :block_self
+
+      def first
+        block_self.instance_exec { super() }
+      end
+    end
+    array_sub = Class.new(Array) { include mod }
+    receiver = array_sub.new
+
+    # Has the module in its ancestry, but is not an array.
+    receiver.block_self = Class.new { include mod }.new
+    assert_raise_with_message(TypeError, /\(expected Array\)/) do
+      receiver.first
+    end
+
+    # An array, but without the module
+    receiver.block_self = [:not_sub]
+    assert_raise_with_message(TypeError, /Array \(expected #{Regexp.quote(array_sub.inspect)}\)/) do
+      receiver.first
+    end
+
+    # Control: has the module and `super` only finds methods for arrays
+    receiver.block_self = Class.new(Array) { include mod }.new.push(:sibling)
+    assert_equal(:sibling, receiver.first)
+
+    receiver.block_self = Class.new(array_sub).new.push(:sub)
+    assert_equal(:sub, receiver.first)
+  end
+
+  def test_super_in_instance_exec_in_module_included_into_included_module
+    mod = Module.new do
+      attr_accessor :block_self
+
+      def first
+        block_self.instance_exec { super() }
+      end
+    end
+    intermediary = Module.new
+    array_sub = Class.new(Array) { include intermediary }
+    # Include after `intermediary` is already in the ancestry of a class
+    intermediary.include(mod)
+    assert_equal([array_sub, intermediary, mod, Array], array_sub.ancestors.first(4))
+    receiver = array_sub.new
+
+    receiver.block_self = Class.new { include mod }.new
+    assert_raise_with_message(TypeError, /\(expected Array\)/) do
+      receiver.first
+    end
+
+    receiver.block_self = Class.new(Array) { include mod }.new.push(:sibling)
+    assert_equal(:sibling, receiver.first)
+
+    # Without the module. The includer of the iclass of the module
+    # is the iclass of `intermediary`, not a class.
+    receiver.block_self = Object.new
+    assert_raise_with_message(TypeError, /Object \(expected #{Regexp.quote(array_sub.inspect)}\)/) do
+      receiver.first
+    end
+  end
+
+  def test_super_in_instance_exec_in_extended_module_method
+    mod = Module.new do
+      attr_accessor :block_self
+
+      def first
+        block_self.instance_exec { super() }
+      end
+    end
+    extended = [:extended].extend(mod)
+
+    extended.block_self = Object.new.extend(mod)
+    assert_raise_with_message(TypeError, /\(expected Array\)/) do
+      extended.first
+    end
+
+    extended.block_self = [:other].extend(mod)
+    assert_equal(:other, extended.first)
+  end
+
+  def test_super_in_block_in_extended_module_method_after_clone
+    mod = Module.new do
+      def first
+        1.then { super() }
+      end
+    end
+    original = [:original].extend(mod)
+    # The singleton class of the clone can share the iclass of the
+    # module with the singleton class of the original.
+    cloned = original.clone.unshift(:cloned)
+    assert_equal([cloned.singleton_class, mod, Array], cloned.singleton_class.ancestors.first(3))
+
+    assert_equal(:cloned, cloned.first)
+    assert_equal(:original, original.first)
+  end
+
+  def test_super_in_instance_exec_in_prepended_module_method
+    mod = Module.new do
+      attr_accessor :block_self
+
+      def first
+        block_self.instance_exec { super() }
+      end
+    end
+    array_sub = Class.new(Array) do
+      prepend mod
+
+      def first
+        [:array_sub, super]
+      end
+    end
+    receiver = array_sub.new
+
+    # `super` lands in a method of the class the module is prepended to,
+    # so being an array with the module is not enough.
+    [Class.new { include mod }, Class.new(Array) { prepend mod }].each do |klass|
+      receiver.block_self = klass.new
+      assert_raise_with_message(TypeError, /\(expected #{Regexp.quote(array_sub.inspect)}\)/) do
+        receiver.first
+      end
+    end
+
+    receiver.block_self = Class.new(array_sub).new.push(:prepended)
+    assert_equal([:array_sub, :prepended], receiver.first)
+  end
+
   def test_yielding_super
     a = Class.new { def yielder; yield; end }
     x = Class.new { define_singleton_method(:hello) { 'hi' } }

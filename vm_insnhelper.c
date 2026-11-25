@@ -4856,10 +4856,51 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     }
 }
 
+NORETURN(static void vm_super_wrong_context(VALUE recv, VALUE expected));
+
+static void
+vm_super_wrong_context(VALUE recv, VALUE expected)
+{
+    rb_raise(rb_eTypeError,
+             "self has wrong type to call super in this context: "
+             "%"PRIsVALUE" (expected %"PRIsVALUE")",
+             rb_obj_class(recv), expected);
+}
+
+// Check `self` against the method `super` lands in, if any. A method from a
+// class assumes `self` is an instance of the class, and so does a method
+// from a refinement of a class.
+// Similar to how UnboundMethod allows method transplants, methods from a
+// module are allowed to run with any object.
+static void
+vm_super_check_self(VALUE recv, const rb_callable_method_entry_t *super_cme)
+{
+    // A refined method entry is not yet a concrete call destination. We'll
+    // check once it is resolved.
+    if (!super_cme || super_cme->def->type == VM_METHOD_TYPE_REFINED) return;
+
+    VALUE owner = super_cme->owner;
+    if (RB_TYPE_P(owner, T_MODULE) && FL_TEST(owner, RMODULE_IS_REFINEMENT)) {
+        owner = rb_refinement_module_get_refined_class(owner);
+    }
+
+    if (RB_TYPE_P(owner, T_CLASS) && !rb_obj_is_kind_of(recv, owner)) {
+        vm_super_wrong_context(recv, owner);
+    }
+}
+
 static VALUE
 vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, cfp, calling);
+
+    // The is-a check for `super` from a module needs to know the final destination,
+    // and that's known here, so this is where we do the check.
+    // TODO: For speed, limit this check to only `super` from a module.
+    // Currently this happens for all `super`s that see a VM_METHOD_TYPE_REFINED.
+    if (vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER) {
+        vm_super_check_self(calling->recv, ref_cme);
+    }
 
     if (ref_cme) {
         if (calling->cd->cc) {
@@ -5298,7 +5339,6 @@ empty_cc_for_super(void)
 static const struct rb_callcache *
 vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *cd, VALUE recv)
 {
-    VALUE current_defined_class;
     const rb_iseq_t *iseq = CFP_ISEQ(reg_cfp);
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
@@ -5306,19 +5346,45 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         vm_super_outside();
     }
 
-    current_defined_class = vm_defined_class_for_protected_call(me);
+    // Could be 0.
+    const VALUE search_start = vm_search_normal_superclass(me->defined_class);
 
-    if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-        iseq != method_entry_iseqptr(me) &&
-        !rb_obj_is_kind_of(recv, current_defined_class)) {
-        VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
-            RCLASS_INCLUDER(current_defined_class) : current_defined_class;
+    if (iseq != method_entry_iseqptr(me)) {
+        // `super` outside of the method body (in a block or eval string).
+        // `self` might not be the receiver of the method.
+        VALUE defined_class = me->defined_class;
+        VALUE expected = 0; // set when rejecting `self`
 
-        if (m) { /* not bound UnboundMethod */
-            rb_raise(rb_eTypeError,
-                     "self has wrong type to call super in this context: "
-                     "%"PRIsVALUE" (expected %"PRIsVALUE")",
-                     rb_obj_class(recv), m);
+        // `super` from within a module is complicated...
+        if (RB_TYPE_P(defined_class, T_ICLASS)) {
+            // When defined_class is part of a plain ancestry chain
+            // (not a refinement, not a bound UnboundMethod),
+            // require `self` to have the module in its ancestry.
+            if (RCLASS_INCLUDER(defined_class) &&
+                !rb_obj_is_kind_of(recv, defined_class)) {
+                // Report the class with the module. The includer is another
+                // iclass when it's from including into an already included
+                // module, so follow it to get to a class.
+                VALUE includer = RCLASS_INCLUDER(defined_class);
+                while (includer && RB_TYPE_P(includer, T_ICLASS)) {
+                    includer = RCLASS_INCLUDER(includer);
+                }
+                expected = includer ? includer : RBASIC_CLASS(defined_class);
+            }
+            else if (RICLASS_FOR_REFINEMENT_P(defined_class) &&
+                     RB_TYPE_P(RCLASS_REFINED_CLASS(defined_class), T_CLASS) &&
+                     !rb_obj_is_kind_of(recv, RCLASS_REFINED_CLASS(defined_class))) {
+                // A method in a refinement of a class is for instances of
+                // the class, same as a method in the class.
+                expected = RCLASS_REFINED_CLASS(defined_class);
+            }
+        }
+        else if (!rb_obj_is_kind_of(recv, defined_class)) {
+            expected = defined_class;
+        }
+
+        if (expected) {
+            vm_super_wrong_context(recv, expected);
         }
     }
 
@@ -5346,15 +5412,13 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     const struct rb_callcache *cc;
 
-    VALUE klass = vm_search_normal_superclass(me->defined_class);
-
-    if (!klass) {
+    if (!search_start) {
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
     }
     else {
-        cc = vm_search_method_fastpath(reg_cfp, cd, klass);
+        cc = vm_search_method_fastpath(reg_cfp, cd, search_start);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
 
         // define_method can cache for different method id
@@ -5363,9 +5427,9 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
             cd->cc = empty_cc_for_super();
         }
         else if (cached_cme->called_id != mid) {
-            const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+            const rb_callable_method_entry_t *cme = rb_callable_method_entry(search_start, mid);
             if (cme) {
-                cc = vm_cc_new(klass, cme, vm_call_super_method, cc_type_super);
+                cc = vm_cc_new(search_start, cme, vm_call_super_method, cc_type_super);
                 RB_OBJ_WRITE(iseq, &cd->cc, cc);
             }
             else {
@@ -5388,6 +5452,14 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
 
     VM_ASSERT((vm_cc_cme(cc), true));
+
+    // When `super` from a module, is-a check self based on where the `super`
+    // lands. Note that this check happens even when the cc->call fastpath
+    // above is set.
+    VM_ASSERT_TYPE2(me->defined_class, T_CLASS, T_ICLASS);
+    if (RB_TYPE_P(me->defined_class, T_ICLASS)) {
+        vm_super_check_self(recv, vm_cc_cme(cc));
+    }
 
     return cc;
 }
