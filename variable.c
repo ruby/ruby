@@ -2103,11 +2103,28 @@ rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
     return val;
 }
 
+static void
+rbasic_set_shape_id_atomic(VALUE obj, shape_id_t shape_id)
+{
+#if RBASIC_SHAPE_ID_FIELD
+    RBASIC_SET_SHAPE_ID(obj, shape_id);
+#else
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
+
+    VALUE clear = (VALUE)(shape_id_t)~SHAPE_ID_FL_PRIVATE_MASK << SHAPE_FLAG_SHIFT;
+    VALUE set = (VALUE)(shape_id & ~SHAPE_ID_FL_PRIVATE_MASK) << SHAPE_FLAG_SHIFT;
+    rb_obj_flags_update_atomic(obj, set, clear);
+
+    RUBY_ASSERT(rb_shape_verify_consistency(obj, RBASIC_SHAPE_ID(obj)));
+#endif
+}
+
 void
 rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {
-        RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
+        rb_obj_flags_update_atomic(x, RUBY_FL_FREEZE, 0);
         if (TYPE(x) == T_STRING) {
             RB_FL_UNSET_RAW(x, FL_USER2); // STR_CHILLED
         }
@@ -2129,10 +2146,10 @@ rb_obj_freeze_inline(VALUE x)
                 }
             }
             // FIXME: How to do multi-shape?
-            RBASIC_SET_SHAPE_ID(x, shape_id);
+            rbasic_set_shape_id_atomic(x, shape_id);
             break;
           default:
-            RBASIC_SET_SHAPE_ID(x, shape_id);
+            rbasic_set_shape_id_atomic(x, shape_id);
             break;
         }
 
