@@ -147,6 +147,10 @@ rsock_strbuf(VALUE str, long buflen)
 {
     rb_len_t len;
 
+    if (buflen < 0) {
+        rb_raise(rb_eArgError, "negative length %ld given", buflen);
+    }
+
     if (NIL_P(str)) return rb_str_new(0, buflen);
 
     StringValue(str);
