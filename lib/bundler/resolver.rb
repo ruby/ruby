@@ -137,8 +137,10 @@ module Bundler
       names_to_allow_remote_specs_for = []
       extended_explanation = nil
 
+      satisfiers = []
       while incompatibility.conflict?
         cause = incompatibility.cause
+        satisfiers << cause.satisfier
         incompatibility = cause.incompatibility
 
         incompatibility.terms.each do |term|
@@ -147,7 +149,7 @@ module Bundler
 
           if base_requirements[name]
             names_to_unlock << name
-          elsif package.ignores_prereleases? && @all_specs[name].any? {|s| s.version.prerelease? }
+          elsif filtered_prereleases?(package)
             names_to_allow_prereleases_for << name
           elsif package.prefer_local? && @all_specs[name].any? {|s| !s.is_a?(StubSpecification) }
             names_to_allow_remote_specs_for << name
@@ -158,6 +160,11 @@ module Bundler
 
           extended_explanation = no_versions_incompat.extended_explanation
         end
+      end
+
+      # Preserve the usual retry order when it can already resolve the conflict.
+      if names_to_unlock.empty? && names_to_allow_prereleases_for.empty? && names_to_allow_remote_specs_for.empty?
+        names_to_allow_prereleases_for = prerelease_names_in(satisfiers)
       end
 
       [names_to_unlock.uniq, names_to_allow_prereleases_for.uniq, names_to_allow_remote_specs_for.uniq, extended_explanation]
@@ -321,8 +328,10 @@ module Bundler
       "Gemfile"
     end
 
-    def raise_incomplete!(incomplete_specs)
-      raise_not_found!(@base.get_package(incomplete_specs.first.name))
+    def raise_incomplete!(incomplete_specs, platform = nil)
+      spec = incomplete_specs.first
+      # An unresolved dependency may be missing for a different resolution platform.
+      raise_not_found!(@base.get_package(spec.name), spec.version && platform)
     end
 
     def sort_versions_by_preferred(package, versions)
@@ -331,7 +340,7 @@ module Bundler
 
     private
 
-    def raise_not_found!(package)
+    def raise_not_found!(package, platform = nil)
       name = package.name
       source = source_for(name)
       specs = @all_specs[name]
@@ -347,7 +356,7 @@ module Bundler
       not_found_message = if specs_matching_requirement.any?
         specs = specs_matching_requirement
         matching_part = requirement_label
-        platforms = package.platforms
+        platforms = platform ? [platform] : package.platforms
 
         if platforms.size == 1
           "Could not find gem '#{requirement_label}' with platform '#{platforms.first}'"
@@ -412,6 +421,30 @@ module Bundler
 
     def filter_specs(specs, package)
       filter_remote_specs(filter_cooldown(filter_prereleases(specs, package)), package)
+    end
+
+    def prerelease_names_in(incompatibilities)
+      seen = {}.compare_by_identity
+      packages = []
+      while (incompatibility = incompatibilities.pop)
+        next if seen[incompatibility]
+        seen[incompatibility] = true
+
+        if incompatibility.conflict?
+          cause = incompatibility.cause
+          incompatibilities.push(cause.incompatibility, cause.satisfier)
+        else
+          incompatibility.terms.each {|term| packages << term.package }
+        end
+      end
+
+      packages.uniq.filter_map do |package|
+        package.name if !base_requirements[package.name] && filtered_prereleases?(package)
+      end
+    end
+
+    def filtered_prereleases?(package)
+      package.ignores_prereleases? && @all_specs[package.name].any? {|s| s.version.prerelease? }
     end
 
     def filter_prereleases(specs, package)
@@ -573,6 +606,13 @@ module Bundler
           versions = versions_for(dep_package, dep_range)
         end
 
+        if versions.empty? && locked_version_missing?(dep_package)
+          @base.unlock_names([name])
+          @all_versions.delete(dep_package)
+          @sorted_versions.delete(dep_package)
+          versions = versions_for(dep_package, dep_range)
+        end
+
         if versions.empty? && select_all_versions(dep_package, dep_range).any?
           raise_all_versions_filtered_out!(dep_package)
         end
@@ -583,6 +623,16 @@ module Bundler
 
         raise_not_found!(dep_package)
       end.to_h
+    end
+
+    def locked_version_missing?(package)
+      return false unless package.unlock?
+
+      name = package.name
+      version = package.locked_version
+      return false unless base_requirements[name]&.requirements == [[">=", version]]
+
+      source_for(name).specs.search([name, version]).empty?
     end
 
     def select_all_versions(package, range)

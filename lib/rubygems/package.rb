@@ -432,6 +432,10 @@ EOM
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
     destination_dir = File.realpath(destination_dir)
+    # File.umask sets the process umask to 0 while reading it, so read it once
+    # instead of per file to keep other threads' files from being created
+    # world-writable.
+    umask = File.umask
 
     directories = []
     symlinks = []
@@ -455,7 +459,7 @@ EOM
           raise Gem::Package::SymlinkError.new(full_name, real_destination, destination_dir) unless
             normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
 
-          symlinks << [full_name, link_target, destination, real_destination]
+          symlinks << [full_name, link_target, destination]
         end
 
         mkdir =
@@ -465,12 +469,12 @@ EOM
             File.dirname destination
           end
 
+        verify_extraction_dir mkdir, destination_dir
+
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 if entry.directory?)
+          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 & ~umask if entry.directory?)
           directories << mkdir
         end
-
-        verify_extraction_dir mkdir, destination_dir
 
         if entry.file?
           File.open(destination, "wb") do |out|
@@ -479,7 +483,7 @@ EOM
             # in the IO buffer that needs to be written, and that could be
             # written after the chmod (on close) which would mess up the perms
             out.flush
-            out.chmod file_mode(entry.header.mode) & ~File.umask
+            out.chmod file_mode(entry.header.mode) & ~umask
           end
         end
 
@@ -487,12 +491,21 @@ EOM
       end
     end
 
-    symlinks.each do |name, target, destination, real_destination|
-      if File.exist?(real_destination)
-        create_symlink(target, destination)
-      else
-        alert_warning "#{@spec.full_name} ships with a dangling symlink named #{name} pointing to missing #{target} file. Ignoring"
+    symlinks.each do |name, target, destination|
+      # The check above expands ".." lexically, so a target that walks
+      # through another symlink in the gem is only known once resolved.
+      real_destination = begin
+        resolve_symlink_target(target, File.dirname(destination))
+      rescue SystemCallError
+        gem_name = @spec ? @spec.full_name : "unknown"
+        alert_warning "#{gem_name} ships with a dangling symlink named #{name} pointing to missing #{target} file. Ignoring"
+        next
       end
+
+      raise Gem::Package::SymlinkError.new(name, real_destination, destination_dir) unless
+        normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
+
+      create_symlink(target, destination)
     end
 
     if dir_mode
@@ -688,16 +701,36 @@ EOM
 
   ##
   # Raises an exception unless +dir+, with symlinks resolved, is
-  # +destination_dir+ or a directory inside it.  +destination_dir+ must
-  # already be resolved with File.realpath by the caller.
+  # +destination_dir+ or a directory inside it.  When +dir+ does not exist
+  # yet, its nearest existing ancestor is checked instead, so this can run
+  # before +dir+ is created.  +destination_dir+ must already be resolved with
+  # File.realpath by the caller.
 
   def verify_extraction_dir(dir, destination_dir) # :nodoc:
+    dir = File.dirname(dir) until File.exist?(dir)
     real_dir = File.realpath(dir)
 
     return if real_dir == destination_dir ||
               normalize_path(real_dir).start_with?(normalize_path(destination_dir + "/"))
 
     raise Gem::Package::PathError.new(real_dir, destination_dir)
+  end
+
+  ##
+  # Resolves the symlink +target+ against +dir+ one component at a time.
+  # File.realpath on JRuby and TruffleRuby folds ".." before following
+  # symlinks, so ".." is applied here to the already resolved path instead.
+
+  def resolve_symlink_target(target, dir) # :nodoc:
+    root = target[%r{\A(?:[A-Za-z]:)?/}] if target.start_with?("/") || File.absolute_path?(target)
+
+    target.delete_prefix(root.to_s).split("/").inject(File.realpath(File.expand_path(root || dir))) do |current, name|
+      case name
+      when "", "." then current
+      when ".." then File.dirname(current)
+      else File.realpath(name, current)
+      end
+    end
   end
 
   ##
