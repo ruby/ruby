@@ -33,7 +33,7 @@ module URI
       #                         "a" | "b" | "c" | "d" | "e" | "f"
       HEX     = "a-fA-F\\d"
       # escaped       = "%" hex hex
-      ESCAPED = "%[#{HEX}]{2}"
+      ESCAPED = "%[#{HEX}][#{HEX}]"
       # mark          = "-" | "_" | "." | "!" | "~" | "*" | "'" |
       #                 "(" | ")"
       # unreserved    = alphanum | mark
@@ -374,9 +374,11 @@ module URI
       # allowed too.  Here is a replacement.
       #
       # IPv4address = 1*3DIGIT "." 1*3DIGIT "." 1*3DIGIT "." 1*3DIGIT
-      ret[:IPV4ADDR] = ipv4addr = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+      dig3 = "\\d\\d?\\d?"
+      ret[:IPV4ADDR] = ipv4addr = "#{dig3}\\.#{dig3}\\.#{dig3}\\.#{dig3}"
       # hex4     = 1*4HEXDIG
-      hex4 = "[#{PATTERN::HEX}]{1,4}"
+      hex = "[#{PATTERN::HEX}]"
+      hex4 = "#{hex}#{hex}?#{hex}?#{hex}?"
       # lastpart = hex4 | IPv4address
       lastpart = "(?:#{hex4}|#{ipv4addr})"
       # hexseq1  = *( hex4 ":" ) hex4
