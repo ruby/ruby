@@ -981,7 +981,10 @@ enumerator_peek_values(VALUE obj)
 static VALUE
 enumerator_peek_values_m(VALUE obj)
 {
-    return rb_ary_dup(enumerator_peek_values(obj));
+    VALUE vs = enumerator_peek_values(obj);
+    /* vs may not be an Array if Fiber.yield is called directly in the enumerator */
+    if (!RB_TYPE_P(vs, T_ARRAY)) return vs;
+    return rb_ary_dup(vs);
 }
 
 /*

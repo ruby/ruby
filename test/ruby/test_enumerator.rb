@@ -328,6 +328,15 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1,2], e.next_values)
   end
 
+  def test_fiber_yield_in_external_iteration
+    e = Enumerator.new {|y| Fiber.yield 7; y << 1 }
+    assert_equal(7, e.peek_values)
+    assert_equal(7, e.peek)
+    assert_equal(7, e.next_values)
+    assert_equal(1, e.next)
+    assert_raise(StopIteration) { e.next }
+  end
+
   def test_each_arg
     o = Object.new
     def o.each(ary)
