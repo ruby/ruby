@@ -16,6 +16,12 @@
 # undef rb_sym_intern_ascii_cstr
 #endif
 
+typedef uint32_t rb_id_serial_t;
+
+RUBY_SYMBOL_EXPORT_BEGIN
+ID rb_id_serial_to_id(rb_id_serial_t num);
+RUBY_SYMBOL_EXPORT_END
+
 /* symbol.c */
 void rb_sym_global_symbols_mark_and_move(void);
 VALUE rb_to_symbol_type(VALUE obj);

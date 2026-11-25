@@ -1,7 +1,6 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "shape.h"
-#include "symbol.h"
 #include "id_table.h"
 #include "internal/class.h"
 #include "internal/error.h"
@@ -9,6 +8,7 @@
 #include "internal/object.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "symbol.h"
 #include "variable.h"
 #include <stdbool.h>
 
@@ -37,7 +37,7 @@
 static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
 
 struct redblack_node {
-    ID key;
+    rb_id_serial_t key;
     rb_shape_t *value;
     redblack_id_t l;
     redblack_id_t r;
@@ -148,7 +148,7 @@ redblack_id_for(redblack_node_t *node)
 }
 
 static redblack_node_t *
-redblack_new(char color, ID key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
+redblack_new(char color, rb_id_serial_t key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
 {
     if (redblack_cache_size + 1 >= REDBLACK_CACHE_SIZE) {
         // We're out of cache, just quit
@@ -168,10 +168,10 @@ redblack_new(char color, ID key, rb_shape_t *value, redblack_node_t *left, redbl
 }
 
 static redblack_node_t *
-redblack_balance(char color, ID key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
+redblack_balance(char color, rb_id_serial_t key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
 {
     if (color == BLACK) {
-        ID new_key, new_left_key, new_right_key;
+        rb_id_serial_t new_key, new_left_key, new_right_key;
         rb_shape_t *new_value, *new_left_value, *new_right_value;
         redblack_node_t *new_left_left, *new_left_right, *new_right_left, *new_right_right;
 
@@ -255,7 +255,7 @@ redblack_balance(char color, ID key, rb_shape_t *value, redblack_node_t *left, r
 }
 
 static redblack_node_t *
-redblack_insert_aux(redblack_node_t *tree, ID key, rb_shape_t *value)
+redblack_insert_aux(redblack_node_t *tree, rb_id_serial_t key, rb_shape_t *value)
 {
     if (tree == LEAF) {
         return redblack_new(RED, key, value, LEAF, LEAF);
@@ -296,7 +296,7 @@ redblack_force_black(redblack_node_t *node)
 }
 
 static redblack_id_t
-redblack_insert(redblack_node_t *tree, ID key, rb_shape_t *value)
+redblack_insert(redblack_node_t *tree, rb_id_serial_t key, rb_shape_t *value)
 {
     redblack_node_t *root = redblack_insert_aux(tree, key, value);
 
@@ -451,12 +451,12 @@ shape_alloc(void)
 }
 
 static rb_shape_t *
-rb_shape_alloc_with_parent_offset(ID edge_name, shape_id_t parent_offset)
+rb_shape_alloc_with_parent_offset(rb_id_serial_t edge_serial, shape_id_t parent_offset)
 {
     rb_shape_t *shape = shape_alloc();
     if (!shape) return NULL;
 
-    shape->edge_name = edge_name;
+    shape->edge_serial = edge_serial;
     shape->next_field_index = 0;
     shape->parent_offset = parent_offset;
     shape->edges = 0;
@@ -465,9 +465,9 @@ rb_shape_alloc_with_parent_offset(ID edge_name, shape_id_t parent_offset)
 }
 
 static rb_shape_t *
-rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
+rb_shape_alloc(rb_id_serial_t edge_serial, rb_shape_t *parent, enum shape_type type)
 {
-    rb_shape_t *shape = rb_shape_alloc_with_parent_offset(edge_name, SHAPE_OFFSET(parent));
+    rb_shape_t *shape = rb_shape_alloc_with_parent_offset(edge_serial, SHAPE_OFFSET(parent));
     if (!shape) return NULL;
 
     shape->type = (uint8_t)type;
@@ -484,11 +484,11 @@ redblack_cache_ancestors(rb_shape_t *shape)
         redblack_node_t *parent_index_node = redblack_cache_ancestors(RSHAPE(shape->parent_offset));
 
         if (shape->type == SHAPE_IVAR) {
-            shape->ancestor_index = redblack_insert(parent_index_node, shape->edge_name, shape);
+            shape->ancestor_index = redblack_insert(parent_index_node, shape->edge_serial, shape);
 
 #if RUBY_DEBUG
             if (shape->ancestor_index) {
-                redblack_node_t *inserted_node = redblack_find(shape->ancestor_index, shape->edge_name);
+                redblack_node_t *inserted_node = redblack_find(shape->ancestor_index, shape->edge_serial);
                 RUBY_ASSERT(inserted_node);
                 RUBY_ASSERT(redblack_value(inserted_node) == shape);
             }
@@ -523,9 +523,9 @@ shape_grow_capa(attr_index_t current_capa)
 }
 
 static rb_shape_t *
-rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
+rb_shape_alloc_new_child(rb_id_serial_t serial, rb_shape_t *shape, enum shape_type shape_type)
 {
-    rb_shape_t *new_shape = rb_shape_alloc(id, shape, shape_type);
+    rb_shape_t *new_shape = rb_shape_alloc(serial, shape, shape_type);
     if (!new_shape) return NULL;
 
     switch (shape_type) {
@@ -553,7 +553,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
 }
 
 static rb_shape_t *
-get_next_shape_internal_atomic(rb_shape_t *shape, ID id, enum shape_type shape_type, bool *variation_created, bool new_variations_allowed)
+get_next_shape_internal_atomic(rb_shape_t *shape, rb_id_serial_t serial, enum shape_type shape_type, bool *variation_created, bool new_variations_allowed)
 {
     rb_shape_t *res = NULL;
 
@@ -570,14 +570,14 @@ retry:
             rb_shape_t *child = SINGLE_CHILD(edges_table);
             // If the one child has a matching edge name, then great,
             // we found what we want.
-            if (child->edge_name == id) {
+            if (child->edge_serial == serial) {
                 res = child;
             }
         }
         else {
             // If it has more than one child, do a hash lookup to find it.
             VALUE lookup_result;
-            if (rb_managed_id_table_lookup(edges_table, id, &lookup_result)) {
+            if (rb_managed_id_table_lookup_serial(edges_table, serial, &lookup_result)) {
                 res = (rb_shape_t *)lookup_result;
             }
         }
@@ -587,7 +587,7 @@ retry:
     if (!res && new_variations_allowed) {
         VALUE new_edges = 0;
 
-        rb_shape_t *new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
+        rb_shape_t *new_shape = rb_shape_alloc_new_child(serial, shape, shape_type);
 
         // If we're out of shapes, return NULL
         if (new_shape) {
@@ -600,13 +600,13 @@ retry:
                 if (SINGLE_CHILD_P(edges_table)) {
                     rb_shape_t *old_child = SINGLE_CHILD(edges_table);
                     new_edges = rb_managed_id_table_new(2);
-                    rb_managed_id_table_insert(new_edges, old_child->edge_name, (VALUE)old_child);
+                    rb_managed_id_table_insert(new_edges, rb_id_serial_to_id(old_child->edge_serial), (VALUE)old_child);
                 }
                 else {
                     new_edges = rb_managed_id_table_dup(edges_table);
                 }
 
-                rb_managed_id_table_insert(new_edges, new_shape->edge_name, (VALUE)new_shape);
+                rb_managed_id_table_insert(new_edges, rb_id_serial_to_id(new_shape->edge_serial), (VALUE)new_shape);
                 *variation_created = true;
             }
 
@@ -624,10 +624,10 @@ retry:
 }
 
 static rb_shape_t *
-get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bool *variation_created, bool new_variations_allowed)
+get_next_shape_internal(rb_shape_t *shape, rb_id_serial_t serial, enum shape_type shape_type, bool *variation_created, bool new_variations_allowed)
 {
     if (rb_multi_ractor_p()) {
-        return get_next_shape_internal_atomic(shape, id, shape_type, variation_created, new_variations_allowed);
+        return get_next_shape_internal_atomic(shape, serial, shape_type, variation_created, new_variations_allowed);
     }
 
     rb_shape_t *res = NULL;
@@ -642,14 +642,14 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             rb_shape_t *child = SINGLE_CHILD(edges_table);
             // If the one child has a matching edge name, then great,
             // we found what we want.
-            if (child->edge_name == id) {
+            if (child->edge_serial == serial) {
                 res = child;
             }
         }
         else {
             // If it has more than one child, do a hash lookup to find it.
             VALUE lookup_result;
-            if (rb_managed_id_table_lookup(edges_table, id, &lookup_result)) {
+            if (rb_managed_id_table_lookup_serial(edges_table, serial, &lookup_result)) {
                 res = (rb_shape_t *)lookup_result;
             }
         }
@@ -663,7 +663,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             res = NULL;
         }
         else {
-            rb_shape_t *new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
+            rb_shape_t *new_shape = rb_shape_alloc_new_child(serial, shape, shape_type);
 
             if (!edges_table) {
                 // If the shape had no edge yet, we can directly set the new child
@@ -674,11 +674,11 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
                 if (SINGLE_CHILD_P(edges_table)) {
                     rb_shape_t *old_child = SINGLE_CHILD(edges_table);
                     VALUE new_edges = rb_managed_id_table_new(2);
-                    rb_managed_id_table_insert(new_edges, old_child->edge_name, (VALUE)old_child);
+                    rb_managed_id_table_insert_serial(new_edges, old_child->edge_serial, (VALUE)old_child);
                     RB_OBJ_WRITE(shape_tree_obj, &shape->edges, new_edges);
                 }
 
-                rb_managed_id_table_insert(shape->edges, new_shape->edge_name, (VALUE)new_shape);
+                rb_managed_id_table_insert_serial(shape->edges, new_shape->edge_serial, (VALUE)new_shape);
                 *variation_created = true;
             }
 
@@ -699,7 +699,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
     bool dont_care;
     rb_shape_t *shape = NULL;
     if (LIKELY(original_shape->next_field_index < rb_shape_max_capacity())) {
-        shape = get_next_shape_internal(original_shape, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dont_care, true);
+        shape = get_next_shape_internal(original_shape, rb_shape_tree.serial_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
     if (!shape) {
         return rb_shape_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
@@ -727,10 +727,10 @@ rb_shape_object_id(shape_id_t original_shape_id)
 
 #if RUBY_DEBUG
 static bool
-shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+shape_get_iv_index(rb_shape_t *shape, rb_id_serial_t serial, attr_index_t *value)
 {
     while (shape->parent_offset != INVALID_SHAPE_ID) {
-        if (shape->edge_name == id) {
+        if (shape->edge_serial == serial) {
             enum shape_type shape_type;
             shape_type = (enum shape_type)shape->type;
 
@@ -754,13 +754,13 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 #endif
 
 static inline rb_shape_t *
-shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id, bool emit_warnings)
+shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, rb_id_serial_t serial, bool emit_warnings)
 {
-    RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
+    RUBY_ASSERT(!is_instance_id(rb_id_serial_to_id(serial)) || RTEST(rb_sym2str(ID2SYM(rb_id_serial_to_id(serial)))));
 
 #if RUBY_DEBUG
     attr_index_t index;
-    if (shape_get_iv_index(shape, id, &index)) {
+    if (shape_get_iv_index(shape, serial, &index)) {
         rb_bug("rb_shape_get_next: trying to create ivar that already exists at index %u", index);
     }
 #endif
@@ -773,7 +773,7 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
 
     bool allow_new_shape = RCLASS_VARIATION_COUNT(klass) < SHAPE_MAX_VARIATIONS;
     bool variation_created = false;
-    rb_shape_t *new_shape = get_next_shape_internal(shape, id, shape_type, &variation_created, allow_new_shape);
+    rb_shape_t *new_shape = get_next_shape_internal(shape, serial, shape_type, &variation_created, allow_new_shape);
 
     if (!new_shape) {
         // We could create a new variation, transitioning to COMPLEX.
@@ -827,7 +827,7 @@ obj_get_owner_class(VALUE obj)
 }
 
 static rb_shape_t *
-remove_shape_recursive(VALUE obj, rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
+remove_shape_recursive(VALUE obj, rb_shape_t *shape, rb_id_serial_t serial, rb_shape_t **removed_shape)
 {
     if (shape->parent_offset == INVALID_SHAPE_ID) {
         // We've hit the top of the shape tree and couldn't find the
@@ -836,20 +836,20 @@ remove_shape_recursive(VALUE obj, rb_shape_t *shape, ID id, rb_shape_t **removed
         return NULL;
     }
     else {
-        if (shape->type == SHAPE_IVAR && shape->edge_name == id) {
+        if (shape->type == SHAPE_IVAR && shape->edge_serial == serial) {
             *removed_shape = shape;
 
             return RSHAPE(shape->parent_offset);
         }
         else {
             // This isn't the IV we want to remove, keep walking up.
-            rb_shape_t *new_parent = remove_shape_recursive(obj, RSHAPE(shape->parent_offset), id, removed_shape);
+            rb_shape_t *new_parent = remove_shape_recursive(obj, RSHAPE(shape->parent_offset), serial, removed_shape);
 
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
             if (new_parent) {
                 VALUE klass = obj_get_owner_class(obj);
-                rb_shape_t *new_child = shape_get_next(new_parent, shape->type, klass, shape->edge_name, true);
+                rb_shape_t *new_child = shape_get_next(new_parent, shape->type, klass, shape->edge_serial, true);
                 RUBY_ASSERT(!new_child || new_child->capacity <= shape->capacity);
                 return new_child;
             }
@@ -873,7 +873,7 @@ rb_obj_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_
     }
 
     rb_shape_t *removed_shape = NULL;
-    rb_shape_t *new_shape = remove_shape_recursive(obj, RSHAPE(original_shape_id), id, &removed_shape);
+    rb_shape_t *new_shape = remove_shape_recursive(obj, RSHAPE(original_shape_id), rb_id_to_serial(id), &removed_shape);
 
     if (removed_shape) {
         *removed_shape_id = SHAPE_OFFSET(removed_shape);
@@ -899,7 +899,7 @@ rb_obj_shape_transition_add_ivar(VALUE obj, ID id)
     RUBY_ASSERT(!rb_shape_frozen_p(original_shape_id));
 
     VALUE klass = obj_get_owner_class(obj);
-    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, id, true);
+    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, rb_id_to_serial(id), true);
     if (next_shape) {
         return SHAPE_ID(next_shape, original_shape_id);
     }
@@ -913,7 +913,7 @@ rb_shape_transition_add_ivar_no_warnings(shape_id_t original_shape_id, ID id, VA
 {
     RUBY_ASSERT(!rb_shape_frozen_p(original_shape_id));
 
-    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, id, false);
+    rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, rb_id_to_serial(id), false);
     if (next_shape) {
         return SHAPE_ID(next_shape, original_shape_id);
     }
@@ -947,6 +947,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         depth = ANCESTOR_SEARCH_MAX_DEPTH;
     }
 
+    rb_id_serial_t serial = rb_id_to_serial(id);
     while (depth > 0 && shape->next_field_index > index_hint) {
         while (shape_hint->next_field_index > shape->next_field_index) {
             shape_hint = RSHAPE(shape_hint->parent_offset);
@@ -958,7 +959,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
             *shape_id_hint = SHAPE_OFFSET(shape);
             return true;
         }
-        if (shape->edge_name == id) {
+        if (shape->edge_serial == serial) {
             // We found the matching id before a common ancestor
             *value = shape->next_field_index - 1;
             *shape_id_hint = SHAPE_OFFSET(shape);
@@ -979,10 +980,10 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
 }
 
 static bool
-shape_cache_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
+shape_cache_find_ivar(rb_shape_t *shape, rb_id_serial_t serial, rb_shape_t **ivar_shape)
 {
     if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
-        redblack_node_t *node = redblack_find(shape->ancestor_index, id);
+        redblack_node_t *node = redblack_find(shape->ancestor_index, serial);
         if (node) {
             *ivar_shape = redblack_value(node);
 
@@ -994,10 +995,10 @@ shape_cache_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
 }
 
 static bool
-shape_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
+shape_find_ivar(rb_shape_t *shape, rb_id_serial_t serial, rb_shape_t **ivar_shape)
 {
     while (shape->parent_offset != INVALID_SHAPE_ID) {
-        if (shape->edge_name == id) {
+        if (shape->edge_serial == serial) {
             RUBY_ASSERT(shape->type == SHAPE_IVAR);
             *ivar_shape = shape;
             return true;
@@ -1016,14 +1017,15 @@ rb_shape_find_ivar(shape_id_t current_shape_id, ID id, shape_id_t *ivar_shape_id
 
     rb_shape_t *shape = RSHAPE(current_shape_id);
     rb_shape_t *ivar_shape;
+    rb_id_serial_t serial = rb_id_to_serial(id);
 
-    if (!shape_cache_find_ivar(shape, id, &ivar_shape)) {
+    if (!shape_cache_find_ivar(shape, serial, &ivar_shape)) {
         // If it wasn't in the ancestor cache, then don't do a linear search
         if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
             return false;
         }
         else {
-            if (!shape_find_ivar(shape, id, &ivar_shape)) {
+            if (!shape_find_ivar(shape, serial, &ivar_shape)) {
                 return false;
             }
         }
@@ -1077,7 +1079,7 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     switch ((enum shape_type)dest_shape->type) {
       case SHAPE_IVAR: {
         bool dont_care;
-        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR, &dont_care, true);
+        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_serial, SHAPE_IVAR, &dont_care, true);
         break;
       }
       case SHAPE_OBJ_ID:
@@ -1140,9 +1142,9 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
     else {
         while (src_shape->parent_offset != INVALID_SHAPE_ID) {
             if (src_shape->type == SHAPE_IVAR) {
-                while (dest_shape->edge_name != src_shape->edge_name) {
+                while (dest_shape->edge_serial != src_shape->edge_serial) {
                     if (UNLIKELY(dest_shape->parent_offset == INVALID_SHAPE_ID)) {
-                        rb_bug("Lost field %s", rb_id2name(src_shape->edge_name));
+                        rb_bug("Lost field %s", rb_id2name(rb_id_serial_to_id(src_shape->edge_serial)));
                     }
                     dest_shape = RSHAPE(dest_shape->parent_offset);
                 }
@@ -1458,7 +1460,7 @@ rb_shape_edges(VALUE self)
     if (shape->edges) {
         if (SINGLE_CHILD_P(shape->edges)) {
             rb_shape_t *child = SINGLE_CHILD(shape->edges);
-            rb_edges_to_hash(child->edge_name, (VALUE)child, &hash);
+            rb_edges_to_hash(rb_id_serial_to_id(child->edge_serial), (VALUE)child, &hash);
         }
         else {
             VALUE edges = shape->edges;
@@ -1473,9 +1475,10 @@ rb_shape_edges(VALUE self)
 static VALUE
 rb_shape_edge_name(rb_shape_t *shape)
 {
-    if (shape->edge_name) {
-        if (is_instance_id(shape->edge_name)) {
-            return ID2SYM(shape->edge_name);
+    if (shape->edge_serial) {
+        ID id = rb_id_serial_to_id(shape->edge_serial);
+        if (is_instance_id(id)) {
+            return ID2SYM(id);
         }
         return INT2NUM(shape->capacity);
     }
@@ -1552,7 +1555,7 @@ static VALUE edges(VALUE edges)
     if (edges) {
         if (SINGLE_CHILD_P(edges)) {
             rb_shape_t *child = SINGLE_CHILD(edges);
-            collect_keys_and_values(child->edge_name, (VALUE)child, &hash);
+            collect_keys_and_values(rb_id_serial_to_id(child->edge_serial), (VALUE)child, &hash);
         }
         else {
             rb_managed_id_table_foreach(edges, collect_keys_and_values, &hash);
@@ -1576,7 +1579,7 @@ shape_to_h(rb_shape_t *shape)
         rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_offset")), INT2NUM(shape->parent_offset));
     }
 
-    rb_hash_aset(rb_shape, ID2SYM(rb_intern("edge_name")), rb_id2str(shape->edge_name));
+    rb_hash_aset(rb_shape, ID2SYM(rb_intern("edge_name")), rb_id2str(rb_id_serial_to_id(shape->edge_serial)));
     return rb_shape;
 }
 
@@ -1627,6 +1630,7 @@ Init_default_shapes(void)
     }
 
     rb_shape_tree.id_object_id = rb_make_internal_id();
+    rb_shape_tree.serial_object_id = rb_id_to_serial(rb_shape_tree.id_object_id);
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
@@ -1661,11 +1665,11 @@ Init_default_shapes(void)
     RUBY_ASSERT(!(SHAPE_OFFSET(root) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
-    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dontcare, true);
+    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, rb_shape_tree.serial_object_id, SHAPE_OBJ_ID, &dontcare, true);
     RUBY_ASSERT(root_with_obj_id);
     RUBY_ASSERT(SHAPE_OFFSET(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
-    RUBY_ASSERT(root_with_obj_id->edge_name == rb_shape_tree.id_object_id);
+    RUBY_ASSERT(root_with_obj_id->edge_serial == rb_shape_tree.serial_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(SHAPE_OFFSET(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;

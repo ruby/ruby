@@ -1544,7 +1544,7 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, const rb_c
 
     VALUE ent_data;
     if (!rb_marked_id_table_lookup(rb_cvc_tbl, id, &ent_data)) {
-        rb_bug("should have cvar cache entry");
+        rb_bug("should have cvar cache entry (%s)", rb_id2name(id));
     }
 
     struct rb_cvar_class_tbl_entry *ent = (void *)ent_data;

@@ -1,6 +1,7 @@
 #ifndef RUBY_SHAPE_H
 #define RUBY_SHAPE_H
 
+#include "internal/symbol.h"
 #include "internal/gc.h"
 #include "internal/imemo.h"
 
@@ -114,7 +115,7 @@ enum shape_type {
 
 struct rb_shape {
     VALUE edges; // id_table from ID (ivar) to next shape
-    ID edge_name; // ID (ivar) for transition from parent to rb_shape
+    rb_id_serial_t edge_serial; // rb_id_serial_t (ivar) for transition from parent to rb_shape
     redblack_id_t ancestor_index;
     shape_id_t parent_offset;
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
@@ -136,6 +137,7 @@ typedef struct {
     rb_shape_t *shape_list;
     attr_index_t max_capacity;
     ID id_object_id;
+    rb_id_serial_t serial_object_id;
 } rb_shape_tree_t;
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -416,7 +418,7 @@ RSHAPE_INDEX(shape_id_t shape_id)
 static inline ID
 RSHAPE_EDGE_NAME(shape_id_t shape_id)
 {
-    return RSHAPE(shape_id)->edge_name;
+    return rb_id_serial_to_id(RSHAPE(shape_id)->edge_serial);
 }
 
 static inline VALUE *

@@ -17,7 +17,7 @@ typedef rb_id_serial_t id_key_t;
 static inline ID
 key2id(id_key_t key)
 {
-    return rb_id_serial_to_id(key);
+    return id_serial_to_id(key);
 }
 
 static inline id_key_t
@@ -269,10 +269,9 @@ hash_table_show(struct rb_id_table *tbl)
 }
 #endif
 
-int
-rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
+static int
+rb_id_table_lookup_key(struct rb_id_table *tbl, id_key_t key, VALUE *valp)
 {
-    id_key_t key = id2key(id);
     int index = hash_table_index(tbl, key);
 
     if (index >= 0) {
@@ -282,6 +281,12 @@ rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
     else {
         return FALSE;
     }
+}
+
+int
+rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
+{
+    return rb_id_table_lookup_key(tbl, id2key(id), valp);
 }
 
 static int
@@ -450,19 +455,31 @@ rb_managed_id_table_dup(VALUE old_table)
 }
 
 int
+rb_managed_id_table_lookup_serial(VALUE table, id_key_t key, VALUE *valp)
+{
+    return rb_id_table_lookup_key(managed_id_table_ptr(table), key, valp);
+}
+
+int
 rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp)
 {
-    return rb_id_table_lookup(managed_id_table_ptr(table), id, valp);
+    return rb_managed_id_table_lookup_serial(table, id2key(id), valp);
+}
+
+int
+rb_managed_id_table_insert_serial(VALUE table, id_key_t key, VALUE val)
+{
+    int result = rb_id_table_insert_key(managed_id_table_ptr(table), key, val);
+    /* The table body is embedded (RUBY_TYPED_EMBEDDABLE), so the pointer above
+     * is interior.  Keep table live in case the insert grows the buffer. */
+    RB_GC_GUARD(table);
+    return result;
 }
 
 int
 rb_managed_id_table_insert(VALUE table, ID id, VALUE val)
 {
-    int result = rb_id_table_insert(managed_id_table_ptr(table), id, val);
-    /* The table body is embedded (RUBY_TYPED_EMBEDDABLE), so the pointer above
-     * is interior.  Keep table live in case the insert grows the buffer. */
-    RB_GC_GUARD(table);
-    return result;
+    return rb_managed_id_table_insert_serial(table, id2key(id), val);
 }
 
 size_t
