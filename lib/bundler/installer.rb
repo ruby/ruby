@@ -127,6 +127,8 @@ module Bundler
       template_path = File.expand_path("templates/Executable", __dir__)
       template = File.read(template_path)
 
+      Bundler.mkdir_p(bin_path)
+
       exists = []
       spec.executables.each do |executable|
         binstub_path = "#{bin_path}/#{executable}"
@@ -172,6 +174,8 @@ module Bundler
       template = File.read(File.expand_path("templates/Executable.standalone", __dir__))
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
+
+      Bundler.mkdir_p(bin_path)
 
       spec.executables.each do |executable|
         next if executable == "bundle"

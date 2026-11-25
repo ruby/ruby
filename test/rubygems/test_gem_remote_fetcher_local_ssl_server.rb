@@ -32,6 +32,22 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
     end
   end
 
+  def test_ssl_server_survives_client_connection_reset
+    ssl_server = start_ssl_server
+    port = ssl_server.addr[1]
+
+    socket = TCPSocket.new("localhost", port)
+    socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, [1, 0].pack("ii"))
+    socket.close
+
+    assert_nil @ssl_server_thread.join(1), "the SSL server stopped accepting connections"
+
+    temp_ca_cert = File.join(certs_dir, "ca_cert.pem")
+    with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
+      fetcher.fetch_path("https://localhost:#{port}/yaml")
+    end
+  end
+
   def test_pqc_ssl_connection
     omit_unless_support_pqc
 

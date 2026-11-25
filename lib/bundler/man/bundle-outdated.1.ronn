@@ -55,7 +55,7 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
   Prefer updating only to next minor version.
 
 * `--major`:
-  Prefer updating to next major version (default).
+  Prefer updating to latest major version (default).
 
 * `--patch`:
   Prefer updating only to next patch version.
