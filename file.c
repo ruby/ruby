@@ -4985,6 +4985,11 @@ rb_home_dir_of(VALUE user, VALUE result)
     }
 #endif
     copy_home_path(result, dir);
+#ifdef HAVE_PWD_H
+    /* dir points into dirname, and copy_home_path may trigger GC while
+     * resizing result before copying from dir. */
+    RB_GC_GUARD(dirname);
+#endif
     return result;
 }
 
