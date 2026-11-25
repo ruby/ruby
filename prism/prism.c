@@ -16969,7 +16969,7 @@ parse_method_definition_name(pm_parser_t *parser) {
             return parser->previous;
         default:
             pm_parser_err_token_type(parser, &parser->current, PM_ERR_DEF_NAME, parser->current.type);
-            return (pm_token_t) { .type = 0, .start = parser->current.start, .end = parser->current.end };
+            return (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
     }
 }
 
