@@ -39,7 +39,6 @@ jobs:
     name: Windows ${{ matrix.os }} (${{ matrix.test_task }})
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      PATCH: C:\msys64\usr\bin\patch.exe
       OS_VER: windows-${{ matrix.os }}
       # see https://github.com/ruby/ruby/commit/9ff4399decef0036897d3cfb9ac2c710dea913ca
       OPENSSL_MODULES: C:\vcpkg\installed\x64-windows\bin
@@ -53,16 +52,6 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
-        id: setup-msys2
-        with:
-          update: true
-          install: >-
-            patch
-      - name: patch path
-        shell: msys2 {0}
-        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
-        if: ${{ steps.setup-msys2.outcome == 'success' }}
       - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: C:\vcpkg\installed
