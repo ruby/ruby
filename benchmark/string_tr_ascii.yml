@@ -1,0 +1,23 @@
+prelude: |
+  # frozen_string_literal: true
+
+  SHORT = "foo-bar-baz"
+  SHORT_NO_MATCH = "foobarbaz"
+  MEDIUM = "the-quick-brown-fox-jumps-over-the-lazy-dog " * 4
+  LONG = "the-quick-brown-fox-jumps-over-the-lazy-dog " * 1000
+  LONG_NO_MATCH = "the quick brown fox jumps over the lazy dog " * 1000
+  LONG_UTF8 = "the-quick-brown-fox-jumps-over-the-lazy-dog é " * 1000
+  LONG_DENSE = "-" * 44_000
+
+benchmark:
+  short: SHORT.tr("-", "_")
+  short_no_match: SHORT_NO_MATCH.tr("-", "_")
+  medium: MEDIUM.tr("-", "_")
+  long: LONG.tr("-", "_")
+  long_no_match: LONG_NO_MATCH.tr("-", "_")
+  long_utf8: LONG_UTF8.tr("-", "_")
+  long_dense: LONG_DENSE.tr("-", "_")
+  long_multi: LONG.tr("-o", "_0")
+  medium_multi: MEDIUM.tr("-o", "_0")
+  long_range: LONG.tr("a-z", "A-Z")
+  long_bang_no_match: LONG_NO_MATCH.dup.tr!("-", "_")
