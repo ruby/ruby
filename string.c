@@ -4797,7 +4797,8 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
         if (!hit) break;
         adjusted = rb_enc_left_char_head(sbeg, hit, e, enc);
         if (hit != adjusted) {
-            searchlen = adjusted - sbeg;
+            /* hit is inside a character, which could still start a match */
+            searchlen = adjusted - sbeg + 1;
             continue;
         }
         if (hit + slen <= e && memcmp(hit, t, slen) == 0)
