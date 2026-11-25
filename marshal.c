@@ -1931,6 +1931,10 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
     return r_object_for(arg, partial, ivp, 0, extmod, type);
 }
 
+/* klass: the Class from an enclosing TYPE_UCLASS record, or 0.
+ * A TYPE_* `case` which allocates its object using `klass` must first check that `klass` is
+ * valid subclass of that type e.g. with `rb_class_inherited_p(klass, rb_cRegexp)`,
+ * because the check in TYPE_UCLASS won't notice if `klass` was used. */
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
