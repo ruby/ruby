@@ -3274,9 +3274,9 @@ fn can_direct_invoke_block(flags: u32) -> bool {
 /// Ok if `yield` with `argc` positional args can dispatch by inlining the block ISEQ
 /// frame. The block must take the simple callee-setup path (`rb_simple_iseq_p`)
 /// with an exact arity match, avoid arg0 auto-splat, and contain no `throw` (break /
-/// non-local return). Anything else falls back to the generic `invokeblock` dispatch,
-/// with the returned reason attached to the fallback instruction.
-fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
+/// non-local return) unless `allow_throw`. Anything else falls back to the generic
+/// `invokeblock` dispatch, with the returned reason attached to the fallback instruction.
+fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize, allow_throw: bool) -> Result<(), SendFallbackReason> {
     if !unsafe { rb_simple_iseq_p(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
@@ -3287,7 +3287,7 @@ fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFa
     if argc == 1 && !unsafe { rb_get_iseq_flags_ambiguous_param0(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
-    if crate::codegen::block_iseq_may_throw(iseq) {
+    if !allow_throw && crate::codegen::block_iseq_may_throw(iseq) {
         return Err(InvokeBlockNotSpecialized);
     }
     Ok(())
@@ -11031,7 +11031,7 @@ fn add_iseq_to_hir(
                                 let obj = profiled_type.class();
                                 if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
                                     let iseq = obj.as_iseq();
-                                    match can_direct_invoke_block_iseq(iseq, args.len()) {
+                                    match can_direct_invoke_block_iseq(iseq, args.len(), false) {
                                         // Push an ISEQ that can be dispatched directly, deduplicating direct_iseqs.
                                         Ok(()) => if !direct_iseqs.contains(&iseq) {
                                             direct_iseqs.push(iseq);
@@ -11052,7 +11052,9 @@ fn add_iseq_to_hir(
                             // TODO: To stay guard-free there, we'd bake in get_lvar_level(...) as the level and fetch
                             // that ancestor's blockiseq from the inline caller chain instead of bi.
                             && get_lvar_level(exit_state.iseq) == 0 {
-                            match can_direct_invoke_block_iseq(bi, args.len()) {
+                            // Allow a literal block that may `throw`. Its `break` and non-local `return` unwind the
+                            // frames like the interpreter, and the iterations that don't throw skip the generic dispatch.
+                            match can_direct_invoke_block_iseq(bi, args.len(), true) {
                                 Ok(()) => Some(bi),
                                 Err(reason) => {
                                     fallback_reason = reason;

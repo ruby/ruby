@@ -1362,9 +1362,8 @@ fn test_inline_block_defined_yield_checks_method_block() {
 }
 
 #[test]
-fn test_inline_block_skips_block_with_break() {
-    // can_direct_invoke_block_iseq rejects blocks that may throw, so a block with `break`
-    // is not inlined. Make sure it still works.
+fn test_inline_block_with_break() {
+    // A block with `break` is inlined, and the `break` throws from the inlined block frame.
     with_inlining(|| {
         let counters = crate::state::ZJITState::get_counters();
         let inline_count_before = counters.inline_block_count;
@@ -1373,7 +1372,33 @@ fn test_inline_block_skips_block_with_break() {
             test([1, 2, 3])
             test([1, 2, 3])
         "), @"20");
-        assert_eq!(counters.inline_block_count, inline_count_before, "expected the block with `break` not to be inlined");
+        assert!(counters.inline_block_count > inline_count_before, "expected the block with `break` to be inlined");
+    });
+}
+
+#[test]
+fn test_yield_to_throwing_block_not_inlined() {
+    // The literal block can't be inlined since its EP escapes, so the yield calls the
+    // block's JIT code, which throws. m3 runs in the interpreter at the depth of the block
+    // frame, so the block frame's cfp->_iseq is m3's ISEQ when the `break` throws.
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles_allowing_exits("
+            def foo = yield
+            def test(x)
+              foo do
+                l = -> { x }
+                break l.call + 1 if x > 0
+                0
+              end
+            end
+            test(1)
+            test(1)
+            def m1 = m2
+            def m2 = m3
+            def m3 = 1
+            m1
+            [test(1), test(-10)]
+        "), @"[2, 0]");
     });
 }
 
