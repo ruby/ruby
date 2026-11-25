@@ -158,6 +158,7 @@ class << RubyVM::ZJIT
       :inline_method_count,
       :inline_block_optimized_send_count,
       :inline_block_count,
+      :inline_throw_count,
       :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,

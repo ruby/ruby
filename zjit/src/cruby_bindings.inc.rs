@@ -2490,6 +2490,10 @@ unsafe extern "C" {
     pub fn rb_zjit_iseq_tracing_currently_enabled() -> bool;
     pub fn rb_zjit_insn_leaf(insn: ::std::os::raw::c_int, opes: *const VALUE) -> bool;
     pub fn rb_zjit_local_id(iseq: *const rb_iseq_t, idx: ::std::os::raw::c_uint) -> ID;
+    pub fn rb_zjit_iseq_ensure_covers_p(
+        iseq: *const rb_iseq_t,
+        epc: ::std::os::raw::c_uint,
+    ) -> bool;
     pub fn rb_zjit_cme_is_cfunc(
         me: *const rb_callable_method_entry_t,
         func: *const ::std::os::raw::c_void,

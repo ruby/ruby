@@ -30047,4 +30047,56 @@ mod hir_opt_tests {
           Return v172
         ");
     }
+
+    #[test]
+    fn test_inline_block_return_becomes_return() {
+        eval(r"
+            def yielder = yield
+            def test(x) = yielder { return x if x }
+            test(1)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:CPtr = LoadSP
+          StoreField v15, :x@0x1000, v10
+          PatchPoint MethodRedefined(Object@0x1008, yielder@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame :yielder, v27 (0x1040), num_args=0, block=0x1060
+          v34:CPtr = GetEP 0
+          v35:CInt64 = LoadField v34, :VM_ENV_DATA_INDEX_SPECVAL@0x1080
+          v36:CInt64[-4] = Const CInt64(-4)
+          v37:CInt64 = IntAnd v35, v36
+          v74:BasicObject = LoadField v37, :captured_self@0x1081
+          PushInlineFrame <block>, v74 (0x1060), captured=v37, num_args=0
+          v53:CPtr = GetEP 1
+          v54:BasicObject = LoadField v53, :x@0x1082
+          v56:CBool = Test v54
+          CondBranch v56, bb9(), bb8()
+        bb9():
+          v61:CPtr = GetEP 1
+          v62:BasicObject = LoadField v61, :x@0x1082
+          PopInlineFrame
+          PopInlineFrame
+          Return v62
+        bb8():
+          v70:NilClass = Const Value(nil)
+          PopInlineFrame
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v70
+        ");
+    }
 }
