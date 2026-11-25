@@ -21,7 +21,7 @@ RSpec.describe "env helpers" do
       create_file("source.rb", <<-RUBY)
         print Bundler.original_env["PATH"]
       RUBY
-      path = `getconf PATH`.strip + "#{File::PATH_SEPARATOR}/foo"
+      path = default_system_path + "#{File::PATH_SEPARATOR}/foo"
       with_path_as(path) do
         bundle_exec_ruby(bundled_app("source.rb").to_s)
         expect(stdboth).to eq(path)
@@ -49,7 +49,7 @@ RSpec.describe "env helpers" do
         end
         exec(Gem.ruby, __FILE__, (count - 1).to_s)
       RUBY
-      path = `getconf PATH`.strip + File::PATH_SEPARATOR + File.dirname(Gem.ruby)
+      path = default_system_path + File::PATH_SEPARATOR + File.dirname(Gem.ruby)
       with_path_as(path) do
         build_bundler_context
         bundle_exec_ruby("#{bundled_app("exe.rb")} 2")

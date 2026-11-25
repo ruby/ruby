@@ -507,7 +507,15 @@ module Bundler
 
           return ["git", *opts, *cmd] unless dir
 
-          ["git", "-C", dir.to_s, *opts, *cmd]
+          # With safe.bareRepository=explicit, git refuses to discover a bare
+          # repository from -C, so the cache clone is named with --git-dir.
+          # Working trees, like a local override, still go through -C.
+          location = bare_repo?(dir) ? "--git-dir" : "-C"
+          ["git", location, dir.to_s, *opts, *cmd]
+        end
+
+        def bare_repo?(dir)
+          File.exist?(File.join(dir, "objects")) && File.exist?(File.join(dir, "HEAD"))
         end
 
         def extra_clone_args
