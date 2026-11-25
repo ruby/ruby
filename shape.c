@@ -38,7 +38,7 @@ static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
 
 struct redblack_node {
     rb_id_serial_t key;
-    rb_shape_t *value;
+    shape_id_t value; // The color bit is stored in the shape_id flags.
     redblack_id_t l;
     redblack_id_t r;
 };
@@ -48,7 +48,7 @@ static redblack_node_t *redblack_cache;
 
 #define LEAF 0
 #define BLACK 0x0
-#define RED 0x1
+#define RED (1<<(SHAPE_ID_FL_USHIFT))
 
 static inline redblack_node_t *
 redblack_node(redblack_id_t id)
@@ -112,19 +112,22 @@ redblack_find(redblack_id_t tree_id, ID key)
     return redblack_find0(redblack_node(tree_id), key);
 }
 
-static inline rb_shape_t *
+static inline shape_id_t
 redblack_value(redblack_node_t *node)
 {
-    // Color is stored in the bottom bit of the shape pointer
+    // Color is stored in flag bits the shape_id.
     // Mask away the bit so we get the actual pointer back
-    return (rb_shape_t *)((uintptr_t)node->value & ~(uintptr_t)1);
+    return node->value & ~RED;
 }
 
 #ifdef HAVE_MMAP
-static inline char
+static inline shape_id_t
 redblack_color(redblack_node_t *node)
 {
-    return node && ((uintptr_t)node->value & RED);
+    if (node) {
+        return node->value & RED;
+    }
+    return BLACK;
 }
 
 static inline bool
@@ -148,7 +151,7 @@ redblack_id_for(redblack_node_t *node)
 }
 
 static redblack_node_t *
-redblack_new(char color, rb_id_serial_t key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
+redblack_new(shape_id_t color, rb_id_serial_t key, shape_id_t value, redblack_node_t *left, redblack_node_t *right)
 {
     if (redblack_cache_size + 1 >= REDBLACK_CACHE_SIZE) {
         // We're out of cache, just quit
@@ -161,18 +164,18 @@ redblack_new(char color, rb_id_serial_t key, rb_shape_t *value, redblack_node_t 
     redblack_node_t *redblack_nodes = redblack_cache;
     redblack_node_t *node = &redblack_nodes[RUBY_ATOMIC_FETCH_ADD(redblack_cache_size, 1)];
     node->key = key;
-    node->value = (rb_shape_t *)((uintptr_t)value | color);
+    node->value = value | color;
     node->l = redblack_id_for(left);
     node->r = redblack_id_for(right);
     return node;
 }
 
 static redblack_node_t *
-redblack_balance(char color, rb_id_serial_t key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
+redblack_balance(shape_id_t color, rb_id_serial_t key, shape_id_t value, redblack_node_t *left, redblack_node_t *right)
 {
     if (color == BLACK) {
         rb_id_serial_t new_key, new_left_key, new_right_key;
-        rb_shape_t *new_value, *new_left_value, *new_right_value;
+        shape_id_t new_value, new_left_value, new_right_value;
         redblack_node_t *new_left_left, *new_left_right, *new_right_left, *new_right_right;
 
         if (redblack_red_p(left) && redblack_red_p(redblack_left(left))) {
@@ -255,7 +258,7 @@ redblack_balance(char color, rb_id_serial_t key, rb_shape_t *value, redblack_nod
 }
 
 static redblack_node_t *
-redblack_insert_aux(redblack_node_t *tree, rb_id_serial_t key, rb_shape_t *value)
+redblack_insert_aux(redblack_node_t *tree, rb_id_serial_t key, shape_id_t value)
 {
     if (tree == LEAF) {
         return redblack_new(RED, key, value, LEAF, LEAF);
@@ -296,7 +299,7 @@ redblack_force_black(redblack_node_t *node)
 }
 
 static redblack_id_t
-redblack_insert(redblack_node_t *tree, rb_id_serial_t key, rb_shape_t *value)
+redblack_insert(redblack_node_t *tree, rb_id_serial_t key, shape_id_t value)
 {
     redblack_node_t *root = redblack_insert_aux(tree, key, value);
 
@@ -382,8 +385,7 @@ static inline shape_id_t
 SHAPE_ID(rb_shape_t *shape, shape_id_t previous_shape_id)
 {
     RUBY_ASSERT(shape);
-    shape_id_t offset = (shape_id_t)(shape - rb_shape_tree.shape_list);
-    return offset | RSHAPE_FLAGS(previous_shape_id);
+    return SHAPE_OFFSET(shape) | RSHAPE_FLAGS(previous_shape_id);
 }
 
 void
@@ -484,13 +486,13 @@ redblack_cache_ancestors(rb_shape_t *shape)
         redblack_node_t *parent_index_node = redblack_cache_ancestors(RSHAPE(shape->parent_offset));
 
         if (shape->type == SHAPE_IVAR) {
-            shape->ancestor_index = redblack_insert(parent_index_node, shape->edge_serial, shape);
+            shape->ancestor_index = redblack_insert(parent_index_node, shape->edge_serial, SHAPE_OFFSET(shape));
 
 #if RUBY_DEBUG
             if (shape->ancestor_index) {
                 redblack_node_t *inserted_node = redblack_find(shape->ancestor_index, shape->edge_serial);
                 RUBY_ASSERT(inserted_node);
-                RUBY_ASSERT(redblack_value(inserted_node) == shape);
+                RUBY_ASSERT(redblack_value(inserted_node) == SHAPE_OFFSET(shape));
             }
 #endif
         }
@@ -985,7 +987,7 @@ shape_cache_find_ivar(rb_shape_t *shape, rb_id_serial_t serial, rb_shape_t **iva
     if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
         redblack_node_t *node = redblack_find(shape->ancestor_index, serial);
         if (node) {
-            *ivar_shape = redblack_value(node);
+            *ivar_shape = RSHAPE(redblack_value(node));
 
             return true;
         }
