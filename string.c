@@ -13073,6 +13073,8 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
         cached_reg_grapheme_cluster = false;
     }
 
+    /* interrupt checks in onig_match may run other threads that modify str */
+    str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
@@ -13089,6 +13091,7 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
         onig_free(reg_grapheme_cluster);
     }
 
+    RB_GC_GUARD(str);
     return SIZET2NUM(grapheme_cluster_count);
 }
 
@@ -13137,7 +13140,8 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
         return rb_str_enumerate_chars(str, ary);
     }
 
-    if (!ary) str = rb_str_new_frozen(str);
+    /* the block and interrupt checks in onig_match may modify str */
+    str = rb_str_new_frozen(str);
 
     struct enumerate_grapheme_clusters_args args = {
         .str = str,
