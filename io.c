@@ -3929,7 +3929,7 @@ static void
 rscheck(const char *rsptr, rb_len_t rslen, VALUE rs)
 {
     if (!rs) return;
-    if (RSTRING_PTR(rs) != rsptr && RSTRING_LEN(rs) != rslen)
+    if (RSTRING_PTR(rs) != rsptr || RSTRING_LEN(rs) != rslen)
         rb_raise(rb_eRuntimeError, "rs modified");
 }
 

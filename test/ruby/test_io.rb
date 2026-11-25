@@ -223,6 +223,30 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_gets_rs_modified_with_same_length
+    r, w = IO.pipe
+    rs = "A" * 1001 + "!"
+    reader = Thread.new { r.gets(rs) }
+
+    Timeout.timeout(5) do
+      Thread.pass until reader.status == "sleep"
+    end
+
+    rs.replace("B" * 100_000 + "!")
+    rs.replace("C" * 1001 + "!")
+    w.write("x" * 1001 + "!")
+    w.close
+
+    assert_raise_with_message(RuntimeError, "rs modified") { reader.value }
+  ensure
+    r&.close
+    w&.close
+    if reader&.alive?
+      reader.kill
+      reader.join
+    end
+  end
+
   def test_gets_default_rs
     pipe(proc do |w|
       w.print "aaa\nbbb\n"
