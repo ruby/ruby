@@ -16,7 +16,7 @@ RSpec.describe Bundler::CLI::Exec do
 
   def expect_exec_path(path, expected_path)
     allow(Bundler).to receive(:which).with("script").and_return(path)
-    expect(command).to receive(:kernel_exec).with(expected_path, kind_of(Hash))
+    expect(command).to receive(:kernel_exec).with([expected_path, expected_path], kind_of(Hash))
     command.run
   end
 

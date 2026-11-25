@@ -206,6 +206,38 @@ RSpec.describe Bundler::RubyDsl do
             expect { subject }.to raise_error(Bundler::InvalidArgumentError, "= is not a valid requirement on the Ruby version")
           end
         end
+
+        context "with an inline table" do
+          let(:file_content) do
+            <<~TOML
+              [tools]
+              ruby = { version = #{quote}#{version}#{quote} }
+            TOML
+          end
+
+          context "with double quotes" do
+            let(:quote) { '"' }
+
+            it_behaves_like "it stores the ruby version"
+          end
+
+          context "with single quotes" do
+            let(:quote) { "'" }
+
+            it_behaves_like "it stores the ruby version"
+          end
+
+          context "with version after other keys" do
+            let(:file_content) do
+              <<~TOML
+                [tools]
+                ruby = { postinstall = "ruby-post-install", version = "#{version}" }
+              TOML
+            end
+
+            it_behaves_like "it stores the ruby version"
+          end
+        end
       end
 
       context "with a .tool-versions file format" do

@@ -86,6 +86,68 @@ class TestGemUninstaller < Gem::InstallerTestCase
     refute File.exist? executable
   end
 
+  def test_remove_executables_force_remove_missing_bin_dir
+    uninstaller = Gem::Uninstaller.new nil, executables: true
+
+    bin_dir = Gem.bindir(@user_spec.base_dir)
+    FileUtils.rm_rf bin_dir
+    refute File.exist?(bin_dir), "bin dir not removed"
+
+    use_ui @ui do
+      uninstaller.remove_executables @user_spec
+    end
+  end
+
+  def test_remove_executables_missing_bin_dir_does_not_ask
+    uninstaller = Gem::Uninstaller.new nil
+
+    FileUtils.rm_rf Gem.bindir(@user_spec.base_dir)
+
+    ui = Gem::MockGemUi.new "y\n"
+    use_ui ui do
+      uninstaller.remove_executables @user_spec
+    end
+
+    refute_match(/Remove executables/, ui.output)
+  end
+
+  def test_remove_executables_unsearchable_bin_dir
+    pend "chmod not supported" if Gem.win_platform?
+    pend "running as root bypasses the permission check" if Process.uid.zero?
+
+    locked = File.join @tempdir, "locked"
+    FileUtils.mkdir_p File.join(locked, "bin")
+    FileUtils.chmod 0o600, locked
+
+    uninstaller = Gem::Uninstaller.new nil, executables: true, bin_dir: File.join(locked, "bin")
+
+    assert_raise Gem::FilePermissionError do
+      use_ui @ui do
+        uninstaller.remove_executables @user_spec
+      end
+    end
+  ensure
+    FileUtils.chmod 0o755, locked if locked
+  end
+
+  def test_uninstall_user_install_with_missing_bin_dir
+    Gem::Specification.dirs = [Gem.user_dir]
+
+    bin_dir = Gem.bindir(@user_spec.base_dir)
+    FileUtils.rm_rf bin_dir
+    refute File.exist?(bin_dir), "bin dir not removed"
+
+    uninstaller = Gem::Uninstaller.new(@user_spec.name,
+                                       executables: true,
+                                       user_install: true)
+
+    gem_dir = @user_spec.gem_dir
+
+    uninstaller.uninstall
+
+    assert_path_not_exist gem_dir
+  end
+
   def test_remove_executables_user
     uninstaller = Gem::Uninstaller.new nil, executables: true
 

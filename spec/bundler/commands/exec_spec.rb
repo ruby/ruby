@@ -367,6 +367,21 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("./.script")
   end
 
+  it "works when exec'ing to an executable in a directory with spaces and no arguments" do
+    skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
+
+    create_file("dir with spaces/script", "#!/bin/sh\necho hello")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+    G
+
+    path = [bundled_app("dir with spaces"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+
+    bundle "exec script", env: { "PATH" => path }
+    expect(out).to eq("hello")
+  end
+
   it "errors nicely when the argument doesn't exist" do
     install_gemfile <<-G
       source "https://gem.repo1"
