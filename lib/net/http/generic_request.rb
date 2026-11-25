@@ -294,6 +294,10 @@ class Net::HTTPGenericRequest
       raise ArgumentError,
           "Content-Length not given and Transfer-Encoding is not `chunked'"
     end
+    # Transfer-Encoding: chunked and Content-Length must not both be sent (RFC 9112 §6.1):
+    # emitting both is a request-smuggling primitive. When chunking, the chunk framing is
+    # authoritative, so drop any Content-Length the caller also set.
+    delete 'Content-Length' if chunked?
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
     if chunked?
@@ -316,6 +320,7 @@ class Net::HTTPGenericRequest
     opt[:boundary] ||= SecureRandom.urlsafe_base64(40)
     self.set_content_type(self.content_type, boundary: opt[:boundary])
     if chunked?
+      delete 'Content-Length'   # chunked framing is authoritative; never emit both (smuggling)
       write_header sock, ver, path
       encode_multipart_form_data(sock, params, opt)
     else

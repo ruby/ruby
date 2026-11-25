@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'net/http'
+require 'stringio'
 require 'test/unit'
 
 class HTTPRequestTest < Test::Unit::TestCase
@@ -121,5 +122,26 @@ class HTTPRequestTest < Test::Unit::TestCase
     req.update_uri("test", 8080, false)
     assert_equal "[2001:db8::1]", req.uri.host
     assert_equal 8080, req.uri.port
+  end
+
+  def test_chunked_request_omits_conflicting_content_length
+    # RFC 9112 6.1: Transfer-Encoding: chunked and Content-Length must not both be sent on a
+    # request -- together they are a request-smuggling primitive. When a caller sets both,
+    # Net::HTTP must drop Content-Length and send only the chunked framing.
+    req = Net::HTTP::Post.new('/')
+    req['Transfer-Encoding'] = 'chunked'
+    req.content_length = 3
+    req.body_stream = StringIO.new('abc')
+
+    captured = +''
+    sock = Object.new
+    sock.define_singleton_method(:write) { |*a| a.each { |s| captured << s.to_s }; captured.bytesize }
+    sock.define_singleton_method(:continue_timeout) { nil }
+
+    req.exec(sock, '1.1', '/')
+    header = captured.split("\r\n\r\n", 2).first
+
+    assert_match(/Transfer-Encoding: chunked/i, header)
+    assert_no_match(/Content-Length/i, header)
   end
 end
