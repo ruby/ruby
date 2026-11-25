@@ -143,8 +143,10 @@ struct rb_ractor_struct {
     rb_atomic_t postponed_job_triggered_bits;
 
     // share requests from other Ractors, a lock-free stack: readers push with CAS, a
-    // thread of this Ractor pops
+    // thread of this Ractor pops at SHAREABLE_P_INTERRUPT_MASK
     struct class_field_shareable_p *shareable_p_requests;
+    // shareable_p_requests of a Ractor that no longer answers
+#define SHAREABLE_P_CLOSED ((struct class_field_shareable_p *)1)
 
     VALUE thgroup_default;
 
@@ -198,6 +200,7 @@ struct rb_ractor_struct {
 struct rb_gc_mark_ctx;
 void rb_ractor_mark_local_roots(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r);
 void rb_ractor_mark_shareable_p_inflight(const struct rb_gc_mark_ctx *ctx);
+void rb_ractor_shareable_p_drain(void);
 void rb_ractor_mark_terminated_join_value(rb_ractor_t *r);
 void rb_ractor_reap_dead_ports(rb_ractor_t *r);
 
@@ -350,6 +353,11 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th, bool always_reset)
     // a job for this Ractor may have flagged a thread that went to sleep since
     if (RUBY_ATOMIC_LOAD(cr->postponed_job_triggered_bits)) {
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
+    }
+    // likewise a share request (shareable_p_push)
+    struct class_field_shareable_p *const requests = RUBY_ATOMIC_PTR_LOAD(cr->shareable_p_requests);
+    if (requests && requests != SHAREABLE_P_CLOSED) {
+        RUBY_VM_SET_SHAREABLE_P_INTERRUPT(th->ec);
     }
 
     VM_ASSERT(cr == GET_RACTOR());
