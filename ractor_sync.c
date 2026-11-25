@@ -1124,11 +1124,11 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
     }
 }
 
-#if RBIMPL_COMPILER_IS(GCC) && defined(__OPTIMIZE__)
-/* GCC produces false-positive -Wclobbered warnings after inlining
- * this function into ractor_basket_new(). */
+/* Keep this out of ractor_basket_new(), which calls it under EC_PUSH_TAG.  Inlined,
+ * clang can reuse the stack slot holding ec for one of this function's locals, so
+ * after a raise longjmps back EC_JUMP_TAG reads a stale ec.  GCC also warns
+ * (-Wclobbered) when this is inlined. */
 NOINLINE(static void ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj, enum ractor_basket_type type, bool exc));
-#endif
 static void
 ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj,
                             enum ractor_basket_type type, bool exc)
