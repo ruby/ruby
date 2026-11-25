@@ -150,6 +150,25 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([[],[:test],[:test],[1,:test]], Forward.new.forward(:test, ...))
   end
 
+  def test_forwardable_super_to_uncached_method
+    c = Class.new do
+      def self.attr_accessor(...) = super
+      def self.private(...) = super(...)
+      def self.include(...) = super
+
+      attr_accessor :a
+      private :a=
+      include Comparable
+    end
+    assert_send([c, :public_method_defined?, :a])
+    assert_send([c, :private_method_defined?, :a=])
+    assert_include(c.ancestors, Comparable)
+
+    base = Class.new { def self.decl(...) = attr_reader(...) }
+    d = Class.new(base) { def self.decl(*) = super; decl :b }
+    assert_send([d, :method_defined?, :b])
+  end
+
   class A
     def tt(aa)
       "A#tt"
