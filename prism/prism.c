@@ -19798,6 +19798,7 @@ parse_heredoc(pm_parser_t *parser, uint16_t depth) {
         if (lex_mode.quote == PM_HEREDOC_QUOTE_BACKTICK) {
             PRISM_ASSERT(sizeof(pm_string_node_t) == sizeof(pm_x_string_node_t));
             cast->base.type = PM_X_STRING_NODE;
+            pm_node_flag_unset(part, PM_NODE_FLAG_STATIC_LITERAL);
         }
 
         if (lex_mode.indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {

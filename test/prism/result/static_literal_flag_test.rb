@@ -21,6 +21,18 @@ module Ruby::Prism
       end
     end
 
+    def test_backtick_heredoc_with_frozen_string_literals
+      array = Ruby::Prism.parse_statement(<<~RUBY)
+        # frozen_string_literal: true
+        [<<`COMMAND`]
+        echo foo
+        COMMAND
+      RUBY
+
+      refute_predicate array.elements.first, :static_literal?
+      refute_predicate array, :static_literal?
+    end
+
     def test_statement_separators_in_interpolation
       assert_static_literal(false, '"#{; "x"}"')
       assert_static_literal(false, ':"#{; "x"}"')
