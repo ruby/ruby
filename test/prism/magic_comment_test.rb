@@ -131,6 +131,23 @@ module Ruby::Prism
       end
     end
 
+    def test_unterminated_quoted_encoding
+      comment = '# encoding: "binary'
+
+      ["\n", "\r\n"].each do |newline|
+        result = Ruby::Prism.parse("#{comment}#{newline}__ENCODING__")
+        assert_equal [:invalid_encoding_magic_comment], result.errors.map(&:type)
+        assert_equal "binary#{newline}", result.errors.first.location.slice
+        assert_equal Encoding::UTF_8, result.encoding
+      end
+
+      [comment, "#{comment}\"\n"].each do |source|
+        result = Ruby::Prism.parse(source)
+        assert_predicate result, :success?
+        assert_equal Encoding::BINARY, result.encoding
+      end
+    end
+
     def test_encoding_after_leading_delimiters
       ['"', "'", ";", ":"].each do |delimiter|
         ["coding", "encoding"].each do |key|

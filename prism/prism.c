@@ -7627,6 +7627,10 @@ static PRISM_INLINE bool
 parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
     const uint8_t *start = parser->current.start + 1;
     const uint8_t *end = parser->current.end;
+
+    /* The comment token ends at LF or EOF. An unterminated quoted value
+     * includes the LF. */
+    if (end < parser->end) end++;
     if (end - start <= 7) return false;
 
     const uint8_t *cursor;
