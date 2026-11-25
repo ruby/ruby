@@ -473,6 +473,9 @@ typedef struct token_info {
     int indent;
     int nonspc;
     struct token_info *next;
+    const char *opening_token;
+    rb_code_position_t opening_pos;
+    int opening_indent;
 } token_info;
 
 typedef struct end_expect_token_locations {
@@ -622,6 +625,11 @@ struct parser_params {
     int token_id;
     /* Array for term tokens */
     rb_parser_ary_t *tokens;
+    struct {
+        const char *token;
+        rb_code_position_t beg;
+        int end_lineno;
+    } indent_mismatch;
 #else
     /* Ripper only */
 
@@ -1060,7 +1068,7 @@ static int parser_yyerror0(struct parser_params*, const char*);
 
 static enum yytokentype parser_variable_name_p(const struct parser_params *p);
 
-static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
+static int token_info_setup(token_info *ptinfo, struct parser_params *p, const rb_code_location_t *loc);
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
@@ -4753,8 +4761,10 @@ k_if		: keyword_if
                     {
                         WARN_EOL("if");
                         token_info_push(p, "if", &@$);
-                        if (p->token_info && p->token_info->nonspc &&
-                            p->token_info->next && !strcmp(p->token_info->next->token, "else")) {
+                        if (p->token_info_enabled && p->token_info && p->token_info->nonspc &&
+                            p->token_info->next && !strcmp(p->token_info->next->token, "else") &&
+                            p->token_info->next->beg.lineno == p->ruby_sourceline &&
+                            p->lex.ptok - p->lex.pbeg >= (ptrdiff_t)rb_strlen_lit("if")) {
                             const char *tok = p->lex.ptok - rb_strlen_lit("if");
                             const char *beg = p->lex.pbeg + p->token_info->next->beg.column;
                             beg += rb_strlen_lit("else");
@@ -4871,11 +4881,10 @@ k_else		: keyword_else
                         token_info *ptinfo_beg = p->token_info;
                         int same = ptinfo_beg && strcmp(ptinfo_beg->token, "case") != 0;
                         token_info_warn(p, "else", p->token_info, same, &@$);
-                        if (same) {
-                            token_info e;
-                            e.next = ptinfo_beg->next;
+                        if (same && p->token_info_enabled) {
+                            token_info e = *ptinfo_beg;
                             e.token = "else";
-                            token_info_setup(&e, p->lex.pbeg, &@$);
+                            token_info_setup(&e, p, &@$);
                             if (!e.nonspc) *ptinfo_beg = e;
                         }
                     }
@@ -5177,6 +5186,15 @@ lambda_body	: tLAMBEG compstmt(stmts) '}'
                     }
                 | keyword_do_LAMBDA
                     {
+#ifndef RIPPER
+                        token_info *info = p->token_info;
+                        if (info && !strcmp(info->token, "->")) {
+                            token_info opener;
+                            info->opening_token = "do";
+                            info->opening_pos = @1.beg_pos;
+                            info->opening_indent = token_info_setup(&opener, p, &@1);
+                        }
+#endif
                         push_end_expect_token_locations(p, &@1.beg_pos);
                     }
                   bodystmt k_end
@@ -7048,23 +7066,33 @@ parser_isascii(struct parser_params *p)
     return ISASCII(*(p->lex.pcur-1));
 }
 
-static void
-token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc)
+static int
+token_info_setup(token_info *ptinfo, struct parser_params *p, const rb_code_location_t *loc)
 {
-    int column = 1, nonspc = 0, i;
+    const char *ptr = p->lex.pbeg;
+    unsigned long long column = 1, line_indent = 0;
+    int i;
+
+    ptinfo->beg = loc->beg_pos;
+    ptinfo->indent = 0;
+    ptinfo->nonspc = 1;
+    if (!ptr || ptinfo->beg.lineno != p->ruby_sourceline ||
+        ptinfo->beg.column < 0 || ptinfo->beg.column > p->lex.pend - ptr) return 0;
+
     for (i = 0; i < loc->beg_pos.column; i++, ptr++) {
         if (*ptr == '\t') {
             column = (((column - 1) / TAB_WIDTH) + 1) * TAB_WIDTH;
         }
-        column++;
-        if (*ptr != ' ' && *ptr != '\t') {
-            nonspc = 1;
+        else if (*ptr != ' ' && !line_indent) {
+            line_indent = column;
         }
+        column++;
     }
 
-    ptinfo->beg = loc->beg_pos;
-    ptinfo->indent = column;
-    ptinfo->nonspc = nonspc;
+    ptinfo->indent = column > INT_MAX ? INT_MAX : (int)column;
+    ptinfo->nonspc = line_indent != 0;
+    if (!line_indent) return ptinfo->indent;
+    return line_indent > INT_MAX ? INT_MAX : (int)line_indent;
 }
 
 static void
@@ -7072,14 +7100,39 @@ token_info_push(struct parser_params *p, const char *token, const rb_code_locati
 {
     token_info *ptinfo;
 
+#ifdef RIPPER
     if (!p->token_info_enabled) return;
+#else
+    if (!p->token_info) p->indent_mismatch.token = NULL;
+#endif
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
     ptinfo->next = p->token_info;
-    token_info_setup(ptinfo, p->lex.pbeg, loc);
+    ptinfo->opening_token = token[0] == '-' ? NULL : token;
+    ptinfo->opening_pos = loc->beg_pos;
+    ptinfo->opening_indent = token_info_setup(ptinfo, p, loc);
 
     p->token_info = ptinfo;
 }
+
+#ifndef RIPPER
+static void
+token_info_record_mismatch(struct parser_params *p, const token_info *opener, const rb_code_location_t *loc)
+{
+    token_info end;
+
+    if (p->indent_mismatch.token || !opener->opening_token ||
+        opener->opening_pos.lineno == loc->beg_pos.lineno ||
+        loc->beg_pos.column >= opener->opening_indent - 1) return;
+
+    token_info_setup(&end, p, loc);
+    if (end.nonspc || end.indent >= opener->opening_indent) return;
+
+    p->indent_mismatch.token = opener->opening_token;
+    p->indent_mismatch.beg = opener->opening_pos;
+    p->indent_mismatch.end_lineno = end.beg.lineno;
+}
+#endif
 
 static void
 token_info_pop(struct parser_params *p, const char *token, const rb_code_location_t *loc)
@@ -7092,6 +7145,11 @@ token_info_pop(struct parser_params *p, const char *token, const rb_code_locatio
     token_info_warn(p, token, ptinfo_beg, 1, loc);
 
     p->token_info = ptinfo_beg->next;
+#ifndef RIPPER
+    if (p->token_info && strcmp(token, "end") == 0) {
+        token_info_record_mismatch(p, ptinfo_beg, loc);
+    }
+#endif
     ruby_xfree_sized(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 
@@ -7121,7 +7179,7 @@ token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_b
     token_info ptinfo_end_body, *ptinfo_end = &ptinfo_end_body;
     if (!p->token_info_enabled) return;
     if (!ptinfo_beg) return;
-    token_info_setup(ptinfo_end, p->lex.pbeg, loc);
+    token_info_setup(ptinfo_end, p, loc);
     if (ptinfo_beg->beg.lineno == ptinfo_end->beg.lineno) return; /* ignore one-line block */
     if (ptinfo_beg->nonspc || ptinfo_end->nonspc) return; /* ignore keyword in the middle of a line */
     if (ptinfo_beg->indent == ptinfo_end->indent) return; /* the indents are matched */
@@ -7176,6 +7234,24 @@ parser_yyerror(struct parser_params *p, const rb_code_location_t *yylloc, const 
 #endif
     parser_compile_error(p, yylloc, "%s", msg);
     parser_show_error_line(p, yylloc);
+
+    static const char eof_error[] = "syntax error, unexpected end-of-input";
+    if (!p->eofp || !p->token_info || strncmp(msg, eof_error, sizeof(eof_error) - 1) != 0) return 0;
+
+    if (p->indent_mismatch.token) {
+        YYLTYPE loc = {p->indent_mismatch.beg, p->indent_mismatch.beg};
+        parser_compile_error(p, &loc,
+                             "'%s' may be missing its 'end'; the 'end' at line %d is indented less",
+                             p->indent_mismatch.token, p->indent_mismatch.end_lineno);
+        return 0;
+    }
+
+    const token_info *open = p->token_info;
+    while (open && !open->opening_token) open = open->next;
+    if (open) {
+        YYLTYPE loc = {open->opening_pos, open->opening_pos};
+        parser_compile_error(p, &loc, "unterminated '%s' meets end of file", open->opening_token);
+    }
     return 0;
 }
 
@@ -9688,6 +9764,9 @@ parser_prepare(struct parser_params *p)
 {
     int c = nextc0(p, FALSE);
     p->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
+#ifndef RIPPER
+    p->indent_mismatch.token = NULL;
+#endif
     switch (c) {
       case '#':
         if (peek(p, '!')) p->has_shebang = 1;

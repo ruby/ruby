@@ -1417,6 +1417,55 @@ x = __ENCODING__
     assert_syntax_error('1e', /expecting end-of-input/)
   end
 
+  def test_unexpected_eof_reports_unclosed_keyword
+    code = <<~RUBY
+      if true
+      else
+    RUBY
+    assert_syntax_error(code, /test:1: unterminated 'if' meets end of file/, "test",
+                        verbose: true, parser: :parsey)
+  end
+
+  def test_unexpected_eof_reports_shallow_end
+    code = <<~RUBY
+      class Foo
+        def a
+          if x
+            1
+        end
+      end
+    RUBY
+    assert_syntax_error(code, /test:3: 'if' may be missing its 'end'; the 'end' at line 5 is indented less/,
+                        "test", parser: :parsey)
+  end
+
+  def test_unexpected_eof_ignores_aligned_end_and_shallow_brace
+    code = <<~RUBY
+      def a
+        x = if true
+          1
+        end
+        -> {
+      }
+    RUBY
+    assert_syntax_error(code, /test:1: unterminated 'def' meets end of file/, "test", parser: :parsey)
+  end
+
+  def test_unexpected_eof_ignores_closed_keyword_stack
+    code = <<~RUBY
+      def a
+        if x
+      end
+      end
+      def b
+    RUBY
+    assert_syntax_error(code, /test:5: unterminated 'def' meets end of file/, "test", parser: :parsey)
+  end
+
+  def test_unexpected_eof_reports_lambda_do
+    assert_syntax_error("-> do\n", /test:1: unterminated 'do' meets end of file/, "test", parser: :parsey)
+  end
+
   def test_broken_numeric
     assert_syntax_error('undef.0when', /0when/)
   end
