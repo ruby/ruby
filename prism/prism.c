@@ -17867,37 +17867,39 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
             bool previous_in_keyword_arg = parser->in_keyword_arg;
             parser->in_keyword_arg = false;
 
-            pm_hash_pattern_node_t *node;
             pm_token_t opening = parser->current;
             parser_lex(parser);
 
-            if (accept1(parser, PM_TOKEN_BRACE_RIGHT)) {
-                // If we have an empty hash pattern, then we'll just return a new hash
-                // pattern node.
+            pm_node_t *first_node = NULL;
+            switch (parser->current.type) {
+                case PM_TOKEN_BRACE_RIGHT:
+                    break;
+                case PM_TOKEN_LABEL:
+                    parser_lex(parser);
+                    first_node = UP(pm_symbol_node_label_create(parser, &parser->previous));
+                    break;
+                case PM_TOKEN_USTAR_STAR:
+                    first_node = parse_pattern_keyword_rest(parser, captures);
+                    break;
+                case PM_TOKEN_STRING_BEGIN:
+                    first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1)).node;
+                    break;
+                default:
+                    /* Leave an enclosing terminator to its owner. Consuming a
+                     * heredoc end here can rewind past the opening brace. */
+                    if (context_recoverable(parser, &parser->current) != PM_CONTEXT_NONE) break;
+
+                    pm_parser_err_token_type(parser, &parser->current, PM_ERR_PATTERN_HASH_KEY, parser->current.type);
+                    parse_discard_token(parser, depth);
+                    first_node = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
+                    break;
+            }
+
+            pm_hash_pattern_node_t *node;
+            if (first_node == NULL) {
+                expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_PATTERN_TERM_BRACE, &opening);
                 node = pm_hash_pattern_node_empty_create(parser, &opening, &parser->previous);
             } else {
-                pm_node_t *first_node;
-
-                switch (parser->current.type) {
-                    case PM_TOKEN_LABEL:
-                        parser_lex(parser);
-                        first_node = UP(pm_symbol_node_label_create(parser, &parser->previous));
-                        break;
-                    case PM_TOKEN_USTAR_STAR:
-                        first_node = parse_pattern_keyword_rest(parser, captures);
-                        break;
-                    case PM_TOKEN_STRING_BEGIN:
-                        first_node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, PM_ERR_PATTERN_HASH_KEY_LABEL, (uint16_t) (depth + 1)).node;
-                        break;
-                    default: {
-                        pm_parser_err_token_type(parser, &parser->current, PM_ERR_PATTERN_HASH_KEY, parser->current.type);
-                        parse_discard_token(parser, depth);
-
-                        first_node = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
-                        break;
-                    }
-                }
-
                 node = parse_pattern_hash(parser, captures, first_node, (uint16_t) (depth + 1));
 
                 accept1(parser, PM_TOKEN_NEWLINE);

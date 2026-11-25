@@ -24,6 +24,27 @@ module Ruby::Prism
       assert_equal :pattern_hash_key, result.errors.first.type
     end
 
+    def test_missing_hash_pattern_brace_preserves_enclosing_end
+      result = assert_bounded_locations(<<~RUBY)
+        def matches?
+          <<~TEXT in {
+            value
+          TEXT
+        end
+        :after
+      RUBY
+
+      assert_equal [:pattern_term_brace], result.errors.map(&:type)
+      definition, following = result.value.statements.body
+      assert_equal "end", definition.end_keyword_loc.slice
+      assert_equal ":after", following.location.slice
+
+      match = definition.body.body.first
+      assert_equal "<<~TEXT in {", match.location.slice
+      assert_equal "{", match.pattern.location.slice
+      assert_empty match.pattern.elements
+    end
+
     def test_discarded_hash_pattern_heredoc_resumes_on_declaration_line
       ["body\n", "\#{<<B}\ninner\nB\n"].each do |body|
         result = assert_bounded_locations("x in {<<A}; after\n#{body}A\n")
