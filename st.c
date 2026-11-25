@@ -2501,8 +2501,10 @@ set_ptr_equal_check(const set_table *tab, const set_table_entry *entry,
                     int *res, int *rebuilt_p)
 {
     unsigned int old_rebuilds_num = tab->rebuilds_num;
+    st_index_t old_entries_bound = tab->entries_bound;
     *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
-    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num ||
+        old_entries_bound != tab->entries_bound;
 }
 
 #define SET_DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \

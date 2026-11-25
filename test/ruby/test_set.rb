@@ -476,6 +476,32 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[1,2,3,4,5], set)
   end
 
+  def test_add_in_eql
+    set = nil
+    added = true
+    klass = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |_|
+        unless added
+          added = true
+          set << :x
+        end
+        false
+      end
+    end
+    (0..40).each do |n|
+      set = Set.new(0...n)
+      set << klass.new
+      added = false
+      obj = klass.new
+      set << obj
+      assert_equal(n + 3, set.size)
+      assert_equal(n + 3, set.to_a.size)
+      assert_include(set, :x)
+      assert_include(set, obj)
+    end
+  end
+
   def test_delete
     set = Set[1,2,3]
 
