@@ -2470,11 +2470,16 @@ rb_reg_onig_match(VALUE re, VALUE str,
 {
     regex_t *reg = reg_prepare_re(re, str, false);
 
+    /* Interrupt checks in the match may run other threads: don't let them
+     * modify str.  The match always returns, as interrupts raise after it. */
+    VALUE lock = rb_str_try_locktmp(str);
     reg_onig_begin();
     OnigPosition result = match(reg, str, regs, args);
     reg_onig_end();
+    rb_str_try_unlocktmp(str, lock);
 
     RB_GC_GUARD(re);
+    RB_GC_GUARD(str);
 
     if (result == ONIGERR_MEMORY) {
         /* e.g. for the match stack or the match cache table */

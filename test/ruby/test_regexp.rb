@@ -1094,6 +1094,50 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('backref', $&)
   end
 
+  # Runs re.match?(s) in the current thread and the block in another thread
+  # while the match is running. Since a thread switch happens only at the
+  # timer interrupt, retries with a longer s if the match is too fast.
+  def match_with_thread_in_match(re = /(\w)\1*\d/) # O(n^2) on the "a" run
+    main = Thread.current
+    n = 3000
+    while n <= 48_000
+      s = "a" * n + "-" * 10_000
+      done = false
+      busy = Thread::Queue.new
+      th = Thread.new do
+        Thread.pass until (in_match = main.backtrace.any? { it.include?("match?") }) || done
+        busy << in_match
+        yield s, main if in_match
+      end
+      th.report_on_exception = false
+      begin
+        result = re.match?(s)
+      rescue Interrupt => e
+        result = e
+      ensure
+        done = true
+      end
+      return s, result, th if busy.pop
+      th.join
+      n *= 2
+    end
+    flunk "no thread switch in the match"
+  end
+
+  def test_match_locks_string
+    s, result, th = match_with_thread_in_match { |str| str.replace("x") }
+    assert_equal(false, result)
+    assert_raise_with_message(RuntimeError, /temporarily locked/) { th.join }
+    assert_operator(s.size, :>, 1)
+  end
+
+  def test_match_unlocks_string_on_exception
+    s, result, th = match_with_thread_in_match { |_, main| main.raise(Interrupt) }
+    th.join
+    assert_kind_of(Interrupt, result)
+    assert_nothing_raised { s << "x" }
+  end
+
   def test_eqq
     assert_equal(false, /../ === nil)
   end
