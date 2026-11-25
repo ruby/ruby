@@ -10300,7 +10300,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(String@0x1010)
-          v19:String = GuardType v10, String
+          v19:String = GuardType v10, String recompile
           PatchPoint NoEPEscape(test)
           v30:StringExact = StringConcat v14, v19
           PatchPoint NoEPEscape(test)
@@ -10337,7 +10337,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(MyString@0x1010)
-          v19:String = GuardType v10, String
+          v19:String = GuardType v10, String recompile
           PatchPoint NoEPEscape(test)
           v30:StringExact = StringConcat v14, v19
           PatchPoint NoEPEscape(test)
@@ -10459,6 +10459,151 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v33
+        ");
+    }
+
+    #[test]
+    fn test_objtostring_guard_failure_recompiles() {
+        set_num_exits_until_invalidate(1);
+        eval(r##"
+            def test(a) = "<#{a}>"
+            test("div")  # profile
+            test("div")  # compile (version 1 with a String guard on a)
+        "##);
+        let string_hir = hir_string("test");
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        assert_eq!(1, crate::payload::get_or_create_iseq_payload(iseq).versions.len());
+
+        eval(r##"
+            test(:div)  # guard failure -> invalidate version 1
+            test(:div)  # re-profile
+            test(:div)  # compile version 2
+        "##);
+        let symbol_hir = hir_string("test");
+        assert_eq!(2, crate::payload::get_or_create_iseq_payload(iseq).versions.len());
+
+        assert_snapshot!(format!("{string_hir}\n{symbol_hir}"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          v19:String = GuardType v10, String recompile
+          PatchPoint NoEPEscape(test)
+          v30:StringExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v32:StringExact = StringConcat v14, v19, v30
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v32
+
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CondBranchHasType v10, String, bb4(), bb5()
+        bb4():
+          v19:String = RefineType v10, String
+          Jump bb6(v19)
+        bb5():
+          v22:NotString = RefineType v10, NotString
+          v23:BasicObject = Send v22, :to_s # SendFallbackReason: Send: polymorphic call site
+          Jump bb6(v23)
+        bb6(v25:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CondBranchHasType v25, String, bb8(), bb9()
+        bb8():
+          v30:String = RefineType v25, String
+          Jump bb10(v30)
+        bb9():
+          v32:StringExact = AnyToString v10
+          Jump bb10(v32)
+        bb10(v34:String):
+          v36:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v38:StringExact = StringConcat v14, v34, v36
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_objtostring_guard_failure_keeps_fixnum_to_string() {
+        set_num_exits_until_invalidate(1);
+        eval(r##"
+            def test(a) = "<#{a}>"
+            test("div")  # profile
+            test("div")  # compile (version 1 with a String guard on a)
+            test(1)  # guard failure -> invalidate version 1
+            test(1)  # re-profile
+            test(1)  # compile version 2
+        "##);
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        assert_eq!(2, crate::payload::get_or_create_iseq_payload(iseq).versions.len());
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CondBranchHasType v10, String, bb4(), bb5()
+        bb4():
+          v19:String = RefineType v10, String
+          Jump bb6(v19)
+        bb5():
+          CondBranchHasType v10, Fixnum, bb7(), bb8()
+        bb7():
+          v21:Fixnum = RefineType v10, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1010, to_s@0x1018, cme:0x1020)
+          v25:StringExact = FixnumToString v21
+          Jump bb6(v25)
+        bb8():
+          v28:NotString = RefineType v10, NotString
+          v29:BasicObject = Send v28, :to_s # SendFallbackReason: Send: polymorphic call site
+          Jump bb6(v29)
+        bb6(v31:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CondBranchHasType v31, String, bb9(), bb10()
+        bb9():
+          v36:String = RefineType v31, String
+          Jump bb11(v36)
+        bb10():
+          v38:StringExact = AnyToString v10
+          Jump bb11(v38)
+        bb11(v40:String):
+          v42:StringExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
+          v44:StringExact = StringConcat v14, v40, v42
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v44
         ");
     }
 

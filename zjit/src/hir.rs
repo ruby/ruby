@@ -11226,7 +11226,7 @@ fn add_iseq_to_hir(
                         if profiled_type.is_string() {
                             // TODO(max): Do we need PatchPoint? We are checking T_STRING-ness.
                             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: profiled_type.class() }, state: exit_id });
-                            fun.push_insn(block, Insn::GuardType { val: recv, guard_type: types::String, state: exit_id, recompile: None })
+                            fun.guard_type_recompile(block, recv, types::String, exit_id, Recompile)
                         } else if let Some(str) = fun.try_objtostring_cfunc(block, recv, profiled_type, cd, exit_id) {
                             str
                         } else {
@@ -11235,7 +11235,7 @@ fn add_iseq_to_hir(
                         }
                     } else {
                         let iftrue_block = fun.new_block(insn_idx);
-                        let iffalse_block = fun.new_block(insn_idx);
+                        let mut iffalse_block = fun.new_block(insn_idx);
                         let join_block = fun.new_block(insn_idx);
                         fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
                             val: recv,
@@ -11246,6 +11246,26 @@ fn add_iseq_to_hir(
                         // true block
                         let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: types::String });
                         fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
+                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
+                            for (expected, buckets) in polymorphic_arms(&summary) {
+                                if buckets[0].is_string() {
+                                    continue;
+                                }
+                                let arm_block = fun.new_block(insn_idx);
+                                let refined = fun.push_insn(arm_block, Insn::RefineType { val: recv, new_type: expected });
+                                if let Some(str) = fun.try_objtostring_cfunc(arm_block, refined, buckets[0], cd, exit_id) {
+                                    let next_block = fun.new_block(insn_idx);
+                                    fun.push_insn(iffalse_block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                                        val: recv,
+                                        expected,
+                                        if_true: BranchEdge { target: arm_block, args: vec![] },
+                                        if_false: BranchEdge { target: next_block, args: vec![] }
+                                    })));
+                                    fun.push_insn(arm_block, Insn::Jump(BranchEdge { target: join_block, args: vec![str] }));
+                                    iffalse_block = next_block;
+                                }
+                            }
+                        }
                         // false block
                         let refined = fun.push_insn(iffalse_block, Insn::RefineType { val: recv, new_type: types::NotString });
                         let send = fun.push_insn(iffalse_block, Insn::Send { recv: refined, cd, block: None, args: vec![], caller_splat_length: None, state: exit_id, reason: ObjToStringNotString });
