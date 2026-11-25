@@ -12,6 +12,19 @@ require "tmpdir"
 require "io/nonblock"
 
 class TestSocket_UNIXSocket < Test::Unit::TestCase
+  def test_recv_negative_length_with_buffer
+    s1, s2 = UNIXSocket.pair
+    buf = "short"
+
+    assert_raise(ArgumentError) { s1.recv(-1, 0, buf) }
+    assert_raise(ArgumentError) { s1.recv_nonblock(-1, 0, buf) }
+    assert_raise(ArgumentError) { s1.recvfrom(-1, 0, buf) }
+    assert_raise(ArgumentError) { s1.read_nonblock(-1, buf) }
+  ensure
+    s1.close if s1
+    s2.close if s2
+  end
+
   def test_fd_passing
     r1, w = IO.pipe
     s1, s2 = UNIXSocket.pair
