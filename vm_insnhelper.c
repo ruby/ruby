@@ -5412,7 +5412,7 @@ static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
                     const struct rb_captured_block *captured,
                     VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler,
-                    const rb_callable_method_entry_t *me)
+                    const rb_callable_method_entry_t *me, int stack_argc)
 {
     int is_lambda = FALSE; /* TODO */
     VALUE val, arg, blockarg;
@@ -5436,12 +5436,16 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
         frame_flag |= VM_FRAME_FLAG_CFRAME_KW;
     }
 
+    rb_control_frame_t *cfp = ec->cfp;
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
                   frame_flag,
                   self,
                   VM_GUARDED_PREV_EP(captured->ep),
                   (VALUE)me,
-                  0, ec->cfp->sp, 0, 0);
+                  0, cfp->sp, 0, 0);
+    /* The new frame keeps the arguments live. Pop them from the caller
+     * before the callback can exit via break. */
+    cfp->sp -= stack_argc;
     val = (*ifunc->func)(arg, (VALUE)ifunc->data, argc, argv, blockarg);
     rb_vm_pop_frame(ec);
 
@@ -5451,7 +5455,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 VALUE
 rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv)
 {
-    return vm_yield_with_cfunc(ec, captured, captured->self, argc, argv, 0, VM_BLOCK_HANDLER_NONE, NULL);
+    return vm_yield_with_cfunc(ec, captured, captured->self, argc, argv, 0, VM_BLOCK_HANDLER_NONE, NULL, 0);
 }
 
 static VALUE
@@ -5701,14 +5705,11 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                       struct rb_calling_info *calling, const struct rb_callinfo *ci,
                       MAYBE_UNUSED(bool is_lambda), VALUE block_handler)
 {
-    VALUE val;
-    int argc;
     const struct rb_captured_block *captured = VM_BH_TO_IFUNC_BLOCK(block_handler);
-    CALLER_SETUP_ARG(ec->cfp, calling, ci, ALLOW_HEAP_ARGV_KEEP_KWSPLAT);
-    argc = calling->argc;
-    val = vm_yield_with_cfunc(ec, captured, captured->self, CALLING_ARGC(calling), calling->heap_argv ? RARRAY_CONST_PTR(calling->heap_argv) : STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler, NULL);
-    POPN(argc); /* TODO: should put before C/yield? */
-    return val;
+    CALLER_SETUP_ARG(reg_cfp, calling, ci, ALLOW_HEAP_ARGV_KEEP_KWSPLAT);
+    const VALUE *argv = calling->heap_argv ? RARRAY_CONST_PTR(calling->heap_argv) : STACK_ADDR_FROM_TOP(calling->argc);
+    return vm_yield_with_cfunc(ec, captured, captured->self, CALLING_ARGC(calling), argv,
+                               calling->kw_splat, calling->block_handler, NULL, calling->argc);
 }
 
 static inline VALUE
