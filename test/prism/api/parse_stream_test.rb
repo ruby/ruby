@@ -53,6 +53,49 @@ module Ruby::Prism
       assert_equal "data\n", io.read
     end
 
+    def test_eof_diagnostic_before___END__
+      ["\n", "\r\n"].each do |newline|
+        code = "[#{newline}"
+        marker = "__END__#{newline}"
+        io = StringIO.new(code + marker + "data\n")
+        buffer = Ruby::Prism.parse(io.string)
+        stream = Ruby::Prism.parse_stream(io)
+
+        [buffer, stream].each do |result|
+          assert_equal [:array_term], result.errors.map(&:type)
+          assert_equal code.bytesize - 1, result.errors.first.location.start_offset
+          assert_equal "\n", result.errors.first.location.slice
+        end
+
+        assert_equal marker + "data\n", buffer.data_loc.slice
+        assert_equal marker, stream.data_loc.slice
+        assert_equal "data\n", io.read
+      end
+    end
+
+    def test___END___in_an_unterminated_interpolation
+      code = '"#{value' + "\n"
+      source = code + "__END__\ndata\n"
+
+      [Ruby::Prism.parse(source), Ruby::Prism.parse_stream(StringIO.new(source))].each do |result|
+        assert_equal code, result.statement.slice
+        assert_equal [:unexpected_token_close_context, :embexpr_end, :string_interpolated_term], result.errors.map(&:type)
+        assert_equal code.bytesize, result.errors.first.location.start_offset
+      end
+    end
+
+    def test_continued_heredoc_resumes_at___END__
+      code = "<<~OUTER\n" + '#{<<INNER}' + "\\c\n" + '#{value' + "\n"
+      source = code + "__END__\ndata\n"
+
+      [Ruby::Prism.parse(source), Ruby::Prism.parse_stream(StringIO.new(source))].each do |result|
+        assert_equal [:heredoc_term, :embexpr_end, :heredoc_term], result.errors.map(&:type)
+        part = result.statement.parts.last
+        assert_equal "\n", part.unescaped
+        assert_equal code.bytesize, part.location.end_offset
+      end
+    end
+
     def test___END___before_ruby_shebang
       [["preamble", { command_line: "x" }], ["#!/bin/sh", { main_script: true }]].each do |first_line, options|
         io = StringIO.new("#{first_line}\n__END__\n__END__\n#!/usr/bin/env ruby\n42\n__END__\ndata\n")

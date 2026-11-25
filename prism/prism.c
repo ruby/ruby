@@ -10239,7 +10239,7 @@ parser_lex(pm_parser_t *parser) {
 
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
-            if (parser->current.end >= parser->end) {
+            if (parser->current.end >= parser->source_end) {
                 lex_eof:
                 // We may be missing closing tokens. We should pop modes one by one
                 // to do the appropriate cleanup like moving next_start for heredocs.
@@ -11558,7 +11558,9 @@ parser_lex(pm_parser_t *parser) {
                         parser->data_loc.start = PM_TOKEN_START(parser, &parser->current);
                         parser->data_loc.length = PM_TOKEN_LENGTH(&parser->current);
 
-                        parser->current.start = parser->current.end;
+                        /* Recover at the end of the Ruby code, before the marker. */
+                        parser->source_end = parser->current.start;
+                        parser->current.end = parser->source_end;
                         goto lex_eof;
                     }
 
@@ -11635,7 +11637,7 @@ parser_lex(pm_parser_t *parser) {
 
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
-            if (parser->current.end >= parser->end) {
+            if (parser->current.end >= parser->source_end) {
                 LEX(PM_TOKEN_EOF);
             }
 
@@ -11855,7 +11857,7 @@ parser_lex(pm_parser_t *parser) {
 
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
-            if (parser->current.end >= parser->end) {
+            if (parser->current.end >= parser->source_end) {
                 LEX(PM_TOKEN_EOF);
             }
 
@@ -12125,7 +12127,7 @@ parser_lex(pm_parser_t *parser) {
 
             // We'll check if we're at the end of the file. If we are, then we need to
             // return the EOF token.
-            if (parser->current.end >= parser->end) {
+            if (parser->current.end >= parser->source_end) {
                 LEX(PM_TOKEN_EOF);
             }
 
@@ -12391,7 +12393,7 @@ parser_lex(pm_parser_t *parser) {
             // will add an error (because we weren't able to find the
             // terminator) but still continue parsing so that content after the
             // declaration of the heredoc can be parsed.
-            if (parser->current.end >= parser->end) {
+            if (parser->current.end >= parser->source_end) {
                 pm_parser_err_heredoc_term(parser, heredoc_lex_mode->ident_start, heredoc_lex_mode->ident_length);
                 parser->next_start = lex_mode->as.heredoc.next_start;
                 parser->heredoc_end = parser->current.end;
@@ -12689,7 +12691,8 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         token_cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, mode);
+                        /* A continued heredoc can resume at __END__ within this token. */
+                        breakpoint = pm_strpbrk(parser, token_cursor, breakpoints, parser->source_end - token_cursor, mode);
                         break;
                     }
                     case '#': {
@@ -12718,15 +12721,8 @@ parser_lex(pm_parser_t *parser) {
                 was_line_continuation = false;
             }
 
-            if (parser->current.end > parser->current.start) {
-                parser->current.end = parser->end;
-                pm_token_buffer_flush(parser, token_cursor);
-                LEX(PM_TOKEN_STRING_CONTENT);
-            }
-
-            // If we've hit the end of the string, then this is an unterminated
-            // heredoc. In that case we'll return a string content token.
-            parser->current.end = parser->end;
+            /* Return the remaining content of the unterminated heredoc. */
+            parser->current.end = parser->source_end;
             pm_token_buffer_flush(parser, token_cursor);
             LEX(PM_TOKEN_STRING_CONTENT);
         }
@@ -23122,6 +23118,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .node_chunks = { .arena = &parser->scratch_arena },
         .start = source,
         .end = source + size,
+        .source_end = source + size,
         .previous = { .type = PM_TOKEN_EOF, .start = source, .end = source },
         .current = { .type = PM_TOKEN_EOF, .start = source, .end = source },
         .next_start = NULL,
@@ -23446,7 +23443,7 @@ pm_parse_continuable(pm_parser_t *parser) {
 
     if (!parser->continuable) return;
 
-    size_t source_length = (size_t) (parser->end - parser->start);
+    size_t source_length = (size_t) (parser->source_end - parser->start);
 
     // First pass: check if there are any non-stray, non-fatal errors.
     bool has_non_stray_error = false;

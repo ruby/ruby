@@ -154,9 +154,8 @@ uint64_t
 pm_parser_checksum(const pm_parser_t *parser) {
     const uint8_t *end = parser->end;
 
-    if (parser->data_loc.length != 0) {
-        const uint8_t *cursor = parser->start + parser->data_loc.start;
-        const uint8_t *newline = pm_memchr(cursor, '\n', (size_t) (end - cursor));
+    if (parser->source_end != end) {
+        const uint8_t *newline = pm_memchr(parser->source_end, '\n', (size_t) (end - parser->source_end));
         if (newline != NULL) end = newline + 1;
     }
 
