@@ -5083,6 +5083,9 @@ append_fspath(VALUE result, VALUE fname, VALUE dirname, rb_encoding **enc, rb_en
     rb_str_resize(result, buflen);
     buf = RSTRING_PTR(result);
     memcpy(buf, cwdp, dirlen);
+    /* dirname may be a new string made above, and rb_str_resize may trigger
+     * GC before copying from cwdp, which points into it. */
+    RB_GC_GUARD(dirname);
     rb_enc_associate(result, *enc);
     return buf + dirlen;
 }
