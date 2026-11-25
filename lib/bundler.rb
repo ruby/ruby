@@ -119,9 +119,7 @@ module Bundler
     def bin_path
       @bin_path ||= begin
         path = Bundler.settings[:bin] || "bin"
-        path = Pathname.new(path).expand_path(root).expand_path
-        mkdir_p(path)
-        path
+        Pathname.new(path).expand_path(root).expand_path
       end
     end
 

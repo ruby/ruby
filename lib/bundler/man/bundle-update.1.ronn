@@ -83,7 +83,7 @@ gem.
   Prefer updating only to next minor version.
 
 * `--major`:
-  Prefer updating to next major version (default).
+  Prefer updating to latest major version (default).
 
 * `--pre`:
   Always choose the highest allowed version, regardless of prerelease status.
@@ -238,7 +238,7 @@ versions are resolved. One of the following options can be used: `--patch`,
   Prefer updating only to next minor version.
 
 * `--major`:
-  Prefer updating to next major version (default).
+  Prefer updating to latest major version (default).
 
 * `--strict`:
   Do not allow any gem to be updated past latest `--patch` | `--minor` | `--major`.

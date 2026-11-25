@@ -272,6 +272,7 @@ class Gem::Uninstaller
 
     safe_delete { rm_r full_gem_path, exclusions: exclusions }
     safe_delete { FileUtils.rm_r spec.extension_dir }
+    safe_delete { FileUtils.rm_f spec.build_info_file }
 
     old_platform_name = spec.original_name
 

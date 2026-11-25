@@ -50,6 +50,13 @@ module Gem::GemcutterUtilities
         socket = server.accept
         request_line = socket.gets
 
+        # Browsers open connections speculatively and close them again without
+        # ever sending a request, so wait for the one that carries the code.
+        unless request_line
+          socket.close
+          next
+        end
+
         method, req_uri, _protocol = request_line.split(" ")
         req_uri = Gem::URI.parse(req_uri)
 
@@ -75,6 +82,8 @@ module Gem::GemcutterUtilities
           responder.send(MethodNotAllowedResponse.for(host))
           raise Gem::WebauthnVerificationError, "Invalid HTTP method #{method.upcase} received."
         end
+      rescue Errno::ECONNABORTED, Errno::ECONNRESET
+        socket&.close
       end
     end
 

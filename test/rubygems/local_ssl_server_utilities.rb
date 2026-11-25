@@ -60,8 +60,8 @@ module Gem::LocalSSLServerUtilities
         ensure
           client.close
         end
-      rescue OpenSSL::SSL::SSLError
-        # Ignore SSL errors because we're testing them implicitly
+      rescue OpenSSL::SSL::SSLError, Errno::ECONNABORTED, Errno::ECONNRESET
+        # Ignore handshake failures the client causes; a reset arrives as Errno, not SSLError
       end
     end
     @ssl_server
@@ -132,7 +132,9 @@ module Gem::LocalSSLServerUtilities
     server_thread = Thread.new do
       client = ssl_server.accept
       client.close
-    rescue OpenSSL::OpenSSLError
+    rescue StandardError
+      # The client side below decides the verdict, and the join in ensure would
+      # re-raise anything left here past this method's own rescue.
       nil
     end
 
