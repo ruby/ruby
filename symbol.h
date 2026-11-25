@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "id.h"
+#include "internal/symbol.h"
 #include "ruby/encoding.h"
 
 #define DYNAMIC_ID_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
@@ -52,7 +53,6 @@ id_type(ID id)
     }
 }
 
-typedef uint32_t rb_id_serial_t;
 static const uint32_t RB_ID_SERIAL_MAX = /* 256M on LP32 */
     UINT32_MAX >>
     ((sizeof(ID)-sizeof(rb_id_serial_t))*CHAR_BIT < RUBY_ID_SCOPE_SHIFT ?

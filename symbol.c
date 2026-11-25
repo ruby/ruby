@@ -909,7 +909,7 @@ rb_static_id_valid_p(ID id)
 }
 
 static inline ID
-rb_id_serial_to_id(rb_id_serial_t num)
+id_serial_to_id(rb_id_serial_t num)
 {
     if (is_notop_id((ID)num)) {
         struct sym_id_entry *entry = get_id_serial_entry(num);
@@ -923,6 +923,12 @@ rb_id_serial_to_id(rb_id_serial_t num)
     else {
         return (ID)num;
     }
+}
+
+ID
+rb_id_serial_to_id(rb_id_serial_t num)
+{
+    return id_serial_to_id(num);
 }
 
 static ID
