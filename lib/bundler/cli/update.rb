@@ -13,7 +13,7 @@ module Bundler
 
       update_bundler = options[:bundler]
 
-      Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
+      Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler, pre: options[:pre]) if update_bundler
 
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
 
