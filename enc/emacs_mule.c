@@ -245,9 +245,9 @@ code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
   if (ONIGENC_IS_CODE_ASCII(code)) return 1;
   else if (code > 0xffffffff) return 0;
-  else if ((code & 0xff000000) >= 0x80000000) return 4;
-  else if ((code &   0xff0000) >= 0x800000) return 3;
-  else if ((code &     0xff00) >= 0x8000) return 2;
+  else if ((code & 0x80808080) == 0x80808080) return 4;
+  else if ((code & 0xff808080) == 0x00808080) return 3;
+  else if ((code & 0xffff8080) == 0x00008080) return 2;
   else
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 }
@@ -272,24 +272,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 	      const UChar** pp, const UChar* end, UChar* lower,
 	      OnigEncoding enc)
 {
-  int len;
-  const UChar* p = *pp;
-
-  if (ONIGENC_IS_MBC_ASCII(p)) {
-    *lower = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
-    (*pp)++;
-    return 1;
-  }
-  else {
-    int i;
-
-    len = mbc_enc_len(p, end, enc);
-    for (i = 0; i < len; i++) {
-      *lower++ = *p++;
-    }
-    (*pp) += len;
-    return len; /* return byte length of converted char to lower */
-  }
+  return onigenc_mbn_mbc_case_fold(enc, flag, pp, end, lower);
 }
 
 static UChar*
@@ -297,6 +280,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
 {
   const UChar *p;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 

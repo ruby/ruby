@@ -42,6 +42,14 @@ module Ruby::Prism
       end
     end
 
+    def test_dump_long_diagnostic_with_embedded_nul_in_source
+      identifier = "é" * 128
+      source = "<<\"#{identifier}\0after\"\n"
+      result = Ruby::Prism.load(source, Ruby::Prism.dump(source))
+
+      assert_equal ["unterminated heredoc; can't find string \"#{identifier}\" anywhere before EOF"], result.errors.map(&:message)
+    end
+
     # These trees are each 20,000 nodes deep, which is deeper than the stack of
     # a thread allows a walk of the tree to recurse.
     def test_dump_and_load_deep_trees

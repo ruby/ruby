@@ -1130,6 +1130,12 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     return Qnil;
 }
 
+#if USE_ZJIT
+static void rb_zjit_extract_values_from_stack_map(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
+#else
+#define rb_zjit_extract_values_from_stack_map(ec, cfp) ((void)0)
+#endif
+
 // child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
 static VALUE
 vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
@@ -1191,6 +1197,13 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         !rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED)) {
         if (rb_yjit_enabled_p) rb_yjit_invalidate_ep_is_bp(iseq);
         if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(iseq);
+    }
+
+    // Spill ZJIT frame if there is one to get locals out.
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        // We only need the locals here but we reconstruct the stack as well for simplicity.
+        // TODO(alan): Directly extract to the heap env from the stackmap.
+        rb_zjit_extract_values_from_stack_map(ec, cfp);
     }
 
     /*
@@ -1525,6 +1538,21 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     return ID_TABLE_CONTINUE;
 }
 
+static void
+env_copy_check_shareable(VALUE v, ID id)
+{
+    if (!rb_ractor_shareable_p(v)) {
+        VALUE name = rb_id2str(id);
+        VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
+                               " unshareable object %+" PRIsVALUE " from ", v);
+        if (name)
+            rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
+        else
+            rb_str_cat_cstr(msg, "a hidden variable");
+        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+    }
+}
+
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
@@ -1534,6 +1562,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
     VALUE *ep = &env_body[src_env->env_size - 2];
     const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+    VALUE block_handler = VM_BLOCK_HANDLER_NONE;
 
     // Copy after allocations above, since they can move objects in src_ep.
     VALUE svar_val = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
@@ -1555,10 +1584,17 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     }
 
     if (read_only_variables) {
+        const struct rb_iseq_constant_body *body = ISEQ_BODY(src_env->iseq);
+
+        const bool forwardable = body->param.flags.forwardable && VM_ENV_LOCAL_P(src_ep);
+        const unsigned int local_offset =
+            src_env->env_size - 1 /* envval */ - VM_ENV_DATA_SIZE - body->local_table_size;
+        VM_ASSERT(src_env->env_size >= body->local_table_size + VM_ENV_DATA_SIZE + 1);
+        VM_ASSERT(forwardable || local_offset == 0);
+
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
             ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
 
-            const struct rb_iseq_constant_body *body = ISEQ_BODY(src_env->iseq);
             for (unsigned int j=0; j<body->local_table_size; j++) {
                 if (id == body->local_table[j]) {
                     // check reassignment
@@ -1570,18 +1606,23 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                     }
 
                     // check shareable
-                    VALUE v = src_env->env[j];
-                    if (!rb_ractor_shareable_p(v)) {
-                        VALUE name = rb_id2str(id);
-                        VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
-                                               " unshareable object %+" PRIsVALUE " from ", v);
-                        if (name)
-                            rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
-                        else
-                            rb_str_cat_cstr(msg, "a hidden variable");
-                        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+                    VALUE v = src_env->env[local_offset + j];
+                    env_copy_check_shareable(v, id);
+                    RB_OBJ_WRITE((VALUE)copied_env, &env_body[local_offset + j], v);
+
+                    if (forwardable && j == body->param.size - 1) {
+                        for (unsigned int k = 0; k < local_offset; k++) {
+                            VALUE arg = src_env->env[k];
+                            env_copy_check_shareable(arg, id);
+                            RB_OBJ_WRITE((VALUE)copied_env, &env_body[k], arg);
+                        }
+
+                        block_handler = VM_ENV_BLOCK_HANDLER(src_ep);
+                        if (block_handler != VM_BLOCK_HANDLER_NONE) {
+                            env_copy_check_shareable(block_handler, id);
+                        }
                     }
-                    RB_OBJ_WRITE((VALUE)copied_env, &env_body[j], v);
+
                     rb_ary_delete_at(read_only_variables, i);
                     break;
                 }
@@ -1604,7 +1645,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
     }
     else {
-        ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
+        RB_OBJ_WRITE(copied_env, &ep[VM_ENV_DATA_INDEX_SPECVAL], block_handler);
     }
 
     RB_OBJ_SET_SHAREABLE((VALUE)copied_env);
@@ -2987,6 +3028,118 @@ zjit_stack_map_read_varint(zjit_stack_map_reader_t *r)
     return (int64_t)value;
 }
 
+#if RUBY_DEBUG
+static void
+zjit_check_owned_slot(const rb_control_frame_t *cfp, const zjit_jit_frame_t *jit_frame,
+                      const VALUE *slot, int32_t i)
+{
+    if (LIKELY(slot < cfp->sp)) return;
+
+    const rb_iseq_t *iseq = jit_frame->iseq;
+    const char *label = "(no iseq)";
+    unsigned int line = 0;
+    if (iseq && jit_frame->pc) {
+        label = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+        line = rb_iseq_line_no(iseq, jit_frame->pc - ISEQ_BODY(iseq)->iseq_encoded);
+    }
+    rb_bug("ZJIT: stack map opcode %d writes %p, at or above cfp->sp %p (ep=%p, %s:%u). "
+           "That slot belongs to a frame pushed over this frame's operand stack.",
+           i, (const void *)slot, (const void *)cfp->sp,
+           (const void *)cfp->ep, label, line);
+}
+#else
+#define zjit_check_owned_slot(cfp, jit_frame, slot, i) ((void)0)
+#endif
+
+// Write a ZJIT frame's off-stack Ruby slots (operands and locals) into VM-stack
+// memory using its stack map, decoding downward from cfp->sp. Does not touch
+// any frame metadata (pc/_iseq/block_code/jit_return).
+static void
+zjit_frame_write_stack(const rb_execution_context_t *ec, rb_control_frame_t *cfp, const zjit_jit_frame_t *jit_frame)
+{
+    // Materialize Ruby stack slots kept off the VM stack.
+    if (jit_frame->stack_map) {
+        // One map can describe several control frames and we care about the
+        // VM_ENV_ESCAPED_P each.
+        const rb_control_frame_t *env_cfp = cfp;
+        bool env_escaped = VM_ENV_ESCAPED_P(env_cfp->ep);
+        // Whether the cursor is in a frame's locals area, i.e. past the frame's
+        // SKIP_VM_ENV_DATA opcode and before the next PREV_FRAME opcode. Locals are
+        // not written when that frame's env escaped:
+        //   - locals in escaped envs are not in cfp->sp memory
+        //   - the stack map describes pre-escape frame state, so is stale here
+        // The slots still exist on the VM stack, so the write cursor moves past
+        // them either way to stay aligned for the frames below.
+        bool locals_area = false;
+        VALUE *stack = cfp->sp;
+        zjit_stack_map_reader_t reader = { jit_frame->stack_map, 1 }; // bit 0 is materialize_block_code
+#define EAT_ONE(value) do { \
+        --stack; \
+        if (!(locals_area && env_escaped)) { \
+            zjit_check_owned_slot(cfp, jit_frame, stack, i); \
+            *stack = (value); \
+        } \
+} while (0)
+        for (int32_t i = 0;; i++) {
+            unsigned int op = zjit_stack_map_read_bits(&reader, ZJIT_STACK_MAP_OP_BITS);
+            if (op == ZJIT_STACK_MAP_OP_END) break;
+            switch (op) {
+              case ZJIT_STACK_MAP_OP_VREG: {
+                // Decode a native stack slot offset generated by ZJIT's backend.
+                // It's an offset from NATIVE_BASE_PTR, which is copied into
+                // cfp->jit_return, to the native stack slot holding the value.
+                int64_t slot_index = zjit_stack_map_read_varint(&reader);
+                EAT_ONE(((VALUE *)cfp->jit_return)[-slot_index]);
+                break;
+              }
+              case ZJIT_STACK_MAP_OP_IMM: {
+                VALUE value = (VALUE)zjit_stack_map_read_varint(&reader);
+                RUBY_ASSERT(RB_SPECIAL_CONST_P(value)); // We don't GC mark stack map entries.
+                EAT_ONE(value);
+                break;
+              }
+              case ZJIT_STACK_MAP_OP_NIL:
+                EAT_ONE(Qnil);
+                break;
+              case ZJIT_STACK_MAP_OP_SKIP:
+                stack -= zjit_stack_map_read_varint(&reader);
+                break;
+              case ZJIT_STACK_MAP_OP_BASE_PTR: {
+                // This has to be the first code to align the write cursor for other entries
+                RUBY_ASSERT_ALWAYS(0 == i, "base_ptr stack map code only makes sense at 0");
+                int64_t slot_index = zjit_stack_map_read_varint(&reader);
+                int64_t stack_size = zjit_stack_map_read_varint(&reader);
+                VALUE *base_ptr = (VALUE *)((VALUE *)cfp->jit_return)[-slot_index];
+                stack = base_ptr + stack_size;
+                break;
+              }
+              case ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA:
+                // The env data (me/cref, specval, flags) already lives in VM stack
+                // memory. The opcodes that follow are this frame's locals.
+                stack -= VM_ENV_DATA_SIZE;
+                locals_area = true;
+                break;
+              case ZJIT_STACK_MAP_OP_PREV_FRAME:
+                // Move past the inlined callee's receiver slot, which sits below
+                // its local table unless the callee is a block, and continue
+                // decoding in the caller's frame.
+                stack -= zjit_stack_map_read_bits(&reader, 1);
+                locals_area = false;
+                env_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(env_cfp);
+                env_escaped = VM_ENV_ESCAPED_P(env_cfp->ep);
+                break;
+              default:
+                rb_bug("unknown ZJIT stackmap opcode: %u", op);
+                break;
+            }
+            // The cursor only ever moves down, and an opcode that moves it off the
+            // bottom of the VM stack means the map or the anchor is malformed.
+            RUBY_ASSERT(stack >= ec->vm_stack);
+        }
+#undef EAT_ONE
+    }
+}
+
 // Materialize JITFrame-enabled CFP into interpreter-compatible CFP
 static void
 zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp, bool materialize_target)
@@ -3015,53 +3168,7 @@ zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cf
             if (ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(jit_frame)) {
                 cfp->block_code = NULL;
             }
-
-            // Materialize Ruby stack slots kept off the VM stack. On side exit,
-            // the exiting frame is already written by compile_exit_save_state()
-            // and skipped here after materialize_exit_trampoline clears its
-            // jit_return, so this restores older ZJIT frames from stack maps.
-            if (jit_frame->stack_map) {
-                VALUE *stack = cfp->sp;
-                zjit_stack_map_reader_t reader = { jit_frame->stack_map, 1 }; // bit 0 is materialize_block_code
-#define WRITE_ONE(value) do { --stack; *stack = (value); } while (0)
-                for (int32_t i = 0;; i++) {
-                    unsigned int op = zjit_stack_map_read_bits(&reader, ZJIT_STACK_MAP_OP_BITS);
-                    if (op == ZJIT_STACK_MAP_OP_END) break;
-                    switch (op) {
-                      case ZJIT_STACK_MAP_OP_VREG:
-                        // Decode a native stack slot offset generated by ZJIT's backend.
-                        // It's an offset from NATIVE_BASE_PTR, which is copied into
-                        // cfp->jit_return, to the native stack slot holding the value.
-                        WRITE_ONE(((VALUE *)cfp->jit_return)[-zjit_stack_map_read_varint(&reader)]);
-                        break;
-                      case ZJIT_STACK_MAP_OP_IMM: {
-                        VALUE value = (VALUE)zjit_stack_map_read_varint(&reader);
-                        RUBY_ASSERT(RB_SPECIAL_CONST_P(value)); // We don't GC mark stack map entries.
-                        WRITE_ONE(value);
-                        break;
-                      }
-                      case ZJIT_STACK_MAP_OP_NIL:
-                        WRITE_ONE(Qnil);
-                        break;
-                      case ZJIT_STACK_MAP_OP_SKIP:
-                        stack -= zjit_stack_map_read_varint(&reader);
-                        break;
-                      case ZJIT_STACK_MAP_OP_BASE_PTR: {
-                        // This has to be the first code to align the write cursor for other entries
-                        RUBY_ASSERT_ALWAYS(0 == i, "base_ptr stack map code only makes sense at 0");
-                        int64_t slot_index = zjit_stack_map_read_varint(&reader);
-                        int64_t stack_size = zjit_stack_map_read_varint(&reader);
-                        VALUE *base_ptr = (VALUE *)((VALUE *)cfp->jit_return)[-slot_index];
-                        stack = base_ptr + stack_size;
-                        break;
-                      }
-                      default:
-                        rb_bug("unknown ZJIT stackmap opcode: %u", op);
-                        break;
-                    }
-                }
-#undef WRITE_ONE
-            }
+            zjit_frame_write_stack(ec, cfp, jit_frame);
             cfp->jit_return = 0;
         }
         if (end_cfp == cfp) break;
@@ -3081,6 +3188,34 @@ rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_cont
     // A ZJIT frame active before the tag's setjmp is below it on the native
     // stack and survives longjmp. Materialize only the frames unwound above it.
     zjit_materialize_frames(ec, cfp, !ec->tag->zjit_frame_active);
+}
+
+// Extract a single control frame's off-stack Ruby slots (operands and locals) into
+// VM-stack memory, leaving jit_return intact. Used for doing environment escape
+// (vm_make_env_each()).
+static void
+rb_zjit_extract_values_from_stack_map(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+{
+    if (!rb_zjit_enabled_p) return;
+    if (!CFP_ZJIT_FRAME_P(cfp)) return;
+
+    // Find the innermost inlined jit_frame which describes the locals of cfp.
+    // When cfp is the caller of an inlined callee, its locals are described by
+    // the stack map of the innermost frame in the inline chain, which
+    // continues into caller frames by PREV_FRAME. Frames inlined into the same
+    // JIT function keep their JITFrame slots next to each other, one VALUE
+    // apart per inlining depth (see cfp_jit_return_for_depth()), so walk
+    // towards top-of-stack while each one is the inlined callee of the
+    // previous one. The adjacency check also stops at interpreter frames (NULL)
+    // and C frames (ZJIT_JIT_RETURN_C_FRAME).
+    // TODO(alan): Remove when inlined frames don't each get a control frame.
+    rb_control_frame_t *innermost = cfp;
+    while (innermost != ec->cfp) {
+        rb_control_frame_t *callee = RUBY_VM_NEXT_CONTROL_FRAME(innermost);
+        if ((VALUE)callee->jit_return + SIZEOF_VALUE != (VALUE)innermost->jit_return) break;
+        innermost = callee;
+    }
+    zjit_frame_write_stack(ec, innermost, CFP_ZJIT_FRAME(innermost));
 }
 #endif
 
@@ -3916,8 +4051,9 @@ rb_execution_context_update(rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             rb_gc_update_moved(&cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
-                const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
-                rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)jit_frame);
+                zjit_jit_frame_t *jit_frame = (zjit_jit_frame_t *)CFP_ZJIT_FRAME(cfp); // drop const
+                // This never writes to the readonly rb_zjit_c_frame as that has NULL iseq.
+                rb_gc_update_moved_ptr(&jit_frame->iseq);
                 // materialize_block_code means cfp->block_code is lazy and may
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by

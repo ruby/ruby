@@ -28,6 +28,7 @@ module Bundler
     def start
       @requirements = @base.requirements
       @packages = @base.packages
+      @incompatible_specs = {}
 
       root, logger = setup_solver
 
@@ -71,6 +72,9 @@ module Bundler
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
           deps = version.dependencies.reject {|d| d.name == package.name }
+          if incompatible = @incompatible_specs[package.name]
+            deps.concat(version.specs.filter_map {|s| incompatible[s.full_name] })
+          end
           deps = Override.rewrite_dependencies(@base.overrides, package.name, deps)
           deps = apply_metadata_overrides(deps, package.name)
           versions[version] = to_dependency_hash(deps, @packages)
@@ -86,8 +90,23 @@ module Bundler
     end
 
     def solve_versions(root:, logger:)
-      solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
-      result = solver.solve
+      result = loop do
+        solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
+        solution = solver.solve
+
+        # Some indexes omit Ruby and RubyGems requirements. Fetch them only for
+        # selected versions, then solve again if the new requirements conflict.
+        incompatible = solution.values.flat_map(&:specs).filter_map do |s|
+          next unless s.is_a?(MatchRemoteMetadata)
+          dependency = s.incompatible_metadata_dependency(@base.overrides)
+          [s, dependency] if dependency
+        end
+        break solution if incompatible.empty?
+
+        incompatible.each {|s, dep| (@incompatible_specs[s.name] ||= {})[s.full_name] = dep }
+        root, logger = setup_solver
+      end
+
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
       check_replaced_gems(resolved_specs)
       Override.attach(resolved_specs, @base.overrides)
@@ -180,8 +199,10 @@ module Bundler
       names_to_allow_remote_specs_for = []
       extended_explanation = nil
 
+      satisfiers = []
       while incompatibility.conflict?
         cause = incompatibility.cause
+        satisfiers << cause.satisfier
         incompatibility = cause.incompatibility
 
         incompatibility.terms.each do |term|
@@ -190,7 +211,7 @@ module Bundler
 
           if base_requirements[name]
             names_to_unlock << name
-          elsif package.ignores_prereleases? && @all_specs[name].any? {|s| s.version.prerelease? }
+          elsif filtered_prereleases?(package)
             names_to_allow_prereleases_for << name
           elsif package.prefer_local? && @all_specs[name].any? {|s| !s.is_a?(StubSpecification) }
             names_to_allow_remote_specs_for << name
@@ -201,6 +222,11 @@ module Bundler
 
           extended_explanation = no_versions_incompat.extended_explanation
         end
+      end
+
+      # Preserve the usual retry order when it can already resolve the conflict.
+      if names_to_unlock.empty? && names_to_allow_prereleases_for.empty? && names_to_allow_remote_specs_for.empty?
+        names_to_allow_prereleases_for = prerelease_names_in(satisfiers)
       end
 
       [names_to_unlock.uniq, names_to_allow_prereleases_for.uniq, names_to_allow_remote_specs_for.uniq, extended_explanation]
@@ -310,6 +336,17 @@ module Bundler
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
       results.group_by(&:version).reduce([]) do |groups, (version, specs)|
+        if rejected = @incompatible_specs[name]
+          compatible = specs.reject do |s|
+            if s.is_a?(RemoteSpecification) && s.gemspec_loaded?
+              rejected[s.full_name] ||= s.incompatible_metadata_dependency(@base.overrides)
+            end
+            rejected[s.full_name]
+          end
+          # Keep the conflicting dependencies when PubGrub needs to explain why no build works.
+          specs = compatible unless compatible.empty?
+        end
+
         platform_specs = package.platform_specs(specs)
 
         # If package is a top-level dependency,
@@ -368,8 +405,10 @@ module Bundler
       "Gemfile"
     end
 
-    def raise_incomplete!(incomplete_specs)
-      raise_not_found!(@base.get_package(incomplete_specs.first.name))
+    def raise_incomplete!(incomplete_specs, platform = nil)
+      spec = incomplete_specs.first
+      # An unresolved dependency may be missing for a different resolution platform.
+      raise_not_found!(@base.get_package(spec.name), spec.version && platform)
     end
 
     def sort_versions_by_preferred(package, versions)
@@ -378,7 +417,7 @@ module Bundler
 
     private
 
-    def raise_not_found!(package)
+    def raise_not_found!(package, platform = nil)
       name = package.name
       source = source_for(name)
       specs = @all_specs[name]
@@ -394,7 +433,7 @@ module Bundler
       not_found_message = if specs_matching_requirement.any?
         specs = specs_matching_requirement
         matching_part = requirement_label
-        platforms = package.platforms
+        platforms = platform ? [platform] : package.platforms
 
         if platforms.size == 1
           "Could not find gem '#{requirement_label}' with platform '#{platforms.first}'"
@@ -459,6 +498,30 @@ module Bundler
 
     def filter_specs(specs, package)
       filter_remote_specs(filter_cooldown(filter_prereleases(specs, package)), package)
+    end
+
+    def prerelease_names_in(incompatibilities)
+      seen = {}.compare_by_identity
+      packages = []
+      while (incompatibility = incompatibilities.pop)
+        next if seen[incompatibility]
+        seen[incompatibility] = true
+
+        if incompatibility.conflict?
+          cause = incompatibility.cause
+          incompatibilities.push(cause.incompatibility, cause.satisfier)
+        else
+          incompatibility.terms.each {|term| packages << term.package }
+        end
+      end
+
+      packages.uniq.filter_map do |package|
+        package.name if !base_requirements[package.name] && filtered_prereleases?(package)
+      end
+    end
+
+    def filtered_prereleases?(package)
+      package.ignores_prereleases? && @all_specs[package.name].any? {|s| s.version.prerelease? }
     end
 
     def filter_prereleases(specs, package)
@@ -620,6 +683,13 @@ module Bundler
           versions = versions_for(dep_package, dep_range)
         end
 
+        if versions.empty? && locked_version_missing?(dep_package)
+          @base.unlock_names([name])
+          @all_versions.delete(dep_package)
+          @sorted_versions.delete(dep_package)
+          versions = versions_for(dep_package, dep_range)
+        end
+
         if versions.empty? && select_all_versions(dep_package, dep_range).any?
           raise_all_versions_filtered_out!(dep_package)
         end
@@ -630,6 +700,16 @@ module Bundler
 
         raise_not_found!(dep_package)
       end.to_h
+    end
+
+    def locked_version_missing?(package)
+      return false unless package.unlock?
+
+      name = package.name
+      version = package.locked_version
+      return false unless base_requirements[name]&.requirements == [[">=", version]]
+
+      source_for(name).specs.search([name, version]).empty?
     end
 
     def select_all_versions(package, range)

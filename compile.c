@@ -10949,7 +10949,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         INIT_ANCHOR(anchor);
         lit = rb_ary_new();
         for (NODE *n = (NODE *)node; n; n = RNODE_LIST(n)->nd_next) {
-            VALUE val;
+            VALUE val = Qundef;
             int shareable_literal_p2;
             NODE *elt = RNODE_LIST(n)->nd_head;
             if (elt) {

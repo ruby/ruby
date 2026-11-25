@@ -246,19 +246,24 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_Bignum(b)
-        result = 0
-        b.data.each_byte.with_index do |byte, exp|
-          result += (byte * 2**(exp * 8))
-        end
+        result = bignum_from_bytes(b.data)
 
         case b.sign
         when 43 # ?+
-          result
+          register_object(result)
         when 45 # ?-
-          -result
+          register_object(-result)
         else
           raise FormatError, "Unexpected sign for Bignum #{b.sign.chr.inspect} (#{b.sign})"
         end
+      end
+
+      # String#to_i(16) is quadratic in the length on JRuby and TruffleRuby
+      def bignum_from_bytes(data)
+        return data.reverse.unpack1("H*").to_i(16) if data.bytesize <= 4096
+
+        half = data.bytesize / 2
+        (bignum_from_bytes(data.byteslice(half..)) << (8 * half)) | bignum_from_bytes(data.byteslice(0, half))
       end
 
       def visit_Gem_SafeMarshal_Elements_UserClass(r)

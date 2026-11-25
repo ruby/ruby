@@ -210,6 +210,7 @@ static UChar*
 utf16be_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end,
 			      OnigEncoding enc ARG_UNUSED)
 {
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
 
   if ((s - start) % 2 == 1) {

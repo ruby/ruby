@@ -147,6 +147,25 @@ EOS
     assert_equal 'hello', body
   end
 
+  def test_chunk_size_line
+    ["1f", "1F", "1f;ext=1", "1f ;ext", "1f\t; ext=\"a\""].each do |size|
+      io = dummy_io("HTTP/1.1 200 OK\nConnection: close\nTransfer-Encoding: chunked\n\n" \
+                    "#{size}\n#{"a" * 31}\n0\n\n")
+      res = Net::HTTPResponse.read_new(io)
+      res.reading_body(io, true) {}
+      assert_equal("a" * 31, res.body, size)
+    end
+
+    ["0x1f", "1_0", ";ext=1f", "zz1f", "-5", "+5", "g5", " 5", "5x"].each do |size|
+      io = dummy_io("HTTP/1.1 200 OK\nConnection: close\nTransfer-Encoding: chunked\n\n" \
+                    "#{size}\n#{"a" * 31}\n0\n\n")
+      res = Net::HTTPResponse.read_new(io)
+      assert_raise(Net::HTTPBadResponse, size) do
+        res.reading_body(io, true) {}
+      end
+    end
+  end
+
   def test_read_body_chunked_is_final_transfer_coding
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK

@@ -1794,6 +1794,82 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #22551]
+  def test_str_concat_keeps_coderange
+    # String#valid_encoding? and such can't tell whether the code range is
+    # cached since they scan the string when it isn't, so look at the flags.
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: %w[7bit valid valid valid valid broken unknown unknown], exits: :any)
+      require 'objspace'
+
+      # The script runs in the C locale, so say which encoding every string is in.
+      def coderange(str) = ObjectSpace.dump(str)[/"coderange":"(\w+)"/, 1]
+      def scanned(str) = str.dup.force_encoding("UTF-8").tap(&:valid_encoding?)
+      def unscanned(str) = [str].pack("a*").force_encoding("UTF-8")
+      def append(a, b) = a << b
+
+      [
+        append(scanned("abc"), scanned("def")),
+        append(scanned("abc"), scanned("\u00e9")),
+        append(scanned("\u00e9"), scanned("abc")),
+        append(scanned("\u00e9"), scanned("\u00e9")),
+        append(scanned("\u00e9"), unscanned("\u00e9")),
+        append(scanned("\u00e9"), scanned("\xE3")),
+        # A receiver that hasn't been scanned might be broken, so it stays unscanned.
+        append(unscanned("\u00e9"), scanned("\u00e9")),
+        append(unscanned("\xE3"), scanned("\u00e9")),
+      ].map { |str| coderange(str) }
+    RUBY
+  end
+
+  def test_str_concat_encodings_with_same_inline_bits
+    # Every encoding with an index of 127 or more has the same encoding bits in
+    # the flags of its strings, so those bits can't tell two of them apart.
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: :compatibility_error)
+      def append(a, b) = a << b
+
+      require "-test-/string"
+
+      padding = [127 - Encoding.list.size, 0].max
+      enc1, enc2 = Array.new(padding + 2) { |i| Bug::String.rb_define_dummy_encoding("YJIT_DUMMY_#{i}") }.last(2)
+
+      append(+"a", "b")
+      begin
+        append("a".dup.force_encoding(enc1), "b".dup.force_encoding(enc2).tap(&:valid_encoding?))
+        :no_error
+      rescue Encoding::CompatibilityError
+        :compatibility_error
+      end
+    RUBY
+  end
+
+  def test_str_concat_broken_strings_into_valid
+    # Two halves of one character. The result must not be left marked broken.
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: [false, false, true, "\u3042"])
+      def append(a, b) = a << b
+
+      head = "\xE3".dup.force_encoding("UTF-8")
+      tail = "\x81\x82".dup.force_encoding("UTF-8")
+      head_valid = head.valid_encoding?
+      tail_valid = tail.valid_encoding?
+      append(head, tail)
+      [head_valid, tail_valid, head.valid_encoding?, head]
+    RUBY
+  end
+
+  def test_str_concat_empty_string_to_frozen
+    assert_compiles(<<~'RUBY', insns: %i[opt_ltlt], result: :frozen_error)
+      def append(a, b) = a << b
+
+      append(+"a", "b")
+      begin
+        append("a".freeze, "")
+        :no_error
+      rescue FrozenError
+        :frozen_error
+      end
+    RUBY
+  end
+
   def test_io_reopen_clobbering_singleton_class
     assert_compiles(<<~RUBY, result: [:ok, :ok], exits: { definesmethod: 1, opt_eq: 2 })
       def $stderr.to_i = :i
@@ -1900,6 +1976,43 @@ class TestYJIT < Test::Unit::TestCase
       def use(empty) = foo(*empty)
 
       use([])
+    RUBY
+  end
+
+  def test_cfunc_splat_at_vm_stack_limit
+    # A splat into a variadic C function right below the VM stack limit must
+    # side-exit and raise SystemStackError instead of writing the array over
+    # the control frames.
+    assert_separately(["--yjit", "--yjit-call-threshold=1"], <<~'RUBY')
+      class SplatArray < Array
+        def rec(depth, args) = depth == 0 ? push(*args) : rec(depth - 1, args)
+      end
+      ary = SplatArray.new
+      overflows = ->(depth) do
+        ary.rec(depth, [])
+        false
+      rescue SystemStackError
+        true
+      end
+
+      # Find the depth at which the recursion itself overflows the VM stack
+      hi = 1
+      hi *= 2 until overflows[hi]
+      lo = hi / 2
+      while hi - lo > 1
+        mid = (lo + hi) / 2
+        overflows[mid] ? hi = mid : lo = mid
+      end
+
+      # Splat the largest array that stays on the stack at every depth near the limit
+      raised = false
+      args = Array.new(126, nil)
+      (hi - 100).upto(hi + 10) do |depth|
+        ary.rec(depth, args)
+      rescue SystemStackError
+        raised = true
+      end
+      assert_true(raised)
     RUBY
   end
 

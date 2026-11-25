@@ -106,6 +106,14 @@
 # define ARG_UNUSED
 #endif
 
+/* For functions whose error must not be dropped, e.g. those emitting into
+   the compiled program: ignoring one leaves a broken program. */
+#if defined(__GNUC__)
+# define ONIG_NODISCARD  __attribute__ ((warn_unused_result))
+#else
+# define ONIG_NODISCARD
+#endif
+
 #if !defined(RUBY) && defined(RUBY_EXPORT)
 # define RUBY
 #endif
@@ -123,6 +131,14 @@
 #  define LONG_LONG long long
 # endif
 #endif /* RUBY */
+
+#if defined(RB_THREAD_LOCAL_SPECIFIER)
+# define ONIG_THREAD_LOCAL RB_THREAD_LOCAL_SPECIFIER
+#elif defined(_MSC_VER)
+# define ONIG_THREAD_LOCAL __declspec(thread)
+#elif defined(_WIN32) && defined(__GNUC__)
+# define ONIG_THREAD_LOCAL __thread
+#endif
 
 #include <stdarg.h>
 
@@ -152,6 +168,9 @@
 
 #ifdef RUBY
 
+/* The interrupts may raise (e.g. Thread#raise).  rb_reg_check_ints() keeps
+   that from jumping out of the matcher, which would leak what it holds; the
+   matcher frees it and returns ONIGERR_INTERRUPTED, and re.c raises again. */
 # define CHECK_INTERRUPT_IN_MATCH_AT do { \
   msa->counter++; \
   if (msa->counter >= 128) { \
@@ -159,9 +178,13 @@
     if (rb_reg_timeout_p(reg, &msa->end_time)) { \
       goto timeout; \
     } \
-    rb_thread_check_ints(); \
+    if (rb_reg_check_ints()) { \
+      goto interrupted; \
+    } \
   } \
 } while(0)
+/* Internal to Ruby: never returned to the users of the Onigmo API. */
+# define ONIGERR_INTERRUPTED                               -1100
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -352,14 +375,14 @@ typedef unsigned int  BitStatusType;
 
 #define BIT_STATUS_ON_AT(stats,n) do {\
   if ((n) < (int )BIT_STATUS_BITS_NUM)\
-    (stats) |= (1 << (n));\
+    (stats) |= ((BitStatusType )1 << (n));\
   else\
     (stats) |= 1;\
 } while (0)
 
 #define BIT_STATUS_ON_AT_SIMPLE(stats,n) do {\
   if ((n) < (int )BIT_STATUS_BITS_NUM)\
-    (stats) |= (1 << (n));\
+    (stats) |= ((BitStatusType )1 << (n));\
 } while (0)
 
 
@@ -452,38 +475,52 @@ typedef struct _BBuf {
   (buf)->p = tmp;\
 } while (0)
 
+/* A BBuf addresses its contents with unsigned int used/alloc fields, so it
+   cannot hold more than this.  Every size below is computed in size_t and
+   checked against it, so neither "pos + n" nor the alloc doubling can wrap
+   and send a write or an infinite grow loop past the buffer. */
+#define ONIG_MAX_BBUF_SIZE  ((size_t )INT_MAX_LIMIT)
+
 #define BBUF_EXPAND(buf,low) do{\
   UChar *tmp;\
-  do { (buf)->alloc *= 2; } while ((buf)->alloc < (unsigned int )low);\
-  tmp = (UChar* )xrealloc((buf)->p, (buf)->alloc);\
+  size_t new_alloc = ((buf)->alloc == 0) ? 1 : (size_t )(buf)->alloc;\
+  if ((size_t )(low) > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  do { new_alloc *= 2; } while (new_alloc < (size_t )(low));\
+  if (new_alloc > ONIG_MAX_BBUF_SIZE) new_alloc = ONIG_MAX_BBUF_SIZE;\
+  tmp = (UChar* )xrealloc((buf)->p, new_alloc);\
   if (IS_NULL(tmp)) return(ONIGERR_MEMORY);\
   (buf)->p = tmp;\
+  (buf)->alloc = (unsigned int )new_alloc;\
 } while (0)
 
 #define BBUF_ENSURE_SIZE(buf,size) do{\
-  unsigned int new_alloc = (buf)->alloc;\
-  while (new_alloc < (unsigned int )(size)) { new_alloc *= 2; }\
-  if ((buf)->alloc != new_alloc) {\
+  size_t new_alloc = ((buf)->alloc == 0) ? 1 : (size_t )(buf)->alloc;\
+  if ((size_t )(size) > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  while (new_alloc < (size_t )(size)) { new_alloc *= 2; }\
+  if (new_alloc > ONIG_MAX_BBUF_SIZE) new_alloc = ONIG_MAX_BBUF_SIZE;\
+  if ((buf)->alloc != (unsigned int )new_alloc) {\
     UChar *tmp;\
     tmp = (UChar* )xrealloc((buf)->p, new_alloc);\
     if (IS_NULL(tmp)) return(ONIGERR_MEMORY);\
     (buf)->p = tmp;\
-    (buf)->alloc = new_alloc;\
+    (buf)->alloc = (unsigned int )new_alloc;\
   }\
 } while (0)
 
 #define BBUF_WRITE(buf,pos,bytes,n) do{\
-  int used = (pos) + (int )(n);\
-  if ((buf)->alloc < (unsigned int )used) BBUF_EXPAND((buf),used);\
+  size_t used = (size_t )(pos) + (size_t )(n);\
+  if (used > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  if ((size_t )(buf)->alloc < used) BBUF_EXPAND((buf),used);\
   xmemcpy((buf)->p + (pos), (bytes), (n));\
-  if ((buf)->used < (unsigned int )used) (buf)->used = used;\
+  if ((size_t )(buf)->used < used) (buf)->used = (unsigned int )used;\
 } while (0)
 
 #define BBUF_WRITE1(buf,pos,byte) do{\
-  int used = (pos) + 1;\
-  if ((buf)->alloc < (unsigned int )used) BBUF_EXPAND((buf),used);\
+  size_t used = (size_t )(pos) + 1;\
+  if (used > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  if ((size_t )(buf)->alloc < used) BBUF_EXPAND((buf),used);\
   (buf)->p[(pos)] = (UChar )(byte);\
-  if ((buf)->used < (unsigned int )used) (buf)->used = used;\
+  if ((size_t )(buf)->used < used) (buf)->used = (unsigned int )used;\
 } while (0)
 
 #define BBUF_ADD(buf,bytes,n)       BBUF_WRITE((buf),(buf)->used,(bytes),(n))
@@ -493,9 +530,11 @@ typedef struct _BBuf {
 
 /* from < to */
 #define BBUF_MOVE_RIGHT(buf,from,to,n) do {\
-  if ((unsigned int )((to)+(n)) > (buf)->alloc) BBUF_EXPAND((buf),(to) + (n));\
+  size_t end = (size_t )(to) + (size_t )(n);\
+  if (end > ONIG_MAX_BBUF_SIZE) return(ONIGERR_MEMORY);\
+  if (end > (size_t )(buf)->alloc) BBUF_EXPAND((buf),end);\
   xmemmove((buf)->p + (to), (buf)->p + (from), (n));\
-  if ((unsigned int )((to)+(n)) > (buf)->used) (buf)->used = (to) + (n);\
+  if (end > (size_t )(buf)->used) (buf)->used = (unsigned int )end;\
 } while (0)
 
 /* from > to */
@@ -853,8 +892,7 @@ typedef struct _OnigStackType {
     } absent_pos;
 #ifdef USE_MATCH_CACHE
     struct {
-      OnigPosition index; /* index of the match cache buffer */
-      uint8_t mask;       /* bit-mask for the match cache buffer */
+      OnigPosition bit;   /* of the match cache table */
     } match_cache_point;
 #endif
   } u;
@@ -867,6 +905,7 @@ typedef struct {
   int outer_repeat_mem;
   long num_cache_points_at_outer_repeat;
   long num_cache_points_in_outer_repeat;
+  int num_cache_points_of_outer_repeat_inc;
   int lookaround_nesting;
   UChar *match_addr;
 } OnigCacheOpcode;
@@ -900,12 +939,17 @@ typedef struct {
   long             num_cache_opcodes;
   OnigCacheOpcode* cache_opcodes;
   long             num_cache_points;
+  /* the match cache table: a flat bit array, or a sparse table (regexec.c) */
   uint8_t*         match_cache_buf;
+  struct OnigMatchCacheSparse* match_cache_sparse;
+  int              match_cache_error; /* a chunk of the sparse table could not be allocated */
 #endif
 } OnigMatchArg;
 
 #define NUM_CACHE_OPCODES_UNINIT      1
 #define NUM_CACHE_OPCODES_IMPOSSIBLE -1
+
+#define MATCH_CACHE_TOO_MANY_POINTS   1
 
 #define MATCH_CACHE_STATUS_UNINIT    1
 #define MATCH_CACHE_STATUS_INIT      2
@@ -975,6 +1019,8 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
 bool rb_reg_timeout_p(regex_t *reg, void *end_time);
+int rb_reg_check_ints(void);
+void rb_reg_warn(const char *sourcefile, int sourceline, const char *msg);
 #endif
 
 RUBY_SYMBOL_EXPORT_END

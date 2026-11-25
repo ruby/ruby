@@ -1,0 +1,9 @@
+if ((a => k); x); end
+     ^~~~~~ unexpected void value expression
+
+case ((a => k); x) in 1 in 2; end
+       ^~~~~~ unexpected void value expression
+
+def f; consume((if flag; return 1; else; ((return 2); x); end)); end
+                                           ^~~~~~~~ unexpected void value expression
+

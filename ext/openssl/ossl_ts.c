@@ -808,9 +808,15 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
 #endif
     TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
 
+    ossl_cb_state_begin();
     ok = TS_RESP_verify_response(ctx, resp);
+    status = ossl_cb_state_end();
     TS_VERIFY_CTX_free(ctx);
 
+    if (status) {
+        ossl_clear_error();
+        rb_jump_tag(status);
+    }
     if (!ok)
         ossl_raise(eTimestampError, "TS_RESP_verify_response");
 

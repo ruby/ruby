@@ -263,7 +263,8 @@ module Test
 
       def non_options(files, options)
         @jobserver = nil
-        if !options[:parallel] and @jobserver = Test::JobServer.connect(ENV.delete("MAKEFLAGS"))
+        makeflags = ENV.delete("MAKEFLAGS")
+        if !options[:parallel] and @jobserver = Test::JobServer.connect(makeflags)
           options[:parallel] ||= 256 # number of tokens to acquire first
         end
         @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 1200)

@@ -317,6 +317,11 @@ if defined? Zlib
       assert_equal("foo", z.finish)
     end
 
+    def test_avail_out_negative
+      z = Zlib::Inflate.new
+      assert_raise_with_message(ArgumentError, "negative size") { z.avail_out = -1 }
+    end
+
     def test_add_dictionary
       dictionary = "foo"
 
@@ -1386,6 +1391,19 @@ if defined? Zlib
           assert_nil(f.gets)
         end
       }
+    end
+
+    def test_gets_limit_shorter_than_separator
+      gz = Zlib::GzipReader.new(StringIO.new(Zlib.gzip("abcd")))
+      assert_equal("a", gz.gets("xyz", 1))
+      assert_equal("bc", gz.gets("xyz", 2))
+      assert_equal("d", gz.gets("xyz", 2))
+      assert_nil(gz.gets("xyz", 2))
+
+      gz = Zlib::GzipReader.new(StringIO.new(Zlib.gzip("ab")))
+      assert_equal("a", gz.gets("xyz", 1))
+      assert_equal("b", gz.gets("xyz", 1))
+      assert_nil(gz.gets("xyz", 1))
     end
 
     def test_readline

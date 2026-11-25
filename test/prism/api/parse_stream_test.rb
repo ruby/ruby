@@ -44,6 +44,137 @@ module Ruby::Prism
       assert_equal "5 + 6\n", io.read
     end
 
+    def test___END___after_syntax_error
+      io = StringIO.new(")\n__END__\ndata\n")
+      result = Ruby::Prism.parse_stream(io)
+
+      assert_predicate result, :failure?
+      assert_equal "__END__\n", result.data_loc.slice
+      assert_equal "data\n", io.read
+    end
+
+    def test_eof_diagnostic_before___END__
+      ["\n", "\r\n"].each do |newline|
+        code = "[#{newline}"
+        marker = "__END__#{newline}"
+        io = StringIO.new(code + marker + "data\n")
+        buffer = Ruby::Prism.parse(io.string)
+        stream = Ruby::Prism.parse_stream(io)
+
+        [buffer, stream].each do |result|
+          assert_equal [:array_term], result.errors.map(&:type)
+          assert_equal code.bytesize - 1, result.errors.first.location.start_offset
+          assert_equal "\n", result.errors.first.location.slice
+        end
+
+        assert_equal marker + "data\n", buffer.data_loc.slice
+        assert_equal marker, stream.data_loc.slice
+        assert_equal "data\n", io.read
+      end
+    end
+
+    def test___END___in_an_unterminated_interpolation
+      code = '"#{value' + "\n"
+      source = code + "__END__\ndata\n"
+
+      [Ruby::Prism.parse(source), Ruby::Prism.parse_stream(StringIO.new(source))].each do |result|
+        assert_equal code, result.statement.slice
+        assert_equal [:unexpected_token_close_context, :embexpr_end, :string_interpolated_term], result.errors.map(&:type)
+        assert_equal code.bytesize, result.errors.first.location.start_offset
+      end
+    end
+
+    def test_continued_heredoc_resumes_at___END__
+      code = "<<~OUTER\n" + '#{<<INNER}' + "\\c\n" + '#{value' + "\n"
+      source = code + "__END__\ndata\n"
+
+      [Ruby::Prism.parse(source), Ruby::Prism.parse_stream(StringIO.new(source))].each do |result|
+        assert_equal [:heredoc_term, :embexpr_end, :heredoc_term], result.errors.map(&:type)
+        part = result.statement.parts.last
+        assert_equal "\n", part.unescaped
+        assert_equal code.bytesize, part.location.end_offset
+      end
+    end
+
+    def test___END___before_ruby_shebang
+      [["preamble", { command_line: "x" }], ["#!/bin/sh", { main_script: true }]].each do |first_line, options|
+        io = StringIO.new("#{first_line}\n__END__\n__END__\n#!/usr/bin/env ruby\n42\n__END__\ndata\n")
+        result = Ruby::Prism.parse_stream(io, **options)
+
+        assert_predicate result, :success?
+        assert_equal 42, result.statement.value
+        assert_equal 5, result.statement.location.start_line
+        assert_equal 6, result.data_loc.start_line
+        assert_equal "data\n", io.read
+      end
+    end
+
+    def test_ruby_shebang_spanning_stream_reads
+      io = StringIO.new("__END__\n#!" + (" " * 4096) + "ruby\n1\n__END__\ndata")
+      result = Ruby::Prism.parse_stream(io, command_line: "x")
+
+      assert_predicate result, :success?
+      assert_equal 1, result.statement.value
+      assert_equal "data", io.read
+    end
+
+    def test___END___without_ruby_shebang
+      io = StringIO.new("__END__\nno Ruby script here\n")
+      result = Ruby::Prism.parse_stream(io, command_line: "x")
+
+      assert_equal [:script_not_found], result.errors.map(&:type)
+      assert_predicate io, :eof?
+    end
+
+    def test_shebang_in_data_remains_unread
+      [
+        ["#!ruby", { command_line: "x" }],
+        ["#!", { main_script: true }],
+        ["\uFEFF#!ruby", { main_script: true }],
+        ["\uFEFF#!/bin/sh", { main_script: true }],
+        ["#!/bin/sh", { main_script: true, scopes: [[]] }]
+      ].each do |first_line, options|
+        io = StringIO.new("#{first_line}\n1\n__END__\n#!ruby\n2\n")
+        result = Ruby::Prism.parse_stream(io, **options)
+
+        assert_predicate result, :success?
+        assert_equal 1, result.statement.value
+        assert_equal 1, Ruby::Prism.parse(io.string, **options).statement.value
+        assert_equal "#!ruby\n2\n", io.read
+      end
+    end
+
+    def test_command_line_x_skips_bom_prefixed_shebang
+      ["#!ruby", "#!ruby   "].each do |first_line|
+        source = "\uFEFF#{first_line}\n1\n__END__\n#!ruby\n2\n__END__\ndata\n"
+        io = StringIO.new(source)
+        result = Ruby::Prism.parse_stream(io, command_line: "x")
+
+        assert_predicate result, :success?
+        assert_equal 2, result.statement.value
+        assert_equal 2, Ruby::Prism.parse(source, command_line: "x").statement.value
+        assert_equal "data\n", io.read
+      end
+    end
+
+    def test_initial___END___after_utf8_bom
+      io = StringIO.new("\uFEFF__END__\r\ndata\n")
+      result = Ruby::Prism.parse_stream(io)
+
+      assert_equal 3, result.data_loc.start_offset
+      assert_equal "__END__\r\n", result.data_loc.slice
+      assert_equal "data\n", io.read
+    end
+
+    def test_false___END___in_percent_string
+      io = StringIO.new("p(%\n__END__\n+ %q{hi})\n")
+      result = Ruby::Prism.parse_stream(io)
+
+      assert_predicate result, :success?
+      assert_nil result.data_loc
+      assert_equal "p(%\n__END__\n+ %q{hi})", result.statement.location.slice
+    end
+
     # __END__ as the final line with no trailing newline must still be detected
     # as the terminator. This exercises the EOF check for a chunk that does not
     # end in a newline, distinct from a line longer than the internal read

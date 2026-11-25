@@ -153,7 +153,7 @@ module Ruby::Prism
               elsif value.is_a?(ConstantReadNode)
                 builder.const([value.name, srange(key.content_loc)])
               else
-                builder.ident([value.name, srange(key.content_loc)]).updated(:lvar)
+                builder.ident([key.unescaped, srange(key.content_loc)]).updated(:lvar)
               end
 
               builder.pair_keyword([key.unescaped, srange(key)], implicit_value)
@@ -1356,7 +1356,8 @@ module Ruby::Prism
         def visit_multi_write_node(node)
           elements = multi_target_elements(node)
 
-          if elements.length == 1 && elements.first.is_a?(MultiTargetNode) && !node.rest
+          # The parser gem flattens consecutive parentheses around the entire left-hand side.
+          while elements.length == 1 && elements.first.is_a?(MultiTargetNode) && !node.rest
             elements = multi_target_elements(elements.first)
           end
 
@@ -1961,7 +1962,7 @@ module Ruby::Prism
           forwarding = []
           forwarding << :* if node.rest.is_a?(RestParameterNode) && node.rest.name.nil?
           forwarding << :** if node.keyword_rest.is_a?(KeywordRestParameterNode) && node.keyword_rest.name.nil?
-          forwarding << :& if !node.block.nil? && node.block.name.nil?
+          forwarding << :& if node.block.is_a?(BlockParameterNode) && node.block.name.nil?
           forwarding |= [:&, :"..."] if node.keyword_rest.is_a?(ForwardingParameterNode)
 
           forwarding

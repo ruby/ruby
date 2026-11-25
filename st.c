@@ -615,7 +615,6 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     tab->entries = (st_table_entry *)malloc(memsize);
 #ifndef RUBY
     if (tab->entries == NULL) {
-        st_free_table(tab);
         return NULL;
     }
 #endif

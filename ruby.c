@@ -2213,7 +2213,7 @@ prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size
 
     if (no_src_enc && opt->src.enc.name) {
         opt->src.enc.index = opt_enc_index(opt->src.enc.name);
-        pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+        pm_options_encoding_set(options, RSTRING_PTR(opt->src.enc.name), RSTRING_LEN(opt->src.enc.name));
     }
     if (no_ext_enc && opt->ext.enc.name) {
         opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
@@ -2237,10 +2237,11 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
 
     if (read_stdin) {
-        pm_options_encoding_set(options, rb_enc_name(IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding())));
+        const char *encoding_name = rb_enc_name(IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding()));
+        pm_options_encoding_set(options, encoding_name, strlen(encoding_name));
     }
     if (opt->src.enc.name != 0) {
-        pm_options_encoding_set(options, StringValueCStr(opt->src.enc.name));
+        pm_options_encoding_set(options, RSTRING_PTR(opt->src.enc.name), RSTRING_LEN(opt->src.enc.name));
     }
 
     uint8_t command_line = prism_script_command_line(opt);
@@ -2248,7 +2249,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 
     if (read_stdin) {
         pm_options_command_line_set(options, command_line);
-        pm_options_filepath_set(options, "-");
+        pm_options_filepath_set(options, "-", 1);
         pm_options_shebang_callback_set(options, prism_script_shebang_callback, (void *) opt);
 
         ruby_opt_init(opt);

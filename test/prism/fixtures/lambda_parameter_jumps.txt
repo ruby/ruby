@@ -1,0 +1,9 @@
+->(x = (break if b)) { x }
+
+->(x = (break if ready)) { x }
+
+-> x: (next if ready) do x end
+
+def f(x = ->(v = (redo if ready)) {}); end
+
+class C; ->(x: (return if ready)) { x }; end

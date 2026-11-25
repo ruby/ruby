@@ -467,8 +467,9 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
     while (th->keeping_mutexes) {
         rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
 
+        // rb_mutex_unlock_th unlinks the mutex from th->keeping_mutexes and
+        // clears its next_mutex so a later owner doesn't inherit our list.
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
         VM_ASSERT(mutex->ec_serial);
         const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
@@ -6323,13 +6324,15 @@ const rb_method_entry_t *
 rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 {
     VALUE path, beg_pos_lineno, beg_pos_column, end_pos_lineno, end_pos_column;
+    const rb_method_definition_t *def;
 
     if (!me->def) return NULL; // negative cme
 
   retry:
-    switch (me->def->type) {
+    def = rb_method_entry_def_acquire(me);
+    switch (def->type) {
       case VM_METHOD_TYPE_ISEQ: {
-        const rb_iseq_t *iseq = me->def->body.iseq.iseqptr;
+        const rb_iseq_t *iseq = def->body.iseq.iseqptr;
         rb_iseq_location_t *loc = &ISEQ_BODY(iseq)->location;
         path = rb_iseq_path(iseq);
         beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
@@ -6339,7 +6342,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
         break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
-        const rb_iseq_t *iseq = rb_proc_get_iseq(me->def->body.bmethod.proc, 0);
+        const rb_iseq_t *iseq = rb_proc_get_iseq(def->body.bmethod.proc, 0);
         if (iseq) {
             rb_iseq_location_t *loc;
             rb_iseq_check(iseq);
@@ -6354,10 +6357,10 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
         return NULL;
       }
       case VM_METHOD_TYPE_ALIAS:
-        me = me->def->body.alias.original_me;
+        me = rb_method_alias_original_me(def);
         goto retry;
       case VM_METHOD_TYPE_REFINED:
-        me = me->def->body.refined.orig_me;
+        me = def->body.refined.orig_me;
         if (!me) return NULL;
         goto retry;
       default:
@@ -6641,7 +6644,7 @@ rb_internal_thread_specific_key_create(void)
     if (specific_key_count == 0 && vm->ractor.cnt > 1) {
         rb_raise(rb_eThreadError, "The first rb_internal_thread_specific_key_create() is called with multiple ractors");
     }
-    else if (specific_key_count > RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
+    else if (specific_key_count >= RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
         rb_raise(rb_eThreadError, "rb_internal_thread_specific_key_create() is called more than %d times", RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
     }
     else {

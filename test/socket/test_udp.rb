@@ -30,6 +30,23 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_recv_negative_length
+    UDPSocket.open do |receiver|
+      receiver.bind("127.0.0.1", 0)
+      UDPSocket.open do |sender|
+        sender.send("A" * 16, 0, "127.0.0.1", receiver.addr[1])
+        IO.select([receiver], nil, nil, 10) or flunk "socket did not become readable"
+        msg = "negative length -1 given"
+        assert_raise_with_message(ArgumentError, msg) { receiver.recvfrom(-1, 0, +"x") }
+        assert_raise_with_message(ArgumentError, msg) { receiver.recv(-1, 0, +"x") }
+        assert_raise_with_message(ArgumentError, msg) { receiver.recvfrom_nonblock(-1, 0, +"x") }
+        assert_raise_with_message(ArgumentError, msg) { receiver.recv_nonblock(-1, 0, +"x") }
+        assert_raise_with_message(ArgumentError, msg) { receiver.recvfrom(-1) }
+        assert_equal("A" * 16, receiver.recv(16))
+      end
+    end
+  end
+
   def test_connect
     s = UDPSocket.new
     host = Object.new

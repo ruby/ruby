@@ -9,6 +9,8 @@ class Gem::CompactIndexClient
   # Gem::CompactIndexClient: #call(path, headers) returning a
   # Gem::Net::HTTP response.
   class HTTPFetcher
+    include Gem::Text
+
     REDIRECT_LIMIT = 10
     private_constant :REDIRECT_LIMIT
 
@@ -79,7 +81,7 @@ class Gem::CompactIndexClient
     end
 
     def bad_response(response, uri)
-      detail = response["X-Error-Message"] || response.message
+      detail = clean_text(response["X-Error-Message"] || response.message)
       Gem::RemoteFetcher::FetchError.new("bad response #{detail} #{response.code}", uri)
     end
 

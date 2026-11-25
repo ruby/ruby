@@ -5,3 +5,19 @@ def f = not foo 1
 def f = not not foo 1
 
 if def f = not 1; end
+
+outer(def f = not return rescue 2)
+
+def f = not a rescue b rescue c
+
+def f = not not a rescue b
+
+def f = not (a) rescue b
+
+def f = not(a) rescue b
+
+def f = not work 1 rescue recover do :ok end
+
+def check = not 1 in 2
+
+def tag = not 1 => bound

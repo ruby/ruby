@@ -1411,6 +1411,22 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).to include("make -j3")
     end
 
+    it "uses the requested number of jobs to build a cached copy of a default gem", rubygems: ">= 4.1.0.a" do
+      ENV.delete("MAKEFLAGS")
+
+      gemfile <<~G
+        source "https://gem.repo4"
+        gem "mypsych"
+      G
+      bundle "lock"
+      cache_gems "mypsych-4.0.6", gem_repo: gem_repo4
+      build_gem "mypsych", "4.0.6", to_system: true, default: true
+
+      bundle "install --jobs 2", env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, raise_on_error: false
+
+      expect(gem_make_out).to include("make -j2")
+    end
+
     it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set", rubygems: ">= 4.1.0.a" do
       ENV.delete("MAKEFLAGS")
 
@@ -1816,6 +1832,49 @@ RSpec.describe "bundle install with gem sources" do
         end
 
         system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
+      end
+
+      it "uses the installed ruby gem when a more specific platform gem is available remotely" do
+        build_repo4 do
+          %w[arm64-darwin x86_64-linux].each do |platform|
+            build_gem("foo", "1.0.0") {|s| s.platform = platform }
+          end
+        end
+
+        simulate_platform "arm64-darwin-23" do
+          install_gemfile <<~G, "prefer-local": true
+            source "https://gem.repo4"
+            gem "foo"
+          G
+
+          expect(out).not_to include("Fetching foo")
+          expect(the_bundle).to include_gems("foo 1.0.0")
+          expect(lockfile).to include("foo (1.0.0-x86_64-linux)")
+        end
+      end
+
+      it "keeps a version-specific installed gem and locks a remote gem for other OS versions" do
+        build_repo4 do
+          %w[arm64-darwin-23 arm64-darwin].each do |platform|
+            build_gem("native", "1.0") {|s| s.platform = platform }
+          end
+        end
+
+        simulate_platform "arm64-darwin-23" do
+          system_gems "native-1.0-arm64-darwin-23", gem_repo: gem_repo4
+          install_gemfile <<~G, "prefer-local": true
+            source "https://gem.repo4"
+            gem "native"
+          G
+
+          expect(the_bundle).to include_gems("native 1.0 arm64-darwin-23")
+        end
+
+        simulate_platform "arm64-darwin-24" do
+          bundle "install", env: { "BUNDLE_FROZEN" => "true" }
+
+          expect(the_bundle).to include_gems("native 1.0 arm64-darwin")
+        end
       end
 
       it "fetches remote sources when not available locally" do

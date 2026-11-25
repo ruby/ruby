@@ -60,9 +60,6 @@ struct RRegexp_and_re_pattern_buffer {
  *            The match is currently in use or may have escaped and can no longer be recycled.
  * 1:     RMATCH_ONIG
  *            TBD.
- * 2:     RMATCH_OFFSETS_EXTERNAL
- *            The match layout isn't fully embedded, offsets are stored in an external buffer,
- *            which will need to be freed during sweep.
  */
 
 #define MATCH_BUSY FL_USER0
@@ -602,6 +599,172 @@ rb_reg_to_s(VALUE re)
     return rb_reg_str_with_term(re, '/');
 }
 
+/*
+ * Onigmo must not be left by a non-local exit (an exception, a throw or
+ * Thread#kill): that leaks what it has allocated (the parse tree, the match
+ * stack, the match cache).  While re.c runs Onigmo (between reg_onig_begin()
+ * and reg_onig_end()), what the interrupts raise in the matcher is caught and
+ * raised again after Onigmo has returned, and the warnings of the parser
+ * (Warning.warn may raise) are kept and emitted after the compilation.  The
+ * other users of Onigmo (C extensions) and the platforms without thread-local
+ * variables get the former behavior.
+ */
+#ifdef ONIG_THREAD_LOCAL
+static ONIG_THREAD_LOCAL int reg_onig_depth;
+static ONIG_THREAD_LOCAL int reg_onig_interrupt_state;
+static ONIG_THREAD_LOCAL struct {
+    char *buf; /* the messages, each terminated by NUL */
+    size_t len, capa;
+    const char *sourcefile;
+    int sourceline;
+} reg_onig_warnings;
+#endif
+
+static inline void
+reg_onig_begin(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    reg_onig_depth++;
+#endif
+}
+
+static inline void
+reg_onig_end(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    reg_onig_depth--;
+#endif
+}
+
+static VALUE
+reg_check_ints_i(VALUE _)
+{
+    rb_thread_check_ints();
+    return Qnil;
+}
+
+/* Called periodically by the matcher (CHECK_INTERRUPT_IN_MATCH_AT).  Returns
+ * nonzero when an interrupt raised; the matcher then frees what it holds and
+ * returns ONIGERR_INTERRUPTED, and reg_onig_raise_interrupt() raises again. */
+int
+rb_reg_check_ints(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) {
+        int depth = reg_onig_depth, state;
+
+        if (!RUBY_VM_INTERRUPTED_ANY(GET_EC())) return 0;
+        /* The interrupts may run Ruby code (e.g. a trap handler), which may
+         * use Onigmo in turn. */
+        reg_onig_depth = 0;
+        rb_protect(reg_check_ints_i, Qnil, &state);
+        reg_onig_depth = depth;
+        if (state) {
+            reg_onig_interrupt_state = state;
+            return 1;
+        }
+        return 0;
+    }
+#endif
+    rb_thread_check_ints();
+    return 0;
+}
+
+NORETURN(static void reg_onig_raise_interrupt(void));
+static void
+reg_onig_raise_interrupt(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    int state = reg_onig_interrupt_state;
+    reg_onig_interrupt_state = 0;
+    rb_jump_tag(state);
+#else
+    UNREACHABLE;
+#endif
+}
+
+static void
+reg_warn_now(const char *sourcefile, int sourceline, const char *msg)
+{
+    if (sourcefile == NULL)
+        rb_warn("%s", msg);
+    else
+        rb_compile_warn(sourcefile, sourceline, "%s", msg);
+}
+
+/* Called by the parser for each warning. */
+void
+rb_reg_warn(const char *sourcefile, int sourceline, const char *msg)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) {
+        size_t n = strlen(msg) + 1;
+
+        if (reg_onig_warnings.capa - reg_onig_warnings.len < n) {
+            size_t capa = reg_onig_warnings.capa * 2 + n;
+            /* not ruby_xrealloc(), which raises */
+            char *buf = realloc(reg_onig_warnings.buf, capa);
+            if (!buf) return;
+            reg_onig_warnings.buf = buf;
+            reg_onig_warnings.capa = capa;
+        }
+        memcpy(reg_onig_warnings.buf + reg_onig_warnings.len, msg, n);
+        reg_onig_warnings.len += n;
+        reg_onig_warnings.sourcefile = sourcefile;
+        reg_onig_warnings.sourceline = sourceline;
+        return;
+    }
+#endif
+    reg_warn_now(sourcefile, sourceline, msg);
+}
+
+/* Emits the warnings kept while compiling. */
+static void
+reg_warn_kept(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_warnings.len == 0) return;
+
+    const char *sourcefile = reg_onig_warnings.sourcefile;
+    int sourceline = reg_onig_warnings.sourceline;
+    VALUE msgs = rb_ary_new();
+    const char *p = reg_onig_warnings.buf, *e = p + reg_onig_warnings.len;
+
+    for (; p < e; p += strlen(p) + 1) {
+        rb_ary_push(msgs, rb_str_new_cstr(p));
+    }
+    free(reg_onig_warnings.buf);
+    reg_onig_warnings.buf = NULL;
+    reg_onig_warnings.len = reg_onig_warnings.capa = 0;
+
+    for (long i = 0; i < RARRAY_LEN(msgs); i++) {
+        reg_warn_now(sourcefile, sourceline, RSTRING_PTR(RARRAY_AREF(msgs, i)));
+    }
+    RB_GC_GUARD(msgs);
+#endif
+}
+
+static void
+reg_warn_discard(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    free(reg_onig_warnings.buf);
+    reg_onig_warnings.buf = NULL;
+    reg_onig_warnings.len = reg_onig_warnings.capa = 0;
+#endif
+}
+
+static VALUE
+reg_warn_kept_i(VALUE _)
+{
+    reg_warn_kept();
+    return Qnil;
+}
+
+static VALUE
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
+
 static VALUE
 rb_reg_str_with_term(VALUE re, int term)
 {
@@ -619,7 +782,7 @@ rb_reg_str_with_term(VALUE re, int term)
     const UChar *ptr = (UChar *)RSTRING_PTR(src_str);
     rb_len_t len = RSTRING_LEN(src_str);
   again:
-    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
+    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?' && rb_enc_asciicompat(enc)) {
         int err = 1;
         ptr += 2;
         if ((len -= 2) > 0) {
@@ -656,14 +819,26 @@ rb_reg_str_with_term(VALUE re, int term)
         if (*ptr == ':' && ptr[len-1] == ')') {
             Regexp *rp;
             VALUE verbose = ruby_verbose;
-            ruby_verbose = Qfalse;
+            rb_encoding *fixed_enc = 0;
+            onig_errmsg_buffer errmsg = "";
+            VALUE unescaped;
 
             ++ptr;
             len -= 2;
-            err = onig_new(&rp, ptr, ptr + len, options,
-                           enc, OnigDefaultSyntax, NULL);
-            onig_free(rp);
-            ruby_verbose = verbose;
+            unescaped = rb_reg_preprocess((const char *)ptr, (const char *)ptr + len,
+                                          enc, &fixed_enc, errmsg, options);
+            if (!NIL_P(unescaped) && (!fixed_enc || fixed_enc == enc)) {
+                ruby_verbose = Qnil;
+                reg_onig_begin();
+                err = onig_new(&rp, (UChar *)RSTRING_PTR(unescaped),
+                               (UChar *)RSTRING_END(unescaped), options,
+                               enc, OnigDefaultSyntax, NULL);
+                reg_onig_end();
+                onig_free(rp);
+                ruby_verbose = verbose;
+                reg_warn_discard();
+                RB_GC_GUARD(unescaped);
+            }
         }
         if (err) {
             options = RREGEXP_PTR(re)->options;
@@ -937,8 +1112,11 @@ make_regexp(Regexp *rp, const char *s, rb_len_t len, rb_encoding *enc, int flags
        from that.
     */
 
+    /* the caller emits the warnings (reg_warn_kept()) */
+    reg_onig_begin();
     r = onig_new_with_source(rp, (UChar*)s, (UChar*)(s + len), flags,
                  enc, OnigDefaultSyntax, &einfo, sourcefile, sourceline);
+    reg_onig_end();
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
         return false;
@@ -1190,6 +1368,21 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
     rm->num_regs = num_regs;
 }
 
+static void
+match_reuse(VALUE match)
+{
+    struct RMatch *rm = RMATCH(match);
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        onig_region_free(&rm->as.onig, 0);
+        memset(&rm->as.onig, 0, sizeof(rm->as.onig));
+        FL_UNSET_RAW(match, RMATCH_ONIG);
+    }
+    if (rm->char_offset) {
+        ruby_xfree(rm->char_offset);
+        rm->char_offset = NULL;
+        rm->char_offset_num_allocated = 0;
+    }
+}
 /* Helpers for carrying a MatchData to another objspace via Ractor#send(move:).  The match's
  * registers are written out to an onig-independent blob so the original malloc'd area can be
  * freed, leaving an empty shell behind, and rebuilt from the blob on the receiving side. */
@@ -1212,16 +1405,7 @@ rb_match_blob_dump(VALUE match, VALUE *regexp_out, VALUE *str_out, int *num_regs
 
     /* A copy leaves the source usable; only a move takes its internals apart. */
     if (release_source) {
-        if (FL_TEST_RAW(match, RMATCH_ONIG)) {
-            onig_region_free(&rm->as.onig, 0);
-            memset(&rm->as.onig, 0, sizeof(rm->as.onig));
-            FL_UNSET_RAW(match, RMATCH_ONIG);
-        }
-        if (rm->char_offset) {
-            ruby_xfree(rm->char_offset);
-            rm->char_offset = NULL;
-            rm->char_offset_num_allocated = 0;
-        }
+        match_reuse(match);
     }
     return blob;
 }
@@ -1273,10 +1457,14 @@ pair_byte_cmp(const void *pair1, const void *pair2)
 #endif
 }
 
-static void
-update_char_offset(VALUE match)
+/* A shareable MatchData is read by several Ractors at once, so the offsets are
+ * built privately and published with a CAS; char_offset is NULL until then. */
+static const struct rmatch_offset *
+match_char_offsets(VALUE match)
 {
     struct RMatch *rm = RMATCH(match);
+    struct rmatch_offset *offsets = RUBY_ATOMIC_PTR_LOAD(rm->char_offset);
+    struct rmatch_offset *published;
     int i, num_regs, num_pos;
     rb_len_t c;
     char *s, *p, *q;
@@ -1284,24 +1472,18 @@ update_char_offset(VALUE match)
     pair_t *pairs;
     VALUE pairs_obj = Qnil;
 
-    if (rm->char_offset_num_allocated)
-        return;
+    if (offsets) return offsets;
 
     num_regs = RMATCH_NREGS(match);
-
-    if (rm->char_offset_num_allocated < num_regs) {
-        SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, num_regs, rm->char_offset_num_allocated);
-        rm->char_offset_num_allocated = num_regs;
-        FL_SET_RAW(match, RMATCH_OFFSETS_EXTERNAL);
-    }
-
     enc = rb_enc_get(RMATCH(match)->str);
+
     if (rb_enc_mbmaxlen(enc) == 1) {
+        offsets = ALLOC_N(struct rmatch_offset, num_regs);
         for (i = 0; i < num_regs; i++) {
-            rm->char_offset[i].beg = RMATCH_BEG(match, i);
-            rm->char_offset[i].end = RMATCH_END(match, i);
+            offsets[i].beg = RMATCH_BEG(match, i);
+            offsets[i].end = RMATCH_END(match, i);
         }
-        return;
+        goto publish;
     }
 
     pairs = RB_ALLOCV_N(pair_t, pairs_obj, num_regs * 2);
@@ -1323,24 +1505,34 @@ update_char_offset(VALUE match)
         p = q;
     }
 
+    offsets = ALLOC_N(struct rmatch_offset, num_regs);
     for (i = 0; i < num_regs; i++) {
         pair_t key, *found;
         if (RMATCH_BEG(match, i) < 0) {
-            rm->char_offset[i].beg = -1;
-            rm->char_offset[i].end = -1;
+            offsets[i].beg = -1;
+            offsets[i].end = -1;
             continue;
         }
 
         key.byte_pos = RMATCH_BEG(match, i);
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
-        rm->char_offset[i].beg = found->char_pos;
+        offsets[i].beg = found->char_pos;
 
         key.byte_pos = RMATCH_END(match, i);
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
-        rm->char_offset[i].end = found->char_pos;
+        offsets[i].end = found->char_pos;
     }
 
     RB_ALLOCV_END(pairs_obj);
+
+  publish:
+    published = RUBY_ATOMIC_PTR_CAS(rm->char_offset, NULL, offsets);
+    if (published) {
+        SIZED_FREE_N(offsets, num_regs);
+        return published;
+    }
+    rm->char_offset_num_allocated = num_regs;
+    return offsets;
 }
 
 static VALUE
@@ -1365,14 +1557,13 @@ rb_match_init_copy(VALUE obj, VALUE orig)
 
     match_set_regs(obj, RMATCH_NREGS(orig), RMATCH_BEG_PTR(orig), RMATCH_END_PTR(orig));
 
-    if (RMATCH(orig)->char_offset_num_allocated) {
+    const struct rmatch_offset *orig_offsets = RUBY_ATOMIC_PTR_LOAD(RMATCH(orig)->char_offset);
+    if (orig_offsets) {
         if (rm->char_offset_num_allocated < rm->num_regs) {
             SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, rm->num_regs, rm->char_offset_num_allocated);
             rm->char_offset_num_allocated = rm->num_regs;
-            FL_SET_RAW(obj, RMATCH_OFFSETS_EXTERNAL);
         }
-        MEMCPY(rm->char_offset, RMATCH(orig)->char_offset,
-               struct rmatch_offset, rm->num_regs);
+        MEMCPY(rm->char_offset, orig_offsets, struct rmatch_offset, rm->num_regs);
         RB_GC_GUARD(orig);
     }
 
@@ -1566,9 +1757,8 @@ match_offset(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return rb_assoc_new(Qnil, Qnil);
 
-    update_char_offset(match);
-    return rb_assoc_new(LEN2NUM(RMATCH(match)->char_offset[i].beg),
-                        LEN2NUM(RMATCH(match)->char_offset[i].end));
+    const struct rmatch_offset *ofs = &match_char_offsets(match)[i];
+    return rb_assoc_new(LEN2NUM(ofs->beg), LEN2NUM(ofs->end));
 }
 
 /*
@@ -1805,8 +1995,7 @@ match_begin(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
-    update_char_offset(match);
-    return LEN2NUM(RMATCH(match)->char_offset[i].beg);
+    return LEN2NUM(match_char_offsets(match)[i].beg);
 }
 
 
@@ -1865,8 +2054,7 @@ match_end(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
-    update_char_offset(match);
-    return LEN2NUM(RMATCH(match)->char_offset[i].end);
+    return LEN2NUM(match_char_offsets(match)[i].end);
 }
 
 /*
@@ -2009,9 +2197,7 @@ match_nth_length(VALUE match, VALUE n)
     if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
-    update_char_offset(match);
-    const struct rmatch_offset *const ofs =
-        &RMATCH(match)->char_offset[i];
+    const struct rmatch_offset *const ofs = &match_char_offsets(match)[i];
     return LEN2NUM(ofs->end - ofs->beg);
 }
 
@@ -2045,6 +2231,7 @@ match_alloc_or_reuse(VALUE existing, int num_regs)
         RB_TYPE_P(existing, T_MATCH) &&
         !FL_TEST(existing, MATCH_BUSY) &&
         RMATCH(existing)->capa >= num_regs * 2) {
+        match_reuse(existing);
         return existing;
     }
     return match_alloc_n(rb_cMatch, num_regs);
@@ -2104,10 +2291,6 @@ rb_reg_fixed_encoding_p(VALUE re)
 {
     return RBOOL(FL_TEST(re, KCODE_FIXED));
 }
-
-static VALUE
-rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
 
 NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 
@@ -2204,12 +2387,15 @@ reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
     RSTRING_GETMEM(unescaped, ptr, len);
 
     struct rb_regexp_variant *variant = ALLOC(struct rb_regexp_variant);
+    reg_onig_begin();
     r = onig_new_without_alloc(&variant->reg, (UChar *)ptr, (UChar *)(ptr + len),
                                reg->options, enc, OnigDefaultSyntax, &einfo);
+    reg_onig_end();
 
     if (r) {
         onig_free_body(&variant->reg);
         SIZED_FREE(variant);
+        reg_warn_kept();
         onig_error_code_to_str((UChar*)err, r, &einfo);
         rb_reg_raise(err, re);
     }
@@ -2218,6 +2404,17 @@ reg_prepare_re(VALUE re, VALUE str, bool caller_owned)
     reg->timelimit = timelimit;
     if (reg->num_mem != RREGEXP_PTR(re)->num_mem) {
         rb_bug("group count mismatch in the recompiled regexp: %d != %d", reg->num_mem, RREGEXP_PTR(re)->num_mem);
+    }
+
+    {
+        /* the new pattern is only ours: free it if a warning raises */
+        int state;
+        rb_protect(reg_warn_kept_i, Qnil, &state);
+        if (state) {
+            onig_free_body(&variant->reg);
+            SIZED_FREE(variant);
+            rb_jump_tag(state);
+        }
     }
 
     if (caller_owned) {
@@ -2273,14 +2470,22 @@ rb_reg_onig_match(VALUE re, VALUE str,
 {
     regex_t *reg = reg_prepare_re(re, str, false);
 
+    reg_onig_begin();
     OnigPosition result = match(reg, str, regs, args);
+    reg_onig_end();
 
     RB_GC_GUARD(re);
 
+    if (result == ONIGERR_MEMORY) {
+        /* e.g. for the match stack or the match cache table */
+        rb_memerror();
+    }
     if (result < 0) {
         switch (result) {
           case ONIG_MISMATCH:
             break;
+          case ONIGERR_INTERRUPTED:
+            reg_onig_raise_interrupt();
           case ONIGERR_TIMEOUT:
             rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
           default: {
@@ -2396,7 +2601,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, rb_len_t pos, int reverse, int set_
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
         rb_obj_reveal(match, rb_cMatch);
     }
-    else {
+    else if (!RMATCH(match)->str) {
         /* Note that a MatchData object with RMATCH(match)->str == 0 is incomplete!
          * We need to hide the object from ObjectSpace.each_object.
          * https://bugs.ruby-lang.org/issues/19159
@@ -2466,6 +2671,7 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     ALLOCV_END(regs_buf);
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
+    rb_obj_reveal(match, rb_cMatch);
     RB_OBJ_WRITE(match, &RMATCH(match)->regexp, re);
     rb_backref_set(match);
 
@@ -3791,6 +3997,7 @@ escape_asis:
                         *encp = enc;
                     }
                 }
+                rb_str_buf_cat(buf, "(?#)", 4);
                 break;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
@@ -3848,6 +4055,9 @@ escape_asis:
                         p = orig_p;
                         c = '(';
                         rb_str_buf_cat(buf, (char *)&c, 1);
+                    }
+                    else {
+                        rb_str_buf_cat(buf, "(?#)", 4);
                     }
                     break;
                 }
@@ -4096,6 +4306,20 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
        enc = rb_usascii_encoding();
     }
 
+    regex_t reg;
+    bool success = make_regexp(&reg, RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
+                          options & ARG_REG_OPTION_MASK, err,
+                          sourcefile, sourceline);
+    if (!success) {
+        reg_warn_kept();
+        return -1;
+    }
+    if (OBJ_FROZEN(obj) || FL_TEST_RAW(obj, RREGEXP_INITIALIZED)) {
+        onig_free_body(&reg);
+        rb_reg_initialize_check(obj);
+    }
+    *RREGEXP_PTR(obj) = reg;
+
     rb_enc_associate((VALUE)re, enc);
     if ((options & ARG_ENCODING_FIXED) || fixed_enc) {
         re->basic.flags |= KCODE_FIXED;
@@ -4103,12 +4327,9 @@ rb_reg_initialize(VALUE obj, const char *s, rb_len_t len, rb_encoding *enc,
     if (options & ARG_ENCODING_NONE) {
         re->basic.flags |= REG_ENCODING_NONE;
     }
-
-    bool success = make_regexp(RREGEXP_PTR(obj), RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
-                          options & ARG_REG_OPTION_MASK, err,
-                          sourcefile, sourceline);
-    if (!success) return -1;
     FL_SET_RAW(obj, RREGEXP_INITIALIZED);
+    /* after the flag, so that GC frees the pattern if a warning raises */
+    reg_warn_kept();
 
     if (RBASIC_CLASS(obj) == rb_cRegexp) {
         OBJ_FREEZE(obj);
@@ -4846,6 +5067,9 @@ static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
  *    r = Regexp.new('foo') # => /foo/
  *    r.source              # => "foo"
  *    r.options             # => 0
+ *
+ *  Passing untrusted input as +string+ is generally not recommended;
+ *  see {Untrusted Patterns}[rdoc-ref:Regexp@Untrusted+Patterns].
  *
  *  Optional argument +options+ is one of the following:
  *

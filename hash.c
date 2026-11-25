@@ -616,17 +616,17 @@ RHASH_AR_TABLE_CLEAR(VALUE h)
     memset(RHASH_AR_TABLE(h), 0, rb_obj_shape_slot_size(h) - sizeof(struct RHash));
 }
 
-NOINLINE(static int ar_equal(VALUE hash, VALUE x, VALUE y));
-
-static int
+static inline bool
 ar_equal(VALUE hash, VALUE x, VALUE y)
 {
-    if (RHASH_IDENTHASH_P(hash)) {
-        return x == y;
+    if (x == y) {
+        return true;
+    }
+    else if (UNLIKELY(RHASH_IDENTHASH_P(hash))) {
+        return false;
     }
     return rb_any_cmp(x, y) == 0;
 }
-
 
 #if SIZEOF_VALUE == 8
 #define AR_HINT_BASE_MASK 0x101010101010101
@@ -661,9 +661,47 @@ ar_hint_first_match(ar_hint_t needle, VALUE haystack)
     return index;
 }
 
+NOINLINE(static unsigned ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match));
+static unsigned
+ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match)
+{
+    RUBY_ASSERT(key != RHASH_AR_TABLE_REF(hash, first_match)->key);
+    bool eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
+    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+        return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
+    }
+
+    if (eq) {
+        return first_match;
+    }
+
+    // In theory we could extract all the matching indexes in `ar_hint_first_match`,
+    // and avoid this loop, but sine `ar_equal` may call back into arbitrary code,
+    // the `ar_hint` may have changed.
+    for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
+        const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
+        if (UNLIKELY(hints[i] == hint)) {
+            eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
+            if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+                return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
+            }
+            if (eq) {
+                RB_DEBUG_COUNTER_INC(artable_hint_hit);
+                return i;
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(artable_hint_miss);
+            }
+        }
+    }
+
+    RB_DEBUG_COUNTER_INC(artable_hint_notfound);
+    return RHASH_AR_TABLE_MISS;
+}
+
 // Returns the bin index if found, RHASH_AR_TABLE_MISS if not found,
 // or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
-static unsigned
+static inline unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
     unsigned first_match = ar_hint_first_match(hint, RHASH_AR_TABLE(hash)->ar_hint.word);
@@ -674,38 +712,12 @@ ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
     }
 
     RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
-    int eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
-    if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
-        return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
-    }
-    if (LIKELY(eq)) {
+    if (LIKELY(key == RHASH_AR_TABLE_REF(hash, first_match)->key)) {
         RB_DEBUG_COUNTER_INC(artable_hint_hit);
         return first_match;
     }
-    else {
-        // In theory we could extract all the matching indexes in `ar_hint_first_match`,
-        // and avoid this loop, but sine `ar_equal` may call back into arbitrary code,
-        // the `ar_hint` may have changed.
-        for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
-            const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
-            if (UNLIKELY(hints[i] == hint)) {
-                eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
-                if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
-                    return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
-                }
-                if (eq) {
-                    RB_DEBUG_COUNTER_INC(artable_hint_hit);
-                    return i;
-                }
-                else {
-                    RB_DEBUG_COUNTER_INC(artable_hint_miss);
-                }
-            }
-        }
-    }
 
-    RB_DEBUG_COUNTER_INC(artable_hint_notfound);
-    return RHASH_AR_TABLE_MISS;
+    return ar_find_entry_hint_slowpath(hash, hint, key, first_match);
 }
 
 static unsigned
@@ -5525,26 +5537,51 @@ env_encoding(void)
 #endif
 }
 
+/*
+ * Gives the binary String copied out of environ the encoding
+ * rb_external_str_new_with_enc would have built it with, transcoding to
+ * default_internal when that would have.  Transcoding can autoload a
+ * transcoder, so this must not be called under ENV_LOCKING().
+ */
 static VALUE
-env_enc_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
+env_str_encode(VALUE str, rb_encoding *enc)
 {
-    VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
+    if (NIL_P(str)) return Qnil;
 
+    int eidx = rb_enc_to_index(enc);
+    rb_encoding *ienc = rb_default_internal_encoding();
+
+    if (eidx == rb_ascii8bit_encindex() ||
+        (eidx == rb_usascii_encindex() && !rb_enc_str_asciionly_p(str))) {
+        /* stays ASCII-8BIT */
+    }
+    else if (!ienc || ienc == enc) {
+        rb_enc_associate(str, enc);
+    }
+    else if (rb_enc_asciicompat(enc) && rb_enc_str_asciionly_p(str)) {
+        rb_enc_associate(str, ienc);
+    }
+    else {
+        VALUE conv = rb_enc_str_new(NULL, 0, ienc);
+        if (NIL_P(rb_str_cat_conv_enc_opts(conv, 0, RSTRING_PTR(str), RSTRING_LEN(str), enc, 0, Qnil))) {
+            /* conversion failed, the bytes are kept as-is in the given encoding */
+            rb_enc_associate(str, enc);
+        }
+        else {
+            RB_GC_GUARD(str);
+            str = conv;
+        }
+    }
     rb_obj_freeze(str);
     return str;
 }
 
-static VALUE
-env_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
+static void
+env_ary_encode(VALUE ary, rb_encoding *enc)
 {
-    return env_enc_str_new(ptr, len, enc);
-}
-
-static VALUE
-env_str_new2(const char *ptr, rb_encoding *enc)
-{
-    if (!ptr) return Qnil;
-    return env_str_new(ptr, strlen(ptr), enc);
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        RARRAY_ASET(ary, i, env_str_encode(RARRAY_AREF(ary, i), enc));
+    }
 }
 
 static VALUE
@@ -5554,9 +5591,9 @@ getenv_with_lock(const char *name)
     rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         const char *val = getenv(name);
-        ret = env_str_new2(val, enc);
+        ret = val ? rb_str_new_cstr(val) : Qnil;
     }
-    return ret;
+    return env_str_encode(ret, enc);
 }
 
 static bool
@@ -6029,7 +6066,7 @@ env_keys(int raw)
             if (s) {
                 const char *p = *env;
                 size_t l = s - p;
-                VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
+                VALUE e = raw ? rb_utf8_str_new(p, l) : rb_str_new(p, l);
                 rb_ary_push(ary, e);
             }
             env++;
@@ -6037,6 +6074,7 @@ env_keys(int raw)
         FREE_ENVIRON(environ);
     }
 
+    if (!raw) env_ary_encode(ary, enc);
     return ary;
 }
 
@@ -6121,13 +6159,14 @@ env_values(void)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new2(s+1, enc));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
 
+    env_ary_encode(ary, enc);
     return ary;
 }
 
@@ -6214,13 +6253,15 @@ env_each_pair(VALUE ehash)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new(*env, s-*env, enc));
-                rb_ary_push(ary, env_str_new2(s+1, enc));
+                rb_ary_push(ary, rb_str_new(*env, s-*env));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
+
+    env_ary_encode(ary, enc);
 
     if (rb_block_pair_yield_optimizable()) {
         for (i=0; i<RARRAY_LEN(ary); i+=2) {
@@ -6530,25 +6571,37 @@ static VALUE
 env_inspect(VALUE _)
 {
     VALUE str = rb_str_buf_new2("{");
+    VALUE ary = rb_ary_new();
     rb_encoding *enc = env_encoding();
 
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             const char *s = strchr(*env, '=');
-
-            if (env != environ) {
-                rb_str_buf_cat2(str, ", ");
-            }
             if (s) {
-                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(*env, s-*env, enc)));
-                rb_str_buf_cat2(str, " => ");
-                s++;
-                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(s, strlen(s), enc)));
+                rb_ary_push(ary, rb_str_new(*env, s-*env));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
+            }
+            else {
+                /* still gets a separator */
+                rb_ary_push(ary, Qnil);
+                rb_ary_push(ary, Qnil);
             }
             env++;
         }
         FREE_ENVIRON(environ);
+    }
+
+    env_ary_encode(ary, enc);
+    for (long i = 0; i < RARRAY_LEN(ary); i += 2) {
+        if (i > 0) {
+            rb_str_buf_cat2(str, ", ");
+        }
+        if (!NIL_P(RARRAY_AREF(ary, i))) {
+            rb_str_buf_append(str, rb_str_inspect(RARRAY_AREF(ary, i)));
+            rb_str_buf_cat2(str, " => ");
+            rb_str_buf_append(str, rb_str_inspect(RARRAY_AREF(ary, i+1)));
+        }
     }
 
     rb_str_buf_cat2(str, "}");
@@ -6576,14 +6629,17 @@ env_to_a(VALUE _)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env, enc),
-                                              env_str_new2(s+1, enc)));
+                rb_ary_push(ary, rb_assoc_new(rb_str_new(*env, s-*env),
+                                              rb_str_new_cstr(s+1)));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
 
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        env_ary_encode(RARRAY_AREF(ary, i), enc);
+    }
     return ary;
 }
 
@@ -6833,7 +6889,7 @@ env_key(VALUE dmy, VALUE value)
             if (s++) {
                 rb_len_t len = strlen(s);
                 if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
-                    str = env_str_new(*env, s-*env-1, enc);
+                    str = rb_str_new(*env, s-*env-1);
                     break;
                 }
             }
@@ -6842,7 +6898,7 @@ env_key(VALUE dmy, VALUE value)
         FREE_ENVIRON(environ);
     }
 
-    return str;
+    return env_str_encode(str, enc);
 }
 
 static inline size_t
@@ -6859,23 +6915,28 @@ environ_size(char **env)
 static VALUE
 env_to_hash(void)
 {
-    VALUE hash;
+    VALUE ary;
 
     rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
-        hash = rb_hash_new_capa(environ_size(env));
+        ary = rb_ary_new_capa(environ_size(env) * 2);
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_hash_aset(hash, env_str_new(*env, s-*env, enc),
-                             env_str_new2(s+1, enc));
+                rb_ary_push(ary, rb_str_new(*env, s-*env));
+                rb_ary_push(ary, rb_str_new_cstr(s+1));
             }
             env++;
         }
         FREE_ENVIRON(environ);
     }
 
+    VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary) / 2);
+    for (long i = 0; i < RARRAY_LEN(ary); i += 2) {
+        rb_hash_aset(hash, env_str_encode(RARRAY_AREF(ary, i), enc),
+                     env_str_encode(RARRAY_AREF(ary, i+1), enc));
+    }
     return hash;
 }
 
@@ -7011,29 +7072,27 @@ env_freeze(VALUE self)
 static VALUE
 env_shift(VALUE _)
 {
-    VALUE result = Qnil;
     VALUE key = Qnil;
 
-    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
             const char *s = strchr(p, '=');
             if (s) {
-                key = env_str_new(p, s-p, enc);
-                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);
-                result = rb_assoc_new(key, val);
+                key = rb_str_new(p, s-p);
             }
         }
         FREE_ENVIRON(environ);
     }
 
-    if (!NIL_P(key)) {
-        env_delete(key);
-    }
+    if (NIL_P(key)) return Qnil;
 
-    return result;
+    key = env_str_encode(key, env_encoding());
+    VALUE val = getenv_with_lock(RSTRING_PTR(key));
+    env_delete(key);
+
+    return rb_assoc_new(key, val);
 }
 
 /*

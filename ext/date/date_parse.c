@@ -15,6 +15,10 @@ typedef long rb_len_t;
 
 #include <ctype.h>
 
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
+
 #undef strncasecmp
 #define strncasecmp STRNCASECMP
 
@@ -425,11 +429,14 @@ shrink_space(char *d, const char *s, rb_len_t l)
 }
 
 VALUE
-date_zone_to_diff(VALUE str)
+date_zone_to_diff_frac(VALUE str, int *fracp, long *whole)
 {
     VALUE offset = Qnil;
     rb_len_t l = RSTRING_LEN(str);
     const char *s = RSTRING_PTR(str);
+
+    *fracp = 0;
+    *whole = 0;
 
     {
 	int dst = 0;
@@ -545,6 +552,8 @@ date_zone_to_diff(VALUE str)
 			    offset = rb_rational_num(offset);
 			}
 		    }
+		    *fracp = 1;
+		    *whole = hour * 3600;
 		    goto ok;
 		}
 		else if (l > 2) {
@@ -567,6 +576,19 @@ date_zone_to_diff(VALUE str)
     }
     RB_GC_GUARD(str);
   ok:
+    return offset;
+}
+
+VALUE
+date_zone_to_diff(VALUE str)
+{
+    int frac;
+    long whole;
+    VALUE offset = date_zone_to_diff_frac(str, &frac, &whole);
+
+    if (frac)
+	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "decimal hour in a zone offset is deprecated"
+			 " and will be ignored in a future version");
     return offset;
 }
 

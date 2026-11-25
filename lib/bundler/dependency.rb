@@ -106,8 +106,8 @@ module Bundler
       @expanded_platforms ||= platforms.filter_map {|pl| CurrentRuby::PLATFORM_MAP[pl] }.flatten.uniq
     end
 
-    def should_include?
-      should_include && current_env? && current_platform?
+    def should_include?(platform = nil)
+      should_include && current_env? && (platform ? matches_platform?(platform) : current_platform?)
     end
 
     def gemspec_dev_dep?
@@ -150,6 +150,21 @@ module Bundler
       super
     rescue NoMethodError
       requirement != ">= 0"
+    end
+
+    private
+
+    def matches_platform?(platform)
+      return true if platforms.empty?
+
+      generic = Gem::Platform.generic(platform)
+      platforms.any? do |name|
+        next false unless [CurrentRuby::PLATFORM_MAP[name]].flatten.include?(generic)
+        next Bundler.current_ruby.public_send("#{name}?") if generic == Bundler.generic_local_platform
+
+        version = name.to_s[/_(\d+)\z/, 1]
+        !version || Bundler.current_ruby.public_send("on_#{version}?")
+      end
     end
   end
 end

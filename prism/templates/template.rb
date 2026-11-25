@@ -7,10 +7,19 @@ require "yaml"
 
 module Ruby::Prism
   module Template # :nodoc: all
-    SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
-    CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
+    # The environment variables that change the generated files. The Rakefile
+    # records their values in a stamp file that every generated file depends
+    # on, so any variable read by a template must be listed here.
+    ENVIRONMENT = %w[
+      CHECK_FIELD_KIND
+      PRISM_JAVA_BACKEND
+      PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS
+    ].to_h { |name| [name, ENV[name]] }.freeze
 
-    JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "default"
+    SERIALIZE_ONLY_SEMANTICS_FIELDS = ENVIRONMENT["PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS"] || false
+    CHECK_FIELD_KIND = ENVIRONMENT["CHECK_FIELD_KIND"] || false
+
+    JAVA_BACKEND = ENVIRONMENT["PRISM_JAVA_BACKEND"] || "default"
     JAVA_IDENTIFIER_TYPE = JAVA_BACKEND == "truffleruby" ? "String" : "byte[]"
     INCLUDE_NODE_ID = !SERIALIZE_ONLY_SEMANTICS_FIELDS || JAVA_BACKEND == "jruby"
 
@@ -22,19 +31,55 @@ module Ruby::Prism
     # so this must be greater than the number of node types.
     LAZY_MARKER = 0xFF
 
-    class Error
-      attr_reader :name
+    # Emit the exact bytes even on compilers with a different execution
+    # character set for non-ASCII text.
+    def self.c_string(string)
+      escaped = string.b.gsub(/["\\?\x00-\x1f\x7f-\xff]/n) do |char|
+        char.ord.between?(32, 126) ? "\\#{char}" : "\\%03o" % char.ord
+      end
+      %("#{escaped}")
+    end
 
-      def initialize(name)
-        @name = name
+    # A diagnostic message alternates literal text with positional arguments.
+    class Diagnostic
+      FORMATS = { "slice" => "slice", "byte" => "byte", "hex" => "byte", "hex2" => "byte", "line" => "line" }.freeze
+
+      attr_reader :name, :id, :level, :literals, :formats, :signature
+
+      def initialize(config, warning: false)
+        @name = config.fetch("name")
+        @id = "PM_#{warning ? "WARN" : "ERR"}_#{name}"
+        @level = "PM_#{warning ? "WARNING" : "ERROR"}_LEVEL_#{config.fetch("level", warning ? "default" : "syntax").upcase}"
+        parts = config.fetch("message").split(/\{([a-z_][a-z_0-9]*)\}/, -1)
+        @literals = []
+        @formats = []
+        parts.each_slice(2) do |literal, format|
+          @literals << literal
+          @formats << format if format
+        end
+        @signature = formats.map { |format| FORMATS.fetch(format) }
+      end
+
+      def byte_formats
+        formats.select { |format| FORMATS.fetch(format) == "byte" }
       end
     end
 
-    class Warning
-      attr_reader :name
+    class DiagnosticSignature
+      TYPES = { "slice" => "pm_string_t", "byte" => "uint8_t", "line" => "int32_t" }.freeze
 
-      def initialize(name)
-        @name = name
+      attr_reader :types
+
+      def initialize(types)
+        @types = types
+      end
+
+      def name
+        types.join("_")
+      end
+
+      def parameters
+        types.each_with_index.map { |type, index| "#{TYPES.fetch(type)} arg#{index}" }.join(", ")
       end
     end
 
@@ -615,12 +660,13 @@ module Ruby::Prism
 
     # This represents a token in the lexer.
     class Token
-      attr_reader :name, :value, :comment
+      attr_reader :name, :value, :comment, :diagnostic_name
 
       def initialize(config)
         @name = config.fetch("name")
         @value = config["value"]
         @comment = config.fetch("comment")
+        @diagnostic_name = config.fetch("diagnostic_name")
       end
     end
 
@@ -739,9 +785,15 @@ module Ruby::Prism
               end
             end
 
+            errors = config.fetch("errors").map { |error| Diagnostic.new(error) }
+            warnings = config.fetch("warnings").map { |warning| Diagnostic.new(warning, warning: true) }
+            diagnostics = errors + warnings
+
             {
-              errors: config.fetch("errors").map { |name| Error.new(name) },
-              warnings: config.fetch("warnings").map { |name| Warning.new(name) },
+              errors: errors,
+              warnings: warnings,
+              diagnostics: diagnostics,
+              diagnostic_signatures: diagnostics.map(&:signature).reject(&:empty?).uniq.sort.map { |types| DiagnosticSignature.new(types) },
               nodes: nodes,
               tokens: config.fetch("tokens").map { |token| Token.new(token) },
               flags: flags.values

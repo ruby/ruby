@@ -577,6 +577,22 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(IPAddr.new("0.0.0.2/255.255.255.255").to_range, IPAddr.new("::2").native.to_range)
   end
 
+  def test_native_drops_zone_id
+    a = IPAddr.new("::ffff:192.168.1.2%eth0")
+    b = a.native
+    c = IPAddr.new("192.168.1.2")
+    assert_equal(Socket::AF_INET, b.family)
+    assert_equal(c, b)
+    assert_equal(true, b.eql?(c))
+    assert_equal(c.hash, b.hash)
+    assert_equal(1, [b, c].uniq.size)
+    assert_equal("%eth0", a.zone_id)
+
+    b = IPAddr.new("::192.168.1.2%eth0").native
+    assert_equal(true, b.eql?(c))
+    assert_equal(c.hash, b.hash)
+  end
+
   def test_loopback?
     assert_equal(true,  IPAddr.new('127.0.0.1').loopback?)
     assert_equal(true,  IPAddr.new('127.127.1.1').loopback?)
@@ -601,6 +617,27 @@ class TC_Operator < Test::Unit::TestCase
 
     # Global unicast addresses with 0xffff in group 5 must not be mistaken for ::ffff:127.x.x.x
     assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:7f00:1').loopback?)
+  end
+
+  def test_unspecified?
+    assert_equal(true,  IPAddr.new('0.0.0.0').unspecified?)
+    assert_equal(true,  IPAddr.new('0.0.0.0/32').unspecified?)
+    assert_equal(false, IPAddr.new('0.0.0.0/31').unspecified?)
+    assert_equal(false, IPAddr.new('0.0.0.0/0').unspecified?)
+    assert_equal(false, IPAddr.new('127.0.0.1').unspecified?)
+    assert_equal(false, IPAddr.new('8.8.8.8').unspecified?)
+
+    assert_equal(true,  IPAddr.new('::').unspecified?)
+    assert_equal(true,  IPAddr.new('::/128').unspecified?)
+    assert_equal(false, IPAddr.new('::/127').unspecified?)
+    assert_equal(false, IPAddr.new('::/0').unspecified?)
+    assert_equal(false, IPAddr.new('::1').unspecified?)
+    assert_equal(false, IPAddr.new('3ffe:505:2::1').unspecified?)
+
+    assert_equal(true,  IPAddr.new('::ffff:0.0.0.0').unspecified?)
+    assert_equal(true,  IPAddr.new('::ffff:0.0.0.0/128').unspecified?)
+    assert_equal(false, IPAddr.new('::ffff:0.0.0.0/127').unspecified?)
+    assert_equal(false, IPAddr.new('::ffff:127.0.0.1').unspecified?)
   end
 
   def test_private?

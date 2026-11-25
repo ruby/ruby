@@ -179,7 +179,7 @@ class JSONEncodingTest < Test::Unit::TestCase
   end
 
   def test_json_escaping_edge_cases
-    # Test escaping forward slashes
+    # Test escaped forward slashes
     assert_equal "/", parse('"\/"')
 
     # Test escaping backslashes

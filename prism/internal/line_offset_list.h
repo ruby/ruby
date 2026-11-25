@@ -17,6 +17,16 @@ void pm_line_offset_list_clear(pm_line_offset_list_t *list);
 /* Append a new offset to the list (slow path with resize). */
 void pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor);
 
+/* Add the zero-based line index to the starting line with defined 32-bit
+ * wraparound. Keep both the addition and conversion free of signed overflow. */
+static PRISM_FORCE_INLINE int32_t
+pm_line_offset_list_line_number(size_t index, int32_t start_line) {
+    uint32_t line = (uint32_t) index + (uint32_t) start_line;
+    if (line <= INT32_MAX) return (int32_t) line;
+
+    return INT32_MIN + (int32_t) (line - ((uint32_t) INT32_MAX + 1));
+}
+
 /* Append a new offset to the list. */
 static PRISM_FORCE_INLINE void
 pm_line_offset_list_append(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {

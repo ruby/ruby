@@ -308,10 +308,7 @@ module Bundler
         update_present = active_minor > current_minor if options["filter-minor"]
 
         if !update_present && options["filter-patch"] && current_minor == active_minor
-          current_patch = get_version_semver_portion_value(current_spec, 2)
-          active_patch = get_version_semver_portion_value(active_spec, 2)
-
-          update_present = active_patch > current_patch
+          update_present = active_spec.version > current_spec.version
         end
       end
 

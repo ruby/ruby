@@ -1439,6 +1439,9 @@ socket_s_ip_address_list(VALUE self)
     list = rb_ary_new();
     for (p = ifp; p; p = p->ifa_next) {
         if (p->ifa_addr != NULL && IS_IP_FAMILY(p->ifa_addr->sa_family)) {
+#if !defined(INET6) && defined(AF_INET6)
+            if (p->ifa_addr->sa_family == AF_INET6) continue;
+#endif
             struct sockaddr *addr = p->ifa_addr;
 #if defined(AF_INET6) && defined(__sun)
             /*
@@ -1509,6 +1512,9 @@ socket_s_ip_address_list(VALUE self)
     for (i = 0; i < ln.lifn_count; i++) {
         struct lifreq *req = &lc.lifc_req[i];
         if (IS_IP_FAMILY(req->lifr_addr.ss_family)) {
+#if !defined(INET6) && defined(AF_INET6)
+            if (req->lifr_addr.ss_family == AF_INET6) continue;
+#endif
             if (req->lifr_addr.ss_family == AF_INET6 &&
                 IN6_IS_ADDR_LINKLOCAL(&((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_addr) &&
                 ((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_scope_id == 0) {
@@ -1591,7 +1597,11 @@ socket_s_ip_address_list(VALUE self)
     req = conf.ifc_req;
     while ((char*)req < (char*)conf.ifc_req + conf.ifc_len) {
         struct sockaddr *addr = &req->ifr_addr;
-        if (IS_IP_FAMILY(addr->sa_family)) {
+        if (IS_IP_FAMILY(addr->sa_family)
+#if !defined(INET6) && defined(AF_INET6)
+            && addr->sa_family != AF_INET6
+#endif
+            ) {
             rb_ary_push(list, sockaddr_obj(addr, sockaddr_len(addr)));
         }
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
@@ -1738,8 +1748,7 @@ socket_s_ip_address_list(VALUE self)
  * is enabled or disabled.
  *
  * If true, it is enabled for TCPSocket.new and Socket.tcp.
- * (Note: Happy Eyeballs Version 2 is not provided when using TCPSocket.new on MinGW builds of Windows.
- * On mswin builds of Windows, it is provided starting from Ruby 4.1.)
+ * On Windows, it is provided starting from Ruby 4.1.
  *
  * If false, Happy Eyeballs Version 2 is disabled.
  *
@@ -1758,8 +1767,7 @@ VALUE socket_s_tcp_fast_fallback(VALUE self) {
  * globally, which is provided starting from Ruby 3.4 when using TCPSocket.new and Socket.tcp.
  *
  * When set to true, the feature is enabled for both `TCPSocket.new` and `Socket.tcp`.
- * (Note: This feature is not available when using TCPSocket.new on MinGW builds of Windows.
- * On mswin builds of Windows, it is available starting from Ruby 4.1.)
+ * On Windows, it is available starting from Ruby 4.1.
  *
  * When set to false, the behavior reverts to that of Ruby 3.3 or earlier.
  *

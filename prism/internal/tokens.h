@@ -2,10 +2,11 @@
 #define PRISM_INTERNAL_TOKENS_H
 
 #include "prism/ast.h"
+#include "prism/stringy.h"
 
 /*
- * Returns the human name of the given token type.
+ * Return the name used for the token type in diagnostics.
  */
-const char * pm_token_str(pm_token_type_t token_type);
+pm_string_t pm_token_string(pm_token_type_t token_type);
 
 #endif

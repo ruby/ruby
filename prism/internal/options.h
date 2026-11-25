@@ -46,6 +46,13 @@ typedef enum {
     PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_4_1
 } pm_options_version_t;
 
+/*
+ * Read the version of Ruby that the given string names, such as "3.4", "4.0.1",
+ * or "latest", into the given version. NULL names the latest version. Returns
+ * false, leaving the version alone, if prism does not support the version.
+ */
+bool pm_options_version_parse(const char *version, size_t length, pm_options_version_t *result);
+
 /* The options that can be passed to the parser. */
 struct pm_options_t {
     /*
@@ -164,6 +171,27 @@ struct pm_options_t {
      */
     bool attach_comments;
 };
+
+/* The kind of shebang found on a source line. */
+typedef enum {
+    PM_OPTIONS_SHEBANG_NONE,
+    PM_OPTIONS_SHEBANG_COMMENT, /* Only permits an encoding comment on the next line. */
+    PM_OPTIONS_SHEBANG_OTHER,
+    PM_OPTIONS_SHEBANG_RUBY
+} pm_options_shebang_type_t;
+
+/* Whether to search past the first line for a Ruby shebang. */
+static inline bool
+pm_options_shebang_search_p(const pm_options_t *options, pm_options_shebang_type_t shebang) {
+    return (
+        (options != NULL) &&
+        (shebang != PM_OPTIONS_SHEBANG_RUBY) &&
+        (
+            (options->command_line & PM_OPTIONS_COMMAND_LINE_X) ||
+            (shebang == PM_OPTIONS_SHEBANG_OTHER && options->main_script && !options->scopes_count)
+        )
+    );
+}
 
 /* Free the internal memory associated with the options. */
 void pm_options_cleanup(pm_options_t *options);

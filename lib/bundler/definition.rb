@@ -159,7 +159,7 @@ module Bundler
       end
       @unlocking ||= @unlocking_ruby ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      @excluded_ruby_abis = @ruby_version ? @ruby_abis.select {|ruby_abi| ruby_abi_excluded?(ruby_abi) } : []
+      @excluded_ruby_abis = @ruby_version && content_addressing_supported? ? @ruby_abis.select {|ruby_abi| ruby_abi_excluded?(ruby_abi) } : []
       @ruby_abis -= @excluded_ruby_abis
 
       @current_platform_missing = add_current_platform unless Bundler.frozen_bundle?
@@ -213,7 +213,8 @@ module Bundler
         sources.remote!
         true
       else
-        Bundler.settings.set_command_option(:jobs, 1) unless install_needed? # to avoid the overhead of Bundler::Worker
+        # A locked local install skips the missing specs check that preloads Git sources.
+        preload_git_sources if options[:local] && no_resolve_needed?
         sources.local!
         false
       end
@@ -558,10 +559,13 @@ module Bundler
     end
 
     def ruby_abis
+      return [] unless content_addressing_supported? || content_addresses_carried_over?
+
       @ruby_abis.sort_by {|ruby_abi| Gem::Version.new(ruby_abi) }
     end
 
     def add_ruby_abi(ruby_abi)
+      ensure_content_addressing_supported!
       if @ruby_version && ruby_abi_excluded?(ruby_abi)
         raise InvalidOption, "Unable to add the Ruby ABI `#{ruby_abi}` since your Gemfile requires #{@ruby_version}"
       end
@@ -572,6 +576,7 @@ module Bundler
     end
 
     def remove_ruby_abi(ruby_abi)
+      ensure_content_addressing_supported!
       raise InvalidOption, "Unable to remove the Ruby ABI `#{ruby_abi}` since the only Ruby ABIs are #{ruby_abis.join(", ")}" unless @ruby_abis.include?(ruby_abi)
 
       @removed_ruby_abis << ruby_abi
@@ -841,6 +846,8 @@ module Bundler
         incomplete_specs = still_incomplete_specs
       end
 
+      check_content_address_fallback_checksums!(specs)
+
       insecurely_materialized_specs = resolve.insecurely_materialized_specs
 
       if insecurely_materialized_specs.any?
@@ -854,6 +861,26 @@ module Bundler
       specs["bundler"] = bundler
 
       specs
+    end
+
+    # The lockfile writes no CHECKSUMS entry for a platform gem it locks only
+    # content-addressed gems of, so nothing would verify the platform gem a
+    # frozen bundle falls back to under a Ruby ABI the lockfile does not cover.
+    def check_content_address_fallback_checksums!(specs)
+      return unless Bundler.frozen_bundle? && @locked_checksums
+
+      unchecksummed_specs = specs.select do |spec|
+        !spec.is_a?(StubSpecification) &&
+          !Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false) &&
+          resolve[spec.name].any? {|locked_spec| locked_spec.content_addresses.any? } &&
+          !spec.source.checksum_store.locked?(spec)
+      end
+      return if unchecksummed_specs.empty?
+
+      raise ProductionError, "Your lockfile has no checksum for #{unchecksummed_specs.map(&:full_name).join(", ")}, " \
+                             "which would be installed in place of the content-addressed gems it locks, " \
+                             "but frozen mode is set.\n\n" \
+                             "Run `bundle install` elsewhere and add the updated Gemfile.lock to version control."
     end
 
     def reresolve_without(incomplete_specs)
@@ -872,10 +899,10 @@ module Bundler
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
       @new_platforms.each do |platform|
-        incomplete_specs = result.incomplete_specs_for_platform(current_dependencies, platform)
+        incomplete_specs = result.incomplete_specs_for_platform(dependencies, platform)
 
         if incomplete_specs.any?
-          resolver.raise_incomplete! incomplete_specs
+          resolver.raise_incomplete! incomplete_specs, platform
         end
       end
 
@@ -888,7 +915,7 @@ module Bundler
       end
 
       if should_add_extra_platforms?
-        result.add_extra_platforms!(platforms)
+        result.add_extra_platforms!(platforms, prefer_local: @prefer_local)
       elsif @originally_invalid_platforms.any?
         result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
       end
@@ -950,10 +977,35 @@ module Bundler
     end
 
     def add_current_ruby_abi
+      return unless content_addressing_supported?
       return if @ruby_abis.include?(Gem.ruby_abi)
 
       @ruby_abis << Gem.ruby_abi
       @locked_specs.any? {|spec| spec.content_addresses.any? }
+    end
+
+    # RubyGems before 4.1 can't lock content-addressed gems, so changing the
+    # locked Ruby ABIs there would leave CONTENT ADDRESSES out of step with them.
+    def content_addressing_supported?
+      Bundler.rubygems.provides?(">= 4.1.0.a")
+    end
+
+    def ensure_content_addressing_supported!
+      return if content_addressing_supported?
+
+      raise InvalidOption, "Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later, but you are using RubyGems #{Bundler.rubygems.version}"
+    end
+
+    # Older RubyGems resolves platform gems without the content addresses the
+    # lockfile had for them, and may swap a locked one for its ruby variant. Unless
+    # every platform gem comes through as locked, the lockfile then drops its Ruby
+    # ABIs, so that RubyGems 4.1 resolves again and records the content addresses
+    # instead of falling back.
+    def content_addresses_carried_over?
+      locked = @originally_locked_specs.select {|spec| spec.platform != Gem::Platform::RUBY && resolve[spec.name].any? }
+      resolved = resolve.select {|spec| spec.platform != Gem::Platform::RUBY }
+
+      locked.to_h {|spec| [spec.full_name, spec.content_addresses] } == resolved.to_h {|spec| [spec.full_name, spec.content_addresses] }
     end
 
     def ruby_abi_excluded?(ruby_abi)

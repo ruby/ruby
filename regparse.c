@@ -445,6 +445,7 @@ onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
   int result;
 
   key = (st_str_end_key* )xmalloc(sizeof(st_str_end_key));
+  CHECK_NULL_RETURN_MEMERR(key);
   key->s   = (UChar* )str_key;
   key->end = (UChar* )end_key;
   result = onig_st_insert(table, (st_data_t )key, value);
@@ -919,6 +920,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
 # ifdef USE_ST_LIBRARY
     if (IS_NULL(t)) {
       t = onig_st_init_strend_table_with_size(5);
+      CHECK_NULL_RETURN_MEMERR(t);
       reg->name_table = (void* )t;
     }
     e = (NameEntry* )xmalloc(sizeof(NameEntry));
@@ -929,8 +931,12 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
       xfree(e);
       return ONIGERR_MEMORY;
     }
-    onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
-                          (HashDataType )e);
+    if (onig_st_insert_strend(t, e->name, (e->name + (name_end - name)),
+                              (HashDataType )e) < 0) {
+      xfree(e->name);
+      xfree(e);
+      return ONIGERR_MEMORY;
+    }
 
     e->name_len   = name_end - name;
     e->back_num   = 0;
@@ -1150,6 +1156,7 @@ scan_env_clear(ScanEnv* env)
   env->has_recursion       = 0;
 #endif
   env->parse_depth         = 0;
+  env->cclass_size         = 0;
   env->warnings_flag       = 0;
 }
 
@@ -1570,6 +1577,15 @@ node_str_cat_codepoint(Node* node, OnigEncoding enc, OnigCodePoint c)
   return onig_node_str_cat(node, buf, buf + num);
 }
 
+static int
+check_code_point(OnigCodePoint code, OnigEncoding enc)
+{
+  if (ONIGENC_IS_UNICODE(enc) &&
+      (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)))
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
+  return 0;
+}
+
 #if 0
 extern void
 onig_node_conv_to_str_node(Node* node, int flag)
@@ -1850,8 +1866,8 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
    * data[(high-1)*2+1] <= to << data[high*2]
    */
 
-  inc_n = low + 1 - high;
-  if (n + inc_n > ONIG_MAX_MULTI_BYTE_RANGES_NUM)
+  inc_n = (int )low + 1 - (int )high;
+  if ((int )n + inc_n > ONIG_MAX_MULTI_BYTE_RANGES_NUM)
     return ONIGERR_TOO_MANY_MULTI_BYTE_RANGES;
 
   if (inc_n != 1) {
@@ -1883,7 +1899,7 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
   BBUF_ENSURE_SIZE(bbuf, pos + SIZE_CODE_POINT * 2);
   BBUF_WRITE_CODE_POINT(bbuf, pos, from);
   BBUF_WRITE_CODE_POINT(bbuf, pos + SIZE_CODE_POINT, to);
-  n += inc_n;
+  n = (OnigCodePoint )((int )n + inc_n);
   BBUF_WRITE_CODE_POINT(bbuf, 0, n);
 
   return 0;
@@ -2985,10 +3001,8 @@ onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
                 fmt, args);
     va_end(args);
 #ifdef RUBY
-    if (env->sourcefile == NULL)
-      rb_warn("%s", (char *)buf);
-    else
-      rb_compile_warn(env->sourcefile, env->sourceline, "%s", (char *)buf);
+    /* may be kept until the compilation returns (Warning.warn may raise) */
+    rb_reg_warn(env->sourcefile, env->sourceline, (char *)buf);
 #else
     (*onig_warn)((char* )buf);
 #endif
@@ -4510,6 +4524,20 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
 
 static int cclass_case_fold(Node** np, CClassNode* cc, CClassNode* asc_cc, ScanEnv* env);
 
+/* The multi-byte ranges of a character class are copied into the compiled
+   program, so give up once their total alone exceeds the program size limit,
+   instead of building a huge tree only to fail in the compiler. */
+static int
+count_cclass_size(CClassNode* cc, ScanEnv* env)
+{
+  if (IS_NOT_NULL(cc->mbuf)) {
+    env->cclass_size += cc->mbuf->used;
+    if (env->cclass_size > MAX_COMPILED_PROGRAM_SIZE)
+      return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  }
+  return 0;
+}
+
 static int
 parse_char_property(Node** np, OnigToken* tok, UChar** src, UChar* end,
                     ScanEnv* env)
@@ -4530,8 +4558,9 @@ parse_char_property(Node** np, OnigToken* tok, UChar** src, UChar* end,
   if (IS_IGNORECASE(env->option)) {
     if (ctype != ONIGENC_CTYPE_ASCII)
       r = cclass_case_fold(np, cc, cc, env);
+    if (r != 0) return r;
   }
-  return r;
+  return count_cclass_size(cc, env);
 }
 
 
@@ -4771,7 +4800,6 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
       /* tok->base != 0 : octal or hexadec. */
       if (! ONIGENC_IS_SINGLEBYTE(env->enc) && tok->base != 0) {
         UChar buf[ONIGENC_CODE_TO_MBC_MAXLEN];
-        UChar* bufe = buf + ONIGENC_CODE_TO_MBC_MAXLEN;
         UChar* psave = p;
         int i, base = tok->base;
 
@@ -4791,9 +4819,10 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           goto err;
         }
 
-        len = enclen(env->enc, buf, buf + i);
-        if (i < len) {
-          r = ONIGERR_TOO_SHORT_MULTI_BYTE_STRING;
+        len = ONIGENC_PRECISE_MBC_ENC_LEN(env->enc, buf, buf + i);
+        if (! ONIGENC_MBCLEN_CHARFOUND_P(len)) {
+          r = ONIGENC_MBCLEN_NEEDMORE_P(len) ?
+            ONIGERR_TOO_SHORT_MULTI_BYTE_STRING : ONIGERR_INVALID_CODE_POINT_VALUE;
           goto err;
         }
         else if (i > len) { /* fetch back */
@@ -4810,7 +4839,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           goto raw_single;
         }
         else {
-          v = ONIGENC_MBC_TO_CODE(env->enc, buf, bufe);
+          v = ONIGENC_MBC_TO_CODE(env->enc, buf, buf + len);
           in_type = CCV_CODE_POINT;
         }
       }
@@ -4825,6 +4854,8 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
 
     case TK_CODE_POINT:
       v = tok->u.code;
+      r = check_code_point(v, env->enc);
+      if (r != 0) goto err;
       in_israw = 1;
     val_entry:
       len = ONIGENC_CODE_TO_MBCLEN(env->enc, v);
@@ -4855,12 +4886,12 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
     case TK_CHAR_TYPE:
       r = add_ctype_to_cc(cc, tok->u.prop.ctype, tok->u.prop.not,
                           IS_ASCII_RANGE(env->option), env);
-      if (r != 0) return r;
+      if (r != 0) goto err;
       if (IS_NOT_NULL(asc_cc)) {
         if (tok->u.prop.ctype != ONIGENC_CTYPE_WORD)
           r = add_ctype_to_cc(asc_cc, tok->u.prop.ctype, tok->u.prop.not,
                               IS_ASCII_RANGE(env->option), env);
-        if (r != 0) return r;
+        if (r != 0) goto err;
       }
 
     next_class:
@@ -4873,13 +4904,16 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
         int ctype;
 
         ctype = fetch_char_property_to_ctype(&p, end, env);
-        if (ctype < 0) return ctype;
+        if (ctype < 0) {
+          r = ctype;
+          goto err;
+        }
         r = add_ctype_to_cc(cc, ctype, tok->u.prop.not, 0, env);
-        if (r != 0) return r;
+        if (r != 0) goto err;
         if (IS_NOT_NULL(asc_cc)) {
           if (ctype != ONIGENC_CTYPE_ASCII)
             r = add_ctype_to_cc(asc_cc, ctype, tok->u.prop.not, 0, env);
-          if (r != 0) return r;
+          if (r != 0) goto err;
         }
         goto next_class;
       }
@@ -4980,6 +5014,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
           r = and_cclass(prev_cc, cc, env);
           if (r != 0) goto err;
           bbuf_free(cc->mbuf);
+          cc->mbuf = NULL;
           if (IS_NOT_NULL(asc_cc)) {
             r = and_cclass(asc_prev_cc, asc_cc, env);
             if (r != 0) goto err;
@@ -5884,8 +5919,11 @@ create_property_node(Node **np, ScanEnv* env, const char* propname)
   if (IS_NULL(*np)) return ONIGERR_MEMORY;
   cc = NCCLASS(*np);
   r = add_property_to_cc(cc, propname, 0, env);
-  if (r != 0)
+  if (r != 0) {
+    /* *np is a slot of the caller's node array, freed again on error */
     onig_node_free(*np);
+    *np = NULL_NODE;
+  }
   return r;
 }
 
@@ -6165,7 +6203,11 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Control", 0, env));
           R_ERR(add_code_range(&(cc->mbuf), env, 0x000A, 0x000A)); /* CR */
           R_ERR(add_code_range(&(cc->mbuf), env, 0x000D, 0x000D)); /* LF */
-          R_ERR(not_code_range_buf(env->enc, cc->mbuf, &inverted_buf, env));
+          r = not_code_range_buf(env->enc, cc->mbuf, &inverted_buf, env);
+          if (r != 0) {
+            bbuf_free(inverted_buf); /* partly built on failure */
+            goto err;
+          }
           bbuf_free(cc->mbuf);
           cc->mbuf = inverted_buf;
 
@@ -6220,6 +6262,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   tmp = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
   if (IS_NULL(tmp)) goto err;
   NENCLOSE(tmp)->target = top_alt;
+  top_alt = NULL; /* owned by tmp now */
   np1 = tmp;
 
 #ifdef USE_UNICODE_PROPERTIES
@@ -6240,9 +6283,12 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
  err:
   onig_node_free(np1);
+  onig_node_free(top_alt);
   for (i=0; i<NODE_COMMON_SIZE; i++)
     onig_node_free(node_common[i]);
-  return (r == 0) ? ONIGERR_MEMORY : r;
+  /* r may still hold a byte count from ONIGENC_CODE_TO_MBC() when an
+     allocation failed afterward. */
+  return (r < 0) ? r : ONIGERR_MEMORY;
 }
 #undef R_ERR
 
@@ -6327,6 +6373,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
   case TK_EOT:
   end_of_token:
     *np = node_new_empty();
+    CHECK_NULL_RETURN_MEMERR(*np);
     return tok->type;
     break;
 
@@ -6393,6 +6440,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
         }
 #ifndef NUMBERED_CHAR_IS_NOT_CASE_AMBIG
         else if (r == TK_CODE_POINT) {
+          r = check_code_point(tok->u.code, env->enc);
+          if (r != 0) return r;
           r = node_str_cat_codepoint(*np, env->enc, tok->u.code);
         }
 #endif
@@ -6416,11 +6465,15 @@ parse_exp(Node** np, OnigToken* tok, int term,
       len = 1;
       while (1) {
         if (len >= ONIGENC_MBC_MINLEN(env->enc)) {
-          if (len == enclen(env->enc, NSTR(*np)->s, NSTR(*np)->end)) {
+          int n = ONIGENC_IS_SINGLEBYTE(env->enc) ? 1 :
+            ONIGENC_PRECISE_MBC_ENC_LEN(env->enc, NSTR(*np)->s, NSTR(*np)->end);
+          if (n == len) {
             r = fetch_token(tok, src, end, env);
             NSTRING_CLEAR_RAW(*np);
             goto string_end;
           }
+          if (! ONIGENC_MBCLEN_NEEDMORE_P(n))
+            return ONIGERR_INVALID_CODE_POINT_VALUE;
         }
 
         r = fetch_token(tok, src, end, env);
@@ -6451,6 +6504,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
   case TK_CODE_POINT:
     {
+      r = check_code_point(tok->u.code, env->enc);
+      if (r != 0) return r;
       *np = node_new_empty();
       CHECK_NULL_RETURN_MEMERR(*np);
       r = node_str_cat_codepoint(*np, env->enc, tok->u.code);
@@ -6503,6 +6558,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
               IS_ASCII_RANGE(env->option), env);
           if (r != 0) return r;
           if (tok->u.prop.not != 0) NCCLASS_SET_NOT(cc);
+          r = count_cclass_size(cc, env);
+          if (r != 0) return r;
         }
         break;
 
@@ -6548,6 +6605,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
         }
       }
       onig_node_free(asc_node);
+      r = count_cclass_size(cc, env);
+      if (r != 0) return r;
     }
     break;
 
@@ -6584,6 +6643,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
       int gnum = tok->u.call.gnum;
 
       if (gnum < 0 || tok->u.call.rel != 0) {
+        if (gnum > ONIG_MAX_CAPTURE_GROUP_NUM)
+          return ONIGERR_INVALID_BACKREF;
         if (gnum > 0) gnum--;
         gnum = BACKREF_REL_TO_ABS(gnum, env);
         if (gnum <= 0)
@@ -6607,8 +6668,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
     if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS)) {
       if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS))
         return ONIGERR_TARGET_OF_REPEAT_OPERATOR_NOT_SPECIFIED;
-      else
+      else {
         *np = node_new_empty();
+        CHECK_NULL_RETURN_MEMERR(*np);
+      }
     }
     else {
       goto tk_byte;
@@ -6650,7 +6713,12 @@ parse_exp(Node** np, OnigToken* tok, int term,
         Node* en;
         en = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
         if (IS_NULL(en)) {
-          onig_node_free(qn);
+          /* When r == 0, qn has taken over the target (or freed it in
+             onig_reduce_nested_quantifier()), so hand qn to the caller. */
+          if (r == 0)
+            *targetp = qn;
+          else
+            onig_node_free(qn);
           return ONIGERR_MEMORY;
         }
         NENCLOSE(en)->target = qn;
@@ -6664,13 +6732,14 @@ parse_exp(Node** np, OnigToken* tok, int term,
         onig_node_free(qn);
       }
       else if (r == 2) { /* split case: /abc+/ */
-        Node *tmp;
+        Node *tmp, *list;
 
-        *targetp = node_new_list(*targetp, NULL);
-        if (IS_NULL(*targetp)) {
+        list = node_new_list(*targetp, NULL);
+        if (IS_NULL(list)) {
           onig_node_free(qn);
           return ONIGERR_MEMORY;
         }
+        *targetp = list;
         tmp = NCDR(*targetp) = node_new_list(qn, NULL);
         if (IS_NULL(tmp)) {
           onig_node_free(qn);
@@ -6704,6 +6773,10 @@ parse_branch(Node** top, OnigToken* tok, int term,
   }
   else {
     *top  = node_new_list(node, NULL);
+    if (IS_NULL(*top)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp = &(NCDR(*top));
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
@@ -6719,6 +6792,11 @@ parse_branch(Node** top, OnigToken* tok, int term,
       }
       else {
         *headp = node_new_list(node, NULL);
+        if (IS_NULL(*headp)) {
+          /* *top is freed by the caller; node is not linked into it yet */
+          onig_node_free(node);
+          return ONIGERR_MEMORY;
+        }
         headp = &(NCDR(*headp));
       }
     }
@@ -6750,6 +6828,10 @@ parse_subexp(Node** top, OnigToken* tok, int term,
   }
   else if (r == TK_ALT) {
     topnode = onig_node_new_alt(node, NULL);
+    if (IS_NULL(topnode)) {
+      onig_node_free(node);
+      return ONIGERR_MEMORY;
+    }
     headp   = &(NCDR(topnode));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
@@ -6766,6 +6848,11 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       }
 
       *headp = onig_node_new_alt(node, NULL);
+      if (IS_NULL(*headp)) {
+        onig_node_free(node);
+        onig_node_free(topnode);
+        return ONIGERR_MEMORY;
+      }
       headp  = &(NCDR(*headp));
     }
 

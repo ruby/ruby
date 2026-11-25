@@ -270,7 +270,7 @@ module ErrorHighlight
         return nil if @point_type != :name
         spot_lambda
 
-      when :ITER
+      when :ITER, :SCOPE
         return nil if @point_type != :name
         spot_iter
 
@@ -727,7 +727,7 @@ module ErrorHighlight
     #   define_method :foo do
     #                      ^^
     def spot_iter
-      _nd_fcall, nd_scope = @node.children
+      nd_scope = @node.type == :SCOPE ? @node : @node.children[1]
       fetch_line(nd_scope.first_lineno)
       if @snippet.match(/\G(?:do\b|\{)/, nd_scope.first_column)
         @beg_column = $~.begin(0)

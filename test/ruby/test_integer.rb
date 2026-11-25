@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/jit_support'
 
 class TestInteger < Test::Unit::TestCase
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
@@ -327,6 +328,26 @@ class TestInteger < Test::Unit::TestCase
     a = []
     assert_equal(y, y.downto(y-2) {|x| a << x })
     assert_equal([y, y-1, y-2], a)
+
+    a = []
+    1.downto(Float::NAN) {|x| a << x; break if a.size == 3 }
+    assert_equal([1, 0, -1], a)
+  end
+
+  def test_downto_comparator_returns_nil
+    args = []
+    args << "--zjit" if JITSupport.zjit_enabled?
+    assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class Integer
+        def <(other)
+          nil
+        end
+      end
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { 1.downto(-3.5) {} }
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { (2**64).downto(2**64-1) {} }
+    end;
   end
 
   def test_times

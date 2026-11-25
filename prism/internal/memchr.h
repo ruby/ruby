@@ -4,12 +4,15 @@
 #include "prism/internal/encoding.h"
 
 #include <stddef.h>
+#include <stdint.h>
+
+/* Return the first occurrence of byte in the slice, or NULL. */
+const uint8_t * pm_memchr(const uint8_t *source, uint8_t byte, size_t length);
 
 /*
- * We need to roll our own memchr to handle cases where the encoding changes and
- * we need to search for a character in a buffer that could be the trailing byte
- * of a multibyte character.
+ * Find an ASCII delimiter at a character boundary in the given encoding.
+ * Scan one character at a time when the delimiter could be a trailing byte.
  */
-const void * pm_memchr(const void *source, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding);
+const uint8_t * pm_memchr_boundary(const uint8_t *source, uint8_t byte, size_t length, const pm_encoding_t *encoding);
 
 #endif

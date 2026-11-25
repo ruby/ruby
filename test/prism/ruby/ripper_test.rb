@@ -16,7 +16,7 @@ module Ruby::Prism
       # Ripper cannot handle named capture groups in regular expressions.
       "regex.txt",
 
-      # Ripper fails to understand some structures that span across heredocs.
+      # Ripper misreads literals spanning a heredoc and rejects valid %w and %i elements.
       "spanning_heredoc.txt",
 
       # Ripper interprets circular keyword arguments as method calls.
@@ -48,6 +48,9 @@ module Ruby::Prism
       ]
     end
 
+    # Older Ripper versions read ?α as a character literal (Ruby #21186).
+    incorrect << "ternary_operator_non_ascii.txt" unless Ripper.sexp_raw("a ?αvar1 : var2")
+
     # https://bugs.ruby-lang.org/issues/21669
     incorrect << "4.1/void_value.txt"
     # https://bugs.ruby-lang.org/issues/19107
@@ -59,12 +62,10 @@ module Ruby::Prism
     omitted_sexp_raw = [
       "bom_leading_space.txt",
       "bom_spaces.txt",
+
+      # Heredoc content boundaries and indentation differ in the translation.
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
-      "heredocs_with_ignored_newlines.txt",
-      "seattlerb/block_call_dot_op2_brace_block.txt",
-      "seattlerb/block_command_operation_colon.txt",
-      "seattlerb/block_command_operation_dot.txt",
       "seattlerb/heredoc__backslash_dos_format.txt",
       "seattlerb/heredoc_backslash_nl.txt",
       "seattlerb/heredoc_nested.txt",
@@ -74,14 +75,15 @@ module Ruby::Prism
       "whitequark/dedenting_heredoc.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
-      "whitequark/ruby_bug_18878.txt",
-      "whitequark/send_block_chain_cmd.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
+      "whitequark/slash_newline_in_heredocs.txt",
     ]
 
     omitted_lex = [
       # Ripper's lex state on a newline delimited %r depends on what follows it.
       "heredoc_percent_newline_delimiter.txt",
+
+      # Ripper skips registering keyword parameters as locals in f_label.
+      "unparser/corpus/literal/def.txt",
 
       "heredoc_with_escaped_newline_at_start.txt",
       "heredocs_with_fake_newlines.txt",
@@ -132,10 +134,28 @@ module Ruby::Prism
 
     Fixture.each_for_current_ruby(except: incorrect | omitted_sexp_raw) do |fixture|
       define_method("#{fixture.test_name}_sexp_raw") { assert_ripper_sexp_raw(fixture.read) }
+      define_method("#{fixture.test_name}_sexp") do
+        source = fixture.read
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source)
+      end
     end
 
     Fixture.each_for_current_ruby(except: incorrect | omitted_lex) do |fixture|
       define_method("#{fixture.test_name}_lex") { assert_ripper_lex(fixture.read) }
+    end
+
+    def test_leading_void_stmt
+      [
+        ";;x; y;",
+        "(;x)",
+        "(\nx;)",
+        '"#{;x}"',
+        "if x; y end",
+        "if x;; y end",
+        "foo { # ;\n x }",
+        "class C < D; x end",
+        "class C\n x; rescue; y; else\n z end"
+      ].each { |source| assert_ripper_sexp_raw(source) }
     end
 
     def test_lex_ignored_missing_heredoc_end
@@ -202,6 +222,63 @@ module Ruby::Prism
         prism.parse
         # Check that the same events are emitted, regardless of order
         assert_equal(ripper.events.sort_by(&:inspect), prism.events.sort_by(&:inspect))
+      end
+    end
+
+    def test_command_and_pattern_productions
+      [
+        "m(A::B {})", "m 1 do end.f 2", "m 1 do end.f(2) do end",
+        "loop { break m 1 do end.g }", "loop { break m(1) do end.g }",
+        "def f; return super 1 do end; end", "def f; return super 1 do end.g; end",
+        "def f; yield yield 1; end", "def f; super yield; end",
+        "not(a and b) in true",
+        "m(self.a = x)",
+        "->(x: ->(x) { x }) { x }", "( #;\n x)"
+      ].each do |source|
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_block_call_events_after_a_jump
+      %w[return break next].each do |keyword|
+        ["m x do end.tail y", "obj.+ x do end.tail {}", "super x do end.tail(x)", "m(x) do end.tail"].each do |call|
+          assert_ripper_sexp_raw("def f; loop { #{keyword} #{call} }; end")
+        end
+      end
+      assert_ripper_sexp_raw("def f; receive case v; when A; return m 1 do end.g; end; end")
+      [
+        "case m 1 do end.g; when A; x; end",
+        "case x; in A if m 1 do end.g; x; end",
+        "class << m 1 do end.g; end",
+        "def (m 1 do end.g).f; end"
+      ].each do |argument|
+        assert_ripper_sexp_raw("def f; return #{argument}; end")
+      end
+    end
+
+    def test_dedenting_blank_lines_in_heredocs
+      ["\n", " \n", "\r\n", "\t\n"].each do |blank_line|
+        source = "<<~DOC\n  first\n#{blank_line}DOC\n"
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source), source
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    if RUBY_VERSION >= "4.1"
+      def test_brace_command_chained_after_a_do_block
+        source = "f x do end.g (y) {}.h"
+        assert_equal Ripper.sexp(source), Translation::Ripper.sexp(source)
+        assert_ripper_sexp_raw(source)
+      end
+    end
+
+    def test_keyword_parameter_registration
+      # Ripper's treatment of the parameter name in its own default changed in Ruby 3.4.
+      if RUBY_VERSION < "3.4"
+        ["def f(x: x +1); end", "def f(x: x /2); end", "->x: x &() {}"].each { |source| assert_ripper_sexp_raw(source) }
+      else
+        assert_ripper_sexp_raw("x = 1; ->(x: x) { x }")
+        assert_ripper_sexp_raw("x = 0; ->(x: x +1) {}")
       end
     end
 

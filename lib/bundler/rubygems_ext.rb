@@ -280,6 +280,19 @@ module Gem
 
     prepend AllowSettingSource
 
+    module TrackGemfileActivation
+      # The Gemfile being evaluated when RubyGems activated this spec.
+      attr_reader :bundler_activating_gemfile
+
+      def activate
+        activated = super
+        @bundler_activating_gemfile = Thread.current[:bundler_evaluating_gemfile] if activated
+        activated
+      end
+    end
+
+    prepend TrackGemfileActivation
+
     alias_method :rg_full_gem_path, :full_gem_path
     alias_method :rg_loaded_from,   :loaded_from
 

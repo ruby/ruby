@@ -121,4 +121,13 @@ class URI::TestParser < Test::Unit::TestCase
     assert_match(regexp, "http://example.com/")
     refute_match(regexp, "https://example.com/")
   end
+
+  def test_rfc2396_regexp_linear_time
+    omit "requires the match cache of CRuby 3.3+" unless RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.3"
+    URI::RFC2396_PARSER.regexp.each do |name, re|
+      assert Regexp.linear_time?(re), "regexp[#{name.inspect}] should be linear time"
+    end
+    assert Regexp.linear_time?(URI::RFC2396_PARSER.make_regexp)
+    assert Regexp.linear_time?(URI::RFC2396_PARSER.make_regexp(%w[http https]))
+  end
 end

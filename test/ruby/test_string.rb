@@ -50,6 +50,8 @@ class TestString < Test::Unit::TestCase
     assert_equal("", S(capacity: 1000))
     assert_equal(Encoding::ASCII_8BIT, S(capacity: 1000).encoding)
 
+    assert(S(capacity: -1000).inspect)
+
     assert_equal("", S(capacity: 1000, encoding: "euc-jp"))
     assert_equal(Encoding::EUC_JP, S(capacity: 1000, encoding: "euc-jp").encoding)
 
@@ -183,6 +185,17 @@ class TestString < Test::Unit::TestCase
     s = S("ab")
     s.bytesplice(0..max, S("x"))
     assert_equal(S("x"), s)
+  end
+
+  def test_AREF_fixed_width_large_length
+    require "rbconfig/sizeof"
+    len = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    [Encoding::UTF_32LE, Encoding::UTF_32BE].each do |enc|
+      s = S("abcd".encode(enc))
+      assert_equal(S("bcd".encode(enc)), s[1, len], enc.name)
+      assert_equal(S("bcd".encode(enc)), s[1, len * 2], enc.name)
+      assert_equal(S("bcd".encode(enc)), s.dup.slice!(1, len), enc.name)
+    end
   end
 
   def test_AREF_invalid_encoding
@@ -1295,6 +1308,60 @@ class TestString < Test::Unit::TestCase
     assert_bit_op_chilled_string_warning(:bit_flip, (7000 * 8)..(7100 * 8))
   end
 
+  def test_setbyte_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:setbyte, 7000, 0)
+    assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
+  end
+
+  def test_concat_chilled_string_warning
+    return unless @cls == String
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target << $target
+      assert_equal("\\xff\\xfe\\xfd\\xff\\xfe\\xfd".b, $target)
+    }
+    {#
+      module ReplaceReceiverWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("\xff\xfe\xfd".b)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ReplaceReceiverWarning)
+    };
+  end
+
+  def test_append_as_bytes_chilled_string_warning
+    return unless @cls == String
+    # The argument grows inside the chilled string warning: the capacity
+    # reserved for the append must match what is actually copied.
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"      # chilled string
+    $value = "x" * 200
+    END {
+      $target.append_as_bytes($value, 0x41, $value)
+      assert_equal("abcdefghij" + "w" * 100_000 + "A" + "w" * 100_000, $target)
+    }
+    {#
+      module GrowArgumentWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $value.replace("w" * 100_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(GrowArgumentWarning)
+    };
+  end
+
   def assert_bit_op_chilled_string_warning(op, *args)
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     $target = <<~STR            # chilled string
@@ -1320,6 +1387,27 @@ class TestString < Test::Unit::TestCase
       end
 
       Warning.extend(ReallocateWarning)
+    };
+  end
+
+  def test_modify_chilled_string_in_warning
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target[0, 2] = ""
+      assert_equal("B" * 998, $target)
+    }
+    {#
+      module ShrinkWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("B" * 1_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkWarning)
     };
   end
 
@@ -1582,6 +1670,17 @@ class TestString < Test::Unit::TestCase
     end;
   end
 
+  def test_each_grapheme_cluster_break_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", rss: true)
+    begin;
+      str = "hello world".encode(Encoding::UTF_32LE)
+
+      10_000.times do
+        str.each_grapheme_cluster { break }
+      end
+    end;
+  end
+
   def test_byteslice_grapheme_clusters
     string = "안녕"
     assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
@@ -1739,6 +1838,17 @@ class TestString < Test::Unit::TestCase
     a = S("hello")
     assert_operator(a, :eql?, S("hello"))
     assert_operator(a, :eql?, a)
+  end
+
+  def test_gsub_keep_in_lookbehind
+    assert_equal("axxx", S("aaaa").gsub(/(?<=\Ka)a/, "x"))
+    assert_equal("axxx", S("aaaa").gsub(/(?<=\Ka)a/) { "x" })
+    assert_equal("axxx", S("aaaa").gsub(/(?<=\Ka)a/, "a" => "x"))
+    assert_equal("aZZ", S("abc").gsub(/b|(?<=a\Kb)c/, "Z"))
+    assert_equal("abXc", S("abc").gsub(/(?<=a\Kb)/, "X"))
+    assert_equal(["ab", "c"], S("abc").split(/(?<=a\Kb)/))
+    assert_equal([""], S("abc").scan(/(?<=a\Kb)/))
+    assert_equal(2, S("aaaa").index(/(?<=\Ka)a/, 2))
   end
 
   def test_gsub
@@ -2172,6 +2282,28 @@ class TestString < Test::Unit::TestCase
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
   end
 
+  def test_scan_timeout
+    re = Regexp.new('B{10}|(a|aa)+\\1Z', timeout: 0.01)
+    s = S("x" * 15 + "B" * 10 + "a" * 5000)
+    /(A)/ =~ "A" * 1000
+    assert_raise(Regexp::TimeoutError) { s.scan(re) }
+    assert_equal("B" * 10, $&)
+
+    s = S("x" * 15 + "B" * 20 + "a" * 5000)
+    assert_raise(Regexp::TimeoutError) { s.scan(re) }
+    assert_equal(MatchData, $~.class)
+    assert_equal("B" * 10, $&)
+
+    assert_raise(Regexp::TimeoutError) { s.gsub(re, "") }
+    assert_equal(MatchData, $~.class)
+    assert_equal("B" * 10, $&)
+
+    assert_raise(Regexp::TimeoutError) { s.gsub(re, "") }
+    assert_equal(true, S("abc").start_with?(/ab/))
+    assert_equal(MatchData, $~.class)
+    assert_equal("ab", $&)
+  end
+
   def test_scan_gc_compact_stress
     EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
@@ -2305,6 +2437,35 @@ class TestString < Test::Unit::TestCase
       0
     end
     assert_nil(s.slice!(/l+$/, obj))
+  end
+
+  def test_slice_bang_middle_updates_coderange
+    # Removing bytes after the start kept the receiver's old coderange, so an
+    # ASCII-only result was not eql?-consistent with its hash.
+    [["é"], [1], [1, 1], [1..], [/é/]].each do |args|
+      s = S("aé")
+      s.valid_encoding?
+      s.slice!(*args)
+      assert_equal(S("a"), s, args.inspect)
+      assert_predicate(s, :ascii_only?, args.inspect)
+      assert_equal("a".b.hash, s.hash, args.inspect)
+      assert_equal(1, {"a".b => 1}[s], args.inspect)
+    end
+
+    s = S("a\xFFb")
+    s.valid_encoding?
+    s.slice!(1)
+    assert_predicate(s, :valid_encoding?)
+
+    s = S("aaaaaa")
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("abcあ")
+      2
+    end
+    s.slice!(/(aaaa)(aa)/, obj)
+    assert_equal("abc\xE3".b, s.b)
+    assert_not_predicate(s, :valid_encoding?)
   end
 
   def test_split
@@ -3010,6 +3171,14 @@ class TestString < Test::Unit::TestCase
     assert_not_predicate(result, :ascii_only?, bug13950)
 
     assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
+
+    assert_equal(S("aああ"), S("abc").tr("^a", "あ"))
+    result = S("abc").tr("^a", "é")
+    assert_equal(S("aéé"), result)
+    assert_not_predicate(result, :ascii_only?)
+    result = S("abc").b.tr("^a".b, "\xB0".b)
+    assert_equal("a\xB0\xB0".b, result)
+    assert_not_predicate(result, :ascii_only?)
   end
 
   def test_tr_hash
@@ -3034,6 +3203,24 @@ class TestString < Test::Unit::TestCase
     end
   end
 
+  def test_tr_hash_broken_pairs
+    # A broken key used to match inside valid characters, and a broken key or
+    # value produced a broken result cached as valid.
+    assert_raise(ArgumentError) { S("あい").tr("\x81" => "X") }
+    assert_raise(ArgumentError) { S("abc").tr("a" => "\xFF") }
+
+    eucjp = ->(s) { s.b.force_encoding("EUC-JP") }
+    assert_raise(ArgumentError) { S(eucjp["a\xA4\xA2"]).tr(eucjp["\xA2"] => eucjp["X"]) }
+    assert_raise(ArgumentError) { S(eucjp["abc"]).tr(eucjp["a"] => eucjp["\xA4"]) }
+
+    utf16 = "aAb".encode("UTF-16LE")
+    assert_raise(ArgumentError) { S(utf16).tr("\x41".b.force_encoding("UTF-16LE") => "X".encode("UTF-16LE")) }
+
+    str = S("abc")
+    assert_raise(ArgumentError) { str.tr!("a" => "\xFF") }
+    assert_equal(S("abc"), str)
+  end
+
   def test_tr_hash_modify
     replacements = {}
     obj = Object.new
@@ -3044,6 +3231,54 @@ class TestString < Test::Unit::TestCase
     replacements[obj] = "x"
     ("b".."z").each { |c| replacements[c] = (c.ord + 1).chr }
     assert_equal(S("xb"), S("ab").tr(replacements))
+  end
+
+  def test_tr_hash_modify_receiver
+    str = S("abc" * 1000)
+    other = "\x8F\xA1\xA1".force_encoding("EUC-JP") * 1000
+    key = Object.new
+    key.define_singleton_method(:to_str) do
+      str.replace(other)
+      "\xA4\xA2".force_encoding("EUC-JP")
+    end
+    assert_nil(str.tr!({key => "X"}))
+    assert_equal(other, str)
+  end
+
+  def test_tr_modify_receiver
+    str = S("a" * 10)
+    src = Object.new
+    src.define_singleton_method(:to_str) do
+      str.replace("\u{1F600}")
+      "\u009f"
+    end
+    assert_nil(str.tr!(src, "X"))
+    assert_equal("\u{1F600}", str)
+  end
+
+  def test_tr_hash_non_ascii_replacement_clears_7bit
+    # Non-UTF-8 encodings kept an ASCII-only receiver's cached coderange after
+    # a non-ASCII replacement, so the result could be concatenated with UTF-8.
+    %w[EUC-JP Shift_JIS Windows-31J GBK].each do |enc|
+      a = "あ".encode(enc)
+      result = S("abc".encode(enc)).tr("a" => a)
+      assert_equal(a + "bc".encode(enc), result)
+      assert_not_predicate(result, :ascii_only?, enc)
+      assert_raise(Encoding::CompatibilityError, enc) { result + "é" }
+
+      str = S("abc".encode(enc))
+      str.tr!("a" => a)
+      assert_not_predicate(str, :ascii_only?, enc)
+    end
+  end
+
+  def test_tr_hash_no_match_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..100)
+    begin;
+      str = ("a" * 10_000).encode("UTF-16LE")
+      replacements = {"b".encode("UTF-16LE") => "c".encode("UTF-16LE")}
+      1_000.times { str.tr!(replacements) }
+    end;
   end
 
   def test_tr!
@@ -3302,6 +3537,14 @@ class TestString < Test::Unit::TestCase
 
   def test_match_method
     assert_equal("bar", S("foobarbaz").match(/bar/).to_s)
+
+    require "rbconfig/sizeof"
+    pos = (2 ** (RbConfig::SIZEOF["rb_len_t"] * 8 - 1) - 1) / 4 + 1
+    s = S("abcd".encode(Encoding::UTF_32LE))
+    re = Regexp.new("c".encode(Encoding::UTF_32LE))
+    assert_nil(s.match(re, pos))
+    assert_nil(s.match(re, pos * 2))
+    assert_equal(false, s.match?(re, pos))
 
     o = Class.new(Regexp) {
       def match(x, y, z) = x + y + z
@@ -4045,6 +4288,16 @@ class TestString < Test::Unit::TestCase
     substr = str.byteslice(0, hundred.bytesize + 1)
     assert_equal hundred + "\0", substr
     refute_includes ObjectSpace.dump(substr), ' "shared":true,'
+  end
+
+  # [Bug #22528]
+  def test_append_wide_to_empty_string
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      s = ("a" * 1000).encode(enc)
+      assert_equal(s, String.new(capacity: s.bytesize, encoding: "UTF-8") << s)
+      a = "".force_encoding("US-ASCII")
+      assert_equal(s, eval(%{# coding: us-ascii\n"\#{a}\#{s}"}))
+    end
   end
 
   def test_substring_embed

@@ -1824,8 +1824,8 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                         slashes = 0;
                         break;
                     }
-                    memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1),
-                           sizeof(WCHAR) * (base + len - p));
+                    memmove(p - ((slashes + 1) >> 1), p + (~slashes & 1),
+                            sizeof(WCHAR) * (base + len - p));
                     len -= ((slashes + 1) >> 1) + (~slashes & 1);
                     p -= (slashes + 1) >> 1;
                     if (!(slashes & 1)) {
@@ -7741,8 +7741,19 @@ timespec_to_filetime(const struct timespec *ts, FILETIME *ft)
 {
     ULARGE_INTEGER tmp;
 
+    /* FILETIME must be in [0, INT64_MAX]: SetFileTime() rejects larger
+     * values, and the multiplication below wraps around before that. */
+    if (ts->tv_sec < -(time_t)filetime_diff_secs ||
+        (ULONGLONG)ts->tv_sec + filetime_diff_secs > INT64_MAX / filetime_unit) {
+        errno = EINVAL;
+        return -1;
+    }
     tmp.QuadPart = unix_to_filetime((ULONGLONG)ts->tv_sec);
     tmp.QuadPart += ts->tv_nsec / 100;
+    if (tmp.QuadPart > INT64_MAX) {
+        errno = EINVAL;
+        return -1;
+    }
     ft->dwLowDateTime = tmp.LowPart;
     ft->dwHighDateTime = tmp.HighPart;
     return 0;

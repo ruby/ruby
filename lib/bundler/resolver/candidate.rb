@@ -30,6 +30,11 @@ module Bundler
         @priority = priority
       end
 
+      # The specifications selected together for this version and its platforms.
+      def specs
+        @spec_group.specs
+      end
+
       def dependencies
         @spec_group.dependencies
       end

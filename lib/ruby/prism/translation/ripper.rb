@@ -23,7 +23,7 @@ module Ruby::Prism
     # - on_ignored_nl
     # - on_ignored_sp
     # - on_nl
-    # - on_operator_ambiguous
+    # - on_operator_ambiguous for `:`
     # - on_semicolon
     # - on_sp
     #
@@ -613,6 +613,22 @@ module Ruby::Prism
               on_arg_ambiguous("-")
             when :ambiguous_slash
               on_arg_ambiguous("/")
+            when :ambiguous_binary_operator
+              operator = warning.location.slice
+              message =
+                case operator
+                when "+", "-" then "unary operator"
+                when "*", "**", "&" then "argument prefix"
+                when "/" then "regexp literal"
+                when "%" then "string literal"
+                when "<<" then "here document"
+                end
+
+              if message
+                on_operator_ambiguous(operator.to_sym, message)
+              else
+                warn(warning.message)
+              end
             else
               warn(warning.message)
             end
@@ -724,7 +740,7 @@ module Ruby::Prism
         if node.is_a?(ParenthesesNode)
           bounds(node.opening_loc)
           on_lparen("(")
-          result = visit(node.body)
+          result = visit_pattern_node(node.body)
           bounds(node.closing_loc)
           on_rparen(")")
 
@@ -936,7 +952,7 @@ module Ruby::Prism
           node.opening == "[" ? on_lbracket("[") : on_lparen("(")
         end
 
-        requireds = visit_all(node.requireds) if node.requireds.any?
+        requireds = node.requireds.map { |part| visit_pattern_node(part) } if node.requireds.any?
         rest =
           if (rest_node = node.rest).is_a?(SplatNode)
             bounds(rest_node.operator_loc)
@@ -950,7 +966,7 @@ module Ruby::Prism
             end
           end
 
-        posts = visit_all(node.posts) if node.posts.any?
+        posts = node.posts.map { |part| visit_pattern_node(part) } if node.posts.any?
 
         if node.closing_loc
           bounds(node.closing_loc)
@@ -1013,7 +1029,7 @@ module Ruby::Prism
           on_kw("begin")
         end
 
-        clauses = visit_begin_node_clauses(node.begin_keyword_loc, node, false)
+        clauses = visit_begin_node_clauses(node)
 
         if node.end_keyword_loc
           bounds(node.end_keyword_loc)
@@ -1025,17 +1041,9 @@ module Ruby::Prism
       end
 
       # Visit the clauses of a begin node to form an on_bodystmt call.
-      private def visit_begin_node_clauses(location, node, allow_newline)
-        statements =
-          if node.statements.nil?
-            on_stmts_add(on_stmts_new, on_void_stmt)
-          else
-            body = node.statements.body
-            body = [nil, *body] if void_stmt?(location, node.statements.body[0].location, allow_newline)
-
-            bounds(node.statements.location)
-            visit_statements_node_body(body)
-          end
+      private def visit_begin_node_clauses(node, class_name_loc = nil)
+        bounds(node.statements.location) if node.statements
+        statements = visit_statements_node_body(node.statements, class_name_loc)
 
         rescue_clause = visit(node.rescue_clause)
         else_clause =
@@ -1043,17 +1051,8 @@ module Ruby::Prism
             bounds(else_clause_node.else_keyword_loc)
             on_kw("else")
 
-            else_statements =
-              if else_clause_node.statements.nil?
-                [nil]
-              else
-                body = else_clause_node.statements.body
-                body = [nil, *body] if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location, allow_newline)
-                body
-              end
-
             bounds(else_clause_node.location)
-            visit_statements_node_body(else_statements)
+            visit_statements_node_body(else_clause_node.statements)
           end
         ensure_clause = visit(node.ensure_clause)
 
@@ -1064,19 +1063,19 @@ module Ruby::Prism
       # Visit the body of a structure that can have either a set of statements
       # or statements wrapped in rescue/else/ensure.
       private def visit_body_node(location, node, allow_newline = false)
+        class_name_loc = location if allow_newline
+
         case node
         when nil
           bounds(location)
-          on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
+          on_bodystmt(visit_statements_node_body(nil), nil, nil, nil)
         when StatementsNode
-          body = [*node.body]
-          body = [nil, *body] if void_stmt?(location, body[0].location, allow_newline)
-          stmts = visit_statements_node_body(body)
+          stmts = visit_statements_node_body(node, class_name_loc)
 
           bounds(node.body.first.location)
           on_bodystmt(stmts, nil, nil, nil)
         when BeginNode
-          visit_begin_node_clauses(location, node, allow_newline)
+          visit_begin_node_clauses(node, class_name_loc)
         else
           raise
         end
@@ -1118,9 +1117,7 @@ module Ruby::Prism
             bounds(node.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
-            stmts = node.body.body
-            stmts = [nil, *stmts] if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
-            stmts = visit_statements_node_body(stmts)
+            stmts = visit_statements_node_body(node.body)
 
             bounds(node.body.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
@@ -1204,10 +1201,7 @@ module Ruby::Prism
           bounds(node.location)
           on_break(on_args_new)
         else
-          arguments = visit(node.arguments)
-
-          bounds(node.location)
-          on_break(arguments)
+          visit_jump_arguments(node) { |arguments| on_break(arguments) }
         end
       end
 
@@ -1257,7 +1251,7 @@ module Ruby::Prism
               if arguments.any?
                 args = visit_arguments(arguments)
 
-                if !node.block.nil?
+                if node.block || (arguments.one? && command?(arguments.first))
                   args
                 else
                   bounds(arguments.first.location)
@@ -1294,7 +1288,7 @@ module Ruby::Prism
               end
 
               receiver =
-                if node.receiver.is_a?(ParenthesesNode) && node.receiver.body.nil?
+                if node.receiver.is_a?(ParenthesesNode) && node.receiver.body.nil? && node.message_loc.end_offset == node.receiver.location.start_offset
                   # The parens in `not()` just emit parens and nothing else.
                   bounds(node.receiver.opening_loc)
                   on_lparen("(")
@@ -1407,21 +1401,23 @@ module Ruby::Prism
             end
 
             block = visit(block_node)
+            if node.opening_loc
+              bounds(node.opening_loc)
+              arguments = on_arg_paren(arguments)
+            end
+
+            bounds(node.location)
+            has_arguments = node.arguments || node.block.is_a?(BlockArgumentNode)
+            chained = node.message_loc && (block_node || (!node.opening_loc && has_arguments)) && block_call?(node.receiver)
             call =
-              if node.opening_loc.nil?
-                bounds(node.location)
-
-                if node.arguments.nil? && !node.block.is_a?(BlockArgumentNode)
-                  on_call(receiver, call_operator, message)
-                else
-                  on_command_call(receiver, call_operator, message, arguments)
-                end
-              else
-                bounds(node.opening_loc)
-                arguments = on_arg_paren(arguments)
-
-                bounds(node.location)
+              if (chained && block_node) || constant_brace_command?(node)
+                on_command_call(receiver, call_operator, message, arguments)
+              elsif node.opening_loc || (chained && has_arguments)
                 on_method_add_arg(on_call(receiver, call_operator, message), arguments)
+              elsif has_arguments
+                on_command_call(receiver, call_operator, message, arguments)
+              else
+                on_call(receiver, call_operator, message)
               end
 
             if block_node
@@ -1459,7 +1455,7 @@ module Ruby::Prism
           elsif arguments.any?
             args = visit_arguments(arguments)
 
-            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || command?(arguments.last) || trailing_comma
+            if block_node.is_a?(BlockArgumentNode) || arguments.last.is_a?(ForwardingArgumentsNode) || (arguments.one? && (command?(arguments.first) || block_call?(arguments.first))) || trailing_comma
               args
             else
               bounds(arguments.first.location)
@@ -1470,12 +1466,78 @@ module Ruby::Prism
         ]
       end
 
+      # A named suffix on a block_call uses the block_call productions in Ripper.
+      private def block_call?(node)
+        while node.is_a?(CallNode) || node.is_a?(SuperNode)
+          return true if node.block.is_a?(BlockNode) && node.block.opening == "do" && command?(node)
+          return false unless node.is_a?(CallNode) && node.call_operator_loc
+          node = node.receiver
+        end
+
+        (node.is_a?(BreakNode) || node.is_a?(NextNode) || node.is_a?(ReturnNode)) && jump_block_argument(node)
+      end
+
+      private def jump_block_argument(node)
+        arguments = node.arguments&.arguments
+        return unless arguments&.one?
+        call = arguments.first
+        if (call.is_a?(CallNode) || call.is_a?(SuperNode)) && call.block.is_a?(BlockNode) && call.block.opening == "do" && command?(call)
+          call
+        end
+      end
+
+      # Ruby::Prism stores the do block on the jump's argument. Ripper emits the
+      # block around the return, break, or next event for `command do_block`.
+      private def visit_jump_arguments(node)
+        if (call = jump_block_argument(node))
+          args = visit_arguments([call.copy(block: nil)])
+          bounds(node.location)
+          jump = yield args
+          block = visit(call.block)
+          bounds(node.location)
+          on_method_add_block(jump, block)
+        else
+          args = visit(node.arguments)
+          bounds(node.location)
+          yield args
+        end
+      end
+
+      private def constant_brace_command?(node)
+        node.block.is_a?(BlockNode) && node.opening_loc.nil? && node.call_operator == "::" &&
+          node.block.opening == "{" && node.message&.match?(/\A[[:upper:]]/)
+      end
+
       # Returns true if the given node is a command node.
       private def command?(node)
-        node.is_a?(CallNode) &&
-          node.opening_loc.nil? &&
-          (!node.arguments.nil? || node.block.is_a?(BlockArgumentNode)) &&
-          !BINARY_OPERATORS.include?(node.name)
+        if node.is_a?(DefNode) && node.equal_loc
+          # An endless_command keeps the command form through not and rescue.
+          node = node.body.body.first
+          loop do
+            case node
+            when RescueModifierNode
+              node = node.expression
+            when CallNode
+              break unless node.call_operator_loc.nil? && node.message == "not" && node.opening_loc.nil?
+              node = node.receiver
+            when ReturnNode, BreakNode, NextNode
+              return !node.arguments.nil?
+            else
+              break
+            end
+          end
+        end
+
+        case node
+        when CallNode
+          node.opening_loc.nil? && node.equal_loc.nil? &&
+            (constant_brace_command?(node) || ((node.arguments || node.block.is_a?(BlockArgumentNode)) &&
+              (node.call_operator_loc || !BINARY_OPERATORS.include?(node.name))))
+        when SuperNode
+          node.lparen_loc.nil?
+        when YieldNode
+          node.lparen_loc.nil? && !node.arguments.nil?
+        end
       end
 
       # foo.bar += baz
@@ -1487,7 +1549,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
@@ -1509,7 +1571,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
@@ -1531,7 +1593,7 @@ module Ruby::Prism
         call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
-        message = visit_token(node.message)
+        message = visit_token(node.message, false)
 
         bounds(node.location)
         target = on_field(receiver, call_operator, message)
@@ -1547,27 +1609,28 @@ module Ruby::Prism
       # foo.bar, = 1
       # ^^^^^^^
       def visit_call_target_node(node)
-        if node.call_operator == "::"
-          receiver = visit(node.receiver)
+        visit_call_target(node, true)
+      end
 
-          bounds(node.call_operator_loc)
-          on_op("::")
+      # A single for target and a rescue variable use the lhs production.
+      private def visit_target(node)
+        node.is_a?(CallTargetNode) ? visit_call_target(node, false) : visit(node)
+      end
 
-          bounds(node.message_loc)
-          message = visit_token(node.message)
+      private def visit_call_target(node, multiple)
+        receiver = visit(node.receiver)
 
-          bounds(node.location)
+        bounds(node.call_operator_loc)
+        operator = node.call_operator
+        call_operator = visit_call_operator(operator)
+
+        bounds(node.message_loc)
+        message = visit_token(node.message, false)
+
+        bounds(node.location)
+        if multiple && operator == "::"
           on_const_path_field(receiver, message)
         else
-          receiver = visit(node.receiver)
-
-          bounds(node.call_operator_loc)
-          call_operator = visit_call_operator(node.call_operator)
-
-          bounds(node.message_loc)
-          message = visit_token(node.message)
-
-          bounds(node.location)
           on_field(receiver, call_operator, message)
         end
       end
@@ -1575,7 +1638,7 @@ module Ruby::Prism
       # foo => bar => baz
       #        ^^^^^^^^^^
       def visit_capture_pattern_node(node)
-        value = visit(node.value)
+        value = visit_pattern_node(node.value)
 
         bounds(node.operator_loc)
         on_op("=>")
@@ -2032,16 +2095,7 @@ module Ruby::Prism
         bounds(node.else_keyword_loc)
         on_kw("else")
 
-        statements =
-          if node.statements.nil?
-            [nil]
-          else
-            body = node.statements.body
-            body = [nil, *body] if void_stmt?(node.else_keyword_loc, node.statements.body[0].location, false)
-            body
-          end
-
-        else_statements = visit_statements_node_body(statements)
+        else_statements = visit_statements_node_body(node.statements)
 
         bounds(node.end_keyword_loc)
         on_kw("end")
@@ -2087,16 +2141,7 @@ module Ruby::Prism
         bounds(node.ensure_keyword_loc)
         on_kw("ensure")
 
-        statements =
-          if node.statements.nil?
-            [nil]
-          else
-            body = node.statements.body
-            body = [nil, *body] if void_stmt?(node.ensure_keyword_loc, body[0].location, false)
-            body
-          end
-
-        statements = visit_statements_node_body(statements)
+        statements = visit_statements_node_body(node.statements)
 
         bounds(node.location)
         on_ensure(statements)
@@ -2129,7 +2174,7 @@ module Ruby::Prism
             visit(node.left.expression)
           end
 
-        requireds = visit_all(node.requireds) if node.requireds.any?
+        requireds = node.requireds.map { |part| visit_pattern_node(part) } if node.requireds.any?
 
         bounds(node.right.operator_loc)
         on_op("*")
@@ -2180,7 +2225,7 @@ module Ruby::Prism
         bounds(node.for_keyword_loc)
         on_kw("for")
 
-        index = visit(node.index)
+        index = visit_target(node.index)
         bounds(node.in_keyword_loc)
         on_kw("in")
 
@@ -2358,7 +2403,7 @@ module Ruby::Prism
                     on_string_add(on_string_content, on_tstring_content(value))
                   end
                 end,
-                visit(element.value)
+                visit_pattern_node(element.value)
               ]
             end
           end
@@ -2475,7 +2520,20 @@ module Ruby::Prism
         bounds(node.in_keyword_loc)
         on_kw("in")
 
-        pattern = visit_pattern_node(node.pattern)
+        guard = node.pattern
+        pattern =
+          if guard.is_a?(IfNode) || guard.is_a?(UnlessNode)
+            body = visit_pattern_node(guard.statements.body.first)
+            keyword = guard.is_a?(IfNode) ? guard.if_keyword_loc : guard.unless_keyword_loc
+            bounds(keyword)
+            on_kw(keyword.slice)
+            predicate = visit(guard.predicate)
+            bounds(guard.location)
+            guard.is_a?(IfNode) ? on_if_mod(predicate, body) : on_unless_mod(predicate, body)
+          else
+            visit_pattern_node(guard)
+          end
+
         if node.then_keyword_loc
           bounds(node.then_keyword_loc)
           on_kw("then")
@@ -2871,9 +2929,7 @@ module Ruby::Prism
             bounds(node.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
-            stmts = node.body.body
-            stmts = [nil, *stmts] if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
-            stmts = visit_statements_node_body(stmts)
+            stmts = visit_statements_node_body(node.body)
 
             bounds(node.body.location)
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
@@ -3146,10 +3202,7 @@ module Ruby::Prism
           bounds(node.location)
           on_next(on_args_new)
         else
-          arguments = visit(node.arguments)
-
-          bounds(node.location)
-          on_next(arguments)
+          visit_jump_arguments(node) { |arguments| on_next(arguments) }
         end
       end
 
@@ -3365,9 +3418,7 @@ module Ruby::Prism
 
       # The top-level program node.
       def visit_program_node(node)
-        body = node.statements.body
-        body = [nil] if body.empty?
-        statements = visit_statements_node_body(body)
+        statements = visit_statements_node_body(node.statements)
 
         bounds(node.location)
         on_program(statements)
@@ -3502,7 +3553,7 @@ module Ruby::Prism
           on_op("=>")
         end
 
-        reference = visit(node.reference)
+        reference = visit_target(node.reference)
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -3556,10 +3607,7 @@ module Ruby::Prism
           bounds(node.location)
           on_return0
         else
-          arguments = visit(node.arguments)
-
-          bounds(node.location)
-          on_return(arguments)
+          visit_jump_arguments(node) { |arguments| on_return(arguments) }
         end
       end
 
@@ -3631,17 +3679,20 @@ module Ruby::Prism
       # A list of statements.
       def visit_statements_node(node)
         bounds(node.location)
-        visit_statements_node_body(node.body)
+        visit_statements_node_body(node)
       end
 
-      # Visit the list of statements of a statements node. We support nil
-      # statements in the list. This would normally not be allowed by the
-      # structure of the prism parse tree, but we manually add them here so that
-      # we can mirror Ripper's void stmt.
-      private def visit_statements_node_body(body)
-        body.inject(on_stmts_new) do |stmts, stmt|
-          on_stmts_add(stmts, stmt.nil? ? on_void_stmt : visit(stmt))
+      # Ripper emits one void_stmt for an empty list or a leading semicolon.
+      # A newline after a class or module name can also produce a void_stmt.
+      private def visit_statements_node_body(node, class_name_loc = nil)
+        stmts = on_stmts_new
+        return on_stmts_add(stmts, on_void_stmt) if node.nil? || node.body.empty?
+
+        if node.leading_semicolon? || (class_name_loc && class_name_loc.end_line < node.start_line)
+          stmts = on_stmts_add(stmts, on_void_stmt)
         end
+
+        node.body.inject(stmts) { |list, stmt| on_stmts_add(list, visit(stmt)) }
       end
 
       # "foo"
@@ -4106,12 +4157,6 @@ module Ruby::Prism
         source.byteslice(left.end_offset...right.start_offset).include?(",")
       end
 
-      # Returns true if there is a semicolon between the two locations.
-      def void_stmt?(left, right, allow_newline)
-        pattern = allow_newline ? /[;\n]/ : /;/
-        source.byteslice(left.end_offset...right.start_offset).match?(pattern)
-      end
-
       # Visit the string content of a particular node. This method is used to
       # split into the various token types.
       def visit_token(token, allow_keywords = true)
@@ -4259,7 +4304,7 @@ module Ruby::Prism
         whitespace = 0
         cursor = 0
 
-        while cursor < string.length && string[cursor].match?(/\s/) && whitespace < width
+        while cursor < string.length && string[cursor].match?(/[ \t]/) && whitespace < width
           if string[cursor] == "\t"
             whitespace = ((whitespace / 8 + 1) * 8)
             break if whitespace > width

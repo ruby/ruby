@@ -49,6 +49,18 @@ module Ruby::Prism
       assert_kind_of CallNode, node.constant_path.unexpected
     end
 
+    def test_def_node_missing_name
+      { "def\n__END__\n1" => "def", "def self. ; end" => "def self." }.each do |source, prefix|
+        result = Ruby::Prism.parse(source)
+        assert_includes result.errors.map(&:type), :def_name
+
+        node = result.value.statements.body.first
+        assert_equal :"", node.name
+        assert_equal prefix.bytesize, node.name_loc.start_offset
+        assert_equal 0, node.name_loc.length
+      end
+    end
+
     def test_for_node_index_back_reference
       result = Ruby::Prism.parse("for $& in a; end")
       refute result.success?

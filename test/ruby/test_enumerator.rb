@@ -328,6 +328,15 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1,2], e.next_values)
   end
 
+  def test_fiber_yield_in_external_iteration
+    e = Enumerator.new {|y| Fiber.yield 7; y << 1 }
+    assert_equal(7, e.peek_values)
+    assert_equal(7, e.peek)
+    assert_equal(7, e.next_values)
+    assert_equal(1, e.next)
+    assert_raise(StopIteration) { e.next }
+  end
+
   def test_each_arg
     o = Object.new
     def o.each(ary)
@@ -1045,6 +1054,48 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       Enumerator.product(1..3, foo: 1, bar: 2)
     }
+  end
+
+  def test_s_product_with_saved_block
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        attr_reader :block
+
+        def each_entry(&block)
+          @block = block
+          self
+        end
+      end
+
+      yielded = []
+      assert_nil(Enumerator.product(enum, [1, 2]) { |x| yielded << x })
+      assert_equal([], yielded)
+      GC.start
+      enum.block.call(3)
+      assert_equal([[3, 1], [3, 2]], yielded)
+    };
+  end
+
+  def test_s_product_with_reentrant_block
+    enum = Object.new
+    class << enum
+      attr_reader :block
+
+      def each_entry(&block)
+        @block = block
+        yield 1
+        self
+      end
+    end
+
+    yielded = []
+    Enumerator.product(enum, [2]) do |x|
+      yielded << x
+      enum.block.call(3) if yielded.size == 1
+    end
+    assert_equal([[1, 2], [3, 2]], yielded)
   end
 
   def test_freeze

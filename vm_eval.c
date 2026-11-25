@@ -1256,17 +1256,9 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
     ID id;
     VALUE vid;
-    VALUE self;
     VALUE ret, vargv = 0;
     rb_execution_context_t *ec = GET_EC();
     int public = scope == CALL_PUBLIC || scope == CALL_PUBLIC_KW;
-
-    if (public) {
-        self = Qundef;
-    }
-    else {
-        self = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp)->self;
-    }
 
     if (argc == 0) {
         rb_raise(rb_eArgError, "no method name given");
@@ -1305,7 +1297,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
         argv++; argc--;
     }
     PASS_PASSED_BLOCK_HANDLER_EC(ec);
-    ret = rb_call0(ec, recv, id, argc, argv, scope, self);
+    ret = rb_call0(ec, recv, id, argc, argv, scope, Qundef);
     ALLOCV_END(vargv);
     return ret;
 }
@@ -1869,7 +1861,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
         pm_index_lookup_table_init_heap(&parent_scope->index_lookup_table, (int) pm_parser_constants_size(result.parser));
         parent_scope->local_table_for_iseq_size = locals_count;
-        pm_constant_id_list_init(&parent_scope->locals);
+        pm_constant_id_list_init(result.arena, &parent_scope->locals, locals_count);
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             const pm_string_t *scope_local = pm_options_scope_local(options_scope, local_index);
@@ -1905,7 +1897,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 pm_index_lookup_table_insert(&parent_scope->index_lookup_table, constant_id, local_index);
             }
 
-            pm_constant_id_list_append(result.arena, &parent_scope->locals, constant_id);
+            parent_scope->locals.ids[local_index] = constant_id;
         }
 
         node->previous = parent_scope;
@@ -2014,14 +2006,19 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
         rb_raise(rb_eRuntimeError, "Can't eval on top of Fiber or Thread");
     }
 
+    // ZJIT needs to be notified about dynamic local variable access not
+    // known at compile-time this eval is an instance of. Usually dynamic
+    // access, like with Binding, escape the environment first, but eval
+    // does not and instead works by having the existing environment parent
+    // the dynamically created eval environment.
+    //   Induce an environment escape when using ZJIT for notification.
+    // TODO(alan): Add a VM_ENV_FLAG_DIRTY and remove this excess env escape.
+    if (rb_zjit_enabled_p) vm_make_env_object(ec, cfp);
+
     block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
     block.as.captured.self = self;
     block.as.captured.code.iseq = CFP_ISEQ(cfp);
     block.type = block_type_iseq;
-
-    // EP is not escaped to the heap here, but captured and reused by another frame.
-    // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {

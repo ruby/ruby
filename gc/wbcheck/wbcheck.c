@@ -25,6 +25,9 @@ static bool wbcheck_verify_after_wb_enabled = false;
 // Useless write barrier warning control
 static bool wbcheck_warn_useless_wb_enabled = false;
 
+// Allocate objects at the size requested instead of rounding up to a heap size
+static bool wbcheck_exact_size_enabled = false;
+
 static void
 wbcheck_debug(const char *format, ...)
 {
@@ -74,6 +77,12 @@ wbcheck_configure_from_env(void)
     const char *warn_useless_wb_env = getenv("WBCHECK_WARN_USELESS_WB");
     if (warn_useless_wb_env && (strcmp(warn_useless_wb_env, "1") == 0 || strcmp(warn_useless_wb_env, "true") == 0)) {
         wbcheck_warn_useless_wb_enabled = true;
+    }
+
+    // Configure exact size allocation based on environment variable
+    const char *exact_size_env = getenv("WBCHECK_EXACT_SIZE");
+    if (exact_size_env && (strcmp(exact_size_env, "1") == 0 || strcmp(exact_size_env, "true") == 0)) {
+        wbcheck_exact_size_enabled = true;
     }
 }
 
@@ -1109,7 +1118,6 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     // Check if we should trigger GC before allocating
     maybe_gc_with_barrier(objspace_ptr);
 
-    // Ensure minimum allocation size of BASE_SLOT_SIZE
     alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
 
     // Allocate memory for the object
@@ -1149,6 +1157,13 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 size_t
 rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
+    if (wbcheck_exact_size_enabled) {
+        // Shapes record an object's capacity in whole VALUEs, so a size that
+        // isn't a multiple of sizeof(VALUE) can't be represented.
+        if (size > MAX_HEAP_SIZE) rb_bug("size too big");
+        return (size + sizeof(VALUE) - 1) & ~(sizeof(VALUE) - 1);
+    }
+
     for (int i = 0; i < HEAP_COUNT; i++) {
         if (size <= heap_sizes[i]) return heap_sizes[i];
     }

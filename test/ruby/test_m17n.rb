@@ -1090,6 +1090,20 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
+  def test_byterindex_match_inside_char
+    # "\x95\\" is a single character whose trail byte is "\\"
+    assert_equal(2, s("C:\\\x95\\").byterindex("\\"))
+    assert_nil(s("\x95\\").byterindex("\\"))
+  end
+
+  def test_rindex_first_byte_repeated_in_char
+    # "\x81\x81" is a single character whose bytes are both "\x81"
+    assert_equal(0, s("\x81\x81A").rindex(s("\x81\x81")))
+    assert_equal(0, s("\x81\x81A").byterindex(s("\x81\x81")))
+    assert_equal(1, s("\x81\x81\x81\x81A").rindex(s("\x81\x81A")))
+    assert_equal(2, s("\x81\x81\x81\x81A").byterindex(s("\x81\x81A")))
+  end
+
   def test_next
     s1 = e("\xa1\xa1")
     s2 = s1.dup
@@ -1467,6 +1481,14 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("a", "a\x8e\xa2\xa1\xa1".force_encoding("euc-tw").chop)
   end
 
+  def test_chop_invalid_byte_in_japanese_encodings
+    %w[EUC-JP Shift_JIS Windows-31J CP51932 eucJP-ms].each do |enc|
+      s = "a\x80".force_encoding(enc)
+      assert_equal("a", s.chop, enc)
+      assert_equal(1, s.byterindex("", 1), enc)
+    end
+  end
+
   def test_valid_encoding
     s = "\xa1".force_encoding("euc-jp")
     assert_equal(false, s.valid_encoding?)
@@ -1737,5 +1759,20 @@ class TestM17N < Test::Unit::TestCase
   def test_greek_capital_gap
     bug12204 = '[ruby-core:74478] [Bug #12204] GREEK CAPITAL RHO and SIGMA'
     assert_equal("\u03A3", "\u03A1".succ, bug12204)
+  end
+
+  def test_emacs_mule_codepoint_with_low_byte
+    # [Bug #22516]
+    %w[Emacs-Mule stateless-ISO-2022-JP].each do |name|
+      enc = Encoding.find(name)
+      [0x01018000, 0x018000, 0x0180a0, 0x8f00b6, 0x9000a0, 0x8141].each do |code|
+        assert_raise(RangeError) { "".force_encoding(enc) << code }
+        assert_raise(RangeError) { code.chr(enc) }
+        assert_raise(ArgumentError) { format(("a" * 100 + "%c").force_encoding(enc), code) }
+      end
+      # too big for format
+      assert_raise(RangeError) { "".force_encoding(enc) << 0x9c00a0a0 }
+      assert_raise(RangeError) { 0x9c00a0a0.chr(enc) }
+    end
   end
 end

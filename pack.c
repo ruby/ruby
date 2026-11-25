@@ -1521,7 +1521,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
 
           case 'u':
             {
-                VALUE buf = rb_str_new(0, (send - s)*3/4);
+                /* (send - s) * 3 / 4, computed without overflow */
+                VALUE buf = rb_str_new(0, (send - s) / 4 * 3 + (send - s) % 4 * 3 / 4);
                 char *ptr = RSTRING_PTR(buf);
                 rb_len_t total = 0;
 

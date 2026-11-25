@@ -22,4 +22,7 @@ undef x + 1
 undef x.z
        ^ unexpected '.', expecting end-of-input
        ^ unexpected '.', ignoring it
+undef method_^other
+             ^ unexpected '^', expecting end-of-input
+             ^ unexpected '^', ignoring it
 

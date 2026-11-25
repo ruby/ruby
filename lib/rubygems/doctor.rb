@@ -111,6 +111,7 @@ class Gem::Doctor
 
       basename = strip_extension File.basename(child), extensions
       next if installed_specs.include? basename
+      next if sub_directory == "gems" && File.fnmatch?(".*.lock", ent) && File.file?(child)
       next if /^rubygems-\d/.match?(basename)
       next if sub_directory == "specifications" && basename == "default"
       next if sub_directory == "plugins" && Gem.plugin_suffix_regexp =~ basename

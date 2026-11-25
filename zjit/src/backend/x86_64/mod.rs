@@ -1475,7 +1475,11 @@ mod tests {
 
     #[test]
     fn test_lir_string() {
+        use crate::cruby::test_utils::compile_to_iseq;
         use crate::hir::SideExitReason;
+        use crate::jit_frame::PendingJITFrame;
+
+        let iseq = compile_to_iseq("nil");
 
         let mut asm = Assembler::new();
         asm.new_block_without_id("test");
@@ -1488,7 +1492,20 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], stack_map: None, recompile: None } }));
+        let side_exit = Target::SideExit(Box::new(SideExitTarget {
+            reason: SideExitReason::Interrupt,
+            exit: SideExit {
+                pc: 0.into(),
+                iseq,
+                vm_stack_size: 0,
+                stack_map: SideExitStackMap {
+                    stack: vec![],
+                    frame_depth: 0,
+                    jit_frame: PendingJITFrame::new_iseq(std::ptr::null(), iseq),
+                },
+                recompile: None,
+            },
+        }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));

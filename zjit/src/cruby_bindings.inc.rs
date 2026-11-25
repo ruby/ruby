@@ -243,6 +243,8 @@ pub const ZJIT_STACK_MAP_OP_SKIP: u32 = 2;
 pub const ZJIT_STACK_MAP_OP_BASE_PTR: u32 = 3;
 pub const ZJIT_STACK_MAP_OP_IMM: u32 = 4;
 pub const ZJIT_STACK_MAP_OP_NIL: u32 = 5;
+pub const ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA: u32 = 6;
+pub const ZJIT_STACK_MAP_OP_PREV_FRAME: u32 = 7;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
 pub type rb_len_t = ::std::os::raw::c_long;
@@ -2482,6 +2484,7 @@ unsafe extern "C" {
     );
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
+    pub fn rb_zjit_iclass_for_refinement_p(iclass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
     pub fn rb_zjit_method_tracing_currently_enabled() -> bool;
     pub fn rb_zjit_iseq_tracing_currently_enabled() -> bool;
@@ -2638,7 +2641,6 @@ unsafe extern "C" {
     );
     pub fn rb_jit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
-    pub fn rb_jit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
     pub fn rb_jit_io_buffer_readable_ptr(
         self_: VALUE,

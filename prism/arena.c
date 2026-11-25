@@ -4,6 +4,7 @@
 #include "prism/internal/assert.h"
 #include "prism/internal/oom.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 
 /**
@@ -27,36 +28,70 @@
 #define PM_ARENA_MAX_SIZE (1024 * 1024)
 
 /**
+ * An allocation that does not fit in the current block and is larger than this
+ * fraction of the next block gets a block of its own. The current block keeps
+ * its free space for the allocations after it, so a block is only given up
+ * when a small allocation does not fit, with less than that much left unused.
+ */
+#define PM_ARENA_LARGE_DIVISOR 2
+
+/**
  * Compute the data size for the next block.
  */
 static size_t
-pm_arena_next_block_size(const pm_arena_t *arena, size_t min_size) {
+pm_arena_next_block_size(const pm_arena_t *arena) {
     size_t size = PM_ARENA_INITIAL_SIZE;
 
     for (size_t exp = PM_ARENA_GROWTH_INTERVAL; exp <= arena->block_count; exp += PM_ARENA_GROWTH_INTERVAL) {
         if (size < PM_ARENA_MAX_SIZE) size *= 2;
     }
 
-    return size > min_size ? size : min_size;
+    return size;
 }
 
 /**
- * Allocate a new block with the given data capacity and initial usage, link it
- * into the arena, and return it. Aborts on allocation failure.
+ * Allocate a block with the given data capacity and initial usage, linked to
+ * the given previous block. Aborts on allocation failure.
  */
 static pm_arena_block_t *
-pm_arena_block_new(pm_arena_t *arena, size_t data_size, size_t initial_used) {
+pm_arena_block_alloc(pm_arena_block_t *prev, size_t data_size, size_t initial_used) {
     PRISM_ASSERT(initial_used <= data_size);
+    if (PRISM_UNLIKELY(data_size > SIZE_MAX - PM_ARENA_BLOCK_SIZE(0))) {
+        pm_arena_alloc_overflow();
+    }
+
     pm_arena_block_t *block = (pm_arena_block_t *) xmalloc(PM_ARENA_BLOCK_SIZE(data_size));
     if (block == NULL) PRISM_OOM();
 
     block->capacity = data_size;
     block->used = initial_used;
-    block->prev = arena->current;
-    arena->current = block;
-    arena->block_count++;
+    block->prev = prev;
 
     return block;
+}
+
+/**
+ * Allocate a new block with the given data capacity and initial usage, make it
+ * the current block, and return it.
+ */
+static pm_arena_block_t *
+pm_arena_block_new(pm_arena_t *arena, size_t data_size, size_t initial_used) {
+    pm_arena_block_t *block = pm_arena_block_alloc(arena->current, data_size, initial_used);
+    arena->current = block;
+    arena->block_count++;
+    return block;
+}
+
+/**
+ * Free every block in a chain linked through prev.
+ */
+static void
+pm_arena_blocks_free(pm_arena_block_t *block) {
+    while (block != NULL) {
+        pm_arena_block_t *prev = block->prev;
+        xfree_sized(block, PM_ARENA_BLOCK_SIZE(block->capacity));
+        block = prev;
+    }
 }
 
 /**
@@ -74,12 +109,65 @@ pm_arena_reserve(pm_arena_t *arena, size_t capacity) {
 /**
  * Slow path for pm_arena_alloc: allocate a new block and return a pointer to
  * the first `size` bytes. Called when the current block has insufficient space.
+ * A large allocation goes in a block of exactly its size on the large list,
+ * which leaves the current block in place.
  */
 void *
 pm_arena_alloc_slow(pm_arena_t *arena, size_t size) {
-    size_t block_data_size = pm_arena_next_block_size(arena, size);
+    size_t block_data_size = pm_arena_next_block_size(arena);
+
+    if (size > block_data_size / PM_ARENA_LARGE_DIVISOR) {
+        arena->large = pm_arena_block_alloc(arena->large, size, size);
+        return arena->large->data;
+    }
+
     pm_arena_block_t *block = pm_arena_block_new(arena, block_data_size, size);
     return block->data;
+}
+
+/**
+ * Allocate memory whose address is aligned to the given power of two. In the
+ * current block the address is known ahead of time, so this pads by exactly
+ * what it needs. A new block's address is only known once it exists, so that
+ * case asks for the worst case and gives the unused tail back to the block.
+ */
+void *
+pm_arena_alloc_aligned(pm_arena_t *arena, size_t size, size_t alignment) {
+    pm_arena_block_t *block = arena->current;
+
+    if (block != NULL) {
+        uintptr_t next = (uintptr_t) (block->data + block->used);
+        size_t padding = (size_t) (-next & (alignment - 1));
+        size_t available = block->capacity - block->used;
+
+        if (padding <= available && size <= available - padding) {
+            block->used += padding + size;
+            return (void *) (next + padding);
+        }
+    }
+
+    size_t mask = alignment - 1;
+    if (PRISM_UNLIKELY(size > SIZE_MAX - mask)) pm_arena_alloc_overflow();
+    uintptr_t start = (uintptr_t) pm_arena_alloc_slow(arena, size + mask);
+    uintptr_t aligned = (start + mask) & ~(uintptr_t) mask;
+
+    block = arena->current;
+    if (block != NULL && (uintptr_t) block->data == start) {
+        block->used = (size_t) (aligned - start) + size;
+    }
+
+    return (void *) aligned;
+}
+
+/**
+ * Report an allocation whose total size does not fit in a size_t. A
+ * consumer's PRISM_OOM is not required to stop execution, so this aborts after
+ * it to keep the promise that it never returns.
+ */
+void
+pm_arena_alloc_overflow(void) {
+    PRISM_OOM();
+    abort();
 }
 
 /**
@@ -97,14 +185,8 @@ pm_arena_new(void) {
  */
 void
 pm_arena_cleanup(pm_arena_t *arena) {
-    pm_arena_block_t *block = arena->current;
-
-    while (block != NULL) {
-        pm_arena_block_t *prev = block->prev;
-        xfree_sized(block, PM_ARENA_BLOCK_SIZE(block->capacity));
-        block = prev;
-    }
-
+    pm_arena_blocks_free(arena->current);
+    pm_arena_blocks_free(arena->large);
     *arena = (pm_arena_t) { 0 };
 }
 

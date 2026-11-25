@@ -156,6 +156,19 @@ do{\
 void ossl_bin2hex(const unsigned char *in, char *out, size_t len);
 
 /*
+ * Use Fiber-local storage for rb_protect() states. This is fragile!
+ */
+void ossl_cb_state_begin(void);
+int ossl_cb_state_end(void);
+int ossl_cb_state_get(void);
+void ossl_cb_state_set(int state);
+/*
+ * Equivalent to rb_protect(func, args, NULL) except that this restores
+ * errinfo to the state before the call.
+ */
+void ossl_suppress(VALUE (*func)(VALUE args), VALUE args);
+
+/*
  * Our default PEM callback
  */
 /* Convert the argument to String and validate the length. Note this may raise. */

@@ -30,6 +30,19 @@ module Ruby::Prism
       assert_equal 5, tokens.length
     end
 
+    def test_do_after_a_command_with_a_brace_block
+      {
+        "outer def f = super A::B() {} do end" => :KEYWORD_DO_BLOCK,
+        "outer def f = super A::B {} rescue fallback do end" => :KEYWORD_DO,
+        "outer inner f (x) {} do end" => :KEYWORD_DO_BLOCK,
+        "outer inner super super A::B { other super B::C {} } do end" => :KEYWORD_DO_BLOCK,
+        "while super A::B {} do end" => :KEYWORD_DO_LOOP
+      }.each do |source, expected|
+        tokens = Ruby::Prism.lex(source, version: "4.0").value
+        assert_equal [expected], tokens.select { |token| token.value == "do" }.map(&:type), source
+      end
+    end
+
     def test_parse_lex_file
       node, tokens = Ruby::Prism.parse_lex_file(__FILE__).value
 
@@ -125,6 +138,27 @@ module Ruby::Prism
         %i[HEREDOC_START EMBEXPR_BEGIN CONSTANT NEWLINE HEREDOC_END PLUS CONSTANT NEWLINE EOF],
         token_types(code + "\n")
       )
+    end
+
+    def test_lex_identifier_underscore_caret
+      assert_equal(
+        %i[IDENTIFIER CARET IDENTIFIER EOF],
+        token_types("foo____^bar")
+      )
+
+      assert_equal(
+        %i[IDENTIFIER CARET IDENTIFIER EOF],
+        token_types("a_1234_^b")
+      )
+    end
+
+    def test_missing_operand_after_identifier_ending_in_underscore
+      # Move the caret through two 8-byte SWAR words. The second array element
+      # leaves a full word to scan even when the identifier is short.
+      16.times do |length|
+        source = "[#{"a" * length}_^, another_value]"
+        assert_equal [:expect_expression_after_operator], Ruby::Prism.lex(source).errors.map(&:type), source
+      end
     end
 
     def token_types(code)

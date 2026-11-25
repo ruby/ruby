@@ -1,0 +1,14 @@
+first = <<A; second = <<B while (redo if ready)
+#{break if ready}
+  ^~~~~ Invalid break
+A
+#{next if ready}
+B
+
+first = <<A; second = <<B until (redo if ready)
+#{break if ready}
+  ^~~~~ Invalid break
+A
+#{next if ready}
+B
+

@@ -1,0 +1,13 @@
+case x; in C; work rescue not value in P in Q; ok; end
+
+work rescue f y do end.tail
+
+work rescue value in Integer
+
+x = work rescue value in Integer
+
+work rescue value => Integer
+
+x = work rescue value => Integer
+
+case v; in First; x = y = f (v) {} rescue a in Integer in Second; end

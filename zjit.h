@@ -49,6 +49,8 @@ ZJIT_FRAME_MATERIALIZE_BLOCK_CODE_P(const zjit_jit_frame_t *jit_frame)
 #define ZJIT_STACK_MAP_OP_BASE_PTR  3
 #define ZJIT_STACK_MAP_OP_IMM       4
 #define ZJIT_STACK_MAP_OP_NIL       5
+#define ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA 6
+#define ZJIT_STACK_MAP_OP_PREV_FRAME 7
 
 extern void *rb_zjit_entry;
 extern bool rb_zjit_compiling_p;
@@ -76,7 +78,6 @@ void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_newobj_hook(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
 void rb_zjit_invalidate_root_box(void);
-void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
 void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 size_t rb_zjit_hash_new_size(VALUE *flags_out, size_t size);
@@ -94,6 +95,10 @@ bool rb_zjit_newobj_hook_enabled_p(void);
 // rb_zjit_c_frame as the JITFrame". We don't control the native stack layout
 // for C frames, so there's no per-call JITFrame storage; we set this sentinel
 // instead of a heap-allocated JITFrame pointer.
+//
+// Tradeoff: accessors must check for this sentinel, but in exchange, the many
+// instances of `cfp->jit_return = sentinel` we generate are compact due to
+// this being a small numeric value.
 #define ZJIT_JIT_RETURN_C_FRAME 0x1
 
 static inline const zjit_jit_frame_t *
@@ -130,7 +135,6 @@ static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_newobj_hook(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}
-static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame) {}
 static inline void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
 static inline void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
 static inline const zjit_jit_frame_t *CFP_ZJIT_FRAME(const rb_control_frame_t *cfp) { return NULL; }

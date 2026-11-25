@@ -3,10 +3,10 @@
 #include "prism/internal/arena.h"
 #include "prism/internal/assert.h"
 #include "prism/internal/char.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/node.h"
 #include "prism/internal/parser.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 /* The state used while walking the tree to find the owner of each comment. */
@@ -60,29 +60,25 @@ typedef struct {
     } stack;
 } pm_comments_walk_t;
 
-/* Compare two comments by start offset for qsort. */
-static int
-pm_comments_compare(const void *left, const void *right) {
-    uint32_t left_start = (*(const pm_comment_t *const *) left)->location.start;
-    uint32_t right_start = (*(const pm_comment_t *const *) right)->location.start;
-    return (left_start > right_start) - (left_start < right_start);
-}
-
 /*
- * Copy the linked list of comments from the parser sorted by start offset, and
- * relink the list in that order. Usually comments arrive in source order, but
- * unfortunately because of heredocs they can occasionally be out of order.
+ * Insertion-sort the comments by start offset as we copy them from the list,
+ * then relink the list in source order. Usually only heredoc comments need
+ * to move.
  */
 static const pm_comment_t **
 pm_comments_sort(pm_parser_t *parser, uint32_t size) {
-    pm_comment_t **comments = (pm_comment_t **) pm_arena_alloc(&parser->metadata_arena, sizeof(pm_comment_t *) * size, PRISM_ALIGNOF(pm_comment_t *));
+    pm_comment_t **comments = PM_ARENA_ALLOC_ARRAY(&parser->metadata_arena, pm_comment_t *, size);
 
     uint32_t index = 0;
     for (pm_list_node_t *node = parser->comment_list.head; node != NULL; node = node->next) {
-        comments[index++] = (pm_comment_t *) node;
+        pm_comment_t *comment = (pm_comment_t *) node;
+        uint32_t position = index++;
+        while (position > 0 && comments[position - 1]->location.start > comment->location.start) {
+            comments[position] = comments[position - 1];
+            position--;
+        }
+        comments[position] = comment;
     }
-
-    qsort((void *) comments, size, sizeof(pm_comment_t *), pm_comments_compare);
 
     for (index = 0; index + 1 < size; index++) {
         comments[index]->node.next = &comments[index + 1]->node;
@@ -232,7 +228,7 @@ pm_comments_push(const pm_node_t *node, void *data) {
 
     if (walk->stack.size == walk->stack.capacity) {
         size_t capacity = walk->stack.capacity == 0 ? 64 : walk->stack.capacity * 2;
-        const pm_node_t **nodes = (const pm_node_t **) pm_arena_alloc(walk->arena, sizeof(pm_node_t *) * capacity, PRISM_ALIGNOF(pm_node_t *));
+        const pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(walk->arena, const pm_node_t *, capacity);
         if (walk->stack.size > 0) memcpy((void *) nodes, (const void *) walk->stack.nodes, sizeof(pm_node_t *) * walk->stack.size);
 
         walk->stack.nodes = nodes;
@@ -288,7 +284,7 @@ pm_comments_visit(pm_comments_walk_t *walk, const pm_node_t *node) {
     ) {
         uint32_t comment_start = walk->starts[after];
 
-        if (memchr(walk->source + end, '\n', comment_start - end) == NULL) {
+        if (pm_memchr(walk->source + end, '\n', comment_start - end) == NULL) {
             const pm_node_t *attached = walk->attached[after];
             uint32_t attached_end = attached == NULL ? 0 : PM_LOCATION_END(&attached->location);
 
@@ -398,9 +394,9 @@ pm_comments_attach(pm_parser_t *parser, const pm_node_t *root) {
         .source = parser->start,
         .comments = pm_comments_sort(parser, size),
         .size = size,
-        .starts = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * size, PRISM_ALIGNOF(uint32_t)),
-        .attached = (const pm_node_t **) pm_arena_zalloc(arena, sizeof(pm_node_t *) * size, PRISM_ALIGNOF(pm_node_t *)),
-        .unclaimed = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * (size + 1), PRISM_ALIGNOF(uint32_t))
+        .starts = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, size),
+        .attached = PM_ARENA_ZALLOC_ARRAY(arena, const pm_node_t *, size),
+        .unclaimed = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, size + 1)
     };
 
     for (uint32_t index = 0; index < size; index++) walk.starts[index] = walk.comments[index]->location.start;
@@ -427,8 +423,8 @@ pm_comments_attach(pm_parser_t *parser, const pm_node_t *root) {
 
     /* The ranges only extend to the largest node id that owns a comment, since
      * none of the nodes after it own any. */
-    pm_comment_range_t *ranges = (pm_comment_range_t *) pm_arena_zalloc(&parser->metadata_arena, sizeof(pm_comment_range_t) * ranges_size, PRISM_ALIGNOF(pm_comment_range_t));
-    uint32_t *attachments = (uint32_t *) pm_arena_alloc(&parser->metadata_arena, sizeof(uint32_t) * size, PRISM_ALIGNOF(uint32_t));
+    pm_comment_range_t *ranges = PM_ARENA_ZALLOC_ARRAY(&parser->metadata_arena, pm_comment_range_t, ranges_size);
+    uint32_t *attachments = PM_ARENA_ALLOC_ARRAY(&parser->metadata_arena, uint32_t, size);
 
     for (uint32_t index = 0; index < size; index++) {
         ranges[walk.attached[index]->node_id].length++;

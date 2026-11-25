@@ -1,0 +1,38 @@
+C::F {}.()
+       ^ unexpected '.', expecting end-of-input
+       ^ unexpected '.', ignoring it
+        ^ unexpected '(', ignoring it
+         ^ unexpected ')', ignoring it
+
+C::F {}&.()
+       ^~ unexpected '&.', expecting end-of-input
+       ^~ unexpected '&.', ignoring it
+         ^ unexpected '(', ignoring it
+          ^ unexpected ')', ignoring it
+
+C::F {}::()
+       ^~ unexpected '::', expecting end-of-input
+       ^~ unexpected '::', ignoring it
+         ^ unexpected '(', ignoring it
+          ^ unexpected ')', ignoring it
+
+C::F x do end.tail, y = z
+                  ^ unexpected ',', expecting end-of-input
+                  ^ unexpected ',', ignoring it
+
+x rescue C::F x do end.tail, y = z
+                           ^ unexpected ',', expecting end-of-input
+                           ^ unexpected ',', ignoring it
+
+!f x do end.tail + y
+                 ^ unexpected '+', expecting end-of-input
+
+not f x do end.tail + y
+                    ^ unexpected '+', expecting end-of-input
+
+a and f x do end.tail + y
+                      ^ unexpected '+', expecting end-of-input
+
+a or f x do end.tail + y
+                     ^ unexpected '+', expecting end-of-input
+

@@ -77,6 +77,14 @@ RSpec.describe "bundle add" do
       expect(the_bundle).to include_gems "foo 1.1"
     end
 
+    it "leaves the Gemfile unchanged when the requested version cannot be found" do
+      original_gemfile = bundled_app_gemfile.read
+      bundle "add foo --version='~> 99.0'", raise_on_error: false
+
+      expect(err).to include("Could not find gem 'foo (~> 99.0)'")
+      expect(bundled_app_gemfile.read).to eq(original_gemfile)
+    end
+
     it "adds multiple version constraints when specified" do
       requirements = ["< 3.0", "> 1.0"]
       bundle "add 'foo' --version='#{requirements.join(", ")}'"

@@ -59,8 +59,8 @@ impl WeakProcessor {
 
         if can_parallel_free {
             let num_buckets = self.parallel_obj_free_candidates.len();
-            for idx in 0..num_buckets {
-                let mut bucket = self.parallel_obj_free_candidates[idx].lock().unwrap();
+            for (idx, candidates) in self.parallel_obj_free_candidates.iter().enumerate() {
+                let mut bucket = candidates.lock().unwrap();
                 for &obj in objects.iter().skip(idx).step_by(num_buckets) {
                     bucket.push(obj);
                 }

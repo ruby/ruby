@@ -3,6 +3,8 @@
 
 #include "prism/compiler/inline.h"
 #include "prism/excludes.h"
+#include "prism/internal/options.h"
+#include "prism/stringy.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -14,7 +16,7 @@
  * other characters take the forms listed for it in encoding.c.
  */
 typedef enum {
-    /* Every byte is a character, with the properties in its table. */
+    /* Every byte is a character. */
     PM_ENCODING_KIND_SINGLE_BYTE,
 
     /* Every byte below 0x80 is a character, and every other byte is invalid. */
@@ -66,15 +68,37 @@ typedef struct {
      */
     const char *name;
 
-    /* The PRISM_ENCODING_*_BIT properties of each byte as a character. */
-    const uint8_t *table;
+    /*
+     * In a single-byte encoding, the bytes from 0x80 up that begin a constant
+     * name, one bit per byte, or NULL if none do.
+     */
+    const uint8_t *uppercase;
 
     /*
      * How the encoding answers questions about its characters, as a
      * pm_encoding_kind_t stored in a byte to keep the table of encodings small.
      */
     uint8_t kind;
+
+    /* The length of the encoding name in bytes, excluding the terminator. */
+    uint8_t name_length;
 } pm_encoding_t;
+
+/* Return a string view of the encoding name. */
+static PRISM_INLINE pm_string_t
+pm_encoding_string(const pm_encoding_t *encoding) {
+    pm_string_t name = { (const uint8_t *) encoding->name, encoding->name_length };
+    return name;
+}
+
+/* Join the encodings of two strings' non-ASCII bytes. NULL means all ASCII. */
+static PRISM_INLINE bool
+pm_encoding_concat(const pm_encoding_t **left, const pm_encoding_t *right) {
+    if (right == NULL) return true;
+    if (*left != NULL && *left != right) return false;
+    *left = right;
+    return true;
+}
 
 /*
  * Return true if the encoding is a multibyte encoding. Every kind other than
@@ -85,21 +109,15 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
     return encoding->kind != PM_ENCODING_KIND_SINGLE_BYTE && encoding->kind != PM_ENCODING_KIND_ASCII;
 }
 
-/*
- * All of the lookup tables use the first bit of each embedded byte to indicate
- * whether the codepoint is alphabetical.
- */
+/* The bit of the ASCII table that marks a letter. */
 #define PRISM_ENCODING_ALPHABETIC_BIT (1 << 0)
 
-/*
- * All of the lookup tables use the second bit of each embedded byte to indicate
- * whether the codepoint is alphanumeric.
- */
+/* The bit of the ASCII table that marks a letter or a digit. */
 #define PRISM_ENCODING_ALPHANUMERIC_BIT (1 << 1)
 
 /*
- * All of the lookup tables use the third bit of each embedded byte to indicate
- * whether the codepoint is uppercase.
+ * The bit that marks a character that begins a constant name, in the ASCII
+ * table, the unicode tables, and the forms of the multibyte encodings.
  */
 #define PRISM_ENCODING_UPPERCASE_BIT (1 << 2)
 
@@ -110,66 +128,78 @@ pm_encoding_multibyte_p(const pm_encoding_t *encoding) {
 size_t pm_encoding_char_width(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
 
 /*
- * Return the number of bytes in the next character in the given encoding if it
- * has the given PRISM_ENCODING_*_BIT property, or 0 otherwise.
+ * Return true if the given bytes begin a character in the given encoding that
+ * takes more bytes than there are. Together with pm_encoding_char_width, this
+ * tells bytes that are cut short of a character from bytes that are invalid,
+ * which matters where a character is built up one byte at a time, such as from
+ * the escapes of a regular expression.
  */
-size_t pm_encoding_property_char(const pm_encoding_t *encoding, uint8_t property, const uint8_t *b, ptrdiff_t n);
+bool pm_encoding_char_prefix_p(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n);
 
 /*
- * Return the number of bytes in the next character in the given encoding if it
- * is alphabetical, or 0 otherwise.
+ * Return the code point of the valid character of the given width at the
+ * start of b, if the characters of the encoding are Unicode code points, as in
+ * UTF-8 and CESU-8. Otherwise return -1.
  */
-static PRISM_INLINE size_t
-pm_encoding_alpha_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return pm_encoding_property_char(encoding, PRISM_ENCODING_ALPHABETIC_BIT, b, n);
-}
+int32_t pm_encoding_unicode_codepoint(const pm_encoding_t *encoding, const uint8_t *b, size_t width);
 
 /*
- * Return the number of bytes in the next character in the given encoding if it
- * is alphanumeric, or 0 otherwise.
+ * Return true if the code point is a decimal digit in the version of Unicode of
+ * the given version of Ruby.
  */
-static PRISM_INLINE size_t
-pm_encoding_alnum_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return pm_encoding_property_char(encoding, PRISM_ENCODING_ALPHANUMERIC_BIT, b, n);
-}
+bool pm_encoding_unicode_digit_p(uint32_t codepoint, pm_options_version_t version);
 
 /*
- * Return true if the next character in the given encoding is uppercase.
+ * Return true if the next character in the given encoding is uppercase, or
+ * titlecase, in the given version of Ruby. Such a character begins a constant
+ * name. The version only matters for an encoding whose characters are Unicode
+ * code points, since each version of Ruby uses a version of Unicode.
  */
-static PRISM_INLINE bool
-pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n) {
-    return pm_encoding_property_char(encoding, PRISM_ENCODING_UPPERCASE_BIT, b, n) != 0;
-}
+bool pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n, pm_options_version_t version);
 
 /* Return the size of the next character in the UTF-8 encoding. */
 size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);
 
 /*
- * Return the size of the next character in the UTF-8 encoding if it is an
- * alphabetical character.
+ * Return true if the next character in the UTF-8 encoding is uppercase, or
+ * titlecase, in the given version of Ruby.
  */
-size_t pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n);
-
-/*
- * Return the size of the next character in the UTF-8 encoding if it is an
- * alphanumeric character.
- */
-size_t pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n);
-
-/*
- * Return true if the next character in the UTF-8 encoding if it is an uppercase
- * character.
- */
-bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
+bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n, pm_options_version_t version);
 
 /*
  * This lookup table indicates whether a US-ASCII character is alphabetical,
- * alphanumeric, or uppercase. It is referenced in both the UTF-8 encoding
- * functions and the parser directly in order to speed up processing ASCII
- * bytes in the default encoding, since every ASCII character is encoded as
- * itself in UTF-8.
+ * alphanumeric, or uppercase. Every encoding that prism supports is
+ * ASCII-compatible, so this table answers for the bytes below 0x80 in all of
+ * them.
  */
 extern const uint8_t pm_encoding_ascii_table[256];
+
+/*
+ * Return true if the byte is an ASCII letter. A byte that is not ASCII is not
+ * one, in every encoding.
+ */
+static PRISM_INLINE bool
+pm_encoding_ascii_alpha_p(uint8_t byte) {
+    return pm_encoding_ascii_table[byte] & PRISM_ENCODING_ALPHABETIC_BIT;
+}
+
+/*
+ * Return true if the byte is an ASCII uppercase letter. A byte that is not
+ * ASCII is not one, in every encoding.
+ */
+static PRISM_INLINE bool
+pm_encoding_ascii_upper_p(uint8_t byte) {
+    return pm_encoding_ascii_table[byte] & PRISM_ENCODING_UPPERCASE_BIT;
+}
+
+/*
+ * Return true if the byte is an ASCII letter or digit. A byte that is not ASCII
+ * is neither, in every encoding.
+ */
+static PRISM_INLINE bool
+pm_encoding_ascii_alnum_p(uint8_t byte) {
+    return pm_encoding_ascii_table[byte] & PRISM_ENCODING_ALPHANUMERIC_BIT;
+}
 
 /* These are all of the encodings that prism supports. */
 typedef enum {

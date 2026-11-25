@@ -5,14 +5,14 @@
 #include "prism/internal/oom.h"
 
 /**
- * Attempts to grow the node list to the next size. If there is already
+ * Attempts to grow the scratch list to the next size. If there is already
  * capacity in the list, this function does nothing. Otherwise it allocates a
  * new array from the arena (abandon-and-copy strategy) and copies the existing
  * data into it.
  */
 static void
-pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
-    size_t requested_size = list->size + size;
+pm_scratch_node_list_grow(pm_arena_t *arena, pm_scratch_node_list_t *list, uint32_t size) {
+    uint32_t requested_size = list->size + size;
 
     // Guard against overflow on the addition.
     if (requested_size < list->size) PRISM_OOM();
@@ -21,7 +21,7 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
     if (requested_size <= list->capacity) return;
 
     // Otherwise, compute the next capacity by doubling.
-    size_t next_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+    uint32_t next_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
 
     // Guard against overflow on the doubling.
     while (requested_size > next_capacity) {
@@ -30,7 +30,7 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
     }
 
     // Allocate a new array from the arena (old array is abandoned).
-    pm_node_t **nodes = (pm_node_t **) pm_arena_alloc(arena, sizeof(pm_node_t *) * next_capacity, PRISM_ALIGNOF(pm_node_t *));
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, next_capacity);
 
     // Copy old data into the new array.
     if (list->size > 0) {
@@ -42,44 +42,146 @@ pm_node_list_grow(pm_arena_t *arena, pm_node_list_t *list, size_t size) {
 }
 
 /**
- * Slow path for pm_node_list_append_inline: grow the list and append the node.
- * Do not call directly - use pm_node_list_append_inline instead.
+ * Slow path for pm_scratch_node_list_append: grow the list and append the
+ * node. Do not call directly - use pm_scratch_node_list_append instead.
  */
 void
-pm_node_list_append_slow(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_list_grow(arena, list, 1);
+pm_scratch_node_list_append_slow(pm_arena_t *arena, pm_scratch_node_list_t *list, pm_node_t *node) {
+    pm_scratch_node_list_grow(arena, list, 1);
     list->nodes[list->size++] = node;
 }
 
 /**
- * Append a new node onto the end of the node list.
+ * Append every node of the other scratch list onto the end of the list.
  */
 void
-pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_list_append_inline(arena, list, node);
+pm_scratch_node_list_concat(pm_arena_t *arena, pm_scratch_node_list_t *list, const pm_scratch_node_list_t *other) {
+    if (other->size > 0) {
+        pm_scratch_node_list_grow(arena, list, other->size);
+        memcpy(list->nodes + list->size, other->nodes, other->size * sizeof(pm_node_t *));
+        list->size += other->size;
+    }
 }
 
 /**
- * Prepend a new node onto the beginning of the node list.
+ * Append a node onto the end of a node list. A node list's array is always
+ * exactly its size, so it grows to exactly one more node, in place when it is
+ * the most recent allocation in the arena and by copying it otherwise.
  */
 void
-pm_node_list_prepend(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
-    pm_node_list_grow(arena, list, 1);
-    memmove(list->nodes + 1, list->nodes, list->size * sizeof(pm_node_t *));
-    list->nodes[0] = node;
+pm_node_list_append(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+    if (list->size == 0) {
+        *list = pm_node_list_single(arena, node);
+        return;
+    }
+
+    list->nodes = PM_ARENA_REALLOC(arena, list->nodes, sizeof(pm_node_t *) * (list->size + 1), sizeof(pm_node_t *) * list->size, pm_node_t *);
+    list->nodes[list->size++] = node;
+}
+
+/**
+ * Carve a new batch of chunks out of the arena and hand out its first one.
+ * Request alignment to the chunk size through pm_arena_alloc_aligned; neither
+ * the chunk type nor the arena's blocks guarantee that alignment on their own.
+ * The chunk-sized stride preserves this alignment for every chunk in the batch.
+ */
+static pm_node_chunk_t *
+pm_node_chunks_carve(pm_node_chunks_t *chunks) {
+    pm_node_chunk_t *batch = (pm_node_chunk_t *) pm_arena_alloc_aligned(chunks->arena, PM_NODE_CHUNK_BATCH * PM_NODE_CHUNK_SIZE, PM_NODE_CHUNK_SIZE);
+
+    chunks->next = batch + 1;
+    chunks->end = batch + PM_NODE_CHUNK_BATCH;
+    return batch;
+}
+
+/**
+ * Get a chunk, preferring the most recently returned one since it is the most
+ * likely to still be in cache, then the current batch, then a new batch.
+ */
+static PRISM_INLINE pm_node_chunk_t *
+pm_node_chunk_acquire(pm_node_chunks_t *chunks) {
+    pm_node_chunk_t *chunk = chunks->free;
+
+    if (chunk != NULL) {
+        chunks->free = chunk->prev;
+        return chunk;
+    }
+
+    if (chunks->next != chunks->end) return chunks->next++;
+    return pm_node_chunks_carve(chunks);
+}
+
+/**
+ * Slow path for pm_node_list_open_append: link a new chunk onto the end of the
+ * list and append the node to it. Do not call directly - use
+ * pm_node_list_open_append instead.
+ */
+void
+pm_node_list_open_append_slow(pm_node_chunks_t *chunks, pm_node_list_t *list, pm_node_t *node) {
+    pm_node_chunk_t *chunk = pm_node_chunk_acquire(chunks);
+    chunk->prev = list->nodes == NULL ? NULL : PM_NODE_CHUNK_OF(list->nodes - 1);
+    chunk->slots[0] = node;
+
+    list->nodes = &chunk->slots[1];
     list->size++;
 }
 
 /**
- * Concatenate the given node list onto the end of the other node list.
+ * Copy an open list into an array of exactly its size allocated from the given
+ * arena. Chunks are linked from the last one backward, so the array is filled
+ * from its end. The whole chain then goes back on the freelist at once.
  */
 void
-pm_node_list_concat(pm_arena_t *arena, pm_node_list_t *list, pm_node_list_t *other) {
-    if (other->size > 0) {
-        pm_node_list_grow(arena, list, other->size);
-        memcpy(list->nodes + list->size, other->nodes, other->size * sizeof(pm_node_t *));
-        list->size += other->size;
+pm_node_list_finalize(pm_node_chunks_t *chunks, pm_arena_t *arena, pm_node_list_t *list) {
+    if (list->size == 0) return;
+
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, list->size);
+    pm_node_chunk_t *last = PM_NODE_CHUNK_OF(list->nodes - 1);
+    pm_node_chunk_t *chunk = last;
+
+    size_t count = (size_t) (list->nodes - chunk->slots);
+    size_t offset = list->size;
+
+    for (;;) {
+        offset -= count;
+        memcpy(nodes + offset, chunk->slots, count * sizeof(pm_node_t *));
+
+        if (chunk->prev == NULL) break;
+        chunk = chunk->prev;
+        count = PM_NODE_CHUNK_SLOTS;
     }
+
+    chunk->prev = chunks->free;
+    chunks->free = last;
+    list->nodes = nodes;
+}
+
+/**
+ * A finalized list holding just the given node. A list with one node is known
+ * to be complete when it is made, so it skips chunks entirely.
+ */
+pm_node_list_t
+pm_node_list_single(pm_arena_t *arena, pm_node_t *node) {
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, 1);
+    nodes[0] = node;
+    return (pm_node_list_t) { .size = 1, .nodes = nodes };
+}
+
+/**
+ * Prepend a node onto the beginning of a finalized list. Every existing node
+ * moves over by one, so the list is copied into a new array.
+ */
+void
+pm_node_list_prepend_finalized(pm_arena_t *arena, pm_node_list_t *list, pm_node_t *node) {
+    pm_node_t **nodes = PM_ARENA_ALLOC_ARRAY(arena, pm_node_t *, list->size + 1);
+    nodes[0] = node;
+
+    if (list->size > 0) {
+        memcpy(nodes + 1, list->nodes, sizeof(pm_node_t *) * list->size);
+    }
+
+    list->nodes = nodes;
+    list->size++;
 }
 
 /**
@@ -161,7 +263,7 @@ pm_visit_child_nodes(const pm_node_t *node, pm_visit_callback_t visitor, void *d
  */
 pm_<%= node.human %>_t *
 pm_<%= node.human %>_new(pm_arena_t *arena, uint32_t node_id, pm_node_flags_t flags, pm_location_t location<%= params.empty? ? "" : ", #{params.join(", ")}" %>) {
-    pm_<%= node.human %>_t *node = (pm_<%= node.human %>_t *) pm_arena_alloc(arena, sizeof(pm_<%= node.human %>_t), PRISM_ALIGNOF(pm_<%= node.human %>_t));
+    pm_<%= node.human %>_t *node = PM_ARENA_ALLOC(arena, pm_<%= node.human %>_t);
 
     *node = (pm_<%= node.human %>_t) {
         .base = { .type = <%= node.type %>, .flags = flags, .node_id = node_id, .location = location }<%= node.fields.empty? ? "" : "," %>

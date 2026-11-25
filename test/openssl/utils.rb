@@ -136,8 +136,12 @@ class OpenSSL::TestCase < Test::Unit::TestCase
     if ENV["OSSL_GC_STRESS"] == "1"
       GC.stress = false
     end
-    # OpenSSL error stack must be empty
-    assert_equal([], OpenSSL.errors)
+    assert_clean_thread
+  end
+
+  def assert_clean_thread
+    assert_equal([], OpenSSL.errors, "OpenSSL error queue leak")
+    assert_nil(Thread.current[:__ossl_cb_state__], "ossl_cb_state leak")
   end
 
   # Omit the tests in FIPS.
@@ -223,6 +227,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
             Thread.current.report_on_exception = false
 
             server_proc.call(sock)
+            assert_clean_thread
           end
           threads << th
         end
@@ -234,6 +239,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         Thread.current.report_on_exception = false
 
         block.call(port)
+        assert_clean_thread
       ensure
         # Stop accepting new connection
         stop_pipe_w.close

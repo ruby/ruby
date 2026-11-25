@@ -1414,5 +1414,9 @@ module Open3
 
 end
 
-# JRuby uses different popen logic on Windows, require it here to reuse wrapper methods above.
-require 'open3/jruby_windows' if RUBY_ENGINE == 'jruby' && JRuby::Util::ON_WINDOWS
+# JRuby uses different popen logic when native popen is unavailable. Require it here to reuse wrapper methods above.
+if RUBY_ENGINE == 'jruby'
+  if JRuby::Util.respond_to?(:native_popen?) ? !JRuby::Util.native_popen? : JRuby::Util::ON_WINDOWS
+    require 'open3/jruby'
+  end
+end

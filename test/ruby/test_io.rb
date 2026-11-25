@@ -341,6 +341,27 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_gets_ff
+    pipe(proc do |w|
+      w.print "ab""\xff""cd".b
+      w.close
+    end, proc do |r|
+      assert_equal "ab\xFFcd", r.gets(nil, 100).b
+      assert_nil r.gets
+      r.close
+    end)
+
+    pipe(proc do |w|
+      w.print "ab\u{1f41e}cd".b
+      w.close
+    end, proc do |r|
+      r.set_encoding(Encoding::UTF_8)
+      assert_equal "ab\u{1f41e}", r.gets(nil, 3)
+      assert_equal "cd", r.gets
+      r.close
+    end)
+  end
+
   # This test cause SEGV.
   def test_ungetc
     pipe(proc do |w|
@@ -1307,6 +1328,32 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_copy_stream_write_tries_to_modify_buffer
+    IO.pipe do |r, w|
+      buffers = Thread::Queue.new
+      chunks = []
+      dst = Object.new
+      dst.define_singleton_method(:write) do |data|
+        chunks << data.dup
+        buffers << data
+        data.bytesize
+      end
+      th = Thread.new { IO.copy_stream(r, dst) }
+      w.write("a" * 6)
+      buf = buffers.pop
+      Thread.pass until th.stop?
+      begin
+        buf.replace("c" * 100_000)
+      rescue RuntimeError
+        # buf may be STR_TMPLOCK
+      end
+      w.write("b" * 6)
+      w.close
+      assert_equal(12, th.value)
+      assert_equal("a" * 6, chunks[0])
+    end
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {
@@ -1603,6 +1650,20 @@ class TestIO < Test::Unit::TestCase
 
   def test_write_with_multiple_nonstring_arguments
     assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
+  end
+
+  def test_write_with_multiple_arguments_drop_bytes
+    str = "x" * 1_000
+    obj = Object.new
+    obj.define_singleton_method(:to_s) { str[0, 5] = ""; "y" }
+
+    with_pipe do |r, w|
+      w.write(str, obj)
+      assert_equal("x" * 1_000 + "y", r.read(1_001))
+    end
+
+    str << "z" * 10
+    assert_equal("x" * 995 + "z" * 10, str)
   end
 
   def test_write_buffered_with_multiple_arguments
@@ -2667,8 +2728,13 @@ class TestIO < Test::Unit::TestCase
       w.write "foob"
       w.close
     end, proc do |r|
-      r.sysread( 5, s = "01234567" )
-      assert_equal( "foob", s )
+      s = +"01234567"
+      assert_same(s, r.sysread(5, s))
+      assert_equal("foob", s)
+
+      s = +"01234567"
+      assert_same(s, r.sysread(0, s))
+      assert_equal("", s)
     end)
   end
 
@@ -2676,6 +2742,7 @@ class TestIO < Test::Unit::TestCase
     make_tempfile {|t|
       open(t.path) do |f|
         assert_raise(ArgumentError) { f.sysread(-1) }
+        assert_raise(ArgumentError) { f.sysread(-1, String.new) }
       end
     }
   end
@@ -4536,6 +4603,13 @@ __END__
         assert_equal("bar", f.pread(3, 4, buf))
         assert_equal("bar", buf)
         assert_raise(EOFError) { f.pread(1, f.size) }
+        assert_equal("", f.pread(0, f.size))
+
+        buf = +"abc"
+        assert_same(buf, f.pread(0, f.size, buf))
+        assert_equal("", buf)
+
+        assert_raise(ArgumentError) { f.pread(-1, 0, buf) }
       end
     }
   end

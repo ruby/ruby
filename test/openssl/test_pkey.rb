@@ -25,6 +25,19 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     }
   end
 
+  def test_s_generate_parameters_options_without_each
+    omit "rb_hash_foreach() works differently" if RUBY_ENGINE == "truffleruby"
+
+    options_class = Class.new(Hash) {
+      def each
+        raise "must not be called"
+      end
+    }
+    options = options_class["ec_paramgen_curve" => "secp384r1"]
+    pkey = OpenSSL::PKey.generate_parameters("EC", options)
+    assert_equal "secp384r1", pkey.group.curve_name
+  end
+
   def test_s_generate_parameters_with_block
     # DSA kengen is not FIPS-approved.
     # https://github.com/openssl/openssl/commit/49a35f0#diff-605396c063194975af8ce31399d42690ab18186b422fb5012101cc9132660fe1R611-R614

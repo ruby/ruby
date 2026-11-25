@@ -1229,6 +1229,18 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [a1], r
   end
 
+  def test_backtracks_when_all_versions_of_a_dependency_conflict
+    aa1 = util_spec "aa", "1.0.0"
+    aa2 = util_spec "aa", "2.0.0", "ff" => nil, "ll" => nil
+    ff1 = util_spec "ff", "1.0.0", "ll" => "< 1"
+    ff2 = util_spec "ff", "2.0.0", "ll" => "= 3"
+    ll = util_spec "ll", "2.0.0"
+
+    resolver = Gem::Resolver.new([make_dep("aa")], set(aa1, aa2, ff1, ff2, ll))
+
+    assert_resolves_to [aa1], resolver
+  end
+
   def test_backtracks_over_band_of_bad_high_versions_to_clean_lower
     a1 = util_spec "a", "1"
     a2 = util_spec "a", "2" do |s|

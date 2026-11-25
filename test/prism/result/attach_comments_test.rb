@@ -137,6 +137,15 @@ module Ruby::Prism
       assert_equal ["# body", "# after"], Ruby::Prism.parse(source).comments.map(&:slice)
     end
 
+    def test_many_comments_in_nested_heredocs_are_sorted
+      comments = Array.new(40) { |index| "# comment #{index}" }
+      source = comments.reverse_each.reduce("nil") do |inner, comment|
+        "<<DOC #{comment}\n\#{\n#{inner}\n}\nDOC\n"
+      end
+
+      assert_equal comments, Ruby::Prism.parse(source, attach_comments: true).comments.map(&:slice)
+    end
+
     def test_nested_heredoc_comments
       source = "foo(<<~A, <<~B) # after\n  \#{x # body a\n  }\nA\n  \#{y # body b\n  }\nB\n"
 

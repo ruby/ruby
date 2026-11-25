@@ -1,0 +1,15 @@
+value if lookup(key:) | 2
+
+value if lookup(key:) in Integer
+
+value unless lookup(key:) | 2
+
+value unless lookup(key:) in Integer
+
+value while lookup(key:) | 2
+
+value while lookup(key:) in Integer
+
+value until lookup(key:) | 2
+
+value until lookup(key:) in Integer

@@ -41,7 +41,7 @@ require 'socket'
 
 class IPAddr
   # The version string
-  VERSION = "1.3.0"
+  VERSION = "1.3.1"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
@@ -389,6 +389,22 @@ class IPAddr
 
   alias link_local_unicast? link_local?
 
+  # Returns true if the ipaddr is an unspecified address.  The IPv4
+  # address 0.0.0.0 and the IPv6 address :: are unspecified.  Unspecified
+  # IPv4 addresses in the IPv4-mapped IPv6 address range are also
+  # considered unspecified.
+  def unspecified?
+    case @family
+    when Socket::AF_INET
+      @addr == 0 && prefix == 32 # 0.0.0.0
+    when Socket::AF_INET6
+      @addr == 0 && prefix == 128 || # ::
+        (@addr >> 32 == 0xffff && (@addr & IN4MASK) == 0) && prefix == 128 # ::ffff:0.0.0.0
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns true if the ipaddr is a multicast address. IPv4
   # addresses in 224.0.0.0/4 and IPv6 multicast addresses
   # in ff00::/8 are considered multicast. Multicast IPv4 addresses in the
@@ -667,6 +683,8 @@ class IPAddr
       @family = family[0]
       if @family == Socket::AF_INET
         @mask_addr &= IN4MASK
+        # zone IDs only exist for IPv6 addresses
+        @zone_id = nil
       end
     end
     return self

@@ -40,6 +40,19 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal([rv_size, GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
+  def test_memsize_of_regexp
+    re = Regexp.allocate
+    slot_size = Integer(ObjectSpace.dump(re)[/"slot_size":(\d+)/, 1])
+    assert_equal(slot_size, ObjectSpace.memsize_of(re))
+    assert_operator(ObjectSpace.memsize_of(Regexp.new("a")), :>, slot_size)
+  end
+
+  def test_memsize_of_split_chars_with_limit
+    ary = ("x" * 10_000).split("", 2)
+    assert_equal(2, ary.size)
+    assert_operator(ObjectSpace.memsize_of(ary), :<, 1_000) # capa of ary should also be 2
+  end
+
   def test_argf_memsize
     size = ObjectSpace.memsize_of(ARGF)
     assert_kind_of(Integer, size)

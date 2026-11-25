@@ -3,7 +3,7 @@ use std::ptr;
 
 use crate::cast::IntoU64;
 use crate::cruby::{IseqPtr, VALUE, Qnil, rb_gc_mark_movable, rb_gc_location};
-use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL};
+use crate::cruby::{ZJIT_STACK_MAP_OP_BITS, ZJIT_STACK_MAP_VARINT_BITS, ZJIT_STACK_MAP_OP_END, ZJIT_STACK_MAP_OP_VREG, ZJIT_STACK_MAP_OP_SKIP, ZJIT_STACK_MAP_OP_BASE_PTR, ZJIT_STACK_MAP_OP_IMM, ZJIT_STACK_MAP_OP_NIL, ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA, ZJIT_STACK_MAP_OP_PREV_FRAME};
 use crate::cruby::zjit_jit_frame;
 use crate::codegen::iseq_may_write_block_code;
 use crate::options::get_option;
@@ -202,6 +202,21 @@ impl StackMapWriter {
         self.write_varint(stack_size.into());
     }
 
+    /// ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA. Moves the cursor past the frame's env
+    /// data (me/cref, specval, flags) and starts the frame's locals area. Writes in
+    /// the locals area are dropped when the frame's env has escaped.
+    pub fn skip_vm_env_data(&mut self) {
+        self.write_op(ZJIT_STACK_MAP_OP_SKIP_VM_ENV_DATA);
+    }
+
+    /// ZJIT_STACK_MAP_OP_PREV_FRAME. Operand: one bit, whether the inlined callee has a
+    /// receiver slot below its local table. Moves the cursor past that slot if any and
+    /// continues decoding in the caller's control frame, leaving the locals area.
+    pub fn prev_frame(&mut self, receiver: bool) {
+        self.write_op(ZJIT_STACK_MAP_OP_PREV_FRAME);
+        self.write_bits(receiver.into(), 1);
+    }
+
     /// Terminate the stream with ZJIT_STACK_MAP_OP_END and return its bytes.
     pub fn finish(mut self) -> Vec<u8> {
         self.write_op(ZJIT_STACK_MAP_OP_END);
@@ -273,11 +288,52 @@ impl JITFrame {
     }
 }
 
-/// Update the iseq pointer in an on-stack JITFrame during GC compaction.
-/// Called from rb_execution_context_update in vm.c.
-#[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_jit_frame_update_references(jit_frame: *mut JITFrame) {
-    unsafe { &mut *jit_frame }.update_references();
+/// A [JITFrame] that is not allocated yet, so no stable address usable for baking into generated
+/// code. Used at compile-time by [crate::backend::lir::SideExitStackMap].
+#[derive(Clone, Copy, Debug)]
+pub struct PendingJITFrame(JITFrame);
+
+impl PendingJITFrame {
+    /// Describe a JITFrame for an ISEQ frame without allocating it.
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> Self {
+        let materialize_block_code = !iseq_may_write_block_code(iseq);
+        Self(JITFrame {
+            pc,
+            iseq,
+            stack_map: &EMPTY_STACK_MAPS[usize::from(materialize_block_code)],
+        })
+    }
+
+    pub fn stack_map_writer(&self) -> StackMapWriter {
+        self.0.stack_map_writer()
+    }
+
+    /// Allocate the JITFrame with a stack map built from [Self::stack_map_writer].
+    pub fn alloc(self, writer: StackMapWriter) -> *const JITFrame {
+        let jit_frame = JITFrame::alloc(self.0.pc, self.0.iseq, self.0.materialize_block_code());
+        unsafe { &mut *jit_frame.cast_mut() }.set_stack_map(writer);
+        jit_frame
+    }
+}
+
+impl PartialEq for PendingJITFrame {
+    fn eq(&self, other: &Self) -> bool {
+        // The stack map is always one of EMPTY_STACK_MAPS, so comparing stack map addresses
+        // compares `materialize_block_code`.
+        let JITFrame { pc, iseq, stack_map } = self.0;
+        pc == other.0.pc && iseq == other.0.iseq && ptr::eq(stack_map, other.0.stack_map)
+    }
+}
+
+impl Eq for PendingJITFrame {}
+
+impl std::hash::Hash for PendingJITFrame {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let JITFrame { pc, iseq, stack_map } = self.0;
+        pc.hash(state);
+        iseq.hash(state);
+        stack_map.hash(state);
+    }
 }
 
 #[cfg(test)]
@@ -505,6 +561,20 @@ mod tests {
         "#), @r#""Object#test""#);
     }
 
+    #[test]
+    fn test_define_method_env_escape() {
+        // This is a regression for fallback call into a method which performs env escape.
+        // At the time of writing the call to define_method is a fallback and relies on a
+        // proper stack map to work.
+        assert_snapshot!(inspect(r#"
+            def go(i)
+              Class.new { define_method(:m) { i } }
+            end
+            4.times { |i| go(i) }
+            go(99).new.m
+        "#), @"99");
+    }
+
     // A send fallback may throw (e.g. via method_missing raising). The
     // interpreter must be able to find the correct rescue handler in the
     // caller's ISEQ catch table. This exercises throw through send fallback.
@@ -565,6 +635,32 @@ mod tests {
             test.outer
             test.outer
         "#), @"[1, nil]");
+    }
+
+    // vm_make_env_each() spills through the same decoder, so an escaping env in
+    // an inlined frame decodes a map that spans three control frames and crosses
+    // two StackMapEntry::PrevFrame boundaries. Unlike the raise-based tests in
+    // codegen_tests.rs, nothing unwinds here: `keep` has to survive in the
+    // caller frame that the map also describes.
+    #[test]
+    fn test_stack_map_spill_across_inlined_frames() {
+        assert_snapshot!(inspect("
+            def leaf(escape)
+              proc { } if escape # escapes only this frame's env
+              escape ? 2 : 1
+            end
+
+            def middle(n)
+              keep = n + 40
+              keep + leaf(n > 0)
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[43, 41]");
     }
 
     // Proc.new inside a block passed via invokeblock captures the caller's

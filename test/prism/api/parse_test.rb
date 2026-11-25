@@ -17,11 +17,80 @@ module Ruby::Prism
       assert_equal [], result.value.statements.body
     end
 
+    def test_statements_leading_semicolon
+      assert_predicate Ruby::Prism.parse(";x").value.statements, :leading_semicolon?
+      assert_predicate Ruby::Prism.parse_statement('"#{;x}"').parts.first.statements, :leading_semicolon?
+      assert_predicate Ruby::Prism.parse_statement("begin; x end").statements, :leading_semicolon?
+      refute_predicate Ruby::Prism.parse_statement("begin x; end").statements, :leading_semicolon?
+
+      # The first semicolon terminates the condition.
+      refute_predicate Ruby::Prism.parse_statement("if x; y end").statements, :leading_semicolon?
+      assert_predicate Ruby::Prism.parse_statement("if x;; y end").statements, :leading_semicolon?
+    end
+
+    def test_parenthesized_statements_leading_semicolon
+      ["(;x)", "(\n; x; y)"].each do |source|
+        group = Ruby::Prism.parse_statement(source)
+        assert_predicate group, :multiple_statements?, source
+        assert_predicate group.body, :leading_semicolon?, source
+      end
+
+      ["(x;)", "(x; y)"].each do |source|
+        group = Ruby::Prism.parse_statement(source)
+        assert_predicate group, :multiple_statements?, source
+        refute_predicate group.body, :leading_semicolon?, source
+      end
+
+      refute_predicate Ruby::Prism.parse_statement("(\nx\n)").body, :leading_semicolon?
+    end
+
+    def test_parenthesized_multiple_assignment_targets
+      result = Ruby::Prism.parse("x, (a, b), (obj).c = values")
+      assert_predicate result, :success?
+      _, nested, field = result.statement.lefts
+      assert_instance_of MultiTargetNode, nested
+      assert_equal [:a, :b], nested.lefts.map(&:name)
+      assert_instance_of CallTargetNode, field
+      assert_equal "(obj)", field.receiver.slice
+
+      assert Ruby::Prism.parse_success?("for ((a, b), c) in values; end")
+      assert Ruby::Prism.parse_success?("(x, (a, b)\n) = values")
+      assert Ruby::Prism.parse_success?("x, *(obj)[0] = values")
+      assert Ruby::Prism.parse_success?("(; a, b = values).c, x = values")
+    end
+
+    def test_loop_modifier_inside_an_endless_method
+      %w[break next redo].product(%w[while until]).each do |jump, modifier|
+        assert Ruby::Prism.parse_success?("def f = (#{jump} #{modifier} x)")
+      end
+    end
+
+    def test_loop_modifier_around_a_class_header
+      %w[break next redo].product(%w[while until]).each do |jump, modifier|
+        assert Ruby::Prism.parse_success?("class << (#{jump} if x); end #{modifier} y")
+        assert Ruby::Prism.parse_success?("class C < (#{jump} if x); end #{modifier} y")
+      end
+    end
+
+    def test_beginless_range_predicate_and_argument_forwarding
+      result = Ruby::Prism.parse("def f(...); g(...x ? h(...) : b, ...); end")
+      assert_predicate result, :success?
+      conditional, forwarding = result.statement.body.body.first.arguments.arguments
+      assert_instance_of FlipFlopNode, conditional.predicate
+      assert_instance_of ForwardingArgumentsNode, conditional.statements.body.first.arguments.arguments.first
+      assert_instance_of ForwardingArgumentsNode, forwarding
+    end
+
     def test_parse_takes_file_path
       filepath = "filepath.rb"
       result = Ruby::Prism.parse("def foo; __FILE__; end", filepath: filepath)
 
       assert_equal filepath, find_source_file_node(result.value).filepath
+    end
+
+    def test_parse_preserves_embedded_nul_in_filepath
+      filepath = "a\0b.rb"
+      assert_equal filepath, Ruby::Prism.parse_statement("__FILE__", filepath: filepath).filepath
     end
 
     def test_parse_takes_line
@@ -102,6 +171,50 @@ module Ruby::Prism
       end
 
       assert_kind_of Errno::EISDIR, error
+    end
+
+    def test_nested_index_writes
+      result = Ruby::Prism.parse("self[k] = other[j] += y")
+      assert_predicate result, :success?
+      assert_predicate result.statement, :attribute_write?
+      assert_kind_of IndexOperatorWriteNode, result.statement.arguments.arguments.last
+
+      result = Ruby::Prism.parse("(self[k] = x..)[j] += y")
+      assert_predicate result, :success?
+      assert_kind_of IndexOperatorWriteNode, result.statement
+      assert_predicate result.statement.receiver.body.body.first, :attribute_write?
+    end
+
+    def test_end_block_jumps_by_version
+      ["break", "break 1", "next", "next 1", "redo"].each do |jump|
+        %w[while until].each do |modifier|
+          source = "END { #{jump} } #{modifier} ready"
+          %w[3.3 3.4 4.0].each { |version| assert Ruby::Prism.parse_success?(source, version: version), source }
+
+          [
+            "END { #{jump} #{modifier} ready }",
+            "END { begin; #{jump}; work; end #{modifier} ready }"
+          ].each { |source| assert Ruby::Prism.parse_success?(source, version: "4.1"), source }
+        end
+
+        [
+          "defined?(m { END { #{jump} } })",
+          "END { for obj[(#{jump} if ready)] in items; end }"
+        ].each { |source| assert Ruby::Prism.parse_success?(source, version: "4.1"), source }
+      end
+    end
+
+    def test_retry_in_the_enclosing_rescue_handler
+      [
+        "f { x rescue retry }",
+        "-> do; work; rescue; retry; end",
+        "x rescue (while b; retry; end)",
+        "x rescue (for i in (retry if b); end)",
+        "x rescue (begin; work; rescue; x; else; retry; end)",
+        "f { begin; work; rescue (retry if b); end }",
+        "begin; work; rescue StandardError => obj[(retry if b)]; end",
+        "defined?(f { retry })"
+      ].each { |source| assert Ruby::Prism.parse_success?(source), source }
     end
 
     def test_partial_script
@@ -208,6 +321,14 @@ module Ruby::Prism
 
       assert Ruby::Prism.parse_failure?("foo(...)")
       assert Ruby::Prism.parse_success?("foo(...)", scopes: [Ruby::Prism.scope(forwarding: [:"..."])])
+    end
+
+    def test_scope_local_with_embedded_nul
+      local = :"foo\0bar"
+      program = Ruby::Prism.parse("foo", scopes: [[local]]).value
+
+      assert_equal [local], program.locals
+      assert_kind_of Ruby::Prism::CallNode, program.statements.body.first
     end
 
     def test_repeated_escape_prefixes

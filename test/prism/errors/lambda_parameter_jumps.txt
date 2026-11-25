@@ -1,0 +1,12 @@
+m { def f = break }
+            ^~~~~ Invalid break
+
+->(x = break) {}
+       ^~~~~ unexpected void value expression
+
+def f(x = (next if ready)); end
+           ^~~~ Invalid next
+
+->(x = (def inner = break)) {}
+                    ^~~~~ Invalid break
+

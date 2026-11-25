@@ -1,0 +1,11 @@
+def f; case 1; in 1; return :empty in 2; :two; end; end
+
+loop { case 1; in 1; break :empty in 2; :two; end }
+
+loop { case 1; in 1; next :empty in 2; :two; end }
+
+loop { case x; in A; return() in B; end }
+
+loop { case x; in A; break() in B; end }
+
+loop { case x; in A; next() in B; end }

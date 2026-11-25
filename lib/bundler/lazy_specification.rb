@@ -209,8 +209,12 @@ module Bundler
     # Try platforms in order of preference until finding a compatible spec.
     # Used for legacy lockfiles and as a fallback when the exact locked spec
     # is incompatible. Falls back to frozen bundle behavior if none match.
+    #
+    # Restricting the candidate platforms is not enough to keep a frozen bundle
+    # to the locked platforms, since a ruby gem is installable on any of them.
     def resolve_best_platform(specs, locked_platforms: nil)
       specs = MatchPlatform.select_all_content_address_match(specs, content_addresses)
+      specs = specs.select {|spec| locked_platforms.include?(spec.platform) } if locked_platforms
 
       find_compatible_platform_spec(specs, locked_platforms: locked_platforms) || frozen_bundle_fallback(specs)
     end

@@ -352,4 +352,17 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
 
     assert_match(/bad response blocked by corporate proxy policy 404/, error.message)
   end
+
+  def test_call_cleans_control_characters_from_x_error_message
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => FakeNotFound.new("\e]0;title\a\e[2Jblocked")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    refute_includes error.message, "\e"
+    assert_match(/bad response \.\]0;title\.\.\[2Jblocked 404/, error.message)
+  end
 end

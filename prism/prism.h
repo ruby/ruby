@@ -111,7 +111,7 @@
  *     pm_buffer_t *buffer = pm_buffer_new();
  *
  *     pm_prettyprint(buffer, parser, root);
- *     printf("%*.s\n", (int) pm_buffer_length(buffer), pm_buffer_value(buffer));
+ *     fwrite(pm_buffer_value(buffer), 1, pm_buffer_length(buffer), stdout);
  *
  *     pm_buffer_free(buffer);
  *     pm_parser_free(parser);

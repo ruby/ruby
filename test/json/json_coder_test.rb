@@ -259,4 +259,72 @@ class JSONCoderTest < Test::Unit::TestCase
     end
     assert_equal '{"a":1}', coder.dump({ a: 1 })
   end
+
+  def test_dump_concurrently
+    coder = JSON::Coder.new
+    expected = '{"a":{"b":[1,{"c":2}]}}'
+    results = run_concurrently(20, 1000) { coder.dump({ a: { b: [1, { c: 2 }] } }) }
+    assert_equal [expected], results.uniq
+    assert_equal "[[]]", coder.dump([[]])
+  end
+
+  def test_dump_concurrently_with_thread_pass
+    custom = Struct.new(:value)
+    coder = JSON::Coder.new do |object|
+      Thread.pass
+      object.value
+    end
+    expected = '{"a":[{"b":[1]},2]}'
+    results = run_concurrently(10, 200) do
+      coder.dump({ a: [{ b: [custom.new(1)] }, custom.new(2)] })
+    end
+    assert_equal [expected], results.uniq
+    assert_equal "[[]]", coder.dump([[]])
+  end
+
+  def test_dump_concurrently_with_depth
+    coder = JSON::Coder.new(depth: 1, max_nesting: 3)
+    results = run_concurrently(10, 500) { coder.dump([[1]]) }
+    assert_equal ["[[1]]"], results.uniq
+    assert_raise(JSON::NestingError) { coder.dump([[[1]]]) }
+  end
+
+  def test_frozen_state_depth_unchanged
+    state = JSON::State.new.freeze
+    assert_equal "[[1]]", state.generate([[1]])
+    assert_equal 0, state.depth
+
+    ary = []
+    ary << ary
+    assert_raise(JSON::NestingError) { state.generate(ary) }
+    assert_equal 0, state.depth
+
+    results = run_concurrently(10, 500) { state.generate({ a: [1, { b: 2 }] }) }
+    assert_equal ['{"a":[1,{"b":2}]}'], results.uniq
+    assert_equal 0, state.depth
+  end
+
+  private
+
+  def run_concurrently(thread_count, iterations)
+    threads = thread_count.times.map do
+      Thread.new do
+        Thread.current.report_on_exception = false
+        Array.new(iterations) { yield }
+      end
+    end
+
+    begin
+      threads.flat_map(&:value)
+    rescue
+      threads.each do |thread|
+        if thread.alive?
+          thread.kill
+          thread.join rescue nil
+        end
+      end
+
+      raise
+    end
+  end
 end

@@ -3,11 +3,9 @@
 #include "prism/compiler/inline.h"
 
 #include "prism/internal/allocator.h"
-#include "prism/internal/assert.h"
 #include "prism/internal/char.h"
 #include "prism/internal/oom.h"
 
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -55,7 +53,7 @@ pm_buffer_length(const pm_buffer_t *buffer) {
  * Append the given amount of space to the buffer. Returns false when there is
  * nothing to write because the length is zero. A zero-initialized buffer has a
  * NULL value until its first allocation, and passing NULL to
- * memcpy/memset/memmove is undefined behavior even for zero bytes, so callers
+ * memcpy or memset is undefined behavior even for zero bytes, so callers
  * must not write in the zero case.
  *
  * The value and capacity are only updated together once the allocation has
@@ -121,25 +119,97 @@ pm_buffer_append_repeated(pm_buffer_t *buffer, uint8_t value, size_t length) {
 }
 
 /**
- * Append a formatted string to the buffer.
+ * Append the decimal digits of an unsigned integer without leading zeros.
  */
 void
-pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
-    va_list arguments;
-    va_start(arguments, format);
-    int result = vsnprintf(NULL, 0, format, arguments);
-    va_end(arguments);
+pm_buffer_append_decimal(pm_buffer_t *buffer, uint64_t value) {
+    char digits[20]; /* UINT64_MAX has 20 decimal digits. */
+    size_t offset = sizeof(digits);
 
-    if (result < 0) return;
-    size_t length = (size_t) (result + 1);
+    do {
+        digits[--offset] = (char) ('0' + value % 10);
+        value /= 10;
+    } while (value);
 
-    size_t cursor = buffer->length;
-    if (pm_buffer_append_length(buffer, length)) {
-        va_start(arguments, format);
-        vsnprintf(buffer->value + cursor, length, format, arguments);
-        va_end(arguments);
-        buffer->length--;
-    }
+    pm_buffer_append_string(buffer, digits + offset, sizeof(digits) - offset);
+}
+
+/** The uppercase hexadecimal digits in order of value. */
+static const char pm_buffer_hexadecimal_digits[] = "0123456789ABCDEF";
+
+/**
+ * Append uppercase hexadecimal digits, padded with zeros to the given width.
+ */
+void
+pm_buffer_append_hexadecimal(pm_buffer_t *buffer, uint32_t value, uint8_t width) {
+    char digits[8]; /* UINT32_MAX has eight hexadecimal digits. */
+    size_t offset = sizeof(digits);
+
+    do {
+        digits[--offset] = pm_buffer_hexadecimal_digits[value & 0xF];
+        value >>= 4;
+    } while (value);
+
+    size_t length = sizeof(digits) - offset;
+    if (width > length) pm_buffer_append_repeated(buffer, '0', width - length);
+    pm_buffer_append_string(buffer, digits + offset, length);
+}
+
+/** Write both uppercase hexadecimal digits of a byte. */
+void
+pm_buffer_hexadecimal_byte_digits(uint8_t byte, char digits[2]) {
+    digits[0] = pm_buffer_hexadecimal_digits[byte >> 4];
+    digits[1] = pm_buffer_hexadecimal_digits[byte & 0xF];
+}
+
+/**
+ * Append a byte as a \xHH escape.
+ */
+void
+pm_buffer_append_byte_escape(pm_buffer_t *buffer, uint8_t byte) {
+    char escape[4] = { '\\', 'x' };
+    pm_buffer_hexadecimal_byte_digits(byte, escape + 2);
+    pm_buffer_append_string(buffer, escape, sizeof(escape));
+}
+
+/**
+ * Write a signed line number at the end of digits and return its length.
+ * The widest possible line number is -2147483648.
+ */
+uint8_t
+pm_buffer_line_number_digits(int32_t line, char digits[11]) {
+    /* Use unsigned arithmetic so that INT32_MIN has a representable magnitude. */
+    uint32_t magnitude = (line < 0) ? (0U - (uint32_t) line) : (uint32_t) line;
+    uint8_t length = 0;
+
+    do {
+        digits[10 - length++] = (char) ('0' + (magnitude % 10));
+        magnitude /= 10;
+    } while (magnitude);
+
+    if (line < 0) digits[10 - length++] = '-';
+    return length;
+}
+
+/**
+ * Return the decimal width of a line number, including its sign.
+ */
+uint8_t
+pm_buffer_line_number_width(int32_t line) {
+    char digits[11];
+    return pm_buffer_line_number_digits(line, digits);
+}
+
+/**
+ * Append a line number, padded on the left with spaces to the given width.
+ */
+void
+pm_buffer_append_line_number(pm_buffer_t *buffer, int32_t line, uint8_t width) {
+    char digits[11];
+    uint8_t length = pm_buffer_line_number_digits(line, digits);
+
+    if (width > length) pm_buffer_append_repeated(buffer, ' ', (size_t) (width - length));
+    pm_buffer_append_string(buffer, digits + sizeof(digits) - length, length);
 }
 
 /**
@@ -261,43 +331,44 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
 
         if ((byte <= 0x06) || (byte >= 0x0E && byte <= 0x1F) || (byte >= 0x7F)) {
             if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                pm_buffer_append_format(buffer, "\\x%02X", byte);
+                pm_buffer_append_byte_escape(buffer, byte);
             } else {
-                pm_buffer_append_format(buffer, "\\u%04X", byte);
+                PM_BUFFER_APPEND_LITERAL(buffer, "\\u");
+                pm_buffer_append_hexadecimal(buffer, byte, 4);
             }
         } else {
             switch (byte) {
                 case '\a':
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                        pm_buffer_append_string(buffer, "\\a", 2);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\a");
                     } else {
-                        pm_buffer_append_format(buffer, "\\u%04X", byte);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\u0007");
                     }
                     break;
                 case '\b':
-                    pm_buffer_append_string(buffer, "\\b", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\b");
                     break;
                 case '\t':
-                    pm_buffer_append_string(buffer, "\\t", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\t");
                     break;
                 case '\n':
-                    pm_buffer_append_string(buffer, "\\n", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\n");
                     break;
                 case '\v':
                     if (escaping == PM_BUFFER_ESCAPING_RUBY) {
-                        pm_buffer_append_string(buffer, "\\v", 2);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\v");
                     } else {
-                        pm_buffer_append_format(buffer, "\\u%04X", byte);
+                        PM_BUFFER_APPEND_LITERAL(buffer, "\\u000B");
                     }
                     break;
                 case '\f':
-                    pm_buffer_append_string(buffer, "\\f", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\f");
                     break;
                 case '\r':
-                    pm_buffer_append_string(buffer, "\\r", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\r");
                     break;
                 case '"':
-                    pm_buffer_append_string(buffer, "\\\"", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\\"");
                     break;
                 case '#': {
                     if (escaping == PM_BUFFER_ESCAPING_RUBY && index + 1 < length) {
@@ -311,25 +382,13 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
                     break;
                 }
                 case '\\':
-                    pm_buffer_append_string(buffer, "\\\\", 2);
+                    PM_BUFFER_APPEND_LITERAL(buffer, "\\\\");
                     break;
                 default:
                     pm_buffer_append_byte(buffer, byte);
                     break;
             }
         }
-    }
-}
-
-/**
- * Prepend the given string to the buffer.
- */
-void
-pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length) {
-    size_t cursor = buffer->length;
-    if (pm_buffer_append_length(buffer, length)) {
-        memmove(buffer->value + length, buffer->value, cursor);
-        memcpy(buffer->value, value, length);
     }
 }
 
@@ -359,31 +418,6 @@ void
 pm_buffer_rstrip(pm_buffer_t *buffer) {
     while (buffer->length > 0 && pm_char_is_whitespace((uint8_t) buffer->value[buffer->length - 1])) {
         buffer->length--;
-    }
-}
-
-/**
- * Checks if the buffer includes the given value.
- */
-size_t
-pm_buffer_index(const pm_buffer_t *buffer, char value) {
-    const char *first = memchr(buffer->value, value, buffer->length);
-    return (first == NULL) ? SIZE_MAX : (size_t) (first - buffer->value);
-}
-
-/**
- * Insert the given string into the buffer at the given index.
- */
-void
-pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size_t length) {
-    PRISM_ASSERT(index <= buffer->length);
-
-    if (index == buffer->length) {
-        pm_buffer_append_string(buffer, value, length);
-    } else {
-        pm_buffer_append_zeroes(buffer, length);
-        memmove(buffer->value + index + length, buffer->value + index, buffer->length - length - index);
-        memcpy(buffer->value + index, value, length);
     }
 }
 

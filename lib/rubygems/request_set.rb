@@ -533,9 +533,7 @@ class Gem::RequestSet
     node.spec.dependencies.each do |dep|
       next if dep.type == :development && !@development
 
-      match = @requests.find do |r|
-        dep.match?(r.spec.name, r.spec.version, r.spec.is_a?(Gem::Resolver::InstalledSpecification) || @prerelease)
-      end
+      match = @requests.find {|r| dep.matches_spec?(r.spec) }
 
       unless match
         next if dep.type == :development && @development_shallow

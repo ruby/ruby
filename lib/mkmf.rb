@@ -1701,7 +1701,7 @@ SRC
     end
 
     exts = config_string('EXECUTABLE_EXTS') {|s| s.split} || config_string('EXEEXT') {|s| [s]}
-    if File.expand_path(bin) == bin
+    if File.absolute_path?(bin)
       return bin if executable_file.call(bin)
       if exts
         exts.each {|ext| executable_file.call(file = bin + ext) and return file}

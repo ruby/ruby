@@ -1,0 +1,17 @@
+matrix[m 1] = x
+
+matrix[m 1, &block] = x
+
+matrix[m(1)] = x
+
+matrix[m(1), 2] = x
+
+matrix[1, 2] = x, y
+
+matrix[1 # ,
+] = x
+
+matrix[<<DOC
+,
+DOC
+] = x

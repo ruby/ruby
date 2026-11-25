@@ -94,7 +94,7 @@ module Ruby::Prism # :nodoc:
     callback :pm_source_stream_feof_t, [:pointer], :int
     pm_source_init_result_values = %i[PM_SOURCE_INIT_SUCCESS PM_SOURCE_INIT_ERROR_GENERIC PM_SOURCE_INIT_ERROR_DIRECTORY PM_SOURCE_INIT_ERROR_NON_REGULAR]
     enum :pm_source_init_result_t, pm_source_init_result_values
-    enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
+    enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR_VERSION, -2, :PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
     enum :pm_errors_format_type_t, [:PM_ERRORS_FORMAT_PLAIN, 1, :PM_ERRORS_FORMAT_STYLE, :PM_ERRORS_FORMAT_COLOR]
 
     # Ractor-safe lookup table for pm_source_init_result_t, since FFI's
@@ -116,6 +116,12 @@ module Ruby::Prism # :nodoc:
       "pm_serialize_parse_lex",
       "pm_serialize_parse_success_p",
       "pm_serialize_parse_errors_format",
+      []
+    )
+
+    load_exported_functions_from(
+      "prism/options.h",
+      "pm_options_version_supported_p",
       []
     )
 
@@ -539,6 +545,8 @@ module Ruby::Prism # :nodoc:
           raise error
         when 3 # stack
           raise SystemStackError, message.force_encoding(encoding_name)
+        when 4 # encoding compatibility
+          raise Encoding::CompatibilityError, message.force_encoding(encoding_name)
         else
           raise "Unknown error level: #{level}"
         end
@@ -711,30 +719,73 @@ module Ruby::Prism # :nodoc:
   class StringQuery # :nodoc:
     class << self
       # Mirrors the C extension's StringQuery::local? method.
-      def local?(string)
-        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name))
+      def local?(string, version: nil)
+        version = query_version(version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_local(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       # Mirrors the C extension's StringQuery::constant? method.
-      def constant?(string)
-        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name))
+      def constant?(string, version: nil)
+        version = query_version(version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_constant(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       # Mirrors the C extension's StringQuery::method_name? method.
-      def method_name?(string)
-        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name))
+      def method_name?(string, version: nil)
+        version = query_version(version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_method_name(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       # Mirrors the C extension's StringQuery::keyword? method.
-      def keyword?(string)
-        query(LibRubyParser.pm_string_query_keyword(string, string.bytesize, string.encoding.name))
+      def keyword?(string, version: nil)
+        version = query_version(version)
+        encoding = string.encoding.name
+        result = LibRubyParser.pm_string_query_keyword(string, string.bytesize, encoding, encoding.bytesize, version, version ? version.bytesize : 0)
+        query_result(result, version)
       end
 
       private
 
-      # Parse the enum result and return an appropriate boolean.
-      def query(result)
+      # Read the version option of a string query the way the version option
+      # of the parse methods reads it. The nearest version is the running Ruby
+      # if prism supports it, 3.3 for an older Ruby, and otherwise the latest
+      # (nil). The current version is the running Ruby, which prism must
+      # support. Any other version is passed on as it is, and the query itself
+      # checks it.
+      def query_version(version)
+        case version
+        when nil, "nearest"
+          if running_version_supported?
+            RUBY_VERSION
+          elsif RUBY_VERSION < "3.3"
+            "3.3"
+          end
+        when "current"
+          raise CurrentVersionError, RUBY_VERSION unless running_version_supported?
+          RUBY_VERSION
+        else
+          version = String.try_convert(version) || raise(TypeError, "no implicit conversion of #{version.class} into String")
+          raise ArgumentError, "string contains null byte" if version.include?("\0")
+          version
+        end
+      end
+
+      # Return true if prism supports the version of the running Ruby.
+      def running_version_supported?
+        LibRubyParser.pm_options_version_supported_p(RUBY_VERSION, RUBY_VERSION.bytesize)
+      end
+
+      # Convert a string query result to a Ruby boolean.
+      def query_result(result, version)
         case result
+        when :PM_STRING_QUERY_ERROR_VERSION
+          raise ArgumentError, "invalid version: #{version}"
         when :PM_STRING_QUERY_ERROR
           raise ArgumentError, "Invalid or non ascii-compatible encoding"
         when :PM_STRING_QUERY_FALSE

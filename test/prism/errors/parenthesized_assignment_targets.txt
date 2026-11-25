@@ -1,0 +1,22 @@
+(;a, b) = values
+  ^~~~ unexpected write target
+
+(;*rest) = values
+  ^~~~~ unexpected write target
+
+x, (a, b).c = values
+   ^~~~~~ unexpected write target
+
+x, (f((a, b))).c = values
+      ^~~~~~ unexpected write target
+
+x, *(a, b) = values
+    ^~~~~~ unexpected write target
+    ^~~~~~ unexpected write target
+
+for (;a, b) in values; end
+      ^~~~ unexpected write target
+
+for x, (a, b)[0] in values; end
+       ^~~~~~ unexpected write target
+

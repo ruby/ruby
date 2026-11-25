@@ -1,0 +1,19 @@
+f(x) {}.tail
+
+f x {}.tail
+
+obj.f(x) {}.tail
+
+obj.f x {}.tail
+
+outer inner super(x) {} do end
+
+outer inner inner2 (x) {} do end
+
+outer super (x) {}
+
+outer super(x) {}
+
+def f; outer yield (x) {}; end
+
+outer inner(x) {} do end

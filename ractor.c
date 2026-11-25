@@ -22,6 +22,7 @@
 #include "internal/variable.h"
 #include "eval_intern.h"
 #include "internal/io.h"
+#include "internal/load.h"
 #include "internal/marshal.h"
 #include "internal/ractor.h"
 #include "internal/rational.h"
@@ -1691,6 +1692,17 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
+// see rb_class_field_shareable_p
+static bool
+zombie_writable_p(VALUE obj)
+{
+    return RB_VM_LOCKED_P() && rb_gc_obj_in_zombie_objspace_p(obj);
+}
+
+// reading obj's contents races its owner, which may be making the graph shareable
+#define ASSERT_traversable(obj) \
+    VM_ASSERT(!rb_objspace_foreign_object_p(obj) || zombie_writable_p(obj), "%s", rb_obj_info(obj))
+
 static bool
 traverse_child_p(VALUE obj)
 {
@@ -1769,6 +1781,8 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
       case traverse_skip: return 0; // skip children
       case traverse_stop: return 1; // stop search
     }
+
+    ASSERT_traversable(obj);
 
     if (UNLIKELY(st_insert(obj_traverse_rec(data), obj, 1))) {
         // already traversed
@@ -2094,13 +2108,6 @@ rb_ractor_ensure_main_ractor(const char *msg)
     }
 }
 
-// see rb_class_field_shareable_p
-static bool
-zombie_writable_p(VALUE obj)
-{
-    return RB_VM_LOCKED_P() && rb_gc_obj_in_zombie_objspace_p(obj);
-}
-
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
@@ -2111,6 +2118,7 @@ shareable_p_enter(VALUE obj)
              RB_TYPE_P(obj, T_MODULE) ||
              RB_TYPE_P(obj, T_ICLASS)) {
         // TODO: remove it
+        ASSERT_traversable(obj);
         mark_shareable(obj);
         return traverse_skip;
     }
@@ -2912,6 +2920,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         return courier_alloc_ref(b->c, obj);
     }
 
+    ASSERT_traversable(obj);
     uint32_t id = courier_alloc_node(b->c);
     st_insert(b->c->seen, (st_data_t)obj, (st_data_t)(uintptr_t)(id + 1));
 
@@ -3152,6 +3161,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         return;
     }
     if (st_lookup(seen, (st_data_t)obj, NULL)) return;   /* cycle */
+    ASSERT_traversable(obj);
     st_insert(seen, (st_data_t)obj, 0);
     ctx->nodes++;
 
@@ -3261,6 +3271,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         return true;
     }
     if (st_lookup(seen, (st_data_t)obj, NULL)) return true;   /* cycle */
+    ASSERT_traversable(obj);
     st_insert(seen, (st_data_t)obj, 0);
     ctx->nodes++;
 
@@ -4249,7 +4260,7 @@ require_result_send_resuce(VALUE crr_obj, VALUE errinfo)
     // the copy of the result raised: send that exception instead
     struct cross_ractor_require *crr;
     TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
-    ractor_reply_send_value(GET_EC(), RACTOR_PTR(crr->reader), crr->port_id, errinfo);
+    ractor_reply_send_value(GET_EC(), RACTOR_PTR(crr->reader), crr->port_id, rb_ary_new_from_args(2, errinfo, Qtrue));
     return Qnil;
 }
 
@@ -4278,7 +4289,7 @@ ractor_require_protect(VALUE crr_obj, VALUE (*func)(VALUE))
     rb_rescue2(require_result_send_body,
                // [crr, [result, raised]]
                rb_ary_new_from_args(2, crr_obj, rb_ary_new_from_args(2, result, crr->raised ? Qtrue : Qfalse)),
-               require_result_send_resuce, rb_eException, crr_obj);
+               require_result_send_resuce, crr_obj, rb_eException, (VALUE)0);
 
     RB_GC_GUARD(crr_obj);
     return Qnil;
@@ -4336,12 +4347,17 @@ rb_ractor_require(VALUE feature, bool silent)
     // We're about to block on the main ractor, so if we're holding the global lock we'll deadlock.
     ASSERT_vm_unlocking();
 
+    feature = rb_fstring(FilePathValue(feature));
+
+    if (rb_feature_provided_ractor_safe(feature)) {
+        return silent ? INT2FIX(0) : Qfalse;
+    }
+
     struct cross_ractor_require *crr;
     VALUE crr_obj = TypedData_Make_Struct(0, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
     RB_OBJ_SET_SHAREABLE(crr_obj); // TODO: internal data?
 
-    // Convert feature to proper file path and make it shareable as fstring
-    RB_OBJ_WRITE(crr_obj, &crr->as.require.feature, rb_fstring(FilePathValue(feature)));
+    RB_OBJ_WRITE(crr_obj, &crr->as.require.feature, feature);
     crr->raised = false;
     crr->silent = silent;
 

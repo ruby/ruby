@@ -44,6 +44,9 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
+    * `Array#index`, `Array#find_index`, and `Array#rindex` accept an
+      `offset` keyword argument to specify where to start searching.
+      [[Feature #17056]]
     * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
       LEB128 encoded integers. [[Feature #21785]]
     * `Array#pack` accepts new formats `x!` and `@!` to align the current
@@ -236,6 +239,12 @@ Note: We're only listing outstanding class updates.
       between Ruby minor versions; use the `prism` gem unless you need the
       parser of the running interpreter.  [[Bug #22379]]
 
+* Shellwords
+
+    * `Shellwords.split` now removes backslash-newline pairs in unquoted and
+      double-quoted text.  A line continuation on its own no longer produces
+      an argument.
+
 ### The following bundled gems are added.
 
 
@@ -264,9 +273,9 @@ They are still available on rubygems.org and can be installed with
 
 ### The following default gems are updated.
 
-* RubyGems 4.1.0.beta3
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.0.24][RubyGems-v4.0.24], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2], [v4.1.0.beta3][RubyGems-v4.1.0.beta3]
-* bundler 4.1.0.beta3
+* RubyGems 4.1.1
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.0.23][RubyGems-v4.0.23], [v4.0.24][RubyGems-v4.0.24], [v4.0.25][RubyGems-v4.0.25], [v4.1.0.beta1][RubyGems-v4.1.0.beta1], [v4.1.0.beta2][RubyGems-v4.1.0.beta2], [v4.1.0.beta3][RubyGems-v4.1.0.beta3], [v4.1.0][RubyGems-v4.1.0], [v4.1.1][RubyGems-v4.1.1]
+* bundler 4.1.1
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
 * date 3.6.0
   * 3.5.1 to [v3.6.0][date-v3.6.0]
@@ -284,15 +293,15 @@ They are still available on rubygems.org and can be installed with
 * io-console 0.9.5
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4], [v0.9.5][io-console-v0.9.5]
 * io-wait 999.999.999
-* ipaddr 1.3.0
-  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9], [v1.3.0][ipaddr-v1.3.0]
-* json 3.1.0
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0]
+* ipaddr 1.3.1
+  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9], [v1.3.0][ipaddr-v1.3.0], [v1.3.1][ipaddr-v1.3.1]
+* json 3.2.0
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.18.2][json-v2.18.2], [v2.18.3][json-v2.18.3], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0], [v3.0.1][json-v3.0.1], [v3.0.2][json-v3.0.2], [v3.1.0][json-v3.1.0], [v3.2.0][json-v3.2.0]
 * net-http 0.10.0
   * 0.9.1 to [v0.10.0][net-http-v0.10.0]
 * net-protocol 0.4.0
   * 0.2.2 to [v0.3.0][net-protocol-v0.3.0], [v0.4.0][net-protocol-v0.4.0]
-* open3 0.3.0
+* open3 0.3.1
   * 0.2.1 to [v0.3.0][open3-v0.3.0]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
@@ -304,6 +313,8 @@ They are still available on rubygems.org and can be installed with
   * 5.3.1 to [v5.4.0][psych-v5.4.0], [v5.5.0][psych-v5.5.0]
 * resolv 0.8.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1], [v0.7.2][resolv-v0.7.2], [v0.8.0][resolv-v0.8.0], [v0.8.1][resolv-v0.8.1]
+* shellwords 0.3.0
+  * 0.2.2 to [v0.3.0][shellwords-v0.3.0]
 * stringio 3.2.1.dev
 * strscan 3.1.9.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7], [v3.1.8][strscan-v3.1.8]
@@ -328,8 +339,8 @@ They are still available on rubygems.org and can be installed with
   * 3.0.1 to [v3.1.0][power_assert-v3.1.0]
 * rake 13.4.2
   * 13.3.1 to [v13.4.0][rake-v13.4.0], [v13.4.1][rake-v13.4.1], [v13.4.2][rake-v13.4.2]
-* test-unit 3.7.8
-  * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8]
+* test-unit 3.7.9
+  * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8], [3.7.9][test-unit-3.7.9]
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
 * net-imap 0.6.8
@@ -350,7 +361,7 @@ They are still available on rubygems.org and can be installed with
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
 * csv 3.3.7
   * 3.3.5 to [v3.3.6][csv-v3.3.6], [v3.3.7][csv-v3.3.7]
-* repl_type_completor 0.1.17
+* repl_type_completor 0.1.18
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16], [v0.1.17][repl_type_completor-v0.1.17]
 * pstore 0.3.0
   * 0.2.0 to [v0.2.1][pstore-v0.2.1], [v0.3.0][pstore-v0.3.0]
@@ -482,7 +493,7 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * Socket
 
     * `TCPSocket.new` now connects through Happy Eyeballs Version 2 on
-      mswin as well, so a host that answers with both an IPv6 and an IPv4
+      Windows as well, so a host that answers with both an IPv6 and an IPv4
       address no longer waits for the IPv6 attempt to time out. When it
       resolves the IPv6 and IPv4 addresses in parallel, the hostname
       resolution, which used to ignore `resolv_timeout` and `open_timeout`
@@ -748,6 +759,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #17056]: https://bugs.ruby-lang.org/issues/17056
 [Feature #17548]: https://bugs.ruby-lang.org/issues/17548
 [Feature #18439]: https://bugs.ruby-lang.org/issues/18439
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
@@ -813,9 +825,12 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.22]: https://github.com/rubygems/rubygems/releases/tag/v4.0.22
 [RubyGems-v4.0.23]: https://github.com/rubygems/rubygems/releases/tag/v4.0.23
 [RubyGems-v4.0.24]: https://github.com/rubygems/rubygems/releases/tag/v4.0.24
+[RubyGems-v4.0.25]: https://github.com/rubygems/rubygems/releases/tag/v4.0.25
 [RubyGems-v4.1.0.beta1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta1
 [RubyGems-v4.1.0.beta2]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta2
 [RubyGems-v4.1.0.beta3]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta3
+[RubyGems-v4.1.0]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0
+[RubyGems-v4.1.1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.1
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -850,7 +865,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [io-console-v0.9.5]: https://github.com/ruby/io-console/releases/tag/v0.9.5
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
 [ipaddr-v1.3.0]: https://github.com/ruby/ipaddr/releases/tag/v1.3.0
+[ipaddr-v1.3.1]: https://github.com/ruby/ipaddr/releases/tag/v1.3.1
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
+[json-v2.18.2]: https://github.com/ruby/json/releases/tag/v2.18.2
+[json-v2.18.3]: https://github.com/ruby/json/releases/tag/v2.18.3
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
 [json-v2.19.2]: https://github.com/ruby/json/releases/tag/v2.19.2
@@ -866,6 +884,10 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.21.2]: https://github.com/ruby/json/releases/tag/v2.21.2
 [json-v3.0.0.rc1]: https://github.com/ruby/json/releases/tag/v3.0.0.rc1
 [json-v3.0.0]: https://github.com/ruby/json/releases/tag/v3.0.0
+[json-v3.0.1]: https://github.com/ruby/json/releases/tag/v3.0.1
+[json-v3.0.2]: https://github.com/ruby/json/releases/tag/v3.0.2
+[json-v3.1.0]: https://github.com/ruby/json/releases/tag/v3.1.0
+[json-v3.2.0]: https://github.com/ruby/json/releases/tag/v3.2.0
 [net-http-v0.10.0]: https://github.com/ruby/net-http/releases/tag/v0.10.0
 [net-protocol-v0.3.0]: https://github.com/ruby/net-protocol/releases/tag/v0.3.0
 [net-protocol-v0.4.0]: https://github.com/ruby/net-protocol/releases/tag/v0.4.0
@@ -880,6 +902,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [resolv-v0.7.2]: https://github.com/ruby/resolv/releases/tag/v0.7.2
 [resolv-v0.8.0]: https://github.com/ruby/resolv/releases/tag/v0.8.0
 [resolv-v0.8.1]: https://github.com/ruby/resolv/releases/tag/v0.8.1
+[shellwords-v0.3.0]: https://github.com/ruby/shellwords/releases/tag/v0.3.0
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [strscan-v3.1.8]: https://github.com/ruby/strscan/releases/tag/v3.1.8
 [tempfile-v0.3.2]: https://github.com/ruby/tempfile/releases/tag/v0.3.2
@@ -896,6 +919,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [test-unit-3.7.6]: https://github.com/test-unit/test-unit/releases/tag/3.7.6
 [test-unit-3.7.7]: https://github.com/test-unit/test-unit/releases/tag/3.7.7
 [test-unit-3.7.8]: https://github.com/test-unit/test-unit/releases/tag/3.7.8
+[test-unit-3.7.9]: https://github.com/test-unit/test-unit/releases/tag/3.7.9
 [rss-0.3.3]: https://github.com/ruby/rss/releases/tag/0.3.3
 [net-imap-v0.6.3]: https://github.com/ruby/net-imap/releases/tag/v0.6.3
 [net-imap-v0.6.4]: https://github.com/ruby/net-imap/releases/tag/v0.6.4

@@ -8,6 +8,8 @@
 #include "prism/internal/bit.h"
 #include "prism/internal/diagnostic.h"
 #include "prism/internal/encoding.h"
+#include "prism/internal/memchr.h"
+#include "prism/internal/memequal.h"
 #include "prism/internal/parser.h"
 
 #include <stdbool.h>
@@ -18,7 +20,30 @@
  */
 static PRISM_INLINE void
 pm_strpbrk_invalid_multibyte_character(pm_parser_t *parser, uint32_t start, uint32_t length) {
-    pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_INVALID_MULTIBYTE_CHARACTER, parser->start[start]);
+    pm_diagnostic_list_append_byte(
+        &parser->metadata_arena,
+        &parser->error_list,
+        start,
+        length,
+        PM_ERR_INVALID_MULTIBYTE_CHARACTER,
+        parser->start[start]
+    );
+}
+
+/**
+ * Add an error to the parser for a byte in a regular expression that does not
+ * begin a character in the encoding of the source.
+ */
+static PRISM_INLINE void
+pm_strpbrk_invalid_multibyte_char(pm_parser_t *parser, const uint8_t *source) {
+    pm_diagnostic_list_append_slice(
+        &parser->metadata_arena,
+        &parser->error_list,
+        (uint32_t) (source - parser->start),
+        1,
+        PM_ERR_INVALID_MULTIBYTE_CHAR,
+        pm_encoding_string(parser->encoding)
+    );
 }
 
 /**
@@ -28,13 +53,20 @@ static PRISM_INLINE void
 pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t length) {
     if (parser->explicit_encoding != NULL) {
         if (parser->explicit_encoding == parser->encoding) {
-            // Okay, we already locked to this encoding.
+            /* Okay, we already locked to this encoding. */
         } else if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
-            // Not okay, we already found a Unicode escape sequence and this
-            // conflicts.
-            pm_diagnostic_list_append_format(&parser->metadata_arena, &parser->error_list, start, length, PM_ERR_MIXED_ENCODING, parser->encoding->name);
+            /* Not okay, we already found a Unicode escape sequence and this
+             * conflicts. */
+            pm_diagnostic_list_append_slice(
+                &parser->metadata_arena,
+                &parser->error_list,
+                start,
+                length,
+                PM_ERR_MIXED_ENCODING,
+                pm_encoding_string(parser->encoding)
+            );
         } else {
-            // Should not be anything else.
+            /* Should not be anything else. */
             PRISM_ASSERT(false && "unreachable");
         }
     }
@@ -61,45 +93,44 @@ pm_strpbrk_explicit_encoding_set(pm_parser_t *parser, uint32_t start, uint32_t l
 #if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
 
 /**
- * Update the cached strpbrk lookup tables if the charset has changed. The
- * parser caches the last charset's precomputed tables so that repeated calls
- * with the same breakpoints (the common case during string/regex/list lexing)
- * skip table construction entirely.
- *
- * Builds three structures:
- *   - low_lut/high_lut: nibble-based lookup tables for SIMD matching (NEON)
- *   - table: 256-bit bitmap for scalar fallback matching (all platforms)
+ * Cache the current breakpoints in nibble lookup tables for NEON and a
+ * bitmap for scalar lookups.
  */
 static PRISM_INLINE void
 pm_strpbrk_cache_update(pm_parser_t *parser, const uint8_t *charset) {
-    // The cache key is the full charset buffer (PM_STRPBRK_CACHE_SIZE bytes).
-    // Since it is always NUL-padded, a fixed-size comparison covers both
-    // content and length.
-    if (memcmp(parser->strpbrk_cache.charset, charset, sizeof(parser->strpbrk_cache.charset)) == 0) return;
+    /* The NUL bit distinguishes a cached empty charset from a fresh cache. */
+    if (parser->strpbrk_cache.table[0] != 0 && pm_memequal(parser->strpbrk_cache.charset, charset, sizeof(parser->strpbrk_cache.charset))) {
+        return;
+    }
 
     memset(parser->strpbrk_cache.low_lut, 0, sizeof(parser->strpbrk_cache.low_lut));
     memset(parser->strpbrk_cache.high_lut, 0, sizeof(parser->strpbrk_cache.high_lut));
     memset(parser->strpbrk_cache.table, 0, sizeof(parser->strpbrk_cache.table));
 
-    // Always include NUL in the tables. The slow path uses strchr, which
-    // always matches NUL (it finds the C string terminator), so NUL is
-    // effectively always a breakpoint. Replicating that here lets the fast
-    // scanner handle NUL at full speed instead of bailing to the slow path.
+    /* NUL is always a breakpoint. */
     parser->strpbrk_cache.low_lut[0x00] |= (uint8_t) (1 << 0);
     parser->strpbrk_cache.high_lut[0x00] = (uint8_t) (1 << 0);
     parser->strpbrk_cache.table[0] |= (uint64_t) 1;
 
-    size_t charset_len = 0;
     for (const uint8_t *c = charset; *c != '\0'; c++) {
         parser->strpbrk_cache.low_lut[*c & 0x0F] |= (uint8_t) (1 << (*c >> 4));
         parser->strpbrk_cache.high_lut[*c >> 4] = (uint8_t) (1 << (*c >> 4));
         parser->strpbrk_cache.table[*c >> 6] |= (uint64_t) 1 << (*c & 0x3F);
-        charset_len++;
     }
 
-    // Store the new charset key, NUL-padded to the full buffer size.
-    memcpy(parser->strpbrk_cache.charset, charset, charset_len + 1);
-    memset(parser->strpbrk_cache.charset + charset_len + 1, 0, sizeof(parser->strpbrk_cache.charset) - charset_len - 1);
+    memcpy(parser->strpbrk_cache.charset, charset, sizeof(parser->strpbrk_cache.charset));
+}
+
+static PRISM_INLINE bool
+pm_strpbrk_contains(const pm_parser_t *parser, PRISM_UNUSED const uint8_t *charset, uint8_t byte) {
+    return (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) != 0;
+}
+
+#else
+
+static PRISM_INLINE bool
+pm_strpbrk_contains(PRISM_UNUSED const pm_parser_t *parser, const uint8_t *charset, uint8_t byte) {
+    return pm_memchr(charset, byte, PM_STRPBRK_CACHE_SIZE) != NULL;
 }
 
 #endif
@@ -121,8 +152,8 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
     while (idx + 16 <= maximum) {
         uint8x16_t v = vld1q_u8(source + idx);
 
-        // If any byte has the high bit set, we have non-ASCII data.
-        // Return to let the caller's encoding-aware loop handle it.
+        /* If any byte has the high bit set, we have non-ASCII data.
+         * Return to let the caller's encoding-aware loop handle it. */
         if (vmaxvq_u8(vandq_u8(v, mask_80)) != 0) break;
 
         uint8x16_t lo_class = vqtbl1q_u8(low_lut, vandq_u8(v, mask_0f));
@@ -134,7 +165,7 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
             continue;
         }
 
-        // Find the position of the first matching byte.
+        /* Find the position of the first matching byte. */
         uint64_t lo64 = vgetq_lane_u64(vreinterpretq_u64_u8(matched), 0);
         if (lo64 != 0) {
             *index = idx + pm_ctzll(lo64) / 8;
@@ -145,10 +176,10 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
         return true;
     }
 
-    // Scalar tail for remaining < 16 ASCII bytes.
+    /* Scalar tail for remaining < 16 ASCII bytes. */
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
-        if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+        if (pm_strpbrk_contains(parser, charset, byte)) {
             *index = idx;
             return true;
         }
@@ -209,7 +240,7 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
     /* Scalar tail. */
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
-        if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+        if (pm_strpbrk_contains(parser, charset, byte)) {
             *index = idx;
             return true;
         }
@@ -233,13 +264,13 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
         uint64_t word;
         memcpy(&word, source + idx, 8);
 
-        // Bail on any non-ASCII byte.
+        /* Bail on any non-ASCII byte. */
         if (word & highs) break;
 
-        // Check each byte against the charset table.
+        /* Check each byte against the charset table. */
         for (size_t j = 0; j < 8; j++) {
             uint8_t byte = source[idx + j];
-            if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+            if (pm_strpbrk_contains(parser, charset, byte)) {
                 *index = idx + j;
                 return true;
             }
@@ -248,10 +279,10 @@ scan_strpbrk_ascii(pm_parser_t *parser, const uint8_t *source, size_t maximum, c
         idx += 8;
     }
 
-    // Scalar tail.
+    /* Scalar tail. */
     while (idx < maximum && source[idx] < 0x80) {
         uint8_t byte = source[idx];
-        if (parser->strpbrk_cache.table[byte >> 6] & ((uint64_t) 1 << (byte & 0x3F))) {
+        if (pm_strpbrk_contains(parser, charset, byte)) {
             *index = idx;
             return true;
         }
@@ -276,9 +307,9 @@ scan_strpbrk_ascii(PRISM_UNUSED pm_parser_t *parser, PRISM_UNUSED const uint8_t 
  * This is the default path.
  */
 static PRISM_INLINE const uint8_t *
-pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
+pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, pm_strpbrk_mode_t mode) {
     while (index < maximum) {
-        if (strchr((const char *) charset, source[index]) != NULL) {
+        if (pm_strpbrk_contains(parser, charset, source[index])) {
             return source + index;
         }
 
@@ -289,13 +320,16 @@ pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *chars
 
             if (width > 0) {
                 index += width;
-            } else if (!validate) {
+            } else if (mode == PM_STRPBRK_RAW) {
+                index++;
+            } else if (mode == PM_STRPBRK_REGEXP) {
+                pm_strpbrk_invalid_multibyte_char(parser, source + index);
                 index++;
             } else {
-                // At this point we know we have an invalid multibyte character.
-                // We'll walk forward as far as we can until we find the next
-                // valid character so that we don't spam the user with a ton of
-                // the same kind of error.
+                /* At this point we know we have an invalid multibyte character.
+                 * We'll walk forward as far as we can until we find the next
+                 * valid character so that we don't spam the user with a ton of
+                 * the same kind of error. */
                 const size_t start = index;
 
                 do {
@@ -314,13 +348,13 @@ pm_strpbrk_utf8(pm_parser_t *parser, const uint8_t *source, const uint8_t *chars
  * This is the path when the encoding is ASCII-8BIT.
  */
 static PRISM_INLINE const uint8_t *
-pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
+pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, pm_strpbrk_mode_t mode) {
     while (index < maximum) {
-        if (strchr((const char *) charset, source[index]) != NULL) {
+        if (pm_strpbrk_contains(parser, charset, source[index])) {
             return source + index;
         }
 
-        if (validate && source[index] >= 0x80) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), 1);
+        if (mode == PM_STRPBRK_STRING && source[index] >= 0x80) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source + index - parser->start), 1);
         index++;
     }
 
@@ -331,11 +365,11 @@ pm_strpbrk_ascii_8bit(pm_parser_t *parser, const uint8_t *source, const uint8_t 
  * This is the slow path that does care about the encoding.
  */
 static PRISM_INLINE const uint8_t *
-pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
+pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, pm_strpbrk_mode_t mode) {
     const pm_encoding_t *encoding = parser->encoding;
 
     while (index < maximum) {
-        if (strchr((const char *) charset, source[index]) != NULL) {
+        if (pm_strpbrk_contains(parser, charset, source[index])) {
             return source + index;
         }
 
@@ -343,17 +377,20 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
             index++;
         } else {
             size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (maximum - index));
-            if (validate) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), (uint32_t) width);
+            if (mode == PM_STRPBRK_STRING) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source + index - parser->start), (uint32_t) (width == 0 ? 1 : width));
 
             if (width > 0) {
                 index += width;
-            } else if (!validate) {
+            } else if (mode == PM_STRPBRK_RAW) {
+                index++;
+            } else if (mode == PM_STRPBRK_REGEXP) {
+                pm_strpbrk_invalid_multibyte_char(parser, source + index);
                 index++;
             } else {
-                // At this point we know we have an invalid multibyte character.
-                // We'll walk forward as far as we can until we find the next
-                // valid character so that we don't spam the user with a ton of
-                // the same kind of error.
+                /* At this point we know we have an invalid multibyte character.
+                 * We'll walk forward as far as we can until we find the next
+                 * valid character so that we don't spam the user with a ton of
+                 * the same kind of error. */
                 const size_t start = index;
 
                 do {
@@ -373,27 +410,30 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
  * the encoding only supports single-byte characters.
  */
 static PRISM_INLINE const uint8_t *
-pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, bool validate) {
+pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t index, size_t maximum, pm_strpbrk_mode_t mode) {
     const pm_encoding_t *encoding = parser->encoding;
 
     while (index < maximum) {
-        if (strchr((const char *) charset, source[index]) != NULL) {
+        if (pm_strpbrk_contains(parser, charset, source[index])) {
             return source + index;
         }
 
-        if (source[index] < 0x80 || !validate) {
+        if (source[index] < 0x80 || mode == PM_STRPBRK_RAW) {
             index++;
         } else {
             size_t width = pm_encoding_char_width(encoding, source + index, (ptrdiff_t) (maximum - index));
-            pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source - parser->start), (uint32_t) width);
+            if (mode == PM_STRPBRK_STRING) pm_strpbrk_explicit_encoding_set(parser, (uint32_t) (source + index - parser->start), (uint32_t) (width == 0 ? 1 : width));
 
             if (width > 0) {
                 index += width;
+            } else if (mode == PM_STRPBRK_REGEXP) {
+                pm_strpbrk_invalid_multibyte_char(parser, source + index);
+                index++;
             } else {
-                // At this point we know we have an invalid multibyte character.
-                // We'll walk forward as far as we can until we find the next
-                // valid character so that we don't spam the user with a ton of
-                // the same kind of error.
+                /* At this point we know we have an invalid multibyte character.
+                 * We'll walk forward as far as we can until we find the next
+                 * valid character so that we don't spam the user with a ton of
+                 * the same kind of error. */
                 const size_t start = index;
 
                 do {
@@ -428,7 +468,7 @@ pm_strpbrk_single_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t
  * need to take a slower path and iterate one multi-byte character at a time.
  */
 const uint8_t *
-pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length, bool validate) {
+pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length, pm_strpbrk_mode_t mode) {
     if (length <= 0) return NULL;
 
     size_t maximum = (size_t) length;
@@ -436,12 +476,12 @@ pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, p
     if (scan_strpbrk_ascii(parser, source, maximum, charset, &index)) return source + index;
 
     if (!parser->encoding_changed) {
-        return pm_strpbrk_utf8(parser, source, charset, index, maximum, validate);
+        return pm_strpbrk_utf8(parser, source, charset, index, maximum, mode);
     } else if (parser->encoding == PM_ENCODING_ASCII_8BIT_ENTRY) {
-        return pm_strpbrk_ascii_8bit(parser, source, charset, index, maximum, validate);
+        return pm_strpbrk_ascii_8bit(parser, source, charset, index, maximum, mode);
     } else if (pm_encoding_multibyte_p(parser->encoding)) {
-        return pm_strpbrk_multi_byte(parser, source, charset, index, maximum, validate);
+        return pm_strpbrk_multi_byte(parser, source, charset, index, maximum, mode);
     } else {
-        return pm_strpbrk_single_byte(parser, source, charset, index, maximum, validate);
+        return pm_strpbrk_single_byte(parser, source, charset, index, maximum, mode);
     }
 }

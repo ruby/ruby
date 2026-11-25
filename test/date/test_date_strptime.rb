@@ -142,8 +142,6 @@ class TestDateStrptime < Test::Unit::TestCase
      [['Thu Jul 29 16:39:41 GMT-09 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'GMT-09',-9*3600,4], __LINE__],
      [['Thu Jul 29 16:39:41 GMT-09:08 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'GMT-09:08',-9*3600-8*60,4], __LINE__],
      [['Thu Jul 29 16:39:41 GMT-09:08:07 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'GMT-09:08:07',-9*3600-8*60-7,4], __LINE__],
-     [['Thu Jul 29 16:39:41 GMT-3.5 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'GMT-3.5',-3*3600-30*60,4], __LINE__],
-     [['Thu Jul 29 16:39:41 GMT-3,5 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'GMT-3,5',-3*3600-30*60,4], __LINE__],
      [['Thu Jul 29 16:39:41 Mountain Daylight Time 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'Mountain Daylight Time',-6*3600,4], __LINE__],
      [['Thu Jul 29 16:39:41 E. Australia Standard Time 1999', '%a %b %d %H:%M:%S %Z %Y'], [1999,7,29,16,39,41,'E. Australia Standard Time',10*3600,4], __LINE__],
 
@@ -182,7 +180,6 @@ class TestDateStrptime < Test::Unit::TestCase
      [['E.  Australia Standard Time', '%Z'], [nil,nil,nil,nil,nil,nil,'E.  Australia Standard Time',10*3600,nil], __LINE__],
 
      # out of range
-     [['+0.9999999999999999999999', '%Z'], [nil,nil,nil,nil,nil,nil,'+0.9999999999999999999999',+1*3600,nil], __LINE__],
      [['+9999999999999999999999.0', '%Z'], [nil,nil,nil,nil,nil,nil,'+9999999999999999999999.0',nil,nil], __LINE__],
     ].each do |x, y|
       h = Date._strptime(*x)
@@ -308,6 +305,8 @@ class TestDateStrptime < Test::Unit::TestCase
     d = Date.new(2002,3,14)
     assert_equal(d, Date.strptime(d.to_s))
     assert_equal(Date.new(2002,3,14), Date.strptime('2002-03-14'))
+    assert_equal(Date.new(2002,3,14), Date.strptime('2002-03-14 11:22:33', '%Y-%m-%d'))
+    assert_equal(Date.new(2002,3,14), Date.strptime('2002-03-14T11:22:33Z', '%F'))
 
     d = DateTime.new(2002,3,14,11,22,33, 0)
     assert_equal(d, DateTime.strptime(d.to_s))
@@ -458,6 +457,10 @@ class TestDateStrptime < Test::Unit::TestCase
     d = DateTime.strptime('2004-11', '%Y-%W')
     assert_equal([2004, 11, 1, 0, 0, 0],
 		 [d.year, d.strftime('%W').to_i, d.wday, d.hour, d.min, d.sec])
+
+    d = DateTime.strptime('2001 Sat', '%Y %a')
+    assert_equal([2001, 1, 6, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
   end
 
   def test_strptime__d_to_s

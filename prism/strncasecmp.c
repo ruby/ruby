@@ -27,9 +27,9 @@ pm_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length) {
     size_t offset = 0;
     int difference = 0;
 
-    while (offset < length && string1[offset] != '\0') {
-        if (string2[offset] == '\0') return string1[offset];
+    while (offset < length) {
         if ((difference = pm_tolower(string1[offset]) - pm_tolower(string2[offset])) != 0) return difference;
+        if (string1[offset] == '\0') return 0;
         offset++;
     }
 

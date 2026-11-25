@@ -280,31 +280,35 @@ class Gem::Installer
     # Set loaded_from to ensure extension_dir is correct
     spec.loaded_from = spec_file
 
-    # Completely remove any previous gem files
-    FileUtils.rm_rf gem_dir
-    FileUtils.rm_rf spec.extension_dir
+    gems_dir = File.dirname(gem_dir)
+    ensure_writable_dir gems_dir
+    Gem.open_file_with_lock(File.join(gems_dir, ".#{spec.full_name}")) do
+      # Completely remove any previous gem files
+      FileUtils.rm_rf gem_dir
+      FileUtils.rm_rf spec.extension_dir
 
-    dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
+      dir_mode = options[:dir_mode]
+      FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
 
-    extract_files
+      extract_files
 
-    build_extensions
-    write_build_info_file
-    run_post_build_hooks
+      build_extensions
+      write_build_info_file
+      run_post_build_hooks
 
-    generate_bin
-    if options[:install_plugin] == false
-      remove_stale_plugins
-      warn_skipped_plugins
-    else
-      generate_plugins
+      generate_bin
+      if options[:install_plugin] == false
+        remove_stale_plugins
+        warn_skipped_plugins
+      else
+        generate_plugins
+      end
+
+      write_spec
+      write_cache_file
+
+      File.chmod(dir_mode, gem_dir) if dir_mode
     end
-
-    write_spec
-    write_cache_file
-
-    File.chmod(dir_mode, gem_dir) if dir_mode
 
     say clean_text(spec.post_install_message.to_s) if options[:post_install_message] && !spec.post_install_message.nil?
 

@@ -23,6 +23,22 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[activemodel-3.2.11 builder-3.0.4 grape-0.2.6 my_app-1.0.0]
   end
 
+  it "backtracks when all versions of a dependency conflict" do
+    @index = build_index do
+      gem "aa", "1.0.0"
+      gem "aa", "2.0.0" do
+        dep "ff", ">= 0"
+        dep "ll", ">= 0"
+      end
+      gem("ff", "1.0.0") { dep "ll", "< 1" }
+      gem("ff", "2.0.0") { dep "ll", "= 3" }
+      gem "ll", "2.0.0"
+    end
+    dep "aa"
+
+    should_resolve_as %w[aa-1.0.0]
+  end
+
   it "resolves a complex conflicting index" do
     @index = a_complex_conflict_index
     dep "my_app"
@@ -78,6 +94,39 @@ RSpec.describe "Resolving" do
   it "selects a pre-release for sub-dependencies if it's the only option" do
     dep "need-pre"
     should_resolve_as %w[need-pre-1.0.0 activesupport-3.0.0.beta1]
+  end
+
+  it "resolves a transitive prerelease when the stable release has a conflicting dependency" do
+    @index = build_index do
+      gem "aa", "1.0.0" do
+        dep "bb", "~> 1.0.0.rc1"
+        dep "cc", "~> 1.0"
+      end
+      gem "bb", "1.0.0.rc1"
+      gem("bb", "1.0.0") { dep "cc", ">= 2.0" }
+      gem "cc", "1.0.0"
+    end
+
+    dep "aa"
+    should_resolve_as %w[aa-1.0.0 bb-1.0.0.rc1 cc-1.0.0]
+  end
+
+  it "keeps a locked transitive dependency when a prerelease can resolve the conflict" do
+    @index = build_index do
+      gem("aa", "1.0.0.rc1") { dep "bb", "~> 1.0" }
+      gem "aa", "1.0.0" do
+        dep "bb", "~> 1.0"
+        dep "cc", "~> 1.0"
+      end
+      gem("bb", "1.0.0") { dep "cc", ">= 2.0" }
+      gem "bb", "1.0.1"
+      gem "cc", %w[1.0.0 2.0.0]
+    end
+
+    dep "aa"
+    bb = @index.search(["bb", Gem::Version.new("1.0.0")]).first
+    base = Bundler::SpecSet.new([Bundler::LazySpecification.from_spec(bb)])
+    should_resolve_and_include %w[aa-1.0.0.rc1 bb-1.0.0 cc-2.0.0], [base, nil, locked(["bb", "1.0.0"])]
   end
 
   it "selects a pre-release if it's specified in the Gemfile" do

@@ -4,3 +4,8 @@
                    ^ unexpected '}', expecting end-of-input
                    ^ unexpected '}', ignoring it
 
+f "#{key}": < 2
+            ^ unexpected '<'; expected a value in the hash literal
+            ^ unexpected '<', expecting end-of-input
+            ^ unexpected '<', ignoring it
+

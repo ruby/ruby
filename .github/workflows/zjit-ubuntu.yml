@@ -88,6 +88,12 @@ jobs:
             run_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
 
+            # Run ruby/spec with call-threshold=2 --repeat 2 so there is one run in the interpreter
+            # to specialize and profile, and one run in ZJIT-compiled code.
+          - test_task: 'test-spec'
+            specopts: '-T --zjit-call-threshold=2 --repeat 2'
+            configure: '--enable-zjit=dev'
+
           - test_task: 'test-bundled-gems'
             configure: '--enable-zjit=dev'
             run_opts: '--zjit-call-threshold=1'
@@ -147,12 +153,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+      - uses: ruby/setup-ruby@be3c7df29b3349ec6bcfc6b4792f1cf9f5237d18 # v1.343.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+      - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}

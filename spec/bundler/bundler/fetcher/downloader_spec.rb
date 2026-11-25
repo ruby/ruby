@@ -113,6 +113,20 @@ RSpec.describe Bundler::Fetcher::Downloader do
       it "should raise a Bundler::Fetcher::FallbackError with the response body" do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::FallbackError, "Body with info")
       end
+
+      it "should replace control characters in the response body" do
+        allow(http_response).to receive(:body).and_return("Body with \e[31minfo".b)
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::FallbackError, "Body with .[31minfo")
+      end
+    end
+
+    context "when the request response is a Gem::Net::HTTPTooManyRequests" do
+      let(:http_response) { Gem::Net::HTTPTooManyRequests.new("1.1", 429, "Too Many Requests") }
+
+      it "should raise a Bundler::Fetcher::TooManyRequestsError with the response body, replacing control characters" do
+        allow(http_response).to receive(:body).and_return("Body with \e[31minfo".b)
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::TooManyRequestsError, "Body with .[31minfo")
+      end
     end
 
     context "when the request response is a Gem::Net::HTTPUnauthorized" do
@@ -216,6 +230,11 @@ RSpec.describe Bundler::Fetcher::Downloader do
 
       it "should raise a Bundler::HTTPError with the response class and body" do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::HTTPError, "Gem::Net::HTTPBadGateway: Body with info")
+      end
+
+      it "should replace control characters in the response body" do
+        allow(http_response).to receive(:body).and_return("Body with \e[31minfo".b)
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::HTTPError, "Gem::Net::HTTPBadGateway: Body with .[31minfo")
       end
     end
   end

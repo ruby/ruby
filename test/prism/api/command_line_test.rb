@@ -41,6 +41,16 @@ module Ruby::Prism
       assert_equal :$F, statement.name
     end
 
+    def test_autosplit_location_covers_parsed_statements
+      io = StringIO.new("# comment\n1\n2\n__END__\ndata\n")
+      result = Ruby::Prism.parse_stream(io, command_line: "pna")
+      split = result.statement.statements.body.first.value
+
+      assert_equal :split, split.name
+      assert_equal "1\n2", split.location.slice
+      assert_equal "data\n", io.read
+    end
+
     def test_command_line_l
       program = Ruby::Prism.parse("1", command_line: "nl").value
       statements = program.statements.body
@@ -67,6 +77,10 @@ module Ruby::Prism
 
       result = Ruby::Prism.parse("1 if 2..3", command_line: "e")
       assert_equal 0, result.warnings.length
+    end
+
+    def test_command_line_rejects_embedded_nul
+      assert_raise(ArgumentError) { Ruby::Prism.parse("1", command_line: "e\0n") }
     end
 
     def test_command_line_x_implicit
@@ -100,6 +114,24 @@ module Ruby::Prism
 
       assert_equal 1, result.errors.length
       assert_equal :load, result.errors.first.level
+    end
+
+    def test_bom_before_shebang_in_main_script
+      result = Ruby::Prism.parse("\uFEFF#!ruby\n# encoding: US-ASCII\n1\n", main_script: true)
+
+      assert_predicate result, :success?
+      assert_equal Encoding::UTF_8, result.encoding
+      assert_equal 1, result.statement.value
+    end
+
+    def test_command_line_x_skips_bom_prefixed_shebang
+      source = "\uFEFF#!ruby -w\n1\n"
+      result = Ruby::Prism.parse(source, command_line: "x")
+      assert_equal [:script_not_found], result.errors.map(&:type)
+
+      result = Ruby::Prism.parse(source + "#!ruby\n2\n", command_line: "x")
+      assert_predicate result, :success?
+      assert_equal [2], result.value.statements.body.map(&:value)
     end
 
     def test_command_line_x_explicit_fail

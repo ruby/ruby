@@ -1,0 +1,3 @@
+def f; -> { class << self; return; end }; end
+
+class << self; -> { return }; end

@@ -55,6 +55,15 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_char_property_name_with_large_code
+    # GB18030 has codes of 0x80000000 and above, negative as int
+    c = "\x81\x30\x90\x32".force_encoding("GB18030")
+    ["\\p{#{c}lnum}", "\\p{A#{c}num}", "[[:#{c}lnum:]]"].each do |pattern|
+      assert_raise(RegexpError) { Regexp.new(pattern) }
+    end
+    assert_match(Regexp.new("\\p{ALNUM}".encode("GB18030")), "a".encode("GB18030"))
+  end
+
   def test_assert_normal_exit
     # moved from knownbug.  It caused core.
     Regexp.union("a", "a")
@@ -69,6 +78,39 @@ class TestRegexp < Test::Unit::TestCase
       rs = Regexp.new(str.encode(enc)).to_s
       assert_equal("(?-mix:abcd\u3042)".encode(enc), rs)
       assert_equal(enc, rs.encoding)
+    end
+  end
+
+  def test_to_s_comment_in_char_class
+    re = EnvUtil.suppress_warning { Regexp.new('(?:[](?#\x{7FFFFFFF})])') }
+    assert_equal('(?-mix:[](?#\x{7FFFFFFF})])', EnvUtil.suppress_warning { re.to_s })
+  end
+
+  def test_to_s_escape_in_extended_comment
+    src = "(?x)(?-x:\\p{Alpha}[])]#(\n)#\\u0081)".force_encoding(Encoding::Shift_JIS)
+    re = EnvUtil.suppress_warning { Regexp.new(src) }
+    assert_equal("(?-mix:".force_encoding(Encoding::Shift_JIS) + src + ")", EnvUtil.suppress_warning { re.to_s })
+  end
+
+  def test_to_s_no_warning_from_trial_compilation
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      re = EnvUtil.suppress_warning { Regexp.new("(?:[]a])") }
+      called = 0
+      Warning.singleton_class.class_eval do
+        define_method(:warn) {|*, **| called += 1; raise "warn" }
+      end
+      $VERBOSE = true
+      assert_equal("(?-mix:[]a])", re.to_s)
+      assert_equal(0, called)
+      assert_equal(true, $VERBOSE)
+    end;
+  end
+
+  def test_to_s_wide_char_looks_like_option_prefix
+    [Encoding::UTF_16LE, Encoding::UTF_16BE].each do |enc|
+      src = "(?mi:ab)".force_encoding(enc)
+      assert_equal("(?-mix:".encode(enc) + src + ")".encode(enc), Regexp.new(src).to_s)
     end
   end
 
@@ -238,6 +280,17 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_match(/\u3042\ba/, "\u3042a")
   end
 
+  def test_word_boundary_after_empty_backref
+    # An empty back reference used to leave the previous character pointing
+    # at the current position, so \b and \B looked at the wrong character.
+    assert_match(/(y?)a\1\b/, "a-")
+    assert_not_match(/(y?)a\1\B/, "a-")
+    assert_match(/(y?)a\1\b/i, "a-")
+    assert_match(/(?<n>y?)(?<n>z?)a\k<n>\b/, "a-")
+    assert_not_match(/(y?)a\1\b/, "ab")
+    assert_match(/(y?)a\1\B/, "ab")
+  end
+
   def test_named_capture
     m = /&(?<foo>.*?);/.match("aaa &amp; yyy")
     assert_equal("amp", m["foo"])
@@ -367,6 +420,20 @@ class TestRegexp < Test::Unit::TestCase
     tap do |nil: :ng|
       /(?<nil>.)/ =~ "c"
       assert_equal("c", binding.local_variable_get(:nil))
+    end
+
+    /(?<__ENCODING__>.)/ =~ "a"
+    assert_not_include(local_variables, :__ENCODING__)
+
+    def (obj = Object.new).test(s, __ENCODING__: :ng)
+      /(?<__ENCODING__>.)/ =~ s
+      binding.local_variable_get(:__ENCODING__)
+    end
+    assert_equal("b", obj.test("b"))
+
+    tap do |__ENCODING__: :ng|
+      /(?<__ENCODING__>.)/ =~ "c"
+      assert_equal("c", binding.local_variable_get(:__ENCODING__))
     end
   end
 
@@ -558,6 +625,33 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal([2, 3], m.offset(3))
   end
 
+  # Character offsets of a shareable MatchData are computed lazily on first use.
+  # Ractors racing on that first use read the cache before it was filled in and
+  # got 0 instead of the offsets.
+  def test_match_char_offset_shared_across_ractors
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      Warning[:experimental] = false
+      re = /(x)(y)(z)(\u3044+)(q)?(nomatch)?/
+      mk = ->(i) { re.match("\u3042" * (i % 7 + 1) + "xyz" + "\u3044" * 3 + "q") }
+      def read(m) = [m.offset(1), m.offset(4), m.begin(5), m.end(0), m.match_length(4)]
+      want = Ractor.make_shareable(Array.new(200) { |i| read(mk.(i)) })
+
+      10.times do
+        mds = Ractor.make_shareable(Array.new(200) { |i| mk.(i) })
+        rs = Array.new(4) do
+          Ractor.new(mds, want) do |mds, want|
+            Ractor.receive
+            mds.each_index.reject { |i| read(mds[i]) == want[i] }
+          end
+        end
+        rs.each { |r| r.send(nil) }
+        rs.each { |r| assert_equal([], r.value) }
+        assert_equal(want[3], read(mds[3].dup))
+      end
+    end;
+  end
+
   def test_match_byteoffset_begin_end
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal([3, 6], m.byteoffset("x"))
@@ -587,6 +681,18 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal([6, 9], m.byteoffset(3))
     assert_equal(6, m.bytebegin(3))
     assert_equal(9, m.byteend(3))
+  end
+
+  def test_match_offset_reuse
+    input = "abcdefgh"
+    big = /(.)(.)(.)(.)(.)(.)(.)(.)/
+    small = /(.)/
+    big =~ input
+    input.split(small, 2) { |s| Regexp.last_match.offset(1) if s.length == 1 }
+    m = big.match(input)
+
+    expected = [[0, 8], [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8]]
+    assert_equal(expected, (0..8).map { |i| m.offset(i) })
   end
 
   def test_match_to_s
@@ -784,6 +890,39 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_initialize_in_warning_hook
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = true
+      inner = error = re = freeze = nil
+      Warning.singleton_class.class_eval do
+        define_method(:warn) do |*, **|
+          src, inner = inner, nil
+          begin
+            re.send(:initialize, src) if src
+          rescue TypeError => error
+          end
+          re.freeze if freeze
+        end
+      end
+
+      re = Regexp.allocate
+      inner = "(?<n>a)(b)(c)[b-a]?x{2,3}" * 20
+      re.send(:initialize, "(?<m>x)[]a](y)")
+      assert_kind_of(TypeError, error)
+      assert_equal("(?<m>x)[]a](y)", re.source)
+      assert_equal(["x"], re.match("xay").captures)
+      assert_equal(["m"], re.names)
+
+      re = Regexp.allocate
+      freeze = true
+      re.send(:initialize, "(?<m>x)[]a](y)")
+      assert_predicate(re, :frozen?)
+      assert_equal("(?<m>x)[]a](y)", re.source)
+      assert_equal(["m"], re.names)
+    end;
+  end
+
   def test_initialize_bool_warning
     assert_warning(/expected true or false as ignorecase/) do
       Regexp.new("foo", :i)
@@ -913,6 +1052,15 @@ class TestRegexp < Test::Unit::TestCase
     $_ = "abc"; assert_equal(1, ~/bc/)
     $_ = "abc"; assert_nil(~/d/)
     $_ = nil; assert_nil(~/./)
+  end
+
+  def test_match_end_anchor_start_position
+    s = "text\n\n\n"
+    assert_nil(s.match(/\r?\n\r?\n\Z/, 6))
+    assert_nil(s.match(/\r?\n\r?\n\z/, 6))
+    assert_equal(4, s.match(/\r?\n\r?\n\Z/, 4).begin(0))
+    assert_equal(["\n\n"], s.scan(/\r?\n\r?\n\Z/))
+    assert_equal("text-\n", s.gsub(/\r?\n\r?\n\Z/, "-"))
   end
 
   def test_match_under_gc_compact_stress
@@ -1353,12 +1501,95 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('(?#')
   end
 
+  def test_invalid_raw_byte_escape_in_utf16
+    {"UTF-16LE" => ['\x00\xD8', '\x00\xD8\x00\xDC'],
+     "UTF-16BE" => ['\xD8\x00', '\xD8\x00\xDC\x00']}.each do |enc, (lone, pair)|
+      assert_raise(RegexpError) { Regexp.new(lone.encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("(?i)#{lone}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[#{lone}]".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[#{lone}a]".encode(enc)) }
+      s = "\u{10000}".encode(enc)
+      assert_match(Regexp.new(pair.encode(enc)), s)
+      assert_match(Regexp.new("[#{pair}]".encode(enc)), s)
+    end
+  end
+
+  def test_comment_separates_tokens
+    assert_raise(RegexpError) { Regexp.new('\3(?#)43') }
+    assert_raise(RegexpError) { Regexp.new("\\3#c\n43", Regexp::EXTENDED) }
+    assert_raise(RegexpError) { Regexp.new("(?x:\\3#c\n43)") }
+    re = Regexp.new('(a)(b)(c)\3(?#)43')
+    assert_match(re, "abcc43")
+    assert_not_match(re, "abc\u00e3")
+    re = Regexp.new("(a)(b)(c)\\3#c\n43", Regexp::EXTENDED)
+    assert_match(re, "abcc43")
+    assert_not_match(re, "abc\u00e3")
+    assert_match(/a(?#x)+b/, "aaab")
+    assert_match(/a #x
+                 +b/x, "aaab")
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise(RegexpError) {
+        Regexp.new('(?~.*\3(?#)43.|(?i:\u{3380}))').match?("a\u3042")
+      }
+      assert_raise(RegexpError) {
+        Regexp.new("(?~.*(?x:\\3#c\n43).|(?i:\\u{3380}))").match?("a\u3042")
+      }
+    end;
+  end
+
+  def test_emacs_mule_case_fold_at_mid_character
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      %w[Emacs-Mule stateless-ISO-2022-JP stateless-ISO-2022-JP-KDDI].each do |name|
+        enc = Encoding.find(name)
+        re = Regexp.new("(?i)(?!x)\x81\xa1{2}".b.force_encoding(enc))
+        assert_nil(re.match("\x81\xa1\x9c\xf0\xa1\xa1".b.force_encoding(enc)))
+        assert_equal(0, re =~ "\x81\xa1\x81\xa1".b.force_encoding(enc))
+        assert_equal(1, re =~ "\x81\xa2\x81\xa1\x81\xa1".b.force_encoding(enc))
+        re = Regexp.new("(?i)\x81\xa1".b.force_encoding(enc))
+        assert_equal(1, re =~ "\x9c\xf0\xa1\xa1\x81\xa1".b.force_encoding(enc))
+      end
+    end;
+  end
+
+  def test_invalid_code_point_escape_in_utf16
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      assert_raise(RegexpError) { Regexp.new("\\x{D801}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("a\\x{D801}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("a\\x{110000}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[\\x{D801}]".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("\\x{110000}".encode(enc)) }
+      s = "\u{1F600}".encode(enc)
+      assert_match(Regexp.new("\\x{1F600}".encode(enc)), s)
+      assert_match(Regexp.new("[\\x{1F600}]".encode(enc)), s)
+    end
+  end
+
+  def test_keep_in_lookbehind
+    assert_equal([1, 3], /ab(?<=a\Kb)c/.match("abc").byteoffset(0))
+    assert_equal([2, 2], /(?<=a\Kb)/.match("abc").byteoffset(0))
+    assert_equal([2, 2], /(?<=a\Kb)/.match("abc", 2).byteoffset(0))
+    assert_equal([1, 2], /(?<=\Ka)a/.match("aaaa").byteoffset(0))
+    assert_equal([2, 3], /(?<=\Ka)a/.match("aaaa", 2).byteoffset(0))
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 
     # CClassTable cache test
     assert_match(/\u3042\d/, "\u30421")
     assert_match(/\u3042\d/, "\u30422")
+  end
+
+  def test_non_ascii_property_name_in_jis_encodings
+    %w[Shift_JIS Windows-31J EUC-JP].each do |enc|
+      ["\\p{\xC4ha}", "\\p{ab\xC4}", "\\P{\xC4ha}"].each do |src|
+        assert_raise(RegexpError) { Regexp.new(src.b.force_encoding(enc)) }
+      end
+      assert_match(Regexp.new("\\p{Hiragana}".encode(enc)), "\u3042".encode(enc))
+    end
   end
 
   def test_char_class
@@ -1422,6 +1653,27 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_match(/[[:word:]]/, "\u{200C}")
     assert_match(/[[:word:]]/, "\u{200D}")
+  end
+
+  def test_too_many_multibyte_ranges_in_intersection
+    chars = (0...9999).map {|i| (0x4e00 + 2 * i).chr("UTF-8") }.join
+    cc = "[[:^ascii:][^#{chars}]&&[^\u9fff]&&x]"
+    assert_raise(RegexpError) { Regexp.new(cc, Regexp::IGNORECASE) }
+    assert_raise(RegexpError) { Regexp.new("[x&&#{cc}]", Regexp::IGNORECASE) }
+    assert_raise(RegexpError) { Regexp.new(cc.encode("UTF-16LE"), Regexp::IGNORECASE) }
+  end
+
+  def test_char_class_intersection_error_no_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 2..100)
+      chars = (0...3000).map {|i| (0x4e00 + 2 * i).chr("UTF-8") }.join
+      pat = "[x&&[^#{chars}]\\p{Foo}]"
+      code = proc do
+        Regexp.new(pat) rescue nil
+      end
+
+    begin;
+      20.times(&code)
+    end;
   end
 
   def test_cclass_R
@@ -1543,6 +1795,43 @@ class TestRegexp < Test::Unit::TestCase
     #assert_match(/^(\ufb05)\1\1$/i, "\ufb05\ufb06st") # this must be bug...
     assert_match(/^\ufb05{3}$/i, "\ufb05\ufb06st")
     assert_match(/^\u03b9\u0308\u0301$/i, "\u0390")
+  end
+
+  def test_ignorecase_fold_longer_than_operand
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      tail = "\u0103\u3042\u3044"
+      s = ("x" * 16 + "\u1E98" + "y" * 8).encode(enc)
+      re = Regexp.new(("x" * 16 + "(?i:w)" + tail).encode(enc))
+      assert_match(re, ("x" * 16 + "W" + tail).encode(enc))
+      assert_no_match(re, s)
+      re = Regexp.new(("(?i:" + "x" * 16 + "w)" + tail).encode(enc))
+      assert_match(re, ("x" * 16 + "W" + tail).encode(enc))
+      assert_no_match(re, s)
+      re = Regexp.new("(?-i:xyz)t(?-i:\u0103)".encode(enc), Regexp::IGNORECASE)
+      assert_match(re, "xyzT\u0103".encode(enc))
+      assert_no_match(re, "xyz\u1E97".encode(enc))
+    end
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      enc = Encoding::UTF_16LE
+      re = Regexp.new("(?i:w)\u6203AB".encode(enc))
+      assert_match(re, "W\u6203AB".encode(enc))
+      assert_no_match(re, "\u1E98\u6203AB".encode(enc))
+      re = Regexp.new("(?i:xw)\u6203AB".encode(enc))
+      assert_match(re, "xW\u6203AB".encode(enc))
+      assert_no_match(re, "x\u1E98\u6203AB".encode(enc))
+    end;
+  end
+
+  def test_ignorecase_literal_search_at_end_of_string
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      s = "x" * 100 + "\u212a\u00e9"
+      s.chop!
+      assert_no_match(/k\0A/i, s)
+      assert_nil(s.rindex(/k\0A/i))
+    end;
   end
 
   def test_unicode_age
@@ -1979,11 +2268,49 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_quantifier_with_zero_upper
+    check(/a{0}(?:a$|b)/, [["b", "ab"]])
+    check(/a{0,0}?(?:a$|b)/, [["b", "ab"]])
+    check(/a{,0}?(?:a$|b)/, [["b", "ab"]])
+    check(/(?:xa){0,0}?(?:xa$|b)/, [["b", "xab"]])
+    check(/\Aa{0,0}?(?:a$|b)/, [], %w(ab))
+    assert_equal(["b", nil], /(a){0,0}?(?:a$|b)/.match("ab").to_a)
+
+    # [Bug #22606]
+    assert_nil(/\Ax{0,0}?x\z/.match("xx"))
+    assert_nil(/\A(\w){0,0}?\w\z/.match("ab"))
+    assert_nil(/\A(?:ab){0,0}?ab\z/.match("abab"))
+    assert_equal([""], /(?:x{0,0}?a+?)?/.match("").to_a)
+    assert_equal(["", nil], /(a)\1{0,0}?|$/.match("").to_a)
+    assert_equal([""], /(?:ab{0,0}?)*/.match("x").to_a)
+  end
+
   def test_once
     pr1 = proc{|i| /#{i}/o}
     assert_equal(/0/, pr1.call(0))
     assert_equal(/0/, pr1.call(1))
     assert_equal(/0/, pr1.call(2))
+  end
+
+  def test_once_implicit_match
+    assert_separately(["-W0"], <<~'RUBY')
+      count = 0
+      matches = []
+      ["a", "b", "a"].each do |line|
+        $_ = line
+        if /#{count += 1; "a"}/o
+          matches << $&
+        end
+      end
+      assert_equal(1, count)
+      assert_equal(["a", "a"], matches)
+
+      matches = ["a", "b"].map do |line|
+        $_ = line
+        /#{"a"}/o ? true : false
+      end
+      assert_equal([true, false], matches)
+    RUBY
   end
 
   def test_once_constant_interpolation
@@ -2068,6 +2395,27 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_range_repeat
+    pre = ->(n) {"a" * n + "!"}
+    [
+      /(?:a|a){4,}[bc]?\z/,
+      /(?:a+){4,}[bc]?\z/,
+      /(?:a|a){2,100}[bc]?\z/,
+      /(?:a|a){4,}?[bc]?\z/,
+    ].each do |re|
+      assert_linear_performance([10, 29], pre: pre) do |s|
+        assert_no_match(re, s)
+      end
+    end
+  end
+
+  def test_match_cache_with_range_repeat_in_lookaround
+    re = /(?!(?:[^#]+?){3,}\0c?.)/n
+    assert_equal(0, "ab\0c!" =~ re)
+    assert_equal(6, "\0" * 10 =~ re)
+    assert_equal(36, "\0" * 40 =~ re)
+  end
+
   def test_absent
     assert_equal(0, /(?~(a|c)c)/ =~ "abb")
     assert_equal("abb", $&)
@@ -2080,6 +2428,26 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_equal(0, /(?~(a))/ =~ "")
     assert_nil($1)
+  end
+
+  def test_backref_ignorecase_at_end_of_string
+    assert_no_match(/(k\0)\1/i, "k\0\u212a")
+    assert_match(/(k)\1/i, "k\u212a")
+    assert_match(/(k\0)\1/i, "k\0\u212a\0")
+  end
+
+  def test_match_cache_large_table
+    # The match cache table has a bit for each point (about 200,000 here) at
+    # each position; past 64 MB it is sparse.  It had no bound: a large pattern
+    # and a long subject could ask for terabytes.
+    re = /(?:a|a){0,100000}(?:a|a)*[bc]?\z/
+    assert_send([Regexp, :linear_time?, re])
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      Regexp.timeout = 30
+      re = /(?:a|a){0,100000}(?:a|a)*[bc]?\z/
+      assert_equal(3001, re =~ "a" * 3000 + "!")
+    end;
   end
 
   def test_backref_overrun
@@ -2204,6 +2572,67 @@ class TestRegexp < Test::Unit::TestCase
       10.times(&code)
     begin;
       100.times(&code)
+    end;
+  end
+
+  def test_match_interrupted_no_memory_leak
+    # An exception from the interrupts (Thread#raise, which Timeout.timeout
+    # uses) jumped out of the matcher and leaked the match stack.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..6)
+      Thread.report_on_exception = false
+      regex = /(a|a)*(a*)*\\1(?!a)(?<!a)/ # a back reference: no match cache
+      str = "a" * 20_000
+
+      code = proc do
+        q = Thread::Queue.new
+        th = Thread.new { q << 1; regex.match?(str) }
+        q.pop # the thread keeps the GVL into the match
+        th.raise(IOError)
+        begin
+          th.join
+        rescue IOError
+        else
+          raise "the match was not interrupted"
+        end
+      end
+
+      2.times(&code)
+    begin;
+      5.times(&code)
+    end;
+  end
+
+  def test_warning_raise_no_memory_leak
+    # An exception from Warning.warn jumped out of the parser and leaked the
+    # parse tree built so far.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true, samples: 2..10)
+      $VERBOSE = true
+      def Warning.warn(*) = raise("warned")
+      src = "(?:abc|def)" * 1_000 + "[aa]"
+
+      code = proc do
+        Regexp.new(src)
+      rescue RuntimeError
+      end
+
+      10.times(&code)
+    begin;
+      100.times(&code)
+    end;
+  end
+
+  def test_warning_raise
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = true
+      def Warning.warn(msg, **) = raise(ArgumentError, msg)
+      e = assert_raise(ArgumentError) { Regexp.new("[aa]") }
+      assert_match(/character class has duplicated range: \/\[aa\]\//, e.message)
+      # the warning still comes before the error
+      e = assert_raise(ArgumentError) { Regexp.new("[aa](") }
+      assert_match(/character class has duplicated range/, e.message)
+      e = assert_raise(ArgumentError) { eval("/[bb]/", nil, "lit.rb", 3) }
+      assert_match(/\Alit\.rb:3: warning: character class has duplicated range/, e.message)
     end;
   end
 
@@ -2385,6 +2814,18 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_zero_upper
+    pre = ->(n) {"a" * n + "x"}
+    [
+      /\A(?:a{0,0}?|a)*\z/,
+      /\A(?:(?:a|a)*){0,0}?\z/,
+    ].each do |re|
+      assert_linear_performance([10, 29], pre: pre) do |s|
+        assert_nil(re =~ s)
+      end
+    end
+  end
+
   def test_cache_opcodes_initialize
     str = 'test1-test2-test3-test4-test_5'
     re = '^([0-9a-zA-Z\-/]*){1,256}$'
@@ -2464,6 +2905,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
   end
 
+  def test_search_bol_in_group_after_bounded_prefix
+    assert_equal(16, /\s{0,5}(^end)/ =~ "def foo; bar end\nend\n")
+    assert_equal(11, /(?:\r?\n){0,2}(^--)/ =~ "aaaaaaaa --\n--\n")
+    assert_equal(24, / {0,4}(^abc)/ =~ ("x" * 20) + "abc\nabc\n")
+    assert_equal(24, /\b.{0,3}(^abc)/ =~ ("x" * 20) + "abc\nabc\n")
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
@@ -2473,6 +2921,10 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_not_send [Regexp, :linear_time?, /(?=(a))/]
     assert_not_send [Regexp, :linear_time?, /(?!(a))/]
+
+    assert_send [Regexp, :linear_time?, /(?:b{0,0}?a){2,3}/]
+
+    assert_send [Regexp, :linear_time?, /(a\1){0}/]
 
     assert_raise(TypeError) {Regexp.linear_time?(nil)}
     assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
@@ -2520,5 +2972,19 @@ class TestRegexp < Test::Unit::TestCase
         assert_nil(re.match("x" * 10), src)
       end
     end;
+  end
+
+  def test_too_big_compiled_program_length
+    k, rest = (2**32 - 217).divmod(100_001)
+    assert_raise_with_message(RegexpError, /too big compiled program/) do
+      Regexp.new("(?:#{'.{100000,}' * k}.{#{rest - 1},})?")
+    end
+  end
+
+  def test_look_behind_length_overflow
+    ["(?<=(?:a{65536}){65536})b", "(?<=(?:a{32768}){65536})b", "(?<!(?:a{65536}){65536})b"].each do |src|
+      assert_raise(RegexpError, src) { Regexp.new(src) }
+    end
+    assert_match(Regexp.new("(?<=(?:a{100}){100})b"), "a" * 10000 + "b")
   end
 end

@@ -196,7 +196,9 @@ The API key to send is resolved in this order: the GEM_HOST_API_KEY environment 
         return send_push_request_without_attestation(name, args)
       end
     end
-    bundles = "[" + attestations.join(",") + "]"
+    # JSON.parse in json before 2.7.3 retags the attestations as UTF-8, which the
+    # multipart body cannot join with the binary gem.
+    bundles = ("[" + attestations.join(",") + "]").b
 
     rubygems_api_request(*args, scope: get_push_scope) do |request|
       request.set_form([

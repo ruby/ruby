@@ -649,7 +649,7 @@ class Net::HTTPResponse
     total = 0
     while true
       line = self.class.read_line(@socket, MAX_RESPONSE_HEADER_LENGTH).chop
-      hexlen = line.slice(/[0-9a-fA-F]+/) or
+      hexlen = line.slice(/\A\h+(?=[ \t]*(?:;|\r?\z))/) or
           raise Net::HTTPBadResponse, "wrong chunk size line: #{line}"
       len = hexlen.hex
       break if len == 0

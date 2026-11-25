@@ -53,11 +53,13 @@ module Ruby::Prism
 
     private
 
+    # Ruby::Prism follows the message with the quoted regular expression, as Ruby
+    # does, while Onigmo gives the message alone.
     def assert_error(source, message)
       result = Ruby::Prism.parse("/#{source}/")
 
       assert result.failure?, "Expected #{source.inspect} to error"
-      assert_equal message, result.errors.first.message
+      assert_equal "#{message}: /#{source}/", result.errors.first.message
 
       error = assert_raise(ArgumentError) { Onigmo.parse(source) }
       assert_equal message, error.message

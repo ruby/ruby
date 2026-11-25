@@ -566,6 +566,18 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[2,4,6,'A','B','C',nil], set)
   end
 
+  def test_collect_bang_gc_stress
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # The temporary set must stay alive while it is copied back.
+      set = Set.new
+      EnvUtil.under_gc_stress do
+        set.collect! { |i| i }
+      end
+      assert_empty(set)
+    end;
+  end
+
   def test_reject!
     set = Set.new(1..10)
 
@@ -851,6 +863,24 @@ class TC_Set < Test::Unit::TestCase
       set << 5
     }
     assert_equal 4, set.size
+  end
+
+  def test_freeze_initialize
+    set = Set[1,2,3].freeze
+    assert_raise(FrozenError) { set.send(:initialize, [4,5]) }
+    assert_equal(Set[1,2,3], set)
+  end
+
+  def test_freeze_initialize_copy
+    set = Set[1,2,3].freeze
+    assert_raise(FrozenError) { set.send(:initialize_copy, Set[4,5,6]) }
+    assert_equal(Set[1,2,3], set)
+  end
+
+  def test_initialize_copy_non_set
+    set = Set[1,2,3]
+    assert_raise(TypeError) { set.send(:initialize_copy, [4,5,6]) }
+    assert_equal(Set[1,2,3], set)
   end
 
   def test_freeze_dup

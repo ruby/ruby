@@ -46,6 +46,10 @@ module Ruby::Prism
         assert_warning("puts 1 #{operator}0", warning)
         assert_warning("puts :a #{operator}0", warning)
         assert_warning("m = 1; puts m #{operator}0", warning)
+
+        diagnostic = Ruby::Prism.parse("puts :é\t#{operator}0").warnings.fetch(0)
+        assert_equal operator.to_s, diagnostic.location.slice
+        assert_equal "'#{operator}' after local variable or literal is interpreted as binary operator even though it seems like #{warning}", diagnostic.message
       end
     end
 
@@ -93,6 +97,25 @@ module Ruby::Prism
 
     def test_duplicated_when_clause
       assert_warning("case 1; when 1, 1; end", "when' clause")
+    end
+
+    def test_line_number_overflow
+      result = Ruby::Prism.parse("{\n__LINE__ => 1, -2147483648 => 2\n}", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+      assert_not_nil warning
+      assert_equal "key -2147483648 is duplicated and overwritten on line -2147483648", warning.message
+
+      result = Ruby::Prism.parse("\nif true\n end", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :indentation_mismatch }
+      assert_not_nil warning
+      assert_equal "mismatched indentations at 'end' with 'if' at -2147483648", warning.message
+    end
+
+    def test_line_number_at_maximum_without_overflow
+      result = Ruby::Prism.parse("{__LINE__ => 1, 2147483647 => 2}", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+      assert_not_nil warning
+      assert_equal "key 2147483647 is duplicated and overwritten on line 2147483647", warning.message
     end
 
     # Negative zero and positive zero are the same key: Float#eql? treats them
@@ -170,6 +193,10 @@ module Ruby::Prism
       assert_warning("_ = 1e-400", "out of range")
       assert_warning("_ = 2.4703282292062327e-324", "out of range")
 
+      literal = "1.23456789012345e999"
+      assert_warning("_ = #{literal}", "Float #{literal} out of range")
+      assert_warning("_ = #{literal}9", "Float #{literal}... out of range", compare: false)
+
       refute_warning("_ = 1e-310")
       refute_warning("_ = 2.4703282292062328e-324")
       refute_warning("_ = 0e99999")
@@ -240,6 +267,20 @@ module Ruby::Prism
       assert_warning("1 if 2..foo", "integer")
     end
 
+    def test_literal_predicate_warnings
+      assert_warning('if "s"; end', "string literal in condition")
+      assert_warning("if /r/; end", "regex literal in condition")
+      assert_warning("if :s..1.5; end", "symbol literal in flip-flop", "literal in flip-flop")
+      refute_warning("if !:s; end")
+    end
+
+    def test_grouped_predicate_warnings
+      assert_warning('if (setup; "s"); end', "string literal in condition", compare: RUBY_VERSION >= "3.3")
+      warnings = Ruby::Prism.parse("if (setup; /r/)..(setup; 1); end").warnings
+      assert_equal ["regex literal in flip-flop", "literal in flip-flop"], warnings.map(&:message)
+      refute_warning("if (; 1..2); end")
+    end
+
     def test_literal_in_conditionals
       sources = [
         "if (a = 2); a; end",
@@ -299,6 +340,11 @@ module Ruby::Prism
       assert_warning("# Frozen-String-Literal: maybe\n", "invalid value for frozen_string_literal: maybe")
       assert_warning("# Warn-Indent: maybe\n", "invalid value for warn_indent: maybe")
       assert_warning("# Shareable-Constant-Value: maybe\n", "invalid value for shareable_constant_value: maybe")
+    end
+
+    def test_magic_comment_invalid_values_with_embedded_nul
+      source = "# -*- Warn-Indent: \"bad\0value\"; Frozen-String-Literal: other -*-"
+      assert_equal ["invalid value for warn_indent: bad", "invalid value for frozen_string_literal: other"], Ruby::Prism.parse(source).warnings.map(&:message)
     end
 
     def test_string_in_predicate
@@ -365,6 +411,26 @@ module Ruby::Prism
       refute_warning("def foo; bar = 1; tap { baz = bar; baz }; end")
 
       refute_warning("def foo; bar = 1; end", line: -2, compare: false)
+    end
+
+    def test_unused_local_variables_in_declaration_order
+      names = %w[bufx bufy curx cury wattr maxx maxy]
+      source = "def foo\n#{names.map { |name| "  #{name} = 1\n" }.join}end\n"
+
+      assert_warning(source, *names.map { |name| "assigned but unused variable - #{name}" })
+    end
+
+    def test_unused_local_variables_in_rescue_modifier_values
+      ["def f = not (a = 1) rescue (b = 2)", "def f = not return rescue (a = 1) rescue (b = 2)"].each do |source|
+        warnings = Ruby::Prism.parse(source, version: "3.4").warnings
+        assert_equal [:unused_local_variable], warnings.map(&:type)
+        assert_equal "b", warnings.first.location.slice
+      end
+    end
+
+    def test_discarded_assignment_in_a_statement_list
+      source = "def f; consume(((discarded = 1); used = 2)); end"
+      assert_warning(source, "assigned but unused variable - discarded", compare: false, version: "4.1")
     end
 
     def test_unused_local_variable_or_assign_with_begin_node

@@ -1,0 +1,33 @@
+f (x) {}.tail
+        ^ unexpected '.', expecting end-of-input
+        ^ unexpected '.', ignoring it
+
+obj.f (x) {}.tail
+            ^ unexpected '.', expecting end-of-input
+            ^ unexpected '.', ignoring it
+
+outer inner (x) {} do end
+                   ^~ unexpected 'do', expecting end-of-input
+                   ^~ unexpected 'do', ignoring it
+                      ^~~ unexpected 'end', ignoring it
+
+outer A::B {} do end
+              ^~ unexpected 'do', expecting end-of-input
+              ^~ unexpected 'do', ignoring it
+                 ^~~ unexpected 'end', ignoring it
+
+outer super A::B {} do end
+                    ^~ unexpected 'do', expecting end-of-input
+                    ^~ unexpected 'do', ignoring it
+                       ^~~ unexpected 'end', ignoring it
+
+outer inner super (x) {} do end
+                         ^~ unexpected 'do', expecting end-of-input
+                         ^~ unexpected 'do', ignoring it
+                            ^~~ unexpected 'end', ignoring it
+
+outer super inner (x) {} do end
+                         ^~ unexpected 'do', expecting end-of-input
+                         ^~ unexpected 'do', ignoring it
+                            ^~~ unexpected 'end', ignoring it
+

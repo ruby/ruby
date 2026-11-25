@@ -28,7 +28,9 @@ module Ruby::Prism
     end
 
     def test_integer
+      assert_equal "0", static_inspect("0")
       assert_equal "1000", static_inspect("1_0_0_0")
+      assert_equal "-18446744073709551615", static_inspect("-0xffff_ffff_ffff_ffff")
       assert_equal "10000000000000000000000000000", static_inspect("1_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0")
 
       num = 7 ** 30_000

@@ -277,7 +277,7 @@ class SimpleHTTPSServer
         handle_request(ssl_socket)
         ssl_socket.close
       end
-    rescue OpenSSL::SSL::SSLError
+    rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
     end
   end
 

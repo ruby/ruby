@@ -6,6 +6,11 @@ require "date"
 require "rubygems/safe_marshal"
 
 class TestGemSafeMarshal < Gem::TestCase
+  unless method_defined?(:assert_linear_performance)
+    require "core_assertions"
+    include Test::Unit::CoreAssertions
+  end
+
   define_method("test_safe_load_marshal Date #<Date: 1994-12-09 ((2449696j,0s,0n),+0s,2299161j)>") { assert_safe_load_marshal "\x04\bU:\tDate[\vi\x00i\x03 a%i\x00i\x00i\x00f\f2299161" }
   define_method("test_safe_load_marshal Float 0.0") { assert_safe_load_marshal "\x04\bf\x060" }
   define_method("test_safe_load_marshal Float -0.0") { assert_safe_load_marshal "\x04\bf\a-0" }
@@ -239,6 +244,14 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_safe_load_as [0.0, a, 1.0, a]
   end
 
+  def test_link_after_bignum
+    i = 2**64
+    s = "s"
+    assert_safe_load_as [i, i]
+    assert_safe_load_as [i, s, "t", s]
+    assert_safe_load_as [Rational(i, 3), s, s]
+  end
+
   def test_hash_with_ivar
     h = { runtime: :development }
     h.instance_variable_set :@type, []
@@ -342,6 +355,27 @@ class TestGemSafeMarshal < Gem::TestCase
       assert_safe_load_as(i + 1)
       assert_safe_load_as(i - 1)
     end
+  end
+
+  def test_large_bignum
+    [2**(8 * 40_000), 7**100_000].each do |i|
+      assert_safe_load_as i
+      assert_safe_load_as(-i)
+    end
+  end
+
+  def test_load_bignum_in_linear_time
+    pre = ->(n) { Marshal.dump(2**(8 * n)) }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |dumped|
+      Gem::SafeMarshal.safe_load(dumped)
+    end
+  end
+
+  def test_bignum_unexpected_sign
+    e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::FormatError) do
+      Gem::SafeMarshal.safe_load("\x04\bl*\a\xFF\xFF\xFF\xFF")
+    end
+    assert_equal 'Unexpected sign for Bignum "*" (42)', e.message
   end
 
   def test_name_tuple_unmarshal_content_addressable_metadata

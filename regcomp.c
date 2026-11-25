@@ -115,6 +115,12 @@ distance_multiply(OnigDistance d, int m)
 }
 
 static int
+distance_to_int(OnigDistance d)
+{
+  return d > INT_MAX_LIMIT ? (int )INT_MAX_LIMIT : (int )d;
+}
+
+static int
 bitset_is_empty(BitSetRef bs)
 {
   int i;
@@ -220,19 +226,32 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
 #endif /* USE_SUBEXP_CALL */
 
 
+/* Reject a write that would push the compiled program past the size its
+   offset type (int) can address.  This must run before every write to the
+   program buffer, not only in add_opcode(): the bulk writers below emit
+   class bodies and exact strings in a single BBUF_ADD, which never revisits
+   the per-instruction guard.  The arithmetic stays unsigned so a multi-GiB
+   payload cannot wrap the accounting and copy past the allocation. */
 static int
+check_compiled_program_size(regex_t* reg, OnigDistance add_len)
+{
+  if (reg->used > MAX_COMPILED_PROGRAM_SIZE ||
+      add_len > (OnigDistance )(MAX_COMPILED_PROGRAM_SIZE - reg->used))
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  return 0;
+}
+
+ONIG_NODISCARD static int
 add_opcode(regex_t* reg, int opcode)
 {
-  /* Every instruction passes here, so this is where a program that would
-     outgrow its offset type is stopped, while it is still being emitted. */
-  if (reg->used > MAX_COMPILED_PROGRAM_SIZE)
-    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  int r = check_compiled_program_size(reg, 1);
+  if (r) return r;
   BBUF_ADD1(reg, opcode);
   return 0;
 }
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
-static int
+ONIG_NODISCARD static int
 add_state_check_num(regex_t* reg, int num)
 {
   StateCheckNumType n = (StateCheckNumType )num;
@@ -242,7 +261,7 @@ add_state_check_num(regex_t* reg, int num)
 }
 #endif
 
-static int
+ONIG_NODISCARD static int
 add_rel_addr(regex_t* reg, int addr)
 {
   RelAddrType ra = (RelAddrType )addr;
@@ -251,7 +270,7 @@ add_rel_addr(regex_t* reg, int addr)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_abs_addr(regex_t* reg, int addr)
 {
   AbsAddrType ra = (AbsAddrType )addr;
@@ -260,7 +279,7 @@ add_abs_addr(regex_t* reg, int addr)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_length(regex_t* reg, OnigDistance len)
 {
   LengthType l = (LengthType )len;
@@ -269,7 +288,7 @@ add_length(regex_t* reg, OnigDistance len)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_mem_num(regex_t* reg, int num)
 {
   MemNumType n = (MemNumType )num;
@@ -279,7 +298,7 @@ add_mem_num(regex_t* reg, int num)
 }
 
 #if 0
-static int
+ONIG_NODISCARD static int
 add_pointer(regex_t* reg, void* addr)
 {
   PointerType ptr = (PointerType )addr;
@@ -289,14 +308,14 @@ add_pointer(regex_t* reg, void* addr)
 }
 #endif
 
-static int
+ONIG_NODISCARD static int
 add_option(regex_t* reg, OnigOptionType option)
 {
   BBUF_ADD(reg, &option, SIZE_OPTION);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
 {
   int r;
@@ -307,21 +326,25 @@ add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
   return r;
 }
 
-static int
+ONIG_NODISCARD static int
 add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 {
+  int r = check_compiled_program_size(reg, len);
+  if (r) return r;
   BBUF_ADD(reg, bytes, len);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_bitset(regex_t* reg, BitSetRef bs)
 {
+  int r = check_compiled_program_size(reg, SIZE_BITSET);
+  if (r) return r;
   BBUF_ADD(reg, bs, SIZE_BITSET);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode_option(regex_t* reg, int opcode, OnigOptionType option)
 {
   int r;
@@ -451,8 +474,12 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
                           regex_t* reg ARG_UNUSED, int ignore_case)
 {
   int len;
-  int op = select_str_opcode(mb_len, byte_len, ignore_case);
+  int op;
 
+  if (byte_len > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+
+  op = select_str_opcode(mb_len, byte_len, ignore_case);
   len = SIZE_OPCODE;
 
   if (op == OP_EXACTMBN)  len += SIZE_LENGTH;
@@ -463,25 +490,29 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
   return len;
 }
 
-static int
+ONIG_NODISCARD static int
 add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
                    regex_t* reg, int ignore_case)
 {
+  int r;
   int op = select_str_opcode(mb_len, byte_len, ignore_case);
-  add_opcode(reg, op);
+  r = add_opcode(reg, op);
+  if (r) return r;
 
-  if (op == OP_EXACTMBN)
-    add_length(reg, mb_len);
+  if (op == OP_EXACTMBN) {
+    r = add_length(reg, (OnigDistance )mb_len);
+    if (r) return r;
+  }
 
   if (IS_NEED_STR_LEN_OP_EXACT(op)) {
     if (op == OP_EXACTN_IC)
-      add_length(reg, byte_len);
+      r = add_length(reg, byte_len);
     else
-      add_length(reg, byte_len / mb_len);
+      r = add_length(reg, byte_len / (OnigDistance )mb_len);
+    if (r) return r;
   }
 
-  add_bytes(reg, s, byte_len);
-  return 0;
+  return add_bytes(reg, s, byte_len);
 }
 
 
@@ -509,10 +540,15 @@ compile_length_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, sn->end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+      if (r < 0) return r;
       rlen += r;
+      if (rlen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       prev = p;
       blen = len;
       prev_len = len;
@@ -520,6 +556,7 @@ compile_length_string_node(Node* node, regex_t* reg)
     p += len;
   }
   r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+  if (r < 0) return r;
   rlen += r;
   return rlen;
 }
@@ -557,6 +594,8 @@ compile_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string(prev, prev_len, blen, reg, ambig);
@@ -581,25 +620,31 @@ compile_string_raw_node(StrNode* sn, regex_t* reg)
   return add_compile_string(sn->s, 1 /* sb */, sn->end - sn->s, reg, 0);
 }
 
-static int
+ONIG_NODISCARD static int
 add_multi_byte_cclass(BBuf* mbuf, regex_t* reg)
 {
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
-  add_length(reg, mbuf->used);
+  int r = add_length(reg, mbuf->used);
+  if (r) return r;
   return add_bytes(reg, mbuf->p, mbuf->used);
 #else
   int r, pad_size;
   UChar* p = BBUF_GET_ADD_ADDRESS(reg) + SIZE_LENGTH;
 
   GET_ALIGNMENT_PAD_SIZE(p, pad_size);
-  add_length(reg, mbuf->used + (WORD_ALIGNMENT_SIZE - 1));
-  if (pad_size != 0) add_bytes(reg, PadBuf, pad_size);
+  r = add_length(reg, mbuf->used + (WORD_ALIGNMENT_SIZE - 1));
+  if (r) return r;
+  if (pad_size != 0) {
+    r = add_bytes(reg, PadBuf, pad_size);
+    if (r) return r;
+  }
 
   r = add_bytes(reg, mbuf->p, mbuf->used);
+  if (r) return r;
 
   /* padding for return value from compile_length_cclass_node() to be fix. */
   pad_size = (WORD_ALIGNMENT_SIZE - 1) - pad_size;
-  if (pad_size != 0) add_bytes(reg, PadBuf, pad_size);
+  if (pad_size != 0) r = add_bytes(reg, PadBuf, pad_size);
   return r;
 #endif
 }
@@ -636,26 +681,29 @@ compile_cclass_node(CClassNode* cc, regex_t* reg)
 
   if (IS_NULL(cc->mbuf)) {
     if (IS_NCCLASS_NOT(cc))
-      add_opcode(reg, OP_CCLASS_NOT);
+      r = add_opcode(reg, OP_CCLASS_NOT);
     else
-      add_opcode(reg, OP_CCLASS);
+      r = add_opcode(reg, OP_CCLASS);
+    if (r) return r;
 
     r = add_bitset(reg, cc->bs);
   }
   else {
     if (ONIGENC_MBC_MINLEN(reg->enc) > 1 || bitset_is_empty(cc->bs)) {
       if (IS_NCCLASS_NOT(cc))
-        add_opcode(reg, OP_CCLASS_MB_NOT);
+        r = add_opcode(reg, OP_CCLASS_MB_NOT);
       else
-        add_opcode(reg, OP_CCLASS_MB);
+        r = add_opcode(reg, OP_CCLASS_MB);
+      if (r) return r;
 
       r = add_multi_byte_cclass(cc->mbuf, reg);
     }
     else {
       if (IS_NCCLASS_NOT(cc))
-        add_opcode(reg, OP_CCLASS_MIX_NOT);
+        r = add_opcode(reg, OP_CCLASS_MIX_NOT);
       else
-        add_opcode(reg, OP_CCLASS_MIX);
+        r = add_opcode(reg, OP_CCLASS_MIX);
+      if (r) return r;
 
       r = add_bitset(reg, cc->bs);
       if (r) return r;
@@ -1038,6 +1086,9 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
   else if (qn->upper == 0 && qn->is_referred != 0) { /* /(?<n>..){0}/ */
     len = SIZE_OP_JUMP + tlen;
   }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    len = 0;
+  }
   else if (!infinite && qn->greedy &&
            (qn->upper == 1 ||
             IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
@@ -1119,7 +1170,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
         r = add_opcode_rel_addr(reg, OP_PUSH_OR_JUMP_EXACT1,
                              mod_tlen + SIZE_OP_JUMP);
         if (r) return r;
-        add_bytes(reg, NSTR(qn->head_exact)->s, 1);
+        r = add_bytes(reg, NSTR(qn->head_exact)->s, 1);
+        if (r) return r;
         r = compile_tree_empty_check(qn->target, reg, empty_info);
         if (r) return r;
         r = add_opcode_rel_addr(reg, OP_JUMP,
@@ -1131,7 +1183,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
         r = add_opcode_rel_addr(reg, OP_PUSH_IF_PEEK_NEXT,
                                 mod_tlen + SIZE_OP_JUMP);
         if (r) return r;
-        add_bytes(reg, NSTR(qn->next_head_exact)->s, 1);
+        r = add_bytes(reg, NSTR(qn->next_head_exact)->s, 1);
+        if (r) return r;
         r = compile_tree_empty_check(qn->target, reg, empty_info);
         if (r) return r;
         r = add_opcode_rel_addr(reg, OP_JUMP,
@@ -1158,6 +1211,9 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
     if (r) return r;
     r = compile_tree(qn->target, reg);
+  }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    r = 0;
   }
   else if (!infinite && qn->greedy &&
            (qn->upper == 1 ||
@@ -1644,23 +1700,24 @@ compile_length_tree(Node* node, regex_t* reg)
       r = compile_length_tree(NCAR(node), reg);
       if (r < 0) return r;
       len += r;
+      if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     } while (IS_NOT_NULL(node = NCDR(node)));
     r = len;
     break;
 
   case NT_ALT:
-    {
-      int n = 0;
-      len = 0;
-      do {
-        r = compile_length_tree(NCAR(node), reg);
-        if (r < 0) return r;
-        len += r;
-        n++;
-      } while (IS_NOT_NULL(node = NCDR(node)));
-      r = len;
-      r += (SIZE_OP_PUSH + SIZE_OP_JUMP) * (n - 1);
-    }
+    len = 0;
+    do {
+      r = compile_length_tree(NCAR(node), reg);
+      if (r < 0) return r;
+      len += r;
+      if (IS_NOT_NULL(NCDR(node)))
+        len += SIZE_OP_PUSH + SIZE_OP_JUMP;
+      if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+    } while (IS_NOT_NULL(node = NCDR(node)));
+    r = len;
     break;
 
   case NT_STR:
@@ -1723,6 +1780,8 @@ compile_length_tree(Node* node, regex_t* reg)
     break;
   }
 
+  if (r > (int )MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
   return r;
 }
 
@@ -1750,6 +1809,8 @@ compile_tree(Node* node, regex_t* reg)
         if (NCDR(x) != NULL) {
           len += SIZE_OP_PUSH + SIZE_OP_JUMP;
         }
+        if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+          return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       } while (IS_NOT_NULL(x = NCDR(x)));
       pos = reg->used + len;  /* goal position */
 
@@ -2076,17 +2137,17 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   BitStatusType loc;
   GroupNumRemap* map;
 
-  map = (GroupNumRemap* )xalloca(sizeof(GroupNumRemap) * (env->num_mem + 1));
+  map = (GroupNumRemap* )xmalloc(sizeof(GroupNumRemap) * (size_t )(env->num_mem + 1));
   CHECK_NULL_RETURN_MEMERR(map);
   for (i = 1; i <= env->num_mem; i++) {
     map[i].new_val = 0;
   }
   counter = 0;
   r = noname_disable_map(root, map, &counter);
-  if (r != 0) return r;
+  if (r != 0) goto end;
 
   r = renumber_by_map(*root, map, env->num_mem);
-  if (r != 0) return r;
+  if (r != 0) goto end;
 
   for (i = 1, pos = 1; i <= env->num_mem; i++) {
     if (map[i].new_val > 0) {
@@ -2106,7 +2167,10 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   env->num_mem = env->num_named;
   reg->num_mem = env->num_named;
 
-  return onig_renumber_name_table(reg, map);
+  r = onig_renumber_name_table(reg, map);
+ end:
+  xfree(map);
+  return r;
 }
 #endif /* USE_NAMED_GROUP */
 
@@ -2475,8 +2539,13 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
   case NT_LIST:
     do {
       r = get_char_length_tree1(NCAR(node), reg, &tlen, level);
-      if (r == 0)
-        *len = (int )distance_add(*len, tlen);
+      if (r == 0) {
+        OnigDistance d = distance_add((OnigDistance )*len, (OnigDistance )tlen);
+        if (d > INT_MAX_LIMIT)
+          r = GET_CHAR_LEN_VARLEN;
+        else
+          *len = (int )d;
+      }
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
 
@@ -2522,8 +2591,13 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       QtfrNode* qn = NQTFR(node);
       if (qn->lower == qn->upper) {
         r = get_char_length_tree1(qn->target, reg, &tlen, level);
-        if (r == 0)
-          *len = (int )distance_multiply(tlen, qn->lower);
+        if (r == 0) {
+          OnigDistance d = distance_multiply((OnigDistance )tlen, qn->lower);
+          if (d > INT_MAX_LIMIT)
+            r = GET_CHAR_LEN_VARLEN;
+          else
+            *len = (int )d;
+        }
       }
       else
         r = GET_CHAR_LEN_VARLEN;
@@ -4888,7 +4962,7 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
 
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
-      if (to->expr.len > (int )add->len.max)
+      if ((OnigDistance )to->expr.len > add->len.max)
         to->expr.len = (int )add->len.max;
 
       if (to->expr.mmd.max == 0)
@@ -5334,7 +5408,8 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   reg->dmax = e->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = (int )(reg->dmin + (reg->exact_end - reg->exact));
+    reg->threshold_len = distance_to_int(distance_add(reg->dmin,
+                       (OnigDistance )(reg->exact_end - reg->exact)));
   }
 
   return 0;
@@ -5353,7 +5428,7 @@ set_optimize_map_info(regex_t* reg, OptMapInfo* m)
   reg->dmax       = m->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = (int )(reg->dmin + 1);
+    reg->threshold_len = distance_to_int(distance_add(reg->dmin, 1));
   }
 }
 
@@ -5675,7 +5750,6 @@ onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
   err_p:
     xfree(nreg->exact);
   err:
-    xfree(nreg);
     return ONIGERR_MEMORY;
   }
   return 0;
@@ -5688,7 +5762,12 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
     regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
     if (IS_NULL(reg)) return ONIGERR_MEMORY;
 
-    return onig_reg_copy_body(reg, oreg);
+    int r = onig_reg_copy_body(reg, oreg);
+    if (r != 0) {
+      xfree(reg);
+      *nreg = NULL;
+    }
+    return r;
   }
   return 0;
 }
@@ -5767,7 +5846,11 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   UnsetAddrList  uslist;
 #endif
 
-  if (IS_NOT_NULL(einfo)) einfo->par = (UChar* )NULL;
+  if (IS_NOT_NULL(einfo)) {
+    einfo->enc     = reg->enc;
+    einfo->par     = (UChar* )NULL;
+    einfo->par_end = (UChar* )NULL;
+  }
 
 #ifdef RUBY
   scan_env.sourcefile = sourcefile;

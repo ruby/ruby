@@ -25,6 +25,9 @@
  */
 #define PM_BIGNUM_DECIMAL_BASE 1000000000
 
+/* 5**13 is the largest power of five that fits in a word. */
+#define PM_BIGNUM_POWER5_13 UINT32_C(1220703125)
+
 /*
  * An arbitrary-precision unsigned integer.
  */
@@ -54,6 +57,16 @@ pm_bignum_mul_add(pm_bignum_t *bignum, uint32_t multiplier, uint32_t addend) {
     }
 
     if (carry != 0) bignum->words[bignum->length++] = (uint32_t) carry;
+}
+
+/* Multiply by 5**power in place. The words must have room for the product. */
+static PRISM_INLINE void
+pm_bignum_multiply_powof5(pm_bignum_t *bignum, uint64_t power) {
+    for (; power >= 13; power -= 13) pm_bignum_mul_add(bignum, PM_BIGNUM_POWER5_13, 0);
+
+    uint32_t multiplier = 1;
+    for (; power > 0; power--) multiplier *= 5;
+    if (multiplier > 1) pm_bignum_mul_add(bignum, multiplier, 0);
 }
 
 /*

@@ -1,0 +1,21 @@
+for * in ready and break; end
+                   ^~~~~ Invalid break
+
+for * in value = work rescue next; end
+                             ^~~~ Invalid next
+
+for * in if ready; redo end; end
+                   ^~~~ Invalid redo
+
+for * in case item; in Integer; break end; end
+                                ^~~~~ Invalid break
+
+for obj in (break if done); end
+            ^~~~~ Invalid break
+
+for obj in (next if done); end
+            ^~~~ Invalid next
+
+for obj in (redo if done); end
+            ^~~~ Invalid redo
+

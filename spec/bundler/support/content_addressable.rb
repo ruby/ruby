@@ -39,8 +39,9 @@ module Spec
       end
     end
 
-    def addresses_by_abi
-      @addresses_by_abi ||= Dir[gem_repo2("gems", "mygem-1.0-*.gem").to_s].to_h do |path|
+    def addresses_by_abi(name: "mygem")
+      @addresses_by_abi ||= {}
+      @addresses_by_abi[name] ||= Dir[gem_repo2("gems", "#{name}-1.0-*.gem").to_s].to_h do |path|
         ruby_abi = Gem::ContentAddress.ruby_abi_for(Gem::Package.new(path).spec.required_ruby_version)
         [ruby_abi, File.basename(path, ".gem").rpartition("-").last]
       end
@@ -54,20 +55,20 @@ module Spec
       addresses_by_abi.fetch(mismatched_abi)
     end
 
-    def addresses(*ruby_abis)
-      ruby_abis.to_h {|ruby_abi| [addresses_by_abi.fetch(ruby_abi), ruby_abi] }
+    def addresses(*ruby_abis, name: "mygem")
+      ruby_abis.to_h {|ruby_abi| [addresses_by_abi(name: name).fetch(ruby_abi), ruby_abi] }
     end
 
     def locked_addresses(name: "mygem", version: "1.0", platform: "x86_64-linux")
       lockfile.scan(/^  #{Regexp.escape("#{name} (#{version}-#{platform})")} ([0-9a-f]+)(?: abi=(\d+\.\d+))?(?: sha\d+=\S+)?$/).to_h
     end
 
-    def lockfile_with_content_addresses(content_addresses = {}, name: "mygem", version: "1.0", platform: "x86_64-linux", ruby_gem: false, checksums: false, ruby_abis: nil, ruby_version: nil, bundled_with: Bundler::VERSION)
+    def lockfile_with_content_addresses(content_addresses = {}, name: "mygem", version: "1.0", platform: "x86_64-linux", ruby_gem: false, checksums: false, platform_checksum: checksums, without_digests: [], ruby_abis: nil, ruby_version: nil, bundled_with: Bundler::VERSION)
       lock_name = "#{name} (#{version}-#{platform})"
       rows = content_addresses.map do |address, ruby_abi|
         row = "#{lock_name} #{address}"
         row += " abi=#{ruby_abi}" if ruby_abi
-        row += " sha256=#{checksum_digest(gem_repo2, name, version, address)}" if checksums
+        row += " sha256=#{checksum_digest(gem_repo2, name, version, address)}" if checksums && !without_digests.include?(address)
         row
       end.sort
 
@@ -83,7 +84,7 @@ module Spec
         DEPENDENCIES
           #{name}
         #{"\nCONTENT ADDRESSES\n#{rows.map {|row| "  #{row}\n" }.join}" if rows.any?}
-        #{"\nCHECKSUMS\n  #{lock_name} sha256=#{checksum_digest(gem_repo2, name, version, platform)}\n" if checksums}
+        #{"\nCHECKSUMS\n#{"  #{lock_name} sha256=#{checksum_digest(gem_repo2, name, version, platform)}\n" if platform_checksum}" if checksums}
         #{"\nRUBY ABIS\n#{ruby_abis.map {|ruby_abi| "  #{ruby_abi}\n" }.join}" if ruby_abis}
         #{"\nRUBY VERSION\n   #{ruby_version}\n" if ruby_version}
         BUNDLED WITH

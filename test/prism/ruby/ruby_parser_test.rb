@@ -39,6 +39,10 @@ module Ruby::Prism
       "dos_endings.txt",
       "endless_method_not.txt",
       "endless_method_rescue_modifier.txt",
+      # A class body inside a loop condition can contain a do block.
+      "class_in_loop_condition.txt",
+      # A numbered parameter in a block passed to a call named _1.
+      "numbered_parameter_calls.txt",
       "heredoc_dedent_line_continuation.txt",
       "heredoc_percent_newline_delimiter.txt",
       "heredoc_percent_q_newline_delimiter.txt",
@@ -63,6 +67,7 @@ module Ruby::Prism
       "spanning_heredoc_newlines.txt",
       "spanning_heredoc.txt",
       "symbols.txt",
+      "ternary_operator_non_ascii.txt",
       "tilde_heredocs.txt",
       "unary_method_calls.txt",
       "unparser/corpus/literal/literal.txt",
@@ -105,6 +110,18 @@ module Ruby::Prism
     Fixture.each_for_version(version: "3.3", except: failures) do |fixture|
       define_method(fixture.test_name) do
         assert_ruby_parser(fixture, todos.include?(fixture.path))
+      end
+    end
+
+    def test_comments_with_multibyte_characters
+      [
+        "# ああああああ\ndef x; end\n",
+        "# あああああああ\ndef x; end\n",
+        "# é\n# 日本語\n\n# ü\ndef x; end\n"
+      ].each do |source|
+        expected = ::RubyParser.new.parse(source)
+        actual = Ruby::Prism::Translation::RubyParser.new.parse(source)
+        assert_comments(expected, actual)
       end
     end
 

@@ -4494,13 +4494,26 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
     }
 }
 
+static inline VALUE
+asan_safe_obj_flags(VALUE obj)
+{
+    GC_ASSERT(!RB_SPECIAL_CONST_P(obj));
+    VALUE flags, type;
+    asan_unpoisoning_object(obj) {
+        flags = RBASIC(obj)->flags;
+        type = RB_BUILTIN_TYPE(obj);
+    }
+    GC_ASSERT(type != RUBY_T_NODE);
+    return flags;
+}
+
 static int
 rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
 {
     VALUE obj = (VALUE)key;
     VALUE table = (VALUE)val;
 
-    GC_ASSERT(RB_FL_TEST(obj, FL_FINALIZE));
+    GC_ASSERT(asan_safe_obj_flags(obj) & FL_FINALIZE);
     GC_ASSERT(RB_BUILTIN_TYPE(val) == T_ARRAY);
 
     rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
@@ -5774,7 +5787,11 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
                     heap_allocatable_bytes_expand(objspace, heap, swept_slots, heap->total_slots, heap->slot_size);
                 }
             }
-            else if (swept_slots < min_free_slots * 7 / 8 &&
+            // A heap smaller than its initial size gets new pages without a GC (see heap_prepare()), so it doesn't need a major GC to
+            // free slots. Otherwise a rarely used heap, e.g. one with 1024-byte slots and a couple of pages, can't reach min_free_slots,
+            // which comes from the initial size, and forces a major GC every RVALUE_OLD_AGE minor GCs once allocatable_bytes runs low.
+            else if (total_slots >= init_slots &&
+                     swept_slots < min_free_slots * 7 / 8 &&
                      objspace->heap_pages.allocatable_bytes < (min_free_slots * 7 / 8 - swept_slots) * heap->slot_size) {
                 gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_NOFREE;
                 heap->force_major_gc_count++;
@@ -5925,7 +5942,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             heap->freed_slots += ctx.freed_slots;
             heap->empty_slots += ctx.empty_slots;
 
-            if (pooled_slots < pool_budget) {
+            if (pooled_slots < pool_budget &&
+                    heap->free_pages && heap->free_pages->free_next) {
                 heap_add_poolpage(objspace, heap, sweep_page);
                 pooled_slots += free_slots;
             }

@@ -111,6 +111,7 @@ LIBPRISM_OBJS = \
 		prism/json.$(OBJEXT) \
 		prism/line_offset_list.$(OBJEXT) \
 		prism/list.$(OBJEXT) \
+		prism/memequal.$(OBJEXT) \
 		prism/memchr.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \

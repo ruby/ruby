@@ -82,6 +82,7 @@ struct rb_classext_struct {
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
+    bool has_struct_inline_field : 1; // See RCLASS_STRUCT_INLINE_FIELD.
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -99,6 +100,7 @@ struct RClass {
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
+    /* VALUE struct_inline_field (optional) */
 };
 
 #if SIZEOF_VALUE >= SIZEOF_LONG_LONG
@@ -110,6 +112,7 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 2
 struct RClass_boxable {
     struct RClass_and_rb_classext_t base;
     st_table *box_classext_tbl; // box_object -> (rb_classext_t *)
+    /* VALUE struct_inline_field (optional) */
 };
 
 static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
@@ -162,8 +165,7 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 // Raw accessor
 #define RCLASSEXT_BOX(ext) (ext->box)
 #define RCLASSEXT_SUPER(ext) (ext->super)
-#define RCLASSEXT_FIELDS(ext) (ext->fields_obj ? ROBJECT_FIELDS(ext->fields_obj) : NULL)
-#define RCLASSEXT_FIELDS_OBJ(ext) (ext->fields_obj)
+#define RCLASSEXT_FIELDS_OBJ(ext) rbimpl_atomic_value_load(&(ext)->fields_obj, RBIMPL_ATOMIC_ACQUIRE)
 #define RCLASSEXT_M_TBL(ext) (ext->m_tbl)
 #define RCLASSEXT_CONST_TBL(ext) (ext->const_tbl)
 #define RCLASSEXT_CALLABLE_M_TBL(ext) (ext->callable_m_tbl)
@@ -191,7 +193,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_PRIME_BOX(c) (RCLASS_EXT_PRIME(c)->box)
 // To invalidate CC by inserting&invalidating method entry into tables containing the target cme
 // See clear_method_cache_by_id_in_class()
-#define RCLASS_PRIME_FIELDS_OBJ(c) (RCLASS_EXT_PRIME(c)->fields_obj)
+#define RCLASS_PRIME_FIELDS_OBJ(c) RCLASSEXT_FIELDS_OBJ(RCLASS_EXT_PRIME(c))
 #define RCLASS_PRIME_M_TBL(c) (RCLASS_EXT_PRIME(c)->m_tbl)
 #define RCLASS_PRIME_CONST_TBL(c) (RCLASS_EXT_PRIME(c)->const_tbl)
 #define RCLASS_PRIME_CALLABLE_M_TBL(c) (RCLASS_EXT_PRIME(c)->callable_m_tbl)
@@ -293,6 +295,37 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
     RUBY_ASSERT(FL_TEST_RAW(klass, RCLASS_BOXABLE));
     struct RClass_boxable *box_klass = (struct RClass_boxable *)klass;
     box_klass->box_classext_tbl = tbl;
+}
+
+/* A "struct inline field" is stored right after the class in the same slot
+ * if its `has_struct_inline_field` is true.
+ * It starts as nil and belongs to the class, not to a box.
+ * Subclasses and copies of the class inherit the same value.
+ */
+static inline bool
+RCLASS_HAS_STRUCT_INLINE_FIELD(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->has_struct_inline_field;
+}
+
+static inline VALUE *
+RCLASS_STRUCT_INLINE_FIELD_PTR(VALUE klass)
+{
+    RUBY_ASSERT(RCLASS_HAS_STRUCT_INLINE_FIELD(klass));
+    size_t offset = FL_TEST_RAW(klass, RCLASS_BOXABLE) ? sizeof(struct RClass_boxable) : sizeof(struct RClass_and_rb_classext_t);
+    return (VALUE *)((char *)klass + offset);
+}
+
+static inline VALUE
+RCLASS_STRUCT_INLINE_FIELD(VALUE klass)
+{
+    return *RCLASS_STRUCT_INLINE_FIELD_PTR(klass);
+}
+
+static inline void
+RCLASS_SET_STRUCT_INLINE_FIELD(VALUE klass, VALUE value)
+{
+    RB_OBJ_WRITE(klass, RCLASS_STRUCT_INLINE_FIELD_PTR(klass), value);
 }
 
 /* class.c */
@@ -475,7 +508,8 @@ void rb_class_update_superclasses(VALUE);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
-VALUE rb_class_s_alloc(VALUE klass);
+VALUE rb_class_new_with_struct_inline_field(VALUE super);
+VALUE rb_class_alloc_with_struct_inline_field_of(VALUE from);
 VALUE rb_module_s_alloc(VALUE klass);
 void rb_class_set_initialized(VALUE klass);
 void rb_module_check_initializable(VALUE module);
@@ -525,17 +559,6 @@ static inline void
 RCLASS_WRITE_SUPER(VALUE klass, VALUE super)
 {
     RB_OBJ_WRITE(klass, &RCLASSEXT_SUPER(RCLASS_EXT_WRITABLE(klass)), super);
-}
-
-static inline VALUE
-RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
-    if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, ROOT_SHAPE_ID, true));
-    }
-    return ext->fields_obj;
 }
 
 static inline VALUE

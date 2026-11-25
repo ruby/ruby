@@ -1086,8 +1086,13 @@ rb_method_definition_addref(rb_method_definition_t *def)
 void
 rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
-    method_definition_release(me->def);
-    *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
+    rb_method_definition_t *old_def = me->def;
+    /* Release: other ractors read me->def without the VM lock, so what was written
+     * to def before this point must be visible to them once the pointer is. */
+    rbimpl_atomic_ptr_store((volatile void **)&me->def,
+                            method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me)),
+                            RBIMPL_ATOMIC_RELEASE);
+    method_definition_release(old_def);
 
     if (!ruby_running) add_opt_method_entry(me);
 
@@ -1279,15 +1284,16 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, r
 const rb_method_entry_t *
 rb_method_entry_clone(const rb_method_entry_t *src_me)
 {
-    rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class, src_me->def, METHOD_ENTRY_COMPLEMENTED(src_me));
+    rb_method_definition_t *src_def = rb_method_entry_def_acquire(src_me);
+    rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class, src_def, METHOD_ENTRY_COMPLEMENTED(src_me));
 
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
 
     // Also clone inner ME in case of refinement ME
-    if (src_me->def &&
-            src_me->def->type == VM_METHOD_TYPE_REFINED &&
-            src_me->def->body.refined.orig_me) {
-        const rb_method_entry_t *orig_me = src_me->def->body.refined.orig_me;
+    if (src_def &&
+            src_def->type == VM_METHOD_TYPE_REFINED &&
+            src_def->body.refined.orig_me) {
+        const rb_method_entry_t *orig_me = src_def->body.refined.orig_me;
         VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_REFINED);
 
         rb_method_entry_t *orig_clone = rb_method_entry_alloc(orig_me->called_id,
@@ -1310,8 +1316,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     rb_method_entry_t *me;
     const rb_method_entry_t *refined_orig_me = NULL;
 
-    if (!src_me->defined_class &&
-        def->type == VM_METHOD_TYPE_REFINED &&
+    if (def->type == VM_METHOD_TYPE_REFINED &&
         def->body.refined.orig_me) {
         const rb_method_entry_t *orig_me =
             rb_method_entry_clone(def->body.refined.orig_me);
@@ -1522,6 +1527,8 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     VALUE orig_klass;
     bool turn_zsuper_to_super = false;
 
+    ASSERT_vm_locking();
+
     if (NIL_P(klass)) {
         klass = rb_cObject;
     }
@@ -1564,7 +1571,21 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         rb_method_entry_t *old_me = (rb_method_entry_t *)data;
         rb_method_definition_t *old_def = old_me->def;
 
-        if (rb_method_definition_eq(old_def, def)) return old_me;
+        if (rb_method_definition_eq(old_def, def)) {
+            /* The existing entry is reused, so a visibility change happens in
+             * place and ccs that still point at it must be invalidated. */
+            bool visi_changed = METHOD_ENTRY_VISI(old_me) != visi;
+            if (visi_changed) {
+                rb_vm_barrier();
+                rb_vm_check_redefinition_opt_method(old_me, klass, &warnings->performance);
+            }
+            old_def->no_redef_warning = TRUE;
+            METHOD_ENTRY_FLAGS_SET(old_me, visi, FALSE);
+            if (visi_changed) {
+                rb_clear_method_cache(klass, mid);
+            }
+            return old_me;
+        }
         rb_vm_check_redefinition_opt_method(old_me, klass, &warnings->performance);
 
         if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
@@ -1840,10 +1861,6 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
     RB_VM_LOCKING() {
         newme = rb_method_entry_make(klass, mid, defined_class, visi,
                 me->def->type, me->def, 0, NULL, &warnings);
-        if (newme == me) {
-            me->def->no_redef_warning = TRUE;
-            METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
-        }
     }
 
     method_entry_warnings_emit(&warnings);
@@ -2448,17 +2465,26 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
         rb_vm_check_redefinition_opt_method(me, klass, NULL);
 
         if (klass == defined_class || origin_class == defined_class) {
-            if (me->def->type == VM_METHOD_TYPE_REFINED) {
-                // Refinement method entries should always be public because the refinement
-                // search is always performed.
-                if (me->def->body.refined.orig_me) {
-                    METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+            // On a private/protected miss, vm_call_method stores the
+            // method_missing_reason into cc->aux_, a union that also holds the
+            // bf read by vm_call_single_noarg_leaf_builtin. If a Ractor saw the
+            // new visibility through a cc still dispatching to that handler,
+            // it would clobber bf under a concurrent caller. Flipping and
+            // invalidating under one barrier keeps each cc to one visibility.
+            RB_VM_LOCKING() {
+                rb_vm_barrier();
+                if (me->def->type == VM_METHOD_TYPE_REFINED) {
+                    // Refinement method entries should always be public because the refinement
+                    // search is always performed.
+                    if (me->def->body.refined.orig_me) {
+                        METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
+                    }
                 }
+                else {
+                    METHOD_ENTRY_VISI_SET(me, visi);
+                }
+                rb_clear_method_cache(klass, name);
             }
-            else {
-                METHOD_ENTRY_VISI_SET(me, visi);
-            }
-            rb_clear_method_cache(klass, name);
         }
         else {
             rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, visi);
@@ -2875,7 +2901,7 @@ rb_mod_protected_method_defined(int argc, VALUE *argv, VALUE mod)
 int
 rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 {
-    return rb_method_definition_eq(m1->def, m2->def);
+    return rb_method_definition_eq(rb_method_entry_def_acquire(m1), rb_method_entry_def_acquire(m2));
 }
 
 static const rb_method_definition_t *
@@ -2891,7 +2917,7 @@ original_method_definition(const rb_method_definition_t *def)
             }
             break;
           case VM_METHOD_TYPE_ALIAS:
-            def = def->body.alias.original_me->def;
+            def = rb_method_entry_def_acquire(rb_method_alias_original_me(def));
             goto again;
           default:
             break;
@@ -2976,7 +3002,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
 st_index_t
 rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
 {
-    return rb_hash_method_definition(hash, me->def);
+    return rb_hash_method_definition(hash, rb_method_entry_def_acquire(me));
 }
 
 void
@@ -3020,7 +3046,7 @@ rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_
         goto again;
       case VM_METHOD_TYPE_ALIAS:
         visi = METHOD_ENTRY_VISI(orig_me);
-        orig_me = orig_me->def->body.alias.original_me;
+        orig_me = rb_method_alias_original_me(rb_method_entry_def_acquire(orig_me));
         VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_ALIAS);
         break;
       default: break;
@@ -3053,11 +3079,13 @@ rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_
 
     if (orig_me->defined_class == 0) {
         struct method_entry_warnings warnings = {0};
-        const rb_method_entry_t *alias_me =
-            // TODO: needs vm lock?
-            rb_method_entry_make(target_klass, alias_name, target_klass, visi,
-                                 VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
-                                 (void *)rb_method_entry_clone(orig_me), &warnings);
+        const rb_method_entry_t *alias_me;
+
+        RB_VM_LOCKING() {
+            alias_me = rb_method_entry_make(target_klass, alias_name, target_klass, visi,
+                                            VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
+                                            (void *)rb_method_entry_clone(orig_me), &warnings);
+        }
 
         method_entry_warnings_emit(&warnings);
         method_added(target_klass, alias_name, alias_me);

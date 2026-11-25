@@ -692,6 +692,29 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(:ok, post_arg(0))
   end
 
+  def test_tailcall_into_forwarding_method
+    tailcall(<<~RUBY)
+      def forwarded_to(*args, **kw) = [args, kw]
+
+      def forwarding(...) = forwarded_to(...)
+
+      def call_forwarding(a, b) = forwarding(a, b, k: 3)
+    RUBY
+
+    assert_equal([[100, 1], {k: 3}], call_forwarding(100, 1))
+  end
+
+  def test_tailcall_super
+    parent = Class.new { def m(*args, **kw) = [args, kw] }
+    zsuper = Class.new(parent)
+    self.class.tailcall(zsuper, "def m(a, b) = super")
+    forwarding = Class.new(parent)
+    self.class.tailcall(forwarding, "def m(...) = super(...)")
+
+    assert_equal([[1, 2], {}], zsuper.new.m(1, 2))
+    assert_equal([[1, 2], {k: 3}], forwarding.new.m(1, 2, k: 3))
+  end
+
   def test_tailcall_interrupted_by_sigint
     bug12576 = 'ruby-core:76327'
     script = "#{<<-"begin;"}\n#{<<~'end;'}"

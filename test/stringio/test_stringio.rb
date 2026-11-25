@@ -151,6 +151,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil(stringio.gets)
   end
 
+  def test_gets_limit_in_truncated_fixed_width_char
+    # 6 bytes: one UTF-32 code unit and a truncated one.  The limit
+    # falls inside the truncated unit, and the line must stop at the
+    # end of the string, not beyond it.
+    stringio = StringIO.new("abcdef".b.freeze)
+    stringio.set_encoding(Encoding::UTF_32LE)
+    assert_equal("abcdef".b, stringio.gets(5).b)
+    assert_equal(6, stringio.pos)
+    assert_nil(stringio.gets(5))
+  end
+
   def test_gets_chomp
     assert_equal(nil, StringIO.new("").gets(chomp: true))
     assert_equal("", StringIO.new("\n").gets(chomp: true))
@@ -495,6 +506,12 @@ class TestStringIO < Test::Unit::TestCase
     assert_nothing_raised { f.pos }
   end
 
+  def test_pos_to_int
+    f = StringIO.new("foo")
+    f.pos = 1.0
+    assert_equal(1, f.pos)
+  end
+
   def test_reopen
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal("foo\n", f.gets)
@@ -752,6 +769,10 @@ class TestStringIO < Test::Unit::TestCase
     s = "0123456789"
     assert_same(s, f.read(nil, s))
     assert_equal("\u3042\u3044", s)
+    # at EOF
+    s = "buf".b
+    assert_same(s, f.read(0, s))
+    assert_equal("", s)
 
     bug13806 = '[ruby-core:82349] [Bug #13806]'
     assert_string("", Encoding::UTF_8, f.read, bug13806)
@@ -847,8 +868,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal "".b, StringIO.new("").pread(0, 0)
 
     buf = "stale".b
-    assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
-    assert_equal "stale".b, buf
+    assert_same buf, StringIO.new("").pread(0, 0, buf)
+    assert_equal "".b, buf
 
     assert_nothing_raised { StringIO.new("pread").freeze.pread(3, 0)}
   end
@@ -891,6 +912,41 @@ class TestStringIO < Test::Unit::TestCase
 
       expected_pos += 1
     end
+  end
+
+  def test_getc_broken_multibyte
+    # A character the remaining bytes cannot complete yields one byte, and never
+    # reads or seeks past the end of the string.
+    truncated = "x\u3042".byteslice(0, 2)
+    s = StringIO.new(truncated)
+    assert_equal("x", s.getc)
+    assert_equal("\xE3".b, s.getc.b)
+    assert_equal(2, s.pos)
+    assert_nil(s.getc)
+
+    # The same holds starting inside a complete character.
+    s = StringIO.new("\u3042")
+    s.pos = 1
+    assert_equal("\x81".b, s.getc.b)
+    assert_equal(2, s.pos)
+
+    # A whole character is still returned whole.
+    s = StringIO.new("\u3042")
+    assert_equal("\u3042", s.getc)
+    assert_equal(3, s.pos)
+
+    # A string that shares a backing buffer with a longer one must be measured at
+    # its own offset, not the buffer's start.
+    s = StringIO.new("\u3042\u3044\u3046".byteslice(1, 3))
+    assert_equal("\x81".b, s.getc.b)
+    assert_equal(1, s.pos)
+  end
+
+  def test_each_codepoint_broken_multibyte
+    # A string that shares a backing buffer with a longer one must not
+    # read the buffer past its own end.
+    s = StringIO.new("\u3042\u3044".byteslice(0, 2))
+    assert_raise(ArgumentError) {s.each_codepoint {}}
   end
 
   def test_ungetc_padding
@@ -1204,6 +1260,65 @@ class TestStringIO < Test::Unit::TestCase
     f.freeze
     f2 = f.dup
     assert_not_predicate(f2, :frozen?)
+  end
+
+  def test_set_string_via_dup_with_gc
+    omit "This is for the write barrier of CRuby" unless RUBY_ENGINE == "ruby"
+    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      io = StringIO.new("old".dup)
+      4.times {GC.start} # Promote io to the old generation
+      io.dup.string = "new" * 100
+      GC.verify_internal_consistency
+    end;
+  end
+
+  def test_new_during_mode_conversion
+    mode = Object.new
+    mode.define_singleton_method(:to_str) {StringIO.new("", "a"); "r"}
+    assert_predicate(StringIO.new("".dup, mode), :closed_write?)
+  end
+
+  def test_reopen_freeze_during_argument_conversion
+    f = StringIO.new("hello")
+    c = Object.new
+    c.define_singleton_method(:to_str) {f.freeze; "new"}
+    assert_raise(FrozenError) {f.reopen(c, "r")}
+    assert_equal(["hello", false], [f.string, f.closed_write?])
+  end
+
+  def test_initialize_frozen
+    f = StringIO.new("hello")
+    f.freeze
+    assert_raise(FrozenError) {f.send(:initialize, "new")}
+    assert_equal("hello", f.string)
+  end
+
+  def test_reopen_freeze_during_to_strio
+    f = StringIO.new("hello")
+    g = StringIO.new("world")
+    c = Object.new
+    c.define_singleton_method(:to_strio) {f.freeze; g}
+    assert_raise(FrozenError) {f.reopen(c)}
+    assert_equal("hello", f.string)
+  end
+
+  def test_initialize_copy_frozen
+    f = StringIO.new("hello")
+    f.freeze
+    assert_raise(FrozenError) {f.send(:initialize_copy, StringIO.new("world"))}
+    assert_equal("hello", f.string)
+  end
+
+  def test_write_null_device_with_encoding
+    f = StringIO.new(nil, external_encoding: "UTF-8")
+    assert_equal(0, f.write("abc"))
+    assert_nil(f.string)
+  end
+
+  def test_set_encoding_by_bom_null_device
+    assert_nil(StringIO.new(nil).set_encoding_by_bom)
+    assert_nil(StringIO.new(nil, "r:BOM|UTF-8").string)
   end
 
   private

@@ -63,7 +63,7 @@ module Bundler
       invalid_platforms
     end
 
-    def add_extra_platforms!(platforms)
+    def add_extra_platforms!(platforms, prefer_local: false)
       if @specs.empty?
         platforms.concat([Gem::Platform::RUBY]).uniq
         return
@@ -73,12 +73,13 @@ module Bundler
         next if platforms.include?(platform)
         next unless Gem::Platform.generic(platform) == Gem::Platform::RUBY
 
-        complete_platform(platform)
+        complete_platform(platform, prefer_local: prefer_local && platform === Bundler.local_platform)
       end
       return if new_platforms.empty?
 
       platforms.concat(new_platforms)
       return if new_platforms.include?(Bundler.local_platform)
+      return if prefer_local && @specs.any? {|spec| spec.platform == Bundler.local_platform }
 
       less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && Bundler.local_platform === platform && platform === Bundler.local_platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
@@ -162,14 +163,14 @@ module Bundler
     end
 
     def incomplete_for_platform?(deps, platform)
+      return false if @specs.empty?
+
       incomplete_specs_for_platform(deps, platform).any?
     end
 
     def incomplete_specs_for_platform(deps, platform)
-      return [] if @specs.empty?
-
       validation_set = self.class.new(@specs)
-      validation_set.for(deps, [platform])
+      validation_set.for(deps.select {|dep| dep.should_include?(platform) }, [platform])
       validation_set.incomplete_specs
     end
 
@@ -291,7 +292,7 @@ module Bundler
       @materializations.filter_map(&:materialized_spec)
     end
 
-    def complete_platform(platform)
+    def complete_platform(platform, prefer_local: false)
       new_specs = []
 
       valid_platform = lookup.all? do |_, specs|
@@ -302,7 +303,7 @@ module Bundler
         # the same overrides the install/resolve path already applies.
         overrides = spec.is_a?(LazySpecification) ? Array(spec.overrides) : []
         matching_specs = spec.source.specs.search([spec.name, spec.version])
-        platform_spec = MatchPlatform.select_best_platform_match(matching_specs, platform).find do |s|
+        platform_spec = find_platform_spec(matching_specs, platform, prefer_local) do |s|
           s.matches_current_metadata_with_overrides?(overrides) && validate_deps(s, overrides) == :valid
         end
 
@@ -326,6 +327,26 @@ module Bundler
       end
 
       valid_platform
+    end
+
+    def find_platform_spec(specs, platform, prefer_local, &valid)
+      if prefer_local
+        local_specs = specs.select {|s| s.is_a?(StubSpecification) || s.instance_of?(Gem::Specification) }
+        local_matches = local_specs.select {|s| covers_platform?(s.platform, platform) && valid.call(s) }
+        return MatchPlatform.select_best_platform_match(local_matches, platform).first if local_matches.any?
+      end
+
+      MatchPlatform.select_best_platform_match(specs, platform).find(&valid)
+    end
+
+    def covers_platform?(gem_platform, platform)
+      return true if gem_platform == Gem::Platform::RUBY
+      return false unless gem_platform === platform
+      # A versioned or CPU-specific binary cannot cover a wildcard in the lockfile.
+      return false if platform.version.nil? && gem_platform.version
+      return false if [nil, "universal"].include?(platform.cpu) && ![nil, "universal"].include?(gem_platform.cpu)
+
+      true
     end
 
     def all_platforms

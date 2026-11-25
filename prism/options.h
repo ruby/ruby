@@ -150,8 +150,9 @@ PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_filepath(const pm_options
  *
  * @param options The options struct to set the filepath on.
  * @param filepath The filepath to set.
+ * @param length The length of the filepath in bytes.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath) PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, const char *filepath, size_t length) PRISM_NONNULL(1);
 
 /**
  * Set the line option on the given options struct.
@@ -166,8 +167,9 @@ PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t 
  *
  * @param options The options struct to set the encoding on.
  * @param encoding The encoding to set.
+ * @param length The length of the encoding name in bytes.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding) PRISM_NONNULL(1);
+PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, const char *encoding, size_t length) PRISM_NONNULL(1);
 
 /**
  * Set the encoding_locked option on the given options struct.
@@ -204,6 +206,16 @@ PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, 
  * @returns Whether or not the version was parsed successfully.
  */
 PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length) PRISM_NONNULL(1);
+
+/**
+ * Check whether prism supports the given version of Ruby, written the way that
+ * pm_options_version_set reads it, such as "3.4", "4.0.1", or "latest".
+ *
+ * @param version The version to check.
+ * @param length The length of the version string.
+ * @returns Whether or not prism supports the version.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_options_version_supported_p(const char *version, size_t length) PRISM_NONNULL(1);
 
 /**
  * Set the version option on the given options struct to the lowest version of

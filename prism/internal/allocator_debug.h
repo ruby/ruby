@@ -46,7 +46,7 @@ pm_allocator_debug_free_sized(void *ptr, size_t old_size) {
     if (ptr != NULL) {
         size_t *memory = (size_t *)ptr;
         if (old_size != memory[-1]) {
-            fprintf(stderr, "[BUG] buffer %p was allocated with size %lu but freed with size %lu\n", ptr, memory[-1], old_size);
+            fprintf(stderr, "[BUG] buffer %p was allocated with size %zu but freed with size %zu\n", ptr, memory[-1], old_size);
             abort();
         }
         xfree_sized(memory - 1, old_size + sizeof(size_t));
@@ -57,7 +57,7 @@ static inline void *
 pm_allocator_debug_realloc_sized(void *ptr, size_t size, size_t old_size) {
     if (ptr == NULL) {
         if (old_size != 0) {
-            fprintf(stderr, "[BUG] realloc_sized called with NULL pointer and old size %lu\n", old_size);
+            fprintf(stderr, "[BUG] realloc_sized called with NULL pointer and old size %zu\n", old_size);
             abort();
         }
         return pm_allocator_debug_malloc(size);
@@ -65,7 +65,7 @@ pm_allocator_debug_realloc_sized(void *ptr, size_t size, size_t old_size) {
 
     size_t *memory = (size_t *)ptr;
     if (old_size != memory[-1]) {
-        fprintf(stderr, "[BUG] buffer %p was allocated with size %lu but realloced with size %lu\n", ptr, memory[-1], old_size);
+        fprintf(stderr, "[BUG] buffer %p was allocated with size %zu but realloced with size %zu\n", ptr, memory[-1], old_size);
         abort();
     }
     return pm_allocator_debug_realloc(ptr, size);

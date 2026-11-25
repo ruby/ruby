@@ -367,8 +367,9 @@ module Ruby::Prism
                 current_string = +""
                 current_length = 0
                 start_offset = token.location.start_offset
-                while token.type == :STRING_CONTENT
-                  current_length += token.value.bytesize
+                loop do
+                  value = token.value
+                  current_length += value.bytesize
                   # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
                   prev_token = lexed[index - 2] if index - 2 >= 0
                   is_first_token_on_line = prev_token && token.location.start_line != prev_token.location.start_line
@@ -380,18 +381,25 @@ module Ruby::Prism
                     value = trim_heredoc_whitespace(token.value, current_heredoc)
                   end
 
-                  current_string << unescape_string(value, quote_stack.last)
                   relevant_backslash_count = if quote_stack.last.start_with?("%W", "%I")
                                                0 # the last backslash escapes the newline
                                              else
                                                token.value[/(\\{1,})\n/, 1]&.length || 0
                                              end
-                  if relevant_backslash_count.even? || !interpolation?(quote_stack.last)
-                    tokens << [:tSTRING_CONTENT, [current_string, range(start_offset, start_offset + current_length)]]
-                    break
+                  continued = relevant_backslash_count.odd? && interpolation?(quote_stack.last)
+                  value = value.delete_suffix("\\\n") if continued
+                  current_string << unescape_string(value, quote_stack.last)
+
+                  if continued && lexed[index]&.type == :STRING_CONTENT
+                    token = lexed[index]
+                    index += 1
+                    next
                   end
-                  token = lexed[index]
-                  index += 1
+
+                  unless continued && current_string.empty?
+                    tokens << [:tSTRING_CONTENT, [current_string, range(start_offset, start_offset + current_length)]]
+                  end
+                  break
                 end
               else
                 # When the parser gem encounters a line continuation inside of a multiline string,
@@ -422,7 +430,7 @@ module Ruby::Prism
                     emit = true
                   end
 
-                  if emit
+                  if emit && !current_line.empty?
                     end_offset = start_offset + current_line.bytesize + adjustment
                     tokens << [:tSTRING_CONTENT, [unescape_string(current_line, quote_stack.last), range(start_offset, end_offset)]]
                     start_offset = end_offset

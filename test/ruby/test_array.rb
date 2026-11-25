@@ -1258,7 +1258,18 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.index('ca'))
     assert_nil(a.index([1,2]))
 
+    assert_equal(1, a.index(99, offset: 0))
+    assert_equal(3, a.index(99, offset: 2))
+    assert_equal(2, a.index(/a/, offset: -4))
+    assert_nil(a.index(99, offset: a.size))
+    assert_nil(a.index(99, offset: -a.size - 1))
+
+    assert_equal(1, a.index(offset: 0).each {|e| e == 99})
+    assert_equal(3, a.index(offset: 2).each {|e| e == 99})
+    assert_equal(2, a.index(offset: -4).each {|e| e == /a/})
+
     assert_equal(1, assert_warn(/given block not used/) {a.index(99) {|x| x == 'cat' }})
+    assert_equal(3, assert_warn(/given block not used/) {a.index(99, offset: 2) {|x| x == 'cat' }})
   end
 
   def test_values_at
@@ -1422,6 +1433,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
     assert_nil(a.pop)
     assert_equal(@cls[], a)
+  end
+
+  def test_pop_frozen_in_to_int
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.pop(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.shift(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
   end
 
   def test_prepend
@@ -1633,7 +1658,19 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.rindex('ca'))
     assert_nil(a.rindex([1,2]))
 
+    assert_equal(3, a.rindex(99, offset: 0))
+    assert_equal(3, a.rindex(99, offset: 2))
+    assert_equal(1, a.rindex(99, offset: -3))
+    assert_nil(a.rindex(/a/, offset: -4))
+    assert_nil(a.index(99, offset: a.size))
+    assert_nil(a.index(99, offset: -a.size - 1))
+
+    assert_equal(3, a.rindex(offset: 0).each {|e| e == 99})
+    assert_equal(3, a.rindex(offset: 2).each {|e| e == 99})
+    assert_equal(1, a.rindex(offset: -3).each {|e| e == 99})
+
     assert_equal(3, assert_warning(/given block not used/) {a.rindex(99) {|x| x == [1,2,3] }})
+    assert_equal(3, assert_warning(/given block not used/) {a.rindex(99, offset: 2) {|x| x == [1,2,3] }})
 
     bug15951 = "[Bug #15951]"
     o2 = Object.new
@@ -2081,6 +2118,17 @@ class TestArray < Test::Unit::TestCase
     orig = ary.dup
     assert_raise(FrozenError, "frozen during comparison") {ary.sort!}
     assert_equal(orig, ary, "must not be modified once frozen")
+  end
+
+  def test_sort_bang_slice_in_block
+    ary = Array.new(1000) { |i| "s#{i}" }
+    x = nil
+    ary.sort! do |p, q|
+      x ||= ary[0, 500]
+      p <=> q
+    end
+    ary.clear
+    assert_equal("s0", x[0])
   end
 
   def test_short_heap_array_sort_bang_memory_leak
@@ -2923,6 +2971,14 @@ class TestArray < Test::Unit::TestCase
     end
     a = [nil, o]
     assert_equal(nil, a.rindex(0))
+
+    a = Array.new(100, 0)
+    o = Object.new
+    o.define_singleton_method(:to_int) { a.pop(99); 0 }
+    assert_equal(0, a.rindex(0, offset: o))
+    a = Array.new(100, 0)
+    o.define_singleton_method(:to_int) { a.pop(99); -1 }
+    assert_equal(0, a.rindex(0, offset: o))
   end
 
   def test_ary_to_ary
@@ -3220,6 +3276,25 @@ class TestArray < Test::Unit::TestCase
     assert_equal([["a", 0], ["b", 1], ["c", 2]], a.zip(e), bug17814)
     assert_equal([["a", 3], ["b", 4], ["c", 5]], a.zip(e), bug17814)
     assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e), bug17814)
+  end
+
+  def test_zip_with_saved_block
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        attr_reader :block
+
+        def each(&block)
+          @block = block
+          self
+        end
+      end
+
+      assert_equal([[1, nil], [2, nil]], [1, 2].zip(enum))
+      GC.start
+      assert_nil(enum.block.call(3))
+    };
   end
 
   def test_zip_modify_during_to_ary

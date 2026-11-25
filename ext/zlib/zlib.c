@@ -15,9 +15,23 @@
 #ifndef HAVE_RB_LEN_T
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
+#endif
+#ifndef SIZEOF_RB_LEN_T
 # define SIZEOF_RB_LEN_T SIZEOF_LONG
+#endif
+#ifndef LEN2NUM
 # define LEN2NUM LONG2NUM
+#endif
+#ifndef ULEN2NUM
+# define ULEN2NUM ULONG2NUM
+#endif
+#ifndef NUM2LEN
 # define NUM2LEN NUM2LONG
+#endif
+#ifndef NUM2ULEN
+# define NUM2ULEN NUM2ULONG
+#endif
+#ifndef PRIdLEN
 # define PRIdLEN "ld"
 #endif
 
@@ -532,8 +546,8 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 {
-    return ULONG2NUM(
-	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
+    return ULEN2NUM(
+	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2ULEN(len2)));
 }
 #else
 #define rb_zlib_crc32_combine rb_f_notimplement
@@ -1568,8 +1582,11 @@ static VALUE
 rb_zstream_set_avail_out(VALUE obj, VALUE size)
 {
     struct zstream *z = get_zstream(obj);
+    int len = FIX2INT(size);
 
-    zstream_expand_buffer_into(z, FIX2INT(size));
+    if (len < 0) rb_raise(rb_eArgError, "negative size");
+
+    zstream_expand_buffer_into(z, len);
     return size;
 }
 
@@ -4068,6 +4085,7 @@ rb_gzreader_s_zcat(int argc, VALUE *argv, VALUE klass)
             }
             tmpbuf = gzfile_read_all(get_gzfile(obj), Qnil);
             rb_str_cat(buf, RSTRING_PTR(tmpbuf), RSTRING_LEN(tmpbuf));
+            RB_GC_GUARD(tmpbuf);
         }
 
         rb_gzreader_read(0, 0, obj);
@@ -4485,10 +4503,11 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	gzreader_skip_linebreaks(gz);
     }
 
-    while (ZSTREAM_BUF_FILLED(&gz->z) < rslen) {
+    rb_len_t minlen = (limit > 0 && limit < rslen) ? limit : rslen;
+    while (ZSTREAM_BUF_FILLED(&gz->z) < minlen) {
 	if (ZSTREAM_IS_FINISHED(&gz->z)) {
 	    if (ZSTREAM_BUF_FILLED(&gz->z) > 0) gz->lineno++;
-	    return gzfile_read(gz, rslen, Qnil);
+	    return gzfile_read(gz, minlen, Qnil);
 	}
 	gzfile_read_more(gz, Qnil);
     }
@@ -4497,6 +4516,10 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     n = rslen;
     for (;;) {
 	rb_len_t filled;
+	if (limit > 0 && limit < rslen) {
+	    n = limit;
+	    break;
+	}
 	if (n > ZSTREAM_BUF_FILLED(&gz->z)) {
 	    if (ZSTREAM_IS_FINISHED(&gz->z)) break;
 	    gzfile_read_more(gz, Qnil);

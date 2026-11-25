@@ -1,0 +1,5 @@
+def f; x = begin; return; rescue; ensure; end; end
+
+def f; x = begin; return; rescue TypeError; return; rescue; 1; ensure; end; end
+
+def f; x = begin; 1; rescue; return; ensure; end; end

@@ -9,16 +9,12 @@
 #include "prism/internal/bignum.h"
 #include "prism/internal/bit.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/oom.h"
-
-/* Include sys/types.h before inttypes.h to work around an issue with certain
- * versions of GCC and newlib which causes omission of PRIu64 and the other
- * 64-bit macros. */
-#include <sys/types.h>
-#include <inttypes.h>
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -99,10 +95,10 @@ static void
 pm_integer_from_bignum(pm_arena_t *arena, pm_integer_t *integer, const pm_bignum_t *bignum, uint32_t capacity) {
     if (bignum->length <= 2) {
         uint64_t value = pm_bignum_uint64(bignum);
-        pm_arena_realloc(arena, bignum->words, 0, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t));
+        PM_ARENA_REALLOC(arena, bignum->words, 0, sizeof(uint32_t) * capacity, uint32_t);
         *integer = pm_integer_uint64(value);
     } else {
-        uint32_t *words = (uint32_t *) pm_arena_realloc(arena, bignum->words, sizeof(uint32_t) * bignum->length, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t));
+        uint32_t *words = PM_ARENA_REALLOC(arena, bignum->words, sizeof(uint32_t) * bignum->length, sizeof(uint32_t) * capacity, uint32_t);
         *integer = (pm_integer_t) { .length = bignum->length, .words = { .values = words } };
     }
 }
@@ -124,7 +120,7 @@ pm_integer_parse_powof2(pm_arena_t *arena, pm_integer_t *integer, uint32_t base,
     uint32_t length = (uint32_t) (((uint64_t) (digits - 1) * bit + leading_bits + 31) / 32);
     PRISM_ASSERT(length > 2);
 
-    uint32_t *words = pm_arena_zalloc(arena, sizeof(uint32_t) * length, PRISM_ALIGNOF(uint32_t));
+    uint32_t *words = PM_ARENA_ZALLOC_ARRAY(arena, uint32_t, length);
     uint64_t bit_position = 0;
 
     for (const uint8_t *cursor = end; cursor > start;) {
@@ -217,7 +213,7 @@ pm_integer_parse_decimal_divide(pm_arena_t *arena, pm_integer_t *integer, uint32
 
     pm_bignum_t result = {
         .length = 0,
-        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+        .words = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity)
     };
 
     /* The scratch space is about 12 times the number of chunks, which can
@@ -288,7 +284,7 @@ pm_integer_parse_decimal_schoolbook(pm_arena_t *arena, pm_integer_t *integer, ui
     uint32_t capacity = pm_integer_decimal_words(digits);
     pm_bignum_t bignum = {
         .length = 0,
-        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+        .words = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity)
     };
 
     uint32_t chunk_size = digits % 9 == 0 ? 9 : digits % 9;
@@ -406,11 +402,9 @@ pm_integer_parse(pm_arena_t *arena, pm_integer_t *integer, pm_integer_base_t bas
  */
 void
 pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer_t *denominator, const uint8_t *start, const uint8_t *end) {
-    static const uint32_t powof5[14] = { 1, 5, 25, 125, 625, 3125, 15625, 78125, 390625, 1953125, 9765625, 48828125, 244140625, 1220703125 };
-
     if (*start == '+') start++;
 
-    const uint8_t *point = memchr(start, '.', (size_t) (end - start));
+    const uint8_t *point = pm_memchr(start, '.', (size_t) (end - start));
     PRISM_ASSERT(point != NULL);
 
     /* Each trailing zero after the decimal point divides both sides by 10, so
@@ -439,7 +433,7 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
 
         /* 5**13 is the largest power of five that fits in a word, so divide by
          * it while it divides evenly before dividing by five alone. */
-        while (exponent - fives >= 13 && pm_bignum_div_exact(&bignum, powof5[13])) fives += 13;
+        while (exponent - fives >= 13 && pm_bignum_div_exact(&bignum, PM_BIGNUM_POWER5_13)) fives += 13;
         while (fives < exponent && pm_bignum_div_exact(&bignum, 5)) fives++;
 
         if (length <= 2) {
@@ -457,12 +451,11 @@ pm_integer_parse_rational(pm_arena_t *arena, pm_integer_t *numerator, pm_integer
 
     pm_bignum_t bignum = {
         .length = 1,
-        .words = (uint32_t *) pm_arena_alloc(arena, sizeof(uint32_t) * capacity, PRISM_ALIGNOF(uint32_t))
+        .words = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity)
     };
     bignum.words[0] = 1;
 
-    for (; remaining_fives >= 13; remaining_fives -= 13) pm_bignum_mul_add(&bignum, powof5[13], 0);
-    if (remaining_fives > 0) pm_bignum_mul_add(&bignum, powof5[remaining_fives], 0);
+    pm_bignum_multiply_powof5(&bignum, remaining_fives);
     pm_bignum_shift_left(&bignum, remaining_twos);
 
     PRISM_ASSERT(bignum.length <= capacity);
@@ -600,7 +593,7 @@ pm_integer_string_divide(pm_buffer_t *buffer, const uint32_t *words, uint32_t le
 
     /* Every word but the most significant is exactly nine digits, padded with
      * zeros. */
-    pm_buffer_append_format(buffer, "%" PRIu32, result.words[result.length - 1]);
+    pm_buffer_append_decimal(buffer, result.words[result.length - 1]);
 
     for (uint32_t index = result.length - 1; index > 0; index--) {
         uint32_t word = result.words[index - 1];
@@ -629,7 +622,7 @@ pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer) {
     /* An integer whose words are inline fits in a uint64_t, so it can be
      * appended directly. */
     if (integer->length <= 2) {
-        pm_buffer_append_format(buffer, "%" PRIu64, pm_integer_uint64_value(integer));
+        pm_buffer_append_decimal(buffer, pm_integer_uint64_value(integer));
         return;
     }
 

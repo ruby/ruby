@@ -21,6 +21,71 @@ RSpec.describe "Bundler.setup" do
     expect(out).to eq("yay")
   end
 
+  shared_examples "a gem activation conflict" do |default_gem, fallback|
+    let(:ruby_options) do
+      { env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, load_path: [lib_dir], raise_on_error: false }
+    end
+
+    before do
+      system_gems "myrack-1.0.0", "myrack_middleware-1.0"
+      system_gems "myrack-0.9.1", default: default_gem
+      gemfile <<~G
+        source "https://gem.repo1"
+        require "myrack_middleware"
+        gem "myrack", "1.0.0"
+      G
+    end
+
+    it "points to the require that activated the gem while evaluating the Gemfile" do
+      ruby 'require "bundler/setup"', ruby_options
+
+      expect(last_command).to be_failure
+      expect(err).to include("You have already activated myrack 0.9.1, but your Gemfile requires myrack 1.0.0. " \
+                             "myrack was activated while evaluating your Gemfile. If a `require` in your Gemfile loads it, " \
+                             "remove that call or move it outside the Gemfile, after `Bundler.setup`.")
+    end
+
+    it "keeps the original advice when the gem was already active before evaluating the Gemfile" do
+      ruby <<~RUBY, ruby_options
+        require "myrack_middleware"
+        require "bundler/setup"
+      RUBY
+
+      expect(last_command).to be_failure
+      expect(err).to include("You have already activated myrack 0.9.1, but your Gemfile requires myrack 1.0.0. #{fallback}")
+    end
+
+    it "keeps the original advice when another thread activates the gem during evaluation" do
+      gemfile <<~G
+        source "https://gem.repo1"
+        START_WORKER << true
+        WORKER.value
+        gem "myrack", "1.0.0"
+      G
+
+      ruby <<~RUBY, ruby_options
+        START_WORKER = Queue.new
+        WORKER = Thread.new do
+          START_WORKER.pop
+          require "myrack_middleware"
+        end
+        require "bundler/setup"
+      RUBY
+
+      expect(last_command).to be_failure
+      expect(err).to include("You have already activated myrack 0.9.1, but your Gemfile requires myrack 1.0.0. #{fallback}")
+    end
+  end
+
+  context "with a conflicting system gem" do
+    it_behaves_like "a gem activation conflict", false, "Prepending `bundle exec` to your command may solve this."
+  end
+
+  context "with a conflicting default gem" do
+    it_behaves_like "a gem activation conflict", true, "Since myrack is a default gem, you can either remove your dependency on it" \
+                                                       " or try updating to a newer version of bundler that supports myrack as a default gem."
+  end
+
   it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"

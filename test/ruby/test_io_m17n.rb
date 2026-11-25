@@ -2258,6 +2258,17 @@ EOT
     end;
   end
 
+  def test_bom_mode_flag_short_encoding_opt
+    # A BOM flag carried in from the mode string must not make a shorter
+    # encoding: option underflow the name length in parse_mode_enc.
+    assert_normal_exit("#{<<~"begin;"}\n#{<<~'end;'}", "must not overflow parse_mode_enc")
+    begin;
+      File.open(IO::NULL, "r:BOM|UTF-8", encoding: "ab:cd") rescue nil
+      File.open(IO::NULL, "r:BOM|UTF-8", encoding: "a:b") rescue nil
+      File.open(IO::NULL, "r:BOM|UTF-8", encoding: "x:y") rescue nil
+    end;
+  end
+
   def test_bom_non_utf
     enc = nil
 

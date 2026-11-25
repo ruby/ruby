@@ -3352,6 +3352,10 @@ iseqw_trace_points(VALUE self)
  *	> RubyVM::InstructionSequence.of(method(:foo))
  *	> #=> <RubyVM::InstructionSequence:foo@(irb)>
  *
+ *	# for a proc created from a method
+ *	> RubyVM::InstructionSequence.of(method(:foo).to_proc)
+ *	> #=> <RubyVM::InstructionSequence:foo@(irb)>
+ *
  *  Using ::compile_file:
  *
  *	# /tmp/iseq_of.rb
@@ -3381,7 +3385,8 @@ iseqw_s_of(VALUE klass, VALUE body)
         iseq = rb_get_iseq_from_frame_info(body);
     }
     else if (rb_obj_is_proc(body)) {
-        iseq = vm_proc_iseq(body);
+        /* Also handles a proc created by Method#to_proc */
+        iseq = rb_proc_get_iseq(body, NULL);
 
         if (!rb_obj_is_iseq((VALUE)iseq)) {
             iseq = NULL;

@@ -33,6 +33,19 @@ module Ruby::Prism
       assert_includes error.message, "syntax errors found"
     end
 
+    def test_syntax_error_display_order
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse("case x\nin [1", raise_error: :plain, filepath: "test.rb") }
+      assert_equal(<<~MESSAGE, error.message)
+        test.rb:2: syntax errors found
+        > 1 | case x
+            | ^~~~ expected an `end` to close the `case` statement
+        > 2 | in [1
+            |    ^ expected a `]` to close the pattern expression
+            |      ^ unexpected end-of-input, assuming it is closing the parent top level context
+            |      ^ expected a delimiter after the patterns of an `in` clause
+      MESSAGE
+    end
+
     def test_syntax_error_true
       # The formatting is determined by whether or not $stderr is a terminal
       # and the NO_COLOR environment variable, so only assert that it raises.
@@ -87,6 +100,30 @@ module Ruby::Prism
 
       assert_includes error.message, "101 | y = 2"
       assert_equal [gutters.first], gutters.uniq
+    end
+
+    def test_syntax_error_extreme_line_numbers
+      [-(2**31), 2**31 - 1].each do |line|
+        error = assert_raise(SyntaxError) { Ruby::Prism.parse("}\n", raise_error: :plain, line: line) }
+        assert_include error.message, "> #{line} | }\n"
+      end
+    end
+
+    def test_syntax_error_context_across_line_number_wraparound
+      source = "\n}\n\n\n"
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain, line: 2**31 - 4) }
+      assert_include error.message, "> 2147483645 | }\n"
+      assert_include error.message, "  2147483647 | \n"
+
+      source = "1 2\n3 4\n5 6\n"
+      error = assert_raise(SyntaxError) { Ruby::Prism.parse(source, raise_error: :plain, line: 2**31 - 1) }
+      source_lines = error.message.lines.grep(/^> /)
+      assert_equal [
+        ">  2147483647 | 1 2\n",
+        "> -2147483648 | 3 4\n",
+        "> -2147483647 | 5 6\n"
+      ], source_lines
+      assert_equal [14], error.message.lines.grep(/\|/).map { |line| line.index("|") }.uniq
     end
 
     def test_syntax_error_not_utf8_in_context

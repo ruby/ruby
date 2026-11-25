@@ -28,3 +28,9 @@ super(bar baz do end)
 foo(bar baz do end) do end
 
 foo bar(baz qux do end)
+
+foo(bar baz do end.first.last)
+
+def f
+  foo(return bar baz do end.last)
+end

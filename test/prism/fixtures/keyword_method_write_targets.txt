@@ -1,0 +1,9 @@
+r.class ||= v
+
+r::if &&= v
+
+r&.return += v
+
+r.class, a = v
+
+r::class, a = v

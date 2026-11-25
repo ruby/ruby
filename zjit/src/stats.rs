@@ -284,6 +284,7 @@ make_counters! {
         send_fallback_super_call_with_block,
         send_fallback_super_from_block,
         send_fallback_super_class_not_found,
+        send_fallback_super_from_refinement,
         send_fallback_super_complex_args_pass,
         send_fallback_super_fallback_no_profile,
         send_fallback_super_not_optimized_method_type,
@@ -453,7 +454,6 @@ make_counters! {
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
-    vm_write_locals_count,
     vm_write_stack_count,
     vm_write_to_parent_iseq_local_count,
     // TODO(max): Implement
@@ -687,6 +687,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperFromBlock                            => send_fallback_super_from_block,
         SuperClassNotFound                        => send_fallback_super_class_not_found,
+        SuperFromRefinement                       => send_fallback_super_from_refinement,
         SuperComplexArgsPass                      => send_fallback_super_complex_args_pass,
         SuperNoProfiles                           => send_fallback_super_fallback_no_profile,
         SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,

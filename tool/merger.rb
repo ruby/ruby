@@ -256,7 +256,7 @@ else
   revstr = ARGV[0].gsub(%r!https://github\.com/ruby/ruby/commit/|https://bugs\.ruby-lang\.org/projects/ruby-master/repository/git/revisions/!, '')
   revstr = revstr.delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
-  commit_message = ''
+  commit_messages = []
 
   revs.each do |rev|
     git_rev = nil
@@ -283,14 +283,16 @@ else
       tickets += patch.scan(/\[(?:Bug|Feature|Misc) #(\d+)\]/i).map(&:first)
     end
 
-    message = "#{(patch[/^Subject: (.*)\n---\n /m, 1] || "Message not found for revision: #{git_rev}\n")}"
+    full_rev = patch[/\AFrom (\h{40}) /, 1] || git_rev
+    message = patch[/^Subject: (.*)\n---\n /m, 1] || "Message not found for revision: #{git_rev}\n"
     message.gsub!(/\G(.*)\n( .*)/, "\\1\\2")
-    message = "\n\n#{message}"
+    message.sub!(/\A\[PATCH[^\]]*\] /, '')
 
     puts '+ git apply'
     IO.popen(['git', 'apply', '--3way'], 'wb') { |f| f.write(patch) }
 
-    commit_message << message.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
+    # Same as the message `git cherry-pick -x` makes
+    commit_messages << "#{message.rstrip}\n\n(cherry picked from commit #{full_rev})"
   end
 
   if Merger.diff.empty?
@@ -299,8 +301,10 @@ else
 
   Merger.version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s", revs.join(', '), tickets.map{|num| " [Backport ##{num}]"}.join
-  f.write commit_message
+  commit_message = commit_messages.join("\n\n")
+  tickets = tickets.uniq.reject { |num| commit_message.include?("##{num}]") }
+  commit_message << "\n\n#{tickets.map { |num| "[Backport ##{num}]" }.join(' ')}" unless tickets.empty?
+  f.puts commit_message
   f.flush
   f.close
 

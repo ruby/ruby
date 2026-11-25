@@ -1,10 +1,15 @@
 #ifndef PRISM_INTERNAL_DIAGNOSTIC_H
 #define PRISM_INTERNAL_DIAGNOSTIC_H
 
+#include "prism/compiler/inline.h"
 #include "prism/internal/list.h"
+#include "prism/internal/memchr.h"
 
 #include "prism/arena.h"
 #include "prism/diagnostic.h"
+#include "prism/stringy.h"
+
+#include <string.h>
 
 /*
  * The diagnostic IDs of all of the diagnostics, used to communicate the types
@@ -35,15 +40,12 @@ struct pm_diagnostic_t {
     /* The ID of the diagnostic. */
     pm_diagnostic_id_t diag_id;
 
-    /* The message associated with the diagnostic. */
-    const char *message;
-
-    /*
-     * The level of the diagnostic, see `pm_error_level_t` and
-     * `pm_warning_level_t` for possible values.
-     */
-    uint8_t level;
+    /* The NUL-terminated message and its length excluding the terminator. */
+    pm_string_t message;
 };
+
+/* The error or warning level associated with this diagnostic ID. */
+uint8_t pm_diagnostic_level(const pm_diagnostic_t *diagnostic);
 
 /*
  * Append a diagnostic to the given list of diagnostics that is using shared
@@ -51,10 +53,18 @@ struct pm_diagnostic_t {
  */
 void pm_diagnostic_list_append(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id);
 
-/*
- * Append a diagnostic to the given list of diagnostics that is using a format
- * string for its message.
- */
-void pm_diagnostic_list_append_format(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, ...);
+/* A diagnostic displays a slice up to its first NUL or its given length. */
+static PRISM_INLINE pm_string_t
+pm_diagnostic_slice(const void *source, size_t length) {
+    const uint8_t *bytes = (const uint8_t *) source;
+    const uint8_t *nul = length ? pm_memchr(bytes, '\0', length) : NULL;
+    pm_string_t slice = { bytes, nul ? (size_t) (nul - bytes) : length };
+    return slice;
+}
+
+/* Append a diagnostic with the arguments required by its message. */
+<%- diagnostic_signatures.each do |signature| -%>
+void pm_diagnostic_list_append_<%= signature.name %>(pm_arena_t *arena, pm_list_t *list, uint32_t start, uint32_t length, pm_diagnostic_id_t diag_id, <%= signature.parameters %>);
+<%- end -%>
 
 #endif

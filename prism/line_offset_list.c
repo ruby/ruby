@@ -10,7 +10,7 @@
  */
 void
 pm_line_offset_list_init(pm_arena_t *arena, pm_line_offset_list_t *list, size_t capacity) {
-    list->offsets = (uint32_t *) pm_arena_alloc(arena, capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
+    list->offsets = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, capacity);
 
     // The first line always has offset 0.
     list->offsets[0] = 0;
@@ -32,7 +32,7 @@ pm_line_offset_list_clear(pm_line_offset_list_t *list) {
 void
 pm_line_offset_list_append_slow(pm_arena_t *arena, pm_line_offset_list_t *list, uint32_t cursor) {
     size_t new_capacity = (list->capacity * 3) / 2;
-    uint32_t *new_offsets = (uint32_t *) pm_arena_alloc(arena, new_capacity * sizeof(uint32_t), PRISM_ALIGNOF(uint32_t));
+    uint32_t *new_offsets = PM_ARENA_ALLOC_ARRAY(arena, uint32_t, new_capacity);
 
     memcpy(new_offsets, list->offsets, list->size * sizeof(uint32_t));
 
@@ -55,7 +55,7 @@ pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cursor, int
         size_t mid = left + (right - left) / 2;
 
         if (list->offsets[mid] == cursor) {
-            return ((int32_t) mid) + start_line;
+            return pm_line_offset_list_line_number(mid, start_line);
         }
 
         if (list->offsets[mid] < cursor) {
@@ -65,7 +65,7 @@ pm_line_offset_list_line(const pm_line_offset_list_t *list, uint32_t cursor, int
         }
     }
 
-    return ((int32_t) left) + start_line - 1;
+    return pm_line_offset_list_line_number(left - 1, start_line);
 }
 
 /**
@@ -82,7 +82,7 @@ pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t curs
         size_t mid = left + (right - left) / 2;
 
         if (list->offsets[mid] == cursor) {
-            return ((pm_line_column_t) { ((int32_t) mid) + start_line, 0 });
+            return ((pm_line_column_t) { pm_line_offset_list_line_number(mid, start_line), 0 });
         }
 
         if (list->offsets[mid] < cursor) {
@@ -93,7 +93,7 @@ pm_line_offset_list_line_column(const pm_line_offset_list_t *list, uint32_t curs
     }
 
     return ((pm_line_column_t) {
-        .line = ((int32_t) left) + start_line - 1,
+        .line = pm_line_offset_list_line_number(left - 1, start_line),
         .column = cursor - list->offsets[left - 1]
     });
 }

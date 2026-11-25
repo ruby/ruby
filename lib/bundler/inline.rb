@@ -57,7 +57,8 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
     builder = Bundler::Dsl.new
     builder.instance_eval(&gemfile)
 
-    Bundler.settings.temporary(deployment: false, frozen: false) do
+    settings = Bundler.settings
+    settings.temporary(deployment: false, frozen: false) do
       definition = builder.to_definition(nil, true)
       definition.validate_runtime!
 
@@ -92,6 +93,7 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
 
         if installed_in_fork
           Bundler.reset!
+          Bundler.instance_variable_set(:@settings, settings)
           Gem::Specification.reset
           Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
 

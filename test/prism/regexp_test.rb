@@ -28,6 +28,48 @@ module Ruby::Prism
       assert_equal([:foo], named_captures("(?<foo>bar)(?<foo>baz)"))
     end
 
+    def test_named_references_after_the_capture_index_grows
+      pattern = Array.new(64) { |index| "(?<n#{index}>a)\\k<n#{index}>" }.join
+      assert_empty Ruby::Prism.parse("/\\g<n63>#{pattern}/").errors
+
+      pattern += "(?<n0>b)\\g<n0>"
+      assert_equal ["multiplex definition name <n0> call: /#{pattern}/"], Ruby::Prism.parse("/#{pattern}/").errors.map(&:message)
+    end
+
+    def test_named_capture_with_a_comment_in_its_name
+      result = Ruby::Prism.parse('/(?<a(?#comment)b>x)/ =~ ab; ab')
+      assert_empty result.errors
+      assert_equal [:ab], result.value.locals
+
+      match, read = result.value.statements.body
+      assert_equal [:ab], match.targets.map(&:name)
+      assert_equal "a(?#comment)b", match.targets.first.location.slice
+      assert_kind_of CallNode, match.call.arguments.arguments.first
+      assert_kind_of LocalVariableReadNode, read
+    end
+
+    def test_named_captures_from_unicode_escapes
+      result = Ruby::Prism.parse('/(?<\\u3042>x)(?<\\u0061>y)/ =~ ""')
+      assert_empty result.errors
+      assert_equal [:あ], result.value.locals
+      assert_equal "\\u3042", result.value.statements.body.first.targets.first.location.slice
+    end
+
+    def test_nested_matches_keep_their_own_captures
+      result = Ruby::Prism.parse('/(?<outer>x)/ =~ (/(?<inner>y)/ =~ "y"); [outer, inner]')
+      assert_empty result.errors
+      assert_equal [:inner, :outer], result.value.locals
+      assert_equal :outer, result.value.statements.body.first.targets.first.name
+    end
+
+    def test_named_captures_after_range_of_escapes
+      assert_equal([:foo], named_captures("[\\u{61}-\\u{7a}](?<foo>bar)"))
+    end
+
+    def test_named_captures_after_range_of_escaped_multibyte_character
+      assert_equal([:foo], named_captures("[!-\\xE3\\x81\\x82-\\p{Alpha}](?<foo>bar)"))
+    end
+
     def test_named_capture_inside_fake_range_quantifier
       assert_equal([:foo], named_captures("foo{1, (?<foo>2)}"))
     end
@@ -135,15 +177,15 @@ module Ruby::Prism
     end
 
     def test_conditional_expression_with_index
-      assert_valid_regexp("(?(1)foo)")
+      assert_valid_regexp("(a)(?(1)foo)")
     end
 
     def test_conditional_expression_with_name
-      assert_valid_regexp("(?(foo)bar)")
+      assert_valid_regexp("(?<foo>a)(?('foo')bar)")
     end
 
     def test_conditional_expression_with_group
-      assert_valid_regexp("(?(<foo>)bar)")
+      assert_valid_regexp("(?<foo>a)(?(<foo>)bar)")
     end
 
     def test_options_on_groups
@@ -287,32 +329,137 @@ module Ruby::Prism
       assert_equal "\\x00a(", Ruby::Prism.parse_statement("/\\C-\\C-a(/").unescaped
     end
 
+    def test_malformed_unicode_list_does_not_close_brace_delimited_regexp
+      ["\\u{s}", "\\u{41 z}", "\\u{z\\}z}"].each do |escape|
+        source = "if false; %r{ #{escape} } + 1; end"
+        result = Ruby::Prism.parse(source)
+
+        assert_equal ["invalid Unicode list: / #{escape} /"], result.errors.map(&:message)
+        addition = result.value.statements.body.first.statements.body.first
+        assert_equal :+, addition.name
+        assert_equal " #{escape} ", addition.receiver.unescaped
+        assert_equal source.rindex("}"), addition.receiver.closing_loc.start_offset
+      end
+    end
+
+    def test_malformed_unicode_lists_in_regexp_comments
+      ["\\C", "\\M", "\\x"].each do |inner|
+        escape = "\\u{" + inner
+        assert_empty Ruby::Prism.parse("/(?#" + escape + ")/").errors
+        assert_empty Ruby::Prism.parse("/#" + escape + "\n/x").errors
+        assert_empty Ruby::Prism.parse("%r!(?#" + escape + ")!").errors
+        assert_empty Ruby::Prism.parse("%r{(?#" + escape + "})}").errors
+        assert_equal ["invalid Unicode list: /#{escape}/"], Ruby::Prism.parse("%r!" + escape + "!").errors.map(&:message)
+      end
+    end
+
     def test_malformed_hex_escape
       node = Ruby::Prism.parse_statement("/a\\xZb/")
       assert_kind_of RegularExpressionNode, node
       assert_equal "aZb", node.unescaped
     end
 
+    # A string that interpolates only string literals has a value known while
+    # parsing, so a regular expression that interpolates it is validated as the
+    # one that its parts join to. parse.y builds this one each time it is
+    # evaluated instead, which raises then.
+    def test_static_interpolation_of_interpolated_string
+      errors = Ruby::Prism.parse('/a#{"b#{"c"}"}(/').errors
+      assert_equal ["end pattern with unmatched parenthesis: /abc(/"], errors.map(&:message)
+    end
+
+    def test_leading_semicolon_in_regexp_interpolation
+      assert_empty Ruby::Prism.parse('/#{; "["}/').errors
+      assert_empty Ruby::Prism.parse(%q{/#{; '\x'}/}).errors
+      assert_equal [:regexp_parse_error], Ruby::Prism.parse(%q{/#{'\x';}/}).errors.map(&:type)
+    end
+
+    # The content that a regular expression's parts join to takes the encoding
+    # of its parts that are not ASCII, as joining strings does, so a string in
+    # UTF-8 makes the content UTF-8 in a source in another encoding.
+    def test_static_interpolation_in_another_encoding
+      assert_empty Ruby::Prism.parse("# encoding: EUC-JP\n" + '/a#{"\\u3042"}/').errors
+
+      # The message is in the encoding of the source, but it quotes the content
+      # in UTF-8, so its bytes are compared.
+      errors = Ruby::Prism.parse("# encoding: EUC-JP\n" + '/a#{"\\u3042"}(/').errors
+      assert_equal ["end pattern with unmatched parenthesis: /aあ(/".b], errors.map { |error| error.message.b }
+    end
+
+    # In a US-ASCII source, every part of a regular expression without an
+    # encoding option is binary, so a UTF-8 string joins a binary one.
+    def test_static_interpolation_in_us_ascii
+      assert_empty Ruby::Prism.parse("# encoding: US-ASCII\n" + '/#{"\\u3042"}#{"\\xFF"}/').errors
+    end
+
+    def test_static_interpolation_of_incompatible_encodings
+      source = "# encoding: EUC-JP\n/\xA4\xA2".b + '#{"\\u3042"}/'
+      errors = Ruby::Prism.parse(source).errors
+      assert_equal ["incompatible character encodings: EUC-JP and UTF-8"], errors.map(&:message)
+    end
+
+    def test_static_interpolation_raises_encoding_compatibility_error
+      source = "# encoding: Windows-31J\n".b + '/#{"\u1234"}#{"' + "\x82\xA0".b + '"}/'
+      message = "incompatible character encodings: UTF-8 and Windows-31J"
+
+      errors = Ruby::Prism.parse(source).errors
+      assert_equal [[:regexp_interpolation_encoding, :encoding_compatibility, message]], errors.map { |error| [error.type, error.level, error.message] }
+
+      error = assert_raise(Encoding::CompatibilityError) { Ruby::Prism.parse(source, raise_error: :plain) }
+      assert_equal message, error.message
+      assert_raise(SyntaxError) { Ruby::Prism.parse(source + "\n)", raise_error: :plain) }
+    end
+
+    # A comment in extended mode ends at the newline, so the * after it has
+    # nothing to repeat. The error quotes the pattern with its newline.
+    def test_repeat_after_extended_comment
+      errors = Ruby::Prism.parse("/( # comment\n*)/x").errors
+
+      assert_equal ["target of repeat operator is not specified: /( # comment\n*)/x"], errors.map(&:message)
+      assert_equal [2, 0], [errors.first.location.start_line, errors.first.location.start_column]
+    end
+
+    def test_regexp_recovery_limits_repeated_pattern_quotes
+      pattern = ")" * 4000
+      errors = Ruby::Prism.parse("/#{pattern}/").errors
+
+      assert_equal pattern.length, errors.length
+      assert_equal "unmatched close parenthesis: /#{pattern}/", errors.first.message
+      assert_equal ")", errors.last.location.slice
+      assert_operator errors.sum { |error| error.message.bytesize }, :<, pattern.bytesize * 50
+    end
+
+    def test_nul_in_a_regexp_reference_name
+      reference = "\\k<n\0x>"
+      error = Ruby::Prism.parse("/#{reference}/i").errors.fetch(0)
+      assert_equal "undefined name <n: /\\k<n\\x00x>/i", error.message
+      assert_equal "n\0x", error.location.slice
+
+      errors = Ruby::Prism.parse("/#{")" * 8}#{reference}/i").errors
+      assert_equal "undefined name <n", errors.fetch(8).message
+    end
+
+    def test_unicode_escapes_in_regexp_error
+      errors = Ruby::Prism.parse("%r!/\u0080\uFFFF\u{10000}\u{10FFFF}(!").errors
+      assert_equal ['end pattern with unmatched parenthesis: /\/\u0080\uFFFF\u{10000}\u{10FFFF}(/'], errors.map(&:message)
+    end
+
     def test_depth_limit_nested_character_sets
       assert_depth_limit("[" * 10_000)
     end
 
-    def test_depth_limit_meta_escapes
-      assert_depth_limit("\\M-" * 10_000 + "a")
-      assert_depth_limit("[" + "\\M-" * 10_000 + "a]")
-    end
-
-    def test_depth_limit_control_escapes
-      assert_depth_limit("\\C-" * 10_000 + "a")
-      assert_depth_limit("\\c" * 10_000 + "a")
-      assert_depth_limit("[" + "\\C-" * 10_000 + "a]")
+    # Each of these groups turns extended mode on or off, and the escape inside
+    # them makes their escapes be read, which follows each such group.
+    def test_depth_limit_groups_that_toggle_extended_mode
+      groups = Array.new(100_000) { |index| index.even? ? "(?x:" : "(?-x:" }
+      assert_depth_limit("#{groups.join}\\x41#{")" * groups.length}")
     end
 
     private
 
     def assert_depth_limit(source)
       messages = Ruby::Prism.parse("/#{source}/ =~ \"\"").errors.map(&:message)
-      assert_equal 1, messages.count("parse depth limit over")
+      assert_equal 1, messages.count { |message| message.start_with?("parse depth limit over: /") }
     end
 
     def assert_options_after_heredoc(closing, options, source)

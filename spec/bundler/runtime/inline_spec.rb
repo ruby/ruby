@@ -455,6 +455,36 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(last_command.stderr).to be_empty
   end
 
+  it "installs inline gems when frozen is configured globally" do
+    bundle_config_global "frozen true"
+
+    script <<-RUBY
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      puts MYRACK, Bundler.settings[:frozen]
+    RUBY
+
+    expect(out).to eq("1.0.0\ntrue")
+  end
+
+  it "installs inline gems when deployment is configured locally" do
+    bundle_config "deployment true"
+
+    script <<-RUBY
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      puts MYRACK, Bundler.settings[:deployment]
+    RUBY
+
+    expect(out).to eq("1.0.0\ntrue")
+  end
+
   it "installs inline gems when BUNDLE_GEMFILE is set to an empty string" do
     ENV["BUNDLE_GEMFILE"] = ""
 

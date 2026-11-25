@@ -549,6 +549,8 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
 static VALUE
 set_i_initialize(int argc, VALUE *argv, VALUE set)
 {
+    rb_check_frozen(set);
+
     if (RBASIC(set)->flags & RSET_INITIALIZED) {
         rb_raise(rb_eRuntimeError, "cannot reinitialize set");
     }
@@ -582,6 +584,8 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
 static VALUE
 set_i_initialize_copy(VALUE set, VALUE other)
 {
+    rb_check_frozen(set);
+
     if (set == other) return set;
 
     if (set_iterating_p(set)) {
@@ -591,8 +595,10 @@ set_i_initialize_copy(VALUE set, VALUE other)
     struct set_object *sobj;
     TypedData_Get_Struct(set, struct set_object, &set_data_type, sobj);
 
+    set_table *other_table = RSET_TABLE(other);
     set_free_embedded_table(&sobj->table);
-    set_copy(&sobj->table, RSET_TABLE(other));
+    set_copy(&sobj->table, other_table);
+    RB_GC_GUARD(other);
     rb_gc_writebarrier_remember(set);
 
     return set;

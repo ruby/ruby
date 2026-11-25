@@ -381,7 +381,6 @@ mbc_case_fold(OnigCaseFoldType flag,
     OnigCodePoint code;
     int len;
 
-    len = mbc_enc_len(p, end, enc);
     code = get_lower_case(mbc_to_code(p, end, enc));
     len = code_to_mbc(code, lower, enc);
     if (len == ONIGERR_INVALID_CODE_POINT_VALUE) len = 1;
@@ -399,11 +398,12 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
   const UChar *p;
   int len;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
-  len = mbc_enc_len(p, end, enc);
+  len = enclen(enc, p, end); /* the precise length is negative if broken */
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));
@@ -506,6 +506,12 @@ static int
 property_name_to_ctype(OnigEncoding enc, const UChar* p, const UChar* end)
 {
   const UChar *s = p, *e = end;
+
+  for (; p < end; p++) {
+    if (!ONIGENC_IS_CODE_ASCII(*p))
+      return onigenc_minimum_property_name_to_ctype(enc, s, e);
+  }
+
   const struct enc_property *prop =
     onig_jis_property((const char* )s, (unsigned int )(e - s));
 
