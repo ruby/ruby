@@ -2484,6 +2484,7 @@ unsafe extern "C" {
     );
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
+    pub fn rb_zjit_iclass_for_refinement_p(iclass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
     pub fn rb_zjit_method_tracing_currently_enabled() -> bool;
     pub fn rb_zjit_iseq_tracing_currently_enabled() -> bool;
