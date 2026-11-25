@@ -2065,7 +2065,6 @@ static int backref_match_at_nested_level(regex_t* reg,
         if (mem_is_in_memp(k->u.mem.num, mem_num, memp)) {
           pstart = k->u.mem.pstr;
           if (pend != NULL_UCHARP) {
-            if (pend - pstart > send - *s) return 0; /* or goto next_mem; */
             p  = pstart;
             ss = *s;
 
@@ -2075,6 +2074,7 @@ static int backref_match_at_nested_level(regex_t* reg,
                 return 0; /* or goto next_mem; */
             }
             else {
+              if (pend - pstart > send - *s) return 0; /* or goto next_mem; */
               while (p < pend) {
                 if (*p++ != *ss++) return 0; /* or goto next_mem; */
               }
@@ -3560,7 +3560,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
                 ? STACK_AT(mem_end_stk[mem])->u.mem.pstr
                 : (UChar* )((void* )mem_end_stk[mem]));
         n = pend - pstart;
-        DATA_ENSURE(n);
         sprev = s;
         STRING_CMP_IC(case_fold_flag, pstart, &s, n, end);
         while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
@@ -3631,7 +3630,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
                   ? STACK_AT(mem_end_stk[mem])->u.mem.pstr
                   : (UChar* )((void* )mem_end_stk[mem]));
           n = pend - pstart;
-          DATA_ENSURE_CONTINUE(n);
           sprev = s;
           swork = s;
           STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, end, is_fail);
