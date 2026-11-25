@@ -22745,6 +22745,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
             }
             break;
         case PM_SYMBOL_NODE:
+        case PM_INTERPOLATED_SYMBOL_NODE:
             if (pm_symbol_node_label_p(parser, left.node)) {
                 return left;
             }
