@@ -182,6 +182,19 @@ fn update_self_is_heap_object(iseq: IseqPtr, cfp: CfpPtr) {
     get_or_create_iseq_payload(iseq).self_is_heap_object = self_is_heap_object;
 }
 
+/// Record the lexical scope (cref) of `iseq` on the payload if it's not known yet. Folded constant
+/// paths use it in [`crate::invariants::rb_zjit_constant_state_changed`].
+/// Must be called while holding the VM lock.
+fn update_cref(iseq: IseqPtr, cref: *const rb_cref_t) {
+    let payload = get_or_create_iseq_payload(iseq);
+    if payload.cref.is_none() && !cref.is_null() {
+        let cref = VALUE::from(cref);
+        // The payload is marked as a part of the ISEQ
+        VALUE::from(iseq).write_barrier(cref);
+        payload.cref = Some(cref);
+    }
+}
+
 /// CRuby API to compile a given ISEQ.
 /// If jit_exception is true, compile JIT code for handling exceptions.
 /// See jit_compile_exception() for details.
@@ -199,6 +212,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         // The current frame is this ISEQ's method frame, so its method entry tells
         // us the owning class and thus whether `self` is always a heap object.
         update_self_is_heap_object(iseq, unsafe { get_ec_cfp(ec) });
+        update_cref(iseq, unsafe { rb_zjit_frame_cref(get_ec_cfp(ec)) });
 
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_compile_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
@@ -1079,8 +1093,8 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
             Invariant::MethodRedefined { klass: _, method: _, cme } => {
                 track_cme_assumption(cme, code_ptr, side_exit_ptr, version);
             }
-            Invariant::StableConstantNames { idlist } => {
-                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, version);
+            Invariant::StableConstantNames { idlist, cref } => {
+                track_stable_constant_names_assumption(idlist, cref, code_ptr, side_exit_ptr, version);
             }
             Invariant::NoTracePoint => {
                 track_no_trace_point_assumption(code_ptr, side_exit_ptr, version);
@@ -4115,6 +4129,7 @@ c_callable! {
             // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
             let native_stack_full = unsafe { rb_ec_stack_check(ec as _) } != 0;
+            update_cref(iseq, unsafe { rb_zjit_frame_cref(cfp) });
             let payload = get_or_create_iseq_payload(iseq);
             // cfp is the callee's (this ISEQ's) frame here, so its method entry gives
             // the owning class and thus whether `self` is always a heap object.

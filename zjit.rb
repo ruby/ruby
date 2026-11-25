@@ -194,6 +194,7 @@ class << RubyVM::ZJIT
       :invalidation_count,
       :method_invalidation_count,
       :constant_invalidation_count,
+      :constant_invalidation_kept,
 
       :vm_write_jit_frame_count,
       :vm_write_sp_count,

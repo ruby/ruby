@@ -169,6 +169,8 @@ make_counters! {
         invalidation_count,
         method_invalidation_count,
         constant_invalidation_count,
+        // Patch points for folded constant paths that survived a change to one of their constants
+        constant_invalidation_kept,
 
         compiled_side_exit_count,
         side_exit_count,

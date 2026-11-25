@@ -218,6 +218,9 @@ pub enum Invariant {
     /// following code to be valid.
     StableConstantNames {
         idlist: *const ID,
+        /// The lexical scope (`rb_cref_t`) of the path, if known. A constant defined in a class
+        /// that this scope doesn't search can't change what the first segment resolves to.
+        cref: Option<VALUE>,
     },
     /// TracePoint is not enabled. If TracePoint is enabled, this is invalidated.
     NoTracePoint,
@@ -352,7 +355,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     self.ptr_map.map_ptr(cme)
                 )
             }
-            Invariant::StableConstantNames { idlist } => {
+            Invariant::StableConstantNames { idlist, .. } => {
                 write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(idlist))?;
                 let mut idx = 0;
                 let mut sep = "";
@@ -10119,7 +10122,7 @@ fn add_iseq_to_hir(
                     let result = if can_fold {
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state: exit_id });
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist, cref: payload.cref }, state: exit_id });
                         fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) })
                     } else {
                         fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id })

@@ -3679,7 +3679,7 @@ rb_const_remove(VALUE mod, ID id)
     }
 
     rb_const_warn_if_deprecated(ce, mod, id);
-    rb_clear_constant_cache_for_id(id);
+    rb_clear_constant_cache_for_id_in(mod, id);
 
     val = ce->value;
 
@@ -3967,7 +3967,7 @@ const_set(VALUE klass, ID id, VALUE val)
         if (!tbl) {
             tbl = rb_id_table_create(0);
             RCLASS_WRITE_CONST_TBL(klass, tbl, false);
-            rb_clear_constant_cache_for_id(id);
+            rb_clear_constant_cache_for_id_in(klass, id);
             ce = ZALLOC(rb_const_entry_t);
             rb_id_table_insert(tbl, id, (VALUE)ce);
             setup_const_entry(ce, klass, val, CONST_PUBLIC);
@@ -4060,7 +4060,7 @@ const_tbl_update(struct autoload_const *ac, int autoload_force, struct const_war
             VALUE autoload_const_value = autoload_const_value_for_named_constant(klass, id, &ac);
 
             if (!autoload_force && autoload_const_value) {
-                rb_clear_constant_cache_for_id(id);
+                rb_clear_constant_cache_for_id_in(klass, id);
 
                 RB_OBJ_WRITE(autoload_const_value, &ac->value, val);
                 RB_OBJ_WRITE(autoload_const_value, &ac->file, rb_source_location(&ac->line));
@@ -4084,12 +4084,12 @@ const_tbl_update(struct autoload_const *ac, int autoload_force, struct const_war
             warning->file = ce->u.file;
             warning->line = ce->line;
         }
-        rb_clear_constant_cache_for_id(id);
+        rb_clear_constant_cache_for_id_in(klass, id);
         setup_const_entry(ce, klass, val, visibility);
     }
     else {
         tbl = RCLASS_WRITABLE_CONST_TBL(klass);
-        rb_clear_constant_cache_for_id(id);
+        rb_clear_constant_cache_for_id_in(klass, id);
 
         ce = ZALLOC(rb_const_entry_t);
         rb_id_table_insert(tbl, id, (VALUE)ce);
@@ -4157,7 +4157,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
                     ac->flag |= flag;
                 }
             }
-            rb_clear_constant_cache_for_id(id);
+            rb_clear_constant_cache_for_id_in(mod, id);
         }
         else {
             undefined_constant(mod, ID2SYM(id));

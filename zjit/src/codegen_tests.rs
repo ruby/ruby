@@ -7249,6 +7249,64 @@ fn test_constant_path_invalidation() {
     "#), @r#"["Foo::C", "Foo::C", "Bar::C"]"#);
 }
 
+fn last_version_invalidated(iseq: IseqPtr) -> bool {
+    let payload = get_or_create_iseq_payload(iseq);
+    unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated()
+}
+
+#[test]
+fn test_constant_definition_outside_lexical_scope_keeps_code() {
+    eval("
+        module KeepA
+          class Base; end
+          def self.test = Base
+        end
+        KeepA.test
+        KeepA.test
+        module KeepB
+          class Base; end
+        end
+    ");
+    assert!(!last_version_invalidated(get_method_iseq("KeepA", "test")));
+    assert_snapshot!(assert_compiles("KeepA.test"), @"KeepA::Base");
+}
+
+#[test]
+fn test_constant_definition_in_lexical_scope_invalidates_code() {
+    eval("
+        X = :outer
+        module ShadowA
+          def self.test = X
+        end
+        ShadowA.test
+        ShadowA.test
+        module ShadowA
+          X = :inner
+        end
+    ");
+    assert!(last_version_invalidated(get_method_iseq("ShadowA", "test")));
+    assert_snapshot!(assert_compiles("ShadowA.test"), @":inner");
+}
+
+#[test]
+fn test_constant_definition_in_ancestor_invalidates_code() {
+    eval("
+        module ShadowMixin; end
+        class ShadowB
+          include ShadowMixin
+          def test = Y
+        end
+        Y = :outer
+        ShadowB.new.test
+        ShadowB.new.test
+        module ShadowMixin
+          Y = :mixin
+        end
+    ");
+    assert!(last_version_invalidated(get_instance_method_iseq("ShadowB", "test")));
+    assert_snapshot!(assert_compiles("ShadowB.new.test"), @":mixin");
+}
+
 #[test]
 fn test_dupn() {
     eval("

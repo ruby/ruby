@@ -26,6 +26,8 @@
 #include "internal/jit.h"
 #include "ractor_core.h"
 #include "shape.h"
+#include "eval_intern.h"
+#include "internal/object.h"
 
 #ifndef _WIN32
 #include <sys/mman.h>
@@ -406,6 +408,31 @@ rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
     else {
         return false;
     }
+}
+
+rb_cref_t *rb_vm_get_cref(const VALUE *ep);
+
+// Return the lexical scope (cref) of an ISEQ frame
+const rb_cref_t *
+rb_zjit_frame_cref(const rb_control_frame_t *cfp)
+{
+    return rb_vm_get_cref(cfp->ep);
+}
+
+// Return true if a constant lookup in the lexical scope `cref` may search `klass`. It checks the
+// scopes and the ancestors that vm_get_ev_const() searches for a constant without a scope (`Foo`).
+bool
+rb_zjit_cref_may_search_class_p(const rb_cref_t *cref, VALUE klass)
+{
+    for (const rb_cref_t *c = cref; c; c = CREF_NEXT(c)) {
+        // vm_get_ev_const() skips scopes pushed by class_eval, so give up on them.
+        if (CREF_CLASS(c) == klass || CREF_PUSHED_BY_EVAL(c)) return true;
+    }
+    VALUE cref_class = CREF_CLASS(cref);
+    if (!RB_TYPE_P(cref_class, T_CLASS) && !RB_TYPE_P(cref_class, T_MODULE)) return true;
+    if (rb_class_search_ancestor(cref_class, klass)) return true;
+    // A module falls back to Object (rb_const_search())
+    return RB_TYPE_P(cref_class, T_MODULE) && rb_class_search_ancestor(rb_cObject, klass);
 }
 
 VALUE rb_nil_to_s(VALUE obj);

@@ -118,6 +118,11 @@ fn iseq_mark(payload: &IseqPayload) {
         unsafe { rb_gc_mark_movable(object); }
     });
 
+    // Pinned since patch points in Invariants hold it as a raw VALUE
+    if let Some(cref) = payload.cref {
+        unsafe { rb_gc_mark(cref); }
+    }
+
     // Mark objects baked in JIT code
     let cb = ZJITState::get_code_block();
     for version in payload.versions.iter() {
