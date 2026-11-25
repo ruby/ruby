@@ -301,7 +301,7 @@ They are still available on rubygems.org and can be installed with
   * 0.9.1 to [v0.10.0][net-http-v0.10.0]
 * net-protocol 0.4.0
   * 0.2.2 to [v0.3.0][net-protocol-v0.3.0], [v0.4.0][net-protocol-v0.4.0]
-* open3 0.3.0
+* open3 0.3.1
   * 0.2.1 to [v0.3.0][open3-v0.3.0]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
