@@ -456,9 +456,6 @@ lex_state_set(pm_parser_t *parser, pm_lex_state_t state) {
 /** True if the -p command line option was given. */
 #define PM_PARSER_COMMAND_LINE_OPTION_P(parser) PM_PARSER_COMMAND_LINE_OPTION(parser, PM_OPTIONS_COMMAND_LINE_P)
 
-/** True if the -x command line option was given. */
-#define PM_PARSER_COMMAND_LINE_OPTION_X(parser) PM_PARSER_COMMAND_LINE_OPTION(parser, PM_OPTIONS_COMMAND_LINE_X)
-
 /******************************************************************************/
 /* Diagnostic-related functions                                               */
 /******************************************************************************/
@@ -23066,20 +23063,68 @@ parse_program(pm_parser_t *parser) {
 /* External functions                                                         */
 /******************************************************************************/
 
+typedef struct {
+    pm_string_t switches;
+    pm_options_shebang_type_t shebang;
+    bool bom;
+} pm_source_line_t;
+
 /**
- * Find a nonempty literal in a shebang line, which can contain NUL bytes.
+ * Find a nonempty literal in a source line, which can contain NUL bytes.
  */
 static const uint8_t *
-pm_shebang_find(const uint8_t *line, size_t length, const char *literal, size_t literal_length) {
-    if (length < literal_length) return NULL;
-
-    /* Search only positions where the whole literal fits. */
-    const uint8_t *end = line + (length - literal_length + 1);
-    for (; (line = memchr(line, (uint8_t) literal[0], (size_t) (end - line))) != NULL; line++) {
-        if (pm_memequal(line + 1, literal + 1, literal_length - 1)) return line;
+pm_source_line_find(const uint8_t *line, size_t length, const char *value, size_t value_length) {
+    if (length >= value_length) {
+        const uint8_t *end = line + (length - value_length + 1);
+        for (; (line = pm_memchr(line, (uint8_t) value[0], (size_t) (end - line))); line++) {
+            if (pm_memequal(line + 1, value + 1, value_length - 1)) return line;
+        }
     }
 
     return NULL;
+}
+
+/* Scan a line of the source and fill in a pm_source_line_t. */
+static void
+pm_source_line_scan(pm_source_line_t *line, const uint8_t *start, size_t length, bool first_line) {
+    *line = (pm_source_line_t) { .shebang = PM_OPTIONS_SHEBANG_NONE };
+    if (length > 0 && start[length - 1] == '\n') length--;
+
+    /* A shebang must start at the first byte, so a line with a BOM cannot have one. */
+    if (first_line && length >= 3 && pm_memequal(start, "\xef\xbb\xbf", 3)) {
+        line->bom = true;
+        return;
+    }
+
+    /* Figure out if we have a shebang on this line, otherwise return. */
+    if (length < 2 || !pm_memequal(start, "#!", 2)) {
+        return;
+    }
+
+    /* If we have just #!, the encoding comment can start on the next line. */
+    if (length == 2) {
+        line->shebang = PM_OPTIONS_SHEBANG_COMMENT;
+        return;
+    }
+
+    const uint8_t *engine = pm_source_line_find(start, length, "ruby", 4);
+    if (engine == NULL) {
+        /* If we have no "ruby" in the shebang, then it is possible we will
+         * search further into the file for a "ruby" shebang. */
+        line->shebang = PM_OPTIONS_SHEBANG_OTHER;
+    } else {
+        /* Otherwise we found one, so we also need to check if there are command
+         * line switches that may impact compilation that we need to call out to
+         * the embedder to handle. */
+        line->shebang = PM_OPTIONS_SHEBANG_RUBY;
+
+        const uint8_t *end = start + length;
+        const uint8_t *switches = pm_source_line_find(engine + 4, (size_t) (end - (engine + 4)), " -", 2);
+
+        if (switches) {
+            line->switches = (pm_string_t) { .source = switches + 1, .length = (size_t) (end - (switches + 1)) };
+        }
+    }
 }
 
 #ifdef _WIN32
@@ -23103,15 +23148,12 @@ pm_parser_warn_shebang_carriage_return(pm_parser_t *parser, const uint8_t *start
  * the shebang_callback option has already been checked for nullability.
  */
 static void
-pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const uint8_t *engine, size_t length) {
-    const uint8_t *switches = pm_shebang_find(engine, length, " -", 2);
-    if (switches == NULL) return;
-
+pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const pm_string_t *switches) {
     pm_options_t next_options = *options;
     options->shebang_callback(
         &next_options,
-        switches + 1,
-        length - ((size_t) (switches - engine)) - 1,
+        switches->source,
+        switches->length,
         options->shebang_callback_data
     );
 
@@ -23338,114 +23380,57 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
     pm_accepts_block_stack_push(parser, true);
 
-    // Skip past the UTF-8 BOM if it exists.
-    if (size >= 3 && source[0] == 0xef && source[1] == 0xbb && source[2] == 0xbf) {
+    const uint8_t *shebang = source;
+    const uint8_t *newline = next_newline(source, parser->end - source);
+    size_t length = (size_t) ((newline ? newline + 1 : parser->end) - source);
+    pm_source_line_t line;
+    pm_source_line_scan(&line, source, length, true);
+
+    if (line.bom) {
         parser->current.end += 3;
         parser->encoding_comment_start += 3;
 
         if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
             parser->encoding = PM_ENCODING_UTF_8_ENTRY;
-            if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser);
+            if (parser->encoding_changed_callback) parser->encoding_changed_callback(parser);
         }
     }
 
-    // If the -x command line flag is set, or the first shebang of the file does
-    // not include "ruby", then we'll search for a shebang that does include
-    // "ruby" and start parsing from there.
-    bool search_shebang = PM_PARSER_COMMAND_LINE_OPTION_X(parser);
-
-    // If the first two bytes of the source are a shebang, then we will do a bit
-    // of extra processing.
-    //
-    // First, we'll indicate that the encoding comment is at the end of the
-    // shebang. This means that when a shebang is present the encoding comment
-    // can begin on the second line.
-    //
-    // Second, we will check if the shebang includes "ruby". If it does, then we
-    // we will start parsing from there. We will also potentially warning the
-    // user if there is a carriage return at the end of the shebang. We will
-    // also potentially call the shebang callback if this is the main script to
-    // allow the caller to parse the shebang and find any command-line options.
-    // If the shebang does not include "ruby" and this is the main script being
-    // parsed, then we will start searching the file for a shebang that does
-    // contain "ruby" as if -x were passed on the command line.
-    const uint8_t *newline = next_newline(parser->current.end, parser->end - parser->current.end);
-    size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->current.end);
-
-    if (length >= 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
-        parser->encoding_comment_start = newline != NULL ? newline + 1 : parser->end;
-        const uint8_t *engine;
-
-        if ((engine = pm_shebang_find(parser->start, length, "ruby", 4)) != NULL) {
-            if (newline != NULL) {
-                if (options == NULL || options->main_script) {
-                    pm_parser_warn_shebang_carriage_return(parser, parser->start, length + 1);
-                }
-            }
-
-            if (options != NULL && options->main_script && options->shebang_callback != NULL) {
-                pm_parser_init_shebang(parser, options, engine, length - (size_t) (engine - parser->start));
-            }
-
-            search_shebang = false;
-        } else if (length > 2 && options != NULL && options->main_script && !parser->parsing_eval) {
-            search_shebang = true;
-        }
+    if (line.shebang != PM_OPTIONS_SHEBANG_NONE) {
+        parser->encoding_comment_start = newline ? newline + 1 : parser->end;
     }
 
-    // Here we're going to find the first shebang that includes "ruby" and start
-    // parsing from there.
-    if (search_shebang) {
-        // If a shebang that includes "ruby" is not found, then we're going to a
-        // a load error to the list of errors on the parser.
-        bool found_shebang = false;
-
-        // This is going to point to the start of each line as we check it.
-        // We'll maintain a moving window looking at each line at they come.
-        const uint8_t *cursor = parser->start;
-
-        // The newline pointer points to the end of the current line that we're
-        // considering. If it is NULL, then we're at the end of the file.
-        const uint8_t *newline = next_newline(cursor, parser->end - cursor);
-
-        while (newline != NULL) {
-            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(newline - parser->start + 1));
-
-            cursor = newline + 1;
-            newline = next_newline(cursor, parser->end - cursor);
-
-            size_t length = (size_t) ((newline != NULL ? newline : parser->end) - cursor);
-            if (length > 2 && cursor[0] == '#' && cursor[1] == '!') {
-                const uint8_t *engine;
-                if ((engine = pm_shebang_find(cursor, length, "ruby", 4)) != NULL) {
-                    found_shebang = true;
-
-                    if (newline != NULL) {
-                        pm_parser_warn_shebang_carriage_return(parser, cursor, length + 1);
-                        parser->encoding_comment_start = newline + 1;
-                    }
-
-                    if (options != NULL && options->shebang_callback != NULL) {
-                        pm_parser_init_shebang(parser, options, engine, length - (size_t) (engine - cursor));
-                    }
-
-                    break;
-                }
-            }
+    if (pm_options_shebang_search_p(options, line.shebang)) {
+        while (line.shebang != PM_OPTIONS_SHEBANG_RUBY && newline) {
+            shebang = newline + 1;
+            pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, U32(shebang - source));
+            newline = next_newline(shebang, parser->end - shebang);
+            length = (size_t) ((newline ? newline + 1 : parser->end) - shebang);
+            pm_source_line_scan(&line, shebang, length, false);
         }
 
-        if (found_shebang) {
-            parser->previous = (pm_token_t) { .type = PM_TOKEN_EOF, .start = cursor, .end = cursor };
-            parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = cursor, .end = cursor };
+        if (line.shebang == PM_OPTIONS_SHEBANG_RUBY) {
+            if (newline) parser->encoding_comment_start = newline + 1;
+            parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = shebang, .end = shebang };
+            parser->previous = parser->current;
         } else {
             pm_parser_err(parser, 0, 0, PM_ERR_SCRIPT_NOT_FOUND);
             pm_line_offset_list_clear(&parser->line_offsets);
         }
     }
 
-    // The encoding comment can start after any amount of inline whitespace, so
-    // here we'll advance it to the first non-inline-whitespace character so
-    // that it is ready for future comparisons.
+    if (line.shebang == PM_OPTIONS_SHEBANG_RUBY && (shebang != source || !options || options->main_script)) {
+        if (newline) pm_parser_warn_shebang_carriage_return(parser, shebang, length);
+        if (line.switches.length && options && options->shebang_callback) {
+            pm_parser_init_shebang(parser, options, &line.switches);
+        }
+    }
+
+    /*
+     * The encoding comment can start after any amount of inline whitespace, so
+     * here we'll advance it to the first non-inline-whitespace character so
+     * that it is ready for future comparisons.
+     */
     parser->encoding_comment_start += pm_strspn_inline_whitespace(parser->encoding_comment_start, parser->end - parser->encoding_comment_start);
 }
 

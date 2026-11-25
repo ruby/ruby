@@ -116,6 +116,24 @@ module Ruby::Prism
       assert_equal :load, result.errors.first.level
     end
 
+    def test_bom_before_shebang_in_main_script
+      result = Ruby::Prism.parse("\uFEFF#!ruby\n# encoding: US-ASCII\n1\n", main_script: true)
+
+      assert_predicate result, :success?
+      assert_equal Encoding::UTF_8, result.encoding
+      assert_equal 1, result.statement.value
+    end
+
+    def test_command_line_x_skips_bom_prefixed_shebang
+      source = "\uFEFF#!ruby -w\n1\n"
+      result = Ruby::Prism.parse(source, command_line: "x")
+      assert_equal [:script_not_found], result.errors.map(&:type)
+
+      result = Ruby::Prism.parse(source + "#!ruby\n2\n", command_line: "x")
+      assert_predicate result, :success?
+      assert_equal [2], result.value.statements.body.map(&:value)
+    end
+
     def test_command_line_x_explicit_fail
       result = Ruby::Prism.parse(<<~RUBY, command_line: "x")
         exit 1

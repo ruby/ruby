@@ -172,6 +172,27 @@ struct pm_options_t {
     bool attach_comments;
 };
 
+/* The kind of shebang found on a source line. */
+typedef enum {
+    PM_OPTIONS_SHEBANG_NONE,
+    PM_OPTIONS_SHEBANG_COMMENT, /* Only permits an encoding comment on the next line. */
+    PM_OPTIONS_SHEBANG_OTHER,
+    PM_OPTIONS_SHEBANG_RUBY
+} pm_options_shebang_type_t;
+
+/* Whether to search past the first line for a Ruby shebang. */
+static inline bool
+pm_options_shebang_search_p(const pm_options_t *options, pm_options_shebang_type_t shebang) {
+    return (
+        (options != NULL) &&
+        (shebang != PM_OPTIONS_SHEBANG_RUBY) &&
+        (
+            (options->command_line & PM_OPTIONS_COMMAND_LINE_X) ||
+            (shebang == PM_OPTIONS_SHEBANG_OTHER && options->main_script && !options->scopes_count)
+        )
+    );
+}
+
 /* Free the internal memory associated with the options. */
 void pm_options_cleanup(pm_options_t *options);
 
