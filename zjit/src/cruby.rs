@@ -1262,6 +1262,12 @@ mod manual_defs {
     // Constants from iseq_inline_constant_cache (IC) and iseq_inline_constant_cache_entry (ICE) in vm_core.h
     pub const RUBY_OFFSET_IC_ENTRY: i32 = 0;
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
+
+    // IMEMO_FL_USER2, the flag METHOD_ENTRY_BASIC() in method.h tests
+    pub const METHOD_ENTRY_BASIC_FLAG: ruby_fl_type = RUBY_FL_USER7;
+
+    // Constants from rb_cref_t in method.h
+    pub const RUBY_OFFSET_CREF_REFINEMENTS: i32 = 8;
 }
 pub use manual_defs::*;
 
@@ -1745,6 +1751,7 @@ pub(crate) mod ids {
         name: to_ary
         name: to_s
         name: to_str
+        name: to_proc
         name: compile
         name: eval
         name: plus               content: b"+"
@@ -1769,6 +1776,7 @@ pub(crate) mod ids {
         name: rb_mod_name
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
+        name: METHOD_ENTRY_BASIC_FLAG
         name: U8
         name: u16
         name: U16

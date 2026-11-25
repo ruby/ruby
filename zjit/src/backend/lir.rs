@@ -619,10 +619,11 @@ impl From<VALUE> for Opnd {
 }
 
 /// `hir::BlockHandler` lowered for codegen: a block ISEQ (encoded as a specval
-/// at frame push) or an already-guarded Proc VALUE.
+/// at frame push) or a block handler VALUE (an already-guarded Proc or
+/// static Symbol).
 pub enum BlockHandler {
     Iseq(IseqPtr),
-    Proc(Opnd),
+    Value(Opnd),
 }
 
 /// Context for a side exit. If `SideExit` matches, it reuses the same code.
@@ -652,6 +653,8 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
+    /// The ISEQ to mark with `exited_for_block_arg_refinements`, for a `BlockArgRefinements` exit.
+    pub refined_iseq: Option<Opnd>,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -3073,7 +3076,10 @@ impl Assembler
 
         fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
             if let Some(recompile) = &exit.recompile {
-                use crate::codegen::exit_recompile;
+                use crate::codegen::{exit_recompile, exit_block_arg_refinements};
+                if let Some(refined_iseq) = recompile.refined_iseq {
+                    asm_ccall!(asm, exit_block_arg_refinements, refined_iseq);
+                }
                 asm_comment!(asm, "invalidate for recompilation");
                 asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
             }

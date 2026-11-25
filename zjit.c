@@ -393,6 +393,7 @@ rb_zjit_callable_method_entry_is_undefined(const rb_callable_method_entry_t *cme
 }
 
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
+rb_cref_t *rb_vm_get_cref(const VALUE *ep);
 bool rb_vm_once_done_value(ISE is, VALUE *result);
 
 bool
