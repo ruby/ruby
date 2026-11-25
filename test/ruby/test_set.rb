@@ -996,6 +996,35 @@ class TC_Set < Test::Unit::TestCase
     }
   end
 
+  def test_reset_raise
+    a = [1]
+    b = [2]
+    obj = Object.new
+    def obj.hash = @raise ? raise(ZeroDivisionError) : super
+    set = Set[a, b, obj]
+    obj.instance_variable_set(:@raise, true)
+
+    assert_raise(ZeroDivisionError) { set.reset }
+
+    obj.instance_variable_set(:@raise, false)
+    assert_equal(Set[[1], [2], obj], set)
+    a << 3
+    set.reset
+    assert_equal(Set[[1, 3], [2], obj], set)
+  end
+
+  def test_reset_raise_memory_leak
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, samples: 5)
+      obj = Object.new
+      def obj.hash = @raise ? raise(ZeroDivisionError) : super
+      set = Set.new(1..100)
+      set << obj
+      obj.instance_variable_set(:@raise, true)
+    PREP
+      20_000.times { set.reset rescue nil }
+    CODE
+  end
+
   def test_set_gc_compact_does_not_allocate
     assert_in_out_err([], <<-"end;", [], [])
     def x

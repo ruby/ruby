@@ -1371,15 +1371,19 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
 
     size_t size = set_table_size(old);
     if (size > 0) {
-        set_table *new = set_init_table_with_size(NULL, type, size);
+        VALUE tmp = set_alloc_with_size_and_type(0, size, type);
+        set_table *new = RSET_TABLE(tmp);
         struct set_merge_args args = {
-            .set = set,
+            .set = tmp,
             .into = new
         };
         set_iter(set, set_merge_i, (st_data_t)&args);
-        set_free_embedded_table(&sobj->table);
-        memcpy(&sobj->table, new, sizeof(*new));
-        SIZED_FREE(new);
+        set_table old_table = sobj->table;
+        sobj->table = *new;
+        *new = old_table;
+        rb_gc_writebarrier_remember(set);
+        rb_gc_writebarrier_remember(tmp);
+        RB_GC_GUARD(tmp);
     }
     else {
         sobj->table.type = type;
