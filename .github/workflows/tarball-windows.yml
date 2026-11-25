@@ -40,7 +40,6 @@ jobs:
     name: Windows ${{ matrix.os }} (${{ matrix.test_task }})
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-      PATCH: C:\msys64\usr\bin\patch.exe
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
@@ -56,16 +55,6 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - uses: msys2/setup-msys2@3c51bf698df1e37b2261f53cb67797b97761185c # v2.34.0
-        id: setup-msys2
-        with:
-          update: true
-          install: >-
-            patch
-      - name: patch path
-        shell: msys2 {0}
-        run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
-        if: ${{ steps.setup-msys2.outcome == 'success' }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: Packages
