@@ -155,7 +155,7 @@ class Gem::Ext::Builder
   end
 
   ##
-  # Splits a command string such as ENV["MAKE"] into an argument list.
+  # Splits a command string such as <tt>ENV["MAKE"]</tt> into an argument list.
   #
   # On Windows, a value that names an existing file, such as
   # <tt>C:\path\nmake.exe</tt>, is taken as a single word because POSIX

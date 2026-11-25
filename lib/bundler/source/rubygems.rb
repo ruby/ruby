@@ -76,7 +76,7 @@ module Bundler
       end
 
       def hash
-        @remotes.hash
+        credless_remotes.hash
       end
 
       def eql?(other)
