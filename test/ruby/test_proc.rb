@@ -271,6 +271,22 @@ class TestProc < Test::Unit::TestCase
     $VERBOSE = verbose_bak
   end
 
+  def test_break_in_method_to_proc_block
+    def self.yield_size(*args)
+      yield args.size
+      flunk "break should exit the proc call"
+    end
+
+    pr = method(:yield_size).to_proc
+    args = Array.new(256, :a)
+    result = [
+      :before,
+      pr.call(:a) { |size| break size },
+      pr.call(*args) { |size| break size },
+    ]
+    assert_equal([:before, 1, args.size], result)
+  end
+
   def test_block_given_method_to_proc
     verbose_bak, $VERBOSE = $VERBOSE, nil
     bug8341 = '[Bug #8341]'
