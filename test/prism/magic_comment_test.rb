@@ -204,6 +204,13 @@ module Ruby::Prism
       end
     end
 
+    def test_searched_shebang_at_eof_is_not_an_encoding_comment
+      source = "#!/bin/sh\n#!ruby coding:bogus"
+      [{ main_script: true }, { command_line: "x" }].each do |options|
+        assert_empty Ruby::Prism.parse(source, **options).errors
+      end
+    end
+
     def test_binary_with_utf8_characters
       source = "# encoding: binary\n\"\xC4\x85\"".b
 

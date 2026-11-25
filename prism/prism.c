@@ -23288,7 +23288,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
     }
 
     if (line.shebang != PM_OPTIONS_SHEBANG_NONE) {
-        parser->encoding_comment_start = newline ? newline + 1 : parser->end;
+        parser->encoding_comment_start = newline ? newline + 1 : NULL;
     }
 
     if (pm_options_shebang_search_p(options, line.shebang)) {
@@ -23301,7 +23301,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         }
 
         if (line.shebang == PM_OPTIONS_SHEBANG_RUBY) {
-            if (newline) parser->encoding_comment_start = newline + 1;
+            parser->encoding_comment_start = newline ? newline + 1 : NULL;
             parser->current = (pm_token_t) { .type = PM_TOKEN_EOF, .start = shebang, .end = shebang };
             parser->previous = parser->current;
         } else {
@@ -23322,7 +23322,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
      * here we'll advance it to the first non-inline-whitespace character so
      * that it is ready for future comparisons.
      */
-    parser->encoding_comment_start += pm_strspn_inline_whitespace(parser->encoding_comment_start, parser->end - parser->encoding_comment_start);
+    if (parser->encoding_comment_start) {
+        parser->encoding_comment_start += pm_strspn_inline_whitespace(parser->encoding_comment_start, parser->end - parser->encoding_comment_start);
+    }
 }
 
 /**

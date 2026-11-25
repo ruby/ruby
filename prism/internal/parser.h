@@ -862,7 +862,7 @@ struct pm_parser_t {
 
     /*
      * This pointer indicates where a comment must start if it is to be
-     * considered an encoding comment.
+     * considered an encoding comment. NULL if the shebang has no terminating newline.
      */
     const uint8_t *encoding_comment_start;
 
