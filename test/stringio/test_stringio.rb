@@ -175,6 +175,19 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil(stringio.gets(5))
   end
 
+  def test_gets_limit_around_truncated_char
+    # The limit is at the start of or inside the truncated last character.
+    [
+      ["\xE3\x81", Encoding::UTF_8, 1, 2],
+      ["ab", Encoding::UTF_32LE, 1, 2],
+      ["abc", Encoding::UTF_16LE, 2, 2],
+    ].each do |string, encoding, limit, pos|
+      stringio = StringIO.new(string.dup.force_encoding(encoding))
+      stringio.gets(limit)
+      assert_equal(pos, stringio.pos, encoding.name)
+    end
+  end
+
   def test_gets_chomp
     assert_equal(nil, StringIO.new("").gets(chomp: true))
     assert_equal("", StringIO.new("\n").gets(chomp: true))
