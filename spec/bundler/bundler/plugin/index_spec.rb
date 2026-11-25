@@ -35,6 +35,43 @@ RSpec.describe Bundler::Plugin::Index do
       new_index = Index.new
       expect(new_index.load_paths(plugin_name)).to eq([lib_path(plugin_name).join("lib").to_s])
     end
+
+    it "reads empty sections that Bundler 4.1 writes as {}" do
+      index.index_file.write(<<~YAML)
+        ---
+        commands: {}
+        hooks: {}
+        load_paths:
+          #{plugin_name}:
+            - #{lib_path(plugin_name).join("lib")}
+        plugin_paths:
+          #{plugin_name}: #{lib_path(plugin_name)}
+        sources: {}
+      YAML
+
+      new_index = Index.new
+      expect(new_index.plugin_path(plugin_name)).to eq(lib_path(plugin_name))
+      expect(new_index.load_paths(plugin_name)).to eq([lib_path(plugin_name).join("lib").to_s])
+    end
+
+    it "expands paths that Bundler 4.1 records relative to the plugin root" do
+      index.index_file.write(<<~YAML)
+        ---
+        commands:
+        hooks:
+        load_paths:
+          #{plugin_name}:
+            - #{plugin_name}/lib
+        plugin_paths:
+          #{plugin_name}: #{plugin_name}
+        sources:
+      YAML
+
+      plugin_root = Bundler::Plugin.root
+      new_index = Index.new
+      expect(new_index.plugin_path(plugin_name)).to eq(plugin_root.join(plugin_name))
+      expect(new_index.load_paths(plugin_name)).to eq([plugin_root.join(plugin_name, "lib").to_s])
+    end
   end
 
   describe "commands" do

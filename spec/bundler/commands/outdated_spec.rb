@@ -1114,6 +1114,50 @@ RSpec.describe "bundle outdated" do
     it_behaves_like "patch version updates are detected"
   end
 
+  context "with fourth-segment and prerelease updates" do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.2.3"
+        build_gem "bar", "1.2.3.4"
+        build_gem "baz", "1.0.0.rc1"
+      end
+
+      install_gemfile <<~G
+        source "https://gem.repo4"
+        gem "foo"
+        gem "bar"
+        gem "baz", ">= 1.0.0.rc1"
+      G
+
+      build_repo4 do
+        build_gem "foo", "1.2.3.1"
+        build_gem "bar", "1.2.3.5"
+        build_gem "baz", "1.0.0"
+      end
+    end
+
+    it "lists the updates with --filter-patch" do
+      bundle "outdated --filter-patch --parseable", raise_on_error: false
+
+      expect(out).to eq(<<~GEMS.strip)
+        bar (newest 1.2.3.5, installed 1.2.3.4)
+        baz (newest 1.0.0, installed 1.0.0.rc1)
+        foo (newest 1.2.3.1, installed 1.2.3)
+      GEMS
+      expect(exitstatus).to eq(1)
+    end
+
+    it "lists the same updates with all three filters as without filters" do
+      bundle "outdated --parseable", raise_on_error: false
+      unfiltered = out
+
+      bundle "outdated --parseable --filter-major --filter-minor --filter-patch", raise_on_error: false
+
+      expect(out).to eq(unfiltered)
+      expect(exitstatus).to eq(1)
+    end
+  end
+
   context "conservative updates" do
     before do
       build_repo4 do

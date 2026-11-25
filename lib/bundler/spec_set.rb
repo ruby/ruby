@@ -140,14 +140,14 @@ module Bundler
     end
 
     def incomplete_for_platform?(deps, platform)
+      return false if @specs.empty?
+
       incomplete_specs_for_platform(deps, platform).any?
     end
 
     def incomplete_specs_for_platform(deps, platform)
-      return [] if @specs.empty?
-
       validation_set = self.class.new(@specs)
-      validation_set.for(deps, [platform])
+      validation_set.for(deps.select {|dep| dep.should_include?(platform) }, [platform])
       validation_set.incomplete_specs
     end
 

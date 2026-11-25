@@ -132,6 +132,33 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   end
 end
 
+RSpec.context "when updating a bundle whose locked top-level gem was yanked" do
+  before do
+    build_repo4 do
+      build_gem "foo", %w[1.0.0 2.0.0]
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+      gem "foo"
+    G
+
+    bundle "lock"
+    expect(lockfile).to include("    foo (2.0.0)")
+
+    build_repo4 do
+      FileUtils.rm gem_repo4("gems/foo-2.0.0.gem")
+    end
+  end
+
+  ["update --all", "lock --update"].each do |command|
+    it "locks the remaining version with `bundle #{command}`" do
+      bundle command
+      expect(lockfile).to include("    foo (1.0.0)")
+    end
+  end
+end
+
 RSpec.context "when resolving a bundle that includes yanked gems, but unlocking an unrelated gem" do
   before(:each) do
     build_repo4 do
