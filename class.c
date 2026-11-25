@@ -709,7 +709,7 @@ class_associate_super(VALUE klass, VALUE super, bool init)
                 // Instead of adding singleton classes to the subclass list,
                 // just set a flag so that method cache invalidation takes the
                 // tree path.
-                FL_SET_RAW(super, RCLASS_HAS_SUBCLASSES);
+                rb_obj_flags_update_atomic(super, RCLASS_HAS_SUBCLASSES, 0);
             }
             else {
                 class_switch_superclass(super, klass);
