@@ -1400,11 +1400,9 @@ obj_use_generic_fields_tbl_p(VALUE obj)
     }
 }
 
-VALUE
-rb_obj_fields(VALUE obj, ID field_name)
+static VALUE
+obj_fields_get(VALUE obj)
 {
-    ivar_ractor_assert(obj, field_name);
-
     switch (BUILTIN_TYPE(obj)) {
       case T_IMEMO:
         RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
@@ -1443,6 +1441,22 @@ rb_obj_fields(VALUE obj, ID field_name)
             return fields_obj;
         }
     }
+}
+
+VALUE
+rb_obj_fields(VALUE obj, ID field_name)
+{
+    ivar_ractor_assert(obj, field_name);
+    return obj_fields_get(obj);
+}
+
+static VALUE
+obj_fields(VALUE obj, shape_id_t shape_id)
+{
+#if RUBY_DEBUG
+    ivar_ractor_assert(obj, RSHAPE_EDGE_NAME(shape_id));
+#endif
+    return obj_fields_get(obj);
 }
 
 void
@@ -1599,7 +1613,7 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
 
-    return rb_imemo_fields_field_get(rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id)), target_shape_id);
+    return rb_imemo_fields_field_get(obj_fields(obj, target_shape_id), target_shape_id);
 }
 
 VALUE
