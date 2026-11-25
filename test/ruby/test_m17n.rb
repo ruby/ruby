@@ -1467,6 +1467,14 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("a", "a\x8e\xa2\xa1\xa1".force_encoding("euc-tw").chop)
   end
 
+  def test_chop_invalid_byte_in_japanese_encodings
+    %w[EUC-JP Shift_JIS Windows-31J CP51932 eucJP-ms].each do |enc|
+      s = "a\x80".force_encoding(enc)
+      assert_equal("a", s.chop, enc)
+      assert_equal(1, s.byterindex("", 1), enc)
+    end
+  end
+
   def test_valid_encoding
     s = "\xa1".force_encoding("euc-jp")
     assert_equal(false, s.valid_encoding?)
