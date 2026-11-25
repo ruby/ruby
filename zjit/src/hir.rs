@@ -973,15 +973,19 @@ pub struct SendDirectData {
     pub exit_state: InsnId,
 }
 
-/// Where an inlined call gets its self from
+/// A call being inlined: a `send` with its receiver, or an `invokeblock` with its captured block
 #[derive(Clone, Copy)]
-enum InlineRecv {
-    /// The receiver of a [`Insn::SendDirect`], below the arguments on the stack
-    Recv(InsnId),
-    /// The `struct rb_captured_block *` of an [`Insn::InvokeBlockIseqDirect`],
-    /// which is a pointer to the middle of a previous `rb_control_frame_t`.
-    /// `yield` has no receiver on the stack, and the block's self is `captured->self`.
-    Captured(InsnId),
+enum InlineCall {
+    /// A [`Insn::SendDirect`]
+    Send {
+        /// The receiver, below the arguments on the stack
+        recv: InsnId,
+    },
+    /// An [`Insn::InvokeBlockIseqDirect`]. `invokeblock` has no receiver on the stack, and the block's self is `captured->self`.
+    InvokeBlock {
+        /// The `struct rb_captured_block *`, which is a pointer to the middle of a previous `rb_control_frame_t`.
+        captured: InsnId,
+    },
 }
 
 /// Payload of [`Insn::CondBranchHasType`]. Boxed in the enum to keep `Insn` small.
@@ -6165,15 +6169,15 @@ impl Function {
 
                 let send_insn_id = self.blocks[block].insns[send_pos];
                 let send = self.resolve(send_insn_id);
-                let (call_recv, cme, iseq, kw_bits, jit_entry_idx, call_block, state, exit_state, args_len) = match send.insn(self) {
+                let (inline_call, cme, iseq, kw_bits, jit_entry_idx, call_block, state, exit_state, args_len) = match send.insn(self) {
                     Insn::SendDirect(data) => {
                         let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block, state, exit_state, .. } = **data;
-                        (InlineRecv::Recv(recv), cme, iseq, kw_bits, jit_entry_idx, block, state, exit_state, data.args.len())
+                        (InlineCall::Send { recv }, cme, iseq, kw_bits, jit_entry_idx, block, state, exit_state, data.args.len())
                     }
                     // `can_direct_invoke_block_iseq` only accepts blocks with lead parameters, so it has 0 kw_bits and
                     // uses JIT entry 0 (no optional arguments). A stack overflow exists with `state` to rerun the `yield`.
                     &Insn::InvokeBlockIseqDirect { iseq, captured, ref args, state } =>
-                        (InlineRecv::Captured(captured), ptr::null(), iseq, 0, 0, None, state, state, args.len()),
+                        (InlineCall::InvokeBlock { captured }, ptr::null(), iseq, 0, 0, None, state, state, args.len()),
                     _ => unreachable!("position {send_insn_id} is not a SendDirect or InvokeBlockIseqDirect"),
                 };
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
@@ -6236,7 +6240,7 @@ impl Function {
 
                 // The callee's perspective of the stack is with the receiver and arguments popped off.
                 // Unlike a method call, `yield` has no receiver on the stack.
-                let recv_slots = usize::from(matches!(call_recv, InlineRecv::Recv(_)));
+                let recv_slots = usize::from(matches!(inline_call, InlineCall::Send { .. }));
                 let caller_stack_size = call_state.stack_size() - args_len - recv_slots;
                 let post_send_caller = self.new_insn(Insn::Snapshot { state: Box::new(call_state.with_stack_size(caller_stack_size)) });
                 let mode = AddIseqMode::Inlined {
@@ -6262,9 +6266,9 @@ impl Function {
                 self.num_instructions += self.insns.len() - pre_insns_len;
 
                 // Past the point of no return: commit the inlining.
-                match call_recv {
-                    InlineRecv::Recv(_) => incr_counter!(inline_method_count),
-                    InlineRecv::Captured(_) => incr_counter!(inline_block_count),
+                match inline_call {
+                    InlineCall::Send { .. } => incr_counter!(inline_method_count),
+                    InlineCall::InvokeBlock { .. } => incr_counter!(inline_block_count),
                 }
                 did_inline = true;
 
@@ -6321,9 +6325,9 @@ impl Function {
                 let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block].params.clone();
 
                 // First param is self. A block's self is the self captured when the block was created.
-                let recv = match call_recv {
-                    InlineRecv::Recv(recv) => recv,
-                    InlineRecv::Captured(captured) => {
+                let recv = match inline_call {
+                    InlineCall::Send { recv } => recv,
+                    InlineCall::InvokeBlock { captured } => {
                         let offset: i32 = std::mem::offset_of!(rb_captured_block, self_).try_into().unwrap();
                         self.load_field(block, captured, FieldName::captured_self, offset, types::BasicObject)
                     }
@@ -6394,7 +6398,7 @@ impl Function {
                 self.push_insn_id(block, post_send_caller);
 
                 // Insert PushLightweightFrame and jump to callee body entry.
-                let captured = if let InlineRecv::Captured(captured) = call_recv { Some(captured) } else { None };
+                let captured = if let InlineCall::InvokeBlock { captured } = inline_call { Some(captured) } else { None };
                 self.push_insn(block, Insn::PushInlineFrame {
                     iseq, cme, recv, num_args: args.len().try_into().unwrap(), block: call_block, state, exit_state, captured,
                 });
