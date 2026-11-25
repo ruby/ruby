@@ -2,6 +2,7 @@
 
 #include "prism/internal/allocator.h"
 #include "prism/internal/buffer.h"
+#include "prism/internal/memchr.h"
 #include "prism/internal/memequal.h"
 #include "prism/internal/oom.h"
 
@@ -358,14 +359,79 @@ pm_source_stream_new(void *stream, pm_source_stream_fgets_t *fgets, pm_source_st
 }
 
 /**
+ * Find a nonempty literal in a source line, which can contain NUL bytes.
+ */
+static const uint8_t *
+pm_source_line_find(const uint8_t *line, size_t length, const char *value, size_t value_length) {
+    if (length >= value_length) {
+        const uint8_t *end = line + (length - value_length + 1);
+        for (; (line = pm_memchr(line, (uint8_t) value[0], (size_t) (end - line))); line++) {
+            if (pm_memequal(line + 1, value + 1, value_length - 1)) return line;
+        }
+    }
+
+    return NULL;
+}
+
+/* Scan a line of the source and fill in a pm_source_line_t. */
+void
+pm_source_line_scan(pm_source_line_t *line, const uint8_t *start, size_t length, bool first_line) {
+    *line = (pm_source_line_t) { .shebang = PM_OPTIONS_SHEBANG_NONE };
+    bool newline = length > 0 && start[length - 1] == '\n';
+    if (newline) length--;
+
+    /* A BOM can precede __END__, but a shebang must start at the first byte. */
+    if (first_line && length >= 3 && pm_memequal(start, "\xef\xbb\xbf", 3)) {
+        line->bom = true;
+        start += 3;
+        length -= 3;
+    }
+
+    if (line->bom || length < 2 || !pm_memequal(start, "#!", 2)) {
+        if (newline && length > 0 && start[length - 1] == '\r') length--;
+        line->__end__ = length == 7 && pm_memequal(start, "__END__", 7);
+        return;
+    }
+
+    /* If we have just #!, the encoding comment can start on the next line. */
+    if (length == 2) {
+        line->shebang = PM_OPTIONS_SHEBANG_COMMENT;
+        return;
+    }
+
+    const uint8_t *engine = pm_source_line_find(start, length, "ruby", 4);
+    if (engine == NULL) {
+        /* If we have no "ruby" in the shebang, then it is possible we will
+         * search further into the file for a "ruby" shebang. */
+        line->shebang = PM_OPTIONS_SHEBANG_OTHER;
+    } else {
+        /* Otherwise we found one, so we also need to check if there are command
+         * line switches that may impact compilation that we need to call out to
+         * the embedder to handle. */
+        line->shebang = PM_OPTIONS_SHEBANG_RUBY;
+
+        const uint8_t *end = start + length;
+        const uint8_t *switches = pm_source_line_find(engine + 4, (size_t) (end - (engine + 4)), " -", 2);
+
+        if (switches) {
+            line->switches = (pm_string_t) { .source = switches + 1, .length = (size_t) (end - (switches + 1)) };
+        }
+    }
+}
+
+/**
  * Read from the stream into the source's internal buffer until __END__ is
  * encountered or EOF is reached. Updates the source pointer and length.
  *
  * Returns true if EOF was reached, false if __END__ was encountered.
  */
 bool
-pm_source_stream_read(pm_source_t *source) {
+pm_source_stream_read(pm_source_t *source, const pm_options_t *options) {
     pm_buffer_t *buffer = source->stream.buffer;
+    size_t line_start = buffer->length;
+
+    bool eof = true;
+    bool search_shebang = false;
 
 #define LINE_SIZE 4096
     char line[LINE_SIZE];
@@ -420,34 +486,23 @@ pm_source_stream_read(pm_source_t *source) {
             continue;
         }
 
-        /*
-         * Check if the line matches the __END__ marker. If it does, then stop
-         * reading and return false. In most circumstances, this means we should
-         * stop reading from the stream so that the DATA constant can pick it
-         * up.
-         */
-        switch (length) {
-            case 7:
-                if (pm_memequal(line, "__END__", 7)) {
-                    source->source = (const uint8_t *) pm_buffer_value(buffer);
-                    source->length = pm_buffer_length(buffer);
-                    return false;
-                }
-                break;
-            case 8:
-                if (pm_memequal(line, "__END__\n", 8)) {
-                    source->source = (const uint8_t *) pm_buffer_value(buffer);
-                    source->length = pm_buffer_length(buffer);
-                    return false;
-                }
-                break;
-            case 9:
-                if (pm_memequal(line, "__END__\r\n", 9)) {
-                    source->source = (const uint8_t *) pm_buffer_value(buffer);
-                    source->length = pm_buffer_length(buffer);
-                    return false;
-                }
-                break;
+        /* Match complete lines, including lines split across multiple reads. */
+        const uint8_t *start = (const uint8_t *) buffer->value + line_start;
+        bool first_line = line_start == 0;
+
+        pm_source_line_t info;
+        pm_source_line_scan(&info, start, buffer->length - line_start, first_line);
+        line_start = buffer->length;
+
+        if (first_line) {
+            search_shebang = pm_options_shebang_search_p(options, info.shebang);
+        } else if (info.shebang == PM_OPTIONS_SHEBANG_RUBY) {
+            search_shebang = false;
+        }
+
+        if (info.__end__ && !search_shebang) {
+            eof = false;
+            break;
         }
 
         /*
@@ -463,10 +518,10 @@ pm_source_stream_read(pm_source_t *source) {
 #undef LINE_FILL
 #undef LINE_SIZE
 
-    source->stream.eof = true;
+    source->stream.eof = eof;
     source->source = (const uint8_t *) pm_buffer_value(buffer);
     source->length = pm_buffer_length(buffer);
-    return true;
+    return eof;
 }
 
 /**

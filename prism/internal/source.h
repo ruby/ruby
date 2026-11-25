@@ -3,6 +3,8 @@
 
 #include "prism/source.h"
 #include "prism/buffer.h"
+#include "prism/internal/options.h"
+#include "prism/stringy.h"
 
 #include <stdbool.h>
 
@@ -58,11 +60,17 @@ struct pm_source_t {
     } stream;
 };
 
-/*
- * Read from a stream into the source's internal buffer. This is used by
- * pm_parse_stream to incrementally read the source.
- */
-bool pm_source_stream_read(pm_source_t *source);
+typedef struct {
+    pm_string_t switches;
+    pm_options_shebang_type_t shebang;
+    bool bom;
+    bool __end__;
+} pm_source_line_t;
+
+void pm_source_line_scan(pm_source_line_t *line, const uint8_t *start, size_t length, bool first_line);
+
+/* Read through the next possible __END__ after the script begins, or to EOF. */
+bool pm_source_stream_read(pm_source_t *source, const pm_options_t *options);
 
 /*
  * Returns whether the stream source has reached EOF.

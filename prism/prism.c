@@ -23063,70 +23063,6 @@ parse_program(pm_parser_t *parser) {
 /* External functions                                                         */
 /******************************************************************************/
 
-typedef struct {
-    pm_string_t switches;
-    pm_options_shebang_type_t shebang;
-    bool bom;
-} pm_source_line_t;
-
-/**
- * Find a nonempty literal in a source line, which can contain NUL bytes.
- */
-static const uint8_t *
-pm_source_line_find(const uint8_t *line, size_t length, const char *value, size_t value_length) {
-    if (length >= value_length) {
-        const uint8_t *end = line + (length - value_length + 1);
-        for (; (line = pm_memchr(line, (uint8_t) value[0], (size_t) (end - line))); line++) {
-            if (pm_memequal(line + 1, value + 1, value_length - 1)) return line;
-        }
-    }
-
-    return NULL;
-}
-
-/* Scan a line of the source and fill in a pm_source_line_t. */
-static void
-pm_source_line_scan(pm_source_line_t *line, const uint8_t *start, size_t length, bool first_line) {
-    *line = (pm_source_line_t) { .shebang = PM_OPTIONS_SHEBANG_NONE };
-    if (length > 0 && start[length - 1] == '\n') length--;
-
-    /* A shebang must start at the first byte, so a line with a BOM cannot have one. */
-    if (first_line && length >= 3 && pm_memequal(start, "\xef\xbb\xbf", 3)) {
-        line->bom = true;
-        return;
-    }
-
-    /* Figure out if we have a shebang on this line, otherwise return. */
-    if (length < 2 || !pm_memequal(start, "#!", 2)) {
-        return;
-    }
-
-    /* If we have just #!, the encoding comment can start on the next line. */
-    if (length == 2) {
-        line->shebang = PM_OPTIONS_SHEBANG_COMMENT;
-        return;
-    }
-
-    const uint8_t *engine = pm_source_line_find(start, length, "ruby", 4);
-    if (engine == NULL) {
-        /* If we have no "ruby" in the shebang, then it is possible we will
-         * search further into the file for a "ruby" shebang. */
-        line->shebang = PM_OPTIONS_SHEBANG_OTHER;
-    } else {
-        /* Otherwise we found one, so we also need to check if there are command
-         * line switches that may impact compilation that we need to call out to
-         * the embedder to handle. */
-        line->shebang = PM_OPTIONS_SHEBANG_RUBY;
-
-        const uint8_t *end = start + length;
-        const uint8_t *switches = pm_source_line_find(engine + 4, (size_t) (end - (engine + 4)), " -", 2);
-
-        if (switches) {
-            line->switches = (pm_string_t) { .source = switches + 1, .length = (size_t) (end - (switches + 1)) };
-        }
-    }
-}
-
 #ifdef _WIN32
 #define pm_parser_warn_shebang_carriage_return(parser, start, length) ((void) 0)
 #else
@@ -23652,7 +23588,7 @@ pm_parse(pm_parser_t *parser) {
  */
 pm_node_t *
 pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_source_t *source, const pm_options_t *options) {
-    bool eof = pm_source_stream_read(source);
+    bool eof = pm_source_stream_read(source, options);
 
     pm_parser_t *tmp = pm_parser_new(arena, pm_source_source(source), pm_source_length(source), options);
     pm_node_t *node = pm_parse(tmp);
@@ -23660,7 +23596,7 @@ pm_parse_stream(pm_parser_t **parser, pm_arena_t *arena, pm_source_t *source, co
     /* The stream reader stops at possible markers. Only the lexer knows if
      * the marker is real, even when the preceding source has syntax errors. */
     while (!eof && tmp->data_loc.length == 0) {
-        eof = pm_source_stream_read(source);
+        eof = pm_source_stream_read(source, options);
 
         pm_parser_free(tmp);
         pm_arena_cleanup(arena);

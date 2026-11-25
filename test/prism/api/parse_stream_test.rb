@@ -53,6 +53,76 @@ module Ruby::Prism
       assert_equal "data\n", io.read
     end
 
+    def test___END___before_ruby_shebang
+      [["preamble", { command_line: "x" }], ["#!/bin/sh", { main_script: true }]].each do |first_line, options|
+        io = StringIO.new("#{first_line}\n__END__\n__END__\n#!/usr/bin/env ruby\n42\n__END__\ndata\n")
+        result = Ruby::Prism.parse_stream(io, **options)
+
+        assert_predicate result, :success?
+        assert_equal 42, result.statement.value
+        assert_equal 5, result.statement.location.start_line
+        assert_equal 6, result.data_loc.start_line
+        assert_equal "data\n", io.read
+      end
+    end
+
+    def test_ruby_shebang_spanning_stream_reads
+      io = StringIO.new("__END__\n#!" + (" " * 4096) + "ruby\n1\n__END__\ndata")
+      result = Ruby::Prism.parse_stream(io, command_line: "x")
+
+      assert_predicate result, :success?
+      assert_equal 1, result.statement.value
+      assert_equal "data", io.read
+    end
+
+    def test___END___without_ruby_shebang
+      io = StringIO.new("__END__\nno Ruby script here\n")
+      result = Ruby::Prism.parse_stream(io, command_line: "x")
+
+      assert_equal [:script_not_found], result.errors.map(&:type)
+      assert_predicate io, :eof?
+    end
+
+    def test_shebang_in_data_remains_unread
+      [
+        ["#!ruby", { command_line: "x" }],
+        ["#!", { main_script: true }],
+        ["\uFEFF#!ruby", { main_script: true }],
+        ["\uFEFF#!/bin/sh", { main_script: true }],
+        ["#!/bin/sh", { main_script: true, scopes: [[]] }]
+      ].each do |first_line, options|
+        io = StringIO.new("#{first_line}\n1\n__END__\n#!ruby\n2\n")
+        result = Ruby::Prism.parse_stream(io, **options)
+
+        assert_predicate result, :success?
+        assert_equal 1, result.statement.value
+        assert_equal 1, Ruby::Prism.parse(io.string, **options).statement.value
+        assert_equal "#!ruby\n2\n", io.read
+      end
+    end
+
+    def test_command_line_x_skips_bom_prefixed_shebang
+      ["#!ruby", "#!ruby   "].each do |first_line|
+        source = "\uFEFF#{first_line}\n1\n__END__\n#!ruby\n2\n__END__\ndata\n"
+        io = StringIO.new(source)
+        result = Ruby::Prism.parse_stream(io, command_line: "x")
+
+        assert_predicate result, :success?
+        assert_equal 2, result.statement.value
+        assert_equal 2, Ruby::Prism.parse(source, command_line: "x").statement.value
+        assert_equal "data\n", io.read
+      end
+    end
+
+    def test_initial___END___after_utf8_bom
+      io = StringIO.new("\uFEFF__END__\r\ndata\n")
+      result = Ruby::Prism.parse_stream(io)
+
+      assert_equal 3, result.data_loc.start_offset
+      assert_equal "__END__\r\n", result.data_loc.slice
+      assert_equal "data\n", io.read
+    end
+
     def test_false___END___in_percent_string
       io = StringIO.new("p(%\n__END__\n+ %q{hi})\n")
       result = Ruby::Prism.parse_stream(io)
