@@ -229,7 +229,11 @@ module Ruby::Prism
           s(:lvar, :it)),
         s(:itblock,
           s(:lambda), :it,
-          s(:lvar, :it)))
+          s(:lvar, :it)),
+        s(:itblock,
+          s(:send, nil, :x), :it,
+          s(:send, nil, :f,
+            s(:kwargs, s(:pair, s(:sym, :it), s(:lvar, :it))))))
       end
     end
 

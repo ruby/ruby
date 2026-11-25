@@ -153,7 +153,7 @@ module Ruby::Prism
               elsif value.is_a?(ConstantReadNode)
                 builder.const([value.name, srange(key.content_loc)])
               else
-                builder.ident([value.name, srange(key.content_loc)]).updated(:lvar)
+                builder.ident([key.unescaped, srange(key.content_loc)]).updated(:lvar)
               end
 
               builder.pair_keyword([key.unescaped, srange(key)], implicit_value)

@@ -5405,15 +5405,6 @@ pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_tok
 }
 
 /**
- * Allocate and initialize a new LocalVariableReadNode node.
- */
-static pm_local_variable_read_node_t *
-pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
-    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
-    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, depth, false);
-}
-
-/**
  * Allocate and initialize a new LocalVariableReadNode node for a missing local
  * variable. (This will only happen when there is a syntax error.)
  */
@@ -13163,6 +13154,9 @@ parse_expression_infixes(pm_parser_t *parser, pm_reduction_t left, pm_binding_po
 static pm_node_t *
 parse_heredoc(pm_parser_t *parser, uint16_t depth);
 
+static pm_node_t *
+parse_variable(pm_parser_t *parser, const pm_token_t *name);
+
 /* Resource failure must preserve the same token/context ownership as ordinary
  * syntax recovery. In particular, do not consume an enclosing terminator or
  * leave an unparsed heredoc's lexer mode pending. */
@@ -14265,11 +14259,9 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_hash_elemen
                         identifier.type = PM_TOKEN_CONSTANT;
                         value = UP(pm_constant_read_node_create(parser, &identifier));
                     } else {
-                        int depth = invalid ? -1 : pm_parser_local_depth(parser, &identifier);
-                        if (depth == -1) {
+                        value = invalid ? NULL : parse_variable(parser, &identifier);
+                        if (value == NULL) {
                             value = UP(pm_call_node_variable_call_create(parser, &identifier));
-                        } else {
-                            value = UP(pm_local_variable_read_node_create(parser, &identifier, (uint32_t) depth));
                         }
                     }
 
@@ -15529,10 +15521,10 @@ parse_blocklike_parameters(pm_parser_t *parser, pm_node_t *parameters, const pm_
                 pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_OUTER_BLOCK);
             } else if (parser->current_scope->parameters & PM_SCOPE_PARAMETERS_NUMBERED_INNER) {
                 pm_parser_err_node(parser, node, PM_ERR_NUMBERED_PARAMETER_INNER_BLOCK);
-            } else if (pm_token_is_numbered_parameter(parser, PM_NODE_START(node), PM_NODE_LENGTH(node))) {
-                numbered_parameter = MAX(numbered_parameter, (uint8_t) (parser->start[node->location.start + 1] - '0'));
             } else {
-                PRISM_ASSERT(false && "unreachable");
+                // The location of a shorthand hash value also includes the colon.
+                PRISM_ASSERT(PM_NODE_LENGTH(node) >= 2 && pm_token_is_numbered_parameter(parser, PM_NODE_START(node), 2));
+                numbered_parameter = MAX(numbered_parameter, (uint8_t) (parser->start[node->location.start + 1] - '0'));
             }
         } else if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
             if (numbered_parameter > 0) {
@@ -16891,17 +16883,17 @@ parse_alias_argument(pm_parser_t *parser, bool first, uint16_t depth) {
 }
 
 /**
- * Parse an identifier into either a local variable read. If the local variable
- * is not found, it returns NULL instead.
+ * Resolve an identifier to a local variable or implicit parameter read.
+ * Return NULL if the name is a method call.
  */
 static pm_node_t *
-parse_variable(pm_parser_t *parser) {
-    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &parser->previous);
+parse_variable(pm_parser_t *parser, const pm_token_t *name) {
+    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
     int depth;
-    bool is_numbered_param = pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous));
+    bool is_numbered_param = pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, name), PM_TOKEN_LENGTH(name));
 
     if (!is_numbered_param && ((depth = pm_parser_local_depth_constant_id(parser, name_id)) != -1)) {
-        return UP(pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, (uint32_t) depth, false));
+        return UP(pm_local_variable_read_node_create_constant_id(parser, name, name_id, (uint32_t) depth, false));
     }
 
     pm_scope_t *current_scope = parser->current_scope;
@@ -16911,7 +16903,7 @@ parse_variable(pm_parser_t *parser) {
             // all of the locals that exist before it. For example, referencing
             // _2 means that _1 must exist. Therefore here we loop through all
             // of the possibilities and add them into the constant pool.
-            uint8_t maximum = (uint8_t) (parser->previous.start[1] - '0');
+            uint8_t maximum = (uint8_t) (name->start[1] - '0');
             for (uint8_t number = 1; number <= maximum; number++) {
                 pm_parser_local_add_constant(parser, pm_numbered_parameter_names[number - 1], 2);
             }
@@ -16920,12 +16912,12 @@ parse_variable(pm_parser_t *parser) {
                 parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_NUMBERED_FOUND;
             }
 
-            pm_node_t *node = UP(pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false));
+            pm_node_t *node = UP(pm_local_variable_read_node_create_constant_id(parser, name, name_id, 0, false));
             pm_scratch_node_list_append(&parser->scratch_arena, &current_scope->implicit_parameters, node);
 
             return node;
-        } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
-            pm_node_t *node = UP(pm_it_local_variable_read_node_create(parser, &parser->previous));
+        } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(name->start, name->end)) {
+            pm_node_t *node = UP(pm_it_local_variable_read_node_create(parser, name));
             pm_scratch_node_list_append(&parser->scratch_arena, &current_scope->implicit_parameters, node);
 
             return node;
@@ -16943,7 +16935,7 @@ parse_variable_call(pm_parser_t *parser) {
     pm_node_flags_t flags = 0;
 
     if (!match1(parser, PM_TOKEN_PARENTHESIS_LEFT) && (parser->previous.end[-1] != '!') && (parser->previous.end[-1] != '?')) {
-        pm_node_t *node = parse_variable(parser);
+        pm_node_t *node = parse_variable(parser, &parser->previous);
         if (node != NULL) return node;
         flags |= PM_CALL_NODE_FLAGS_VARIABLE_CALL;
     }
@@ -17969,7 +17961,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
             switch (parser->current.type) {
                 case PM_TOKEN_IDENTIFIER: {
                     parser_lex(parser);
-                    pm_node_t *variable = UP(parse_variable(parser));
+                    pm_node_t *variable = parse_variable(parser, &parser->previous);
 
                     if (variable == NULL) {
                         pm_parser_err_token_content(parser, &parser->previous, PM_ERR_NO_LOCAL_VARIABLE);

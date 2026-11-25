@@ -3542,6 +3542,7 @@ nodes:
         type: node
         kind:
           - LocalVariableReadNode
+          - ItLocalVariableReadNode
           - CallNode
           - ConstantReadNode
           - LocalVariableTargetNode
