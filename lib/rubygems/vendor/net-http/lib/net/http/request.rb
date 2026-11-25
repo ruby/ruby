@@ -61,6 +61,7 @@
 # - Gem::Net::HTTP::Options
 # - Gem::Net::HTTP::Trace
 # - Gem::Net::HTTP::Patch
+# - Gem::Net::HTTP::Query
 #
 # Subclasses for WebDAV requests:
 #

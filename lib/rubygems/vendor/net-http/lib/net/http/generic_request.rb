@@ -19,16 +19,13 @@ class Gem::Net::HTTPGenericRequest
 
     if Gem::URI === uri_or_path then
       raise ArgumentError, "not an HTTP Gem::URI" unless Gem::URI::HTTP === uri_or_path
-      hostname = uri_or_path.hostname
+      hostname = uri_or_path.host
       raise ArgumentError, "no host component for Gem::URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
-      host = @uri.hostname.dup
-      host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
       raise ArgumentError, "no HTTP request path given" unless @path
     else
       @uri = nil
-      host = nil
       raise ArgumentError, "no HTTP request path given" unless uri_or_path
       raise ArgumentError, "HTTP request path is empty" if uri_or_path.empty?
       @path = uri_or_path.dup
@@ -51,7 +48,7 @@ class Gem::Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
-    self['Host'] ||= host if host
+    self['Host'] ||= @uri.authority if @uri
     @body = nil
     @body_stream = nil
     @body_data = nil
@@ -245,7 +242,7 @@ class Gem::Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/m, '')
+      host = Gem::URI.parse("//#{host}").host # Remove a port component from the existing Host header
     elsif host = @uri.host
     else
      host = addr
@@ -263,6 +260,8 @@ class Gem::Net::HTTPGenericRequest
   end
 
   private
+
+  # :stopdoc:
 
   class Chunker #:nodoc:
     def initialize(sock)
@@ -337,6 +336,9 @@ class Gem::Net::HTTPGenericRequest
     boundary = opt[:boundary]
     require 'securerandom' unless defined?(SecureRandom)
     boundary ||= SecureRandom.urlsafe_base64(40)
+    if /[\r\n]/.match?(boundary.to_s)
+      raise ArgumentError, "multipart boundary cannot include CR/LF"
+    end
     chunked_p = chunked?
 
     buf = +''
@@ -350,7 +352,10 @@ class Gem::Net::HTTPGenericRequest
       buf << "--#{boundary}\r\n"
       if filename
         filename = quote_string(filename, charset)
-        type = h[:content_type] || 'application/octet-stream'
+        type = (h[:content_type] || 'application/octet-stream').to_s
+        if /[\r\n]/.match?(type)
+          raise ArgumentError, "field content type cannot include CR/LF"
+        end
         buf << "Content-Disposition: form-data; " \
           "name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
           "Content-Type: #{type}\r\n\r\n"
@@ -385,6 +390,9 @@ class Gem::Net::HTTPGenericRequest
 
   def quote_string(str, charset)
     str = str.encode(charset, fallback:->(c){'&#%d;'%c.encode("UTF-8").ord}) if charset
+    if /[\r\n]/.match?(str)
+      raise ArgumentError, "multipart field name or filename cannot include CR/LF"
+    end
     str.gsub(/[\\"]/, '\\\\\&')
   end
 

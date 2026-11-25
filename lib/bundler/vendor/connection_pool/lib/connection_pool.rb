@@ -104,6 +104,9 @@ class Bundler::ConnectionPool
   end
 
   def with(options = {})
+    # We need to manage exception handling manually here in order
+    # to work correctly with `Gem::Timeout.timeout` and `Thread#raise`.
+    # Otherwise an interrupted Thread can leak connections.
     Thread.handle_interrupt(Exception => :never) do
       conn = checkout(options)
       begin
