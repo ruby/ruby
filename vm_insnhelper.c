@@ -5355,6 +5355,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);
+        VM_ASSERT(cc != &rb_vm_uncached_cc);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
 
         // define_method can cache for different method id
