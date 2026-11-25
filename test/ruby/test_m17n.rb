@@ -1096,6 +1096,14 @@ class TestM17N < Test::Unit::TestCase
     assert_nil(s("\x95\\").byterindex("\\"))
   end
 
+  def test_rindex_first_byte_repeated_in_char
+    # "\x81\x81" is a single character whose bytes are both "\x81"
+    assert_equal(0, s("\x81\x81A").rindex(s("\x81\x81")))
+    assert_equal(0, s("\x81\x81A").byterindex(s("\x81\x81")))
+    assert_equal(1, s("\x81\x81\x81\x81A").rindex(s("\x81\x81A")))
+    assert_equal(2, s("\x81\x81\x81\x81A").byterindex(s("\x81\x81A")))
+  end
+
   def test_next
     s1 = e("\xa1\xa1")
     s2 = s1.dup
