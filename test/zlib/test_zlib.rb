@@ -257,6 +257,18 @@ if defined? Zlib
       assert_equal(data, Zlib::Inflate.inflate(s))
     end
 
+    def test_params_with_block
+      data = Random.new(0).bytes(16_500)
+      z = Zlib::Deflate.new
+      s = z.deflate(data)
+      z.avail_out = 1
+      chunks = []
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_SPEED, Zlib::FILTERED) {|c| chunks << c}}
+      assert_not_empty(chunks)
+      s << chunks.join << z.finish
+      assert_equal(data, Zlib::Inflate.inflate(s))
+    end
+
     def test_params_with_buf_error_and_pending_output
       data = Random.new(0).bytes(1000)
       z = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS, 1)
