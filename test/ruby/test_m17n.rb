@@ -1113,6 +1113,12 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
+  def test_byterindex_match_inside_char
+    # "\x95\\" is a single character whose trail byte is "\\"
+    assert_equal(2, s("C:\\\x95\\").byterindex("\\"))
+    assert_nil(s("\x95\\").byterindex("\\"))
+  end
+
   def test_next
     s1 = e("\xa1\xa1")
     s2 = s1.dup

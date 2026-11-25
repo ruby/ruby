@@ -4648,10 +4648,6 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     c = *t & 0xff;
     searchlen = s - sbeg + 1;
 
-    if (s + slen <= e && memcmp(s, t, slen) == 0) {
-        return s - sbeg;
-    }
-
     do {
         hit = memrchr(sbeg, c, searchlen);
         if (!hit) break;
