@@ -238,6 +238,25 @@ if defined? Zlib
       assert_equal(true, z.closed?)
     end
 
+    def test_params_with_raising_warning
+      data = Random.new(0).bytes(16_500)
+      z = Zlib::Deflate.new
+      s = z.deflate(data)
+      z.avail_out = 1
+      stderr = Object.new
+      def stderr.write(*) raise IOError end
+      begin
+        verbose, $VERBOSE = $VERBOSE, true
+        orig_stderr, $stderr = $stderr, stderr
+        assert_raise(IOError) {z.params(Zlib::BEST_SPEED, Zlib::FILTERED)}
+      ensure
+        $stderr = orig_stderr
+        $VERBOSE = verbose
+      end
+      s << z.finish
+      assert_equal(data, Zlib::Inflate.inflate(s))
+    end
+
     def test_params_with_buf_error_and_pending_output
       data = Random.new(0).bytes(1000)
       z = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, Zlib::MAX_WBITS, 1)

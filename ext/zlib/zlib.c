@@ -2015,8 +2015,8 @@ rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
     err = deflateParams(&z->stream, level, strategy);
     filled = n - z->stream.avail_out;
     while (err == Z_BUF_ERROR) {
-	rb_warning("deflateParams() returned Z_BUF_ERROR");
 	rb_str_set_len(z->buf, RSTRING_LEN(z->buf) + filled);
+	rb_warning("deflateParams() returned Z_BUF_ERROR");
 	zstream_expand_buffer(z);
 	n = z->stream.avail_out;
 	err = deflateParams(&z->stream, level, strategy);
