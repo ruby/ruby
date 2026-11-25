@@ -1865,6 +1865,28 @@ fn test_optimized_method_call_proc_call_kwarg() {
 }
 
 #[test]
+fn test_optimized_method_call_proc_call_kwarg_to_hash() {
+    set_call_threshold(2);
+    assert_snapshot!(assert_compiles("
+        def test(p) = p.call(a: 1, b: 2)
+        p = proc { |opts| opts }
+        test(p)
+        [test(p), test(proc { |a:, **rest| rest })]
+    "), @"[{a: 1, b: 2}, {b: 2}]");
+}
+
+#[test]
+fn test_optimized_method_call_proc_call_kwarg_non_iseq() {
+    set_call_threshold(2);
+    assert_snapshot!(assert_compiles("
+        def test(p) = p.call({}, a: 1)
+        p = {}.method(:merge).to_proc
+        test(p)
+        [test(p), test(:merge.to_proc)]
+    "), @"[{a: 1}, {a: 1}]");
+}
+
+#[test]
 fn test_local_access_straddling_inlined_noop_call() {
     // https://github.com/Shopify/ruby/issues/976
     set_call_threshold(2);

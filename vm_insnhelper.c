@@ -6563,6 +6563,24 @@ rb_vm_invokeblock(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_
     return val;
 }
 
+VALUE
+rb_vm_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd)
+{
+    stack_check(ec);
+    const struct rb_callinfo *ci = cd->ci;
+    int argc = vm_ci_argc(ci);
+    struct rb_calling_info calling = {
+        .block_handler = VM_BLOCK_HANDLER_NONE,
+        .kw_splat = IS_ARGS_KW_SPLAT(ci) > 0,
+        .recv = TOPN(argc),
+        .argc = argc,
+        .cd = cd,
+    };
+    VALUE val = vm_call_opt_call(ec, reg_cfp, &calling);
+    VM_EXEC(ec, val);
+    return val;
+}
+
 /* object.c */
 VALUE rb_nil_to_s(VALUE);
 VALUE rb_true_to_s(VALUE);

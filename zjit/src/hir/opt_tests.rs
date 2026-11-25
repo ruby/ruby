@@ -8961,12 +8961,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Proc@0x1008)
           PatchPoint MethodRedefined(Proc@0x1008, call@0x1010, cme:0x1018)
           v27:ObjectSubclass[class_exact:Proc] = GuardType v10, ObjectSubclass[class_exact:Proc] recompile
-          v28:StaticSymbol[:a] = Const Value(VALUE(0x1040))
-          v29:HashExact = NewHash v28: v15
-          v30:BasicObject = InvokeProc v27, v29, kw_splat
+          v28:BasicObject = InvokeProc v27, v15, kwarg
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v30
+          Return v28
         ");
     }
 

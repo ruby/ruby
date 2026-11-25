@@ -1255,7 +1255,7 @@ pub enum Insn {
         recv: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
-        kw_splat: bool,
+        cd: *const rb_call_data,
     },
     /// Fast-path `yield`: the enclosing frame's block is a known ISEQ block, so push its frame
     /// inline and jump straight to its JIT entry. `iseq` is the comptime-known block iseq; the
@@ -2388,10 +2388,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::InvokeProc { recv, args, kw_splat, .. } => {
+            Insn::InvokeProc { recv, args, cd, .. } => {
                 write!(f, "InvokeProc {recv}")?;
                 write_separated!(f, ", ", ", ", args);
-                if *kw_splat {
+                let flags = unsafe { rb_vm_ci_flag((**cd).ci) };
+                if flags & VM_CALL_KWARG != 0 {
+                    write!(f, ", kwarg")?;
+                }
+                if flags & VM_CALL_KW_SPLAT != 0 {
                     write!(f, ", kw_splat")?;
                 }
                 Ok(())
@@ -5381,21 +5385,7 @@ impl Function {
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
-                                    if flags & VM_CALL_KWARG != 0 {
-                                        let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
-                                        let caller_kw_count = unsafe { get_cikw_keyword_len(kwarg) } as usize;
-                                        let kw_args_start = args.len() - caller_kw_count;
-                                        let mut elements = Vec::with_capacity(caller_kw_count * 2);
-                                        for (i, value) in args.drain(kw_args_start..).enumerate() {
-                                            let key = unsafe { get_cikw_keywords_idx(kwarg, i as i32) };
-                                            elements.push(self.push_insn(block, Insn::Const { val: Const::Value(key) }));
-                                            elements.push(value);
-                                        }
-                                        // TODO: Avoid packing explicit keywords into a Hash when possible.
-                                        args.push(self.push_insn(block, Insn::NewHash { elements, state }));
-                                    }
-                                    let kw_splat = flags & (VM_CALL_KWARG | VM_CALL_KW_SPLAT) != 0;
-                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args, state, kw_splat });
+                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args, state, cd });
                                     self.make_equal_to(insn_id, invoke_proc);
                                 }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {

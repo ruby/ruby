@@ -734,7 +734,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, function, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, function, cd, &function.frame_state(state), reason),
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, function, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
-        Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, function, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
+        Insn::InvokeProc { recv, args, state, cd } => gen_invokeproc(jit, asm, function, opnd!(recv), opnds!(args), *cd, &function.frame_state(*state)),
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, function, &function.frame_state(*state), unsafe { &**bf }, *leaf, opnds!(args)),
         Insn::InvokeBlockIseqDirect { iseq, captured, args, state } => gen_invoke_block_iseq_direct(cb, jit, asm, function, *iseq, opnd!(captured), opnds!(args), &function.frame_state(*state)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
@@ -2097,15 +2097,24 @@ fn gen_invokeproc(
     function: &Function,
     recv: Opnd,
     args: Vec<Opnd>,
-    kw_splat: bool,
+    cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_fallback_call(jit, asm, function, state);
 
     asm_comment!(asm, "call invokeproc");
 
+    let ci = unsafe { (*cd).ci };
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    // TODO: Consolidate rb_vm_opt_call and rb_optimized_call.
+    if flags & VM_CALL_KWARG != 0 {
+        unsafe extern "C" {
+            fn rb_vm_opt_call(ec: EcPtr, cfp: CfpPtr, cd: *const rb_call_data) -> VALUE;
+        }
+        return asm_ccall!(asm, rb_vm_opt_call, EC, CFP, Opnd::const_ptr(cd));
+    }
     let argv_ptr = gen_push_opnds(jit, asm, &args);
-    let kw_splat_opnd = Opnd::Imm(i64::from(kw_splat));
+    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
     asm_ccall!(
         asm,
         rb_optimized_call,
@@ -2113,7 +2122,7 @@ fn gen_invokeproc(
         EC,
         args.len().into(),
         argv_ptr,
-        kw_splat_opnd,
+        Opnd::Imm(i64::from(kw_splat)),
         VM_BLOCK_HANDLER_NONE.into()
     )
 }
