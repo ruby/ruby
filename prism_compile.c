@@ -3764,9 +3764,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(message_loc, call_node->base.node_id);
 
-    LABEL *else_label = NEW_LABEL(location.line);
-    LABEL *end_label = NEW_LABEL(location.line);
-    LABEL *retry_end_l = NEW_LABEL(location.line);
+    LABEL *else_label = NULL;
 
     VALUE branches = Qfalse;
     rb_code_location_t code_location = { 0 };
@@ -3814,6 +3812,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             branches = decl_branch_base(iseq, (int) call_node->base.node_id, &code_location, "&.");
         }
 
+        else_label = NEW_LABEL(location.line);
         PUSH_INSN(ret, location, dup);
         PUSH_INSNL(ret, location, branchnil, else_label);
 
@@ -3878,15 +3877,15 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, splatkw);
     }
 
-    LABEL *not_basic_new = NEW_LABEL(location.line);
-    LABEL *not_basic_new_finish = NEW_LABEL(location.line);
-
     bool inline_new = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
         method_id == rb_intern("new") &&
         call_node->block == NULL &&
         (flags & VM_CALL_ARGS_BLOCKARG) == 0;
 
     if (inline_new) {
+        LABEL *not_basic_new = NEW_LABEL(location.line);
+        LABEL *not_basic_new_finish = NEW_LABEL(location.line);
+
         if (LAST_ELEMENT(ret) == opt_new_prelude) {
             PUSH_INSN(ret, location, putnil);
             PUSH_INSN(ret, location, swap);
@@ -3928,11 +3927,13 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     }
 
     if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
+        LABEL *retry_end_l = NEW_LABEL(location.line);
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
         PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, start, retry_end_l, block_iseq, retry_end_l);
     }
 
-    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+    if (else_label) {
+        LABEL *end_label = NEW_LABEL(location.line);
         PUSH_INSNL(ret, location, jump, end_label);
         PUSH_LABEL(ret, else_label);
         add_trace_branch_coverage(iseq, ret, &code_location, node_id, 1, "else", branches);
@@ -7546,8 +7547,11 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
         return;
     }
 
-    LABEL *start = NEW_LABEL(location.line);
-    if (node->block) PUSH_LABEL(ret, start);
+    LABEL *start = NULL;
+    if (node->block) {
+        start = NEW_LABEL(location.line);
+        PUSH_LABEL(ret, start);
+    }
 
     switch (method_id) {
       case idUMinus: {
