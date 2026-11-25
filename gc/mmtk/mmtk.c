@@ -963,6 +963,34 @@ rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *rac
     }
 }
 
+/* Copied from internal/imemo.h */
+enum imemo_type {
+    imemo_env            =  0,
+    imemo_cref           =  1, /*!< class reference */
+    imemo_svar           =  2, /*!< special variable */
+    imemo_throw_data     =  3,
+    imemo_ifunc          =  4, /*!< iterator function */
+    imemo_memo           =  5,
+    imemo_ment           =  6,
+    imemo_iseq           =  7,
+    imemo_tmpbuf         =  8,
+    imemo_cvar_entry     =  9,
+    imemo_callinfo       = 10,
+    imemo_callcache      = 11,
+    imemo_constcache     = 12,
+    imemo_fields         = 13,
+    imemo_subclasses     = 14,
+    imemo_cdhash         = 15,
+};
+
+#define IMEMO_MASK (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3 | FL_USER4)
+
+static inline enum imemo_type
+imemo_type(VALUE imemo)
+{
+    return (RBASIC(imemo)->flags & IMEMO_MASK) >> FL_USHIFT;
+}
+
 static bool
 obj_can_parallel_free_p(VALUE obj)
 {
@@ -998,6 +1026,22 @@ obj_need_obj_free_p(VALUE obj)
       case T_OBJECT:
       case T_SYMBOL:
         return false;
+      case T_IMEMO: {
+        switch (imemo_type(obj)) {
+          case imemo_constcache:
+          case imemo_cref:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_svar:
+          case imemo_callcache:
+          case imemo_throw_data:
+          case imemo_cvar_entry:
+            return false;
+          default:
+            return true;
+        }
+      }
+
       default:
         return true;
     }
