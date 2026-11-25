@@ -3129,6 +3129,9 @@ gzfile_readpartial(struct gzfile *gz, rb_len_t len, VALUE outbuf)
 static VALUE
 gzfile_read_all(struct gzfile *gz, VALUE dst)
 {
+    VALUE str;
+
+    if (!NIL_P(dst)) rb_str_modify(dst);
     while (!ZSTREAM_IS_FINISHED(&gz->z)) {
 	gzfile_read_more(gz, dst);
     }
@@ -3138,15 +3141,18 @@ gzfile_read_all(struct gzfile *gz, VALUE dst)
 	}
         if (!NIL_P(dst)) {
             rb_str_resize(dst, 0);
+            rb_enc_associate(dst, gz->enc);
             return dst;
         }
 	return rb_str_new(0, 0);
     }
 
-    dst = zstream_detach_buffer(&gz->z);
-    if (NIL_P(dst)) return dst;
-    gzfile_calc_crc(gz, dst);
-    return gzfile_newstr(gz, dst);
+    str = zstream_detach_buffer(&gz->z);
+    if (NIL_P(str)) return str;
+    gzfile_calc_crc(gz, str);
+    str = gzfile_newstr(gz, str);
+    if (NIL_P(dst)) return str;
+    return rb_str_replace(dst, str);
 }
 
 static VALUE

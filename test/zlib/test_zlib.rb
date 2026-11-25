@@ -1310,6 +1310,25 @@ if defined? Zlib
       assert_raise(TypeError) { gz.read(nil, Object.new) }
     end
 
+    def test_read_all_with_outbuf
+      ["foo", Random.new(0).bytes(20000)].each do |data|
+        gzdata = Zlib.gzip(data)
+        expected = Zlib::GzipReader.wrap(StringIO.new(gzdata), &:read)
+        Zlib::GzipReader.wrap(StringIO.new(gzdata)) do |f|
+          assert_raise(FrozenError) { f.read(nil, "x".freeze) }
+
+          s = "x".b
+          assert_same s, f.read(nil, s)
+          assert_equal expected, s
+
+          s = "x".b
+          assert_same s, f.read(nil, s)
+          assert_equal "", s
+          assert_equal f.external_encoding, s.encoding
+        end
+      end
+    end
+
     def test_readpartial
       Tempfile.create("test_zlib_gzip_reader_readpartial") {|t|
         t.close
