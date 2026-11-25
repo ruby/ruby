@@ -262,6 +262,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
     annotate!(rb_mKernel, "dup", inline_kernel_dup);
+    annotate!(rb_mKernel, "hash", types::Fixnum);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
