@@ -6248,7 +6248,10 @@ impl Function {
                 // Apply the cheap optimization heuristics (size, budget, denylist)
                 // before can_inline's more expensive elibility checks. This allows
                 // oversized callees to bail out early. Both guards must pass.
-                if !self.should_inline(iseq, cme, insns_at_pass_start) || !Self::can_inline(iseq) {
+                // Inlining a block whose non-local `return` can skip a `throw` saves an expensive
+                // interpreter re-entry, so skip the size and budget heuristics for it. This is
+                // bounded by the number of literal blocks passed to the methods inlined in this pass.
+                if (throw_targets.is_none() && !self.should_inline(iseq, cme, insns_at_pass_start)) || !Self::can_inline(iseq) {
                     search_start = send_pos + 1;
                     continue;
                 }

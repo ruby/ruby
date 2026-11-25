@@ -1412,6 +1412,24 @@ fn test_inline_block_return_from_home_method() {
 }
 
 #[test]
+fn test_inline_large_block_with_return() {
+    // The block is larger than the inline threshold, but it's inlined since its `return`
+    // can skip a `throw`.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_throw("
+            def test(a)
+              a.each do |x|
+                y = x + 1; y = y + 1; y = y + 1; y = y + 1; y = y + 1; y = y + 1
+                return y if y > 7
+              end
+            end
+            test([1, 2])
+            test([1, 2])
+        ", "test([1, 2])"), @"8");
+    });
+}
+
+#[test]
 fn test_inline_block_return_runs_block_ensure() {
     // The ensure clause in the block covers the return, so the return stays a throw.
     with_inlining(|| {
