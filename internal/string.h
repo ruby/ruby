@@ -73,6 +73,8 @@ VALUE rb_str_quote_unprintable(VALUE);
 char *rb_str_fill_terminator(VALUE str, const int termlen);
 void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
+VALUE rb_str_try_locktmp(VALUE str);
+void rb_str_try_unlocktmp(VALUE str, VALUE lock);
 VALUE rb_str_chomp_string(VALUE str, VALUE chomp);
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 VALUE rb_str_cat_conv_enc_opts(VALUE newstr, rb_len_t ofs, const char *ptr, rb_len_t len,

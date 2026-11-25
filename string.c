@@ -3527,6 +3527,24 @@ rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
     return rb_ensure(func, arg, rb_str_unlocktmp, str);
 }
 
+/* Locks str unless it is frozen or already locked.  Returns Qtrue if this
+ * locked str, otherwise Qfalse. */
+VALUE
+rb_str_try_locktmp(VALUE str)
+{
+    if (FL_TEST_RAW(str, FL_FREEZE | STR_TMPLOCK)) return Qfalse;
+    FL_SET_RAW(str, STR_TMPLOCK);
+    return Qtrue;
+}
+
+void
+rb_str_try_unlocktmp(VALUE str, VALUE lock)
+{
+    if (lock == Qtrue) {
+        FL_UNSET_RAW(str, STR_TMPLOCK);
+    }
+}
+
 void
 rb_str_set_len(VALUE str, rb_len_t len)
 {
