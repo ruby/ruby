@@ -17,6 +17,7 @@
 #endif
 
 #include "constant.h"
+#include "const_path.h"
 #include "debug_counter.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -1193,20 +1194,21 @@ rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE al
 }
 
 static inline VALUE
-vm_get_ev_const_chain(rb_execution_context_t *ec, const ID *segments)
+vm_get_ev_const_chain(rb_execution_context_t *ec, const rb_const_path_t const_path)
 {
     VALUE val = Qnil;
-    int idx = 0;
     int allow_nil = TRUE;
-    if (segments[0] == idNULL) {
+
+    if (const_path_absolute_p(const_path)) {
         val = rb_cObject;
-        idx++;
         allow_nil = FALSE;
     }
-    while (segments[idx]) {
-        ID id = segments[idx++];
-        val = vm_get_ev_const(ec, val, id, allow_nil, 0);
+    size_t i = 0;
+    ID segment;
+    while ((segment = const_path_aref(const_path, i))) {
+        val = vm_get_ev_const(ec, val, segment, allow_nil, 0);
         allow_nil = FALSE;
+        i++;
     }
     return val;
 }
@@ -6869,13 +6871,14 @@ vm_track_constant_cache(ID id, void *ic)
 }
 
 static void
-vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
+vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const rb_const_path_t const_path)
 {
     RB_VM_LOCKING() {
-        for (int i = 0; segments[i]; i++) {
-            ID id = segments[i];
-            if (id == idNULL) continue;
-            vm_track_constant_cache(id, ic);
+        size_t i = 0;
+        ID segment;
+        while (((segment = const_path_aref(const_path, i)))) {
+            vm_track_constant_cache(segment, ic);
+            i++;
         }
     }
 }
@@ -6937,7 +6940,7 @@ VALUE
 rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
 {
     VALUE val;
-    const ID *segments = ic->segments;
+    const rb_const_path_t const_path = ic->const_path;
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
 
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
@@ -6947,12 +6950,12 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
         // shareable constant (which invalidates ICs asynchronously), so the
         // cached-but-still-shareable value may legitimately differ from a
         // freshly recomputed chain. Only assert equality when single-ractor.
-        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments) || rb_multi_ractor_p());
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, const_path) || rb_multi_ractor_p());
     }
     else {
         ruby_vm_constant_cache_misses++;
-        val = vm_get_ev_const_chain(ec, segments);
-        vm_ic_track_const_chain(GET_CFP(), ic, segments);
+        val = vm_get_ev_const_chain(ec, const_path);
+        vm_ic_track_const_chain(GET_CFP(), ic, const_path);
         // Undo the PC increment to get the address to this instruction
         // INSN_ATTR(width) == 2
         vm_ic_update(ec, CFP_ISEQ(GET_CFP()), ic, val, GET_EP(), CFP_PC(GET_CFP()) - 2);

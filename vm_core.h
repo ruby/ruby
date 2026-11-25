@@ -128,6 +128,7 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
+#include "const_path.h"
 
 #include "ruby/thread_native.h"
 /*
@@ -274,19 +275,7 @@ STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
-
-    /**
-     * A null-terminated list of ids, used to represent a constant's path
-     * idNULL is used to represent the :: prefix, and 0 is used to donate the end
-     * of the list.
-     *
-     * For example
-     *   FOO        {rb_intern("FOO"), 0}
-     *   FOO::BAR   {rb_intern("FOO"), rb_intern("BAR"), 0}
-     *   ::FOO      {idNULL, rb_intern("FOO"), 0}
-     *   ::FOO::BAR {idNULL, rb_intern("FOO"), rb_intern("BAR"), 0}
-     */
-    const ID *segments;
+    rb_const_path_t const_path;
 };
 
 struct iseq_inline_iv_cache_entry {

@@ -25,6 +25,7 @@
 #include "internal/bits.h"
 #include "internal/class.h"
 #include "internal/compile.h"
+#include "const_path.h"
 #include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
@@ -148,21 +149,20 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
 
         // Iterate over the IC's constant path's segments and clean any references to
         // the ICs out of the VM's constant cache table.
-        const ID *segments = ic->segments;
+        const rb_const_path_t const_path = ic->const_path;
 
         // It's possible that segments is NULL if we overallocated an IC but
         // optimizations removed the instruction using it
-        if (segments == NULL)
+        if (const_path.packed == 0)
             continue;
 
-        int i;
-        for (i = 0; segments[i]; i++) {
-            ID id = segments[i];
-            if (id == idNULL) continue;
-            remove_from_constant_cache(id, ic);
+        size_t i = 0;
+        ID segment;
+        while ((segment = const_path_aref(const_path, i))) {
+            remove_from_constant_cache(segment, ic);
+            i++;
         }
-
-        SIZED_FREE_N(segments, i + 1);
+        const_path_free(const_path);
     }
 }
 
@@ -620,12 +620,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
             /* IC entries constant segments */
             for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
                 IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-                const ID *ids = ic->segments;
-                if (!ids) continue;
-                while (*ids++) {
-                    size += sizeof(ID);
-                }
-                size += sizeof(ID); // null terminator
+                size += const_path_memsize(ic->const_path);
             }
         }
 
@@ -2783,10 +2778,18 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
       case TS_IC:
         {
             ret = rb_sprintf("<ic:%"PRIdPTRDIFF" ", (union iseq_inline_storage_entry *)op - ISEQ_BODY(iseq)->is_entries);
-            const ID *segments = ((IC)op)->segments;
-            rb_str_cat2(ret, rb_id2name(*segments++));
-            while (*segments) {
-                rb_str_catf(ret, "::%s", rb_id2name(*segments++));
+            const rb_const_path_t const_path = ((IC)op)->const_path;
+
+            size_t i = 0;
+            if (!const_path_absolute_p(const_path)) {
+                rb_str_cat2(ret, rb_id2name(const_path_aref(const_path, 0)));
+                i++;
+            }
+
+            ID segment;
+            while ((segment = const_path_aref(const_path, i))) {
+                rb_str_catf(ret, "::%s", rb_id2name(segment));
+                i++;
             }
             rb_str_cat2(ret, ">");
         }
@@ -3682,12 +3685,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_IC:
                 {
-                    VALUE list = rb_ary_new();
-                    const ID *ids = ((IC)*seq)->segments;
-                    while (*ids) {
-                        rb_ary_push(list, ID2SYM(*ids++));
-                    }
-                    rb_ary_push(ary, list);
+                    rb_ary_push(ary, rb_const_path_to_array(((IC)*seq)->const_path));
                 }
                 break;
               case TS_IVC:

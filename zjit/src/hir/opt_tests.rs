@@ -23433,13 +23433,12 @@ mod hir_opt_tests {
           v31:CShape = LoadField v11, :shape_id@0x1048
           v32:CShape[0x1049] = GuardBitEquals v31, CShape(0x1049) recompile
           v33:BasicObject = LoadField v11, :@x@0x104a
-          PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
           v16:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
+          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x104b, cme:0x1050)
           v38:CShape = LoadField v16, :shape_id@0x1048
           v39:CShape[0x1049] = GuardBitEquals v38, CShape(0x1049) recompile
-          v40:BasicObject = LoadField v16, :@y@0x1088
-          PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
+          v40:BasicObject = LoadField v16, :@y@0x1078
+          PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
           v43:Fixnum = GuardType v33, Fixnum recompile
           v44:Fixnum = GuardType v40, Fixnum recompile
           v45:Fixnum = FixnumAdd v43, v44
@@ -28854,7 +28853,6 @@ mod hir_opt_tests {
           StoreField v85, :shape_id@0x1088, v134
           PopInlineFrame
           v42:NilClass = Const Value(nil)
-          PatchPoint StableConstantNames(0x1090, Point)
           v45:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
           v47:Fixnum[1] = Const Value(1)
           v49:Fixnum[2] = Const Value(2)
@@ -28869,14 +28867,14 @@ mod hir_opt_tests {
           v173:CShape[0x108d] = Const CShape(0x108d)
           StoreField v95, :shape_id@0x1088, v173
           PopInlineFrame
-          PatchPoint MethodRedefined(Point@0x1008, ==@0x1098, cme:0x10a0)
-          PushInlineFrame :==, v85 (0x10c8), num_args=1
+          PatchPoint MethodRedefined(Point@0x1008, ==@0x108e, cme:0x1090)
+          PushInlineFrame :==, v85 (0x10b8), num_args=1
           v192:CShape = LoadField v85, :shape_id@0x1088
           v193:CShape[0x108d] = GuardBitEquals v192, CShape(0x108d) recompile
           v194:BasicObject = LoadField v85, :@x@0x108a
           PatchPoint NoEPEscape(==)
-          PatchPoint MethodRedefined(Point@0x1008, x@0x10e8, cme:0x10f0)
-          PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
+          PatchPoint MethodRedefined(Point@0x1008, x@0x10d8, cme:0x10e0)
+          PatchPoint MethodRedefined(Integer@0x1108, ==@0x108e, cme:0x1110)
           v252:Fixnum = GuardType v194, Fixnum recompile
           v254:BoolExact = FixnumEq v252, v47
           v207:CBool = Test v254
@@ -28888,11 +28886,11 @@ mod hir_opt_tests {
           v216:BasicObject = LoadField v85, :@y@0x108c
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
-          PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
+          PatchPoint MethodRedefined(Point@0x1008, y@0x1138, cme:0x1140)
           v259:CShape = LoadField v95, :shape_id@0x1088
           v260:CShape[0x108d] = GuardBitEquals v259, CShape(0x108d) recompile
           v261:BasicObject = LoadField v95, :@y@0x108c
-          PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
+          PatchPoint MethodRedefined(Integer@0x1108, ==@0x108e, cme:0x1110)
           v264:Fixnum = GuardType v216, Fixnum recompile
           v265:Fixnum = GuardType v261, Fixnum recompile
           v266:BoolExact = FixnumEq v264, v265
@@ -30003,13 +30001,12 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, O)
           v13:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint StableConstantNames(0x1010, O)
           v17:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(Object@0x1018, is_equal@0x1020, cme:0x1028)
-          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1018)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1018)] recompile
-          PushInlineFrame :is_equal, v26 (0x1050), num_args=2
-          PatchPoint NoSingletonClass(Object@0x1070)
-          PatchPoint MethodRedefined(Object@0x1070, ==@0x1078, cme:0x1080)
+          PatchPoint MethodRedefined(Object@0x1010, is_equal@0x1018, cme:0x1020)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          PushInlineFrame :is_equal, v26 (0x1048), num_args=2
+          PatchPoint NoSingletonClass(Object@0x1068)
+          PatchPoint MethodRedefined(Object@0x1068, ==@0x1070, cme:0x1078)
           v53:TrueClass = Const Value(true)
           PopInlineFrame
           CheckInterrupts

@@ -2467,8 +2467,8 @@ impl<'a> JITState<'a> {
         for cme in unsafe { blockref.as_ref() }.cme_dependencies.iter() {
             track_method_lookup_stability_assumption(blockref, cme.get());
         }
-        if let Some(idlist) = self.stable_constant_names_assumption {
-            track_stable_constant_names_assumption(blockref, idlist);
+        if let Some(const_path) = self.stable_constant_names_assumption {
+            track_stable_constant_names_assumption(blockref, const_path);
         }
         for klass in self.no_singleton_class_assumptions {
             track_no_singleton_class_assumption(blockref, klass);
