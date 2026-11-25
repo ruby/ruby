@@ -978,7 +978,8 @@ pub struct SendDirectData {
 enum InlineRecv {
     /// The receiver of a [`Insn::SendDirect`], below the arguments on the stack
     Recv(InsnId),
-    /// The `struct rb_captured_block *` of an [`Insn::InvokeBlockIseqDirect`].
+    /// The `struct rb_captured_block *` of an [`Insn::InvokeBlockIseqDirect`],
+    /// which is a pointer to the middle of a previous `rb_control_frame_t`.
     /// `yield` has no receiver on the stack, and the block's self is `captured->self`.
     Captured(InsnId),
 }
