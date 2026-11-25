@@ -54,6 +54,7 @@ compar.$(OBJEXT): {$(VPATH)}compar.c
 compile.$(OBJEXT): {$(VPATH)}compile.c
 complex.$(OBJEXT): {$(VPATH)}complex.c
 concurrent_set.$(OBJEXT): {$(VPATH)}concurrent_set.c
+const_path.$(OBJEXT): {$(VPATH)}const_path.c
 cont.$(OBJEXT): {$(VPATH)}cont.c
 coroutine/test/main.$(OBJEXT): {$(VPATH)}coroutine/test/main.c
 coroutine/test/stack.$(OBJEXT): {$(VPATH)}coroutine/test/stack.c

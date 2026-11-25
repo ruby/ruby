@@ -6,6 +6,7 @@ use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, Redefin
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
 use crate::cruby::{rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
+use crate::cruby::{rb_const_path_t, const_path_ids};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -308,27 +309,19 @@ pub fn track_cme_assumption(
 
 /// Track a patch point for each constant name in a constant path assumption.
 pub fn track_stable_constant_names_assumption(
-    idlist: *const ID,
+    const_path: rb_const_path_t,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
     version: IseqVersionRef,
 ) {
     let invariants = ZJITState::get_invariants();
 
-    let mut idx = 0;
-    loop {
-        let id = unsafe { *idlist.wrapping_add(idx) };
-        if id.0 == 0 {
-            break;
-        }
-
+    for id in const_path_ids(const_path) {
         invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint::new(
             patch_point_ptr,
             side_exit_ptr,
             version,
         ));
-
-        idx += 1;
     }
 }
 

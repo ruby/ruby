@@ -105,6 +105,19 @@ mod autogened {
 }
 pub use autogened::*;
 
+#[cfg(not(test))]
+pub fn const_path_ids(const_path: rb_const_path_t) -> impl Iterator<Item = ID> {
+    (0..)
+        .map(move |idx| unsafe { rb_jit_const_path_aref(const_path, idx) })
+        .take_while(|&id| id != 0)
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn const_path_ids(_const_path: rb_const_path_t) -> impl Iterator<Item = ID> {
+    std::iter::empty()
+}
+
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
 

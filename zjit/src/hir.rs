@@ -214,10 +214,10 @@ pub enum Invariant {
         /// The callable method entry that we want to track
         cme: *const rb_callable_method_entry_t,
     },
-    /// A list of constant expression path segments that must have not been written to for the
+    /// A constant path whose segments must have not been written to for the
     /// following code to be valid.
     StableConstantNames {
-        idlist: *const ID,
+        const_path: rb_const_path_t,
     },
     /// TracePoint is not enabled. If TracePoint is enabled, this is invalidated.
     NoTracePoint,
@@ -352,18 +352,13 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     self.ptr_map.map_ptr(cme)
                 )
             }
-            Invariant::StableConstantNames { idlist } => {
-                write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(idlist))?;
-                let mut idx = 0;
-                let mut sep = "";
-                loop {
-                    let id = unsafe { *idlist.wrapping_add(idx) };
-                    if id.0 == 0 {
-                        break;
-                    }
+            Invariant::StableConstantNames { const_path } => {
+                let word = ptr::without_provenance::<u64>(const_path.bits());
+                write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(word))?;
+                let mut sep = if const_path.absolute_p() { "::" } else { "" };
+                for id in const_path_ids(const_path) {
                     write!(f, "{sep}{}", id.contents_lossy())?;
                     sep = "::";
-                    idx += 1;
                 }
                 write!(f, ")")
             }
@@ -10167,7 +10162,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic: *const iseq_inline_constant_cache = get_arg(pc, 0).as_ptr();
-                    let idlist: *const ID = unsafe { (*ic).segments };
+                    let const_path = unsafe { (*ic).const_path };
                     let ice = unsafe { (*ic).entry };
                     let can_fold = !ice.is_null()
                         && unsafe { (*ice).ic_cref }.is_null()
@@ -10175,7 +10170,7 @@ fn add_iseq_to_hir(
                     let result = if can_fold {
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state: exit_id });
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { const_path }, state: exit_id });
                         fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) })
                     } else {
                         fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id })
@@ -10184,17 +10179,11 @@ fn add_iseq_to_hir(
 
                     // Check for `::RubyVM::ZJIT` for directives
                     unsafe {
-                        let mut current_segment = (*ic).segments;
-                        let mut segments = [ID(0); 4 /* expected segment length */];
-                        for segment in segments.iter_mut() {
-                            *segment = current_segment.read();
-                            if *segment == ID(0) {
-                                break;
-                            }
-                            current_segment = current_segment.add(1);
+                        let mut segments = [ID(0); 3 /* expected segment length */];
+                        for (segment, id) in segments.iter_mut().zip(const_path_ids(const_path)) {
+                            *segment = id;
                         }
-                        if [ID!(NULL), ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
-                            debug_assert_ne!(ID!(NULL), ID(0));
+                        if const_path.absolute_p() && [ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
                             let ruby_vm_mod = rb_const_lookup(rb_cObject, ID!(RubyVM));
                             if !ruby_vm_mod.is_null() && (*ruby_vm_mod).value == rb_cRubyVM {
                                 let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));

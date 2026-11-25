@@ -69,6 +69,15 @@ rb_id_to_serial(ID id)
     }
 }
 
+static inline ID
+rb_id_from_serial_and_type(rb_id_serial_t num, int type)
+{
+    if (type == -1) {
+        return num;
+    }
+    return ((ID)num << ID_SCOPE_SHIFT) | (rb_id_serial_t)type;
+}
+
 static inline int
 sym_type(VALUE sym)
 {

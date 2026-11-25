@@ -371,6 +371,8 @@ fn main() {
         .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_constcache_shareable")
+        .allowlist_function("rb_jit_const_path_aref")
+        .allowlist_function("rb_jit_const_path_absolute_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")

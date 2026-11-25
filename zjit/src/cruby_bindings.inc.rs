@@ -453,6 +453,7 @@ pub const RSTRING_CHILLED: ruby_rstring_private_flags = 16384;
 pub type ruby_rstring_private_flags = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 pub type rb_atomic_t = ::std::os::raw::c_uint;
+pub type rb_id_serial_t = u32;
 #[repr(C)]
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
@@ -580,6 +581,18 @@ pub struct rb_code_location_struct {
     pub end_pos: rb_code_position_t,
 }
 pub type rb_code_location_t = rb_code_location_struct;
+#[repr(C)]
+#[derive(Debug)]
+pub struct rb_const_path_heap {
+    pub size: u32,
+    pub segments: __IncompleteArrayField<rb_id_serial_t>,
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_const_path_t {
+    pub heap: *const rb_const_path_heap,
+    pub packed: usize,
+}
 pub type rb_num_t = ::std::os::raw::c_ulong;
 pub type rb_snum_t = ::std::os::raw::c_long;
 pub const RUBY_TAG_NONE: ruby_tag_type = 0;
@@ -604,10 +617,10 @@ pub struct iseq_inline_constant_cache_entry {
     pub ractor_id: rb_serial_t,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct iseq_inline_constant_cache {
     pub entry: *mut iseq_inline_constant_cache_entry,
-    pub segments: *const ID,
+    pub const_path: rb_const_path_t,
 }
 #[repr(C)]
 pub struct iseq_inline_iv_cache_entry {
@@ -2618,6 +2631,8 @@ unsafe extern "C" {
     pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
     pub fn rb_jit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
+    pub fn rb_jit_const_path_aref(const_path: rb_const_path_t, index: usize) -> ID;
+    pub fn rb_jit_const_path_absolute_p(const_path: rb_const_path_t) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,
