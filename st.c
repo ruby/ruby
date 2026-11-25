@@ -635,21 +635,20 @@ st_init_existing_numtable_with_size(st_table *tab, st_index_t size)
 st_table *
 st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 {
-    st_table *tab = malloc(sizeof(st_table));
-#ifndef RUBY
-    if (tab == NULL)
-        return NULL;
-#endif
+    st_table tmp, *tab;
 
-#ifdef RUBY
-    st_init_existing_table_with_size(tab, type, size);
-#else
-    if (st_init_existing_table_with_size(tab, type, size) == NULL) {
-        free_fixed_ptr(tab);
+    if (st_init_existing_table_with_size(&tmp, type, size) == NULL)
+        return NULL;
+
+    tab = malloc(sizeof(st_table));
+#ifndef RUBY
+    if (tab == NULL) {
+        free(tmp.entries);
         return NULL;
     }
 #endif
 
+    *tab = tmp;
     return tab;
 }
 
@@ -836,14 +835,14 @@ rebuild_table(st_table *tab)
         rebuild_table_with(tab, tab);
     }
     else {
-        st_table *new_tab;
+        st_table new_tab;
         /* This allocation could trigger GC and compaction. If tab is the
          * gen_fields_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
-        new_tab = st_init_table_with_size(tab->type,
-                                          2 * tab->num_entries - 1);
-        rebuild_table_with(new_tab, tab);
-        rebuild_move_table(new_tab, tab);
+        st_init_existing_table_with_size(&new_tab, tab->type,
+                                         2 * tab->num_entries - 1);
+        rebuild_table_with(&new_tab, tab);
+        rebuild_move_table(&new_tab, tab);
     }
     rebuild_cleanup(tab);
 }
@@ -893,7 +892,6 @@ rebuild_move_table(st_table *const new_tab, st_table *const tab)
     tab->bin_power = new_tab->bin_power;
     tab->size_ind = new_tab->size_ind;
     tab->entries = new_tab->entries;
-    free_fixed_ptr(new_tab);
 }
 
 static void
@@ -1398,19 +1396,26 @@ st_replace(st_table *new_tab, st_table *old_tab)
 st_table *
 st_copy(st_table *old_tab)
 {
-    st_table *new_tab;
+    st_table tmp = *old_tab, *new_tab;
+    size_t memsize = get_allocated_entries(old_tab) * sizeof(st_table_entry);
+    memsize += bins_size(old_tab);
 
-    new_tab = (st_table *) malloc(sizeof(st_table));
+    tmp.entries = (st_table_entry *) malloc(memsize);
 #ifndef RUBY
-    if (new_tab == NULL)
+    if (tmp.entries == NULL)
         return NULL;
 #endif
 
-    if (st_replace_no_check(new_tab, old_tab) == NULL) {
-        st_free_table(new_tab);
+    new_tab = (st_table *) malloc(sizeof(st_table));
+#ifndef RUBY
+    if (new_tab == NULL) {
+        sized_free(tmp.entries, memsize);
         return NULL;
     }
+#endif
 
+    MEMCPY(tmp.entries, old_tab->entries, char, memsize);
+    *new_tab = tmp;
     return new_tab;
 }
 
@@ -2276,23 +2281,22 @@ st_numhash(st_data_t n)
 static void
 st_expand_table(st_table *tab, st_index_t siz)
 {
-    st_table *tmp;
+    st_table tmp;
     st_index_t n;
 
     if (siz <= get_allocated_entries(tab))
         return; /* enough room already */
 
-    tmp = st_init_table_with_size(tab->type, siz);
+    st_init_existing_table_with_size(&tmp, tab->type, siz);
     n = get_allocated_entries(tab);
-    MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
+    MEMCPY(tmp.entries, tab->entries, st_table_entry, n);
     st_free_entries(tab);
 
-    tab->entry_power = tmp->entry_power;
-    tab->bin_power = tmp->bin_power;
-    tab->size_ind = tmp->size_ind;
-    tab->entries = tmp->entries;
+    tab->entry_power = tmp.entry_power;
+    tab->bin_power = tmp.bin_power;
+    tab->size_ind = tmp.size_ind;
+    tab->entries = tmp.entries;
     tab->rebuilds_num++;
-    free_fixed_ptr(tmp);
 }
 
 /* Rehash using linear search.  Return TRUE if we found that the table
@@ -2479,9 +2483,10 @@ rb_st_compact_table(st_table *tab)
     st_index_t num = tab->num_entries;
     if (REBUILD_THRESHOLD * num <= get_allocated_entries(tab)) {
         /* Compaction: */
-        st_table *new_tab = st_init_table_with_size(tab->type, 2 * num);
-        rebuild_table_with(new_tab, tab);
-        rebuild_move_table(new_tab, tab);
+        st_table new_tab;
+        st_init_existing_table_with_size(&new_tab, tab->type, 2 * num);
+        rebuild_table_with(&new_tab, tab);
+        rebuild_move_table(&new_tab, tab);
         rebuild_cleanup(tab);
     }
 }
@@ -2651,9 +2656,15 @@ set_init_existing_table_with_size(set_table *tab, const struct st_hash_type *typ
 set_table *
 set_init_table_with_size(set_table *tab, const struct st_hash_type *type, st_index_t size)
 {
-    if (tab == NULL) tab = malloc(sizeof(set_table));
-
-    set_init_existing_table_with_size(tab, type, size);
+    if (tab == NULL) {
+        set_table tmp;
+        set_init_existing_table_with_size(&tmp, type, size);
+        tab = malloc(sizeof(set_table));
+        *tab = tmp;
+    }
+    else {
+        set_init_existing_table_with_size(tab, type, size);
+    }
 
     return tab;
 }
@@ -2748,14 +2759,14 @@ set_rebuild_table(set_table *tab)
         set_rebuild_table_with(tab, tab);
     }
     else {
-        set_table *new_tab;
+        set_table new_tab;
         /* This allocation could trigger GC and compaction. If tab is the
          * gen_fields_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
-        new_tab = set_init_table_with_size(NULL, tab->type,
+        set_init_existing_table_with_size(&new_tab, tab->type,
                                           2 * tab->num_entries - 1);
-        set_rebuild_table_with(new_tab, tab);
-        set_rebuild_move_table(new_tab, tab);
+        set_rebuild_table_with(&new_tab, tab);
+        set_rebuild_move_table(&new_tab, tab);
     }
     set_rebuild_cleanup(tab);
 }
@@ -2806,8 +2817,6 @@ set_rebuild_move_table(set_table *const new_tab, set_table *const tab)
     tab->entry_power = new_tab->entry_power;
     tab->bin_power = new_tab->bin_power;
     tab->size_ind = new_tab->size_ind;
-
-    free_fixed_ptr(new_tab);
 }
 
 static void
@@ -3392,9 +3401,10 @@ set_compact_table(set_table *tab)
     st_index_t num = tab->num_entries;
     if (REBUILD_THRESHOLD * num <= set_get_allocated_entries(tab)) {
         /* Compaction: */
-        set_table *new_tab = set_init_table_with_size(NULL, tab->type, 2 * num);
-        set_rebuild_table_with(new_tab, tab);
-        set_rebuild_move_table(new_tab, tab);
+        set_table new_tab;
+        set_init_existing_table_with_size(&new_tab, tab->type, 2 * num);
+        set_rebuild_table_with(&new_tab, tab);
+        set_rebuild_move_table(&new_tab, tab);
         set_rebuild_cleanup(tab);
     }
 }
