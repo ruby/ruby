@@ -857,6 +857,24 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert(s0.closed?)
   end
 
+  def test_recv_negative_length
+    msg = "negative length -1 given"
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
+      UNIXSocket.pair(:DGRAM) do |s1, s2|
+        s1.send("A" * 16, 0)
+        IO.select([s2], nil, nil, 10) or flunk "socket did not become readable"
+        assert_raise_with_message(ArgumentError, msg) { s2.recvfrom(-1, 0, +"x") }
+        assert_equal("A" * 16, s2.recv(16))
+      end
+    end
+    UNIXSocket.pair do |s1, s2|
+      s1.write("A" * 16)
+      IO.select([s2], nil, nil, 10) or flunk "socket did not become readable"
+      assert_raise_with_message(ArgumentError, msg) { s2.read_nonblock(-1, +"x") }
+      assert_equal("A" * 16, s2.read_nonblock(16))
+    end
+  end
+
   def test_accept_nonblock
     bound_unix_socket(UNIXServer) {|serv, path|
       assert_raise(IO::WaitReadable) { serv.accept_nonblock }

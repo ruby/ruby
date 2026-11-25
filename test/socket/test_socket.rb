@@ -687,6 +687,20 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
+  def test_recvfrom_negative_length
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("A" * 16, 0)
+    IO.select([s1], nil, nil, 10) or flunk "socket did not become readable"
+    msg = "negative length -1 given"
+    assert_raise_with_message(ArgumentError, msg) { s1.recvfrom(-1, 0, +"x") }
+    assert_raise_with_message(ArgumentError, msg) { s1.recvfrom_nonblock(-1, 0, +"x") }
+    assert_equal("A" * 16, s1.recv(16))
+  ensure
+    s1&.close
+    s2&.close
+  end
+
   def test_recvmsg_udp_no_arg
     n = 4097
     s1 = Addrinfo.udp("127.0.0.1", 0).bind
