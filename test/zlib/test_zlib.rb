@@ -317,6 +317,11 @@ if defined? Zlib
       assert_equal("foo", z.finish)
     end
 
+    def test_avail_out_negative
+      z = Zlib::Inflate.new
+      assert_raise_with_message(ArgumentError, "negative size") { z.avail_out = -1 }
+    end
+
     def test_add_dictionary
       dictionary = "foo"
 
