@@ -1681,6 +1681,35 @@ class TestString < Test::Unit::TestCase
     end;
   end
 
+  def test_grapheme_clusters_modified_in_match
+    {"grapheme_clusters.size" => "grapheme_clusters", "each_grapheme_cluster.size" => "Enumerator#size"}.each do |call, frame|
+      assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+      begin;
+        cluster = "e" + "\u0301" * 2000 # many steps in one onig_match
+        main = Thread.current
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        n = 100
+        while true
+          s = cluster * n
+          done = false
+          th = Thread.new do
+            Thread.pass until (in_match = main.backtrace.any? { it.include?(#{frame.dump}) }) || done
+            s.replace("x") if in_match
+            in_match
+          end
+          result = s.#{call}
+          done = true
+          assert_equal(n, result)
+          break if th.value
+          if Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0 > 10
+            omit "no thread switch in #{call}"
+          end
+          n *= 2
+        end
+      end;
+    end
+  end
+
   def test_byteslice_grapheme_clusters
     string = "안녕"
     assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
