@@ -19,9 +19,9 @@
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -29,6 +29,7 @@
 # - Gem::Net::HTTP#get: sends +GET+ request, returns response object.
 #
 class Gem::Net::HTTP::Get < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'GET'
   REQUEST_HAS_BODY  = false
   RESPONSE_HAS_BODY = true
@@ -51,15 +52,16 @@ end
 #
 # - Request body: optional.
 # - Response body: no.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
 # - Gem::Net::HTTP#head: sends +HEAD+ request, returns response object.
 #
 class Gem::Net::HTTP::Head < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'HEAD'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = false
@@ -85,9 +87,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: no.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: no.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -95,6 +97,7 @@ end
 # - Gem::Net::HTTP#post: sends +POST+ request, returns response object.
 #
 class Gem::Net::HTTP::Post < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'POST'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -120,9 +123,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -130,6 +133,7 @@ end
 # - Gem::Net::HTTP#put: sends +PUT+ request, returns response object.
 #
 class Gem::Net::HTTP::Put < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PUT'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -153,15 +157,16 @@ end
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
 # - Gem::Net::HTTP#delete: sends +DELETE+ request, returns response object.
 #
 class Gem::Net::HTTP::Delete < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'DELETE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -184,15 +189,16 @@ end
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
 # - Gem::Net::HTTP#options: sends +OPTIONS+ request, returns response object.
 #
 class Gem::Net::HTTP::Options < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'OPTIONS'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -215,15 +221,16 @@ end
 #
 # - Request body: no.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
 # - Gem::Net::HTTP#trace: sends +TRACE+ request, returns response object.
 #
 class Gem::Net::HTTP::Trace < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'TRACE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -249,16 +256,52 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: no.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: no.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
 # - Gem::Net::HTTP#patch: sends +PATCH+ request, returns response object.
 #
 class Gem::Net::HTTP::Patch < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PATCH'
+  REQUEST_HAS_BODY = true
+  RESPONSE_HAS_BODY = true
+end
+
+# \Class for representing
+# {HTTP method QUERY}[https://www.rfc-editor.org/rfc/rfc10008.html]:
+#
+#   require 'rubygems/vendor/net-http/lib/net/http'
+#   uri = Gem::URI('http://example.com')
+#   hostname = uri.hostname # => "example.com"
+#   uri.path = '/posts'
+#   req = Gem::Net::HTTP::Query.new(uri) # => #<Gem::Net::HTTP::Query QUERY>
+#   req.body = '{"title": "foo","body": "bar","userId": 1}'
+#   req.content_type = 'application/json'
+#   res = Gem::Net::HTTP.start(hostname) do |http|
+#     http.request(req)
+#   end
+#
+# See {Request Headers}[rdoc-ref:Gem::Net::HTTPRequest@Request+Headers].
+#
+# Properties:
+#
+# - Request body: yes.
+# - Response body: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
+#
+# Related:
+#
+# - Gem::Net::HTTP#query: sends +QUERY+ request, returns response object.
+#
+class Gem::Net::HTTP::Query < Gem::Net::HTTPRequest
+  # :stopdoc:
+  METHOD = 'QUERY'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
 end
@@ -285,6 +328,7 @@ end
 # - Gem::Net::HTTP#propfind: sends +PROPFIND+ request, returns response object.
 #
 class Gem::Net::HTTP::Propfind < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PROPFIND'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -308,6 +352,7 @@ end
 # - Gem::Net::HTTP#proppatch: sends +PROPPATCH+ request, returns response object.
 #
 class Gem::Net::HTTP::Proppatch < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PROPPATCH'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -331,6 +376,7 @@ end
 # - Gem::Net::HTTP#mkcol: sends +MKCOL+ request, returns response object.
 #
 class Gem::Net::HTTP::Mkcol < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'MKCOL'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -354,6 +400,7 @@ end
 # - Gem::Net::HTTP#copy: sends +COPY+ request, returns response object.
 #
 class Gem::Net::HTTP::Copy < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'COPY'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -377,6 +424,7 @@ end
 # - Gem::Net::HTTP#move: sends +MOVE+ request, returns response object.
 #
 class Gem::Net::HTTP::Move < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'MOVE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -400,6 +448,7 @@ end
 # - Gem::Net::HTTP#lock: sends +LOCK+ request, returns response object.
 #
 class Gem::Net::HTTP::Lock < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'LOCK'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -423,8 +472,8 @@ end
 # - Gem::Net::HTTP#unlock: sends +UNLOCK+ request, returns response object.
 #
 class Gem::Net::HTTP::Unlock < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'UNLOCK'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
 end
-

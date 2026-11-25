@@ -1,10 +1,7 @@
 require_relative '../../../../../vendored_net_http'
 require_relative '../../../../../vendored_uri'
-begin
-  require 'cgi/escape'
-rescue LoadError
-  require 'cgi/util' # for escaping
-end
+require 'cgi/escape'
+require 'cgi/util' unless defined?(CGI::EscapeExt)
 require_relative '../../../../connection_pool/lib/connection_pool'
 
 autoload :OpenSSL, 'openssl'
@@ -180,7 +177,7 @@ class Gem::Net::HTTP::Persistent
   ##
   # The version of Gem::Net::HTTP::Persistent you are using
 
-  VERSION = '4.0.6'
+  VERSION = '4.0.8'
 
   ##
   # Error class for errors raised by Gem::Net::HTTP::Persistent.  Various
@@ -475,6 +472,13 @@ class Gem::Net::HTTP::Persistent
 
   attr_reader :verify_hostname
 
+
+  ##
+  #  Sets whether to ignore end-of-file when reading a response body
+  #  with Content-Length headers.
+
+  attr_accessor :ignore_eof
+
   ##
   # Creates a new Gem::Net::HTTP::Persistent.
   #
@@ -514,6 +518,7 @@ class Gem::Net::HTTP::Persistent
     @max_retries      = 1
     @socket_options   = []
     @ssl_generation   = 0 # incremented when SSL session variables change
+    @ignore_eof       = nil
 
     @socket_options << [Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1] if
       Socket.const_defined? :TCP_NODELAY
@@ -642,6 +647,7 @@ class Gem::Net::HTTP::Persistent
         reset connection
       end
 
+      http.ignore_eof         = @ignore_eof    if @ignore_eof
       http.keep_alive_timeout = @idle_timeout  if @idle_timeout
       http.max_retries        = @max_retries   if http.respond_to?(:max_retries=)
       http.read_timeout       = @read_timeout  if @read_timeout

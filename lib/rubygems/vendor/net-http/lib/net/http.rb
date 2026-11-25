@@ -36,7 +36,7 @@ module Gem::Net   #:nodoc:
   # For information about \HTTP, see:
   #
   # - {Hypertext Transfer Protocol}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol].
-  # - {Technical overview}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview].
+  # - {Technology}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technology].
   #
   # == About the Examples
   #
@@ -71,7 +71,7 @@ module Gem::Net   #:nodoc:
   #
   # - If performance is important, consider using sessions, which lower request overhead.
   #   This {session}[rdoc-ref:Gem::Net::HTTP@Sessions] has multiple requests for
-  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]
+  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Method]
   #   and {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
   #     Gem::Net::HTTP.start(hostname) do |http|
@@ -81,6 +81,7 @@ module Gem::Net   #:nodoc:
   #       body = 'Some text'
   #       http.post(path, body)  # Can also have a block.
   #       http.put(path, body)
+  #       http.query(path, body) # Can also have a block.
   #       http.delete(path)
   #       http.options(path)
   #       http.trace(path)
@@ -197,7 +198,7 @@ module Gem::Net   #:nodoc:
   # In the block, you can use these instance methods,
   # each of which that sends a single request:
   #
-  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]:
+  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Method]:
   #
   #   - #get, #request_get: GET.
   #   - #head, #request_head: HEAD.
@@ -206,6 +207,7 @@ module Gem::Net   #:nodoc:
   #   - #options: OPTIONS.
   #   - #trace: TRACE.
   #   - #patch: PATCH.
+  #   - #query, #request_query: QUERY.
   #
   # - {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
@@ -446,7 +448,7 @@ module Gem::Net   #:nodoc:
   # if the response has header <tt>'Content-Range'</tt>.
   #
   # Otherwise decompression (or not) depends on the value of header
-  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-encoding-response-header]:
+  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Content-Encoding_2]:
   #
   # - <tt>'deflate'</tt>, <tt>'gzip'</tt>, or <tt>'x-gzip'</tt>:
   #   decompresses the body and deletes the header.
@@ -459,7 +461,7 @@ module Gem::Net   #:nodoc:
   #
   # First, what's elsewhere. Class Gem::Net::HTTP:
   #
-  # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+  # - Inherits from {class Object}[rdoc-ref:Object#class-object-whats-here].
   #
   # This is a categorized summary of methods and attributes.
   #
@@ -552,6 +554,8 @@ module Gem::Net   #:nodoc:
   #   Sends a PROPPATCH request and returns a response object.
   # - {#put}[rdoc-ref:Gem::Net::HTTP#put]:
   #   Sends a PUT request and returns a response object.
+  # - {#query}[rdoc-ref:Gem::Net::HTTP#query]:
+  #   Sends a QUERY request and returns a response object.
   # - {#request}[rdoc-ref:Gem::Net::HTTP#request]:
   #   Sends a request and returns a response object.
   # - {#request_get}[rdoc-ref:Gem::Net::HTTP#request_get]:
@@ -723,7 +727,7 @@ module Gem::Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.7.0"
+    VERSION = "0.10.0"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -1178,6 +1182,7 @@ module Gem::Net   #:nodoc:
       @debug_output = options[:debug_output]
       @response_body_encoding = options[:response_body_encoding]
       @ignore_eof = options[:ignore_eof]
+      @tcpsocket_supports_open_timeout = nil
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1302,7 +1307,7 @@ module Gem::Net   #:nodoc:
 
     # Sets whether to determine the proxy from environment variable
     # '<tt>ENV['http_proxy']</tt>';
-    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Gem::Net::HTTP@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
+    # see {Proxy Using ENV}[rdoc-ref:Gem::Net::HTTP@Proxy+Using+ENVHTTPProxy].
     attr_writer :proxy_from_env
 
     # Sets the proxy address;
@@ -1320,6 +1325,9 @@ module Gem::Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+
+    # Sets whether the proxy uses SSL;
+    # see {Proxy Server}[rdoc-ref:Gem::Net::HTTP@Proxy+Server].
     attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
@@ -1526,7 +1534,7 @@ module Gem::Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ] # :nodoc:
+    ].freeze # :nodoc:
 
     SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym }.freeze # :nodoc:
 
@@ -1568,11 +1576,11 @@ module Gem::Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets or returns the available SSL ciphers.
-    # See {OpenSSL::SSL::SSLContext#ciphers=}[OpenSSL::SSL::SSL::Context#ciphers=].
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers-3D].
     attr_accessor :ciphers
 
     # Sets or returns the extra X509 certificates to be added to the certificate chain.
-    # See {OpenSSL::SSL::SSLContext#add_certificate}[OpenSSL::SSL::SSL::Context#add_certificate].
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
     attr_accessor :extra_chain_cert
 
     # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
@@ -1582,15 +1590,15 @@ module Gem::Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets or returns the SSL version.
-    # See {OpenSSL::SSL::SSLContext#ssl_version=}[OpenSSL::SSL::SSL::Context#ssl_version=].
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version-3D].
     attr_accessor :ssl_version
 
     # Sets or returns the minimum SSL version.
-    # See {OpenSSL::SSL::SSLContext#min_version=}[OpenSSL::SSL::SSL::Context#min_version=].
+    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version-3D].
     attr_accessor :min_version
 
     # Sets or returns the maximum SSL version.
-    # See {OpenSSL::SSL::SSLContext#max_version=}[OpenSSL::SSL::SSL::Context#max_version=].
+    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version-3D].
     attr_accessor :max_version
 
     # Sets or returns the callback for the server certification verification.
@@ -1606,7 +1614,7 @@ module Gem::Net   #:nodoc:
 
     # Sets or returns whether to verify that the server certificate is valid
     # for the hostname.
-    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[OpenSSL::SSL::SSL::Context#verify_hostname=].
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#attribute-i-verify_hostname].
     attr_accessor :verify_hostname
 
     # Returns the X509 certificate chain (an array of strings)
@@ -1654,6 +1662,21 @@ module Gem::Net   #:nodoc:
       self
     end
 
+    # Finishes the \HTTP session:
+    #
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
+    def finish
+      raise IOError, 'HTTP session not yet started' unless started?
+      do_finish
+    end
+
+    # :stopdoc:
     def do_start
       connect
       @started = true
@@ -1676,14 +1699,15 @@ module Gem::Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      s = Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_addr}:#{conn_port} (#{e.message})"
+      begin
+        s = timeouted_connect(conn_addr, conn_port)
+      rescue => e
+        if (defined?(IO::TimeoutError) && e.is_a?(IO::TimeoutError)) || e.is_a?(Errno::ETIMEDOUT)  # for compatibility with previous versions
+          e = Gem::Net::OpenTimeout.new(e)
         end
-      }
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_addr}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
@@ -1776,23 +1800,30 @@ module Gem::Net   #:nodoc:
     end
     private :connect
 
+    tcp_socket_parameters = TCPSocket.instance_method(:initialize).parameters
+    TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT = if tcp_socket_parameters != [[:rest]]
+      tcp_socket_parameters.include?([:key, :open_timeout])
+    else
+      # Use Socket.tcp to find out since there is no parameters information for TCPSocket#initialize
+      # See discussion in https://github.com/ruby/net-http/pull/224
+      Socket.method(:tcp).parameters.include?([:key, :open_timeout])
+    end
+    private_constant :TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+
+    def timeouted_connect(conn_addr, conn_port)
+      if TCP_SOCKET_NEW_HAS_OPEN_TIMEOUT
+        TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
+      else
+        Gem::Timeout.timeout(@open_timeout, Gem::Net::OpenTimeout) {
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        }
+      end
+    end
+    private :timeouted_connect
+
     def on_connect
     end
     private :on_connect
-
-    # Finishes the \HTTP session:
-    #
-    #   http = Gem::Net::HTTP.new(hostname)
-    #   http.start
-    #   http.started? # => true
-    #   http.finish   # => nil
-    #   http.started? # => false
-    #
-    # Raises IOError if not in a session.
-    def finish
-      raise IOError, 'HTTP session not yet started' unless started?
-      do_finish
-    end
 
     def do_finish
       @started = false
@@ -1842,6 +1873,8 @@ module Gem::Net   #:nodoc:
         @proxy_use_ssl = p_use_ssl
       }
     end
+
+    # :startdoc:
 
     class << HTTP
       # Returns true if self is a class which was created by HTTP::Proxy.
@@ -1937,6 +1970,7 @@ module Gem::Net   #:nodoc:
     alias proxyport proxy_port      #:nodoc: obsolete
 
     private
+    # :stopdoc:
 
     def unescape(value)
       require 'cgi/escape'
@@ -1965,6 +1999,7 @@ module Gem::Net   #:nodoc:
         path
       end
     end
+    # :startdoc:
 
     #
     # HTTP operations
@@ -2090,6 +2125,25 @@ module Gem::Net   #:nodoc:
     #
     def patch(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       send_entity(path, data, initheader, dest, Patch, &block)
+    end
+
+    # Sends a QUERY request to the server;
+    # returns an instance of a subclass of Gem::Net::HTTPResponse.
+    #
+    # The request is based on the Gem::Net::HTTP::Query object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.query('/todos/1', data) # => #<Gem::Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Gem::Net::HTTP::Query: request class for \HTTP method QUERY.
+    # - Gem::Net::HTTP.query: sends QUERY request, returns response body.
+    #
+    def query(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
+      send_entity(path, data, initheader, dest, Query, &block)
     end
 
     # Sends a PUT request to the server;
@@ -2326,6 +2380,36 @@ module Gem::Net   #:nodoc:
       request Put.new(path, initheader), data, &block
     end
 
+    # Sends a QUERY request to the server;
+    # returns an instance of a subclass of Gem::Net::HTTPResponse.
+    #
+    # The request is based on the Gem::Net::HTTP::Query object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.query('/todos/1', 'xyzzy')
+    #   # => #<Gem::Net::HTTPOK 200 OK readbody=true>
+    #
+    # With no block given, returns the response object:
+    #
+    #   http = Gem::Net::HTTP.new(hostname)
+    #   http.request_query('/todos') # => #<Gem::Net::HTTPOK 200 OK readbody=true>
+    #
+    # With a block given, calls the block with the response object
+    # and returns the response object:
+    #
+    #   http.request_query('/todos') do |res|
+    #     p res
+    #   end # => #<Gem::Net::HTTPOK 200 OK readbody=true>
+    #
+    # Output:
+    #
+    #   #<Gem::Net::HTTPOK 200 OK readbody=false>
+    #
+    def request_query(path, data, initheader = nil, &block) # :yield: +response+
+      request Query.new(path, initheader), data, &block
+    end
+
     alias get2   request_get    #:nodoc: obsolete
     alias head2  request_head   #:nodoc: obsolete
     alias post2  request_post   #:nodoc: obsolete
@@ -2419,7 +2503,9 @@ module Gem::Net   #:nodoc:
       res
     end
 
-    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+    # :stopdoc:
+
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE QUERY/.freeze # :nodoc:
 
     def transport_request(req)
       count = 0
@@ -2433,11 +2519,17 @@ module Gem::Net   #:nodoc:
             # still read the received response.
           end
 
+          informational_count = 0
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
             res.body_encoding = @response_body_encoding
             res.ignore_eof = @ignore_eof
+            if res.kind_of?(HTTPInformation)
+              informational_count += 1
+              raise HTTPBadResponse, 'too many informational responses' if
+                informational_count > HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+            end
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri
@@ -2576,7 +2668,7 @@ module Gem::Net   #:nodoc:
     alias_method :D, :debug
   end
 
-  # for backward compatibility until Ruby 3.5
+  # for backward compatibility until Ruby 4.0
   # https://bugs.ruby-lang.org/issues/20900
   # https://github.com/bblimke/webmock/pull/1081
   HTTPSession = HTTP

@@ -133,6 +133,13 @@
 # there is a protocol error.
 #
 class Gem::Net::HTTPResponse
+  # The maximum total size in bytes of the response header.
+  MAX_RESPONSE_HEADER_LENGTH = 1024 * 1024 # 1 MiB
+
+  # The maximum number of informational (1xx) responses accepted before the
+  # final response.
+  MAX_INFORMATIONAL_RESPONSES = 100
+
   class << self
     # true if the response has a body.
     def body_permitted?
@@ -152,10 +159,17 @@ class Gem::Net::HTTPResponse
       res
     end
 
+    def read_line(sock, limit, ignore_eof = false)   #:nodoc: internal use only
+      sock.readuntil("\n", ignore_eof, limit: limit)
+    rescue Gem::Net::ReadLimitExceeded
+      raise Gem::Net::HTTPBadResponse, 'response line too long'
+    end
+
     private
+    # :stopdoc:
 
     def read_status_line(sock)
-      str = sock.readline
+      str = read_line(sock, MAX_RESPONSE_HEADER_LENGTH).chop
       m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)(?:\s+(.*))?\z/in.match(str) or
         raise Gem::Net::HTTPBadResponse, "wrong status line: #{str.dump}"
       m.captures
@@ -169,12 +183,19 @@ class Gem::Net::HTTPResponse
 
     def each_response_header(sock)
       key = value = nil
+      remaining = MAX_RESPONSE_HEADER_LENGTH
       while true
-        line = sock.readuntil("\n", true).sub(/\s+\z/, '')
+        line = read_line(sock, MAX_RESPONSE_HEADER_LENGTH, true)
+        remaining -= line.bytesize
+        raise Gem::Net::HTTPBadResponse, 'response header too large' if remaining < 0
+        line = line.chomp
         break if line.empty?
         if line[0] == ?\s or line[0] == ?\t and value
-          value << ' ' unless value.empty?
-          value << line.strip
+          folded = line.strip
+          unless folded.empty?
+            value << ' ' unless value.empty?
+            value << folded
+          end
         else
           yield key, value if key
           key, value = line.strip.split(/\s*:\s*/, 2)
@@ -232,7 +253,7 @@ class Gem::Net::HTTPResponse
   #
   # - If the given value is an Encoding object, that encoding will be used.
   # - Otherwise if the value is a string, the value of
-  #   {Encoding#find(value)}[https://docs.ruby-lang.org/en/master/Encoding.html#method-c-find]
+  #   {Encoding#find(value)}[rdoc-ref:Encoding.find]
   #   will be used.
   # - Otherwise an encoding will be deduced from the body itself.
   #
@@ -259,7 +280,7 @@ class Gem::Net::HTTPResponse
   # header.
   attr_accessor :ignore_eof
 
-  def inspect
+  def inspect   # :nodoc:
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
   end
 
@@ -598,15 +619,20 @@ class Gem::Net::HTTPResponse
 
       @socket = inflate_body_io
 
-      clen = content_length()
-      if clen
-        @socket.read clen, dest, @ignore_eof
-        return
-      end
-      clen = range_length()
-      if clen
-        @socket.read clen, dest
-        return
+      # Transfer-Encoding overrides Content-Length, so a body that is not
+      # chunk-framed runs until the server closes the connection.
+      # See RFC 9112 Section 6.3.
+      unless @header['transfer-encoding']
+        clen = content_length()
+        if clen
+          @socket.read clen, dest, @ignore_eof
+          return
+        end
+        clen = range_length()
+        if clen
+          @socket.read clen, dest
+          return
+        end
       end
       @socket.read_all dest
     end
@@ -622,7 +648,7 @@ class Gem::Net::HTTPResponse
   def read_chunked(dest, chunk_data_io) # :nodoc:
     total = 0
     while true
-      line = @socket.readline
+      line = self.class.read_line(@socket, MAX_RESPONSE_HEADER_LENGTH).chop
       hexlen = line.slice(/[0-9a-fA-F]+/) or
           raise Gem::Net::HTTPBadResponse, "wrong chunk size line: #{line}"
       len = hexlen.hex
@@ -634,7 +660,7 @@ class Gem::Net::HTTPResponse
         @socket.read 2   # \r\n
       end
     end
-    until @socket.readline.empty?
+    until self.class.read_line(@socket, MAX_RESPONSE_HEADER_LENGTH).chop.empty?
       # none
     end
   end
