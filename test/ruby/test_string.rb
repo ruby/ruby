@@ -723,6 +723,23 @@ class TestString < Test::Unit::TestCase
     assert_raise(FrozenError) { S('foo').freeze.concat('bar') }
   end
 
+  def test_concat_codepoint_incomplete_char
+    # These encode to an incomplete character; validating them used to read
+    # one byte past the encoded bytes.
+    {
+      "GBK" => 0x81, "GB18030" => 0x81, "EUC-JP" => 0x8FA1, "EUC-TW" => 0x8E,
+      "UTF-16LE" => 0xD800, "UTF-16BE" => 0xDBFF, "CESU-8" => 0xD800,
+    }.each do |enc, code|
+      str = S("", encoding: enc)
+      assert_raise(RangeError, enc) { str << code }
+      assert_equal(S("", encoding: enc), str, enc)
+      assert_raise(RangeError, enc) { code.chr(enc) }
+    end
+
+    assert_equal("あ".encode("GBK"), S("", encoding: "GBK") << 0xA4A2)
+    assert_equal("\u{10000}".encode("UTF-16LE"), S("", encoding: "UTF-16LE") << 0x10000)
+  end
+
   def test_concat_literals
     s=S("." * 50)
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
