@@ -211,6 +211,8 @@ enum NoCache {
     Impossible,
     /// It does not decode.
     Malformed,
+    /// Its cache points would overflow `long`, as Onigmo counts them.
+    TooManyPoints,
 }
 
 impl Prog<'_> {
@@ -508,8 +510,17 @@ impl Prog<'_> {
                         }
                     }
                     let repeat_bounds = if range.upper == 0x7fffffff { 1 } else { i64::from(range.upper - range.lower) };
-                    cache_point += num_cache_points_in_repeat * i64::from(range.lower)
-                        + (num_cache_points_in_repeat + step) * repeat_bounds;
+                    let lower = i64::from(range.lower);
+                    let rest = std::ffi::c_long::MAX as i64 / 2 - cache_point;
+                    if rest < 0
+                        || (lower > 0 && num_cache_points_in_repeat > rest / lower)
+                        || (repeat_bounds > 0
+                            && num_cache_points_in_repeat + step
+                                > (rest - num_cache_points_in_repeat * lower) / repeat_bounds)
+                    {
+                        return Err(NoCache::TooManyPoints);
+                    }
+                    cache_point += num_cache_points_in_repeat * lower + (num_cache_points_in_repeat + step) * repeat_bounds;
                     if let Some(v) = cache_opcodes.as_deref_mut() {
                         for co in &mut v[first_in_repeat..] {
                             co.num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
@@ -1389,7 +1400,7 @@ impl Vm<'_, '_, '_> {
                     return Ok(());
                 }
                 match prog.count_num_cache_opcodes() {
-                    Ok(0) | Err(NoCache::Impossible) => {
+                    Ok(0) | Err(NoCache::Impossible | NoCache::TooManyPoints) => {
                         msa.match_cache = MatchCache::Disabled;
                         return Ok(());
                     }
@@ -1412,10 +1423,15 @@ impl Vm<'_, '_, '_> {
 
         let mut ops = Vec::new();
         ops.try_reserve(usize::try_from(num_cache_opcodes).unwrap_or(0)).map_err(|_| ONIGERR_MEMORY as isize)?;
-        msa.num_cache_points = prog.init_cache_opcodes(&mut ops).map_err(|e| match e {
-            NoCache::Impossible => ONIGERR_UNEXPECTED_BYTECODE as isize,
-            NoCache::Malformed => ONIGERR_UNDEFINED_BYTECODE as isize,
-        })?;
+        msa.num_cache_points = match prog.init_cache_opcodes(&mut ops) {
+            Ok(n) => n,
+            Err(NoCache::TooManyPoints) => {
+                msa.match_cache = MatchCache::Disabled;
+                return Ok(());
+            }
+            Err(NoCache::Impossible) => return Err(ONIGERR_UNEXPECTED_BYTECODE as isize),
+            Err(NoCache::Malformed) => return Err(ONIGERR_UNDEFINED_BYTECODE as isize),
+        };
         msa.cache_opcodes = ops;
 
         let points = usize::try_from(msa.num_cache_points)
