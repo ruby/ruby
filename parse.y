@@ -5220,10 +5220,12 @@ lambda_body	: tLAMBEG compstmt(stmts) '}'
                     }
                 | keyword_do_LAMBDA
                     {
+                        COND_PUSH(0);
                         push_end_expect_token_locations(p, &@1.beg_pos);
                     }
                   bodystmt k_end
                     {
+                        COND_POP();
                         $$ = new_locations_lambda_body(p, $3, &@3, &@1, &@4);
                     /*% ripper: $:3 %*/
                     }
