@@ -3071,6 +3071,8 @@ gc_mark_and_pin_internal(const struct rb_gc_mark_ctx *ctx, VALUE obj)
 static inline void
 gc_mark_maybe_internal(const struct rb_gc_mark_ctx *ctx, VALUE obj)
 {
+    (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
+
     RB_GC_MARK_OR_TRAVERSE(ctx, rb_gc_impl_mark_maybe, obj, obj, true);
 }
 
@@ -3115,6 +3117,8 @@ rb_gc_mark_and_pin_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj)
 void
 rb_gc_mark_maybe(VALUE obj)
 {
+    (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
+
     if (RB_SPECIAL_CONST_P(obj)) return;
 
     const struct rb_gc_mark_ctx ctx = gc_current_mark_ctx();

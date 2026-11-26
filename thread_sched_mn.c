@@ -661,6 +661,9 @@ static struct nt_stack_chunk_header {
 struct nt_machine_stack_footer {
     struct nt_stack_chunk_header *ch;
     size_t index;
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+    unsigned int valgrind_stack_id;
+#endif
 };
 
 static rb_nativethread_lock_t nt_machine_stack_lock = RB_NATIVETHREAD_LOCK_INIT;
@@ -774,6 +777,9 @@ nt_stack_chunk_get_stack(const rb_vm_t *vm, struct nt_stack_chunk_header *ch, si
     struct nt_machine_stack_footer *msf = nt_stack_chunk_get_msf(vm, mstack);
     msf->ch = ch;
     msf->index = idx;
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+    msf->valgrind_stack_id = VALGRIND_STACK_REGISTER(mstack, (const char *)msf - 1);
+#endif
 
 #if 0
     RUBY_DEBUG_LOG("msf:%p vstack:%p-%p guard_page:%p-%p mstack:%p-%p", msf,
@@ -906,6 +912,9 @@ nt_free_stack(void *mstack)
         void *stack = nt_stack_chunk_get_stack_start(ch, idx);
 
         RUBY_DEBUG_LOG("stack:%p mstack:%p ch:%p index:%d", stack, mstack, ch, idx);
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+        VALGRIND_STACK_DEREGISTER(msf->valgrind_stack_id);
+#endif
 
         if (!ch->on_free_list) {
             ch->on_free_list = true;
