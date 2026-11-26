@@ -11,6 +11,7 @@
 
 pub mod ast;
 pub mod bytecode;
+mod cache_table;
 pub mod compile;
 pub mod enc;
 pub mod error;

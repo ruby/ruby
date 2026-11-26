@@ -12,6 +12,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::ast::*;
 use crate::bytecode::*;
+use crate::cache_table::MatchCacheTable;
 use crate::compile::*;
 use crate::enc::*;
 use crate::error::*;
@@ -148,7 +149,9 @@ pub struct MatchArg<'c> {
     num_fails: i64,
     cache_opcodes: Vec<CacheOpcode>,
     num_cache_points: i64,
-    match_cache_buf: Vec<u8>,
+    match_cache_table: MatchCacheTable,
+    /// A chunk of the sparse table could not be allocated.
+    match_cache_error: bool,
 }
 
 impl<'c> MatchArg<'c> {
@@ -164,8 +167,23 @@ impl<'c> MatchArg<'c> {
             num_fails: 0,
             cache_opcodes: Vec::new(),
             num_cache_points: 0,
-            match_cache_buf: Vec::new(),
+            match_cache_table: MatchCacheTable::default(),
+            match_cache_error: false,
         }
+    }
+
+    /// `MATCH_CACHE_SET`: a failure leaves the bit unset, which only costs
+    /// time, and is reported by the next `check_match_cache`.
+    fn memoize(&mut self, bit: i64) {
+        if self.match_cache_table.set(bit).is_err() {
+            self.match_cache_error = true;
+        }
+    }
+
+    /// `memoize_extended_match_cache_point`
+    fn memoize_extended(&mut self, bit: i64) {
+        self.memoize(bit);
+        self.memoize(bit + 1);
     }
 }
 
@@ -587,19 +605,6 @@ pub fn check_linear_time(reg: &Regex) -> bool {
     !matches!(prog.count_num_cache_opcodes(), Err(NoCache::Impossible))
 }
 
-fn check_extended_match_cache_point(buf: &[u8], index: usize, mask: u8) -> bool {
-    if mask & 0x80 != 0 { (buf[index + 1] & 0x01) > 0 } else { (buf[index] & (mask << 1)) > 0 }
-}
-
-fn memoize_extended_match_cache_point(buf: &mut [u8], index: usize, mask: u8) {
-    buf[index] |= mask;
-    if mask & 0x80 != 0 {
-        buf[index + 1] |= 0x01;
-    } else {
-        buf[index] |= mask << 1;
-    }
-}
-
 enum CacheCheck {
     Miss,
     Fail,
@@ -977,9 +982,9 @@ impl Vm<'_, '_, '_> {
     #[inline]
     fn memoize_match_cache_point(&mut self, e: &Stk) {
         if e.typ == STK_MATCH_CACHE_POINT {
-            self.msa.match_cache_buf[e.w[0] as usize] |= e.num as u8;
+            self.msa.memoize(e.w[0] as i64);
         } else if e.typ == STK_ATOMIC_MATCH_CACHE_POINT {
-            memoize_extended_match_cache_point(&mut self.msa.match_cache_buf, e.w[0] as usize, e.num as u8);
+            self.msa.memoize_extended(e.w[0] as i64);
         }
     }
 
@@ -1033,7 +1038,7 @@ impl Vm<'_, '_, '_> {
     fn memoize_lookaround(&mut self, e: &mut Stk) {
         if e.typ == STK_MATCH_CACHE_POINT {
             e.typ = STK_VOID;
-            memoize_extended_match_cache_point(&mut self.msa.match_cache_buf, e.w[0] as usize, e.num as u8);
+            self.msa.memoize_extended(e.w[0] as i64);
         }
     }
 
@@ -1101,7 +1106,7 @@ impl Vm<'_, '_, '_> {
                 return;
             }
             if e.typ == STK_MATCH_CACHE_POINT {
-                memoize_extended_match_cache_point(&mut self.msa.match_cache_buf, e.w[0] as usize, e.num as u8);
+                self.msa.memoize_extended(e.w[0] as i64);
             }
         }
     }
@@ -1350,25 +1355,27 @@ impl Vm<'_, '_, '_> {
     fn check_enabled_match_cache(&mut self, pbegin: usize, s: Pos) -> VmResult<CacheCheck> {
         if let Some((cache_point, idx)) = self.find_cache_point(pbegin) {
             let mcp = self.msa.num_cache_points * s as i64 + cache_point;
-            let index = (mcp >> 3) as usize;
-            let mask = 1u8 << (mcp & 7);
-            if self.msa.match_cache_buf[index] & mask != 0 {
+            if self.msa.match_cache_error {
+                return Err(ONIGERR_MEMORY as isize);
+            }
+            let table = &self.msa.match_cache_table;
+            if table.test(mcp) {
                 let co = self.msa.cache_opcodes[idx];
                 return Ok(if co.lookaround_nesting == 0 {
                     CacheCheck::Fail
                 } else if co.lookaround_nesting < 0 {
-                    if check_extended_match_cache_point(&self.msa.match_cache_buf, index, mask) {
+                    if table.test(mcp + 1) {
                         CacheCheck::StopBtFail
                     } else {
                         CacheCheck::Fail
                     }
-                } else if check_extended_match_cache_point(&self.msa.match_cache_buf, index, mask) {
+                } else if table.test(mcp + 1) {
                     CacheCheck::Jump(co.match_addr.expect("match cache point without match address"))
                 } else {
                     CacheCheck::Fail
                 });
             }
-            self.push(STK_MATCH_CACHE_POINT, mask as i32, [index as isize, 0, 0, 0])?;
+            self.push(STK_MATCH_CACHE_POINT, 0, [mcp as isize, 0, 0, 0])?;
         }
         Ok(CacheCheck::Miss)
     }
@@ -1437,12 +1444,9 @@ impl Vm<'_, '_, '_> {
         let points = usize::try_from(msa.num_cache_points)
             .ok()
             .and_then(|n| n.checked_mul(self.sb.len() + 1))
+            .filter(|&n| n < isize::MAX as usize)
             .ok_or(ONIGERR_MEMORY as isize)?;
-        let buf_len = points.div_ceil(8) + 1;
-        let mut buf = Vec::new();
-        buf.try_reserve_exact(buf_len).map_err(|_| ONIGERR_MEMORY as isize)?;
-        buf.resize(buf_len, 0);
-        msa.match_cache_buf = buf;
+        msa.match_cache_table = MatchCacheTable::new(points).map_err(|_| ONIGERR_MEMORY as isize)?;
         msa.match_cache = MatchCache::Enabled;
         Ok(())
     }
