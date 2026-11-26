@@ -1765,7 +1765,7 @@ if defined? Zlib
       # whole characters (same as IO#gets(limit)).
       content = (("\u3042\u3044\u3046" * 700) + "\n") * 3
       [1, 4, 7, 10].each do |limit|
-        r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip(content, level: 0)))
+        r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip(content, level: 0)), external_encoding: Encoding::UTF_8)
         lines = []
         while (line = r.gets(limit))
           lines << line
