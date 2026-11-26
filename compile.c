@@ -4982,6 +4982,14 @@ compile_block(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     return COMPILE_OK;
 }
 
+static void
+compile_file_path(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int frozen_string_literal)
+{
+    ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    ADD_INSN1(ret, node, putobject, INT2FIX(frozen_string_literal));
+    ADD_SEND(ret, node, id_core_iseq_path, INT2FIX(1));
+}
+
 static int
 compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
@@ -5349,7 +5357,6 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
       case NODE_FALSE:
         return TRUE;
       case NODE_STR:
-      case NODE_FILE:
         return hash_key || frozen_string_literal_p(iseq);
       default:
         return FALSE;
@@ -5773,8 +5780,6 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return rb_node_line_lineno_val(node);
       case NODE_STR:
         return rb_node_str_string_val(node);
-      case NODE_FILE:
-        return rb_node_file_path_val(node);
     }
     return Qundef;
 }
@@ -5794,7 +5799,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             cdhash_aset_if_missing(literals, lit, (VALUE)(l1));
         }
 
-        if (nd_type_p(val, NODE_STR) || nd_type_p(val, NODE_FILE)) {
+        if (nd_type_p(val, NODE_STR)) {
             debugp_param("nd_lit", get_string_value(val));
             lit = get_string_value(val);
             ADD_INSN1(cond_seq, val, putobject, lit);
@@ -9324,7 +9329,7 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
      *   "literal".freeze -> opt_str_freeze("literal")
      */
     if (get_nd_recv(node) &&
-        (nd_type_p(get_nd_recv(node), NODE_STR) || nd_type_p(get_nd_recv(node), NODE_FILE)) &&
+        nd_type_p(get_nd_recv(node), NODE_STR) &&
         (get_node_call_nd_mid(node) == idFreeze || get_node_call_nd_mid(node) == idUMinus) &&
         get_nd_args(node) == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
@@ -10924,15 +10929,11 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         return COMPILE_OK;
       }
 
-      case NODE_FILE:{
-        VALUE lit = rb_node_file_path_val(node);
-        ADD_INSN1(ret, node, putobject, lit);
-        RB_OBJ_WRITTEN(iseq, Qundef, lit);
-        *value_p = lit;
+      case NODE_FILE:
+        compile_file_path(iseq, ret, node, ISEQ_FROZEN_STRING_LITERAL_ENABLED);
+        *value_p = Qundef;
         *shareable_literal_p = 1;
-
         return COMPILE_OK;
-      }
 
       case NODE_ZLIST:{
         VALUE lit = rb_ary_new();
@@ -11541,6 +11542,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case NODE_FILE:
+        if (!popped) {
+            compile_file_path(iseq, ret, node, ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal);
+        }
+        break;
       case NODE_STR:{
         debugp_param("nd_lit", get_string_value(node));
         if (!popped) {
@@ -12881,6 +12886,8 @@ struct ibf_load {
     VALUE loader_obj;
     rb_iseq_t *iseq;
     VALUE str;
+    VALUE path_override;
+    VALUE realpath_override;
     struct ibf_load_buffer *current_buffer;
 };
 
@@ -14207,6 +14214,10 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
         else {
             rb_raise(rb_eRuntimeError, "unexpected path object");
         }
+        if (RTEST(load->path_override)) {
+            path = load->path_override;
+            realpath = load->realpath_override;
+        }
         rb_iseq_pathobj_set(iseq, path, realpath);
     }
 
@@ -15353,6 +15364,8 @@ ibf_loader_mark(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
     rb_gc_mark(load->str);
+    rb_gc_mark(load->path_override);
+    rb_gc_mark(load->realpath_override);
     rb_gc_mark(load->iseq_list);
     rb_gc_mark(load->global_buffer.obj_list);
 }
@@ -15376,14 +15389,24 @@ static const rb_data_type_t ibf_load_type = {
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
+static void
+ibf_load_set_path(struct ibf_load *load, VALUE path, VALUE realpath)
+{
+    if (NIL_P(path)) return;
+    if (NIL_P(realpath)) realpath = path;
+    RB_OBJ_WRITE(load->loader_obj, &load->path_override, rb_fstring(path));
+    RB_OBJ_WRITE(load->loader_obj, &load->realpath_override, rb_fstring(realpath));
+}
+
 const rb_iseq_t *
-rb_iseq_ibf_load(VALUE str)
+rb_iseq_ibf_load(VALUE str, VALUE fname, VALUE path)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup(load, loader_obj, str);
+    ibf_load_set_path(load, fname, path);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);
@@ -15391,13 +15414,14 @@ rb_iseq_ibf_load(VALUE str)
 }
 
 const rb_iseq_t *
-rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
+rb_iseq_ibf_load_bytes(const char *bytes, size_t size, VALUE fname, VALUE path)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup_bytes(load, loader_obj, bytes, size);
+    ibf_load_set_path(load, fname, path);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);
