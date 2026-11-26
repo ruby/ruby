@@ -3147,6 +3147,9 @@ pub fn search(
                         return ONIG_MISMATCH as isize;
                     } else {
                         range = max_semi_end + 1 - reg.anchor_dmin;
+                        if start >= range {
+                            return ONIG_MISMATCH as isize;
+                        }
                     }
                 }
                 if start > range {
