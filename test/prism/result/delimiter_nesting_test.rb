@@ -47,6 +47,17 @@ module Ruby::Prism
       end
     end
 
+    def test_blocks_in_a_rescue_header_and_on_the_enclosing_command
+      source = "receive class << target; rescue error_type do end; end do end"
+      result = Ruby::Prism.parse(source)
+      assert_empty result.errors
+
+      receive = result.value.statements.body.first
+      rescue_clause = receive.arguments.arguments.first.body.rescue_clause
+      assert_instance_of BlockNode, rescue_clause.exceptions.first.block
+      assert_instance_of BlockNode, receive.block
+    end
+
     # A closing delimiter without a matching opening one still pops both
     # stacks, so these pop an empty stack, some of them more than 64 times in
     # a row, and check that the source still parses with errors.

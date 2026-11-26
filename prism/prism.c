@@ -15165,6 +15165,9 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
 
     while (match1(parser, PM_TOKEN_KEYWORD_RESCUE)) {
         if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false, false);
+
+        /* A call in the exception list can take a block even inside a command argument. */
+        pm_accepts_block_stack_push(parser, true);
         parser_lex(parser);
 
         pm_token_t rescue_keyword = parser->previous;
@@ -15202,7 +15205,6 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         }
 
         if (!match3(parser, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
-            pm_accepts_block_stack_push(parser, true);
             pm_context_t context;
 
             switch (type) {
@@ -15217,11 +15219,10 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
             }
 
             statements = parse_statements(parser, context, (uint16_t) (depth + 1));
-
-            pm_accepts_block_stack_pop(parser);
             accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
         }
 
+        pm_accepts_block_stack_pop(parser);
         pm_rescue_node_t *rescue = pm_rescue_node_create(parser, &rescue_keyword, &exceptions, NTOK2PTR(operator), reference, NTOK2PTR(then_keyword), statements);
 
         if (current == NULL) {
