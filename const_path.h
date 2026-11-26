@@ -14,6 +14,14 @@ struct rb_const_path_heap {
  */
 typedef union {
     const struct rb_const_path_heap *heap;
+
+    // On 32bit:
+    // |    31-2   |     1    |    0   |
+    // |   first   | absolute | packed |
+    //
+    // On 64bit:
+    // |   63-33   |    32-2   |     1    |    0   |
+    // |  second   |   first   | absolute | packed |
     uintptr_t packed;
 } rb_const_path_t;
 
@@ -21,7 +29,15 @@ typedef union {
 #define PACKED_FLAG     0x1
 #define ABSOLUTE_FLAG   0x2
 
-#define PACKED_ID_STATIC_FLAG (((uint32_t)0x1) << 31)
+#if SIZEOF_VOIDP == 8
+#define PACKED_ID_BITS 31
+#else
+#define PACKED_ID_BITS 30
+#endif
+
+#define PACKED_ID_BITS_MASK (((uintptr_t)1 << PACKED_ID_BITS) - 1)
+
+#define PACKED_ID_STATIC_FLAG 0x1
 
 static inline bool
 const_path_packed_p(const rb_const_path_t const_path)
@@ -72,26 +88,11 @@ const_path_absolute_p(const rb_const_path_t const_path)
     return const_path.packed & ABSOLUTE_FLAG;
 }
 
-static inline size_t
-const_path_size(const rb_const_path_t const_path)
-{
-    if (const_path_packed_p(const_path)) {
-        return 1;
-    }
-    else {
-        const struct rb_const_path_heap *heap = const_path_heap(const_path);
-        if (!heap) {
-            return 0;
-        }
-        return heap->size;
-    }
-}
-
 static inline ID
 const_path_unpack_id(uint32_t packed_id)
 {
     bool static_p = packed_id & PACKED_ID_STATIC_FLAG;
-    packed_id &= ~PACKED_ID_STATIC_FLAG;
+    packed_id >>= 1;
 
     ID id = rb_id_from_serial_and_type(packed_id, RUBY_ID_CONST);
     if (static_p) {
@@ -100,25 +101,26 @@ const_path_unpack_id(uint32_t packed_id)
     return id;
 }
 
-static inline uint32_t
-const_path_pack_id(ID id)
-{
-    RUBY_ASSERT(is_notop_id(id));
-    RUBY_ASSERT(id_type(id) == RUBY_ID_CONST);
-    uint32_t packed_id = rb_id_to_serial(id);
-    RUBY_ASSERT(!(packed_id & PACKED_ID_STATIC_FLAG));
-    return DYNAMIC_ID_P(id) ? packed_id : packed_id | PACKED_ID_STATIC_FLAG;
-}
-
 static inline ID
 const_path_aref(const rb_const_path_t const_path, size_t index)
 {
     rb_id_serial_t serial;
     if (const_path_packed_p(const_path)) {
-        if (index > 0) {
+        switch (index) {
+          case 0:
+            serial = ((const_path.packed >> PACKED_SHIFT) & PACKED_ID_BITS_MASK);
+            break;
+#if SIZEOF_VOIDP == 8
+          case 1:
+            serial = (const_path.packed >> PACKED_SHIFT >> PACKED_ID_BITS) & PACKED_ID_BITS_MASK;
+            break;
+#endif
+          default:
             return 0;
         }
-        serial = (rb_id_serial_t)(const_path.packed >> PACKED_SHIFT);
+        if (!serial) {
+            return 0;
+        }
     }
     else {
         const struct rb_const_path_heap *heap = const_path_heap(const_path);
@@ -128,20 +130,6 @@ const_path_aref(const rb_const_path_t const_path, size_t index)
         serial = heap->segments[index];
     }
     return const_path_unpack_id(serial);
-}
-
-static inline rb_const_path_t
-const_path_packed(ID id, bool absolute)
-{
-    uintptr_t num = (uintptr_t)const_path_pack_id(id);
-
-    rb_const_path_t const_path = {
-        .packed = (num << PACKED_SHIFT) | PACKED_FLAG
-    };
-    if (absolute) {
-        const_path.packed |= ABSOLUTE_FLAG;
-    }
-    return const_path;
 }
 
 VALUE rb_const_path_to_array(const rb_const_path_t const_path);
