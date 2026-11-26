@@ -10004,15 +10004,16 @@ pm_regexp_escape_kept_p(const pm_lex_mode_t *lex_mode, uint8_t peeked) {
 
 /**
  * Copy a braced Unicode escape up to its closing brace, the regexp terminator,
- * or a line ending. A closing brace belongs to the escape even when it is also
- * the regexp terminator. The regexp preprocessor validates the escape after
- * handling comments.
+ * or the end of the current line, preserving its bytes including CRLF. A
+ * closing brace belongs to the escape even when it is also the regexp
+ * terminator. The regexp preprocessor validates the escape after handling
+ * comments.
  */
 static void
 pm_regexp_lex_braced_unicode(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t terminator) {
     const uint8_t *start = parser->current.end - 1;
     const uint8_t *cursor = parser->current.end + 2;
-    const uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE] = { '}', '\\', '\n', '\r', terminator, '\0' };
+    const uint8_t breakpoints[PM_STRPBRK_CACHE_SIZE] = { '}', '\\', '\n', terminator, '\0' };
 
     while (cursor < parser->end) {
         cursor = pm_strpbrk(parser, cursor, breakpoints, parser->end - cursor, PM_STRPBRK_REGEXP);
@@ -10022,16 +10023,24 @@ pm_regexp_lex_braced_unicode(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t t
         }
 
         uint8_t byte = *cursor;
-        if (byte != '}' && (byte == terminator || byte == '\n' || (byte == '\r' && peek_at(parser, cursor + 1) == '\n'))) break;
-        cursor++;
-        if (byte == '}') break;
+        if (byte == '}') {
+            cursor++;
+            break;
+        }
+        if (byte == terminator) break;
 
-        /* Leave multibyte characters and line endings for the next scan. */
-        if (byte == '\\' && cursor < parser->end && *cursor < 0x80 && *cursor != '\n' && *cursor != '\r') cursor++;
+        /* Leave multibyte characters for the next scan. */
+        if (byte == '\\' && cursor + 1 < parser->end && cursor[1] < 0x80) cursor++;
+        if (*cursor++ == '\n') {
+            escape_consume_newline(parser, U32(cursor - parser->current.end));
+            break;
+        }
     }
 
-    parser->current.end = cursor;
     pm_buffer_append_bytes(buffer, start, (size_t) (cursor - start));
+    /* A newline delimiter starts at CR even when the escape copied that CR. */
+    if (terminator == '\n' && cursor[-1] == '\r' && peek_at(parser, cursor) == '\n') cursor--;
+    parser->current.end = cursor;
 }
 
 /**
