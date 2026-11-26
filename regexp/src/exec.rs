@@ -112,6 +112,7 @@ struct CacheOpcode {
     outer_repeat_mem: Option<i32>,
     num_cache_points_at_outer_repeat: i64,
     num_cache_points_in_outer_repeat: i64,
+    num_cache_points_of_outer_repeat_inc: i64,
     lookaround_nesting: i32,
     match_addr: Option<usize>,
 }
@@ -349,14 +350,12 @@ impl Prog<'_> {
                     p += SIZE_MEMNUM as usize + SIZE_RELADDR as usize;
                     let range = self.reg.repeat_range[repeat_mem as usize];
                     let body = self.count_num_cache_opcodes_inner(Some(repeat_mem), lookaround_nesting, &mut p)?;
-                    if range.lower != 0 || range.upper != 0 {
-                        if range.lower == 0 {
-                            num_cache_opcodes += 1;
-                        }
-                        num_cache_opcodes += body;
-                        if range.lower < range.upper {
-                            num_cache_opcodes += 1;
-                        }
+                    if range.lower == 0 {
+                        num_cache_opcodes += 1;
+                    }
+                    num_cache_opcodes += body;
+                    if range.lower < range.upper {
+                        num_cache_opcodes += 1;
                     }
                 }
                 OP_REPEAT_INC | OP_REPEAT_INC_NG => {
@@ -441,6 +440,7 @@ impl Prog<'_> {
                         outer_repeat_mem: current_repeat_mem,
                         num_cache_points_at_outer_repeat: 0,
                         num_cache_points_in_outer_repeat: 0,
+                        num_cache_points_of_outer_repeat_inc: 0,
                         lookaround_nesting,
                         match_addr: None,
                     });
@@ -485,36 +485,36 @@ impl Prog<'_> {
                     let repeat_mem = self.memnum_at(p);
                     p += SIZE_MEMNUM as usize + SIZE_RELADDR as usize;
                     let range = self.reg.repeat_range[repeat_mem as usize];
-                    if range.lower == 0 && range.upper == 0 {
-                        self.init_cache_opcodes_inner(Some(repeat_mem), lookaround_nesting, &mut None, &mut p, 0)?;
-                    } else {
-                        if range.lower == 0 {
-                            inc_cache_opcodes!(pbegin);
-                        }
-                        let num_cache_points_at_repeat = cache_point;
-                        let first_in_repeat = cache_opcodes.as_deref().map(|v| v.len()).unwrap_or(0);
-                        let num_cache_points_in_repeat = self.init_cache_opcodes_inner(
-                            Some(repeat_mem),
-                            lookaround_nesting,
-                            cache_opcodes,
-                            &mut p,
-                            0,
-                        )?;
-                        if range.lower < range.upper {
-                            inc_cache_opcodes!(pbegin);
-                            if cache_opcodes.is_some() {
-                                cache_point -= step;
-                            }
-                        }
-                        let repeat_bounds =
-                            if range.upper == 0x7fffffff { 1 } else { i64::from(range.upper - range.lower) };
-                        cache_point += num_cache_points_in_repeat * i64::from(range.lower)
-                            + (num_cache_points_in_repeat + step) * repeat_bounds;
+                    if range.lower == 0 {
+                        inc_cache_opcodes!(pbegin);
+                    }
+                    let num_cache_points_at_repeat = cache_point;
+                    let first_in_repeat = cache_opcodes.as_deref().map(|v| v.len()).unwrap_or(0);
+                    let num_cache_points_in_repeat =
+                        self.init_cache_opcodes_inner(Some(repeat_mem), lookaround_nesting, cache_opcodes, &mut p, 0)?;
+                    if range.lower < range.upper {
+                        // The OP_REPEAT_INC that ends the body, after its points.
                         if let Some(v) = cache_opcodes.as_deref_mut() {
-                            for co in &mut v[first_in_repeat..] {
-                                co.num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
-                                co.num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
-                            }
+                            v.push(CacheOpcode {
+                                addr: p - SIZE_OP_REPEAT_INC as usize,
+                                cache_point: num_cache_points_in_repeat,
+                                outer_repeat_mem: Some(repeat_mem),
+                                num_cache_points_at_outer_repeat: 0,
+                                num_cache_points_in_outer_repeat: 0,
+                                num_cache_points_of_outer_repeat_inc: 0,
+                                lookaround_nesting,
+                                match_addr: None,
+                            });
+                        }
+                    }
+                    let repeat_bounds = if range.upper == 0x7fffffff { 1 } else { i64::from(range.upper - range.lower) };
+                    cache_point += num_cache_points_in_repeat * i64::from(range.lower)
+                        + (num_cache_points_in_repeat + step) * repeat_bounds;
+                    if let Some(v) = cache_opcodes.as_deref_mut() {
+                        for co in &mut v[first_in_repeat..] {
+                            co.num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
+                            co.num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+                            co.num_cache_points_of_outer_repeat_inc = step;
                         }
                     }
                 }
@@ -1312,6 +1312,7 @@ impl Vm<'_, '_, '_> {
         };
         let at = co.num_cache_points_at_outer_repeat;
         let inr = co.num_cache_points_in_outer_repeat;
+        let inc = co.num_cache_points_of_outer_repeat_inc;
         let range = self.reg.repeat_range[outer_repeat_mem as usize];
         let stkp = &self.stk[self.repeat_stk[outer_repeat_mem as usize] as usize];
         let count = if is_inc { stkp.w[1] - 1 } else { stkp.w[1] } as i64;
@@ -1319,9 +1320,9 @@ impl Vm<'_, '_, '_> {
         let v = if count < lower {
             at + inr * count + cache_point
         } else if upper == 0x7fffffff {
-            at + inr * (lower - if is_inc { 1 } else { 0 }) + if is_inc { 0 } else { 1 } + cache_point
+            at + inr * (lower - if is_inc { 1 } else { 0 }) + if is_inc { 0 } else { inc } + cache_point
         } else {
-            at + inr * (lower - 1) + (inr + 1) * (count - lower + 1) + cache_point
+            at + inr * (lower - 1) + (inr + inc) * (count - lower + 1) + cache_point
         };
         Some((v, m as usize))
     }
