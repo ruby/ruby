@@ -10201,7 +10201,7 @@ parser_lex(pm_parser_t *parser) {
 
                 switch (*parser->current.end) {
                     case '\r':
-                        if (match_eol_offset(parser, 1)) {
+                        if (peek_offset(parser, 1) == '\n') {
                             chomping = false;
                         } else {
                             pm_parser_warn(parser, PM_TOKEN_END(parser, &parser->current), 1, PM_WARN_UNEXPECTED_CARRIAGE_RETURN);

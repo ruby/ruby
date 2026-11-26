@@ -30,6 +30,14 @@ module Ruby::Prism
       assert_equal 5, tokens.length
     end
 
+    def test_carriage_return_before_crlf_in_call_chain
+      result = Ruby::Prism.lex("r\r\r\n.O")
+
+      assert_empty result.errors
+      assert_equal %i[IDENTIFIER IGNORED_NEWLINE DOT CONSTANT EOF], result.value.map(&:type)
+      assert_equal "\r\n", result.value[1].value
+    end
+
     def test_do_after_a_command_with_a_brace_block
       {
         "outer def f = super A::B() {} do end" => :KEYWORD_DO_BLOCK,
