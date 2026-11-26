@@ -1624,6 +1624,7 @@ if defined? Zlib
     end
 
     def test_getc_with_encoding_conversion
+      pend "rb_io_extract_encoding_option ignores the encoding options on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
       gz = Zlib.gzip("\x82\xa0\x82\xa2".b)
       Zlib::GzipReader.wrap(StringIO.new(gz), external_encoding: "Shift_JIS", internal_encoding: "UTF-8") do |f|
         assert_equal(["\u3042", "\u3044"], f.each_char.to_a)
