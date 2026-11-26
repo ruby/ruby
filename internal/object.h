@@ -12,6 +12,7 @@
 #include "internal/string.h"
 #include "internal/vm.h"
 #include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/atomic.h"
 
 /* object.c */
 
@@ -147,5 +148,21 @@ rb_eql_inline(VALUE obj1, VALUE obj2)
 }
 
 #define rb_eql rb_eql_inline
+
+static inline void
+rb_obj_flags_update_atomic(VALUE obj, VALUE set, VALUE clear)
+{
+    volatile VALUE *flags = &RBASIC(obj)->flags;
+    VALUE old = rbimpl_atomic_value_load(flags, RBIMPL_ATOMIC_RELAXED);
+
+    for (;;) {
+        VALUE new_flags = (old & ~clear) | set;
+        if (new_flags == old) return;
+        VALUE prev = rbimpl_atomic_value_cas(flags, old, new_flags,
+                                             RBIMPL_ATOMIC_RELAXED, RBIMPL_ATOMIC_RELAXED);
+        if (prev == old) return;
+        old = prev;
+    }
+}
 
 #endif /* INTERNAL_OBJECT_H */

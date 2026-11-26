@@ -4,6 +4,7 @@
 #include "internal/symbol.h"
 #include "internal/gc.h"
 #include "internal/imemo.h"
+#include "internal/object.h"
 
 typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;
@@ -258,6 +259,21 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
         (shape_id & ~SHAPE_ID_FL_PRIVATE_MASK) |
         (RBASIC_SHAPE_ID(obj) & SHAPE_ID_FL_PRIVATE_MASK)
     ));
+}
+
+static inline void
+RBASIC_SET_SHAPE_ID_ATOMIC(VALUE obj, shape_id_t shape_id)
+{
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+
+#if RBASIC_SHAPE_ID_FIELD
+    RBASIC_SET_SHAPE_ID(obj, shape_id);
+#else
+    VALUE clear = (VALUE)(shape_id_t)~SHAPE_ID_FL_PRIVATE_MASK << SHAPE_FLAG_SHIFT;
+    VALUE set = (VALUE)(shape_id & ~SHAPE_ID_FL_PRIVATE_MASK) << SHAPE_FLAG_SHIFT;
+    rb_obj_flags_update_atomic(obj, set, clear);
+    RUBY_ASSERT(rb_shape_verify_consistency(obj, RBASIC_SHAPE_ID(obj)));
+#endif
 }
 
 static inline shape_id_t

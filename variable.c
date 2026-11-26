@@ -1837,6 +1837,9 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             RBASIC_SET_SHAPE_ID_WITH_LAYOUT(obj, next_shape_id, SHAPE_ID_LAYOUT_EXTENDED);
         }
     }
+    else if (type == T_CLASS || type == T_MODULE) {
+        RBASIC_SET_SHAPE_ID_ATOMIC(obj, next_shape_id);
+    }
     else {
         RBASIC_SET_SHAPE_ID(obj, next_shape_id);
     }
@@ -4719,7 +4722,7 @@ class_ivar_set(VALUE obj, ID id, VALUE val, bool *new_ivar)
     // TODO: What should we set as the T_CLASS shape_id?
     // In most case we can replicate the single `fields_obj` shape
     // but in namespaced case? Perhaps INVALID_SHAPE_ID?
-    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
+    RBASIC_SET_SHAPE_ID_ATOMIC(obj, RBASIC_SHAPE_ID(new_fields_obj));
     return index;
 }
 
