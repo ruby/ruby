@@ -2991,7 +2991,7 @@ fn forward_search_range(reg: &Regex, sb: &[u8], s: usize, range: usize, want_low
                         let (q, prev) = enc.get_right_adjust_char_head_with_prev(sb, s, l, end);
                         l = q;
                         if want_low_prev {
-                            low_prev = prev.or_else(|| enc.get_prev_char_head(sb, pprev.unwrap_or(s), l, end));
+                            low_prev = prev.or_else(|| enc.get_prev_char_head(sb, s, l, end));
                         }
                     } else if want_low_prev {
                         low_prev = enc.get_prev_char_head(sb, pprev.unwrap_or(0), l, end);
