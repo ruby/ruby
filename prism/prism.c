@@ -16659,11 +16659,12 @@ parse_symbol(pm_parser_t *parser, pm_lex_state_t next_state, uint16_t depth) {
     const pm_token_t opening = parser->previous;
 
     if (lex_mode.mode != PM_LEX_STRING) {
-        if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
+        /* A bare symbol ends an expression unless alias expects another name. */
+        lex_state_set(parser, next_state == PM_LEX_STATE_NONE ? PM_LEX_STATE_END : next_state);
 
         switch (parser->current.type) {
             case PM_CASE_OPERATOR:
-                return parse_operator_symbol(parser, &opening, next_state == PM_LEX_STATE_NONE ? PM_LEX_STATE_ENDFN : next_state);
+                return parse_operator_symbol(parser, &opening, PM_LEX_STATE_NONE);
             case PM_TOKEN_IDENTIFIER:
             case PM_TOKEN_CONSTANT:
             case PM_TOKEN_INSTANCE_VARIABLE:

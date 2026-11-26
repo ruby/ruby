@@ -38,6 +38,18 @@ module Ruby::Prism
       assert_equal "\r\n", result.value[1].value
     end
 
+    def test_modifier_after_symbol_in_undef_and_alias
+      {
+        "undef:f while:c" => :KEYWORD_WHILE_MODIFIER,
+        "undef f, :+ until:c" => :KEYWORD_UNTIL_MODIFIER,
+        "alias :new :old if:c" => :KEYWORD_IF_MODIFIER
+      }.each do |source, modifier|
+        result = Ruby::Prism.lex(source)
+        assert_empty result.errors, source
+        assert_include result.value.map(&:type), modifier, source
+      end
+    end
+
     def test_do_after_a_command_with_a_brace_block
       {
         "outer def f = super A::B() {} do end" => :KEYWORD_DO_BLOCK,
