@@ -5234,7 +5234,6 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 {
     RUBY_ASSERT(nd_type_p(root_node, NODE_HASH));
     RUBY_ASSERT(kw_arg_ptr != NULL);
-    RUBY_ASSERT(flag != NULL);
 
     if (RNODE_HASH(root_node)->nd_head && nd_type_p(RNODE_HASH(root_node)->nd_head, NODE_LIST)) {
         const NODE *node = RNODE_HASH(root_node)->nd_head;
@@ -6838,7 +6837,7 @@ static void
 compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                                      NODE *kwnode, unsigned int *flag_ptr)
 {
-    *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+    if (flag_ptr) *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
     ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
     ADD_INSN1(args, argn, newhash, INT2FIX(0));
     compile_hash(iseq, args, kwnode, TRUE, FALSE);
@@ -6864,7 +6863,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_ARGS_SPLAT) == 0);
 
         if (kwnode) {
-            if (compile_keyword_arg(iseq, args, kwnode, kwarg_ptr, flag_ptr)) {
+            if (kwarg_ptr && compile_keyword_arg(iseq, args, kwnode, kwarg_ptr, flag_ptr)) {
                 len -= 1;
             }
             else {
@@ -6916,7 +6915,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         // f(..., *a, ..., k1:1, ...) #=> f(..., *[*a, ...], **{k1:1, ...})
         if (kwnode) {
             // kwsplat
-            *flag_ptr |= VM_CALL_KW_SPLAT;
+            if (flag_ptr) *flag_ptr |= VM_CALL_KW_SPLAT;
             compile_hash(iseq, args, kwnode, TRUE, FALSE);
             argc += 1;
         }
@@ -6945,9 +6944,9 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 
         if (kwnode) {
             // f(*a, k:1)
-            *flag_ptr |= VM_CALL_KW_SPLAT;
+            if (flag_ptr) *flag_ptr |= VM_CALL_KW_SPLAT;
             if (!keyword_node_single_splat_p(kwnode)) {
-                *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+                if (flag_ptr) *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
                 compile_hash(iseq, args, kwnode, TRUE, FALSE);
             }
             else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
@@ -7022,6 +7021,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 {
     VALUE ret;
     unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest;
+    RUBY_ASSERT(flag);
 
     if (argn) {
         const NODE *check_arg = nd_type_p(argn, NODE_BLOCK_PASS) ?

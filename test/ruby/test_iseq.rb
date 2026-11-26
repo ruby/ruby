@@ -1093,4 +1093,39 @@ class TestISeq < Test::Unit::TestCase
       RubyVM::InstructionSequence.compile_file(File::NULL)
     end
   end
+
+  def test_compile_splat_keyword_hash
+    source = "#{<<-"{#"}\n#{<<-'};'}"
+    {#
+      m c, *[s:], *[*y]
+    };
+
+    each_compiler(source) do |iseq|
+      assert_kind_of ISeq, iseq
+    end
+
+    source = %[#{<<-"{#"}\n#{<<-"};"}]
+    {#
+      Class.new do
+        def m(*args) = args
+        def c = :c
+        def s = :s
+        def y = [:y]
+        def run = #{source}
+      end.new.run
+    };
+
+    each_compiler(source) do |iseq|
+      assert_kind_of ISeq, iseq
+      assert_equal [:c, {s: :s}, :y], iseq.eval
+    end
+  end
+
+  COMPILERS = ISeq.methods(false).grep(/\Acompile_(?!file|option)\w+\z/)
+
+  def each_compiler(src)
+    COMPILERS.each do |compile|
+      yield ISeq.__send__(compile, src)
+    end
+  end
 end
