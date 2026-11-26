@@ -982,6 +982,19 @@ fn test_getblockparamproxy_proc() {
 }
 
 #[test]
+fn test_getblockparamproxy_dynamic_symbol() {
+    eval(r#"
+        # String#to_sym makes a dynamic symbol, which is a heap object unlike a static symbol.
+        SYM = "zjit_dynamic_symbol_method".to_sym
+        Integer.define_method(SYM) { self + 1 }
+        def test(x, &block) = block.call(x)
+        test(1, &SYM)
+    "#);
+    assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+    assert_snapshot!(inspect("test(2, &SYM)"), @"3");
+}
+
+#[test]
 fn test_getblockparamproxy_polymorphic_none_and_iseq_and_proc() {
     set_call_threshold(4);
     eval("
