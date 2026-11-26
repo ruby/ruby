@@ -7308,6 +7308,23 @@ fn test_constant_definition_in_ancestor_invalidates_code() {
 }
 
 #[test]
+fn test_instance_eval_cref_does_not_retain_receiver() {
+    eval("
+        RetainBlock = proc { @x }
+        def make_receivers(wmap) = 20.times do
+          obj = Object.new
+          obj.instance_variable_set(:@x, 1)
+          wmap[obj] = true
+          obj.instance_eval(&RetainBlock)
+        end
+        RetainWMap = ObjectSpace::WeakMap.new
+        make_receivers(RetainWMap)
+    ");
+    assert!(get_or_create_iseq_payload(get_proc_iseq("RetainBlock")).cref.is_none());
+    assert_snapshot!(inspect("4.times { GC.start }; RetainWMap.keys.size"), @"0");
+}
+
+#[test]
 fn test_dupn() {
     eval("
         def test(array) = (array[1, 2] ||= :rhs)

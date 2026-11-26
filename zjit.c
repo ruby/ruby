@@ -412,11 +412,17 @@ rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
 
 rb_cref_t *rb_vm_get_cref(const VALUE *ep);
 
-// Return the lexical scope (cref) of an ISEQ frame
+// Return the lexical scope (cref) of an ISEQ frame, or NULL if a scope in it is pushed by eval
 const rb_cref_t *
 rb_zjit_frame_cref(const rb_control_frame_t *cfp)
 {
-    return rb_vm_get_cref(cfp->ep);
+    const rb_cref_t *cref = rb_vm_get_cref(cfp->ep);
+    for (const rb_cref_t *c = cref; c; c = CREF_NEXT(c)) {
+        // rb_zjit_cref_may_search_class_p() can't use such a cref, and its class is the receiver's
+        // singleton class for instance_eval, so pinning it would keep the receiver alive.
+        if (CREF_PUSHED_BY_EVAL(c)) return NULL;
+    }
+    return cref;
 }
 
 // Return true if a constant lookup in the lexical scope `cref` may search `klass`. It checks the
