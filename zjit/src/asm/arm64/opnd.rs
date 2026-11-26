@@ -126,6 +126,7 @@ pub const X30_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 30 };
 
 // zero register
 pub const XZR_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 31 };
+pub const WZR_REG: A64Reg = A64Reg { num_bits: 32, reg_no: 31 };
 
 // 64-bit registers
 pub const X0: A64Opnd = A64Opnd::Reg(X0_REG);
