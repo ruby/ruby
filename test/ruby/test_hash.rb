@@ -2514,4 +2514,30 @@ class TestHashOnly < Test::Unit::TestCase
       assert_equal(:w, h[key])
     end
   end
+
+  def test_lookup_eql_replaces_table
+    h = nil
+    replace = nil
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |_|
+        if replace
+          r, replace = replace, nil
+          r.call
+        end
+        false
+      end
+    end
+    [-> { h.rehash }, -> { h.compare_by_identity }].each do |r|
+      (0..40).each do |n|
+        h = Hash.new(capacity: 16)
+        n.times { |i| h[i] = i }
+        h[key_class.new] = 0
+        h[key_class.new] = 0
+        replace = r
+        assert_nil(h[key_class.new])
+        assert_equal(n + 2, h.size)
+      end
+    end
+  end
 end
