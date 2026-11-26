@@ -4276,20 +4276,22 @@ rb_str_concat(VALUE str1, VALUE str2)
         rb_len_t pos = RSTRING_LEN(str1);
         int cr = ENC_CODERANGE(str1);
         int len;
-        char *buf;
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
 
         switch (len = rb_enc_codelen(code, enc)) {
-          case ONIGERR_INVALID_CODE_POINT_VALUE:
-            rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
-            break;
           case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
           case 0:
             rb_raise(rb_eRangeError, "%u out of char range", code);
             break;
+          default:
+            if (len < 0) {
+                rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
+            }
+            break;
         }
-        buf = ALLOCA_N(char, len + 1);
+        RUBY_ASSERT(len <= ONIGENC_CODE_TO_MBC_MAXLEN);
         rb_enc_mbcput(code, buf, enc);
-        if (rb_enc_precise_mbclen(buf, buf + len + 1, enc) != len) {
+        if (rb_enc_precise_mbclen(buf, buf + len, enc) != len) {
             rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
         }
         rb_str_resize(str1, pos+len);
