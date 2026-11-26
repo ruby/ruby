@@ -271,10 +271,44 @@ rb_get_mct_func(const rb_method_cfunc_t *mct)
     return (void*)(uintptr_t)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
 }
 
+// Complete a lazily loaded ISeq (see rb_iseq_check()) from JIT compilation.
+// The JITs hold object references in Rust data structures while compiling,
+// so keep GC from running while the body is loaded.
+const rb_iseq_t *
+rb_jit_iseq_check(const rb_iseq_t *iseq)
+{
+    if (RB_UNLIKELY(ISEQ_BODY(iseq) == NULL)) {
+        VALUE gc_disabled = rb_gc_disable_no_rest();
+        rb_iseq_check(iseq);
+        if (!RTEST(gc_disabled)) rb_gc_enable();
+    }
+    return iseq;
+}
+
+// Complete the ISeq operands (literal blocks, class bodies, ...) of a loaded
+// ISeq, so that JIT analysis can read their bodies.
+void
+rb_jit_iseq_check_children(const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    const VALUE *code = body->iseq_encoded;
+
+    for (unsigned int pc = 0; pc < body->iseq_size;) {
+        int insn = rb_vm_insn_addr2opcode((const void *)code[pc]);
+        const char *types = insn_op_types(insn);
+        for (int j = 0; types[j]; j++) {
+            if (types[j] == TS_ISEQ && code[pc + j + 1]) {
+                rb_jit_iseq_check((const rb_iseq_t *)code[pc + j + 1]);
+            }
+        }
+        pc += insn_len(insn);
+    }
+}
+
 const rb_iseq_t *
 rb_get_def_iseq_ptr(rb_method_definition_t *def)
 {
-    return def_iseq_ptr(def);
+    return rb_jit_iseq_check(def->body.iseq.iseqptr);
 }
 
 const rb_iseq_t *
@@ -678,7 +712,8 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
         void *ptr = rb_asan_poisoned_object_p(v);
         rb_asan_unpoison_object(v, false);
 
-        if (rb_obj_is_iseq(v)) {
+        // Skip not-yet-loaded ISeqs: they have no body and no JIT state
+        if (rb_obj_is_iseq(v) && ISEQ_BODY((rb_iseq_t *)v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;
             callback_data->callback(iseq, callback_data->data);
         }

@@ -9810,7 +9810,7 @@ fn gen_invokeblock_specialized(
         }
 
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
-        let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
+        let comptime_iseq = unsafe { rb_jit_iseq_check(*comptime_captured.code.iseq.as_ref()) };
 
         asm_comment!(asm, "guard known ISEQ");
         let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
@@ -9954,7 +9954,7 @@ fn gen_send_block_param_proxy(
     );
 
     let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
-    let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
+    let comptime_iseq = unsafe { rb_jit_iseq_check(*comptime_captured.code.iseq.as_ref()) };
 
     asm_comment!(asm, "guard known ISEQ");
     let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));

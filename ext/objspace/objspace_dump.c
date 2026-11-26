@@ -468,8 +468,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 #if USE_YJIT || USE_ZJIT
             {
                 unsigned int jit_call_threshold = rb_jit_call_threshold();
-                if (jit_call_threshold > 0) {
-                    const struct rb_iseq_constant_body *body = ISEQ_BODY((const rb_iseq_t *)obj);
+                const struct rb_iseq_constant_body *body = ISEQ_BODY((const rb_iseq_t *)obj);
+                if (jit_call_threshold > 0 && body) { /* body is NULL until a lazily loaded ISeq is used */
                     dump_append(dc, ", \"jit_calls\":");
                     dump_append_lu(dc, body->jit_entry_calls);
                     if (body->jit_entry_calls >= jit_call_threshold) {

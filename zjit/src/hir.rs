@@ -3277,6 +3277,8 @@ fn can_direct_invoke_block(flags: u32) -> bool {
 /// non-local return). Anything else falls back to the generic `invokeblock` dispatch,
 /// with the returned reason attached to the fallback instruction.
 fn can_direct_invoke_block_iseq(iseq: IseqPtr, argc: usize) -> Result<(), SendFallbackReason> {
+    // Materialize a lazily loaded block before reading its body
+    unsafe { rb_jit_iseq_check(iseq) };
     if !unsafe { rb_simple_iseq_p(iseq) } {
         return Err(InvokeBlockNotSpecialized);
     }
@@ -9611,6 +9613,9 @@ fn add_iseq_to_hir(
     iseq: *const rb_iseq_t,
     mode: AddIseqMode,
 ) -> Result<AddIseqResult, ParseError> {
+    // Literal blocks are analyzed (e.g. for the locals they access) before
+    // they run, so materialize any that are lazily loaded.
+    unsafe { rb_jit_iseq_check_children(iseq) };
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new();
 

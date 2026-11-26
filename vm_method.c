@@ -1107,12 +1107,16 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                 /* setup iseq first (before invoking GC) */
                 RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, iseq);
 
-                // Methods defined in `with_jit` should be considered METHOD_ENTRY_BASIC
-                if (rb_iseq_attr_p(iseq, BUILTIN_ATTR_C_TRACE)) {
-                    METHOD_ENTRY_BASIC_SET((rb_method_entry_t *)me, TRUE);
-                }
+                /* A lazily loaded ISeq is left unloaded until it is called;
+                 * it is never builtin, so it has no attrs or overload. */
+                if (ISEQ_BODY(iseq)) {
+                    // Methods defined in `with_jit` should be considered METHOD_ENTRY_BASIC
+                    if (rb_iseq_attr_p(iseq, BUILTIN_ATTR_C_TRACE)) {
+                        METHOD_ENTRY_BASIC_SET((rb_method_entry_t *)me, TRUE);
+                    }
 
-                if (ISEQ_BODY(iseq)->mandatory_only_iseq) def->iseq_overload = 1;
+                    if (ISEQ_BODY(iseq)->mandatory_only_iseq) def->iseq_overload = 1;
+                }
 
                 if (0) vm_cref_dump("rb_method_definition_create", cref);
 
@@ -2974,7 +2978,9 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
 
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-        return rb_hash_uint(hash, (st_index_t)def->body.iseq.iseqptr->body);
+        /* The body pointer is stable across compaction, but a lazily
+         * loaded ISeq gets it only on completion. */
+        return rb_hash_uint(hash, (st_index_t)ISEQ_BODY(rb_iseq_check(def->body.iseq.iseqptr)));
       case VM_METHOD_TYPE_CFUNC:
         hash = rb_hash_uint(hash, (st_index_t)def->body.cfunc.func);
         return rb_hash_uint(hash, def->body.cfunc.argc);
@@ -3385,6 +3391,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
         if (module == defined_class || origin_class == defined_class) {
             switch (me->def->type) {
               case VM_METHOD_TYPE_ISEQ:
+                rb_iseq_check(me->def->body.iseq.iseqptr);
                 if (ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_rest &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_post &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kw &&
