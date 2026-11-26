@@ -14348,34 +14348,12 @@ pm_call_node_command_p(const pm_call_node_t *node) {
 }
 
 /**
- * Returns true if the given call node is a constant-path command with a brace
- * block and no parentheses, e.g. `Foo::Bar { }`. In parse.y this is the
- * dedicated command production `primary_value tCOLON2 tCONSTANT '{' brace_body
- * '}'`, which is a command call (not a primary) -- so it cannot be used as an
- * argument operand and cannot be chained. Note that the call operator must be
- * `::` and the message must be a constant: `Foo::bar { }` (lowercase) and
- * `Foo.Bar { }` (`.` operator) are method calls and remain primaries.
- */
-static bool
-pm_constant_path_command_call_p(const pm_parser_t *parser, const pm_call_node_t *call) {
-    return (
-        call->receiver != NULL &&
-        call->opening_loc.length == 0 &&
-        call->block != NULL && PM_NODE_TYPE_P(call->block, PM_BLOCK_NODE) &&
-        call->call_operator_loc.length > 0 &&
-        parser->start[call->call_operator_loc.start] == ':' &&
-        call->message_loc.length > 0 &&
-        pm_encoding_isupper_char(parser->encoding, parser->start + call->message_loc.start, (ptrdiff_t) call->message_loc.length, parser->version)
-    );
-}
-
-/**
  * Returns true if the given node is a command-style call (a method call without
  * parentheses that has arguments), excluding operator calls (e.g., a + b) which
  * satisfy the same structural criteria but are not commands.
  */
 static bool
-pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
+pm_command_call_value_p(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         /* A jump with call_args can be the command body of an endless def. */
         case PM_RETURN_NODE:
@@ -14393,15 +14371,10 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
                 return true;
             }
 
-            /* A constant-path command with a brace block, e.g. `Foo::Bar { }`. */
-            if (pm_constant_path_command_call_p(parser, call)) {
-                return true;
-            }
-
             /* A `!` or `not` prefix wrapping a command call (e.g., `!foo bar`,
              * `not foo bar`) is also a command-call value. */
             if (call->receiver != NULL && call->arguments == NULL && call->opening_loc.length == 0 && call->call_operator_loc.length == 0) {
-                return pm_command_call_value_p(parser, call->receiver);
+                return pm_command_call_value_p(call->receiver);
             }
 
             return false;
@@ -14420,7 +14393,7 @@ pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
             return cast->lparen_loc.length == 0 && cast->arguments != NULL;
         }
         case PM_RESCUE_MODIFIER_NODE:
-            return pm_command_call_value_p(parser, ((const pm_rescue_modifier_node_t *) node)->expression);
+            return pm_command_call_value_p(((const pm_rescue_modifier_node_t *) node)->expression);
         default:
             return false;
     }
@@ -15788,7 +15761,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                      * command calls never reach here as a key because they
                      * absorb the `=>` into their own arguments first.
                      */
-                    if (pm_command_before_comma_p(argument_kind) || pm_command_call_value_p(parser, argument)) {
+                    if (pm_command_before_comma_p(argument_kind) || pm_command_call_value_p(argument)) {
                         pm_parser_err_token_type(parser, &parser->previous, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, parser->previous.type);
                     }
 
@@ -21522,7 +21495,7 @@ static pm_reduction_t
 parse_assignment_rescue(pm_parser_t *parser, pm_reduction_t rhs, bool multiple_assignment, uint8_t flags, uint16_t depth) {
     enum pm_reduction_kind rhs_kind = PM_REDUCTION_KIND(rhs);
     bool command_rhs = rhs_kind == PM_REDUCTION_COMMAND || pm_command_before_comma_p(rhs_kind);
-    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (command_rhs || pm_command_call_value_p(parser, rhs.node))) {
+    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (command_rhs || pm_command_call_value_p(rhs.node))) {
         parse_unexpected_statement_operator(parser, flags, depth);
     }
 
@@ -22657,7 +22630,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_reduction_t *reduction) {
                 return left > PM_BINDING_POWER_MODIFIER;
             }
 
-            if (left > PM_BINDING_POWER_COMPOSITION && pm_command_call_value_p(parser, node)) {
+            if (left > PM_BINDING_POWER_COMPOSITION && pm_command_call_value_p(node)) {
                 /* Preserve the command_call reduction for a surrounding `!`. */
                 reduction->kind = PM_REDUCTION_COMMAND;
                 return true;

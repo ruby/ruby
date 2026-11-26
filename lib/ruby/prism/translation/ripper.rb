@@ -1505,7 +1505,7 @@ module Ruby::Prism
 
       private def constant_brace_command?(node)
         node.block.is_a?(BlockNode) && node.opening_loc.nil? && node.call_operator == "::" &&
-          node.block.opening == "{" && node.message&.match?(/\A[[:upper:]]/)
+          node.block.opening == "{" && StringQuery.constant?(node.name.to_s)
       end
 
       # Returns true if the given node is a command node.
