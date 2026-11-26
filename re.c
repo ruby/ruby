@@ -791,6 +791,19 @@ reg_warn_discard(void)
 #endif
 }
 
+#if USE_RUST_REGEXP
+/* Called by the Rust engine right before it raises in the compile hook,
+ * which skips the reg_onig_end() of the caller. */
+void
+rb_reg_rust_leave(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) reg_onig_depth--;
+#endif
+    reg_warn_kept();
+}
+#endif
+
 static VALUE
 reg_warn_kept_i(VALUE _)
 {

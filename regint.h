@@ -1044,6 +1044,7 @@ int rb_reg_rust_name_to_group_numbers(regex_t *reg, const UChar *name, const UCh
 int rb_regexp_rust_set_parse_depth_limit(unsigned int depth);
 int rb_reg_rust_check_ints(void);
 OnigPosition rb_reg_rust_interrupted(int state);
+void rb_reg_rust_leave(void);
 # else
 #  define RB_REG_RUST_P(reg) 0
 # endif

@@ -67,17 +67,12 @@ rust_panicked(void)
 #endif
 }
 
-/* Emits warnings collected while compiling, the way onig_syntax_warn does. */
+/* Passes warnings collected while compiling to rb_reg_warn, as onig_syntax_warn does. */
 static void
 emit_warnings(unsigned char *warnings, size_t len, const char *sourcefile, int sourceline)
 {
     for (size_t i = 0; i < len; i += strlen((char *)warnings + i) + 1) {
-        if (sourcefile) {
-            rb_compile_warn(sourcefile, sourceline, "%s", (char *)warnings + i);
-        }
-        else {
-            rb_warn("%s", (char *)warnings + i);
-        }
+        rb_reg_warn(sourcefile, sourceline, (char *)warnings + i);
     }
 }
 
@@ -144,8 +139,11 @@ rb_reg_rust_compile_hook(regex_t *reg, const UChar *pattern, const UChar *patter
         emit_warnings((unsigned char *)RSTRING_PTR(buf), wl, sourcefile, sourceline);
         RB_GC_GUARD(buf);
     }
-    if (r == RB_REGEXP_PANICKED) rust_panicked();
-    if (r == RB_REGEXP_STACK_OVERFLOW) rb_raise(rb_eSysStackError, "stack level too deep");
+    if (r == RB_REGEXP_PANICKED || r == RB_REGEXP_STACK_OVERFLOW) {
+        rb_reg_rust_leave();
+        if (r == RB_REGEXP_PANICKED) rust_panicked();
+        rb_raise(rb_eSysStackError, "stack level too deep");
+    }
 
     *result = r;
     return 1;
