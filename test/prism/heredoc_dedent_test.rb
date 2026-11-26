@@ -109,6 +109,25 @@ module Ruby::Prism
       )
     end
 
+    def test_only_blank_lines
+      %w[EOF 'EOF' "EOF" `EOF`].each do |delimiter|
+        single = Ruby::Prism.parse_statement("<<~#{delimiter}\n \t\nEOF\n")
+        assert_equal "\n", single.unescaped, delimiter
+
+        multiple = Ruby::Prism.parse_statement("<<~#{delimiter}\r\n \r\n\t\t\r\nEOF\r\n")
+        assert_equal ["\n", "\n"], multiple.parts.map(&:unescaped), delimiter
+      end
+    end
+
+    def test_control_characters_set_the_common_indent
+      ["\r", "\f", "\v"].each do |char|
+        assert_equal "#{char}z\n", Ruby::Prism.parse_statement("<<~EOF\n#{char}z\nEOF\n").unescaped
+
+        node = Ruby::Prism.parse_statement("<<~EOF\n  \n #{char}\r\n\t\nEOF\n")
+        assert_equal [" \n", "#{char}\n", "\t\n"], node.parts.map(&:unescaped), char.inspect
+      end
+    end
+
     def test_many_blank_lines
       assert_heredoc_dedent(
         "a\n" "\n" "\n" "\n" "\n" "b\n",
