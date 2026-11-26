@@ -171,6 +171,8 @@ ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 /* set on every iseq of a subtree copied for Proc#refined */
 #define ISEQ_REFINED_COPY     IMEMO_FL_USER4
+/* set once rb_iseq_pack_body() has moved the read-only arrays into one block */
+#define ISEQ_PACKED           IMEMO_FL_USER5
 
 #define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
@@ -298,6 +300,22 @@ int rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos);
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
+void rb_iseq_alloc_inline_storage(struct rb_iseq_constant_body *body);
+void rb_iseq_pack_body(rb_iseq_t *iseq);
+
+/* What rb_iseq_alloc_packed() needs beyond the sizes already in the body
+ * (iseq_size, insns_info.size, local_table_size, param.opt_num). */
+struct rb_iseq_pack_sizes {
+    bool own_local_table;         /* false for none or rb_iseq_shared_exc_local_tbl */
+    bool mark_bits;               /* mark_bits.list is needed (more than one word) */
+    bool keyword;
+    int keyword_default_num;
+    unsigned int catch_table_size;
+    unsigned int ic_segments_len; /* IDs in all IC segment lists, terminators included */
+    unsigned int node_ids_size;
+};
+ID *rb_iseq_alloc_packed(rb_iseq_t *iseq, const struct rb_iseq_pack_sizes *sizes);
+void rb_iseq_insns_info_encode_positions_packed(const rb_iseq_t *iseq, const unsigned int *positions);
 
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);

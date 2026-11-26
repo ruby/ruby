@@ -59,7 +59,12 @@ static const rb_iseq_t *iseqw_check(VALUE iseqw);
 static struct succ_index_table *succ_index_table_create(int max_pos, int *data, int size);
 static unsigned int *succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size);
 static int succ_index_lookup(const struct succ_index_table *sd, int x);
+static size_t succ_index_table_bytes(int max_pos);
+static void succ_index_table_fill(struct succ_index_table *sd, int max_pos, const int *data, int size);
 #endif
+static size_t iseq_packed_bytes(const struct rb_iseq_constant_body *body);
+static size_t iseq_inline_storage_bytes(const struct rb_iseq_constant_body *body);
+static void iseq_free_inline_storage(struct rb_iseq_constant_body *body);
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
@@ -162,7 +167,7 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
             remove_from_constant_cache(id, ic);
         }
 
-        SIZED_FREE_N(segments, i + 1);
+        if (!FL_TEST_RAW((VALUE)iseq, ISEQ_PACKED)) SIZED_FREE_N(segments, i + 1);
     }
 }
 
@@ -202,41 +207,51 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #if USE_ZJIT
         if (rb_zjit_enabled_p) rb_zjit_iseq_free(iseq);
 #endif
-        SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
-        SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
+        if (FL_TEST_RAW((VALUE)iseq, ISEQ_PACKED)) {
+            if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
+                ruby_xfree(body->iseq_encoded); /* load failed part way: iseq_packed_bytes() can't be trusted */
+            }
+            else {
+                ruby_xfree_sized(body->iseq_encoded, iseq_packed_bytes(body));
+            }
+        }
+        else {
+            SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
+            SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
 #ifdef USE_ISEQ_NODE_ID
-        SIZED_FREE_N(body->insns_info.node_ids, body->insns_info.node_ids_size);
+            SIZED_FREE_N(body->insns_info.node_ids, body->insns_info.node_ids_size);
 #endif
 #if VM_INSN_INFO_TABLE_IMPL == 2
-        ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
+            ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
 #else
-        SIZED_FREE_N(body->insns_info.positions_or_succ_index_table.positions, body->insns_info.size);
+            SIZED_FREE_N(body->insns_info.positions_or_succ_index_table.positions, body->insns_info.size);
 #endif
-        SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
-        SIZED_FREE_N(body->call_data, body->ci_size);
-        if (body->catch_table) {
-            ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+            if (body->catch_table) {
+                ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+            }
+            SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
+            if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
+                SIZED_FREE_N(body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size));
+            }
+
+            struct rb_iseq_param_keyword *pkw = (struct rb_iseq_param_keyword *)body->param.keyword;
+            if (pkw != NULL) {
+                if (pkw->table != &body->local_table[pkw->bits_start - pkw->num])
+                    SIZED_FREE_N(pkw->table, pkw->required_num);
+                if (pkw->default_values) {
+                    SIZED_FREE_N(pkw->default_values, pkw->num - pkw->required_num);
+                }
+                SIZED_FREE(pkw);
+            }
+            if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl)) {
+                SIZED_FREE_N(body->local_table, body->local_table_size);
+            }
         }
-        SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
-        if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
-            SIZED_FREE_N(body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size));
-        }
+        iseq_free_inline_storage(body);
 
         ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
         if (body->variable) xfree(body->variable);
 
-        struct rb_iseq_param_keyword *pkw = (struct rb_iseq_param_keyword *)body->param.keyword;
-        if (pkw != NULL) {
-            if (pkw->table != &body->local_table[pkw->bits_start - pkw->num])
-                SIZED_FREE_N(pkw->table, pkw->required_num);
-            if (pkw->default_values) {
-                SIZED_FREE_N(pkw->default_values, pkw->num - pkw->required_num);
-            }
-            SIZED_FREE(pkw);
-        }
-        if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl)) {
-            SIZED_FREE_N(body->local_table, body->local_table_size);
-        }
         if (!ISEQ_LVAR_STATES_EMBED_P(body->local_table_size)) {
             SIZED_FREE_N(body->lvar_states.list, ISEQ_LVAR_STATES_BUFLEN(body->local_table_size));
         }
@@ -595,42 +610,44 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
     if (ISEQ_EXECUTABLE_P(iseq) && body) {
         size += sizeof(struct rb_iseq_constant_body);
         if (body->variable) size += sizeof(struct rb_iseq_variable);
-        size += body->iseq_size * sizeof(VALUE);
-        size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
+        if (FL_TEST_RAW((VALUE)iseq, ISEQ_PACKED)) {
+            size += iseq_packed_bytes(body);
+        }
+        else {
+            size += body->iseq_size * sizeof(VALUE);
+            size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
 #ifdef USE_ISEQ_NODE_ID
-        size += body->insns_info.node_ids_size;
+            size += body->insns_info.node_ids_size;
 #endif
-        size += body->local_table_size * sizeof(ID); // body->local_table
+            size += body->local_table_size * sizeof(ID); // body->local_table
+            size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
+            if (body->catch_table) {
+                size += iseq_catch_table_bytes(body->catch_table->size);
+            }
+            size += (body->param.opt_num + 1) * sizeof(VALUE);
+            size += param_keyword_size(body->param.keyword);
+
+            if (ISEQ_BODY(iseq)->is_entries) {
+                /* IC entries constant segments */
+                for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
+                    IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
+                    const ID *ids = ic->segments;
+                    if (!ids) continue;
+                    while (*ids++) {
+                        size += sizeof(ID);
+                    }
+                    size += sizeof(ID); // null terminator
+                }
+            }
+        }
         if (!ISEQ_LVAR_STATES_EMBED_P(body->local_table_size) && body->lvar_states.list) {
             size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
         }
-        size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
-        if (body->catch_table) {
-            size += iseq_catch_table_bytes(body->catch_table->size);
-        }
-        size += (body->param.opt_num + 1) * sizeof(VALUE);
-        size += param_keyword_size(body->param.keyword);
 
         if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
 
-        /* body->is_entries */
-        size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
-
-        if (ISEQ_BODY(iseq)->is_entries) {
-            /* IC entries constant segments */
-            for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
-                IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-                const ID *ids = ic->segments;
-                if (!ids) continue;
-                while (*ids++) {
-                    size += sizeof(ID);
-                }
-                size += sizeof(ID); // null terminator
-            }
-        }
-
-        /* body->call_data */
-        size += body->ci_size * sizeof(struct rb_call_data);
+        /* body->is_entries and body->call_data */
+        size += iseq_inline_storage_bytes(body);
         // TODO: should we count imemo_callinfo?
     }
 
@@ -868,6 +885,298 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
     SIZED_FREE_N(positions, size);
     body->insns_info.positions_or_succ_index_table.succ_index_table = sd;
 #endif
+}
+
+/* For rb_iseq_alloc_packed() ISeqs: fills the table already in the block; positions stay the caller's. */
+void
+rb_iseq_insns_info_encode_positions_packed(const rb_iseq_t *iseq, const unsigned int *positions)
+{
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    succ_index_table_fill(body->insns_info.positions_or_succ_index_table.succ_index_table,
+                          body->iseq_size, (const int *)positions, body->insns_info.size);
+#else
+    MEMCPY(body->insns_info.positions_or_succ_index_table.positions, positions, unsigned int, body->insns_info.size);
+#endif
+}
+
+/*
+ * An ISeq's arrays are allocated one by one while it is compiled or loaded,
+ * which costs ~8 malloc chunks per ISeq. Once the ISeq is complete, they are
+ * regrouped into two blocks, split by how they are used at run time so that
+ * forked processes keep sharing the pages of the first one:
+ *
+ * - the inline storage block (is_entries followed by call_data), written by
+ *   the inline caches. rb_iseq_alloc_inline_storage() allocates it as one
+ *   block from the start, so that the IC/IVC/ISE/ICVARC and call data
+ *   pointers embedded as operands in iseq_encoded never have to be moved.
+ *
+ * - the "read-only" block made by rb_iseq_pack_body(): everything that is
+ *   no longer written once compilation finishes, other than for GC reference
+ *   updating and instruction rewrites for tracing/JIT profiling. Nothing
+ *   outside of the ISeq body points into these arrays at that point, so they
+ *   can be moved with only keyword->table and ic->segments to fix up.
+ *
+ * lvar_states.list stays separate: eval writes it after compilation and it
+ * is only allocated for ISeqs with more than 32 locals. outer_variables,
+ * the rb_iseq_variable struct and the original iseq copy also stay separate
+ * as they are allocated or resized lazily.
+ */
+
+#define ISEQ_PACK_ALIGN(n) (((n) + sizeof(VALUE) - 1) & ~(sizeof(VALUE) - 1))
+
+static size_t
+iseq_inline_storage_bytes(const struct rb_iseq_constant_body *body)
+{
+    return ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry) +
+        body->ci_size * sizeof(struct rb_call_data);
+}
+
+void
+rb_iseq_alloc_inline_storage(struct rb_iseq_constant_body *body)
+{
+    const size_t is_bytes = ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
+    const size_t bytes = iseq_inline_storage_bytes(body);
+    char *buf = bytes ? ZALLOC_N(char, bytes) : NULL;
+
+    body->is_entries = ISEQ_IS_SIZE(body) ? (union iseq_inline_storage_entry *)buf : NULL;
+    body->call_data = body->ci_size ? (struct rb_call_data *)(buf + is_bytes) : NULL;
+}
+
+static void
+iseq_free_inline_storage(struct rb_iseq_constant_body *body)
+{
+    /* is_entries may be missing after a compile error. */
+    void *buf = body->is_entries ? (void *)body->is_entries : (void *)body->call_data;
+    if (buf) ruby_xfree_sized(buf, iseq_inline_storage_bytes(body));
+}
+
+struct iseq_pack_cursor {
+    char *dst;     /* NULL when only measuring */
+    size_t size;
+};
+
+/* Account for one piece and, when copying, move it and free the original.
+ * Returns the new location, or NULL for an empty piece. */
+static void *
+iseq_pack_piece(struct iseq_pack_cursor *c, const void *src, size_t bytes)
+{
+    void *p = NULL;
+    if (!src) return NULL;
+    if (bytes) {
+        if (c->dst) {
+            p = c->dst + c->size;
+            memcpy(p, src, bytes);
+        }
+        c->size += ISEQ_PACK_ALIGN(bytes);
+    }
+    if (c->dst) ruby_xfree_sized((void *)src, bytes);
+    return p;
+}
+
+static bool
+iseq_has_own_local_table_p(const struct rb_iseq_constant_body *body)
+{
+    return body->local_table && body->local_table != rb_iseq_shared_exc_local_tbl;
+}
+
+/* Walk the pieces of the read-only block in layout order. With c->dst
+ * set, move them into c->dst and update the body; otherwise only sum up
+ * their sizes, which must give the same result before and after packing. */
+static void
+iseq_pack_walk(struct rb_iseq_constant_body *body, struct iseq_pack_cursor *c)
+{
+    const bool copy = c->dst != NULL;
+    void *p;
+
+    p = iseq_pack_piece(c, body->iseq_encoded, body->iseq_size * sizeof(VALUE));
+    if (copy) body->iseq_encoded = p;
+
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    p = iseq_pack_piece(c, body->insns_info.positions_or_succ_index_table.succ_index_table,
+                        succ_index_table_bytes(body->iseq_size));
+    if (copy) body->insns_info.positions_or_succ_index_table.succ_index_table = p;
+#else
+    p = iseq_pack_piece(c, body->insns_info.positions_or_succ_index_table.positions,
+                        body->insns_info.size * sizeof(unsigned int));
+    if (copy) body->insns_info.positions_or_succ_index_table.positions = p;
+#endif
+
+    const ID *old_local_table = body->local_table;
+    if (iseq_has_own_local_table_p(body)) {
+        p = iseq_pack_piece(c, body->local_table, body->local_table_size * sizeof(ID));
+        if (copy) body->local_table = p;
+    }
+
+    if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1) {
+        p = iseq_pack_piece(c, body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE);
+        if (copy) body->mark_bits.list = p;
+    }
+
+    if (body->param.opt_table) {
+        p = iseq_pack_piece(c, body->param.opt_table, (body->param.opt_num + 1) * sizeof(VALUE));
+        if (copy) body->param.opt_table = p;
+    }
+
+    if (body->param.keyword) {
+        struct rb_iseq_param_keyword *kw =
+            iseq_pack_piece(c, body->param.keyword, sizeof(struct rb_iseq_param_keyword));
+        if (copy) {
+            body->param.keyword = kw;
+            /* table points into local_table (checked by rb_iseq_pack_body) */
+            if (kw->table) kw->table = body->local_table + (kw->table - old_local_table);
+        }
+        kw = (struct rb_iseq_param_keyword *)body->param.keyword;
+        p = iseq_pack_piece(c, kw->default_values, (kw->num - kw->required_num) * sizeof(VALUE));
+        if (copy) kw->default_values = p;
+    }
+
+    if (body->catch_table) {
+        p = iseq_pack_piece(c, body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+        if (copy) body->catch_table = p;
+    }
+
+    if (body->is_entries) {
+        for (unsigned int i = 0; i < body->ic_size; i++) {
+            IC ic = &ISEQ_IS_IC_ENTRY(body, i);
+            const ID *ids = ic->segments;
+            if (!ids) continue;
+            size_t n = 1;
+            while (ids[n - 1]) n++;
+            p = iseq_pack_piece(c, ids, n * sizeof(ID));
+            if (copy) ic->segments = p;
+        }
+    }
+
+    p = iseq_pack_piece(c, body->insns_info.body, body->insns_info.size * sizeof(struct iseq_insn_info_entry));
+    if (copy) body->insns_info.body = p;
+
+#ifdef USE_ISEQ_NODE_ID
+    p = iseq_pack_piece(c, body->insns_info.node_ids, body->insns_info.node_ids_size);
+    if (copy) body->insns_info.node_ids = p;
+#endif
+}
+
+/* Size of the read-only block of a packed iseq. Its first piece is always
+ * iseq_encoded. */
+static size_t
+iseq_packed_bytes(const struct rb_iseq_constant_body *body)
+{
+    struct iseq_pack_cursor c = { NULL, 0 };
+    iseq_pack_walk((struct rb_iseq_constant_body *)body, &c);
+    return c.size;
+}
+
+void
+rb_iseq_pack_body(rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+
+    if (FL_TEST_RAW((VALUE)iseq, ISEQ_PACKED)) return;
+    if (!body->iseq_encoded || body->iseq_size == 0) return;
+
+    const struct rb_iseq_param_keyword *kw = body->param.keyword;
+    if (kw && kw->table &&
+        !(iseq_has_own_local_table_p(body) &&
+          kw->table >= body->local_table &&
+          kw->table + kw->num <= body->local_table + body->local_table_size)) {
+        return;
+    }
+
+    struct iseq_pack_cursor c = { NULL, 0 };
+    iseq_pack_walk(body, &c);
+
+    /* May trigger GC: the body must stay consistent until the walk below,
+     * which does not allocate. */
+    c.dst = ALLOC_N(char, c.size);
+    c.size = 0;
+    iseq_pack_walk(body, &c);
+
+    struct iseq_compile_data *data = ISEQ_COMPILE_DATA(iseq);
+    if (data) {
+        data->iseq_encoded = body->iseq_encoded;
+        if (!data->is_single_mark_bit && data->mark_bits.list) {
+            data->mark_bits.list = body->mark_bits.list;
+        }
+    }
+
+    FL_SET_RAW((VALUE)iseq, ISEQ_PACKED);
+}
+
+/* Carve out one piece of the packed block, in iseq_pack_walk() order. */
+static void *
+iseq_carve_piece(char *buf, size_t *pos, size_t bytes)
+{
+    if (!bytes) return NULL;
+    void *p = buf + *pos;
+    *pos += ISEQ_PACK_ALIGN(bytes);
+    return p;
+}
+
+/*
+ * Allocate the zeroed read-only block up front and point the body's arrays
+ * into it, for the binary loader to fill in place. Sets catch_table->size,
+ * node_ids_size and keyword->default_values; returns where the IC segment
+ * lists go, back to back in IC order. The ISeq is ISEQ_PACKED from here on.
+ */
+ID *
+rb_iseq_alloc_packed(rb_iseq_t *iseq, const struct rb_iseq_pack_sizes *s)
+{
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    const size_t catch_bytes = s->catch_table_size ? iseq_catch_table_bytes(s->catch_table_size) : 0;
+    const size_t kw_bytes = s->keyword ? sizeof(struct rb_iseq_param_keyword) : 0;
+    const size_t sizes[] = {
+        body->iseq_size * sizeof(VALUE),
+#if VM_INSN_INFO_TABLE_IMPL == 2
+        succ_index_table_bytes(body->iseq_size),
+#else
+        body->insns_info.size * sizeof(unsigned int),
+#endif
+        s->own_local_table ? body->local_table_size * sizeof(ID) : 0,
+        s->mark_bits ? ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE : 0,
+        body->param.opt_num > 0 ? (body->param.opt_num + 1) * sizeof(VALUE) : 0,
+        kw_bytes,
+        s->keyword ? s->keyword_default_num * sizeof(VALUE) : 0,
+        catch_bytes,
+        s->ic_segments_len * sizeof(ID),
+        body->insns_info.size * sizeof(struct iseq_insn_info_entry),
+        s->node_ids_size,
+    };
+    size_t total = 0;
+    for (size_t i = 0; i < numberof(sizes); i++) total += ISEQ_PACK_ALIGN(sizes[i]);
+
+    char *buf = ZALLOC_N(char, total);
+    size_t pos = 0, i = 0;
+
+    body->iseq_encoded = iseq_carve_piece(buf, &pos, sizes[i++]);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    body->insns_info.positions_or_succ_index_table.succ_index_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+#else
+    body->insns_info.positions_or_succ_index_table.positions = iseq_carve_piece(buf, &pos, sizes[i++]);
+#endif
+    ID *local_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (s->own_local_table) body->local_table = local_table;
+    iseq_bits_t *mark_bits = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1) body->mark_bits.list = mark_bits;
+    body->param.opt_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+    struct rb_iseq_param_keyword *kw = iseq_carve_piece(buf, &pos, sizes[i++]);
+    VALUE *default_values = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (kw) kw->default_values = default_values;
+    body->param.keyword = kw;
+    body->catch_table = iseq_carve_piece(buf, &pos, sizes[i++]);
+    if (body->catch_table) body->catch_table->size = s->catch_table_size;
+    ID *segments = iseq_carve_piece(buf, &pos, sizes[i++]);
+    body->insns_info.body = iseq_carve_piece(buf, &pos, sizes[i++]);
+#ifdef USE_ISEQ_NODE_ID
+    body->insns_info.node_ids = iseq_carve_piece(buf, &pos, sizes[i++]);
+    body->insns_info.node_ids_size = s->node_ids_size;
+#else
+    i++;
+#endif
+    RUBY_ASSERT(i == numberof(sizes) && pos == total);
+
+    FL_SET_RAW((VALUE)iseq, ISEQ_PACKED);
+    return segments;
 }
 
 #if VM_INSN_INFO_TABLE_IMPL == 2
@@ -4585,15 +4894,20 @@ struct succ_index_table {
 #define small_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (9 * ((i) - 1))
 #define small_block_rank_get(v, i) ((i) == 0 ? 0 : (((int)((v) >> (((i) - 1) * 9))) & 0x1ff))
 
-static struct succ_index_table *
-succ_index_table_create(int max_pos, int *data, int size)
+static size_t
+succ_index_table_bytes(int max_pos)
 {
     const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
     const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
-    struct succ_index_table *sd =
-        rb_xcalloc_mul_add_mul(
-            imm_size, sizeof(uint64_t),
-            succ_size, sizeof(struct succ_dict_block));
+    return imm_size * sizeof(uint64_t) + succ_size * sizeof(struct succ_dict_block);
+}
+
+/* sd must be zeroed and succ_index_table_bytes(max_pos) long. */
+static void
+succ_index_table_fill(struct succ_index_table *sd, int max_pos, const int *data, int size)
+{
+    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
+    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
     int i, j, k, r;
 
     r = 0;
@@ -4620,6 +4934,18 @@ succ_index_table_create(int max_pos, int *data, int size)
             small_rank += rb_popcount64(bits);
         }
     }
+}
+
+static struct succ_index_table *
+succ_index_table_create(int max_pos, int *data, int size)
+{
+    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
+    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
+    struct succ_index_table *sd =
+        rb_xcalloc_mul_add_mul(
+            imm_size, sizeof(uint64_t),
+            succ_size, sizeof(struct succ_dict_block));
+    succ_index_table_fill(sd, max_pos, data, size);
     return sd;
 }
 
