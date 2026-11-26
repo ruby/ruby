@@ -12285,7 +12285,7 @@ parser_lex(pm_parser_t *parser) {
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
-                                    if (!lex_mode->as.string.interpolation) {
+                                    if (!lex_mode->as.string.interpolation && term != '\r') {
                                         pm_buffer_append_byte(&parser->lex_buffer, '\\');
                                     }
                                     pm_buffer_append_byte(&parser->lex_buffer, '\r');
