@@ -1740,6 +1740,13 @@ eom
     assert_valid_syntax('while class Foo a = tap do end; end; break; end')
   end
 
+  def test_lambda_in_cond
+    assert_valid_syntax('while -> do tap do end end; break; end')
+    assert_valid_syntax('until -> do tap do end end do end')
+    assert_valid_syntax('for x in -> do tap do end end do end')
+    assert_valid_syntax('while -> a = -> do tap do end end do end; break; end')
+  end
+
   def test_command_with_cmd_brace_block
     assert_valid_syntax('obj.foo (1) {}')
     assert_valid_syntax('obj::foo (1) {}')
