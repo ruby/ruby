@@ -329,7 +329,7 @@ They are still available on rubygems.org and can be installed with
   * 0.3.1 to [v0.3.2][tmpdir-v0.3.2]
 * uri 1.1.2
   * 1.1.1 to [v1.1.2][uri-v1.1.2]
-* zlib 3.2.4
+* zlib 3.3.0
   * 3.2.2 to [v3.2.3][zlib-v3.2.3], [v3.2.4][zlib-v3.2.4]
 
 ### The following bundled gems are updated.
