@@ -768,5 +768,6 @@ dependencies = [
  "jit",
  "libc",
  "rand",
+ "regexp",
  "yjit",
 ]
