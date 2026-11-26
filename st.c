@@ -200,16 +200,19 @@ entry_equal(const struct st_hash_type *type,
             ((entry_key == key) || (*type->compare)(key, entry_key) == 0);
 }
 
-/* As entry_equal, but also checks whether the table was rebuilt
-   during the comparison (i.e. #eql? mutated it). */
+/* As entry_equal, but also checks whether the table was rebuilt, or
+   an entry was added or deleted, during the comparison (i.e. #eql?
+   mutated it). */
 static inline void
 ptr_equal_check(const st_table *tab, const st_table_entry *entry,
                 st_hash_t hash_val, st_data_t key,
                 int *res, int *rebuilt_p)
 {
     unsigned int old_rebuilds_num = tab->rebuilds_num;
+    st_index_t old_num_entries = tab->num_entries;
     *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
-    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num ||
+        old_num_entries != tab->num_entries;
 }
 
 #define DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
@@ -2511,9 +2514,11 @@ set_ptr_equal_check(const set_table *tab, const set_table_entry *entry,
 {
     unsigned int old_rebuilds_num = tab->rebuilds_num;
     st_index_t old_entries_bound = tab->entries_bound;
+    st_index_t old_num_entries = tab->num_entries;
     *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
     *rebuilt_p = old_rebuilds_num != tab->rebuilds_num ||
-        old_entries_bound != tab->entries_bound;
+        old_entries_bound != tab->entries_bound ||
+        old_num_entries != tab->num_entries;
 }
 
 #define SET_DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \

@@ -2460,4 +2460,58 @@ class TestHashOnly < Test::Unit::TestCase
       assert_equal(keys.drop(1), h.keys)
     end
   end
+
+  def test_delete_eql_deletes_entry
+    h = nil
+    deleting = false
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |other|
+        # ar_table may compare with other keys whose hint collides
+        return false unless other.instance_of?(self.class)
+        if deleting
+          deleting = false
+          h.delete(other)
+        end
+        true
+      end
+    end
+    (0..40).each do |n|
+      h = {}
+      n.times { |i| h[i] = i }
+      h[key_class.new] = :v
+      deleting = true
+      assert_nil(h.delete(key_class.new))
+      assert_equal(n, h.size)
+      assert_equal((0...n).to_a, h.keys)
+    end
+  end
+
+  def test_aset_eql_deletes_entry
+    h = nil
+    deleting = false
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |other|
+        # ar_table may compare with other keys whose hint collides
+        return false unless other.instance_of?(self.class)
+        if deleting
+          deleting = false
+          h.delete(other)
+        end
+        true
+      end
+    end
+    (0..40).each do |n|
+      h = {}
+      n.times { |i| h[i] = i }
+      h[key_class.new] = :v
+      deleting = true
+      key = key_class.new
+      h[key] = :w
+      assert_equal(n + 1, h.size)
+      assert_equal([*0...n, key], h.keys)
+      assert_equal(:w, h[key])
+    end
+  end
 end
