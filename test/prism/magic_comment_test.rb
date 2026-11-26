@@ -148,6 +148,31 @@ module Ruby::Prism
       end
     end
 
+    def test_dangling_escape_in_quoted_magic_comment
+      comment = '#|:"coding:\\'
+      result = Ruby::Prism.parse(comment)
+      assert_empty result.magic_comments
+      assert_equal [:invalid_encoding_magic_comment], result.errors.map(&:type)
+      assert_equal "", result.errors.first.location.slice
+
+      result = Ruby::Prism.parse('#|:"coding:binary\\')
+      assert_predicate result, :success?
+      assert_empty result.magic_comments
+      assert_equal Encoding::BINARY, result.encoding
+
+      ["\\", "\n", "\r\n"].each do |suffix|
+        result = Ruby::Prism.parse(comment + suffix)
+        assert_predicate result, :success?
+        assert_equal ["coding:\\" + suffix], result.magic_comments.map(&:value)
+      end
+    end
+
+    def test_quoted_magic_comment_escape_before_emacs_marker
+      result = Ruby::Prism.parse('# -*- note:"value\-*-')
+      assert_predicate result, :success?
+      assert_equal ['value\-'], result.magic_comments.map(&:value)
+    end
+
     def test_encoding_after_leading_delimiters
       ['"', "'", ";", ":"].each do |delimiter|
         ["coding", "encoding"].each do |key|

@@ -7691,7 +7691,11 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         if (*cursor == '"') {
             value_start = ++cursor;
             for (; cursor < end && *cursor != '"'; cursor++) {
-                if (*cursor == '\\' && (cursor + 1 < end)) cursor++;
+                if (*cursor == '\\') {
+                    /* The escaped byte can be a newline or the first dash of
+                     * a closing -*- marker. At EOF the directive is incomplete. */
+                    if (++cursor == parser->end) return false;
+                }
             }
             value_end = cursor;
             if (cursor < end && *cursor == '"') cursor++;
