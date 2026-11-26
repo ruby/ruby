@@ -1262,7 +1262,9 @@ if defined? Zlib
       n = 0
       io = Object.new
       io.define_singleton_method(:readpartial) do |len, buf = nil|
-        (rs.clear << "-" * 1000) if (n += 1) == 300
+        # allocate the new buffer before the old one is freed, so that the
+        # allocator cannot hand the same address back
+        rs.replace("-" * 1000) if (n += 1) == 300
         src.readpartial([len, 100].min, *buf)
       end
       gz = Zlib::GzipReader.new(io)
