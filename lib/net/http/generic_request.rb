@@ -419,7 +419,7 @@ class Net::HTTPGenericRequest
       timeout = sock.continue_timeout
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout if timeout
       informational_count = 0
-      while sock.io.to_io.wait_readable(timeout)
+      while response_available?(sock, timeout)
         res = Net::HTTPResponse.read_new(sock)
         break if res.kind_of?(Net::HTTPContinue)
         if res.kind_of?(Net::HTTPInformation) && !res.kind_of?(Net::HTTPSwitchProtocol)
@@ -436,6 +436,13 @@ class Net::HTTPGenericRequest
         throw :response, res
       end
     end
+  end
+
+  def response_available?(sock, timeout)
+    return sock.wait_readable(timeout) if sock.respond_to?(:wait_readable)
+    sock.__send__(:rbuf_size) > 0 ||
+      (sock.io.respond_to?(:pending) && sock.io.pending > 0) ||
+      sock.io.to_io.wait_readable(timeout)
   end
 
   def write_header(sock, ver, path)

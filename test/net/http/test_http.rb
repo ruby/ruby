@@ -1166,9 +1166,11 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       end
     end
     http = Net::HTTP.new(config('host'), server.addr[1])
-    http.continue_timeout = 1
+    http.continue_timeout = 10
     http.start {
+      t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_operator(Process.clock_gettime(Process::CLOCK_MONOTONIC) - t, :<, 5)
       assert_equal('201', res.code)
       assert_equal('data!', res.body)
       res = http.get('/second')
@@ -1178,6 +1180,70 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     th&.kill
     th&.join
     server&.close
+  end
+
+  def test_expect_continue_early_hints_with_final_response
+    server = TCPServer.new(config('host'), 0)
+    th = Thread.new do
+      sock = server.accept
+      begin
+        while (reqline = sock.gets)
+          while (line = sock.gets) && line != "\r\n"
+          end
+          if reqline.start_with?('PUT')
+            sock.write "HTTP/1.1 103 Early Hints\r\nLink: </a>\r\n\r\nHTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n"
+          else
+            sock.write "HTTP/1.1 200 OK\r\nContent-Length: #{reqline.bytesize}\r\n\r\n#{reqline}"
+          end
+        end
+      ensure
+        sock.close
+      end
+    end
+    http = Net::HTTP.new(config('host'), server.addr[1])
+    http.continue_timeout = 10
+    http.start {
+      t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_equal('429', res.code)
+      assert_operator(Process.clock_gettime(Process::CLOCK_MONOTONIC) - t, :<, 5)
+    }
+  ensure
+    th&.kill
+    th&.join
+    server&.close
+  end
+
+  def test_expect_continue_pending_ssl_data
+    io = Object.new
+    def io.pending
+      1
+    end
+    def io.to_io
+      raise "must not wait on the socket"
+    end
+    sock = Object.new
+    sock.define_singleton_method(:io) { io }
+    def sock.rbuf_size
+      0
+    end
+    sock.singleton_class.send(:private, :rbuf_size)
+    req = Net::HTTP::Put.new('/')
+    assert_equal(true, req.__send__(:response_available?, sock, 10))
+  end
+
+  def test_expect_continue_buffered_io_wait_readable
+    sock = Object.new
+    def sock.wait_readable(timeout)
+      @timeout = timeout
+      :ready
+    end
+    def sock.io
+      raise "must not look at the socket directly"
+    end
+    req = Net::HTTP::Put.new('/')
+    assert_equal(:ready, req.__send__(:response_available?, sock, 10))
+    assert_equal(10, sock.instance_variable_get(:@timeout))
   end
 
   def test_expect_continue_early_response
