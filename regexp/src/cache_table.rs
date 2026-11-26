@@ -35,7 +35,7 @@ impl Hasher for KeyHasher {
 
     fn write(&mut self, bytes: &[u8]) {
         for &b in bytes {
-            self.write_u64(self.0 << 8 | u64::from(b));
+            self.write_u64((self.0 << 8) | u64::from(b));
         }
     }
 
@@ -63,7 +63,7 @@ impl Default for MatchCacheTable {
 }
 
 fn bits_test(bits: &[u8], i: usize) -> bool {
-    bits[i >> 3] >> (i & 7) & 1 != 0
+    (bits[i >> 3] >> (i & 7)) & 1 != 0
 }
 
 fn bits_set(bits: &mut [u8], i: usize) {

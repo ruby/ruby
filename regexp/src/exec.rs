@@ -233,6 +233,10 @@ enum NoCache {
     TooManyPoints,
 }
 
+/// `LONG_MAX`: `long` is 32 bits on Windows, so the cast is not always a no-op.
+#[allow(clippy::unnecessary_cast)]
+const LONG_MAX: i64 = std::ffi::c_long::MAX as i64;
+
 impl Prog<'_> {
     #[inline]
     fn len_at(&self, p: usize) -> i32 {
@@ -529,7 +533,7 @@ impl Prog<'_> {
                     }
                     let repeat_bounds = if range.upper == 0x7fffffff { 1 } else { i64::from(range.upper - range.lower) };
                     let lower = i64::from(range.lower);
-                    let rest = std::ffi::c_long::MAX as i64 / 2 - cache_point;
+                    let rest = LONG_MAX / 2 - cache_point;
                     if rest < 0
                         || (lower > 0 && num_cache_points_in_repeat > rest / lower)
                         || (repeat_bounds > 0
@@ -2246,20 +2250,23 @@ impl Vm<'_, '_, '_> {
                         self.stk[si].w[1] += 1;
                         let count = self.stk[si].w[1];
                         let range = self.reg.repeat_range[mem as usize];
-                        if count < range.upper as isize {
-                            if count >= range.lower as isize {
+                        match count.cmp(&(range.upper as isize)) {
+                            std::cmp::Ordering::Less if count >= range.lower as isize => {
                                 let pcode = self.stk[si].w[0];
                                 self.push(STK_REPEAT_INC, 0, [si as isize, 0, 0, 0])?;
                                 if op == OP_REPEAT_INC_NG {
                                     cache_check!('op, pbegin);
                                 }
                                 self.push_state(STK_ALT, pcode, s, sprev, pkeep)?;
-                            } else {
+                            }
+                            std::cmp::Ordering::Less => {
                                 p = self.stk[si].w[0] as usize;
                                 self.push(STK_REPEAT_INC, 0, [si as isize, 0, 0, 0])?;
                             }
-                        } else if count == range.upper as isize {
-                            self.push(STK_REPEAT_INC, 0, [si as isize, 0, 0, 0])?;
+                            std::cmp::Ordering::Equal => {
+                                self.push(STK_REPEAT_INC, 0, [si as isize, 0, 0, 0])?;
+                            }
+                            std::cmp::Ordering::Greater => {}
                         }
                         self.check_interrupt()?;
                         Flow::Jump

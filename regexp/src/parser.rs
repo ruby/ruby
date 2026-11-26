@@ -474,7 +474,7 @@ pub fn parse_make_tree(
     }
 }
 
-impl<'a> Parser<'a> {
+impl Parser<'_> {
     // scanning helpers: PEND, PFETCH, PINC, PPEEK ...
 
     #[inline]

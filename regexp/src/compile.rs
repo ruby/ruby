@@ -158,7 +158,7 @@ pub struct Regex {
 impl Regex {
     #[inline]
     pub fn is_char_loop(&self, at: usize) -> bool {
-        self.char_loops.get(at / 64).is_some_and(|w| w >> (at % 64) & 1 != 0)
+        self.char_loops.get(at / 64).is_some_and(|w| (w >> (at % 64)) & 1 != 0)
     }
 }
 
