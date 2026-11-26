@@ -140,7 +140,7 @@ impl X86Opnd {
                     }
 
                     // x86 can only encode 8-bit and 32-bit displacements
-                    if num_bits == 16 { 32 } else { 8 }
+                    if num_bits > 8 { 32 } else { 8 }
                 } else if mem.base_reg_no == RBP_REG_NO || mem.base_reg_no == R13_REG_NO {
                     // If EBP or RBP or R13 is used as the base, displacement must be encoded
                     8
