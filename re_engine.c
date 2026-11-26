@@ -157,33 +157,21 @@ struct rust_check_data {
     int state;
 };
 
-static VALUE
-check_ints_body(VALUE arg)
-{
-    rb_thread_check_ints();
-    return Qnil;
-}
-
 /* CHECK_INTERRUPT_IN_MATCH_AT for the Rust engine: never longjmps. */
 static int
 rust_check(void *data)
 {
     struct rust_check_data *d = data;
     if (rb_reg_timeout_p(d->reg, &d->end_time)) return ONIGERR_TIMEOUT;
-    int state = 0;
-    rb_protect(check_ints_body, Qnil, &state);
-    if (state) {
-        d->state = state;
-        return RB_REGEXP_INTERRUPTED;
-    }
-    return 0;
+    d->state = rb_reg_rust_check_ints();
+    return d->state ? RB_REGEXP_INTERRUPTED : 0;
 }
 
 /* The Rust engine has returned; now it is safe to longjmp. */
 static OnigPosition
 rust_result(OnigPosition r, struct rust_check_data *d)
 {
-    if (r == RB_REGEXP_INTERRUPTED) rb_jump_tag(d->state);
+    if (r == RB_REGEXP_INTERRUPTED) return rb_reg_rust_interrupted(d->state);
     if (r == RB_REGEXP_PANICKED) rust_panicked();
     return r;
 }

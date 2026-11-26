@@ -1042,6 +1042,8 @@ int rb_reg_rust_foreach_name(regex_t *reg, int (*func)(const UChar *, const UCha
                              void *arg);
 int rb_reg_rust_name_to_group_numbers(regex_t *reg, const UChar *name, const UChar *name_end, int **nums);
 int rb_regexp_rust_set_parse_depth_limit(unsigned int depth);
+int rb_reg_rust_check_ints(void);
+OnigPosition rb_reg_rust_interrupted(int state);
 # else
 #  define RB_REG_RUST_P(reg) 0
 # endif

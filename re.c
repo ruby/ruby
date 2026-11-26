@@ -670,6 +670,43 @@ rb_reg_check_ints(void)
     return 0;
 }
 
+#if USE_RUST_REGEXP
+/* rb_reg_check_ints() for the Rust engine (re_engine.c), which must not be
+ * jumped out of even outside rb_reg_onig_match.  Returns the state of an
+ * interrupt that raised, for rb_reg_rust_interrupted(). */
+int
+rb_reg_rust_check_ints(void)
+{
+    int state = 0;
+
+    if (!RUBY_VM_INTERRUPTED_ANY(GET_EC())) return 0;
+#ifdef ONIG_THREAD_LOCAL
+    int depth = reg_onig_depth;
+    reg_onig_depth = 0;
+#endif
+    rb_protect(reg_check_ints_i, Qnil, &state);
+#ifdef ONIG_THREAD_LOCAL
+    reg_onig_depth = depth;
+#endif
+    return state;
+}
+
+/* Raises the interrupt rb_reg_rust_check_ints() caught, once the Rust engine
+ * has returned: through rb_reg_onig_match when the match runs there, which
+ * unlocks the string first. */
+OnigPosition
+rb_reg_rust_interrupted(int state)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) {
+        reg_onig_interrupt_state = state;
+        return ONIGERR_INTERRUPTED;
+    }
+#endif
+    rb_jump_tag(state);
+}
+#endif
+
 NORETURN(static void reg_onig_raise_interrupt(void));
 static void
 reg_onig_raise_interrupt(void)
