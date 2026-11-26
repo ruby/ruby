@@ -128,6 +128,8 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/129") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/33") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/255.255.255.1") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/255.255.255.0/8") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("3ffe:505::1/ffff:ffff::/16") }
     assert_raise(IPAddr::AddressFamilyError) { IPAddr.new(1) }
     assert_raise(IPAddr::AddressFamilyError) { IPAddr.new("::ffff:192.168.1.2/120", Socket::AF_INET) }
     assert_raise(IPAddr::AddressFamilyError) { IPAddr.new("[::]", Socket::AF_INET) }
@@ -569,6 +571,8 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal("192.168.2.0", a.to_s)
     assert_raise(IPAddr::InvalidPrefixError) {a.mask("255.255.0.255")}
     assert_raise(IPAddr::InvalidPrefixError) {@a.mask("ffff:1::")}
+    assert_raise(IPAddr::InvalidAddressError) {a.mask("255.255.255.0/8")}
+    assert_raise(IPAddr::InvalidAddressError) {@a.mask("ffff:ffff::/16")}
   end
 
   def test_include?
