@@ -1718,6 +1718,29 @@ x = __ENCODING__
     assert_equal({ x: {}, y: {}}, b)
   end
 
+  def test_shareable_constant_value_braceless_hash_in_array
+    a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      # [Bug #22646]
+      A = [g: []]
+      # shareable_constant_value: experimental_copy
+      B = [[1, g: []]]
+      [A, B]
+    end;
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+    assert_equal([{g: []}], a)
+    assert_equal([[1, {g: []}]], b)
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      C = [g: 1]
+    end;
+  end
+
   def test_shareable_constant_value_unshareable_literal
     assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
