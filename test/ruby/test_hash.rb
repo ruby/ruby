@@ -2429,4 +2429,35 @@ class TestHashOnly < Test::Unit::TestCase
 
     assert_equal nil, h[lookup_key]
   end
+
+  def test_shift_eql_deletes_first_entry
+    h = target = nil
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |_|
+        if target
+          t, target = target, nil
+          h.delete(t)
+        end
+        false
+      end
+    end
+    (0..40).each do |n|
+      h = {}
+      a, b = key_class.new, key_class.new
+      h[b] = :b
+      h[a] = :a
+      n.times { |i| h[i] = i }
+      # Move b to the end; it takes the first bin of the probe sequence
+      h.delete(b)
+      h[b] = :b
+      keys = h.keys
+      target = a
+      key, = h.shift
+      keys.delete(a) unless target # a was deleted by #eql?
+      target = nil
+      assert_same(keys.first, key)
+      assert_equal(keys.drop(1), h.keys)
+    end
+  end
 end

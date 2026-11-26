@@ -1503,6 +1503,7 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
     st_table_entry *entries, *curr_entry_ptr;
     st_index_t bin_ind;
 
+  restart:
     entries = tab->entries;
     bound = tab->entries_bound;
     for (i = tab->entries_start; i < bound; i++) {
@@ -1520,6 +1521,10 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
                     entries = tab->entries;
                     goto retry;
                 }
+                if (EXPECT(bin == UNDEFINED_ENTRY_IND, 0)) {
+                    /* #eql? called during the lookup deleted the entry */
+                    goto restart;
+                }
                 curr_entry_ptr = &entries[bin];
             }
             else {
@@ -1527,6 +1532,10 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
                 if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0)) {
                     entries = tab->entries;
                     goto retry;
+                }
+                if (EXPECT(bin_ind == UNDEFINED_BIN_IND, 0)) {
+                    /* #eql? called during the lookup deleted the entry */
+                    goto restart;
                 }
                 curr_entry_ptr = &entries[get_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind)
                                           - ENTRY_BASE];
