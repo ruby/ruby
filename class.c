@@ -1972,7 +1972,7 @@ rb_prepend_module(VALUE klass, VALUE module)
         while (iclass) {
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
-            if (!rb_objspace_garbage_object_p(iclass->klass)) {
+            if (!rb_objspace_garbage_object_p(iclass->klass) && !RICLASS_IS_ORIGIN_P(iclass->klass)) {
                 const VALUE subclass = iclass->klass;
                 if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                     // backfill an origin iclass to handle refinements and future prepends
