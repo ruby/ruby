@@ -20449,7 +20449,8 @@ parse_uninterpolated_symbol_array(pm_parser_t *parser) {
     pm_node_list_t parts = { 0 };
 
     while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-        accept1(parser, PM_TOKEN_WORDS_SEP);
+        /* A heredoc body can split the whitespace between words into two tokens. */
+        while (accept1(parser, PM_TOKEN_WORDS_SEP));
         if (match1(parser, PM_TOKEN_STRING_END)) break;
 
         // Interpolation is not possible but nested heredocs can still lead to
@@ -20612,7 +20613,8 @@ parse_uninterpolated_string_array(pm_parser_t *parser) {
     pm_node_list_t parts = { 0 };
 
     while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-        accept1(parser, PM_TOKEN_WORDS_SEP);
+        /* A heredoc body can split the whitespace between words into two tokens. */
+        while (accept1(parser, PM_TOKEN_WORDS_SEP));
         if (match1(parser, PM_TOKEN_STRING_END)) break;
 
         // Interpolation is not possible but nested heredocs can still lead to

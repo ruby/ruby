@@ -4,6 +4,18 @@ require_relative "../test_helper"
 
 module Ruby::Prism
   class HeredocTest < TestCase
+    def test_word_separators_spanning_a_heredoc
+      %w[%w %i].each do |literal|
+        { "\nA\n " => [], "first\nbody\nA\n  second" => %w[first second] }.each do |contents, expected|
+          source = "[<<A, #{literal}[#{contents}]]"
+          result = Ruby::Prism.parse(source)
+
+          assert_empty result.errors, source
+          assert_equal expected, result.statement.elements.last.elements.map(&:unescaped), source
+        end
+      end
+    end
+
     def test_long_heredoc_terminator
       [17, 32, 77].each do |length|
         terminator = "A" * length
