@@ -2854,6 +2854,39 @@ mod tests {
     }
 
     #[test]
+    fn test_cmp_reg8_mem8_with_spilling() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // We allow only one register, and X19_REG.with_num_bits(8) takes it up with the masking.
+        // Regalloc will spill the the right hand side of the cmp.
+        asm.cmp(Opnd::Reg(X19_REG.with_num_bits(8)), Opnd::mem(8, Opnd::Reg(X20_REG), 0));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // XXX This is wrong! notice how it stores 1 byte with sturb,
+        // but then loads back 8 with ldur the next line. The extra bytes are garbage.
+        //
+        // It's not clear which phase is wrong.
+        //
+        // after split:
+        //   VReg64(v0) = And x19, 0xff
+        //   VReg8(v1) = Load Mem8[x20]
+        //   Cmp VReg64(v0), VReg64(v1)
+        //
+        // after alloc_regs:
+        //   i0:   test():
+        //   i2:     x0 = And x19, 0xff
+        //   i4:     Mem8[Stack8[0]] = Load Mem8[x20]
+        //   i6:     Cmp x0, [Stack[0]]
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: and x0, x19, #0xff
+        0x4: ldurb w16, [x20]
+        0x8: sturb w16, [x29, #-8]
+        0xc: ldur x17, [x29, #-8]
+        0x10: cmp x0, x17
+        ");
+    }
+
+    #[test]
     fn test_emit_test_with_encodable_unsigned_immediate() {
         let (mut asm, mut cb) = setup_asm();
 
