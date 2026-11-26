@@ -1247,13 +1247,18 @@ loop:
 		VALUE dict = rb_hash_aref(dicts, rb_uint2inum(z->stream.adler));
 		if (!NIL_P(dict)) {
 		    rb_inflate_set_dictionary(self, dict);
-		    goto loop;
+		    if (z->stream.avail_in > 0) goto loop;
+		    /* the dictionary id was the last byte available; inflate()
+		     * would only report Z_BUF_ERROR now */
+		    err = Z_OK;
 		}
 	    }
 	}
-	z->stream.next_in = Z_NULL;
-	z->stream.avail_in = 0;
-	raise_zlib_error(err, z->stream.msg);
+	if (err != Z_OK) {
+	    z->stream.next_in = Z_NULL;
+	    z->stream.avail_in = 0;
+	    raise_zlib_error(err, z->stream.msg);
+	}
     }
 
     zstream_append_input(z, z->stream.next_in, z->stream.avail_in + args->rest_in);

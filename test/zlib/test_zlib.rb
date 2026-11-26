@@ -395,6 +395,22 @@ if defined? Zlib
       assert_equal "foofoofoo", out
     end
 
+    def test_add_dictionary_byte_at_a_time
+      dict = "hello world"
+      d = Zlib::Deflate.new
+      d.set_dictionary(dict)
+      deflated = d.deflate("hello", Zlib::FINISH)
+      d.close
+      z = Zlib::Inflate.new
+      z.add_dictionary(dict)
+      out = "".dup
+      # feeding the byte that completes the dictionary id used to raise BufError
+      deflated.each_byte { |b| out << z.inflate(b.chr) }
+      out << z.finish
+      assert_equal("hello", out)
+      z.close
+    end
+
     def test_finish_chunked
       # zeros = Zlib::Deflate.deflate("0" * 100_000)
       zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
