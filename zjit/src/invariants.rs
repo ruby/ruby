@@ -6,7 +6,7 @@ use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, Redefin
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
 use crate::cruby::{rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
-use crate::stats::with_time_stat;
+use crate::stats::{Counter, incr_counter, incr_counter_by, with_time_stat};
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
 
@@ -27,7 +27,12 @@ macro_rules! compile_patch_points {
                 let mut version = patch_point.version;
                 let iseq = unsafe { version.as_ref() }.iseq;
                 if !iseq.is_null() {
-                    invalidate_iseq_version($cb, iseq, &mut version);
+                    if invalidate_iseq_version($cb, iseq, &mut version) {
+                        incr_counter!(invalidation_count);
+                        if let Some(counter) = invalidation_counter!($cause) {
+                            incr_counter_by(counter, 1);
+                        }
+                    }
                     // Remember NoSingletonClass busts on the payload
                     if is_no_singleton_class!($cause) {
                         let payload = get_or_create_iseq_payload(iseq);
@@ -42,6 +47,13 @@ macro_rules! compile_patch_points {
 macro_rules! is_no_singleton_class {
     (NoSingletonClass) => { true };
     ($_:ident) => { false };
+}
+
+/// The counter for ISEQ versions invalidated by a specific cause, in addition to invalidation_count
+macro_rules! invalidation_counter {
+    (Const) => { Some(Counter::constant_invalidation_count) };
+    (CME) => { Some(Counter::method_invalidation_count) };
+    ($_:ident) => { None };
 }
 
 /// When a PatchPoint is invalidated, it generates a jump instruction from `from` to `to`.

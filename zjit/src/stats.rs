@@ -165,6 +165,11 @@ make_counters! {
         gc_time_ns,
         invalidation_time_ns,
 
+        // ISEQ versions invalidated by patch points, in total and by cause
+        invalidation_count,
+        method_invalidation_count,
+        constant_invalidation_count,
+
         compiled_side_exit_count,
         side_exit_count,
         side_exit_size_bytes,
