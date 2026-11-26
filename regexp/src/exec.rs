@@ -1267,9 +1267,13 @@ impl Vm<'_, '_, '_> {
         (self.sb[su..su + cap.len()] == *cap).then_some(pos(su + cap.len()))
     }
 
-    /// The head of the last character of `from..to`, or `from` when it is
-    /// empty.
-    fn last_char_head(&self, from: Pos, to: Pos) -> Pos {
+    /// `SPREV_AFTER_BACKREF`: the head of the last character of `from..to`,
+    /// which a back reference has just matched. An empty match keeps `sprev`,
+    /// which still has to be the character before `to` for \b and the like.
+    fn sprev_after_backref(&self, sprev: Pos, from: Pos, to: Pos) -> Pos {
+        if from >= to {
+            return sprev;
+        }
         self.enc.get_prev_char_head(self.sb, self.u(from), self.u(to), self.u(self.end)).map_or(from, pos)
     }
 
@@ -2015,7 +2019,7 @@ impl Vm<'_, '_, '_> {
                         let Some(e) = self.match_capture(pstart, pend, s, op == OP_BACKREFN_IC) else {
                             break 'op Flow::Fail;
                         };
-                        sprev = self.last_char_head(s, e);
+                        sprev = self.sprev_after_backref(sprev, s, e);
                         s = e;
                         Flow::Jump
                     }
@@ -2035,7 +2039,7 @@ impl Vm<'_, '_, '_> {
                         let Some(e) = found else {
                             break 'op Flow::Fail;
                         };
-                        sprev = self.last_char_head(s, e);
+                        sprev = self.sprev_after_backref(sprev, s, e);
                         s = e;
                         Flow::Jump
                     }
@@ -2049,7 +2053,7 @@ impl Vm<'_, '_, '_> {
                         let Some(e) = self.backref_match_at_nested_level(ic != 0, level, mems, s) else {
                             break 'op Flow::Fail;
                         };
-                        sprev = self.last_char_head(s, e);
+                        sprev = self.sprev_after_backref(sprev, s, e);
                         s = e;
                         Flow::Jump
                     }
