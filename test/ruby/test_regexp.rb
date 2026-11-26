@@ -1138,6 +1138,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { s << "x" }
   end
 
+  def test_match_concurrently_on_same_string
+    re = /(\w)\1*\d/
+    # the main thread takes the lock, the other matches without it
+    s, _, th = match_with_thread_in_match(re) { |str| re.match?(str) }
+    Thread.pass until th.backtrace&.any? { it.include?("match?") } || !th.alive?
+    omit "the other match finished first" unless th.alive?
+    s.replace("x") # nobody holds the lock now
+    assert_raise_with_message(RuntimeError, /string modified/) { th.join }
+  end
+
   def test_eqq
     assert_equal(false, /../ === nil)
   end
