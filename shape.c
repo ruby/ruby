@@ -717,7 +717,7 @@ rb_shape_object_id_child_exists_p(shape_id_t shape_id)
     RUBY_ASSERT(!rb_shape_has_object_id(shape_id));
 
     bool dont_care;
-    return get_next_shape_internal(RSHAPE(shape_id), rb_shape_tree.id_object_id, SHAPE_OBJ_ID, &dont_care, false) != NULL;
+    return get_next_shape_internal(RSHAPE(shape_id), rb_shape_tree.serial_object_id, SHAPE_OBJ_ID, &dont_care, false) != NULL;
 }
 
 shape_id_t
