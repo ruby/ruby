@@ -13064,18 +13064,22 @@ expect1_opening(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t di
  * enclosing statement. */
 #define PM_PARSE_NO_STATEMENT_MODIFIERS ((uint8_t) 0x10)
 
-/**
- * Indicates that an endless method definition may have a command call as its
- * body, as in `def f = foo 1`. Such a definition is a command write, accepted
- * as a statement (including the value of a statement-level rescue modifier)
- * and as the value of a single-target write. Since Ruby 4.0 it is also
- * accepted as the sole argument of a call, where other command writes such as
- * `x = foo 1` are not. Expression positions such as conditional predicates and
- * the operands of `not`, `!`, `and`, and `or` accept a command call but not a
- * command write, so this is set alongside PM_PARSE_ACCEPTS_COMMAND_CALL only
- * where both are accepted.
+/*
+ * parse_arguments sets this on an expression directly in call_args, which
+ * also supplies the operands of return, break, and next.
+ *
+ * The sole-command alternative of call_args is value_expr(command). In
+ * `f(return g x do end.t)`, the return is therefore a void argument. When
+ * PM_PARSE_ACCEPTS_DO_BLOCK is set, Prism recovers by parsing `g x do end.t`
+ * as the return value. In `f((return g x do end.t))`, the inner parentheses
+ * start a compstmt. There the jump can form a block_call and receive `.t`.
+ * parse_arguments_list handles block binding for ordinary `fcall command_args`.
+ *
+ * Since Ruby 4.0, call_args also accepts def_endless_method(endless_command)
+ * as its sole argument, as in `private def f = g x`. The first argument has
+ * PM_PARSE_ACCEPTS_COMMAND_CALL, which allows that command body.
  */
-#define PM_PARSE_ACCEPTS_COMMAND_DEF ((uint8_t) 0x20)
+#define PM_PARSE_CALL_ARGUMENT ((uint8_t) 0x20)
 
 static PRISM_INLINE pm_reduction_t
 pm_reduction(pm_node_t *node) {
@@ -13990,7 +13994,7 @@ parse_statement(pm_parser_t *parser, uint16_t depth) {
     bool has_previous_exits = outer->size != 0;
     if (PRISM_UNLIKELY(has_previous_exits)) parser->current_block_exits = &exits;
 
-    pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, depth).node;
+    pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_CANNOT_PARSE_EXPRESSION, depth).node;
 
     if (PRISM_UNLIKELY(has_previous_exits)) {
         pm_scratch_node_list_concat(&parser->scratch_arena, outer, &exits);
@@ -15741,15 +15745,9 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                      * 4.0 also an endless method with a command body
                      * (`private def f = foo 1`), either of which must then be
                      * the sole argument. */
-                    uint8_t command_flags = 0;
-                    if (!parsed_first_argument) {
-                        command_flags = PM_PARSE_ACCEPTS_COMMAND_CALL;
-                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
-                    }
-
-                    uint8_t do_block = flags & PM_PARSE_ACCEPTS_DO_BLOCK;
-
-                    pm_reduction_t parsed = parse_expression(parser, PM_BINDING_POWER_DEFINED, (uint8_t) (do_block | command_flags | PM_PARSE_ACCEPTS_LABEL), PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
+                    uint8_t argument_flags = (uint8_t) (PM_PARSE_CALL_ARGUMENT | PM_PARSE_ACCEPTS_LABEL | (flags & PM_PARSE_ACCEPTS_DO_BLOCK));
+                    if (!parsed_first_argument) argument_flags |= PM_PARSE_ACCEPTS_COMMAND_CALL;
+                    pm_reduction_t parsed = parse_expression(parser, PM_BINDING_POWER_DEFINED, argument_flags, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
                     argument = parsed.node;
                     argument_kind = PM_REDUCTION_KIND(parsed);
                 }
@@ -18880,11 +18878,24 @@ parse_endless_rescues(pm_parser_t *parser, pm_node_t *body, uint8_t flags, uint1
     return body;
 }
 
+/* Block parameters take a primary_value immediately after '=' or a keyword
+ * label. Nested arguments use their own precedence, even when they share
+ * the parameter context. */
+static bool
+block_parameter_default_p(const pm_parser_t *parser, pm_binding_power_t binding_power) {
+    return (
+        binding_power == PM_BINDING_POWER_INDEX &&
+        parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
+        (parser->previous.type == PM_TOKEN_EQUAL || parser->previous.type == PM_TOKEN_LABEL)
+    );
+}
+
 /**
  * Parse a method definition expression (the `def` keyword).
  */
 static pm_reduction_t
-parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth) {
+parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    bool block_default = block_parameter_default_p(parser, binding_power);
     pm_scratch_node_list_t current_block_exits = { 0 };
     pm_scratch_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
@@ -19144,9 +19155,14 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
         context_push(parser, PM_CONTEXT_DEF);
         pm_do_loop_stack_push(parser, false);
 
-        /* The body accepts a command call (`def f = foo 1`) only where the
-         * caller accepts an endless method with a command body. */
-        uint8_t allow_flags = (flags & PM_PARSE_ACCEPTS_COMMAND_DEF) ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0;
+        /* An endless command definition can be a statement, a single-target
+         * assignment RHS, or (since 4.0) the sole argument of a call. */
+        bool accepts_command_body = (
+            binding_power == PM_BINDING_POWER_STATEMENT ||
+            binding_power == PM_BINDING_POWER_ASSIGNMENT ||
+            ((flags & PM_PARSE_CALL_ARGUMENT) && parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0)
+        );
+        uint8_t command_flags = accepts_command_body ? (flags & PM_PARSE_ACCEPTS_COMMAND_CALL) : 0;
 
         /* Inside a def body, we push true onto the accepts_block_stack so that
          * `do` is lexed as PM_TOKEN_KEYWORD_DO (which can only start a block
@@ -19159,7 +19175,7 @@ parse_def(pm_parser_t *parser, bool block_default, uint8_t flags, uint16_t depth
          * `baz def f = a rescue z do end` lexes as a plain keyword that
          * attaches to `z` rather than to `baz`. */
         pm_accepts_block_stack_push(parser, true);
-        pm_reduction_t body = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
+        pm_reduction_t body = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, command_flags | PM_PARSE_IN_ENDLESS_DEF, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 
         /* parse.y reduces the sole brace-command argument in `super A::B {}`
          * before reading `do`. Prism already has that token as lookahead. */
@@ -20761,13 +20777,11 @@ parse_jump(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
         if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
             pm_token_t next = parser->current;
 
-            /* The arguments of a jump start a fresh command context, so a
-             * `do` inside them binds to the nearest call within the
-             * arguments rather than to an enclosing command call, as in
-             * `check 1, case x when 1 then return bar do end end`. A
-             * command argument leaves its do_block for the jump. */
+            /* Jump arguments start a fresh command context, as in
+             * `check 1, case x when 1 then return bar do end end`. */
             pm_accepts_block_stack_push(parser, true);
-            enum pm_reduction_kind argument_kind = parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, 0, (uint16_t) (depth + 1));
+            uint8_t argument_flags = (flags & PM_PARSE_CALL_ARGUMENT) ? (flags & PM_PARSE_ACCEPTS_DO_BLOCK) : 0;
+            enum pm_reduction_kind argument_kind = parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, argument_flags, (uint16_t) (depth + 1));
             if (arguments.list.size > 0) kind = PM_REDUCTION_JUMP;
             if ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) && argument_kind == PM_REDUCTION_COMMAND && accept1(parser, PM_TOKEN_KEYWORD_DO_BLOCK)) {
                 pm_node_t *argument = pm_node_list_open_last(&arguments.list);
@@ -21067,18 +21081,6 @@ parse_unary_minus(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t
     return pm_call_node_unary_create(parser, &operator, receiver, "-@", 2);
 }
 
-/* Block parameters take a primary_value immediately after '=' or a keyword
- * label. Nested arguments use their own precedence, even when they share
- * the parameter context. */
-static bool
-block_parameter_default_p(const pm_parser_t *parser, pm_binding_power_t binding_power) {
-    return (
-        binding_power == PM_BINDING_POWER_INDEX &&
-        parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
-        (parser->previous.type == PM_TOKEN_EQUAL || parser->previous.type == PM_TOKEN_LABEL)
-    );
-}
-
 static pm_node_t *
 parse_unary_minus_number(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     bool block_default = block_parameter_default_p(parser, binding_power);
@@ -21320,7 +21322,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_CLASS:
             return pm_reduction(parse_class(parser, flags, depth));
         case PM_TOKEN_KEYWORD_DEF:
-            return parse_def(parser, block_parameter_default_p(parser, binding_power), flags, depth);
+            return parse_def(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_DEFINED:
             return pm_reduction(UP(parse_defined(parser, block_parameter_default_p(parser, binding_power), flags, depth)));
         case PM_TOKEN_KEYWORD_END_UPCASE:
@@ -21458,7 +21460,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 static pm_reduction_t
 parse_rescue_modifier_value(pm_parser_t *parser, uint8_t flags, bool statement, uint16_t depth) {
     if (statement) {
-        return parse_expression(parser, PM_BINDING_POWER_STATEMENT, flags | PM_PARSE_NO_STATEMENT_MODIFIERS | PM_PARSE_ACCEPTS_COMMAND_DEF, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        return parse_expression(parser, PM_BINDING_POWER_STATEMENT, flags | PM_PARSE_NO_STATEMENT_MODIFIERS, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
     } else {
         return parse_expression(parser, PM_BINDING_POWER_DEFINED, flags, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
     }
@@ -21552,11 +21554,7 @@ parse_assignment_rescue(pm_parser_t *parser, pm_reduction_t rhs, bool multiple_a
  */
 static pm_reduction_t
 parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
-    /* Where an operator write accepts a command call it also accepts an
-     * endless method with a command body (`x += def f = foo 1`). */
     uint8_t command_flags = parse_assignment_command_flag(previous_binding_power, flags);
-    if (command_flags) command_flags |= PM_PARSE_ACCEPTS_COMMAND_DEF;
-
     pm_reduction_t parsed = parse_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_flags), diag_id, (uint16_t) (depth + 1));
     pm_node_t *value = parsed.node;
     pm_assert_value_expression(parser, value);
@@ -21623,14 +21621,6 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     if (!statement_level && match1(parser, PM_TOKEN_USTAR)) permitted = false;
 
     uint8_t command_call_flag = parse_assignment_command_flag(previous_binding_power, flags);
-
-    /* Where a single-target write accepts a command call it also accepts an
-     * endless method with a command body (`x = def f = foo 1`), but a
-     * multi-write accepts only the command call. */
-    if (command_call_flag && !multiple_assignment) {
-        command_call_flag |= PM_PARSE_ACCEPTS_COMMAND_DEF;
-    }
-
     pm_reduction_t parsed = parse_starred_expression(parser, binding_power, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | command_call_flag), diag_id, (uint16_t) (depth + 1));
     pm_node_t *value = parsed.node;
     if (!permitted) pm_parser_err_node(parser, value, PM_ERR_UNEXPECTED_MULTI_WRITE);
@@ -22820,7 +22810,7 @@ parse_expression_infixes(pm_parser_t *parser, pm_reduction_t left, pm_binding_po
                             cast->block != NULL && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)
                         )
                      ) {
-                        flags &= (uint8_t) ~(PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF);
+                        flags &= (uint8_t) ~PM_PARSE_ACCEPTS_COMMAND_CALL;
                     }
                     break;
                 }
@@ -22828,7 +22818,7 @@ parse_expression_infixes(pm_parser_t *parser, pm_reduction_t left, pm_binding_po
                 case PM_CONSTANT_PATH_NODE:
                     break;
                 default:
-                    flags &= (uint8_t) ~(PM_PARSE_ACCEPTS_COMMAND_CALL | PM_PARSE_ACCEPTS_COMMAND_DEF);
+                    flags &= (uint8_t) ~PM_PARSE_ACCEPTS_COMMAND_CALL;
                     break;
             }
         }

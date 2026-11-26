@@ -241,6 +241,25 @@ module Ruby::Prism
       assert_instance_of ReturnNode, call.receiver
     end
 
+    def test_jump_with_a_chained_command_block_in_call_arguments
+      %w[return break next].each do |keyword|
+        argument = "#{keyword} r z do end.t"
+        result = Ruby::Prism.parse("loop { o(#{argument}) }")
+        assert_equal [:void_expression], result.errors.map(&:type), keyword
+        assert_equal argument, result.errors.first.location.slice
+
+        jump = result.statement.block.body.body.first.arguments.arguments.first
+        assert_equal keyword, jump.keyword
+        assert_equal :t, jump.arguments.arguments.first.name
+
+        grouped = Ruby::Prism.parse("loop { o((#{argument})) }")
+        assert_empty grouped.errors
+        call = grouped.statement.block.body.body.first.arguments.arguments.first.body.body.first
+        assert_equal :t, call.name
+        assert_equal keyword, call.receiver.keyword
+      end
+    end
+
     def test_parenthesized_targets_reject_newline_before_assignment
       ["(first, second\n= [1, 2])", "((first, second), third\n= [1, 2, 3])"].each do |source|
         result = Ruby::Prism.parse(source)
