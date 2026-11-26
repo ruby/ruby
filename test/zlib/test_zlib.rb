@@ -1709,6 +1709,15 @@ if defined? Zlib
       }
     end
 
+    def test_external_encoding_with_internal_encoding
+      pend "rb_io_extract_encoding_option ignores the encoding options on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
+      r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip("caf\xE9\n".b)), external_encoding: "ISO-8859-1", internal_encoding: "UTF-8")
+      assert_equal(Encoding::ISO_8859_1, r.external_encoding)
+      assert_equal("caf\u00E9\n", r.gets)
+      r = Zlib::GzipReader.new(StringIO.new(Zlib.gzip("caf\xE9\n".b)), external_encoding: "ISO-8859-1")
+      assert_equal(Encoding::ISO_8859_1, r.external_encoding)
+    end
+
     def test_gets_separator_inside_multibyte_char
       pend "rb_io_extract_encoding_option ignores the encoding options on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
       # In Shift_JIS the second byte of a character can be an ASCII byte such

@@ -4676,7 +4676,10 @@ rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
 static VALUE
 rb_gzreader_external_encoding(VALUE self)
 {
-    return rb_enc_from_encoding(get_gzfile(self)->enc);
+    struct gzfile *gz = get_gzfile(self);
+    /* with a conversion set up, enc is the internal encoding and enc2 the
+     * external one (same convention as rb_io_extract_encoding_option) */
+    return rb_enc_from_encoding(gz->enc2 ? gz->enc2 : gz->enc);
 }
 
 static VALUE
