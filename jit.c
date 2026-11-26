@@ -740,56 +740,35 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 {
 #ifdef JIT_PROBE_NEAR_TEXT
     uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
+# if defined(__aarch64__) || defined(_M_ARM64)
+    // AArch64 direct BL spans +/-128MiB. Stepping by 64MiB from cfunc_sample_addr
+    // with a 128MiB block lands ~59MiB below .text (outside BL range). Start just
+    // below .text with a 2MiB stride; if we miss the close-by range, fall back
+    // directly to an unhinted reservation.
+    const uintptr_t probe_stride = 2 * 1024 * 1024;
+    const int max_probe_trials = 32;
+    uint8_t *req_addr = ((uintptr_t)cfunc_sample_addr > mem_size)
+        ? (cfunc_sample_addr - mem_size)
+        : cfunc_sample_addr;
+# else
     // 64MiB: balancing space probed and time spent probing.
     const uintptr_t probe_stride = 64 * 1024 * 1024;
     // Related to the stride. Any successful trial will be within INT32_MAX
     // range with slack for the binary size.
     const int max_probe_trials = 30;
+    uint8_t *req_addr = cfunc_sample_addr;
+# endif
 #endif
 #ifndef _WIN32
-    uint8_t *mem_block;
+    uint8_t *mem_block = MAP_FAILED;
 
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *req_addr = cfunc_sample_addr;
-        mem_block = MAP_FAILED;
-
-        #if defined(__aarch64__)
-        // AArch64 direct BL spans +/-128MiB, and nearby targets within +/-4GiB
-        // use ADRP+ADD+BLR instead of MOVZ+MOVK*+BLR. Stepping downward by 64MiB
-        // with a 128MiB block lands ~59MiB below ruby's .text. Probe just below
-        // .text in 2MiB steps first (staying below .text so [heap]/brk growth
-        // above .bss is never obstructed).
-        if ((uintptr_t)cfunc_sample_addr > mem_size) {
-            const uintptr_t a64_near_stride = 2 * 1024 * 1024;
-            const int a64_near_trials = 32;
-            uint8_t *near_addr = cfunc_sample_addr - mem_size;
-            for (int i = 0; i < a64_near_trials; i++) {
-                if ((uintptr_t)near_addr <= a64_near_stride) {
-                    break;
-                }
-                near_addr -= a64_near_stride;
-                uint8_t *aligned = rb_jit_align_ptr(near_addr, page_size);
-                mem_block = mmap(
-                    aligned,
-                    mem_size,
-                    PROT_NONE,
-                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
-                    -1,
-                    0
-                );
-                if (mem_block != MAP_FAILED) {
-                    ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_jit_reserve_addr_space");
-                    break;
-                }
-            }
-        }
-        #endif
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
-        // to improve odds of being in range for 32-bit relative call instructions.
-        for (int i = 0; mem_block == MAP_FAILED && i < max_probe_trials; i++) {
+        // to improve odds of being in range for relative call instructions.
+        for (int i = 0; i < max_probe_trials; i++) {
             // The address space on x86-64/A64 Linux tends to look like:
             //
             //  high addr  +---------------+
@@ -803,6 +782,9 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
             // We always probe downwards from one of the program text areas
             // to avoid getting in the way of the stack's downwards growth.
             // If we happen to start from the main text, we also avoid the heap.
+            if ((uintptr_t)req_addr <= probe_stride) {
+                break;
+            }
             req_addr -= probe_stride;
             req_addr = rb_jit_align_ptr(req_addr, page_size);
 
@@ -866,8 +848,10 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     uint8_t *mem_block = NULL;
-    uint8_t *req_addr = cfunc_sample_addr;
     for (int i = 0; i < max_probe_trials; i++) {
+        if ((uintptr_t)req_addr <= probe_stride) {
+            break;
+        }
         req_addr -= probe_stride;
         req_addr = rb_jit_align_ptr(req_addr, si.dwAllocationGranularity);
         mem_block = VirtualAlloc(req_addr, mem_size, MEM_RESERVE, PAGE_NOACCESS);
