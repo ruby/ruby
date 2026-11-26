@@ -1973,7 +1973,7 @@ impl Vm<'_, '_, '_> {
                     }
 
                     OP_KEEP => {
-                        pkeep = s;
+                        pkeep = s.max(sstart);
                         Flow::Jump
                     }
 
