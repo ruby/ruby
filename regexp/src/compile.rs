@@ -2194,6 +2194,9 @@ fn check_stack(&self) -> R<()> {
         } else if upper == 0 && qn.is_referred {
             /* /(?<n>..){0}/ */
             SIZE_OP_JUMP + tlen
+        } else if upper == 0 {
+            /* {0} and {0,0}? : never match the body */
+            0
         } else if !infinite && qn.greedy && (upper == 1 || is_expand_limit_ok(tlen + SIZE_OP_PUSH, upper)) {
             tlen * lower + (SIZE_OP_PUSH + tlen) * (upper - lower)
         } else if !qn.greedy && upper == 1 && lower == 0 {
@@ -2266,6 +2269,8 @@ fn check_stack(&self) -> R<()> {
             /* /(?<n>..){0}/ */
             self.add_opcode_rel_addr(OP_JUMP, tlen)?;
             self.compile_tree(target)?;
+        } else if upper == 0 {
+            /* {0} and {0,0}? : never match the body */
         } else if !infinite && qn.greedy && (upper == 1 || is_expand_limit_ok(tlen + SIZE_OP_PUSH, upper)) {
             let n = upper - lower;
             self.compile_tree_n_times(target, qn.lower)?;
