@@ -4,7 +4,6 @@
 #include "internal/symbol.h"
 #include "internal/gc.h"
 #include "internal/imemo.h"
-#include "internal/object.h"
 
 typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;
@@ -261,20 +260,20 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     ));
 }
 
-static inline void
-RBASIC_SET_SHAPE_ID_ATOMIC(VALUE obj, shape_id_t shape_id)
-{
-    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-
 #if RBASIC_SHAPE_ID_FIELD
-    RBASIC_SET_SHAPE_ID(obj, shape_id);
+#define RBASIC_SET_SHAPE_ID_ATOMIC(obj, shape_id) RBASIC_SET_SHAPE_ID((obj), (shape_id))
 #else
-    VALUE clear = (VALUE)(shape_id_t)~SHAPE_ID_FL_PRIVATE_MASK << SHAPE_FLAG_SHIFT;
-    VALUE set = (VALUE)(shape_id & ~SHAPE_ID_FL_PRIVATE_MASK) << SHAPE_FLAG_SHIFT;
-    rb_obj_flags_update_atomic(obj, set, clear);
-    RUBY_ASSERT(rb_shape_verify_consistency(obj, RBASIC_SHAPE_ID(obj)));
+#define RBASIC_SET_SHAPE_ID_ATOMIC(obj, shape_id) do { \
+    VALUE rbimpl_set_shape_obj = (obj); \
+    shape_id_t rbimpl_set_shape_id = (shape_id); \
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(rbimpl_set_shape_obj)); \
+    rb_obj_flags_update_atomic( \
+        rbimpl_set_shape_obj, \
+        (VALUE)(rbimpl_set_shape_id & ~SHAPE_ID_FL_PRIVATE_MASK) << SHAPE_FLAG_SHIFT, \
+        (VALUE)(shape_id_t)~SHAPE_ID_FL_PRIVATE_MASK << SHAPE_FLAG_SHIFT); \
+    RUBY_ASSERT(rb_shape_verify_consistency(rbimpl_set_shape_obj, RBASIC_SHAPE_ID(rbimpl_set_shape_obj))); \
+} while (0)
 #endif
-}
 
 static inline shape_id_t
 RSHAPE_FLAGS(shape_id_t shape_id)
