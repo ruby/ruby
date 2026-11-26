@@ -17764,7 +17764,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_
  * Parse a pattern expression primitive.
  */
 static pm_node_t *
-parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_diagnostic_id_t diag_id, uint16_t depth) {
+parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     switch (parser->current.type) {
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME: {
@@ -17911,7 +17911,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_
             }
         }
         case PM_CASE_PRIMITIVE: {
-            pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_MAX, PM_PARSE_ACCEPTS_LABEL | PM_PARSE_ACCEPTS_DO_BLOCK, diag_id, (uint16_t) (depth + 1)).node;
+            pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_MAX, flags, diag_id, (uint16_t) (depth + 1)).node;
 
             // If we found a label, we need to immediately return to the caller.
             if (pm_symbol_node_label_p(parser, node)) return node;
@@ -18080,10 +18080,10 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_set_t *captures, pm
             case PM_TOKEN_UDOT_DOT_DOT:
             case PM_CASE_PRIMITIVE: {
                 if (!alternation) {
-                    node = parse_pattern_primitive(parser, captures, diag_id, (uint16_t) (depth + 1));
+                    node = parse_pattern_primitive(parser, captures, PM_PARSE_ACCEPTS_DO_BLOCK, diag_id, (uint16_t) (depth + 1));
                 } else {
                     pm_token_t operator = parser->previous;
-                    pm_node_t *right = parse_pattern_primitive(parser, captures, PM_ERR_PATTERN_EXPRESSION_AFTER_PIPE, (uint16_t) (depth + 1));
+                    pm_node_t *right = parse_pattern_primitive(parser, captures, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_PATTERN_EXPRESSION_AFTER_PIPE, (uint16_t) (depth + 1));
 
                     if (captures->size) parse_pattern_alternation_error(parser, right);
                     node = UP(pm_alternation_pattern_node_create(parser, node, right, &operator));
@@ -18194,9 +18194,8 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
             return node;
         }
         case PM_TOKEN_STRING_BEGIN: {
-            // We need special handling for string beginnings because they could
-            // be dynamic symbols leading to hash patterns.
-            node = parse_pattern_primitive(parser, captures, diag_id, (uint16_t) (depth + 1));
+            /* A quoted label at the start of a pattern can introduce a hash pattern. */
+            node = parse_pattern_primitive(parser, captures, PM_PARSE_ACCEPTS_DO_BLOCK | PM_PARSE_ACCEPTS_LABEL, diag_id, (uint16_t) (depth + 1));
 
             if (pm_symbol_node_label_p(parser, node)) {
                 node = UP(parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1)));
@@ -18223,12 +18222,6 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags
         default:
             node = parse_pattern_primitives(parser, captures, NULL, diag_id, (uint16_t) (depth + 1));
             break;
-    }
-
-    // If we got a dynamic label symbol, then we need to treat it like the
-    // beginning of a hash pattern.
-    if (pm_symbol_node_label_p(parser, node)) {
-        return UP(parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1)));
     }
 
     if ((flags & PM_PARSE_PATTERN_MULTI) && match1(parser, PM_TOKEN_COMMA)) {

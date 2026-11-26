@@ -37,6 +37,16 @@ module Ruby::Prism
       end
     end
 
+    def test_quoted_labels_in_patterns
+      ['o=>1,"":', 'o in [1, "key":]', 'o in 1 | "key":'].each do |source|
+        assert_equal [:unexpected_label], Ruby::Prism.parse(source).errors.map(&:type), source
+      end
+
+      ['o => "key": 1', 'o => [1, {"": 2}]', 'o => 1, :""'].each do |source|
+        assert Ruby::Prism.parse_success?(source), source
+      end
+    end
+
     def test_unclosed_array_location_covers_last_element
       source = '[r="#{ '
       result = Ruby::Prism.parse(source)
