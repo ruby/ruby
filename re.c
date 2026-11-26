@@ -2472,6 +2472,8 @@ rb_reg_onig_match(VALUE re, VALUE str,
 
     /* Interrupt checks in the match may run other threads: don't let them
      * modify str.  The match always returns, as interrupts raise after it. */
+    const char *const ptr = RSTRING_PTR(str);
+    const rb_len_t len = RSTRING_LEN(str);
     VALUE lock = rb_str_try_locktmp(str);
     reg_onig_begin();
     OnigPosition result = match(reg, str, regs, args);
@@ -2480,6 +2482,13 @@ rb_reg_onig_match(VALUE re, VALUE str,
 
     RB_GC_GUARD(re);
     RB_GC_GUARD(str);
+    RB_GC_GUARD(lock);
+
+    if (result == ONIGERR_INTERRUPTED) reg_onig_raise_interrupt();
+    /* not locked by this: the owner of the lock may have modified str */
+    if (lock != Qtrue && (RSTRING_PTR(str) != ptr || RSTRING_LEN(str) != len)) {
+        rb_raise(rb_eRuntimeError, "string modified");
+    }
 
     if (result == ONIGERR_MEMORY) {
         /* e.g. for the match stack or the match cache table */

@@ -3527,12 +3527,29 @@ rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
     return rb_ensure(func, arg, rb_str_unlocktmp, str);
 }
 
-/* Locks str unless it is frozen or already locked.  Returns Qtrue if this
- * locked str, otherwise Qfalse. */
+/* Keeps the current heap buffer of str alive even if str is modified. */
+static VALUE
+str_keep_buffer(VALUE str)
+{
+    if (STR_EMBED_P(str) || FL_TEST_RAW(str, STR_NOFREE)) return Qfalse;
+    if (STR_SHARED_P(str)) {
+        const VALUE shared = RSTRING(str)->as.heap.aux.shared;
+        if (RBASIC_CLASS(shared) == 0) FL_SET_RAW(shared, STR_BORROWED);
+        return shared;
+    }
+    const VALUE root = heap_str_make_shared(0, str, TERM_LEN(str));
+    OBJ_FREEZE(root);
+    return root;
+}
+
+/* Locks str unless it is frozen.  If str is already locked, its owner may
+ * unlock and modify it meanwhile: keep the buffer instead.  Returns Qtrue if
+ * this locked str, otherwise the root keeping the buffer or Qfalse. */
 VALUE
 rb_str_try_locktmp(VALUE str)
 {
-    if (FL_TEST_RAW(str, FL_FREEZE | STR_TMPLOCK)) return Qfalse;
+    if (OBJ_FROZEN_RAW(str)) return Qfalse;
+    if (FL_TEST_RAW(str, STR_TMPLOCK)) return str_keep_buffer(str);
     FL_SET_RAW(str, STR_TMPLOCK);
     return Qtrue;
 }
@@ -3542,6 +3559,9 @@ rb_str_try_unlocktmp(VALUE str, VALUE lock)
 {
     if (lock == Qtrue) {
         FL_UNSET_RAW(str, STR_TMPLOCK);
+    }
+    else if (lock) {
+        rb_str_tmp_frozen_release(str, lock);
     }
 }
 
