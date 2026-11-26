@@ -182,3 +182,50 @@ with when they are fired and the arguments they take:
   sourcefile::   the file being parsed (string)
   lineno::       the line number where the source ended (int)
 
+
+[ruby:::yjit-invalidate_*(subject, count, filename, lineno);]
+[ruby:::zjit-invalidate_*(subject, count, filename, lineno);]
+  Fired when YJIT or ZJIT throws away compiled code because an assumption it
+  was compiled under no longer holds. There is one probe per reason, and each
+  one corresponds to an invalidation counter in yjit/src/stats.rs or
+  zjit/src/stats.rs. They all take the same arguments:
+
+  subject::      what changed, e.g. <code>"Integer#+"</code>, or <code>""</code>
+                 when there is nothing more specific than the probe name (string)
+  count::        how much code was invalidated: the number of blocks for YJIT,
+                 or the number of patch points for ZJIT (long)
+  filename::     the file of the Ruby code that caused the invalidation (string)
+  lineno::       the line of the Ruby code that caused the invalidation (int)
+
+  The probes only fire when +count+ is non-zero, except for
+  <code>yjit-invalidate_everything</code> and
+  <code>zjit-invalidate_no_tracepoint</code>, which fire whenever all code is
+  invalidated. For YJIT, the sum of +count+ matches the corresponding
+  <code>invalidate_*</code> counter, except that
+  <code>invalidate_everything</code> counts events.
+
+  The probes, and what their +subject+ is:
+
+  yjit-invalidate_method_lookup::          the method, e.g. <code>"Foo#bar"</code> or <code>"Foo.bar"</code>
+  yjit-invalidate_bop_redefined::          the basic operator, e.g. <code>"Integer#+"</code>
+  yjit-invalidate_ractor_spawn::           <code>""</code>
+  yjit-invalidate_constant_state_bump::    the constant's name, e.g. <code>"Foo"</code>
+  yjit-invalidate_constant_ic_fill::       the constant path, e.g. <code>"Foo::Bar"</code>
+  yjit-invalidate_no_singleton_class::     the class, e.g. <code>"String"</code>
+  yjit-invalidate_ep_escape::              the ISEQ, e.g. <code>"foo@/path/to/file.rb:1"</code>
+  yjit-invalidate_everything::             <code>""</code> (e.g. a TracePoint was enabled)
+  zjit-invalidate_bop_redefined::          the basic operator, e.g. <code>"Integer#+"</code>
+  zjit-invalidate_method_redefined::       the method, e.g. <code>"Foo#bar"</code> or <code>"Foo.bar"</code>
+  zjit-invalidate_stable_constant_names::  the constant's name, e.g. <code>"Foo"</code>
+  zjit-invalidate_no_tracepoint::          <code>""</code>
+  zjit-invalidate_no_newobj_hook::         <code>""</code>
+  zjit-invalidate_no_ep_escape::           the ISEQ, e.g. <code>"foo@/path/to/file.rb:1"</code>
+  zjit-invalidate_single_ractor_mode::     <code>""</code>
+  zjit-invalidate_no_singleton_class::     the class, e.g. <code>"String"</code>
+  zjit-invalidate_root_box_only::          <code>""</code>
+
+  For example, to see what invalidates YJIT code with bpftrace on Linux:
+
+    $ sudo bpftrace -e 'usdt:./ruby:ruby:yjit__invalidate_* {
+        printf("%s %s %d %s:%d\n", probe, str(arg0), arg1, str(arg2), arg3); }' \
+        -c './ruby --yjit app.rb'
