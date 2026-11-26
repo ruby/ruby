@@ -50,17 +50,20 @@ performance by a set of workloads:
 
 ## Status
 
-Measured on arm64 macOS:
+Measured on x64 mswin (clang-cl, YJIT) on 2026-11-26:
 
 * The programs and optimizer choices are identical to Onigmo's for the
-  2798 regexp literals of the test suite in six encodings.
-* `test/ruby`, the regexp, string and matchdata specs and the tests of the
-  default gems pass on the Rust engine; the failures left are the RSS-based
-  leak checks, which fail on Onigmo the same way on this machine.
-* Fuzzing found no difference in about 70,000 patterns, each matched
-  against several subjects, in seven encodings.
-* The workloads above take 1.36 times as long as on Onigmo (geometric mean).
-  Compiling is 1.8 times slower, matching 1.1 to 2 times.
+  regexp literals of the test suite in six encodings.
+* `make check` passes, and so does `make test-all` on the Rust engine
+  (41,288 tests).
+* Fuzzing 32 seeds of 5,000 patterns, each matched against several
+  subjects, in seven encodings found no difference in the results. One
+  pattern with an absent operator hit the fuzzer's time limit on the Rust
+  engine only, taking 13 seconds against Onigmo's 10.
+* On 2026-10-31, on a machine that was not idle, the workloads above took
+  0.83 times as long as on Onigmo (geometric mean of 14). Without the three
+  literal searches, which the Rust engine does with word-sized compares,
+  they took about 1.08 times as long, and compiling about 1.2 times.
 
 ## Open problems
 
@@ -95,30 +98,28 @@ engine can become the default or Onigmo can be removed.
 5. **The encoding layer depends on the engine.** `enc/unicode.c`,
    `enc/euc_jp.c` and `enc/shift_jis.h` call `onig_is_in_code_range`, which
    is defined in `regcomp.c`.
-6. **Interrupts longjmp out of the matcher.** `CHECK_INTERRUPT_IN_MATCH_AT`
-   calls `rb_thread_check_ints()`, which may raise. A longjmp across Rust
-   frames is undefined behaviour, so the Rust engine returns to C first and
-   C re-raises.
-7. **`tool/lib/envutil.rb` is a copy** of ruby/test-unit-ruby-core. The
+6. **`tool/lib/envutil.rb` is a copy** of ruby/test-unit-ruby-core. The
    `--regexp-engine` propagation has to go upstream as well.
-8. **The JIT panic hooks abort on any panic.** YJIT (`yjit/src/yjit.rs`)
+7. **The JIT panic hooks abort on any panic.** YJIT (`yjit/src/yjit.rs`)
    and ZJIT (`zjit/src/cruby.rs`) replace the process-wide panic hook with
    one that calls `rb_bug()`. The hook runs before unwinding starts, so with
    a JIT enabled a panic in this engine aborts the process even though the
    FFI boundary catches it. The crates linked into one ruby need a shared
    hook that knows which component panicked.
-9. **Warnings run Ruby code.** Onigmo calls `rb_warn` from inside the
-   parser, and `Warning.warn` may raise, which longjmps out of
-   `onig_compile`. The Rust engine collects warnings during compilation and
-   C emits them after it returns.
-10. **Deep patterns overflow the machine stack.** Parsing, the tree passes
-    and the optimizer recurse once per nesting level, up to the parse depth
-    limit of 4096. Threads may run on 128KB machine stacks (M:N threads),
-    where Onigmo compiles up to 199 nested groups and then relies on Ruby
-    turning the overflow into SystemStackError by longjmp from its SIGSEGV
-    handler. That cannot cross Rust frames, so the Rust engine compares its
-    frame address with a limit taken from the execution context and returns
-    before the stack runs out; C raises SystemStackError. Its frames are
-    larger than Onigmo's, so it stops at 104 nested groups in such a thread.
-    Matching Onigmo needs smaller frames or an explicit stack in the parser.
-    On the main thread both engines reach the parse depth limit.
+8. **Deep patterns overflow the machine stack.** Parsing, the tree passes
+   and the optimizer recurse once per nesting level, up to the parse depth
+   limit of 4096. Threads may run on 128KB machine stacks (M:N threads),
+   where Onigmo compiles up to 199 nested groups and then relies on Ruby
+   turning the overflow into SystemStackError by longjmp from its SIGSEGV
+   handler. That cannot cross Rust frames, so the Rust engine compares its
+   frame address with a limit taken from the execution context and returns
+   before the stack runs out; C raises SystemStackError. Its frames are
+   larger than Onigmo's, so it stops at 104 nested groups in such a thread.
+   Matching Onigmo needs smaller frames or an explicit stack in the parser.
+   On the main thread both engines reach the parse depth limit.
+9. **Every change to Onigmo has to be ported.** While both engines are
+   built, a fix to `regparse.c`, `regcomp.c` or `regexec.c` needs the same
+   change in `regexp/src`, or `test_compiled_form` and the fuzzer report a
+   difference. Moving from the master of 2026-11-19 to that of 2026-11-26
+   brought 24 commits to these files, and 11 of them needed a change on the
+   Rust side.
