@@ -4581,7 +4581,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	    n += (rb_len_t)(res - p);
 	    p = res;
 	    if (maxlen > 1 &&
-		rb_enc_left_char_head(RSTRING_PTR(gz->z.buf), p, RSTRING_PTR(gz->z.buf) + ZSTREAM_BUF_FILLED(&gz->z), enc) != p) {
+		rb_enc_left_char_head(RSTRING_PTR(gz->z.buf), p, RSTRING_PTR(gz->z.buf) + ZSTREAM_BUF_FILLED(&gz->z),
+				      GZFILE_RAW_ENC(gz)) != p) {
 		/* the match starts inside a multibyte character: keep searching */
 		p++, n++;
 		continue;
