@@ -39,6 +39,10 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
+    defaults:
+      run:
+        working-directory: regexp
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,10 +51,8 @@ jobs:
       - run: rustup install 1.85.0 --profile minimal --component clippy
 
       - run: RUST_BACKTRACE=1 cargo +1.85.0 test
-        working-directory: regexp
 
       - run: cargo +1.85.0 clippy --all-targets -- -D warnings
-        working-directory: regexp
 
   make:
     strategy:
