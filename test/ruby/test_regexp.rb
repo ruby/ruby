@@ -1145,9 +1145,17 @@ class TestRegexp < Test::Unit::TestCase
     re = /(\w)\1*\d/
     # the main thread takes the lock, the other matches without it
     s, _, th = match_with_thread_in_match(re) { |str| re.match?(str) }
-    Thread.pass until th.backtrace&.any? { it.include?("match?") } || !th.alive?
+    in_match = -> { th.backtrace&.any? { it.include?("match?") } }
+    Thread.pass until in_match.() || !th.alive?
     omit "the other match finished first" unless th.alive?
-    s.replace("x") # nobody holds the lock now
+    begin
+      s.replace("x") # nobody holds the lock now
+    rescue RuntimeError => e
+      raise unless e.message.include?("temporarily locked")
+      omit "the other match started after the lock was released"
+    end
+    # the replace happened in the other match only if it is still running
+    omit "the other match finished first" unless in_match.()
     assert_raise_with_message(RuntimeError, /string modified/) { th.join }
   end
 
