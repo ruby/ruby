@@ -724,8 +724,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 *kw_bits, *jit_entry_idx, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh)),
             )
         }
-        Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, exit_state, .. } => {
-            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh))))
+        Insn::PushInlineFrame { cme, iseq, recv, num_args, block, state, exit_state, captured } => {
+            no_output!(gen_push_inline_frame(jit, asm, function, *cme, *iseq, opnd!(recv), *num_args, &function.frame_state(*state), &function.frame_state(*exit_state), block.map(|bh| lower_block_handler(jit, bh)), captured.map(|c| jit.get_opnd(c))))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
             no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -1753,6 +1753,7 @@ fn gen_push_inline_frame(
     state: &FrameState,
     exit_state: &FrameState,
     block: Option<lir::BlockHandler>,
+    captured: Option<Opnd>,
 ) {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
@@ -1760,15 +1761,20 @@ fn gen_push_inline_frame(
 
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
-    let stack_size = state.stack().len() - num_args.to_usize() - 1; // -1 for receiver
+    // An inlined block has no receiver on the stack.
+    let stack_size = state.stack().len() - num_args.to_usize() - usize::from(captured.is_none());
     gen_write_jit_frame(asm, state);
     gen_save_sp(asm, stack_size);
 
     let block_handler = block.map(|bh| gen_block_handler_opnd(asm, bh));
 
-    let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
+    let callee_is_bmethod = !cme.is_null() && VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
 
-    let (frame_type, specval) = if callee_is_bmethod {
+    let (frame_type, specval) = if let Some(captured) = captured {
+        // An inlined block, like vm_invoke_iseq_block_with_cref(): specval = VM_GUARDED_PREV_EP(captured->ep)
+        let captured_ep = asm.load(Opnd::mem(64, captured, SIZEOF_VALUE_I32)); // captured->ep
+        (VM_FRAME_MAGIC_BLOCK, asm.or(captured_ep, Opnd::Imm(0x1)))
+    } else if callee_is_bmethod {
         // Extract EP from the Proc instance
         let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
         let proc = unsafe { rb_jit_get_proc_ptr(procv) };
