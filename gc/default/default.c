@@ -3089,6 +3089,9 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     if (!page->flags.body_zeroed) {
         memset((void *)start, 0, slots_end - start);
     }
+    else {
+        (void)VALGRIND_MAKE_MEM_DEFINED((void *)start, slots_end - start);
+    }
     page->flags.body_zeroed = FALSE;
 
     struct free_region *region = (struct free_region *)start;
@@ -5241,6 +5244,7 @@ gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, str
     rb_asan_unpoison_object(p, false);
     /* A slot that was already free reads 0 here. Skipping the store keeps the sweep from
      * possibly dirtying a page */
+    (void)VALGRIND_MAKE_MEM_DEFINED(&((struct RBasic *)p)->flags, sizeof(VALUE));
     if (((struct RBasic *)p)->flags) ((struct RBasic *)p)->flags = 0;
 
     /* Keep a freed slot from carrying its old shareable and shref bits into the next
@@ -6661,8 +6665,6 @@ void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
-
-    (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
 
     if (RB_UNLIKELY(objspace->flags.during_global_gc)
             ? gc_global_pointer_to_heap_p((void *)obj)

@@ -1051,7 +1051,9 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         /* The value is returned by reference: inherit the dead Ractor's objspace first,
          * making it our own object (containment without a copy).  Wait for
          * ractor_terminated: a monitor-port wakeup arrives before the dying thread
-         * finishes teardown (vm_remove_ractor still touches the objspace). */
+         * finishes teardown (vm_remove_ractor still touches the objspace).
+         * Under valgrind this spin can livelock, starving the dying thread, unless
+         * --fair-sched=yes is given. */
         while (!rb_ractor_status_p(r, ractor_terminated)) {
             rb_thread_schedule();
         }
