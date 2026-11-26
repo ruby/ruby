@@ -43,7 +43,7 @@ class TestFiberEnumerator < Test::Unit::TestCase
     assert_predicate(o, :closed?)
   end
 
-  def enumerator_fiber_is_nonblocking
+  def test_enumerator_fiber_is_nonblocking
     enumerator = Enumerator.new do |yielder|
       yielder << Fiber.current.blocking?
     end
