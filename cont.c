@@ -1456,6 +1456,7 @@ rb_fiber_free_body(void *ptr)
     if (fiber->cont.saved_ec.local_storage) {
         rb_id_table_free(fiber->cont.saved_ec.local_storage);
     }
+    rb_ec_discard_deferred_warnings(&fiber->cont.saved_ec);
 
     cont_free(&fiber->cont);
     RUBY_FREE_LEAVE("fiber");

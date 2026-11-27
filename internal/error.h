@@ -219,6 +219,12 @@ NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
 NORETURN(void rb_cant_convert(VALUE val, const char *tname));
 NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
 void rb_eager_load_detailed_message_extension(void);
+struct rb_execution_context_struct;
+void rb_ec_defer_warnings_begin(struct rb_execution_context_struct *ec);
+void rb_ec_defer_warnings_end(struct rb_execution_context_struct *ec);
+void rb_ec_warn_deferrable(struct rb_execution_context_struct *ec, const char *file, int line, const char *msg);
+void rb_ec_emit_deferred_warnings(struct rb_execution_context_struct *ec);
+void rb_ec_discard_deferred_warnings(struct rb_execution_context_struct *ec);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* error.c (export) */
