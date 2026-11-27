@@ -133,6 +133,12 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
+  def test_month_mday_normalization_before_local_dst_change
+    with_tz(tz="Pacific/Auckland") {
+      assert_time_constructor(tz, "2000-10-01 03:30:00 +1300", :new, [2000,9,31,3,30])
+    }
+  end
+
   def test_america_managua
     with_tz(tz="America/Managua") {
       assert_time_constructor(tz, "1993-01-01 01:00:00 -0500", :local, [1993,1,1,0,0,0])
