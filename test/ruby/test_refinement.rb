@@ -4398,6 +4398,50 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_unused_refinement_for_module_method_in_superclass
+    assert_separately([], <<-"end;")
+      class C
+        def foo = :C
+      end
+      module M
+      end
+      class D < C
+        include M
+      end
+      Module.new { refine(M) { def foo = :M } }
+      d = D.new
+      assert_equal(:C, d.send(:foo))
+      assert_equal(:C, d.method(:foo).call)
+      assert_respond_to(d, :foo)
+      assert_send([D, :method_defined?, :foo])
+      D.alias_method(:bar, :foo)
+      assert_equal(:C, d.bar)
+      D.undef_method(:foo)
+      assert_not_respond_to(d, :foo)
+
+      Module.new { refine(Kernel) { def ==(other) = true } }
+      assert_equal(true, Object.new != 1)
+    end;
+  end
+
+  def test_undef_in_active_refinement_for_module_method_in_superclass
+    assert_separately([], <<-"end;")
+      class C
+        def foo = :C
+      end
+      module M
+      end
+      class D < C
+        include M
+      end
+      using Module.new { refine(M) { def foo = :M; undef_method :foo } }
+      d = D.new
+      assert_raise(NoMethodError) { d.foo }
+      assert_raise(NoMethodError) { d.send(:foo) }
+      assert_equal(false, d.respond_to?(:foo))
+    end;
+  end
+
   def test_refining_module_repeatedly
     bug14070 = '[ruby-core:83617] [Bug #14070]'
     assert_in_out_err([], <<-INPUT, ["ok"], [], bug14070, timeout: 30)
