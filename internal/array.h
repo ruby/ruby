@@ -20,7 +20,6 @@
 
 #define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
-#define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 #define RARRAY_FAKEARY          FL_USER19
 
 /* array.c */
@@ -69,12 +68,6 @@ rb_ary_entry_internal(VALUE ary, rb_len_t offset)
         return Qnil;
     }
     return ptr[offset];
-}
-
-static inline bool
-ARY_PTR_USING_P(VALUE ary)
-{
-    return FL_TEST_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
