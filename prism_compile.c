@@ -7049,20 +7049,18 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         break;
       }
       case ISEQ_TYPE_BLOCK: {
+        // A for-loop target is assigned during block argument setup, before
+        // the body's redo and next labels are in scope and before B_CALL.
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+            pm_compile_for_node_index(iseq, ((const pm_for_node_t *) scope_node->ast_node)->index, ret, scope_node);
+        }
+
         LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
         LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
         const pm_node_location_t block_location = { .line = body->location.first_lineno, .node_id = scope_node->ast_node->node_id };
 
         start->rescued = LABEL_RESCUE_BEG;
         end->rescued = LABEL_RESCUE_END;
-
-        // For nodes automatically assign the iteration variable to whatever
-        // index variable. We need to handle that write here because it has
-        // to happen in the context of the block. Note that this happens
-        // before the B_CALL tracepoint event.
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
-            pm_compile_for_node_index(iseq, ((const pm_for_node_t *) scope_node->ast_node)->index, ret, scope_node);
-        }
 
         PUSH_TRACE(ret, RUBY_EVENT_B_CALL);
         PUSH_INSN(ret, block_location, nop);
