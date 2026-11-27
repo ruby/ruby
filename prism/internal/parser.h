@@ -493,17 +493,12 @@ typedef enum {
     PM_CONTEXT_MAXIMUM,
 } pm_context_t;
 
-/* This is a node in a linked list of contexts. */
-typedef struct pm_context_node {
-    /* The context that this node represents. */
+typedef struct {
     pm_context_t context;
 
-    /* A pointer to the previous context in the linked list. */
-    struct pm_context_node *prev;
-
-    /* One bit set per context in this list, including one for this node. */
-    uint64_t mask;
-} pm_context_node_t;
+    /* Popping the outermost occurrence clears this context's membership bit. */
+    bool outermost;
+} pm_context_frame_t;
 
 /* The type of shareable constant value that can be set. */
 typedef uint8_t pm_shareable_constant_value_t;
@@ -837,15 +832,13 @@ struct pm_parser_t {
      */
     pm_scope_t *free_scopes;
 
-    /* The current parsing context. */
-    pm_context_node_t *current_context;
+    /* Slot 0 holds PM_CONTEXT_NONE. The depth indexes the current frame. */
+    pm_context_frame_t *contexts;
+    uint32_t context_depth;
+    uint32_t context_capacity;
 
-    /*
-     * Context nodes that have been popped, kept for reuse by the next push.
-     * Context nodes are allocated from the scratch arena, so they are never
-     * freed individually.
-     */
-    pm_context_node_t *free_contexts;
+    /* One bit per context present anywhere on the stack. */
+    uint64_t context_mask;
 
     /*
      * The encoding functions for the current file is attached to the parser as

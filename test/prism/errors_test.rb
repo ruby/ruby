@@ -101,6 +101,15 @@ module Ruby::Prism
       assert_equal "retry", errors.first.location.slice
     end
 
+    def test_end_block_exit_after_nested_defined_expressions
+      nested = "defined?(" * 32 + "nil" + ")" * 32
+      source = "defined?(begin; #{nested}; END { break }; end)\nEND { break }"
+
+      errors = Ruby::Prism.parse(source, version: "4.1").errors
+      assert_equal [:invalid_block_exit], errors.map(&:type)
+      assert_equal 2, errors.first.location.start_line
+    end
+
     def test_top_level_yield_is_invalid_in_dead_code
       assert_equal [:invalid_yield], Ruby::Prism.parse("yield if false").errors.map(&:type)
       assert Ruby::Prism.parse_success?("def f; yield if false; end")
