@@ -913,6 +913,9 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 }
 
                 rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
+                /* rb_str_buf_cat may trigger GC while resizing res before
+                 * copying from buf. */
+                RB_GC_GUARD(buf);
             }
             break;
 
