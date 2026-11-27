@@ -50,6 +50,18 @@ module Ruby::Prism
       end
     end
 
+    def test_forwarding_parameter_in_a_nested_method_definition
+      [
+        "def outer value = def inner...\nend, range = 1...2\nend",
+        "def outer(value: [def self.inner...; end, 1...2]); end"
+      ].each do |source|
+        result = Ruby::Prism.lex(source)
+        assert_empty result.errors, source
+        ellipses = result.value.select { |token| token.value == "..." }
+        assert_equal %i[UDOT_DOT_DOT DOT_DOT_DOT], ellipses.map(&:type), source
+      end
+    end
+
     def test_do_after_a_command_with_a_brace_block
       {
         "outer def f = super A::B() {} do end" => :KEYWORD_DO_BLOCK,

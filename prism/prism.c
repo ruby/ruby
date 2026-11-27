@@ -7917,7 +7917,7 @@ context_pop(pm_parser_t *parser) {
 
 static bool
 context_p(const pm_parser_t *parser, pm_context_t context) {
-    return parser->current_context != NULL && (parser->current_context->mask & ((uint64_t) 1 << context)) != 0;
+    return parser->current_context != NULL && (parser->current_context->mask & ((uint64_t) 1 << context));
 }
 
 static bool
@@ -11153,8 +11153,8 @@ parser_lex(pm_parser_t *parser) {
 
                     if (match(parser, '.')) {
                         if (match(parser, '.')) {
-                            // If we're _not_ inside a range within default parameters
-                            if (!context_p(parser, PM_CONTEXT_DEFAULT_PARAMS) && context_p(parser, PM_CONTEXT_DEF_PARAMS)) {
+                            /* A nested def starts its own parameter list, even inside a default value. */
+                            if (parser->current_context != NULL && parser->current_context->context == PM_CONTEXT_DEF_PARAMS) {
                                 if (lex_state_p(parser, PM_LEX_STATE_END)) {
                                     lex_state_set(parser, PM_LEX_STATE_BEG);
                                 } else {
