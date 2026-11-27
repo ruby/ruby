@@ -16,7 +16,9 @@ describe "File.ctime" do
 
   platform_is :linux, :windows do
     it "returns the change time for the named file (the time at which directory information about the file was changed, not the file itself) with microseconds." do
-      supports_subseconds = Integer(`stat -c%z #{__FILE__}`[/\.(\d{1,6})/, 1], 10)
+      # File.ctime is the birthtime on Windows
+      format = platform_is(:windows) ? "%w" : "%z"
+      supports_subseconds = Integer(`stat -c#{format} #{__FILE__}`[/\.(\d{1,6})/, 1], 10)
       if supports_subseconds != 0
         File.ctime(__FILE__).usec.should > 0
       else
