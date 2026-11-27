@@ -13132,10 +13132,7 @@ parse_resource_recovery(pm_parser_t *parser, uint16_t depth) {
         pm_parser_err_stack_exhausted(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current));
     }
 
-    if (context_recoverable(parser, &parser->current)) {
-        parser->recovering = true;
-    }
-
+    pm_location_t location;
     if (match1(parser, PM_TOKEN_HEREDOC_START)) {
         pm_token_t opening = parser->current;
         PRISM_ASSERT(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
@@ -13153,10 +13150,16 @@ parse_resource_recovery(pm_parser_t *parser, uint16_t depth) {
         }
 
         parser->previous = opening;
-        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &opening), PM_TOKEN_LENGTH(&opening)));
+        location = TOK2LOC(parser, &opening);
+    } else {
+        location = PM_LOCATION_INIT(PM_TOKEN_END(parser, &parser->previous), 0);
     }
 
-    return UP(pm_error_recovery_node_create(parser, PM_TOKEN_END(parser, &parser->previous), 0));
+    /* Skipping a heredoc can expose the terminator of an enclosing context.
+     * Leave that token for its owner when unwinding. */
+    if (context_recoverable(parser, &parser->current)) parser->recovering = true;
+
+    return UP(pm_error_recovery_node_create(parser, location.start, location.length));
 }
 
 /* Discard an unexpected token without abandoning lexer state owned by it.

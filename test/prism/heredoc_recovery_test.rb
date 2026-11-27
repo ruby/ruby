@@ -68,6 +68,29 @@ module Ruby::Prism
       end
     end
 
+    def test_missing_lambda_end_preserves_interpolation_after_heredoc
+      source = <<~'RUBY'
+        <<OUTER
+        #{-> do
+          <<INNER}
+        text
+        INNER
+        OUTER
+        :after
+      RUBY
+      result = assert_bounded_locations(source)
+      outer, following = result.value.statements.body
+      interpolation = outer.parts.first
+      node = interpolation.statements.body.first
+
+      assert_include result.errors.map(&:type), :lambda_term_end
+      assert_equal "-> do\n  <<INNER", node.location.slice
+      assert_equal "}", interpolation.closing_loc.slice
+      assert_equal interpolation.closing_loc.start_offset, node.closing_loc.start_offset
+      assert_equal 0, node.closing_loc.length
+      assert_equal ":after", following.location.slice
+    end
+
     def test_documentation_at_eof_inside_interpolation
       ["", "a", "if", "foo"].each do |tail|
         source = "if A\n<<0\n\#{\n=begin\n#{tail}"
