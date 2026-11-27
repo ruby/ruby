@@ -682,7 +682,7 @@ impl Assembler {
                     // combine displacements -- no indirection needed. Large
                     // displacements are handled by split_stack_membase().
                     let Mem { base, disp: stack_disp, .. } = asm.stack_state.stack_membase_to_mem(stack_membase);
-                    Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
+                    Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: 64 })
                 }
                 Opnd::Mem(Mem { base: MemBase::StackIndirect { stack_idx }, disp: opnd_disp, num_bits: opnd_num_bits }) => {
                     // The spilled value (a pointer) lives at a stack slot. Load it
@@ -2883,6 +2883,22 @@ mod tests {
         0x8: sturb w16, [x29, #-8]
         0xc: ldur x17, [x29, #-8]
         0x10: cmp x0, x17
+        ");
+    }
+
+    #[test]
+    fn test_cmp_reg32_mem32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let w19 = Opnd::Reg(W19.unwrap_reg());
+        asm.cmp(w19, Opnd::mem(32, Opnd::Reg(X20_REG), 0));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur w16, [x20]
+        0x4: stur w16, [x29, #-8]
+        0x8: ldur w17, [x29, #-8]
+        0xc: cmp w19, w17
         ");
     }
 
