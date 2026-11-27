@@ -302,7 +302,7 @@ They are still available on rubygems.org and can be installed with
 * net-protocol 0.4.0
   * 0.2.2 to [v0.3.0][net-protocol-v0.3.0], [v0.4.0][net-protocol-v0.4.0]
 * open3 0.3.1
-  * 0.2.1 to [v0.3.0][open3-v0.3.0]
+  * 0.2.1 to [v0.3.0][open3-v0.3.0], [v0.3.1][open3-v0.3.1]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
@@ -330,7 +330,7 @@ They are still available on rubygems.org and can be installed with
 * uri 1.1.2
   * 1.1.1 to [v1.1.2][uri-v1.1.2]
 * zlib 3.3.0
-  * 3.2.2 to [v3.2.3][zlib-v3.2.3], [v3.2.4][zlib-v3.2.4]
+  * 3.2.2 to [v3.2.3][zlib-v3.2.3], [v3.2.4][zlib-v3.2.4], [v3.3.0][zlib-v3.3.0]
 
 ### The following bundled gems are updated.
 
@@ -892,6 +892,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [net-protocol-v0.3.0]: https://github.com/ruby/net-protocol/releases/tag/v0.3.0
 [net-protocol-v0.4.0]: https://github.com/ruby/net-protocol/releases/tag/v0.4.0
 [open3-v0.3.0]: https://github.com/ruby/open3/releases/tag/v0.3.0
+[open3-v0.3.1]: https://github.com/ruby/open3/releases/tag/v0.3.1
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4
@@ -912,6 +913,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [uri-v1.1.2]: https://github.com/ruby/uri/releases/tag/v1.1.2
 [zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
 [zlib-v3.2.4]: https://github.com/ruby/zlib/releases/tag/v3.2.4
+[zlib-v3.3.0]: https://github.com/ruby/zlib/releases/tag/v3.3.0
 [power_assert-v3.1.0]: https://github.com/ruby/power_assert/releases/tag/v3.1.0
 [rake-v13.4.0]: https://github.com/ruby/rake/releases/tag/v13.4.0
 [rake-v13.4.1]: https://github.com/ruby/rake/releases/tag/v13.4.1
