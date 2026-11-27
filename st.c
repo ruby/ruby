@@ -1371,15 +1371,16 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
 static st_table *
 st_replace_no_check(st_table *new_tab, st_table *old_tab)
 {
-    *new_tab = *old_tab;
     size_t memsize = get_allocated_entries(old_tab) * sizeof(st_table_entry);
     memsize += bins_size(old_tab);
-    new_tab->entries = (st_table_entry *) malloc(memsize);
+    st_table_entry *entries = (st_table_entry *) malloc(memsize);
 #ifndef RUBY
-    if (new_tab->entries == NULL) {
+    if (entries == NULL) {
         return NULL;
     }
 #endif
+    *new_tab = *old_tab;
+    new_tab->entries = entries;
     MEMCPY(new_tab->entries, old_tab->entries, char, memsize);
 
     return new_tab;
@@ -1407,7 +1408,7 @@ st_copy(st_table *old_tab)
 #endif
 
     if (st_replace_no_check(new_tab, old_tab) == NULL) {
-        st_free_table(new_tab);
+        free_fixed_ptr(new_tab);
         return NULL;
     }
 
