@@ -210,40 +210,61 @@ all refinements from the same module are active when a refined method
 
 == Method Lookup
 
-When looking up a method for an instance of class +C+ Ruby checks:
+Method lookup in Ruby is based on the ancestor chain. You can see the
+ancestor chain for any object in Ruby by doing:
 
-* The refinements of +C+, in reverse order of activation
-* The prepended modules of +C+
-* +C+
-* The included modules of +C+
+  object.singleton_class.ancestors
+  # or, if the object does not support a singleton class:
+  object.class.ancestors
 
-If no method was found at any point this repeats with the superclass of +C+.
+The ancestor chain is constructed as follows:
 
-Note that methods in a subclass have priority over refinements in a
-superclass.  For example, if the method <code>/</code> is defined in a
+* Subclasses are before superclasses in the ancestor chain
+* Prepended modules are before the class they prepend in the ancestor
+  chain, in reverse order in which they were prepended.
+* Included modules are after the class they are included in in the
+  ancestor chain, in reverse order in which they were included.
+
+When looking up a method for an object, Ruby goes through each ancestor:
+
+* If the class/module has been refined, Ruby will consider the refinements
+  activated at the point the method was called, in reverse order of
+  activation.
+* Otherwise, Ruby will check the methods of the class/module itself.
+
+If no method was found at either point this repeats with the next
+ancestor.
+
+Note that methods in a earlier ancestor have priority over refinements in a
+later ancestor.  For example, if the method <code>/</code> is defined in a
 refinement for Numeric <code>1 / 2</code> invokes the original Integer#/
-because Integer is a subclass of Numeric and is searched before the refinements
-for the superclass Numeric. Since the method <code>/</code> is also present
-in child +Integer+, the method lookup does not move up to the superclass.
-
-However, if a method +foo+ is defined on Numeric in a refinement, <code>1.foo</code>
+because Integer is a comes before Numeric in the ancestor chain.  However,
+if a method +foo+ is defined on Numeric in a refinement, <code>1.foo</code>
 invokes that method since +foo+ does not exist on Integer.
 
 == +super+
 
-When +super+ is invoked method lookup checks:
+When +super+ is invoked, method lookup starts:
 
-* The included modules of the current class.  Note that the current class may
-  be a refinement.
-* If the current class is a refinement, the method lookup proceeds as in the
-  Method Lookup section above.
-* If the current class has a direct superclass, the method proceeds as in the
-  Method Lookup section above using the superclass.
+* If the method is in a refinement:
+  * At the next active refinement in scope at the +super+ call site,
+    excluding the current refinement, if such a refinement exists
+  * Otherwise, at the refined class or module
+* Otherwise, at the next ancestor
 
-Note that +super+ in a method of a refinement invokes the method in the
-refined class even if there is another refinement which has been activated in
-the same context. This is only true for +super+ in a method of a refinement, it
-does not apply to +super+ in a method in a module that is included in a refinement.
+Method lookup then proceeds as described in the Method Lookup section
+above.
+
+Refinements activated at the call site of a refinement method do not
+affect +super+ inside that method. Only refinements activated at the
+point +super+ was called affect method lookup for that +super+ call.
+You cannot use refinements to insert into the middle of a method
+lookup chain, only to insert at the start of a method lookup chain,
+unless you control the +super+ call sites.
+
+Note that if you refine a module, the refinement method can call +super+
+to call the method in the module, but the method in the module cannot
+call +super+ to continue the method lookup process to further ancestors.
 
 == Methods Introspection
 

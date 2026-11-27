@@ -13,6 +13,6 @@ describe "Matrix::LUPDecomposition#l" do
   end
 
   it "returns a lower triangular matrix" do
-    @l.lower_triangular?.should be_true
+    @l.lower_triangular?.should == true
   end
 end

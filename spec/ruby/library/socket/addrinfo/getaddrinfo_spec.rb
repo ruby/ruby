@@ -5,8 +5,8 @@ describe 'Addrinfo.getaddrinfo' do
   it 'returns an Array of Addrinfo instances' do
     array = Addrinfo.getaddrinfo('127.0.0.1', 80)
 
-    array.should be_an_instance_of(Array)
-    array[0].should be_an_instance_of(Addrinfo)
+    array.should.instance_of?(Array)
+    array[0].should.instance_of?(Addrinfo)
   end
 
   SocketSpecs.each_ip_protocol do |family, ip_address|
@@ -54,7 +54,7 @@ describe 'Addrinfo.getaddrinfo' do
       array    = Addrinfo.getaddrinfo('127.0.0.1', 80)
       possible = [Socket::SOCK_STREAM, Socket::SOCK_DGRAM]
 
-      possible.should include(array[0].socktype)
+      possible.should.include?(array[0].socktype)
     end
   end
 
@@ -69,7 +69,7 @@ describe 'Addrinfo.getaddrinfo' do
       array    = Addrinfo.getaddrinfo('127.0.0.1', 80)
       possible = [Socket::IPPROTO_TCP, Socket::IPPROTO_UDP]
 
-      possible.should include(array[0].protocol)
+      possible.should.include?(array[0].protocol)
     end
   end
 
@@ -82,6 +82,63 @@ describe 'Addrinfo.getaddrinfo' do
   it 'sets the canonical name when AI_CANONNAME is given as a flag' do
     array = Addrinfo.getaddrinfo('localhost', 80, nil, nil, nil, Socket::AI_CANONNAME)
 
-    array[0].canonname.should be_an_instance_of(String)
+    array[0].canonname.should.instance_of?(String)
+  end
+end
+
+describe "Addrinfo.getaddrinfo with a Fiber scheduler" do
+  require_relative '../../../core/fiber/fixtures/scheduler'
+
+  before :each do
+    @scheduler = Class.new(FiberSpecs::LoggingScheduler) do
+      attr_accessor :addresses
+
+      def address_resolve(hostname)
+        @events << { event: :address_resolve, fiber: Fiber.current, args: [hostname] }
+        @addresses
+      end
+    end.new
+    @scheduler.addresses = ["127.0.0.1"]
+    Fiber.set_scheduler(@scheduler)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+  end
+
+  def getaddrinfo(*args)
+    Fiber.new(blocking: false) { Addrinfo.getaddrinfo(*args) }.resume
+  end
+
+  it "calls the scheduler's #address_resolve with the host name and uses the addresses it returns" do
+    getaddrinfo("example.invalid", 80, :INET, :STREAM).map(&:ip_address).should == ["127.0.0.1"]
+
+    @scheduler.events.map { |e| [e[:event], e[:args]] }.should == [[:address_resolve, ["example.invalid"]]]
+  end
+
+  it "only keeps the numeric addresses #address_resolve returns" do
+    @scheduler.addresses = ["other.invalid", "127.0.0.2"]
+
+    getaddrinfo("example.invalid", 80, :INET, :STREAM).map(&:ip_address).should == ["127.0.0.2"]
+  end
+
+  it "raises SocketError when #address_resolve returns an empty Array, without resolving the host itself" do
+    @scheduler.addresses = []
+
+    -> { getaddrinfo("localhost", 80) }.should.raise(SocketError)
+    @scheduler.events.map { |e| e[:event] }.should == [:address_resolve]
+  end
+
+  it "raises SocketError when #address_resolve returns nil, without resolving the host itself" do
+    @scheduler.addresses = nil
+
+    -> { getaddrinfo("localhost", 80) }.should.raise(SocketError)
+    @scheduler.events.map { |e| e[:event] }.should == [:address_resolve]
+  end
+
+  it "resolves the host itself when the scheduler has no #address_resolve" do
+    Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+
+    getaddrinfo("localhost", 80, :INET, :STREAM).map(&:ip_address).should.include?("127.0.0.1")
   end
 end

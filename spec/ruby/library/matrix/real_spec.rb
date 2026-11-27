@@ -4,23 +4,20 @@ require 'matrix'
 
 describe "Matrix#real?" do
   it "returns true for matrices with all real entries" do
-    Matrix[ [1,   2], [3, 4] ].real?.should be_true
-    Matrix[ [1.9, 2], [3, 4] ].real?.should be_true
+    Matrix[ [1,   2], [3, 4] ].real?.should == true
+    Matrix[ [1.9, 2], [3, 4] ].real?.should == true
   end
 
   it "returns true for empty matrices" do
-    Matrix.empty.real?.should be_true
+    Matrix.empty.real?.should == true
   end
 
   it "returns false if one element is a Complex" do
-    Matrix[ [Complex(1,1), 2], [3, 4] ].real?.should be_false
+    Matrix[ [Complex(1,1), 2], [3, 4] ].real?.should == false
   end
 
-  # Guard against the Mathn library
-  guard -> { !defined?(Math.rsqrt) } do
-    it "returns false if one element is a Complex whose imaginary part is 0" do
-      Matrix[ [Complex(1,0), 2], [3, 4] ].real?.should be_false
-    end
+  it "returns false if one element is a Complex whose imaginary part is 0" do
+    Matrix[ [Complex(1,0), 2], [3, 4] ].real?.should == false
   end
 end
 
@@ -37,7 +34,7 @@ describe "Matrix#real" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.ins.real.should be_an_instance_of(MatrixSub)
+      MatrixSub.ins.real.should.instance_of?(MatrixSub)
     end
   end
 end

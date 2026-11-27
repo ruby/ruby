@@ -5,7 +5,6 @@ module JITSupport
 
   def yjit_supported?
     return @yjit_supported if defined?(@yjit_supported)
-    # nil in mswin
     @yjit_supported = ![nil, 'no'].include?(RbConfig::CONFIG['YJIT_SUPPORT'])
   end
 

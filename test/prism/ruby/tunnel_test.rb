@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class TunnelTest < TestCase
     def test_tunnel
-      program = Prism.parse("foo(1) +\n  bar(2, 3) +\n  baz(3, 4, 5)").value
+      program = Ruby::Prism.parse("foo(1) +\n  bar(2, 3) +\n  baz(3, 4, 5)").value
 
       tunnel = program.tunnel(1, 4).last
       assert_kind_of IntegerNode, tunnel

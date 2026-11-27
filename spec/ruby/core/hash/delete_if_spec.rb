@@ -12,13 +12,13 @@ describe "Hash#delete_if" do
 
   it "removes every entry for which block is true and returns self" do
     h = { a: 1, b: 2, c: 3, d: 4 }
-    h.delete_if { |k,v| v % 2 == 1 }.should equal(h)
+    h.delete_if { |k,v| v % 2 == 1 }.should.equal?(h)
     h.should == { b: 2, d: 4 }
   end
 
   it "removes all entries if the block is true" do
     h = { a: 1, b: 2, c: 3 }
-    h.delete_if { |k,v| true }.should equal(h)
+    h.delete_if { |k,v| true }.should.equal?(h)
     h.should == {}
   end
 
@@ -35,8 +35,8 @@ describe "Hash#delete_if" do
   end
 
   it "raises a FrozenError if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.delete_if { false } }.should raise_error(FrozenError)
-    -> { HashSpecs.empty_frozen_hash.delete_if { true } }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.delete_if { false } }.should.raise(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.delete_if { true } }.should.raise(FrozenError)
   end
 
   it_behaves_like :hash_iteration_no_block, :delete_if

@@ -9,16 +9,17 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include <signal.h>
 
 // GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
 // GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)
-// GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated pthread
-//                         (and if the call is interrupted, the pthread is detached)
+// GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated native thread
+//                         (and if the call is interrupted, the thread is left running)
 
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
 #    define GETADDRINFO_IMPL 0
-#  elif !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)
+#  elif !defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH))
 #    define GETADDRINFO_IMPL 1
 #  else
 #    define GETADDRINFO_IMPL 2
@@ -359,6 +360,11 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 
 #elif GETADDRINFO_IMPL == 2
 
+#ifndef EAI_SYSTEM
+/* Winsock has no EAI_SYSTEM. Report a thread that fails to start as a temporary failure. */
+#  define EAI_SYSTEM EAI_AGAIN
+#endif
+
 struct getaddrinfo_arg
 {
     char *node, *service;
@@ -456,6 +462,8 @@ do_getaddrinfo(void *ptr)
 
     if (need_free) free_getaddrinfo_arg(arg);
 
+    rb_thread_register_exiting();
+
     return 0;
 }
 
@@ -495,11 +503,55 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
+#ifdef _WIN32
+
+struct raddrinfo_thread_arg
+{
+    void *(*start_routine)(void *);
+    void *arg;
+};
+
+static unsigned __stdcall
+raddrinfo_thread_start(void *ptr)
+{
+    struct raddrinfo_thread_arg *th_arg = ptr;
+    void *(*start_routine)(void *) = th_arg->start_routine;
+    void *arg = th_arg->arg;
+
+    free(th_arg);
+    start_routine(arg);
+    return 0;
+}
+
 int
-raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
+raddrinfo_thread_create(void *(*start_routine) (void *), void *arg)
+{
+    struct raddrinfo_thread_arg *th_arg = malloc(sizeof(struct raddrinfo_thread_arg));
+    if (!th_arg) return ENOMEM;
+    th_arg->start_routine = start_routine;
+    th_arg->arg = arg;
+
+    // _beginthreadex(3), not CreateThread, because the thread calls the CRT.
+    uintptr_t th = _beginthreadex(NULL, 0, raddrinfo_thread_start, th_arg, 0, NULL);
+    if (!th) {
+        int err = errno;
+        free(th_arg);
+        return err;
+    }
+    // Nobody joins the thread, so drop the handle and let the system reap it.
+    CloseHandle((HANDLE)th);
+    return 0;
+}
+
+#else
+
+// start_routine must call rb_thread_register_exiting(), or the thread is never joined.
+int
+raddrinfo_thread_create(void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
     int saved_errno;
+    pthread_t th;
 #ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
     pthread_attr_t attr;
     pthread_attr_t *attr_p = &attr;
@@ -515,7 +567,7 @@ retry_attr_init:
         }
         return err;
     }
-    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_JOINABLE)) != 0) {
         saved_errno = errno;
         pthread_attr_destroy(attr_p);
         errno = saved_errno;
@@ -529,7 +581,7 @@ retry_attr_init:
         //
         // https://bugs.openjdk.org/browse/JDK-8268605
         // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
-        ret = pthread_create(th, attr_p, start_routine, arg);
+        ret = pthread_create(&th, attr_p, start_routine, arg);
     } while (ret == EAGAIN && limit-- > 0);
 #ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
     saved_errno = errno;
@@ -537,13 +589,11 @@ retry_attr_init:
     if (ret != 0) {
         errno = saved_errno;
     }
-#else
-    if (ret == 0) {
-        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
-    }
 #endif
     return ret;
 }
+
+#endif
 
 static void *
 fork_safe_do_getaddrinfo(void *ptr)
@@ -566,8 +616,7 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
+    if (raddrinfo_thread_create(fork_safe_do_getaddrinfo, arg) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
@@ -601,13 +650,9 @@ start:
     if (need_free) free_getaddrinfo_arg(arg);
 
     if (timedout) {
-        if (arg->ai) {
-            rsock_raise_user_specified_timeout(arg->ai, Qnil, Qnil);
-        } else {
-            VALUE host = rb_str_new_cstr(hostp);
-            VALUE port = rb_str_new_cstr(portp);
-            rsock_raise_user_specified_timeout(NULL, host, port);
-        }
+        VALUE host = hostp ? rb_str_new_cstr(hostp) : Qnil;
+        VALUE port = portp ? rb_str_new_cstr(portp) : Qnil;
+        rsock_raise_user_specified_timeout(NULL, host, port);
     }
 
     // If the current thread is interrupted by asynchronous exception, the following raises the exception.
@@ -660,6 +705,13 @@ nogvl_getnameinfo(void *arg)
                                       ptr->serv, (socklen_t)ptr->servlen,
                                       ptr->flags);
 }
+
+static void *
+fork_safe_getnameinfo(void *arg)
+{
+    return rb_thread_prevent_fork(nogvl_getnameinfo, arg);
+}
+
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
@@ -678,7 +730,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.serv = serv;
     arg.servlen = servlen;
     arg.flags = flags;
-    ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getnameinfo, &arg, RUBY_UBF_IO, 0);
+    ret = (int)(VALUE)rb_thread_call_without_gvl(fork_safe_getnameinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
 }
 
@@ -763,6 +815,8 @@ do_getnameinfo(void *ptr)
 
     if (need_free) free_getnameinfo_arg(arg);
 
+    rb_thread_register_exiting();
+
     return 0;
 }
 
@@ -788,6 +842,12 @@ cancel_getnameinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
+static void *
+fork_safe_do_getnameinfo(void *ptr)
+{
+    return rb_thread_prevent_fork(do_getnameinfo, ptr);
+}
+
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
@@ -809,8 +869,7 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_thread_create(fork_safe_do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
@@ -978,7 +1037,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
     const struct addrinfo *hints, struct rb_addrinfo **res)
 {
     int error, res_allocated = 0, _additional_flags = 0;
-    long i, len;
+    rb_len_t i, len;
     struct addrinfo *ai, *ai_tail = NULL;
     char *hostp;
     char _hbuf[NI_MAXHOST];
@@ -1041,6 +1100,20 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     }
     hints->ai_flags |= additional_flags;
 
+#if !defined(INET6) && defined(AF_INET6)
+    /*
+     * IPv6 support is disabled (--disable-ipv6), but the system resolver
+     * may still return IPv6 addresses.  Restrict resolution to IPv4 so that
+     * no IPv6 addresses leak into Ruby.
+     */
+    if (hints->ai_family == PF_UNSPEC) {
+        hints->ai_family = PF_INET;
+    }
+    else if (hints->ai_family == PF_INET6) {
+        rsock_raise_resolution_error_for_host("getaddrinfo", EAI_FAMILY, host);
+    }
+#endif
+
     error = numeric_getaddrinfo(hostp, portp, hints, &ai);
     if (error == 0) {
         res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
@@ -1073,7 +1146,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");
         }
-        rsock_raise_resolution_error("getaddrinfo", error);
+        rsock_raise_resolution_error_for_host("getaddrinfo", error, host);
     }
 
     return res;
@@ -1295,7 +1368,7 @@ addrinfo_memsize(const void *ptr)
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
     {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1899,15 +1972,12 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
 
 #if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
           /* AF_LINK is defined in 4.4BSD derivations since Net2.
-             link_ntoa is also defined at Net2.
-             However Debian GNU/kFreeBSD defines AF_LINK but
-             don't have link_ntoa.  */
+             link_ntoa is also defined at Net2.  */
           case AF_LINK:
           {
             /*
              * Simple implementation using link_ntoa():
-             * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
-             * Also, the format is bit different.
+             * The format is bit different.
              *
              * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
              * break;
@@ -2327,7 +2397,6 @@ addrinfo_protocol(VALUE self)
 /*
  * call-seq:
  *   addrinfo.to_sockaddr => string
- *   addrinfo.to_s => string
  *
  * returns the socket address as packed struct sockaddr string.
  *
@@ -2342,6 +2411,20 @@ addrinfo_to_sockaddr(VALUE self)
     VALUE ret;
     ret = rb_str_new((char*)&rai->addr, rai->sockaddr_len);
     return ret;
+}
+
+/*
+ * call-seq:
+ *   addrinfo.to_s => string
+ *
+ * Deprecated at 1.9.2.  Do not use.
+ */
+static VALUE
+addrinfo_to_s(VALUE self)
+{
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "Addrinfo#to_s has been "
+                     "deprecated since 1.9.2; Use #to_sockaddr instead");
+    return addrinfo_to_sockaddr(self);
 }
 
 /*
@@ -3131,10 +3214,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
     int err = 0, shared_need_free = 0;
     struct addrinfo *ai = NULL;
 
+#ifndef _WIN32
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGPIPE);
     pthread_sigmask(SIG_BLOCK, &set, NULL);
+#endif
 
     err = numeric_getaddrinfo(shared->node, shared->service, &entry->hints, &entry->ai);
 
@@ -3151,6 +3236,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
 
     /* for testing HEv2 */
     if (entry->test_sleep_ms > 0) {
+#ifdef _WIN32
+        /* Not Sleep(), which the ruby DLL exports as rb_w32_Sleep().  That
+         * waits through the Ruby thread scheduler, which this thread does
+         * not belong to. */
+        SleepEx((DWORD)entry->test_sleep_ms, FALSE);
+#else
         struct timespec sleep_ts;
         sleep_ts.tv_sec = entry->test_sleep_ms / 1000;
         sleep_ts.tv_nsec = (entry->test_sleep_ms % 1000) * 1000000L;
@@ -3159,6 +3250,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
             sleep_ts.tv_nsec = sleep_ts.tv_nsec % 1000000000L;
         }
         nanosleep(&sleep_ts, NULL);
+#endif
     }
     if (entry->test_ecode != 0) {
         err = entry->test_ecode;
@@ -3175,7 +3267,6 @@ do_fast_fallback_getaddrinfo(void *ptr)
         IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
         if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
-            entry->err = errno;
             entry->has_syserr = true;
         }
         if (--(entry->refcount) == 0) {
@@ -3190,6 +3281,8 @@ do_fast_fallback_getaddrinfo(void *ptr)
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }
+
+    rb_thread_register_exiting();
 
     return 0;
 }
@@ -3269,7 +3362,7 @@ rsock_init_addrinfo(void)
 #endif
 
     rb_define_method(rb_cAddrinfo, "to_sockaddr", addrinfo_to_sockaddr, 0);
-    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_sockaddr, 0); /* compatibility for ruby before 1.9.2 */
+    rb_define_method(rb_cAddrinfo, "to_s", addrinfo_to_s, 0); /* compatibility for ruby before 1.9.2 */
 
     rb_define_method(rb_cAddrinfo, "getnameinfo", addrinfo_getnameinfo, -1);
 

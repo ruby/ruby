@@ -170,6 +170,7 @@ cp949_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end
   const UChar *p;
   int len;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 
@@ -211,7 +212,11 @@ OnigEncodingDefine(cp949, CP949) = {
   onigenc_not_support_get_ctype_code_range,
   cp949_left_adjust_char_head,
   cp949_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

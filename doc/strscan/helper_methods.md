@@ -1,8 +1,8 @@
-## Helper Methods
+# Helper Methods
 
 These helper methods display values returned by scanner's methods.
 
-### `put_situation(scanner)`
+## `put_situation(scanner)`
 
 Display scanner's situation:
 
@@ -21,7 +21,7 @@ put_situation(scanner)
 #   rest_size: 6
 ```
 
-### `put_match_values(scanner)`
+## `put_match_values(scanner)`
 
 Display the scanner's match values:
 
@@ -49,7 +49,7 @@ put_match_values(scanner)
 #     [4]:          nil
 ```
 
-### `match_values_cleared?(scanner)`
+## `match_values_cleared?(scanner)`
 
 Returns whether the scanner's match values are all properly cleared:
 

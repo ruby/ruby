@@ -15,7 +15,7 @@ describe "Kernel#!~" do
   end
 
   it "raises NoMethodError if self does not respond to #=~" do
-    -> { Object.new !~ :foo }.should raise_error(NoMethodError)
+    -> { Object.new !~ :foo }.should.raise(NoMethodError)
   end
 
   it 'can be overridden in subclasses' do

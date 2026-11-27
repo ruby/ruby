@@ -22,6 +22,10 @@
  */
 #include "ruby/internal/has/attribute.h"
 
+#if defined(__MINGW32__)
+#include <stdio.h>              /* for __MINGW_PRINTF_FORMAT */
+#endif
+
 /** Wraps (or simulates) `__attribute__((format))` */
 #if RBIMPL_HAS_ATTRIBUTE(format)
 # define RBIMPL_ATTR_FORMAT(x, y, z) __attribute__((__format__(x, y, z)))

@@ -10,9 +10,9 @@ describe "ENV.each_key" do
       ENV.clear
       ENV["1"] = "3"
       ENV["2"] = "4"
-      ENV.each_key { |k| e << k }.should equal(ENV)
-      e.should include("1")
-      e.should include("2")
+      ENV.each_key { |k| e << k }.should.equal?(ENV)
+      e.should.include?("1")
+      e.should.include?("2")
     ensure
       ENV.replace orig
     end
@@ -20,13 +20,34 @@ describe "ENV.each_key" do
 
   it "returns an Enumerator if called without a block" do
     enum = ENV.each_key
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == ENV.keys
   end
 
-  it "returns keys in the locale encoding" do
-    ENV.each_key do |key|
-      key.encoding.should == Encoding.find('locale')
+  platform_is_not :windows do
+    it "returns keys in the locale encoding" do
+      ENV.each_key do |key|
+        key.encoding.should == Encoding.find('locale')
+      end
+    end
+  end
+
+  # https://bugs.ruby-lang.org/issues/20958
+  platform_is :windows do
+    ruby_version_is ""..."3.4.11" do
+      it "returns keys in the locale encoding" do
+        ENV.each_key do |key|
+          key.encoding.should == Encoding.find('locale')
+        end
+      end
+    end
+
+    ruby_version_is "3.4.11" do
+      it "returns the keys in UTF-8" do
+        ENV.each_key do |key|
+          key.encoding.should == Encoding::UTF_8
+        end
+      end
     end
   end
 

@@ -29,6 +29,7 @@
 # - Gem::Net::HTTP#get: sends +GET+ request, returns response object.
 #
 class Gem::Net::HTTP::Get < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'GET'
   REQUEST_HAS_BODY  = false
   RESPONSE_HAS_BODY = true
@@ -60,6 +61,7 @@ end
 # - Gem::Net::HTTP#head: sends +HEAD+ request, returns response object.
 #
 class Gem::Net::HTTP::Head < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'HEAD'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = false
@@ -95,6 +97,7 @@ end
 # - Gem::Net::HTTP#post: sends +POST+ request, returns response object.
 #
 class Gem::Net::HTTP::Post < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'POST'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -130,6 +133,7 @@ end
 # - Gem::Net::HTTP#put: sends +PUT+ request, returns response object.
 #
 class Gem::Net::HTTP::Put < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PUT'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -162,6 +166,7 @@ end
 # - Gem::Net::HTTP#delete: sends +DELETE+ request, returns response object.
 #
 class Gem::Net::HTTP::Delete < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'DELETE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -193,6 +198,7 @@ end
 # - Gem::Net::HTTP#options: sends +OPTIONS+ request, returns response object.
 #
 class Gem::Net::HTTP::Options < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'OPTIONS'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -224,6 +230,7 @@ end
 # - Gem::Net::HTTP#trace: sends +TRACE+ request, returns response object.
 #
 class Gem::Net::HTTP::Trace < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'TRACE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -258,6 +265,7 @@ end
 # - Gem::Net::HTTP#patch: sends +PATCH+ request, returns response object.
 #
 class Gem::Net::HTTP::Patch < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PATCH'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -285,6 +293,7 @@ end
 # - Gem::Net::HTTP#propfind: sends +PROPFIND+ request, returns response object.
 #
 class Gem::Net::HTTP::Propfind < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PROPFIND'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -308,6 +317,7 @@ end
 # - Gem::Net::HTTP#proppatch: sends +PROPPATCH+ request, returns response object.
 #
 class Gem::Net::HTTP::Proppatch < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'PROPPATCH'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -331,6 +341,7 @@ end
 # - Gem::Net::HTTP#mkcol: sends +MKCOL+ request, returns response object.
 #
 class Gem::Net::HTTP::Mkcol < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'MKCOL'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -354,6 +365,7 @@ end
 # - Gem::Net::HTTP#copy: sends +COPY+ request, returns response object.
 #
 class Gem::Net::HTTP::Copy < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'COPY'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -377,6 +389,7 @@ end
 # - Gem::Net::HTTP#move: sends +MOVE+ request, returns response object.
 #
 class Gem::Net::HTTP::Move < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'MOVE'
   REQUEST_HAS_BODY = false
   RESPONSE_HAS_BODY = true
@@ -400,6 +413,7 @@ end
 # - Gem::Net::HTTP#lock: sends +LOCK+ request, returns response object.
 #
 class Gem::Net::HTTP::Lock < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'LOCK'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
@@ -423,8 +437,8 @@ end
 # - Gem::Net::HTTP#unlock: sends +UNLOCK+ request, returns response object.
 #
 class Gem::Net::HTTP::Unlock < Gem::Net::HTTPRequest
+  # :stopdoc:
   METHOD = 'UNLOCK'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
 end
-

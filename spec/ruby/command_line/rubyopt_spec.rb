@@ -59,6 +59,11 @@ describe "Processing RUBYOPT" do
     ruby_exe("p $VERBOSE").chomp.should == "true"
   end
 
+  it "is overwritten by a cli switch" do
+    ENV["RUBYOPT"] = "-W2"
+    ruby_exe("p $VERBOSE", options: "-W0").chomp.should == "nil"
+  end
+
   it "suppresses deprecation warnings for '-W:no-deprecated'" do
     ENV["RUBYOPT"] = '-W:no-deprecated'
     result = ruby_exe('$; = ""', args: '2>&1')
@@ -81,6 +86,12 @@ describe "Processing RUBYOPT" do
     f = fixture __FILE__, "rubyopt"
     ENV["RUBYOPT"] = "-r#{f}"
     ruby_exe("0", args: '2>&1').should =~ /^rubyopt.rb required/
+  end
+
+  it "requires from CLI -r first and then from RUBYOPT -r" do
+    ENV["RUBYOPT"] = "-r#{fixture(__FILE__, "rubyopt.rb")}"
+    ruby_exe("", options: "-r#{fixture(__FILE__, "test_file.rb")}").
+      should == "REQUIRED\nrubyopt.rb required\n"
   end
 
   it "raises a RuntimeError for '-a'" do

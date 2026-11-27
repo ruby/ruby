@@ -5,9 +5,10 @@ module Bundler
     class RubygemsAggregate
       attr_reader :source_map, :sources
 
-      def initialize(sources, source_map)
+      def initialize(sources, source_map, excluded_sources = [])
         @sources = sources
         @source_map = source_map
+        @excluded_sources = excluded_sources
 
         @index = build_index
       end
@@ -28,9 +29,11 @@ module Bundler
 
       def build_index
         Index.build do |idx|
-          dependency_names = source_map.pinned_spec_names
+          dependency_names = source_map.pinned_spec_names | source_map.replacement_names
 
           sources.all_sources.each do |source|
+            next if @excluded_sources.include?(source)
+
             source.dependency_names = dependency_names - source_map.pinned_spec_names(source)
             idx.add_source source.specs
             dependency_names.concat(source.unmet_deps).uniq!

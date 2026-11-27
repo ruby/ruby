@@ -131,7 +131,8 @@ module Bundler
     attr_reader :orig_exception
 
     def initialize(orig_exception, msg)
-      full_message = msg + "\nGem Load Error is: #{orig_exception.message}\n"\
+      full_message = msg + "\nGem Load Error is:
+                      #{orig_exception.full_message(highlight: false)}\n"\
                       "Backtrace for gem load error is:\n"\
                       "#{orig_exception.backtrace.join("\n")}\n"\
                       "Bundler Error Backtrace:\n"
@@ -221,7 +222,9 @@ module Bundler
   class DirectoryRemovalError < BundlerError
     def initialize(orig_exception, msg)
       full_message = "#{msg}.\n" \
-                     "The underlying error was #{orig_exception.class}: #{orig_exception.message}, with backtrace:\n" \
+                     "The underlying error was #{orig_exception.class}:
+                     #{orig_exception.full_message(highlight: false)},
+                     with backtrace:\n" \
                      "  #{orig_exception.backtrace.join("\n  ")}\n\n" \
                      "Bundler Error Backtrace:"
       super(full_message)
@@ -262,16 +265,50 @@ module Bundler
   class InvalidArgumentError < BundlerError; status_code(40); end
 
   class IncorrectLockfileDependencies < BundlerError
-    attr_reader :spec
+    attr_reader :spec, :actual_dependencies, :lockfile_dependencies
 
-    def initialize(spec)
+    def initialize(spec, actual_dependencies = nil, lockfile_dependencies = nil)
       @spec = spec
+      @actual_dependencies = actual_dependencies
+      @lockfile_dependencies = lockfile_dependencies
     end
 
     def message
-      "Bundler found incorrect dependencies in the lockfile for #{spec.full_name}"
+      lines = ["Bundler found incorrect dependencies in the lockfile for #{spec.full_name}", ""]
+
+      if @actual_dependencies && @lockfile_dependencies
+        actual_by_name = @actual_dependencies.each_with_object({}) {|d, h| h[d.name] = d }
+        lockfile_by_name = @lockfile_dependencies.each_with_object({}) {|d, h| h[d.name] = d }
+
+        (actual_by_name.keys | lockfile_by_name.keys).sort.each do |name|
+          actual = actual_by_name[name]
+          lockfile = lockfile_by_name[name]
+          next if actual && lockfile && actual.requirement == lockfile.requirement
+
+          if actual && lockfile
+            lines << "  #{name}: gemspec specifies #{actual.requirement}, lockfile has #{lockfile.requirement}"
+          elsif actual
+            lines << "  #{name}: gemspec specifies #{actual.requirement}, not in lockfile"
+          else
+            lines << "  #{name}: not in gemspec, lockfile has #{lockfile.requirement}"
+          end
+        end
+
+        lines << ""
+      end
+
+      lines << "Please run `bundle install` to regenerate the lockfile."
+      lines.join("\n")
     end
 
     status_code(41)
+  end
+
+  class CleanError < BundlerError
+    def initialize(errors)
+      super("Bundler could not remove some unused files:\n\n#{errors.map(&:message).uniq.join("\n")}")
+    end
+
+    status_code(44)
   end
 end

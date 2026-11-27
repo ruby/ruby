@@ -496,9 +496,6 @@ module Psych
         end
       end
 
-      def dump_list o
-      end
-
       def dump_exception o, msg
         tag = ['!ruby/exception', o.class.name].join ':'
 

@@ -12,7 +12,7 @@ describe "Float#denominator" do
 
   it "returns an Integer" do
     @numbers.each do |number|
-      number.denominator.should be_kind_of(Integer)
+      number.denominator.should.is_a?(Integer)
     end
   end
 

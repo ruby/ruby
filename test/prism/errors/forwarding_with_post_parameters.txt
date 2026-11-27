@@ -1,0 +1,9 @@
+def f(opt = 1, *rest, ...) = rest
+                      ^~~ ... after rest argument
+
+def f(*, post, ...); end
+               ^~~ ... after rest argument
+
+def f(opt = 1, *rest, (first, last), ...); end
+                                     ^~~ ... after rest argument
+

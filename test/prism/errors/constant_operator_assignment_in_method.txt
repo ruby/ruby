@@ -1,0 +1,9 @@
+def foo();A+=1;end
+          ^~~~ dynamic constant assignment
+
+def bar();B||=1;end
+          ^~~~~ dynamic constant assignment
+
+def baz();C&&=1;end
+          ^~~~~ dynamic constant assignment
+

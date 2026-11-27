@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/tell'
+require 'stringio'
 
 describe "StringIO#tell" do
-  it_behaves_like :stringio_tell, :tell
+  it "is an alias of StringIO#pos" do
+    StringIO.instance_method(:tell).should == StringIO.instance_method(:pos)
+  end
 end

@@ -1,0 +1,25 @@
+prelude: |
+  # frozen_string_literal: true
+  N1   = 5
+  N2   = 42
+  N3   = 400
+  N5   = 12345
+  N10  = 1_234_567_890
+  N19  = 4_611_686_018_427_387_903
+  NEG  = -1_234_567_890
+  BIG20  = 10 ** 19 + 12_345_678_901_234_567
+  BIG40  = 10 ** 39 + 123_456_789_012_345
+  BIG100 = 10 ** 99 + 42
+benchmark:
+  fix_1digit:   "N1.to_s"
+  fix_2digit:   "N2.to_s"
+  fix_3digit:   "N3.to_s"
+  fix_5digit:   "N5.to_s"
+  fix_10digit:  "N10.to_s"
+  fix_19digit:  "N19.to_s"
+  fix_negative: "NEG.to_s"
+  big_20digit:  "BIG20.to_s"
+  big_40digit:  "BIG40.to_s"
+  big_100digit: "BIG100.to_s"
+  interp_id:    '"id=#{N10}"'
+  interp_mixed: '"a=#{N2},b=#{N5},c=#{N10}"'

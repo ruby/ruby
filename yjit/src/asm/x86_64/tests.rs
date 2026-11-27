@@ -172,6 +172,8 @@ fn test_mov() {
     check_bytes("89d8", |cb| mov(cb, EAX, EBX));
     check_bytes("89c8", |cb| mov(cb, EAX, ECX));
     check_bytes("8b9380000000", |cb| mov(cb, EDX, mem_opnd(32, RBX, 128)));
+    check_bytes("488b8100000100", |cb| mov(cb, RAX, mem_opnd(64, RCX, 0x10000)));
+    check_bytes("488b810000ffff", |cb| mov(cb, RAX, mem_opnd(64, RCX, -0x10000)));
     check_bytes("488b442404", |cb| mov(cb, RAX, mem_opnd(64, RSP, 4)));
 
     // Test `mov rax, 3` => `mov eax, 3` optimization

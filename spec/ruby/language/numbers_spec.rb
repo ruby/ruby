@@ -11,7 +11,7 @@ describe "A number literal" do
   end
 
   it "cannot have a leading underscore" do
-    -> { eval("_4_2") }.should raise_error(NameError)
+    -> { eval("_4_2") }.should.raise(NameError)
   end
 
   it "can have a decimal point" do
@@ -20,8 +20,8 @@ describe "A number literal" do
 
   it "must have a digit before the decimal point" do
     0.75.should == 0.75
-    -> { eval(".75")  }.should raise_error(SyntaxError)
-    -> { eval("-.75") }.should raise_error(SyntaxError)
+    -> { eval(".75")  }.should.raise(SyntaxError)
+    -> { eval("-.75") }.should.raise(SyntaxError)
   end
 
   it "can have an exponent" do

@@ -446,37 +446,28 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_search
     rubypath_orig = ENV['RUBYPATH']
     path_orig = ENV['PATH']
+    libpath = (path_orig if path_orig && RbConfig::CONFIG['LIBPATHENV'] == 'PATH')
 
-    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
-      t.puts "p 1"
-      t.close
+    Dir.mktmpdir("test_ruby_test_rubyoption") do |path|
+      name = "test_rubyoption.rb"
+      parent, dir = File.split(path)
+      File.write("#{path}/#{name}", "p 1")
+      load_error = %r[#{Regexp.quote dir}/#{Regexp.quote name} \(LoadError\)]
 
-      @verbose = $VERBOSE
-      $VERBOSE = nil
-
-      path, name = File.split(t.path)
-
-      ENV['PATH'] = (path_orig && RbConfig::CONFIG['LIBPATHENV'] == 'PATH') ?
-          [path, path_orig].join(File::PATH_SEPARATOR) : path
+      ENV['PATH'] = [path, *libpath].join(File::PATH_SEPARATOR)
       assert_in_out_err(%w(-S) + [name], "", %w(1), [])
+      ENV['PATH'] = [parent, *libpath].join(File::PATH_SEPARATOR)
+      assert_in_out_err(%W(-S) + ["#{dir}/#{name}"], "", [], load_error)
       ENV['PATH'] = path_orig
 
       ENV['RUBYPATH'] = path
       assert_in_out_err(%w(-S) + [name], "", %w(1), [])
-    }
-
-  ensure
-    if rubypath_orig
+      ENV['RUBYPATH'] = parent
+      assert_in_out_err(%w(-S) + ["#{dir}/#{name}"], "", [], load_error)
+    ensure
       ENV['RUBYPATH'] = rubypath_orig
-    else
-      ENV.delete('RUBYPATH')
-    end
-    if path_orig
       ENV['PATH'] = path_orig
-    else
-      ENV.delete('PATH')
     end
-    $VERBOSE = @verbose
   end
 
   def test_shebang
@@ -490,6 +481,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n",
                       ["\"\u3042\""], warning,
                       encoding: Encoding::UTF_8)
+    assert_in_out_err([{'RUBYOPT' => nil}, '-EUTF-8'], "#!ruby -Ke\nputs __ENCODING__, Encoding.default_external\n",
+                      ["EUC-JP", "UTF-8"], [])
 
     bug4118 = '[ruby-dev:42680]'
     assert_in_out_err(%w[], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
@@ -823,7 +816,7 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
         (?:-e:1:in\s\'(?:block\sin\s)?<main>\'\n)*
-        -e:1:in\s\'kill\'\n
+        -e:1:in\s\'segv\'\n
         \n
         )?
       )x,
@@ -847,15 +840,24 @@ class TestRubyOptions < Test::Unit::TestCase
       )x,
     ]
 
-    KILL_SELF = "Process.kill :SEGV, $$"
+    # Crash the current thread with a thread-directed raise(SIGSEGV) so the
+    # signal is delivered synchronously on the calling thread. Requires
+    # -test-/fatal to be loaded.
+    KILL_SELF = "Bug.segv"
   end
 
-  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
+  # Turning the C level backtrace into file:line pairs walks the whole of the
+  # binary's debug info, and that is nearly all of what a crash costs: 0.8s of
+  # CPU with the dSYM in place against 0.01s without it, on an idle arm64 macOS
+  # host.  The default subprocess budget of 10 seconds is meant for a child
+  # that does none of that work.
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, timeout: 60, **opt, &block)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if JITSupport.yjit_enabled?
     args.unshift("--zjit") if JITSupport.zjit_enabled?
+    args.unshift("-r-test-/fatal")
     env.update({'RUBY_ON_BUG' => nil})
     env['RUBY_CRASH_REPORT'] ||= nil # default to not passing down parent setting
     # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
@@ -871,7 +873,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions, **opt, &block)
+                      timeout: timeout, **SEGVTest::ExecOptions, **opt, &block)
   end
 
   def test_segv_test
@@ -971,6 +973,38 @@ class TestRubyOptions < Test::Unit::TestCase
         end
       end
     end
+  end
+
+  # The sender pid is only reported for a signal another process sent us.
+  def abrt_crash_report(code)
+    Dir.mktmpdir("ruby_crash_report") do |dir|
+      IO.popen([{"RUBY_CRASH_REPORT" => "abrt.log", "RUBY_ON_BUG" => nil},
+                EnvUtil.rubybin, "--disable-gems", "-e", "STDOUT.sync = true; puts; #{code}"],
+               chdir: dir, err: File::NULL, rlimit_core: 0) do |child|
+        child.gets
+        yield child if block_given?
+      end
+      break File.read(File.join(dir, "abrt.log"))
+    end
+  end
+
+  def test_crash_report_sender_pid
+    omit "needs siginfo" unless (macos? || linux?)
+
+    # Signal only once the main thread sleeps.  The crash report is not
+    # async-signal-safe and deadlocks if the signal lands inside malloc.
+    code = "Thread.new {Thread.pass until Thread.main.stop?; puts}; sleep"
+    report = abrt_crash_report(code) {|child| child.gets; Process.kill(:ABRT, child.pid)}
+    assert_include(report, "[BUG] Aborted")
+    assert_include(report, "(sent by pid #{Process.pid})")
+  end
+
+  def test_crash_report_no_sender_pid_when_self_inflicted
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("Process.kill(:ABRT, $$)")
+    assert_include(report, "[BUG] Aborted")
+    assert_not_include(report, "sent by pid")
   end
 
   def test_DATA
@@ -1259,10 +1293,11 @@ class TestRubyOptions < Test::Unit::TestCase
     code = <<~RUBY
       "foo" << "bar"
     RUBY
-    assert_in_out_err(["-W:deprecated"], code, [], ["-:1: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)"])
-    assert_in_out_err(["-W:deprecated", "--debug-frozen-string-literal"], code, [], ["-:1: warning: literal string will be frozen in the future", "-:1: info: the string was created here"])
-    assert_in_out_err(["-W:deprecated", "--disable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], [])
-    assert_in_out_err(["-W:deprecated", "--enable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], ["-:1:in '<main>': can't modify frozen String: \"foo\", created at -:1 (FrozenError)"])
+    env = {"RUBYOPT" => ""}
+    assert_in_out_err([env, "-W:deprecated"], code, [], ["-:1: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)"]) unless ENV["RUBYOPT"] =~ /frozen-string/
+    assert_in_out_err([env, "-W:deprecated", "--debug-frozen-string-literal"], code, [], ["-:1: warning: literal string will be frozen in the future", "-:1: info: the string was created here"])
+    assert_in_out_err([env, "-W:deprecated", "--disable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], [])
+    assert_in_out_err([env, "-W:deprecated", "--enable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], ["-:1:in '<main>': can't modify frozen String: \"foo\", created at -:1 (FrozenError)"])
   end
 
   def test___dir__encoding
@@ -1301,6 +1336,13 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_rubylib_invalid_encoding
     env = {"RUBYLIB"=>"\xFF", "LOCALE"=>"en_US.UTF-8", "LC_ALL"=>"en_US.UTF-8"}
     assert_ruby_status([env, "-e;"])
+  end
+
+  def test_path_separator_after_multibyte_char
+    path = ["./\u{3042}", "./b"].join(File::PATH_SEPARATOR)
+    code = "p $:.include?('./b')"
+    assert_in_out_err([{"RUBYLIB"=>path}, "-e", code], "", %w[true], [])
+    assert_in_out_err(["-I", path, "-e", code], "", %w[true], [])
   end
 
   def test_null_script

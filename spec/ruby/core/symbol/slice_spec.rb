@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/slice'
 
 describe "Symbol#slice" do
-  it_behaves_like :symbol_slice, :slice
+  it "is an alias of Symbol#[]" do
+    Symbol.instance_method(:slice).should == Symbol.instance_method(:[])
+  end
 end

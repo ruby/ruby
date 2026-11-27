@@ -23,6 +23,6 @@ Use the following style for commit messages:
 
 ## CI
 
-GitHub actions will run on each pull request.
+GitHub Actions will run on each pull request.
 
 There is [a CI that runs on master](https://rubyci.org/). It has broad coverage of different systems and architectures, such as Solaris SPARC and macOS.

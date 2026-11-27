@@ -24,7 +24,7 @@ describe "StringScanner#check_until" do
     it "raises TypeError if given a String" do
       -> {
         @s.check_until('T')
-      }.should raise_error(TypeError, 'wrong argument type String (expected Regexp)')
+      }.should.raise(TypeError, 'wrong argument type String (expected Regexp)')
     end
   end
 
@@ -67,7 +67,7 @@ describe "StringScanner#check_until" do
       it "returns nil when matching failed" do
         @s.check_until(/(?<a>2008)/)
         @s.should_not.matched?
-        @s[:a].should be_nil
+        @s[:a].should == nil
       end
     end
 
@@ -78,21 +78,21 @@ describe "StringScanner#check_until" do
           it "returns nil when matching succeeded" do
             @s.check_until("This")
             @s.should.matched?
-            @s[:a].should be_nil
+            @s[:a].should == nil
           end
         end
         version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
           it "raises IndexError when matching succeeded" do
             @s.check_until("This")
             @s.should.matched?
-            -> { @s[:a] }.should raise_error(IndexError)
+            -> { @s[:a] }.should.raise(IndexError)
           end
         end
 
         it "returns nil when matching failed" do
           @s.check_until("2008")
           @s.should_not.matched?
-          @s[:a].should be_nil
+          @s[:a].should == nil
         end
 
         it "returns a matching substring when given Integer index" do
@@ -109,7 +109,7 @@ describe "StringScanner#check_until" do
 
             @s.check_until("This")
             @s.should.matched?
-            @s[:a].should be_nil
+            @s[:a].should == nil
           end
         end
         version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
@@ -120,7 +120,7 @@ describe "StringScanner#check_until" do
 
             @s.check_until("This")
             @s.should.matched?
-            -> { @s[:a] }.should raise_error(IndexError)
+            -> { @s[:a] }.should.raise(IndexError)
           end
         end
       end

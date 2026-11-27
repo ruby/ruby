@@ -28,7 +28,7 @@ describe "Module#using" do
       Module.new do
         using refinement
       end
-    }.should_not raise_error
+    }.should_not.raise
   end
 
   it "accepts module without refinements" do
@@ -38,7 +38,7 @@ describe "Module#using" do
       Module.new do
         using mod
       end
-    }.should_not raise_error
+    }.should_not.raise
   end
 
   it "does not accept class" do
@@ -48,7 +48,7 @@ describe "Module#using" do
       Module.new do
         using klass
       end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises TypeError if passed something other than module" do
@@ -56,7 +56,7 @@ describe "Module#using" do
       Module.new do
         using "foo"
       end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "returns self" do
@@ -67,7 +67,7 @@ describe "Module#using" do
       result = using refinement
     end
 
-    result.should equal(mod)
+    result.should.equal?(mod)
   end
 
   it "works in classes too" do
@@ -95,7 +95,7 @@ describe "Module#using" do
 
     -> {
       mod.foo
-    }.should raise_error(RuntimeError, /Module#using is not permitted in methods/)
+    }.should.raise(RuntimeError, /Module#using is not permitted in methods/)
   end
 
   it "activates refinement even for existed objects" do

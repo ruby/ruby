@@ -39,14 +39,14 @@ describe :socket_local_remote_address, shared: true do
 
     it 'equals address of peer socket' do
       if @method == :local_address
-        @addr.to_s.should == @b.remote_address.to_s
+        @addr.to_sockaddr.should == @b.remote_address.to_sockaddr
       else
-        @addr.to_s.should == @b.local_address.to_s
+        @addr.to_sockaddr.should == @b.local_address.to_sockaddr
       end
     end
 
     it 'returns an Addrinfo' do
-      @addr.should be_an_instance_of(Addrinfo)
+      @addr.should.instance_of?(Addrinfo)
     end
 
     it 'uses 0 as the protocol' do
@@ -57,7 +57,7 @@ describe :socket_local_remote_address, shared: true do
       skip if @method == :local_address
       b = @addr.connect
       begin
-        b.remote_address.to_s.should == @addr.to_s
+        b.remote_address.to_sockaddr.should == @addr.to_sockaddr
       ensure
         b.close
       end
@@ -103,14 +103,14 @@ describe :socket_local_remote_address, shared: true do
 
       it 'equals address of peer socket' do
         if @method == :local_address
-          @addr.to_s.should == @b.remote_address.to_s
+          @addr.to_sockaddr.should == @b.remote_address.to_sockaddr
         else
-          @addr.to_s.should == @b.local_address.to_s
+          @addr.to_sockaddr.should == @b.local_address.to_sockaddr
         end
       end
 
       it 'returns an Addrinfo' do
-        @addr.should be_an_instance_of(Addrinfo)
+        @addr.should.instance_of?(Addrinfo)
       end
 
       it 'uses 0 as the protocol' do
@@ -121,7 +121,7 @@ describe :socket_local_remote_address, shared: true do
         skip if @method == :local_address
         b = @addr.connect
         begin
-          b.remote_address.to_s.should == @addr.to_s
+          b.remote_address.to_sockaddr.should == @addr.to_sockaddr
         ensure
           b.close
         end
@@ -129,65 +129,75 @@ describe :socket_local_remote_address, shared: true do
     end
   end
 
-  with_feature :unix_socket do
-    describe 'using UNIXSocket' do
-      before :each do
-        @path = SocketSpecs.socket_path
-        @s = UNIXServer.new(@path)
-        @a = UNIXSocket.new(@path)
-        @b = @s.accept
-        @addr = @object.call(@a)
-      end
+  describe 'using UNIXSocket' do
+    before :each do
+      @path = SocketSpecs.socket_path
+      @s = UNIXServer.new(@path)
+      @a = UNIXSocket.new(@path)
+      @b = @s.accept
+      @addr = @object.call(@a)
+    end
 
-      after :each do
-        [@b, @a, @s].each(&:close)
-        rm_r(@path)
-      end
+    after :each do
+      [@b, @a, @s].each(&:close)
+      rm_r(@path)
+    end
 
-      it 'uses AF_UNIX as the address family' do
-        @addr.afamily.should == Socket::AF_UNIX
-      end
+    it 'uses AF_UNIX as the address family' do
+      @addr.afamily.should == Socket::AF_UNIX
+    end
 
-      it 'uses PF_UNIX as the protocol family' do
-        @addr.pfamily.should == Socket::PF_UNIX
-      end
+    it 'uses PF_UNIX as the protocol family' do
+      @addr.pfamily.should == Socket::PF_UNIX
+    end
 
-      it 'uses SOCK_STREAM as the socket type' do
-        @addr.socktype.should == Socket::SOCK_STREAM
-      end
+    it 'uses SOCK_STREAM as the socket type' do
+      @addr.socktype.should == Socket::SOCK_STREAM
+    end
 
-      it 'uses the correct socket path' do
-        if @method == :local_address
-          @addr.unix_path.should == ""
-        else
-          @addr.unix_path.should == @path
-        end
+    it 'uses the correct socket path' do
+      if @method == :local_address
+        @addr.unix_path.should == ""
+      else
+        @addr.unix_path.should == @path
       end
+    end
 
+    platform_is_not :windows do
       it 'equals address of peer socket' do
         if @method == :local_address
-          @addr.to_s.should == @b.remote_address.to_s
+          @addr.to_sockaddr.should == @b.remote_address.to_sockaddr
         else
-          @addr.to_s.should == @b.local_address.to_s
+          @addr.to_sockaddr.should == @b.local_address.to_sockaddr
         end
       end
+    end
 
-      it 'returns an Addrinfo' do
-        @addr.should be_an_instance_of(Addrinfo)
-      end
-
-      it 'uses 0 as the protocol' do
-        @addr.protocol.should == 0
-      end
-
-      it 'can be used to connect to the server' do
-        skip if @method == :local_address
-        b = @addr.connect
-        begin
-          b.remote_address.to_s.should == @addr.to_s
-        ensure
-          b.close
+    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.2" } do
+      it 'equals address of peer socket' do
+        if @method == :local_address
+          @addr.to_sockaddr.should == @b.remote_address.to_sockaddr
+        else
+          @addr.to_sockaddr.should == @b.local_address.to_sockaddr
         end
+      end
+    end
+
+    it 'returns an Addrinfo' do
+      @addr.should.instance_of?(Addrinfo)
+    end
+
+    it 'uses 0 as the protocol' do
+      @addr.protocol.should == 0
+    end
+
+    it 'can be used to connect to the server' do
+      skip if @method == :local_address
+      b = @addr.connect
+      begin
+        b.remote_address.to_sockaddr.should == @addr.to_sockaddr
+      ensure
+        b.close
       end
     end
   end
@@ -230,7 +240,7 @@ describe :socket_local_remote_address, shared: true do
     end
 
     it 'returns an Addrinfo' do
-      @addr.should be_an_instance_of(Addrinfo)
+      @addr.should.instance_of?(Addrinfo)
     end
 
     it 'uses 0 as the protocol' do
@@ -240,7 +250,7 @@ describe :socket_local_remote_address, shared: true do
     it 'can be used to connect to the peer' do
       b = @addr.connect
       begin
-        b.remote_address.to_s.should == @addr.to_s
+        b.remote_address.to_sockaddr.should == @addr.to_sockaddr
       ensure
         b.close
       end

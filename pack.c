@@ -19,6 +19,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
+#include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -54,19 +55,13 @@ static const char endstr[] = "sSiIlLqQjJ";
 #endif
 
 #ifdef DYNAMIC_ENDIAN
-/* for universal binary of NEXTSTEP and MacOS X */
+/* for universal binary of MacOS X */
 /* useless since autoconf 2.63? */
 static int
 is_bigendian(void)
 {
-    static int init = 0;
-    static int endian_value;
-    char *p;
-
-    if (init) return endian_value;
-    init = 1;
-    p = (char*)&init;
-    return endian_value = p[0]?0:1;
+    static const union {int i; char b[1];} endian_value = {1};
+    return !endian_value.b[0];
 }
 # define BIGENDIAN_P() (is_bigendian())
 #elif defined(WORDS_BIGENDIAN)
@@ -77,8 +72,12 @@ is_bigendian(void)
 
 #ifdef NATINT_PACK
 # define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
+# define NATINT_ALIGN(type,len) (natint?(int)RUBY_ALIGNOF(type):(int)(len))
+# define USING_NATINT(expr) expr
 #else
 # define NATINT_LEN(type,len) ((int)sizeof(type))
+# define NATINT_ALIGN(type,len) ((int)RUBY_ALIGNOF(type))
+# define USING_NATINT(expr) /* void */
 #endif
 
 typedef union {
@@ -118,11 +117,12 @@ typedef union {
 #define MAX_INTEGER_PACK_SIZE 8
 
 static const char toofew[] = "too few arguments";
+static const char intoitself[] = "cannot pack buffer object into itself";
 
-static void encodes(VALUE,const char*,long,int,int);
-static void qpencode(VALUE,VALUE,long);
+static void encodes(VALUE,const char*,rb_len_t,int,int);
+static void qpencode(VALUE,VALUE,rb_len_t);
 
-static unsigned long utf8_to_uv(const char*,long*);
+static unsigned long utf8_to_uv(const char*,rb_len_t*);
 
 static ID id_associated;
 
@@ -194,9 +194,9 @@ VALUE_to_float(VALUE obj)
 }
 
 static void
-str_expand_fill(VALUE res, int c, long len)
+str_expand_fill(VALUE res, int c, rb_len_t len)
 {
-    long olen = RSTRING_LEN(res);
+    rb_len_t olen = RSTRING_LEN(res);
     memset(RSTRING_PTR(res) + olen, c, len);
     rb_str_set_len(res, olen + len);
 }
@@ -212,40 +212,124 @@ skip_to_eol(const char *p, const char *pend)
     (ISSPACE(type) || (type == '#' && (p = skip_to_eol(p, pend), 1)))
 
 #ifndef NATINT_PACK
-# define pack_modifiers(p, t, n, e) pack_modifiers(p, t, e)
+# define pack_modifiers(p, pe, t, n, e) pack_modifiers(p, pe, t, e)
 #endif
-static char *
-pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
+static const char *
+pack_modifiers(const char *p, const char *pend, char type, int *natint, int *explicit_endian)
 {
-     while (1) {
-         switch (*p) {
-           case '_':
-           case '!':
-             if (strchr(natstr, type)) {
-#ifdef NATINT_PACK
-                 *natint = 1;
-#endif
-                 p++;
-             }
-             else {
-                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
-             }
-             break;
+    while (p < pend) {
+        switch (*p) {
+          case '_':
+          case '!':
+            if (strchr(natstr, type)) {
+                USING_NATINT(*natint = 1);
+                p++;
+            }
+            else {
+                rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+            }
+            break;
 
-           case '<':
-           case '>':
-             if (!strchr(endstr, type)) {
-                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
-             }
-             if (*explicit_endian) {
-                 rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
-             }
-             *explicit_endian = *p++;
-             break;
-           default:
-             return (char *)p;
-         }
+          case '<':
+          case '>':
+            if (!strchr(endstr, type)) {
+                rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+            }
+            if (*explicit_endian) {
+                rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+            }
+            *explicit_endian = *p++;
+            break;
+          default:
+            return (char *)p;
+        }
     }
+    return p;
+}
+
+#ifndef NATINT_PACK
+# define pack_alignof(t, n) pack_alignof(t)
+#endif
+static size_t
+pack_alignof(char type, int natint)
+{
+    switch (type) {
+      case 'c': case 'C':
+        return RUBY_ALIGNOF(char);
+      case 's': case 'S':
+        return NATINT_ALIGN(short, 2);
+      case 'i': case 'I':
+        return RUBY_ALIGNOF(int);
+      case 'l': case 'L':
+        return NATINT_ALIGN(long, 4);
+      case 'q': case 'Q':
+        return RUBY_ALIGNOF(int64_t);
+      case 'j':
+        return RUBY_ALIGNOF(intptr_t);
+      case 'J':
+        return RUBY_ALIGNOF(uintptr_t);
+      case 'n': case 'v':
+        return RUBY_ALIGNOF(uint16_t);
+      case 'N': case 'V':
+        return RUBY_ALIGNOF(uint32_t);
+      case 'f': case 'F': case 'e': case 'g':
+        return RUBY_ALIGNOF(float);
+      case 'd': case 'D': case 'E': case 'G':
+        return RUBY_ALIGNOF(double);
+      case 'p': case 'P':
+        return RUBY_ALIGNOF(char *);
+      default:
+        return 0;
+    }
+}
+
+static rb_len_t
+pack_align_pad(rb_len_t pos, rb_len_t base, size_t alignment)
+{
+    rb_len_t offset, mod;
+
+    if (alignment <= 1) return 0;
+    if (alignment > RB_LEN_MAX) rb_raise(rb_eRangeError, "alignment too big");
+    offset = pos - base;
+    mod = offset % (rb_len_t)alignment;
+    if (mod < 0) mod += alignment;
+    return mod ? (rb_len_t)alignment - mod : 0;
+}
+
+static char *
+pack_alignment(const char *p, const char *pend, VALUE fmt, size_t *alignment)
+{
+    char type;
+    int explicit_endian = 0;
+    USING_NATINT(int natint = 0);
+
+    if (p >= pend) {
+        rb_raise(rb_eArgError, "missing alignment");
+    }
+    type = *p++;
+    p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
+    if (explicit_endian) {
+        rb_raise(rb_eArgError, "endian modifier is not allowed for alignment");
+    }
+    *alignment = pack_alignof(type, natint);
+    if (!*alignment) {
+        unknown_directive("alignment", type, fmt);
+    }
+    return (char *)p;
+}
+
+static char *
+pack_alignment_size(const char *p, const char *pend, VALUE fmt, size_t *alignment)
+{
+    if (p < pend && ISDIGIT(*p)) {
+        errno = 0;
+        *alignment = STRTOUL(p, (char**)&p, 10);
+        if (*alignment <= 0 || errno) {
+            rb_raise(rb_eRangeError, "invalid alignment");
+        }
+        return (char *)p;
+    }
+    return pack_alignment(p, pend, fmt, alignment);
 }
 
 static VALUE
@@ -253,10 +337,11 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 {
     const char *p, *pend;
     VALUE res, from, associates = 0;
-    long len, idx, plen;
+    rb_len_t len, idx, plen;
     const char *ptr;
     int enc_info = 1;		/* 0 - BINARY, 1 - US-ASCII, 2 - UTF-8 */
     int integer_size, bigendian_p;
+    rb_len_t align_base;
 
     StringValue(fmt);
     rb_must_asciicompat(fmt);
@@ -274,26 +359,41 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     }
 
     idx = 0;
+    align_base = RSTRING_LEN(res);
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
 #define MORE_ITEM (idx < RARRAY_LEN(ary))
 #define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
 #define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define NOT_BUFFER(val) (((val) == res) ? rb_raise(rb_eArgError, intoitself) : (void)0)
+#define STR_FROM(val) NOT_BUFFER(StringValue(val))
 
     while (p < pend) {
         int explicit_endian = 0;
+        size_t align = 0;
+        bool star = false;
         if (RSTRING_END(fmt) != pend) {
             rb_raise(rb_eRuntimeError, "format string modified");
         }
         const char type = *p++; /* get data type */
-#ifdef NATINT_PACK
-        int natint = 0; 	/* native integer */
-#endif
+        USING_NATINT(int natint = 0);	/* native integer */
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+
+        /* Directives that do not take modifiers. */
+        if ((type == 'x' || type == '@') && p < pend && *p == '!') {
+            p++;
+            p = pack_alignment_size(p, pend, fmt, &align);
+            len = pack_align_pad(RSTRING_LEN(res), type == '@' ? 0 : align_base, align);
+            rb_str_modify_expand(res, len);
+            str_expand_fill(res, '\0', len);
+            continue;
+        }
+
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
+            star = true;
             len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
                 : RARRAY_LEN(ary) - idx;
@@ -333,12 +433,14 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 plen = 0;
             }
             else {
-                StringValue(from);
+                STR_FROM(from);
                 ptr = RSTRING_PTR(from);
                 plen = RSTRING_LEN(from);
             }
 
-            if (p[-1] == '*')
+            /* The conversion of from with #to_str may have modified fmt,
+             * so p may be a dangling pointer; use star instead of p[-1]. */
+            if (star)
                 len = plen;
 
             switch (type) {
@@ -347,7 +449,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'Z':         /* null terminated string  */
                 if (plen >= len) {
                     rb_str_buf_cat(res, ptr, len);
-                    if (p[-1] == '*' && type == 'Z')
+                    if (star && type == 'Z')
                         rb_str_buf_cat(res, "", 1);
                 }
                 else {
@@ -362,7 +464,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'b':		/* bit string (ascending) */
                 {
                     int byte = 0;
-                    long i, j = 0;
+                    rb_len_t i, j = 0;
 
                     if (len > plen) {
                         j = (len - plen + 1)/2;
@@ -393,7 +495,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'B':		/* bit string (descending) */
                 {
                     int byte = 0;
-                    long i, j = 0;
+                    rb_len_t i, j = 0;
 
                     if (len > plen) {
                         j = (len - plen + 1)/2;
@@ -423,7 +525,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'h':		/* hex string (low nibble first) */
                 {
                     int byte = 0;
-                    long i, j = 0;
+                    rb_len_t i, j = 0;
 
                     if (len > plen) {
                         j = (len + 1) / 2 - (plen + 1) / 2;
@@ -454,7 +556,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'H':		/* hex string (high nibble first) */
                 {
                     int byte = 0;
-                    long i, j = 0;
+                    rb_len_t i, j = 0;
 
                     if (len > plen) {
                         j = (len + 1) / 2 - (plen + 1) / 2;
@@ -667,10 +769,59 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             }
             break;
 
+          case 'r':  /* r for SLEB128 encoding (signed) */
+          case 'R': /* R for ULEB128 encoding (unsigned) */
+            {
+                int pack_flags = INTEGER_PACK_LITTLE_ENDIAN;
+
+                if (type == 'r') {
+                    pack_flags |= INTEGER_PACK_2COMP;
+                }
+
+                while (len-- > 0) {
+                    size_t numbytes, nlz_bits;
+                    int sign, extra = 0;
+                    char *cp;
+
+                    from = NEXTFROM;
+                    from = rb_to_int(from);
+                    if (type == 'R' && rb_int_negative_p(from)) {
+                        rb_raise(rb_eArgError, "can't encode negative numbers in ULEB128");
+                    }
+
+                    numbytes = rb_absint_numwords(from, 7, &nlz_bits);
+                    if (numbytes == 0) {
+                        numbytes = 1;
+                    }
+                    else if (nlz_bits == 0 && type == 'r') {
+                        /* No leading zero bits, we need an extra byte for sign extension */
+                        extra = 1;
+                    }
+                    rb_str_modify_expand(res, numbytes + extra);
+
+                    rb_len_t start = RSTRING_LEN(res);
+
+                    cp = RSTRING_PTR(res) + start;
+                    sign = rb_integer_pack(from, cp, numbytes, 1, 1, pack_flags);
+
+                    if (extra) {
+                        /* Need an extra byte */
+                        cp[numbytes++] = sign < 0 ? 0x7f : 0x00;
+                    }
+                    rb_str_set_len(res, start + numbytes);
+
+                    while (1 < numbytes) {
+                        *cp |= 0x80;
+                        cp++;
+                        numbytes--;
+                    }
+                }
+            }
+            break;
           case 'u':		/* uuencoded string */
           case 'm':		/* base64 encoded string */
             from = NEXTFROM;
-            StringValue(from);
+            STR_FROM(from);
             ptr = RSTRING_PTR(from);
             plen = RSTRING_LEN(from);
 
@@ -686,7 +837,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             else
                 len = len / 3 * 3;
             while (plen > 0) {
-                long todo;
+                rb_len_t todo;
 
                 if (plen > len)
                     todo = len;
@@ -700,6 +851,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'M':		/* quoted-printable encoded string */
             from = rb_obj_as_string(NEXTFROM);
+            NOT_BUFFER(from);
             if (len <= 1)
                 len = 72;
             qpencode(res, from, len);
@@ -708,9 +860,9 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'P':		/* pointer to packed byte string */
             from = THISFROM;
             if (!NIL_P(from)) {
-                StringValue(from);
+                STR_FROM(from);
                 if (RSTRING_LEN(from) < len) {
-                    rb_raise(rb_eArgError, "too short buffer for P(%ld for %ld)",
+                    rb_raise(rb_eArgError, "too short buffer for P(%"PRIdLEN" for %"PRIdLEN")",
                              RSTRING_LEN(from), len);
                 }
             }
@@ -718,13 +870,11 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             /* FALL THROUGH */
           case 'p':		/* pointer to string */
             while (len-- > 0) {
-                char *t;
+                const char *t = 0;
                 from = NEXTFROM;
-                if (NIL_P(from)) {
-                    t = 0;
-                }
-                else {
-                    t = StringValuePtr(from);
+                if (!NIL_P(from)) {
+                    STR_FROM(from);
+                    t = RSTRING_PTR(from);
                 }
                 if (!associates) {
                     associates = rb_ary_new();
@@ -736,7 +886,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'w':		/* BER compressed integer  */
             while (len-- > 0) {
-                VALUE buf = rb_str_new(0, 0);
+                VALUE buf;
                 size_t numbytes;
                 int sign;
                 char *cp;
@@ -763,6 +913,9 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 }
 
                 rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
+                /* rb_str_buf_cat may trigger GC while resizing res before
+                 * copying from buf. */
+                RB_GC_GUARD(buf);
             }
             break;
 
@@ -802,11 +955,11 @@ static const char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static void
-encodes(VALUE str, const char *s0, long len, int type, int tail_lf)
+encodes(VALUE str, const char *s0, rb_len_t len, int type, int tail_lf)
 {
     enum {buff_size = 4096, encoded_unit = 4, input_unit = 3};
     char buff[buff_size + 1];	/* +1 for tail_lf */
-    long i = 0;
+    rb_len_t i = 0;
     const char *const trans = type == 'u' ? uu_table : b64_table;
     char padding;
     const unsigned char *s = (const unsigned char *)s0;
@@ -853,10 +1006,11 @@ encodes(VALUE str, const char *s0, long len, int type, int tail_lf)
 static const char hex_table[] = "0123456789ABCDEF";
 
 static void
-qpencode(VALUE str, VALUE from, long len)
+qpencode(VALUE str, VALUE from, rb_len_t len)
 {
     char buff[1024];
-    long i = 0, n = 0, prev = EOF;
+    rb_len_t i = 0;
+    long n = 0, prev = EOF;
     unsigned char *s = (unsigned char*)RSTRING_PTR(from);
     unsigned char *send = s + RSTRING_LEN(from);
 
@@ -917,7 +1071,10 @@ hex2num(char c)
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
     tmp_len = 0;				\
-    if (len > (long)((send-s)/(sz))) {		\
+    if (mode == UNPACK_ARRAY) { 		\
+        rb_ary_modify_expand(ary, len); 	\
+    }						\
+    if (len > (rb_len_t)((send-s)/(sz))) {	\
         if (!star) {				\
             tmp_len = len-(send-s)/(sz);	\
         }					\
@@ -927,7 +1084,7 @@ hex2num(char c)
 
 #define PACK_ITEM_ADJUST() do { \
     if (tmp_len > 0 && mode == UNPACK_ARRAY) \
-        rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
+        rb_ary_resize(ary, RARRAY_LEN(ary)+tmp_len); \
 } while (0)
 
 /* Workaround for Oracle Developer Studio (Oracle Solaris Studio)
@@ -947,19 +1104,32 @@ enum unpack_mode {
 };
 
 static VALUE
-pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
+pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
 {
 #define hexdigits ruby_hexdigits
-    char *s, *send;
-    char *p, *pend;
+    const char *s, *send;
+    const char *p, *pend;
     VALUE ary, associates = Qfalse;
-    long len;
-    AVOID_CC_BUG long tmp_len;
+    rb_len_t len;
+    AVOID_CC_BUG rb_len_t tmp_len;
     int signed_p, integer_size, bigendian_p;
+    rb_len_t align_base;
+    const char *sptr;
+    rb_len_t slen;
+    const char *fptr;
+    rb_len_t flen;
 #define UNPACK_PUSH(item) do {\
         VALUE item_val = (item);\
         if ((mode) == UNPACK_BLOCK) {\
             rb_yield(item_val);\
+            /* The block may have modified str and invalidated s */ \
+            if (RSTRING_PTR(str) != sptr || RSTRING_LEN(str) != slen) {\
+                rb_raise(rb_eRuntimeError, "string modified");\
+            }\
+            /* The block may have also modified fmt and invalidated p */ \
+            if (RSTRING_PTR(fmt) != fptr || RSTRING_LEN(fmt) != flen) {\
+                rb_raise(rb_eRuntimeError, "format string modified");\
+            }\
         }\
         else if ((mode) == UNPACK_ARRAY) {\
             rb_ary_push(ary, item_val);\
@@ -971,18 +1141,25 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
     StringValue(str);
     StringValue(fmt);
+    rb_len_t offset = NUM2LEN(ofs);
     rb_must_asciicompat(fmt);
 
-    if (offset < 0) rb_raise(rb_eArgError, "offset can't be negative");
     len = RSTRING_LEN(str);
-    if (offset > len) rb_raise(rb_eArgError, "offset outside of string");
+    if (offset < 0 ? (offset += len) < 0 : offset > len) {
+        rb_raise(rb_eArgError, "offset outside of string");
+    }
 
     s = RSTRING_PTR(str);
     send = s + len;
+    sptr = s;
+    slen = len;
     s += offset;
+    align_base = offset;
 
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
+    fptr = p;
+    flen = RSTRING_LEN(fmt);
 
 #define UNPACK_FETCH(var, type) (memcpy((var), s, sizeof(type)), s += sizeof(type))
 
@@ -990,13 +1167,25 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
     while (p < pend) {
         int explicit_endian = 0;
         const char type = *p++;
-#ifdef NATINT_PACK
-        int natint = 0;		/* native integer */
-#endif
+        size_t align = 0;
         int star = 0;
+        USING_NATINT(int natint = 0);	/* native integer */
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+
+        /* Directives that do not take modifiers. */
+        if ((type == 'x' || type == '@') && p < pend && *p == '!') {
+            p++;
+            p = pack_alignment_size(p, pend, fmt, &align);
+            len = pack_align_pad(s - RSTRING_PTR(str), type == '@' ? 0 : align_base, align);
+            if (len > send - s) {
+                rb_raise(rb_eArgError, type == '@' ? "@ outside of string" : "x outside of string");
+            }
+            s += len;
+            continue;
+        }
+
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (p >= pend)
             len = 1;
@@ -1024,8 +1213,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
           case 'A':
             if (len > send - s) len = send - s;
             {
-                long end = len;
-                char *t = s + len - 1;
+                rb_len_t end = len;
+                const char *t = s + len - 1;
 
                 while (t >= s) {
                     if (*t != ' ' && *t != '\0') break;
@@ -1038,7 +1227,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
           case 'Z':
             {
-                char *t = s;
+                const char *t = s;
 
                 if (len > send-s) len = send-s;
                 while (t < s+len && *t) t++;
@@ -1059,7 +1248,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 VALUE bitstr;
                 char *t;
                 int bits;
-                long i;
+                rb_len_t i;
 
                 if (p[-1] == '*' || len > (send - s) * 8)
                     len = (send - s) * 8;
@@ -1080,7 +1269,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 VALUE bitstr;
                 char *t;
                 int bits;
-                long i;
+                rb_len_t i;
 
                 if (p[-1] == '*' || len > (send - s) * 8)
                     len = (send - s) * 8;
@@ -1101,7 +1290,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 VALUE bitstr;
                 char *t;
                 int bits;
-                long i;
+                rb_len_t i;
 
                 if (p[-1] == '*' || len > (send - s) * 2)
                     len = (send - s) * 2;
@@ -1124,7 +1313,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 VALUE bitstr;
                 char *t;
                 int bits;
-                long i;
+                rb_len_t i;
 
                 if (p[-1] == '*' || len > (send - s) * 2)
                     len = (send - s) * 2;
@@ -1324,7 +1513,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
           case 'U':
             if (len > send - s) len = send - s;
             while (len > 0 && s < send) {
-                long alen = send - s;
+                rb_len_t alen = send - s;
                 unsigned long l;
 
                 l = utf8_to_uv(s, &alen);
@@ -1335,9 +1524,10 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
           case 'u':
             {
-                VALUE buf = rb_str_new(0, (send - s)*3/4);
+                /* (send - s) * 3 / 4, computed without overflow */
+                VALUE buf = rb_str_new(0, (send - s) / 4 * 3 + (send - s) % 4 * 3 / 4);
                 char *ptr = RSTRING_PTR(buf);
-                long total = 0;
+                rb_len_t total = 0;
 
                 while (s < send && (unsigned char)*s > ' ' && (unsigned char)*s < 'a') {
                     long a,b,c,d;
@@ -1352,7 +1542,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                     }
 
                     while (len > 0) {
-                        long mlen = len > 3 ? 3 : len;
+                        rb_len_t mlen = len > 3 ? 3 : len;
 
                         if (s < send && (unsigned char)*s >= ' ' && (unsigned char)*s < 'a')
                             a = ((unsigned char)*s++ - ' ') & 077;
@@ -1390,7 +1580,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
           case 'm':
             {
-                VALUE buf = rb_str_new(0, (send - s + 3)*3/4); /* +3 is for skipping paddings */
+                VALUE buf = rb_str_new(0, (send - s + 3) / 4 * 3); /* +3 is for skipping paddings */
                 char *ptr = RSTRING_PTR(buf);
                 int a = -1,b = -1,c = 0,d = 0;
                 static signed char b64_xtable[256];
@@ -1472,7 +1662,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
           case 'M':
             {
                 VALUE buf = rb_str_new(0, send - s);
-                char *ptr = RSTRING_PTR(buf), *ss = s;
+                char *ptr = RSTRING_PTR(buf);
+                const char *ss = s;
                 int csum = 0;
                 int c1, c2;
 
@@ -1520,10 +1711,14 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             s += len;
             break;
 
+          case '^':
+            UNPACK_PUSH(SSIZET2NUM(s - RSTRING_PTR(str)));
+            break;
+
           case 'P':
             if (sizeof(char *) <= (size_t)(send - s)) {
                 VALUE tmp = Qnil;
-                char *t;
+                const char *t;
 
                 UNPACK_FETCH(&t, char *);
                 if (t) {
@@ -1539,14 +1734,14 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             break;
 
           case 'p':
-            if (len > (long)((send - s) / sizeof(char *)))
+            if (len > (rb_len_t)((send - s) / sizeof(char *)))
                 len = (send - s) / sizeof(char *);
             while (len-- > 0) {
                 if ((size_t)(send - s) < sizeof(char *))
                     break;
                 else {
                     VALUE tmp = Qnil;
-                    char *t;
+                    const char *t;
 
                     UNPACK_FETCH(&t, char *);
                     if (t) {
@@ -1558,9 +1753,42 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             }
             break;
 
+          case 'r':
+          case 'R':
+            {
+                int pack_flags = INTEGER_PACK_LITTLE_ENDIAN;
+
+                if (type == 'r') {
+                    pack_flags |= INTEGER_PACK_2COMP;
+                }
+                const char *s0 = s;
+                while (len > 0 && s < send) {
+                    if (*s & 0x80) {
+                        s++;
+                    }
+                    else {
+                        s++;
+                        UNPACK_PUSH(rb_integer_unpack(s0, s-s0, 1, 1, pack_flags));
+                        len--;
+                        s0 = s;
+                    }
+                }
+                /* Handle incomplete value and remaining expected values with nil (only if not using *) */
+                if (!star) {
+                    if (s0 != s && len > 0) {
+                        UNPACK_PUSH(Qnil);
+                        len--;
+                    }
+                    while (len-- > 0) {
+                        UNPACK_PUSH(Qnil);
+                    }
+                }
+            }
+            break;
+
           case 'w':
             {
-                char *s0 = s;
+                const char *s0 = s;
                 while (len > 0 && s < send) {
                     if (*s & 0x80) {
                         s++;
@@ -1588,13 +1816,13 @@ static VALUE
 pack_unpack(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
     enum unpack_mode mode = rb_block_given_p() ? UNPACK_BLOCK : UNPACK_ARRAY;
-    return pack_unpack_internal(str, fmt, mode, RB_NUM2LONG(offset));
+    return pack_unpack_internal(str, fmt, offset, mode);
 }
 
 static VALUE
 pack_unpack1(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
-    return pack_unpack_internal(str, fmt, UNPACK_1, RB_NUM2LONG(offset));
+    return pack_unpack_internal(str, fmt, offset, UNPACK_1);
 }
 
 int
@@ -1655,11 +1883,11 @@ static const unsigned long utf8_limits[] = {
 };
 
 static unsigned long
-utf8_to_uv(const char *p, long *lenp)
+utf8_to_uv(const char *p, rb_len_t *lenp)
 {
     int c = *p++ & 0xff;
     unsigned long uv = c;
-    long n;
+    rb_len_t n;
 
     if (!(uv & 0x80)) {
         *lenp = 1;
@@ -1680,7 +1908,7 @@ utf8_to_uv(const char *p, long *lenp)
         rb_raise(rb_eArgError, "malformed UTF-8 character");
     }
     if (n > *lenp) {
-        rb_raise(rb_eArgError, "malformed UTF-8 character (expected %ld bytes, given %ld bytes)",
+        rb_raise(rb_eArgError, "malformed UTF-8 character (expected %"PRIdLEN" bytes, given %"PRIdLEN" bytes)",
                  n, *lenp);
     }
     *lenp = n--;

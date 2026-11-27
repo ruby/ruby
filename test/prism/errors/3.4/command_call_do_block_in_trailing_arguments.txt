@@ -1,0 +1,22 @@
+foo(bar baz do end, 1)
+                  ^ invalid comma
+                    ^ unexpected integer; expected a `)` to close the arguments
+                    ^ unexpected integer, expecting end-of-input
+                     ^ unexpected ')', expecting end-of-input
+                     ^ unexpected ')', ignoring it
+
+foo(bar 1 do end, 2)
+                ^ invalid comma
+                  ^ unexpected integer; expected a `)` to close the arguments
+                  ^ unexpected integer, expecting end-of-input
+                   ^ unexpected ')', expecting end-of-input
+                   ^ unexpected ')', ignoring it
+
+foo(bar 1 do end,)
+                ^ invalid comma
+
+p(p a do end => value)
+             ^~ unexpected '=>'; expected a `)` to close the arguments
+                     ^ unexpected ')', expecting end-of-input
+                     ^ unexpected ')', ignoring it
+

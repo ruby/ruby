@@ -3,3 +3,5 @@ x do
 end
 
 -> { it }
+
+x { f(it:) }

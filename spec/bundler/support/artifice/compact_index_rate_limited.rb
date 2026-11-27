@@ -32,7 +32,7 @@ class CompactIndexRateLimited < CompactIndexAPI
       if RequestCounter.size == 1
         etag_response do
           gem = gems.find {|g| g.name == params[:name] }
-          CompactIndex.info(gem ? gem.versions : [])
+          VendoredCompactIndex.info(gem ? gem.versions : [])
         end
       else
         status 429

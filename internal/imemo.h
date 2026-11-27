@@ -15,17 +15,19 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
-#define IMEMO_MASK   0x0f
+struct rb_gc_mark_ctx;          /* internal/gc.h */
 
-/* FL_USER0 to FL_USER3 is for type */
-#define IMEMO_FL_USHIFT (FL_USHIFT + 4)
-#define IMEMO_FL_USER0 FL_USER4
-#define IMEMO_FL_USER1 FL_USER5
-#define IMEMO_FL_USER2 FL_USER6
-#define IMEMO_FL_USER3 FL_USER7
-#define IMEMO_FL_USER4 FL_USER8
-#define IMEMO_FL_USER5 FL_USER9
-#define IMEMO_FL_USER6 FL_USER10
+#define IMEMO_MASK   (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3 | FL_USER4)
+
+/* FL_USER0 to FL_USER4 is for type */
+#define IMEMO_FL_USHIFT (FL_USHIFT + 5)
+#define IMEMO_FL_USER0 FL_USER5
+#define IMEMO_FL_USER1 FL_USER6
+#define IMEMO_FL_USER2 FL_USER7
+#define IMEMO_FL_USER3 FL_USER8
+#define IMEMO_FL_USER4 FL_USER9
+#define IMEMO_FL_USER5 FL_USER10
+#define IMEMO_FL_USER6 FL_USER11
 
 enum imemo_type {
     imemo_env            =  0,
@@ -37,10 +39,13 @@ enum imemo_type {
     imemo_ment           =  6,
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
+    imemo_cvar_entry     =  9,
     imemo_callinfo       = 10,
     imemo_callcache      = 11,
     imemo_constcache     = 12,
-    imemo_fields   = 13,
+    imemo_fields         = 13,
+    imemo_subclasses     = 14,
+    imemo_cdhash         = 15,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -57,7 +62,6 @@ struct vm_svar {
 /*! THROW_DATA */
 struct vm_throw_data {
     VALUE flags;
-    VALUE reserved;
     const VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
     int throw_state;
@@ -94,8 +98,18 @@ struct vm_ifunc {
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE *ptr; /* malloc'ed buffer */
-    size_t cnt; /* buffer size in VALUE */
+    size_t size; /* buffer size in bytes */
+    bool marked; /* whether the buffer may contain object references */
 };
+
+struct rb_imemo_cdhash {
+    VALUE flags;
+    st_table tbl;
+};
+
+/* Set on imemo_memo when u3 holds a VALUE that GC must mark.
+ * When unset, u3 is a non-VALUE (cnt/ucnt/state). */
+#define MEMO_U3_IS_VALUE IMEMO_FL_USER0
 
 /*! MEMO
  *
@@ -103,14 +117,13 @@ struct rb_imemo_tmpbuf_struct {
  * */
 struct MEMO {
     VALUE flags;
-    VALUE reserved;
     const VALUE v1;
     const VALUE v2;
     union {
-        long cnt;
+        rb_len_t cnt;
+        rb_ulen_t ucnt;
         long state;
         const VALUE value;
-        void (*func)(void);
     } u3;
 };
 
@@ -133,30 +146,35 @@ struct MEMO {
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
-VALUE rb_imemo_tmpbuf_new(void);
-struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, VALUE c);
+struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, rb_len_t c);
+struct MEMO *rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
 static inline int imemo_type_p(VALUE imemo, enum imemo_type imemo_type);
 static inline bool imemo_throw_data_p(VALUE imemo);
 static inline struct vm_ifunc *rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data);
 static inline void *RB_IMEMO_TMPBUF_PTR(VALUE v);
-static inline void *rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr);
 static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
-void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
+void rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool reference_updating);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_imemo_name(enum imemo_type type);
+ID rb_imemo_callinfo_mid(VALUE obj);
+struct rb_imemo_callcache_data {
+    VALUE klass;
+    ID called_id;
+};
+bool rb_imemo_callcache_get_data(VALUE obj, struct rb_imemo_callcache_data *data);
 RUBY_SYMBOL_EXPORT_END
 
 static inline enum imemo_type
 imemo_type(VALUE imemo)
 {
-    return (RBASIC(imemo)->flags >> FL_USHIFT) & IMEMO_MASK;
+    return (RBASIC(imemo)->flags & IMEMO_MASK) >> FL_USHIFT;
 }
 
 static inline int
@@ -164,7 +182,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 {
     if (LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
         /* fixed at compile time if imemo_type is given. */
-        const VALUE mask = (IMEMO_MASK << FL_USHIFT) | RUBY_T_MASK;
+        const VALUE mask = IMEMO_MASK | RUBY_T_MASK;
         const VALUE expected_type = (imemo_type << FL_USHIFT) | T_IMEMO;
         /* fixed at runtime. */
         return expected_type == (RBASIC(imemo)->flags & mask);
@@ -195,30 +213,16 @@ RB_IMEMO_TMPBUF_PTR(VALUE v)
     return p->ptr;
 }
 
-static inline void *
-rb_imemo_tmpbuf_set_ptr(VALUE v, void *ptr)
-{
-    return ((rb_imemo_tmpbuf_t *)v)->ptr = ptr;
-}
-
 static inline VALUE
 rb_imemo_tmpbuf_new_from_an_RString(VALUE str)
 {
-    const void *src;
     VALUE imemo;
-    rb_imemo_tmpbuf_t *tmpbuf;
-    void *dst;
     size_t len;
 
     StringValue(str);
-    /* create tmpbuf to keep the pointer before xmalloc */
-    imemo = rb_imemo_tmpbuf_new();
-    tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
-    src = RSTRING_PTR(str);
-    dst = ruby_xmalloc(len);
-    memcpy(dst, src, len);
-    tmpbuf->ptr = dst;
+    rb_alloc_tmp_buffer(&imemo, len, false);
+    memcpy(RB_IMEMO_TMPBUF_PTR(imemo), RSTRING_PTR(str), len);
     return imemo;
 }
 
@@ -234,6 +238,15 @@ MEMO_V2_SET(struct MEMO *m, VALUE v)
     RB_OBJ_WRITE(m, &m->v2, v);
 }
 
+VALUE rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type);
+
+static inline st_table *
+rb_imemo_cdhash_tbl(VALUE obj)
+{
+    RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_cdhash));
+    return &((struct rb_imemo_cdhash *)obj)->tbl;
+}
+
 struct rb_fields {
     struct RBasic basic;
     union {
@@ -241,29 +254,40 @@ struct rb_fields {
             VALUE fields[1];
         } embed;
         struct {
-            VALUE *ptr;
-        } external;
-        struct {
-            // Note: the st_table could be embedded, but complex T_CLASS should be rare to
-            // non-existent, so not really worth the trouble.
-            st_table *table;
+            st_table table;
         } complex;
     } as;
 };
 
 // IMEMO/fields and T_OBJECT have exactly the same layout.
 // This is useful for JIT and common codepaths.
-#define OBJ_FIELD_HEAP ROBJECT_HEAP
-STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
-STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
-STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
-VALUE rb_imemo_fields_new(VALUE owner, size_t capa, bool shareable);
-VALUE rb_imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl, bool shareable);
+#define IMEMO_SUBCLASSES_HEAP IMEMO_FL_USER0
+
+struct rb_subclasses {
+    VALUE flags;
+    uint32_t count;
+    uint32_t capacity;
+    union {
+        VALUE *external;
+        VALUE embed[1];
+    } as;
+};
+
+static inline VALUE *
+rb_imemo_subclasses_entries(VALUE v)
+{
+    struct rb_subclasses *s = (struct rb_subclasses *)v;
+    return FL_TEST_RAW(v, IMEMO_SUBCLASSES_HEAP) ? s->as.external : s->as.embed;
+}
+
+VALUE rb_imemo_fields_new(VALUE owner, /* shape_id_t */ uint32_t shape_id, bool shareable);
+VALUE rb_imemo_subclasses_new(uint32_t capacity);
+VALUE rb_imemo_fields_new_complex(VALUE owner, /* shape_id_t */ uint32_t shape_id, size_t capa, bool shareable);
+VALUE rb_imemo_fields_new_complex_empty(VALUE owner);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
 
@@ -273,40 +297,6 @@ rb_imemo_fields_owner(VALUE fields_obj)
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
 
     return CLASS_OF(fields_obj);
-}
-
-static inline VALUE *
-rb_imemo_fields_ptr(VALUE fields_obj)
-{
-    if (!fields_obj) {
-        return NULL;
-    }
-
-    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
-
-    if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
-    }
-    else {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
-    }
-}
-
-static inline st_table *
-rb_imemo_fields_complex_tbl(VALUE fields_obj)
-{
-    if (!fields_obj) {
-        return NULL;
-    }
-
-    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
-    RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
-
-    // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
-    // shape is too_complex.
-    RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
-
-    return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
 #endif /* INTERNAL_IMEMO_H */

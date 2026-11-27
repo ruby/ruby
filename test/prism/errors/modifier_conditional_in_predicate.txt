@@ -1,0 +1,12 @@
+if a if b then end
+     ^~ expected `then` or `;` or '\n'
+     ^~ unexpected 'if', ignoring it
+          ^~~~ unexpected 'then', expecting end-of-input
+          ^~~~ unexpected 'then', ignoring it
+
+unless a unless b then end
+         ^~~~~~ expected `then` or `;` or '\n'
+         ^~~~~~ unexpected 'unless', ignoring it
+                  ^~~~ unexpected 'then', expecting end-of-input
+                  ^~~~ unexpected 'then', ignoring it
+

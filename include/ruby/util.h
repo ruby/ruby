@@ -33,7 +33,7 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-/** an approximation of ceil(n * log10(2)), up to 1,048,576 (1<<20)
+/** an approximation of ceil(n * log10(2)), for n=1..4756
  * without overflow within 32-bit calculation
  */
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)

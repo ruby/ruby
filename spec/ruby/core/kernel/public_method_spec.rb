@@ -13,20 +13,20 @@ describe "Kernel#public_method" do
     @obj.send(:private_method).should == :private_method
     -> do
       @obj.public_method(:private_method)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "raises a NameError when called on a protected method" do
     @obj.send(:protected_method).should == :protected_method
     -> {
       @obj.public_method(:protected_method)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
   it "raises a NameError if we only repond_to_missing? method, true" do
     obj = KernelSpecs::RespondViaMissing.new
     -> do
       obj.public_method(:handled_privately)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 end

@@ -3,9 +3,8 @@
 use std::ptr::null;
 use std::{ffi::c_void, ops::Range};
 use crate::{cruby::*, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
-use crate::payload::{IseqPayload, IseqVersionRef, get_or_create_iseq_payload};
+use crate::payload::{IseqPayload, IseqVersionRef, get_iseq_payload_ptr};
 use crate::stats::Counter::gc_time_ns;
-use crate::state::gc_mark_raw_samples;
 
 /// GC callback for marking GC objects in the per-ISEQ payload.
 #[unsafe(no_mangle)]
@@ -52,14 +51,26 @@ pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
         return;
     }
 
-    // TODO(Shopify/ruby#682): Free `IseqPayload`
-    let payload = get_or_create_iseq_payload(iseq);
-    for version in payload.versions.iter_mut() {
-        unsafe { version.as_mut() }.iseq = null();
+    ZJITState::get_invariants().forget_iseq(iseq);
+
+    // If ZJIT has never created a payload for this ISEQ, do nothing.
+    let payload_ptr = get_iseq_payload_ptr(iseq);
+    if payload_ptr.is_null() {
+        return;
     }
 
-    let invariants = ZJITState::get_invariants();
-    invariants.forget_iseq(iseq);
+    // Take ownership of the payload and unset it from the ISEQ.
+    let payload = unsafe { Box::from_raw(payload_ptr) };
+    unsafe { rb_iseq_clear_jit_payload(iseq) };
+
+    // Clear IseqVersion references. Patch points may hold raw pointers to them, so
+    // they have to outlive the ISEQ. They're dropped when the assumption is broken.
+    for &version in payload.versions.iter() {
+        unsafe { (*version.as_ptr()).iseq = null() };
+    }
+
+    // Free the IseqPayload.
+    drop(payload);
 }
 
 /// GC callback for finalizing a CME
@@ -90,6 +101,15 @@ pub extern "C" fn rb_zjit_root_update_references() {
     }
     let invariants = ZJITState::get_invariants();
     invariants.update_references();
+
+    // Update iseq pointers in all JITFrames for GC compaction.
+    // rb_execution_context_update only updates JITFrames currently on the stack,
+    // but JITFrames not on the stack also need their iseq pointers updated
+    // because the JIT code will reuse them on the next call.
+    // SAFETY: Only pointers to mutable memory from allocator(s) make it into the list.
+    for &jit_frame in ZJITState::get_jit_frames().iter() {
+        unsafe { &mut *jit_frame }.update_references();
+    }
 }
 
 fn iseq_mark(payload: &IseqPayload) {
@@ -151,7 +171,9 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
         }
     }
 
-    // Move objects baked in JIT code
+    // Move objects baked in JIT code.
+    // The code region is already writable because rb_zjit_mark_all_writable() was called
+    // before the GC update_references phase. We write directly to avoid per-page mprotect calls.
     let cb = ZJITState::get_code_block();
     for &offset in unsafe { version.as_ref() }.gc_offsets.iter() {
         let value_ptr: *const u8 = offset.raw_ptr(cb);
@@ -163,13 +185,10 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
 
         // Only write when the VALUE moves, to be copy-on-write friendly.
         if new_addr != object {
-            for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                let byte_code_ptr = offset.add_bytes(byte_idx);
-                cb.write_mem(byte_code_ptr, byte).expect("patching existing code should be within bounds");
-            }
+            let value_ptr = value_ptr as *mut VALUE;
+            unsafe { value_ptr.write_unaligned(new_addr) };
         }
     }
-    cb.mark_all_executable();
 }
 
 /// Append a set of gc_offsets to the iseq's payload
@@ -204,8 +223,75 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
     left.start < right.end && right.start < left.end
 }
 
+/// GC callback for making all JIT code writable before updating references in bulk.
+/// This avoids toggling W^X permissions per-page during GC compaction.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_mark_all_writable() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    ZJITState::get_code_block().mark_all_writable();
+}
+
+/// GC callback for making all JIT code executable after updating references in bulk.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_mark_all_executable() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    ZJITState::get_code_block().mark_all_executable();
+}
+
 /// Callback for marking GC objects inside [crate::invariants::Invariants].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
-    gc_mark_raw_samples();
+    // Mark iseq pointers in all JITFrames. JITFrames that are currently on the
+    // stack are also marked via rb_execution_context_mark_ctx, but JITFrames not on
+    // the stack still need their iseqs kept alive because JIT code will reuse them.
+    if !ZJITState::has_instance() {
+        return;
+    }
+    for &jit_frame in ZJITState::get_jit_frames().iter() {
+        unsafe { &*jit_frame }.mark();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cruby::test_utils::{eval, with_rubyvm};
+    use crate::options::set_call_threshold;
+
+    /// Regression test that freeing an ISEQ must not leave an `IseqPayload` behind.
+    #[test]
+    fn test_freed_iseqs_do_not_retain_payloads() {
+        with_rubyvm(|| {
+            // A high call threshold to keep any ISEQs out of the JIT
+            let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+            set_call_threshold(1_000_000);
+
+            eval(r#"
+                def zjit_eval_iseqs(n)
+                  n.times do |i|
+                    eval("def __zjit_churn#{i}(x) = x + 1", TOPLEVEL_BINDING, "zjit_churn#{i}.rb")
+                    send(:"__zjit_churn#{i}", i)
+                    Object.send(:remove_method, :"__zjit_churn#{i}")
+                  end
+                  3.times { GC.start }
+                end
+            "#);
+
+            // Each iteration creates and frees several ISEQs. It should not grow the heap usage.
+            let alloc_bytes_after_eval = |n: usize| {
+                eval(&format!("zjit_eval_iseqs({n})"));
+                crate::stats::zjit_alloc_bytes()
+            };
+            let small = alloc_bytes_after_eval(200);
+            let large = alloc_bytes_after_eval(2000);
+
+            set_call_threshold(old_call_threshold);
+
+            let alloc_growth = large.saturating_sub(small);
+            assert!(alloc_growth < 100_000, "zjit_alloc_bytes grew by {alloc_growth} bytes across freed ISEQs");
+        });
+    }
 }

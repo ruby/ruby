@@ -18,6 +18,44 @@ RSpec.describe Bundler::Worker do
         expect { subject.enq "a" }.to raise_error(Bundler::ThreadCreationError, "Failed to create threads for the Spec Worker worker: error creating thread")
       end
     end
+
+    context "with a shared response queue" do
+      it "allows workers to publish to the same queue" do
+        response_queue = Thread::Queue.new
+        workers = [
+          described_class.new(1, "First", function, response_queue: response_queue),
+          described_class.new(1, "Second", function, response_queue: response_queue),
+        ]
+
+        workers.first.enq("first")
+        workers.last.enq("second")
+
+        responses = Array.new(2) { workers.first.deq.first }
+        expect(responses).to contain_exactly("first", "second")
+      ensure
+        workers&.reverse_each(&:stop)
+      end
+    end
+  end
+
+  describe "priority queue" do
+    it "process elements from the priority queue first" do
+      processed_elements = []
+
+      function = proc do |element, _|
+        processed_elements << element
+      end
+
+      worker = described_class.new(1, "Spec Worker", function)
+      worker.instance_variable_set(:@threads, []) # Prevent the enqueueing from starting work.
+      worker.enq("Normal element")
+      worker.enq("Priority element", priority: true)
+      worker.send(:create_threads)
+
+      worker.stop
+
+      expect(processed_elements).to eq(["Priority element", "Normal element"])
+    end
   end
 
   describe "handling interrupts" do

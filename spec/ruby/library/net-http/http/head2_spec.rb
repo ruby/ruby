@@ -1,8 +1,8 @@
 require_relative '../../../spec_helper'
 require 'net/http'
-require_relative 'fixtures/http_server'
-require_relative 'shared/request_head'
 
 describe "Net::HTTP#head2" do
-  it_behaves_like :net_http_request_head, :head2
+  it "is an alias of Net::HTTP#request_head" do
+    Net::HTTP.instance_method(:head2).should == Net::HTTP.instance_method(:request_head)
+  end
 end

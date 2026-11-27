@@ -20,6 +20,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
+yes_git = $(HAVE_GIT:no=)
+no_git = $(HAVE_GIT:yes=)
 
 UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
@@ -69,13 +71,18 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-RDOC          = $(XRUBY) "$(tooldir)/rdoc-srcdir"
+yes_cross_compiling = $(CROSS_COMPILING:no=)
+X_$(CROSS_COMPILING:yes=)BASERUBY = $(BASERUBY)
+X_$(CROSS_COMPILING:no=)BASERUBY = $(XRUBY)
+RDOC          = $(X_BASERUBY) --enable-gems "$(tooldir)/rdoc-srcdir"
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
 RDOC_GEN_OPTS = --no-force-update \
+	--exclude '^lib/rubygems/core_ext/kernel_require\.rb$$' \
 	$(empty)
+RDOC_SERVER_PORT = 4000
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -89,31 +96,49 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-PRISM_FILES = prism/api_node.$(OBJEXT) \
-		prism/api_pack.$(OBJEXT) \
+LIBPRISM_OBJS = \
+		prism/arena.$(OBJEXT) \
+		prism/bignum.$(OBJEXT) \
+		prism/buffer.$(OBJEXT) \
+		prism/char.$(OBJEXT) \
+		prism/comments.$(OBJEXT) \
+		prism/constant_pool.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
+		prism/double.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
-		prism/extension.$(OBJEXT) \
+		prism/errors_format.$(OBJEXT) \
+		prism/integer.$(OBJEXT) \
+		prism/json.$(OBJEXT) \
+		prism/line_offset_list.$(OBJEXT) \
+		prism/list.$(OBJEXT) \
+		prism/memequal.$(OBJEXT) \
+		prism/memchr.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \
-		prism/pack.$(OBJEXT) \
+		prism/parser.$(OBJEXT) \
 		prism/prettyprint.$(OBJEXT) \
+		prism/prism.$(OBJEXT) \
 		prism/regexp.$(OBJEXT) \
 		prism/serialize.$(OBJEXT) \
+		prism/source.$(OBJEXT) \
 		prism/static_literals.$(OBJEXT) \
-		prism/token_type.$(OBJEXT) \
-		prism/util/pm_buffer.$(OBJEXT) \
-		prism/util/pm_char.$(OBJEXT) \
-		prism/util/pm_constant_pool.$(OBJEXT) \
-		prism/util/pm_integer.$(OBJEXT) \
-		prism/util/pm_list.$(OBJEXT) \
-		prism/util/pm_memchr.$(OBJEXT) \
-		prism/util/pm_newline_list.$(OBJEXT) \
-		prism/util/pm_string.$(OBJEXT) \
-		prism/util/pm_strncasecmp.$(OBJEXT) \
-		prism/util/pm_strpbrk.$(OBJEXT) \
-		prism/prism.$(OBJEXT) \
+		prism/string_query.$(OBJEXT) \
+		prism/stringy.$(OBJEXT) \
+		prism/strncasecmp.$(OBJEXT) \
+		prism/strpbrk.$(OBJEXT) \
+		prism/tokens.$(OBJEXT) \
+		prism/xxh3.$(OBJEXT)
+
+EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
+		prism/extension.$(OBJEXT) \
 		prism_init.$(OBJEXT)
+
+PRISM_OBJS = $(LIBPRISM_OBJS) $(EXTPRISM_OBJS)
+
+# Prism objects depend on generated headers that are created from templates.
+# This must be declared here to ensure parallel builds don't compile prism
+# sources before the generated headers exist.
+$(LIBPRISM_OBJS): $(srcdir)/prism/ast.h $(srcdir)/prism/internal/diagnostic.h
 
 COMMONOBJS    = \
 		array.$(OBJEXT) \
@@ -125,6 +150,7 @@ COMMONOBJS    = \
 		compile.$(OBJEXT) \
 		complex.$(OBJEXT) \
 		concurrent_set.$(OBJEXT) \
+		const_path.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		debug_counter.$(OBJEXT) \
@@ -192,7 +218,7 @@ COMMONOBJS    = \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
-		$(PRISM_FILES) \
+		$(PRISM_OBJS) \
 		$(YJIT_OBJ) \
 		$(ZJIT_OBJ) \
 		$(JIT_OBJ) \
@@ -203,13 +229,13 @@ COMMONOBJS    = \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
 
-$(PRISM_FILES): $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time
+$(PRISM_OBJS): $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time
 
 $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
-EXPORTOBJS    = $(DLNOBJ) \
+EXPORTOBJS    = $(DLNOBJS) \
 		localeinit.$(OBJEXT) \
 		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)
@@ -269,21 +295,15 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 # For release builds
 YJIT_RUSTC_ARGS = --crate-name=yjit \
 	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2021 \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	$(JIT_RUST_FLAGS) \
+	$(RUSTC_FLAGS) \
 	--edition=2024 \
-	-g \
-	-C lto=thin \
-	-C opt-level=3 \
-	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	'$(top_srcdir)/zjit/src/lib.rs'
 
@@ -336,12 +356,15 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
-		$(srcdir)/template/configure-ext.mk.tmpl
+		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs \
+		$(HAVE_BASERUBY:yes=extract-gems)
 	$(ECHO) generating makefiles $@
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)" \
-	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)'
+	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)' \
+	    --thread-model="$(THREAD_MODEL)" --gnumake=$(gnumake) \
+	    $(yes_cross_compiling:yes=--without-ext=-test-)
 
 configure-ext: $(EXTS_MK)
 
@@ -395,18 +418,20 @@ program: $(SHOWFLAGS) $(DOT_WAIT) $(PROGRAM)
 wprogram: $(SHOWFLAGS) $(DOT_WAIT) $(WPROGRAM)
 mini: PHONY miniruby$(EXEEXT)
 
-$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP) $(PROGRAM_EXTS)
 
 $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(BUILTIN_ENCOBJS)
+
+$(LIBRUBY_A) $(LIBRUBY_SO): $(LIBRUBY_SO_UPDATE)
 
 $(LIBRUBY_EXTS):
 	@$(NULLCMD) > $@
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(Q)$(RM) $@
-	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
+	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(COMMONOBJS)
 	$(Q){ \
@@ -614,23 +639,28 @@ post-install-dbg::
 
 srcs-doc: prepare-gems
 
-rdoc: PHONY main srcs-doc
+RDOC_DEPENDS = main srcs-doc
+rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG) update-default-gemspecs
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
-html: PHONY main srcs-doc
+html: PHONY $(RDOC_DEPENDS) $(RBCONFIG) update-default-gemspecs
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
+
+html-server: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+	@echo Starting RDoc server with live reload
+	$(Q) $(RDOC) --server=$(RDOC_SERVER_PORT) $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
 RDOC_COVERAGE_EXCLUDES = -x ^ext/json -x ^ext/openssl -x ^ext/psych \
 	-x ^lib/bundler -x ^lib/rubygems \
 	-x ^lib/did_you_mean -x ^lib/error_highlight -x ^lib/syntax_suggest
 
-rdoc-coverage: PHONY main srcs-doc
+rdoc-coverage: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	@echo Generating RDoc coverage report
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) .
 
-undocumented: PHONY main srcs-doc
+undocumented: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) $(RDOC_COVERAGE_EXCLUDES) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
@@ -664,6 +694,8 @@ install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
+noarch_config_h = tmp/include/noarch/ruby/config.h
+
 clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-modular-gc clean-local clean-platform clean-spec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
@@ -672,9 +704,11 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.rbbin
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
+	$(Q)$(RM) $(noarch_config_h)
+	-$(Q)$(RMALL) dump_ast$(BUILD_EXEEXT)*
 	-$(Q)$(RMALL) target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
-	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
+	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) gc/default gc tmp \
 	2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY
@@ -700,6 +734,7 @@ clean-rubyspec: clean-spec
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-modular-gc distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
+	-$(Q)$(RMALL) .deps
 	$(Q)$(RM) $(MKFILES) *.inc $(PRELUDES) *.rbinc *.rbbin
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
@@ -767,7 +802,7 @@ timestamp/distclean:: ext/distclean .bundle/distclean
 timestamp/realclean:: ext/realclean .bundle/realclean
 
 timestamp/clean timestamp/distclean timestamp/realclean::
-	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
+	$(Q)$(RM) $(TIMESTAMPDIR)/*.time $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
 	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 clean-ext::
@@ -803,10 +838,13 @@ clean-platform distclean-platform realclean-platform:
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) {$(VPATH)}internal/abi.h $(LIBRUBY)
 RUBYSPEC_CAPIEXT_BUILD = $(enable_shared:yes=rubyspec-capiext)
 
-rubyspec-capiext: build-ext $(DOT_WAIT)
+yes-rubyspec-capiext: build-ext
+	$(ACTIONS_GROUP)
+rubyspec-capiext: build-ext $(DOT_WAIT) yes-rubyspec-capiext $(DOT_WAIT)
+	$(ACTIONS_ENDGROUP)
 # make-dependent rules should be included after this and built after build-ext.
 
 clean-spec: PHONY
@@ -816,12 +854,7 @@ clean-spec: PHONY
 
 check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all
 	$(ECHO) check succeeded
-	-$(Q) : : "run only on sh"; \
-	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
-	    b=`$(GIT) symbolic-ref --short HEAD 2>&1` && \
-	    u=`$(GIT) branch --list --format='%(upstream:short)' $$b`; then \
-	  set -x; $(GIT) --no-pager log --format=oneline -G '^ *# *include *("|<ruby)' $$u..HEAD --; \
-	fi
+
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
@@ -840,6 +873,12 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
 	    i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" \
 	    LIBPATHENV="$(LIBPATHENV)" PRELOADENV="$(PRELOADENV)" LIBRUBY_SO="$(LIBRUBY_SO)"
+
+# dummy file for generating sources; $(arch_hdrdir)/ruby/config.h with prereq.status.
+$(noarch_config_h):
+	$(ECHO) generating dummy config.h
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(TOUCH) $@
 
 noarch-fake.rb: # prerequisite of yes-fake
 	$(Q) exit > $@
@@ -901,13 +940,13 @@ yes-test-tool: prog PHONY
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
-test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
+test-short: test-coroutine $(DOT_WAIT) btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
 # for GNU make.
-test-precheck: $(ENCSTATIC:static=lib)encs $(RUBYSPEC_CAPIEXT_BUILD) exts PHONY $(DOT_WAIT)
-yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
+test-precheck: $(ENCSTATIC:static=lib)encs exts PHONY $(DOT_WAIT)
+yes-test-all-precheck: programs $(DOT_WAIT) test-precheck yes-fake
 
 PRECHECK_TEST_ALL = yes-test-all-precheck
 
@@ -944,24 +983,20 @@ rbconfig.rb: $(RBCONFIG)
 
 $(HAVE_BASERUBY:no=)$(RBCONFIG)$(HAVE_BASERUBY:no=): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(srcdir)/common.mk
-	$(Q)$(BOOTSTRAPRUBY) -n \
-	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
-	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
-	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
-	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
+
+$(RBCONFIG):
 	$(Q)$(BOOTSTRAPRUBY) $(tooldir)/mkconfig.rb \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) \
 		-unicode_version=$(UNICODE_VERSION) \
 		-unicode_emoji_version=$(UNICODE_EMOJI_VERSION) \
-	> rbconfig.tmp
-	$(IFCHANGE) "--timestamp=$@" rbconfig.rb rbconfig.tmp
+	| $(IFCHANGE) "--timestamp=$@" rbconfig.rb -
 
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-yes-test-spec-precheck: yes-test-all-precheck yes-fake
+yes-test-spec-precheck: yes-test-all-precheck $(RUBYSPEC_CAPIEXT_BUILD)
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: yes-test-spec-precheck
@@ -1016,15 +1051,15 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: distclean-srcs distclean-srcs-local distclean-srcs-ext
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 .PHONY: realclean-srcs realclean-srcs-local realclean-srcs-ext
-.PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
+.PHONY: exam check test test-short test-all test-coroutine btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
 .PHONY: touch-unicode-files
 
 PHONY:
 
-{$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
-{$(VPATH)}parse.h: {$(VPATH)}parse.c
+parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
+parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
@@ -1038,7 +1073,7 @@ $(PLATFORM_D):
 exe/$(PROGRAM): $(TIMESTAMPDIR)/$(arch)/.time
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(XLDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) $(BOOTSTRAPRUBY) \
 	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
@@ -1131,7 +1166,7 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(tooldir)/transcode-tblgen.rb
 	$(Q) $(BASERUBY) "$(tooldir)/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
-verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb $(RBCONFIG)
+verconf.h: $(srcdir)/template/verconf.h.tmpl $(tooldir)/generic_erb.rb rbconfig.rb
 	$(ECHO) creating $@
 	$(Q) $(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
@@ -1159,6 +1194,7 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
+		$(srcdir)/basic_object.rb \
 		$(srcdir)/dir.rb \
 		$(srcdir)/gc.rb \
 		$(srcdir)/numeric.rb \
@@ -1172,6 +1208,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/pathname_builtin.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/string.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
@@ -1193,12 +1230,13 @@ missing-srcs: $(srcdir)/missing/des_tables.c
 
 srcs: common-srcs missing-srcs srcs-enc srcs-doc
 
-RIPPER_SRCS = $(srcdir)/ext/ripper/ripper.c \
-	      $(srcdir)/ext/ripper/ripper_init.c \
-	      $(srcdir)/ext/ripper/eventids1.h \
-	      $(srcdir)/ext/ripper/eventids1.c \
-	      $(srcdir)/ext/ripper/eventids2table.c \
-	      # RIPPER_SRCS
+RIPPER_SRCS1 = $(srcdir)/ext/ripper/ripper.c
+RIPPER_SRCS2 = $(srcdir)/ext/ripper/ripper_init.c \
+	       $(srcdir)/ext/ripper/eventids1.h \
+	       $(srcdir)/ext/ripper/eventids1.c \
+	       $(srcdir)/ext/ripper/eventids2table.c \
+	       # RIPPER_SRCS2
+RIPPER_SRCS = $(RIPPER_SRCS1) $(RIPPER_SRCS2)
 
 EXT_SRCS = ripper_srcs \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
@@ -1281,12 +1319,10 @@ $(MAINOBJ): $(srcdir)/$(MAINSRC)
 	$(ECHO) compiling $(srcdir)/$(MAINSRC)
 	$(Q) $(CC) $(MAINCPPFLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/$(MAINSRC)
 
-{$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
-
-probes.dmyh:
+probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
 	$(BASERUBY) $(tooldir)/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
-probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
+probes.h: {$(VPATH)}probes.$(DTRACE_EXT) $(srcdir)/vm_opts.h
 
 prereq: incs srcs preludes PHONY
 
@@ -1296,9 +1332,9 @@ preludes: {$(VPATH)}miniprelude.c
 	$(ECHO) making $@
 	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $(SRC_FILE) > $(OS_DEST_FILE)
 
-{$(srcdir)}.rb.rbinc:
+{$(srcdir)}.rb.$(HAVE_BASERUBY:yes=)rbinc:
 	$(ECHO) making $@
-	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(SRC_FILE)
+	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(DUMP_AST) $(SRC_FILE)
 
 $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
@@ -1308,13 +1344,33 @@ $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)
 $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 	$(Q) echo> $@ // empty $(@F)
 
-$(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
+$(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(DUMP_AST_TARGET)
 
-$(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
+dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+	$(ECHO) compiling $@
+	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
-$(REVISION_H)$(no_baseruby:no=~disabled~):
-	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
-$(REVISION_H)$(yes_baseruby:yes=~disabled~):
+build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
+	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb \
+	    "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" "-objext=$(OBJEXT)" \
+	    build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
+
+build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE) Q=$(Q)
+
+clean-local:: clean-build-tool
+clean-build-tool:
+	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
+
+$(srcdir)/revision.h$(no_git:no=~disabled~): $(REVISION_H)
+
+REVISION_H_CMD = $(LASTREV) $(srcdir) | $(IFCHANGE) --empty --timestamp=.revision.time revision.h -
+
+$(REVISION_H)$(no_git:no=~disabled~):
+	$(Q) $(REVISION_H_CMD)
+$(REVISION_H)$(yes_git:yes=~disabled~):
+	$(Q) exit >> revision.h
 	$(Q) exit > $@
 
 # uncommon.mk: $(REVISION_H)
@@ -1331,6 +1387,8 @@ $(RIPPER_SRCS): $(srcdir)/parse.y $(srcdir)/defs/id.def
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/depend $(srcdir)/ext/ripper/extconf.rb
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/ext/ripper/tools/dsl.rb
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/ripper_init.c.tmpl $(srcdir)/ext/ripper/eventids2.c
+$(RIPPER_SRCS2): $(RIPPER_SRCS1)
+$(RIPPER_SRCS1):
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && \
 	$(CAT_DEPEND) depend | \
@@ -1395,15 +1453,26 @@ COMPARE_RUBY = $(BASERUBY)
 BENCH_RUBY = $(RUNRUBY)
 BENCH_OPTS = --output=markdown --output-compare -v
 ITEM =
-ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '$(ITEM)' -o -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
+ARGS =
 OPTS =
 
-# See benchmark/README.md for details.
+# Select the benchmark files with Ruby instead of `find | sort`, so the
+# recipe runs on any platform regardless of the shell.  When ARGS is
+# empty, collect the files matching ITEM under benchmark/.  Executables
+# are passed with forward slashes because benchmark-driver splits them
+# with Shellwords, which eats backslashes.  See benchmark/README.md.
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
-	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
-	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
-	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
-	            $(BENCH_OPTS) $(ARGS) $(OPTS)
+	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib \
+	    -e "files = %w[$(ARGS)]" \
+	    -e "files = Dir.glob(['$(ITEM)', '*$(ITEM)*.yml', '*$(ITEM)*.rb'], base: '$(srcdir)/benchmark').reject(&:empty?).sort.uniq.map {|f| '$(srcdir)/benchmark/' + f} if files.empty?" \
+	    -e "if sep = File::ALT_SEPARATOR" \
+	    -e   "ARGV.map! {|a| a.start_with?('--executables') ? a.gsub(sep, '/') : a}" \
+	    -e "end" \
+	    -e "ARGV.concat(files)" \
+	    -e "load '$(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver'" -- \
+	    --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	    --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
+	    $(BENCH_OPTS) $(OPTS)
 
 run.gdb:
 	echo set breakpoint pending on         > run.gdb
@@ -1413,8 +1482,9 @@ run.gdb:
 	echo '# handle SIGINT nostop'         >> run.gdb
 	echo '# handle SIGPIPE nostop'        >> run.gdb
 	echo '# b rb_longjmp'                 >> run.gdb
-	echo source $(srcdir)/breakpoints.gdb >> run.gdb
-	echo source $(srcdir)/.gdbinit        >> run.gdb
+	echo directory $(srcdir)              >> run.gdb
+	echo source -s breakpoints.gdb        >> run.gdb
+	echo source -s .gdbinit               >> run.gdb
 	echo 'set $$_exitcode = -999'         >> run.gdb
 	echo run                              >> run.gdb
 	echo 'if $$_exitcode != -999'         >> run.gdb
@@ -1448,7 +1518,7 @@ dist:
 up:: update-remote
 
 up$(DOT_WAIT)::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= after-update
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= MINIRUBY=$(BASERUBY) after-update
 
 yes::
 no::
@@ -1457,10 +1527,17 @@ after-update:: common-srcs
 after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
+after-update:: update-default-gemspecs
 
+# Do not remove or empty revision.h itself, whose content file2lastrev.rb
+# keeps when the source tree has no VCS.
 update-src::
-	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
-	$(Q) exit > "$(srcdir)/revision.h"
+	$(Q) $(RM) $(REVISION_H) "$(srcdir)/$(REVISION_H)"
+
+# $(REVISION_H) can have been made already in this run, as a prerequisite
+# of the included dependency file, and make does not make it twice.
+update-src$(no_baseruby:no=~disabled~)::
+	$(Q) $(REVISION_H_CMD)
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
@@ -1476,7 +1553,7 @@ update-config_files: PHONY
 
 update-coverage: main PHONY
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "simplecov"
+		--install-dir .bundle --conservative "simplecov" -v "~> 1.1"
 
 refresh-gems: update-bundled_gems prepare-gems
 # can't recall exactly, but `make` somewhere (not GNU or nmake)
@@ -1539,40 +1616,29 @@ test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: $(PRECHECK_BUNDLED_GEMS:yes=main)
 no-test-bundled-gems-precheck:
 
-update-default-gemspecs: $(TEST_RUNNABLE)-update-default-gemspecs
-no-update-default-gemspecs:
-yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main)
+yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
+update-default-gemspecs: $(PREP) $(RBCONFIG)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
-	@$(XRUBY) -W0 -C "$(srcdir)" -rrubygems \
-	    -e "destdir = ARGV.shift" \
-	    -e "ARGV.each do |basedir|" \
-	    -e   "Dir.glob(basedir+'/**/*.gemspec') do |g|" \
-	    -e     "dir, base = File.split(g)" \
-	    -e     "spec = Dir.chdir(dir) {Gem::Specification.load(base)} ||" \
-	    -e         "Gem::Specification.load(g)" \
-	    -e     "unless spec" \
-	    -e       "puts %[Ignoring #{g}]" \
-	    -e       "next" \
-	    -e     "end" \
-	    -e     "spec.files.clear" \
-	    -e     "spec.extensions.clear" \
-	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), spec.to_ruby)" \
-	    -e   "end" \
-	    -e "end" \
-	    -- .bundle/specifications lib ext
+	$(Q)$(MINIRUBY) -W0 -I "$(srcdir)/tool/lib" -roptparse -routput -rbundled_gem \
+	    -e "(out = Output.new).def_options(ARGV.options)" \
+	    -e "BundledGem.update_default_gemspecs(ARGV.parse!, out, quiet: $(V).zero?)" \
+	    -- -c -o "$(srcdir)/.bundle/specifications" "$(srcdir)/lib" "$(srcdir)/ext"
 
 install-for-test-bundled-gems: $(TEST_RUNNABLE)-install-for-test-bundled-gems
 no-install-for-test-bundled-gems: no-update-default-gemspecs
 yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
 		install --no-document --conservative \
-		"hoe" "json-schema:5.1.0" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json" "rspec" "zeitwerk" \
+		"hoe" "json-schema:5.1.0" "test-unit-rr" "rspec" "zeitwerk" \
 		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer" "minitest-mock"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
-clone-bundled-gems-src: PHONY
+clone-bundled-gems-src: PHONY $(TIMESTAMPDIR)/bundled-gems-src.time
+$(TIMESTAMPDIR)/bundled-gems-src.time: $(srcdir)/gems/bundled_gems
+	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) -C $(srcdir) tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" gems/src gems/bundled_gems
+	$(Q) $(TOUCH) $@
 no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
@@ -1606,7 +1672,7 @@ yes-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 no-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 
 test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
-yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
+yes-test-bundled-gems-spec: yes-test-all-precheck $(PREPARE_BUNDLED_GEMS)
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q) \
 	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
@@ -1616,9 +1682,37 @@ yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
 no-test-bundled-gems-spec:
 
 
-test-syntax-suggest:
+test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
+no-test-syntax-suggest-precheck:
+yes-test-syntax-suggest-precheck: main
+
+test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
+no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
+yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
+	$(ACTIONS_GROUP)
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+		--install-dir .bundle --conservative "rspec:~> 3"
+	$(ACTIONS_ENDGROUP)
+
+RSPECOPTS =
+SYNTAX_SUGGEST_SPECS =
+PREPARE_SYNTAX_SUGGEST = $(TEST_RUNNABLE)-test-syntax-suggest-prepare
+test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
+yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
+	$(ACTIONS_GROUP)
+	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest$(PATH_SEPARATOR)spec/lib .bundle/bin/rspec \
+		--require rspec/expectations \
+		--require spec_helper --require formatter_overrides --require spec_coverage \
+		$(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
+	$(ACTIONS_ENDGROUP)
+no-test-syntax-suggest:
 
 check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+
+RAKER = $(XRUBY) -I$(srcdir)/gems/lib$(PATH_SEPARATOR)$(srcdir)/.bundle/lib \
+	-rrubygems $(srcdir)/.bundle/bin/rake
+rake:
+	$(RAKER) $(RAKE_OPTS) $(RAKE)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
@@ -1638,9 +1732,12 @@ BUNDLER_SPECS =
 PREPARE_BUNDLER = $(TEST_RUNNABLE)-test-bundler-prepare
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
-	$(gnumake_recursive)$(XRUBY) \
+	$(gnumake_recursive)$(XRUBY) --enable-gems \
 		-r./$(arch)-fake \
-		-C $(srcdir) -Ispec/bundler -Ispec/lib spec/bin/rspec \
+		-r$(tooldir)/lib/_tmpdir \
+		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \
+		-e "Dir.chdir(ARGV.shift); load('spec/bin/rspec')" \
+		-s -- -no-report-tmpdir -- "$(srcdir)" \
 		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
@@ -1649,11 +1746,16 @@ test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
+		-r$(tooldir)/lib/_tmpdir \
+		-r$(tooldir)/lib/bundler_runtime_grouping \
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
 		-e "ENV['RSPEC_EXECUTABLE'] = ruby + ARGV.shift" \
+		-e "require 'support/setup'" \
+		-e "BundlerRuntimeGrouping.install!" \
 		-e "load ARGV.shift" \
+		-s -- -no-report-tmpdir -- \
 		" -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec -r spec_helper" \
 		$(srcdir)/spec/bin/parallel_rspec $(RSPECOPTS) \
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
@@ -1891,10 +1993,15 @@ sudo-precheck: PHONY
 	@$(SUDO) echo > $(NULL)
 
 update-man-date: PHONY
-	-$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
-	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
-	"$(srcdir)" "$(srcdir)"/man/*.1
+	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
+	-C "$(srcdir)" \
+	-e 'BEGIN{@vcs=VCS.detect; ARGV.replace(Dir.glob(ARGV))}' \
+	-e '$$_.sub!(/^\.Dd \K.*/){' \
+	-e   'STDOUT.puts "Updating #{ARGF.path}"' \
+	-e   '@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")' \
+	-e '}' \
+	$(MANPAGES_TO_UPDATE)
+MANPAGES_TO_UPDATE = man/*.1
 
 .PHONY: ChangeLog
 ChangeLog:
@@ -1921,6 +2028,15 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
+MKDEPEND_FILES = --scope=all
+MKDEPEND_OPTIONS = --sources
+
+fix-depends: PHONY
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb $(MKDEPEND_FILES) $(MKDEPEND_OPTIONS) --inplace
+
+check-depends: PHONY
+	$(BASERUBY) -C $(srcdir) tool/mkdepend.rb --scope=all --sources --check
+
 gc/Makefile:
 	$(MAKEDIRS) $(@D)
 	$(MESSAGE_BEGIN) \
@@ -1932,8 +2048,10 @@ gc/distclean gc/realclean::
 	-$(Q) $(RM) gc/Makefile
 
 modular-gc-precheck:
-modular-gc: probes.h gc/Makefile
-	$(Q) $(RUNRUBY) $(srcdir)/ext/extmk.rb \
+modular-gc: probes.h gc/Makefile $(PROGRAM) $(RBCONFIG)
+	$(Q) DTRACE='$(DTRACE)' DTRACE_EXT='$(DTRACE_EXT)' \
+		DTRACE_OBJ='$(DTRACE_OBJ)' DTRACE_REBUILD='$(DTRACE_REBUILD)' \
+		$(RUNRUBY) $(srcdir)/ext/extmk.rb \
 		$(SCRIPT_ARGS) \
 		--make='$(MAKE)' --make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" \
 		--gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
@@ -1948,7 +2066,7 @@ clean-modular-gc: gc/clean
 distclean-modular-gc: gc/distclean
 realclean-modular-gc: gc/realclean
 distclean-modular-gc realclean-modular-gc:
-	-$(Q) $(RMDIR) gc
+	-$(Q) $(RMDIR) gc 2> $(NULL) || $(NULLCMD)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
@@ -1998,4 +2116,5 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
-!include $(srcdir)/depend
+!include $(DEPENDENCIES_DIR)/depend
+!include $(srcdir)/coroutine/test.mk

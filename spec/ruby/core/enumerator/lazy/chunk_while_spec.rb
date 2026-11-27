@@ -9,6 +9,6 @@ describe "Enumerator::Lazy#chunk_while" do
 
   it "should return a lazy enumerator" do
     s = 0..Float::INFINITY
-    s.lazy.chunk_while { |a, b| false }.should be_kind_of(Enumerator::Lazy)
+    s.lazy.chunk_while { |a, b| false }.should.is_a?(Enumerator::Lazy)
   end
 end

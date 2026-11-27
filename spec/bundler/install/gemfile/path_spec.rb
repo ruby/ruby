@@ -125,7 +125,7 @@ RSpec.describe "bundle install with explicit source paths" do
       gem 'foo', :path => File.expand_path("foo-1.0", __dir__)
     G
 
-    bundle "config set --local frozen true"
+    bundle_config "frozen true"
     bundle :install
   end
 
@@ -355,7 +355,7 @@ RSpec.describe "bundle install with explicit source paths" do
       s.add_dependency "graphql", "~> 2.0"
     end
 
-    bundle "install", dir: lib_path("foo")
+    bundle "lock", dir: lib_path("foo")
     expect(lockfile_path).to read_as(original_lockfile.gsub("foo (0.1.0)", "foo (0.1.1)"))
   end
 
@@ -510,8 +510,6 @@ RSpec.describe "bundle install with explicit source paths" do
     gemfile <<-G
       gem "foo", "1.0", :path => "#{lib_path("foo-1.0")}"
     G
-
-    expect(the_bundle).to include_gems "foo 1.0"
 
     expect(the_bundle).to include_gems "foo 1.0"
   end

@@ -30,7 +30,7 @@ describe "Fiber#resume" do
 
   it "raises a FiberError if the Fiber tries to resume itself" do
     fiber = Fiber.new { fiber.resume }
-    -> { fiber.resume }.should raise_error(FiberError, /current fiber/)
+    -> { fiber.resume }.should.raise(FiberError, /current fiber/)
   end
 
   it "returns control to the calling Fiber if called from one" do
@@ -78,6 +78,26 @@ describe "Fiber#resume" do
   it "raises a FiberError if the Fiber attempts to resume a resuming fiber" do
     root_fiber = Fiber.current
     fiber1 = Fiber.new { root_fiber.resume }
-    -> { fiber1.resume }.should raise_error(FiberError, /attempt to resume a resuming fiber/)
+    -> { fiber1.resume }.should.raise(FiberError, /attempt to resume a resuming fiber/)
+  end
+
+  it "can resume a fiber that was transferred away from and back before it yielded" do
+    other = nil
+    fiber = Fiber.new do
+      other.transfer
+      Fiber.yield :yielded
+      :done
+    end
+    other = Fiber.new { fiber.transfer }
+
+    fiber.resume.should == :yielded
+    fiber.resume.should == :done
+  end
+
+  it "raises a FiberError when resuming a fiber suspended by transfer" do
+    root = Fiber.current
+    fiber = Fiber.new { root.transfer }
+    fiber.transfer
+    -> { fiber.resume }.should.raise(FiberError, /attempt to resume a transferring fiber/)
   end
 end

@@ -12,13 +12,13 @@ describe "File::Stat#rdev_minor" do
 
   platform_is_not :windows do
     it "returns the minor part of File::Stat#rdev" do
-      File.stat(@name).rdev_minor.should be_kind_of(Integer)
+      File.stat(@name).rdev_minor.should.is_a?(Integer)
     end
   end
 
   platform_is :windows do
     it "returns nil" do
-      File.stat(@name).rdev_minor.should be_nil
+      File.stat(@name).rdev_minor.should == nil
     end
   end
 end

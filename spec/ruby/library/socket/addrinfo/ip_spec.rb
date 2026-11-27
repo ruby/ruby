@@ -8,7 +8,7 @@ describe "Addrinfo#ip?" do
     end
 
     it "returns true" do
-      @addrinfo.ip?.should be_true
+      @addrinfo.ip?.should == true
     end
   end
 
@@ -18,19 +18,17 @@ describe "Addrinfo#ip?" do
     end
 
     it "returns true" do
-      @addrinfo.ip?.should be_true
+      @addrinfo.ip?.should == true
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns false" do
-        @addrinfo.ip?.should be_false
-      end
+    it "returns false" do
+      @addrinfo.ip?.should == false
     end
   end
 end
@@ -38,7 +36,7 @@ end
 describe 'Addrinfo.ip' do
   SocketSpecs.each_ip_protocol do |family, ip_address|
     it 'returns an Addrinfo instance' do
-      Addrinfo.ip(ip_address).should be_an_instance_of(Addrinfo)
+      Addrinfo.ip(ip_address).should.instance_of?(Addrinfo)
     end
 
     it 'sets the IP address' do

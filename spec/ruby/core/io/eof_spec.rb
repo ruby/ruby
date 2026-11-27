@@ -18,7 +18,7 @@ describe "IO#eof?" do
   it "raises IOError on stream not opened for reading" do
     -> do
       File.open(@name, "w") { |f| f.eof? }
-    end.should raise_error(IOError)
+    end.should.raise(IOError)
   end
 end
 
@@ -67,12 +67,12 @@ describe "IO#eof?" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.eof? }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.eof? }.should.raise(IOError)
   end
 
   it "raises IOError on stream closed for reading by close_read" do
     @io.close_read
-    -> { @io.eof? }.should raise_error(IOError)
+    -> { @io.eof? }.should.raise(IOError)
   end
 
   it "returns true on one-byte stream after single-byte read" do
@@ -103,5 +103,11 @@ describe "IO#eof?" do
     @r.should_not.eof?
     @r.read
     @r.should.eof?
+  end
+end
+
+describe "IO#eof" do
+  it "is an alias of IO#eof?" do
+    IO.instance_method(:eof).should == IO.instance_method(:eof?)
   end
 end

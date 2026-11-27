@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/select'
 
 describe "Set#filter!" do
-  it_behaves_like :set_select_bang, :filter!
+  it "is an alias of Set#select!" do
+    Set.instance_method(:filter!).should == Set.instance_method(:select!)
+  end
 end

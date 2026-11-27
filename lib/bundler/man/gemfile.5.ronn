@@ -111,9 +111,11 @@ engine version specified _must_ match the Ruby version.
 
 ### PATCHLEVEL
 
-Each application _may_ specify a Ruby patchlevel. Specifying the patchlevel has
-been meaningless since Ruby 2.1.0 was released as the patchlevel is now
-uniquely determined by a combination of major, minor, and teeny version numbers.
+Each application _may_ specify a Ruby patchlevel. The option is accepted for
+compatibility with existing Gemfiles and ignored: the patchlevel has been
+uniquely determined by the combination of major, minor, and teeny version
+numbers since Ruby 2.1.0 was released, so Bundler does not compare it against
+the patchlevel of the running Ruby.
 
 This option was implemented in Bundler 1.4.0 for Ruby 2.0 or earlier.
 
@@ -136,6 +138,13 @@ Each _gem_ `MAY` have one or more version specifiers.
 
     gem "nokogiri", ">= 1.4.2"
     gem "RedCloth", ">= 4.1.0", "< 4.2.0"
+
+Most version specifiers, like `>= 1.0`, are self-explanatory. The pessimistic
+specifier `~>` constrains both a lower and an upper bound: `~> 2.0.3` is
+identical to `>= 2.0.3` and `< 2.1`, and `~> 2.1` is identical to `>= 2.1` and
+`< 3.0`. A pessimistic specifier with a prerelease component, like
+`~> 2.2.beta`, will match prerelease versions like `2.2.beta.12`. `~> 0` is
+identical to `>= 0.0` and `< 1.0`.
 
 ### REQUIRE AS
 
@@ -193,7 +202,7 @@ are not available).
 Note that on `bundle install`, bundler downloads and evaluates all gems, in order to
 create a single canonical list of all of the required gems and their dependencies.
 This means that you cannot list different versions of the same gems in different
-groups. For more details, see [Understanding Bundler](https://bundler.io/rationale.html).
+groups. For more details, see [Dependency management](https://guides.rubygems.org/dependency_management/).
 
 ### PLATFORMS
 
@@ -352,6 +361,20 @@ Git repositories support a number of additional options.
     Specify `submodules: true` to cause bundler to expand any
     submodules included in the git repository
 
+  * `sparse_checkout`:
+    Specify a directory, or an array of directories, to include when
+    checking out a git repository. Uses git's sparse-checkout feature
+    (requires git 2.25+) to only check out the specified directories,
+    reducing disk usage for large repos. Unless `glob` is given, the
+    `.gemspec` is looked up within those directories.
+
+      gem "foo", git: "https://github.com/org/monorepo.git",
+                 sparse_checkout: "packages/foo"
+
+    Files at the top level of the repository are always checked out.
+    On git versions below 2.25, the entire repository will be checked
+    out with a warning.
+
 If a git repository contains multiple `.gemspecs`, each `.gemspec`
 represents a gem located at the same place in the file system as
 the `.gemspec`.
@@ -444,7 +467,9 @@ Since the `bitbucket` method is a specialization of `git_source`, it accepts a `
 
 You can specify that a gem is located in a particular location
 on the file system. Relative paths are resolved relative to the
-directory containing the `Gemfile`.
+directory containing the `Gemfile`. The path must point to a
+directory containing the gem's unpacked source code, not to a
+packaged `.gem` file.
 
 Similar to the semantics of the `:git` option, the `:path`
 option requires that the directory in question either contains
@@ -537,9 +562,131 @@ options, which control where bundler looks for the `.gemspec`, the glob it uses 
 for the gemspec (defaults to: `{,*,*/*}.gemspec`), what named `.gemspec` it uses
 (if more than one is present), and which group development dependencies are included in.
 
+When `gemspec` is called inside a `group` block, the gem requirement on your
+project goes into that group instead of the default group, and so do its runtime
+dependencies. Development dependencies stay in the `development` group, or the
+group given by `:development_group`. An enclosing `platforms` or `install_if`
+block applies to the project and its development dependencies alike.
+
 When a `gemspec` dependency encounters version conflicts during resolution, the
 local version under development will always be selected -- even if there are
 remote versions that better match other requirements for the `gemspec` gem.
+
+## EVAL_GEMFILE
+
+A Gemfile `MAY` be split across multiple files. The `eval_gemfile` method reads
+the contents of another file as if they appeared in the current Gemfile. A
+relative path is resolved against the directory of the file containing the
+call.
+
+    eval_gemfile "another.gemfile"
+
+This can be useful to run tests against multiple combinations of dependencies,
+or to load per-developer gems from an untracked gemfile.
+
+## OVERRIDE
+
+The `override` directive rewrites a constraint on another gem before
+resolution runs. It targets the common case where an upstream gem's
+published metadata is too narrow on the current project's machine -- a stale
+upper bound, an unwanted floor, or a transitive pin that has to be lifted.
+
+    override <target>, <field>: <operation>
+
+`<target>` is a gem name string or `:all`. `<field>` is one of `version:`,
+`required_ruby_version:`, or `required_rubygems_version:`. `<operation>` is
+one of:
+
+  * a version requirement string (e.g. `">= 8.0"`), which **replaces** the
+    target's requirement absolutely. The original requirement, both direct
+    and transitive, is discarded in favour of the override.
+  * `:ignore_upper`, which removes upper-bound operators (`<` and `<=`) from
+    the existing requirement and folds `~>` into its lower bound (`~> 1.5`
+    becomes `>= 1.5`). Other operators, including `!=`, are preserved.
+  * `nil`, which collapses the requirement to `>= 0` (no constraint at all).
+
+`:all` only applies to `required_ruby_version:` and `required_rubygems_version:`.
+A per-gem override on the same field takes precedence over an `:all` override.
+`:all + version:` is rejected: version requirements only make sense per gem.
+
+Declaring the same `target` and `field` twice is an error.
+
+    source "https://rubygems.org"
+
+    # Force every reference to "rails" -- direct or transitive -- to >= 8.0.
+    override "rails", version: ">= 8.0"
+
+    # Strip the upper bound on nokogiri.
+    override "nokogiri", version: :ignore_upper
+
+    # Drop the version pin on legacy entirely.
+    override "legacy", version: nil
+
+    # Loosen every gem's required_ruby_version upper bound.
+    override :all, required_ruby_version: :ignore_upper
+
+    # Override one specific gem's required_rubygems_version.
+    override "tricky", required_rubygems_version: nil
+
+    gem "rails", "~> 7.0"
+
+The override only affects resolution and the install-time Ruby/RubyGems
+compatibility checks; the gems in `Gemfile.lock` continue to reflect the
+resolved versions, not the rewritten requirements. The overrides themselves are
+recorded in the lockfile's `OVERRIDES` section, one line per field, sorted:
+
+    OVERRIDES
+      "rails", version: ">= 8.0"
+      :all, required_ruby_version: :ignore_upper
+
+Requirements are recorded in normalized form, so `">=8.0"` and `">= 8.0"` are
+the same override. A frozen install fails when the Gemfile's overrides differ
+from the recorded ones. Adding or removing a `:all` or metadata override
+rewrites the section and keeps the locked versions. The exception is a locked
+gem that is not installed and whose metadata rejects the current Ruby. Bundler
+re-resolves it, as it does without the override. Run `bundle update` to
+re-resolve under the override. When resolution still fails,
+Bundler appends the active overrides (with their Gemfile location) to the
+error message so it is clear which override shaped the constraint set.
+
+### DROPPING OR REPLACING A DEPENDENCY
+
+`with:` and `in:` rewrite a single dependency of a single gem:
+
+    override <target>, with: nil, in: <gem>
+    override <target>, with: <replacement>, in: <gem>, version: <requirement>
+
+`with: nil` removes the dependency of `<gem>` on `<target>`, so `<target>` is
+not installed unless something else still requires it. `with: <replacement>`
+makes `<gem>` depend on `<replacement>` instead of `<target>`. The requirement
+`<gem>` put on `<target>` is discarded, and the optional `version:` gives the
+replacement its own. Both forms apply whether `<gem>` is a direct or a
+transitive dependency.
+
+`in:` is required, and so is `with:` once `in:` is given. To rewrite the
+same dependency of several gems, write one `override` per gem. It is an error
+to declare the same `<target>` and `in:` twice, to drop a gem that the
+Gemfile requires directly, or to replace a gem that another gem still
+requires, since both would then be in the bundle.
+
+    # jekyll only loads em-websocket for `jekyll serve --livereload`.
+    override "em-websocket", with: nil, in: "jekyll"
+
+    # Use an API-compatible gem that provides the same files.
+    override "foo", with: "foo-lite", in: "bar"
+
+Bundler does not check what a gem loads at runtime. If `<gem>` requires
+`<target>` unconditionally, dropping it makes that require raise `LoadError`,
+as with jekyll's dependency on jekyll-sass-converter or the adapters that
+faraday 1.x requires on load. A replacement only works when it provides the
+files `<gem>` requires, and it does not take over the name of `<target>`:
+`Gem.loaded_specs` has no entry for `<target>`, and `gem "<target>"` fails.
+
+`Gemfile.lock` keeps listing `<target>` under `<gem>` as the gem publishes it,
+while the locked gems leave `<target>` out or include `<replacement>`, and the
+`OVERRIDES` section records the rewrite so tools that read the lockfile can
+apply it. A frozen install accepts that lockfile as long as the Gemfile still
+has the override. Removing the override makes Bundler resolve `<target>` again.
 
 ## SOURCE PRIORITY
 

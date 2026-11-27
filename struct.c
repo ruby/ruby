@@ -32,48 +32,68 @@ enum {
    on the C level, but is unrelated on the Ruby level. */
 VALUE rb_cStruct;
 static VALUE rb_cData;
-static ID id_members, id_back_members, id_keyword_init;
+
+// The classes that Struct.new, Data.define and the C API make have one inline
+// field, holding a hidden object that wraps this. Their subclasses share it.
+struct struct_info {
+    VALUE members;      // frozen hidden Array of the member names
+    VALUE back_members; // what struct_member_pos() searches
+    VALUE keyword_init; // the keyword_init option of Struct.new
+};
+
+RUBY_REFERENCES(struct_info_refs) = {
+    RUBY_REF_EDGE(struct struct_info, members),
+    RUBY_REF_EDGE(struct struct_info, back_members),
+    RUBY_REF_EDGE(struct struct_info, keyword_init),
+    RUBY_REF_END
+};
+
+static const rb_data_type_t struct_info_type = {
+    "struct/info",
+    {
+        RUBY_REFS_LIST_PTR(struct_info_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated outside of the object
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+};
 
 static VALUE struct_alloc(VALUE);
 
-static inline VALUE
-struct_ivar_get(VALUE c, ID id)
+// NULL when +klass+ is not a Struct / Data class.
+static inline const struct struct_info *
+struct_info_of(VALUE klass)
 {
-    VALUE orig = c;
-    VALUE ivar = rb_attr_get(c, id);
-
-    if (!NIL_P(ivar))
-        return ivar;
-
-    for (;;) {
-        c = rb_class_superclass(c);
-        if (c == rb_cStruct || c == rb_cData || !RTEST(c))
-            return Qnil;
-        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
-        ivar = rb_attr_get(c, id);
-        if (!NIL_P(ivar)) {
-            if (!OBJ_FROZEN(orig)) rb_ivar_set(orig, id, ivar);
-            return ivar;
-        }
+    if (LIKELY(RCLASS_HAS_STRUCT_INLINE_FIELD(klass))) {
+        VALUE info = RCLASS_STRUCT_INLINE_FIELD(klass);
+        if (LIKELY(!NIL_P(info))) return RTYPEDDATA_GET_DATA(info);
     }
+    return NULL;
+}
+
+// nil for a class that is not a Struct / Data class.
+static inline VALUE
+struct_s_members(VALUE klass)
+{
+    const struct struct_info *info = struct_info_of(klass);
+    return info ? info->members : Qnil;
 }
 
 VALUE
 rb_struct_s_keyword_init(VALUE klass)
 {
-    return struct_ivar_get(klass, id_keyword_init);
+    const struct struct_info *info = struct_info_of(klass);
+    return info ? info->keyword_init : Qnil;
 }
 
 VALUE
 rb_struct_s_members(VALUE klass)
 {
-    VALUE members = struct_ivar_get(klass, id_members);
+    Check_Type(klass, T_CLASS);
+    VALUE members = struct_s_members(klass);
 
     if (NIL_P(members)) {
         rb_raise(rb_eTypeError, "uninitialized struct");
-    }
-    if (!RB_TYPE_P(members, T_ARRAY)) {
-        rb_raise(rb_eTypeError, "corrupted struct");
     }
     return members;
 }
@@ -83,22 +103,22 @@ rb_struct_members(VALUE s)
 {
     VALUE members = rb_struct_s_members(rb_obj_class(s));
 
-    if (RSTRUCT_LEN(s) != RARRAY_LEN(members)) {
-        rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
-                 RARRAY_LEN(members), RSTRUCT_LEN(s));
+    if (RSTRUCT_LEN_RAW(s) != RARRAY_LEN(members)) {
+        rb_raise(rb_eTypeError, "struct size differs (%"PRIdLEN" required %"PRIdLEN" given)",
+                 RARRAY_LEN(members), RSTRUCT_LEN_RAW(s));
     }
     return members;
 }
 
-static long
-struct_member_pos_ideal(VALUE name, long mask)
+static rb_len_t
+struct_member_pos_ideal(VALUE name, rb_len_t mask)
 {
     /* (id & (mask/2)) * 2 */
     return (SYM2ID(name) >> (ID_SCOPE_SHIFT - 1)) & mask;
 }
 
-static long
-struct_member_pos_probe(long prev, long mask)
+static rb_len_t
+struct_member_pos_probe(rb_len_t prev, rb_len_t mask)
 {
     /* (((prev/2) * AREF_HASH_UNIT + 1) & (mask/2)) * 2 */
     return (prev * AREF_HASH_UNIT + 2) & mask;
@@ -108,13 +128,13 @@ static VALUE
 struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 {
     VALUE back;
-    const long members_length = RARRAY_LEN(members);
+    const rb_len_t members_length = RARRAY_LEN(members);
 
     if (members_length <= AREF_HASH_THRESHOLD) {
         back = members;
     }
     else {
-        long i, j, mask = 64;
+        rb_len_t i, j, mask = 64;
         VALUE name;
 
         while (mask < members_length * AREF_HASH_UNIT) mask *= 2;
@@ -139,8 +159,12 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
         }
         OBJ_FREEZE(back);
     }
-    rb_ivar_set(klass, id_members, members);
-    rb_ivar_set(klass, id_back_members, back);
+    struct struct_info *info;
+    VALUE info_obj = TypedData_Make_Struct(0, struct struct_info, &struct_info_type, info);
+    RB_OBJ_WRITE(info_obj, &info->members, members);
+    RB_OBJ_WRITE(info_obj, &info->back_members, back);
+    info->keyword_init = Qnil;
+    RCLASS_SET_STRUCT_INLINE_FIELD(klass, info_obj);
 
     return members;
 }
@@ -148,23 +172,21 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 static inline int
 struct_member_pos(VALUE s, VALUE name)
 {
-    VALUE back = struct_ivar_get(rb_obj_class(s), id_back_members);
-    long j, mask;
+    const struct struct_info *info = struct_info_of(rb_obj_class(s));
+    rb_len_t j, mask;
 
-    if (UNLIKELY(NIL_P(back))) {
+    if (UNLIKELY(!info)) {
         rb_raise(rb_eTypeError, "uninitialized struct");
     }
-    if (UNLIKELY(!RB_TYPE_P(back, T_ARRAY))) {
-        rb_raise(rb_eTypeError, "corrupted struct");
-    }
+    VALUE back = info->back_members;
 
     mask = RARRAY_LEN(back);
 
     if (mask <= AREF_HASH_THRESHOLD) {
-        if (UNLIKELY(RSTRUCT_LEN(s) != mask)) {
+        if (UNLIKELY(RSTRUCT_LEN_RAW(s) != mask)) {
             rb_raise(rb_eTypeError,
-                     "struct size differs (%ld required %ld given)",
-                     mask, RSTRUCT_LEN(s));
+                     "struct size differs (%"PRIdLEN" required %"PRIdLEN" given)",
+                     mask, RSTRUCT_LEN_RAW(s));
         }
         for (j = 0; j < mask; j++) {
             if (RARRAY_AREF(back, j) == name)
@@ -173,9 +195,9 @@ struct_member_pos(VALUE s, VALUE name)
         return -1;
     }
 
-    if (UNLIKELY(RSTRUCT_LEN(s) != FIX2INT(RARRAY_AREF(back, mask-1)))) {
-        rb_raise(rb_eTypeError, "struct size differs (%d required %ld given)",
-                 FIX2INT(RARRAY_AREF(back, mask-1)), RSTRUCT_LEN(s));
+    if (UNLIKELY(RSTRUCT_LEN_RAW(s) != FIX2INT(RARRAY_AREF(back, mask-1)))) {
+        rb_raise(rb_eTypeError, "struct size differs (%d required %"PRIdLEN" given)",
+                 FIX2INT(RARRAY_AREF(back, mask-1)), RSTRUCT_LEN_RAW(s));
     }
 
     mask -= 3;
@@ -235,7 +257,7 @@ rb_struct_getmember(VALUE obj, ID id)
     VALUE slot = ID2SYM(id);
     int i = struct_member_pos(obj, slot);
     if (i != -1) {
-        return RSTRUCT_GET(obj, i);
+        return RSTRUCT_GET_RAW(obj, i);
     }
     rb_name_err_raise("'%1$s' is not a struct member", obj, ID2SYM(id));
 
@@ -251,30 +273,9 @@ rb_struct_modify(VALUE s)
 static VALUE
 anonymous_struct(VALUE klass)
 {
-    VALUE nstr;
-
-    nstr = rb_class_new(klass);
+    VALUE nstr = rb_class_new_with_struct_inline_field(klass);
     rb_make_metaclass(nstr, RBASIC(klass)->klass);
-    rb_class_inherited(klass, nstr);
     return nstr;
-}
-
-static VALUE
-new_struct(VALUE name, VALUE super)
-{
-    /* old style: should we warn? */
-    ID id;
-    name = rb_str_to_str(name);
-    if (!rb_is_const_name(name)) {
-        rb_name_err_raise("identifier %1$s needs to be constant",
-                          super, name);
-    }
-    id = rb_to_id(name);
-    if (rb_const_defined_at(super, id)) {
-        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
-        rb_mod_remove_const(super, ID2SYM(id));
-    }
-    return rb_define_class_id_under_no_pin(super, id, super);
 }
 
 NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
@@ -283,6 +284,12 @@ static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
     rb_add_method_optimized(nstr, SYM2ID(name), OPTIMIZED_METHOD_TYPE_STRUCT_AREF, FIX2UINT(off), METHOD_VISI_PUBLIC);
+}
+
+void
+rb_struct_define_aref_method(VALUE nstr, ID name, unsigned int off)
+{
+    rb_add_method_optimized(nstr, name, OPTIMIZED_METHOD_TYPE_STRUCT_AREF, off, METHOD_VISI_PUBLIC);
 }
 
 static void
@@ -301,6 +308,19 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+static VALUE rb_data_initialize_m(int argc, const VALUE *argv, VALUE self);
+
+// Given every member, Data#initialize can only store them and freeze the
+// instance: it raises nothing and calls no Ruby code. So when initialize is
+// that method, the members can be stored without calling it.
+static bool
+data_initialize_default_p(VALUE klass)
+{
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, idInitialize);
+    return cme && cme->def->type == VM_METHOD_TYPE_CFUNC &&
+        cme->def->body.cfunc.func == (rb_cfunc_t)rb_data_initialize_m;
+}
+
 static VALUE
 rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
 {
@@ -311,12 +331,20 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         return rb_class_new_instance_pass_kw(argc, argv, klass);
     }
     else {
-        VALUE members = struct_ivar_get(klass, id_members);
+        VALUE members = struct_s_members(klass);
         int num_members = RARRAY_LENINT(members);
 
         rb_check_arity(argc, 0, num_members);
-        VALUE arg_hash = rb_hash_new_with_size(argc);
-        for (long i=0; i<argc; i++) {
+        if (argc == num_members && data_initialize_default_p(klass)) {
+            VALUE self = rb_obj_alloc(klass);
+            for (rb_len_t i=0; i<argc; i++) {
+                RSTRUCT_SET_RAW(self, i, argv[i]);
+            }
+            OBJ_FREEZE(self);
+            return self;
+        }
+        VALUE arg_hash = rb_hash_new_capa(argc);
+        for (rb_len_t i=0; i<argc; i++) {
             VALUE k = rb_ary_entry(members, i), v = argv[i];
             rb_hash_aset(arg_hash, k, v);
         }
@@ -352,7 +380,7 @@ rb_struct_s_keyword_init_p(VALUE obj)
 static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
-    long i, len;
+    rb_len_t i, len;
 
     members = struct_set_members(nstr, members);
 
@@ -367,7 +395,7 @@ setup_struct(VALUE nstr, VALUE members)
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
         ID id = SYM2ID(sym);
-        VALUE off = LONG2NUM(i);
+        VALUE off = LEN2NUM(i);
 
         define_aref_method(nstr, sym, off);
         define_aset_method(nstr, ID2SYM(rb_id_attrset(id)), off);
@@ -379,7 +407,7 @@ setup_struct(VALUE nstr, VALUE members)
 static VALUE
 setup_data(VALUE subclass, VALUE members)
 {
-    long i, len;
+    rb_len_t i, len;
 
     members = struct_set_members(subclass, members);
 
@@ -394,7 +422,7 @@ setup_data(VALUE subclass, VALUE members)
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
-        VALUE off = LONG2NUM(i);
+        VALUE off = LEN2NUM(i);
 
         define_aref_method(subclass, sym, off);
     }
@@ -427,23 +455,32 @@ struct_make_members_list(va_list ar)
     return ary;
 }
 
+static void
+struct_register_under(VALUE outer, VALUE name, VALUE klass)
+{
+    if (!outer) outer = rb_cObject;
+
+    name = rb_str_to_str(name);
+
+    if (!rb_is_const_name(name)) {
+        rb_name_err_raise("identifier %1$s needs to be constant",
+                          outer, name);
+    }
+
+    ID id = rb_to_id(name);
+    if (rb_const_defined_at(outer, id)) {
+        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, outer, name);
+        rb_mod_remove_const(outer, ID2SYM(id));
+    }
+
+    rb_set_class_path_string(klass, outer, name);
+    rb_const_set(outer, id, klass);
+}
+
 static VALUE
 struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, VALUE members)
 {
-    VALUE klass;
-
-    if (class_name) {
-        if (outer) {
-            klass = rb_define_class_under(outer, class_name, super);
-        }
-        else {
-            klass = rb_define_class(class_name, super);
-        }
-    }
-    else {
-        klass = anonymous_struct(super);
-    }
-
+    VALUE klass = anonymous_struct(super);
     struct_set_members(klass, members);
 
     if (alloc) {
@@ -452,6 +489,14 @@ struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super,
     else {
         rb_define_alloc_func(klass, struct_alloc);
     }
+
+    if (class_name) {
+        VALUE name = rb_enc_interned_str_cstr(class_name, rb_usascii_encoding());
+        struct_register_under(outer, name, klass);
+        rb_vm_register_global_object(klass);
+    }
+
+    rb_class_inherited(super, klass);
 
     return klass;
 }
@@ -483,36 +528,48 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
 }
 
 VALUE
-rb_struct_define(const char *name, ...)
+rb_struct_define(const char *class_name, ...)
 {
     va_list ar;
-    VALUE st, ary;
 
-    va_start(ar, name);
-    ary = struct_make_members_list(ar);
+    va_start(ar, class_name);
+    VALUE ary = struct_make_members_list(ar);
     va_end(ar);
 
-    if (!name) {
-        st = anonymous_struct(rb_cStruct);
+    VALUE klass = anonymous_struct(rb_cStruct);
+    setup_struct(klass, ary);
+
+    if (class_name) {
+        VALUE name = rb_enc_interned_str_cstr(class_name, rb_usascii_encoding());
+        struct_register_under(rb_cStruct, name, klass);
+        rb_vm_register_global_object(klass);
     }
-    else {
-        st = new_struct(rb_str_new2(name), rb_cStruct);
-        rb_vm_register_global_object(st);
-    }
-    return setup_struct(st, ary);
+
+    rb_class_inherited(rb_cStruct, klass);
+
+    return klass;
 }
 
 VALUE
-rb_struct_define_under(VALUE outer, const char *name, ...)
+rb_struct_define_under(VALUE outer, const char *class_name, ...)
 {
     va_list ar;
     VALUE ary;
 
-    va_start(ar, name);
+    va_start(ar, class_name);
     ary = struct_make_members_list(ar);
     va_end(ar);
 
-    return setup_struct(rb_define_class_id_under(outer, rb_intern(name), rb_cStruct), ary);
+    VALUE klass = anonymous_struct(rb_cStruct);
+    setup_struct(klass, ary);
+
+    VALUE name = rb_enc_interned_str_cstr(class_name, rb_usascii_encoding());
+    struct_register_under(outer, name, klass);
+    rb_vm_register_global_object(klass);
+
+    rb_class_inherited(rb_cStruct, klass);
+
+    return klass;
 }
 
 /*
@@ -628,7 +685,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    PositionalOnly.new(0, 1)
  *    # => #<struct PositionalOnly foo=0, bar=1>
  *    PositionalOnly.new(bar: 1, foo: 0)
- *    # => #<struct PositionalOnly foo={:foo=>1, :bar=>2}, bar=nil>
+ *    # => #<struct PositionalOnly foo={foo: 1, bar: 2}, bar=nil>
  *    # Note that no error is raised, but arguments treated as one hash value
  *
  *    # Same as not providing keyword_init:
@@ -640,11 +697,9 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  */
 
 static VALUE
-rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
+rb_struct_s_def(int argc, VALUE *argv, VALUE super)
 {
-    VALUE name = Qnil, rest, keyword_init = Qnil;
-    long i;
-    VALUE st;
+    VALUE name = Qnil, keyword_init = Qnil;
     VALUE opt;
 
     argc = rb_scan_args(argc, argv, "0*:", NULL, &opt);
@@ -669,9 +724,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    rest = rb_ident_hash_new();
+    VALUE rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    for (i=0; i<argc; i++) {
+    for (int i = 0; i < argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
@@ -684,30 +739,41 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE(rest);
-    if (NIL_P(name)) {
-        st = anonymous_struct(klass);
-    }
-    else {
-        st = new_struct(name, klass);
-    }
-    setup_struct(st, rest);
-    rb_ivar_set(st, id_keyword_init, keyword_init);
-    if (rb_block_given_p()) {
-        rb_mod_module_eval(0, 0, st);
+
+    VALUE klass = anonymous_struct(super);
+    setup_struct(klass, rest);
+    VALUE info_obj = RCLASS_STRUCT_INLINE_FIELD(klass);
+    struct struct_info *info = RTYPEDDATA_GET_DATA(info_obj);
+    RB_OBJ_WRITE(info_obj, &info->keyword_init, keyword_init);
+
+    if (!NIL_P(name)) {
+        struct_register_under(super, rb_str_to_str(name), klass);
     }
 
-    return st;
+    rb_class_inherited(super, klass);
+
+    if (rb_block_given_p()) {
+        rb_mod_module_eval(0, 0, klass);
+    }
+
+    return klass;
 }
 
-static long
+static rb_len_t
 num_members(VALUE klass)
 {
     VALUE members;
-    members = struct_ivar_get(klass, id_members);
+    members = struct_s_members(klass);
     if (!RB_TYPE_P(members, T_ARRAY)) {
-        rb_raise(rb_eTypeError, "broken members");
+        rb_bug("broken members"); /* should never happen */
     }
     return RARRAY_LEN(members);
+}
+
+rb_len_t
+rb_zjit_struct_num_members(VALUE klass)
+{
+    return num_members(klass);
 }
 
 /*
@@ -716,25 +782,36 @@ num_members(VALUE klass)
 struct struct_hash_set_arg {
     VALUE self;
     VALUE unknown_keywords;
+    bool *found; // Data#initialize: which members were given
+    rb_len_t missing_count;
 };
 
-static int rb_struct_pos(VALUE s, VALUE *name);
+static int rb_struct_pos(VALUE s, VALUE *name, bool name_only);
+static VALUE deconstruct_keys(VALUE s, VALUE keys, bool name_only);
+static int rb_struct_pos(VALUE s, VALUE *name, bool name_only);
 
 static int
-struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
+struct_hash_aset(VALUE key, VALUE val, struct struct_hash_set_arg *args, bool name_only)
 {
-    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
-    int i = rb_struct_pos(args->self, &key);
+    int i = rb_struct_pos(args->self, &key, name_only);
     if (i < 0) {
-        if (NIL_P(args->unknown_keywords)) {
+        if (!args->unknown_keywords) {
             args->unknown_keywords = rb_ary_new();
         }
         rb_ary_push(args->unknown_keywords, key);
     }
     else {
         rb_struct_modify(args->self);
-        RSTRUCT_SET(args->self, i, val);
+        RSTRUCT_SET_RAW(args->self, i, val);
     }
+    return i;
+}
+
+static int
+struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
+{
+    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
+    struct_hash_aset(key, val, args, false);
     return ST_CONTINUE;
 }
 
@@ -743,7 +820,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
     rb_struct_modify(self);
-    long n = num_members(klass);
+    rb_len_t n = RSTRUCT_LEN_RAW(self);
     if (argc == 0) {
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
         return Qnil;
@@ -767,22 +844,22 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
         break;
     }
     if (keyword_init) {
-        struct struct_hash_set_arg arg;
+        struct struct_hash_set_arg arg = {
+            .self = self,
+        };
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
-        arg.self = self;
-        arg.unknown_keywords = Qnil;
         rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
-        if (arg.unknown_keywords != Qnil) {
-            rb_raise(rb_eArgError, "unknown keywords: %s",
-                     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
+        if (UNLIKELY(arg.unknown_keywords)) {
+            rb_raise(rb_eArgError, "unknown keywords: %"PRIsVALUE,
+                     rb_ary_join(arg.unknown_keywords, rb_str_new2(", ")));
         }
     }
     else {
         if (n < argc) {
             rb_raise(rb_eArgError, "struct size differs");
         }
-        for (long i=0; i<argc; i++) {
-            RSTRUCT_SET(self, i, argv[i]);
+        for (rb_len_t i=0; i<argc; i++) {
+            RSTRUCT_SET_RAW(self, i, argv[i]);
         }
         if (n > argc) {
             rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self)+argc, n-argc);
@@ -806,54 +883,70 @@ struct_heap_alloc(VALUE st, size_t len)
     return ALLOC_N(VALUE, len);
 }
 
+STATIC_ASSERT(robject_rstruct_fields_offset, offsetof(struct RObject, as.extended) == offsetof(struct RStruct, fields_obj));
+
+static inline bool
+struct_embedded_p(rb_len_t n)
+{
+    size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
+    const rb_len_t embed_len_max = RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT;
+    return n > 0 && n <= embed_len_max && rb_gc_size_allocatable_p(embedded_size);
+}
+
+bool
+rb_zjit_struct_embedded_p(rb_len_t num_members)
+{
+    return struct_embedded_p(num_members);
+}
+
 static VALUE
 struct_alloc(VALUE klass)
 {
-    long n = num_members(klass);
+    rb_len_t n = num_members(klass);
     size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
-    if (RCLASS_MAX_IV_COUNT(klass) > 0) {
-        embedded_size += sizeof(VALUE);
-    }
+    VALUE flags = T_STRUCT;
 
-    VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
-
-    if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
+    if (struct_embedded_p(n)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
-        if (RCLASS_MAX_IV_COUNT(klass) == 0) {
-            // We set the flag before calling `NEWOBJ_OF` in case a NEWOBJ tracepoint does
-            // attempt to write fields. We'll remove it later if no fields was written to.
-            flags |= RSTRUCT_GEN_FIELDS;
-        }
 
-        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
-        if (RCLASS_MAX_IV_COUNT(klass) == 0) {
-            if (!rb_shape_obj_has_fields((VALUE)st)
-                    && embedded_size < rb_gc_obj_slot_size((VALUE)st)) {
-                FL_UNSET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
-                RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
-            }
-        }
-        else {
-            RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
-        }
+        VALUE st = rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED, true, embedded_size);
+        RSTRUCT_SET_FIELDS_OBJ(st, 0);
+        rb_mem_clear((VALUE *)RSTRUCT(st)->as.ary, n);
 
-        rb_mem_clear((VALUE *)st->as.ary, n);
-
-        return (VALUE)st;
+        return st;
     }
     else {
-        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+        VALUE obj = rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED, true, sizeof(struct RStruct));
+        struct RStruct *st = RSTRUCT(obj);
 
+        st->fields_obj = 0;
         st->as.heap.ptr = NULL;
-        st->as.heap.fields_obj = 0;
         st->as.heap.len = 0;
 
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
         st->as.heap.len = n;
 
-        return (VALUE)st;
+        return obj;
     }
+}
+
+// Whether `klass` allocates its instances with struct_alloc.
+bool
+rb_zjit_class_has_struct_allocator(VALUE klass)
+{
+    return rb_get_alloc_func(klass) == struct_alloc;
+}
+
+// The ID of the `index`th member of the Struct class `klass`. `index` must be in bounds
+// according to rb_zjit_struct_num_members().
+ID
+rb_zjit_struct_member_id(VALUE klass, rb_len_t index)
+{
+    VALUE members = struct_s_members(klass);
+    RUBY_ASSERT(RB_TYPE_P(members, T_ARRAY));
+    RUBY_ASSERT(index >= 0 && index < RARRAY_LEN(members));
+    return SYM2ID(RARRAY_AREF(members, index));
 }
 
 VALUE
@@ -869,7 +962,7 @@ rb_struct_new(VALUE klass, ...)
     int size, i;
     va_list args;
 
-    size = rb_long2int(num_members(klass));
+    size = rb_len2int(num_members(klass));
     if (size > numberof(tmpargs)) {
         tmpargs[0] = rb_ary_hidden_new(size);
         mem = RARRAY_PTR(tmpargs[0]);
@@ -914,11 +1007,11 @@ struct_enum_size(VALUE s, VALUE args, VALUE eobj)
 static VALUE
 rb_struct_each(VALUE s)
 {
-    long i;
+    rb_len_t i;
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
-    for (i=0; i<RSTRUCT_LEN(s); i++) {
-        rb_yield(RSTRUCT_GET(s, i));
+    for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
+        rb_yield(RSTRUCT_GET_RAW(s, i));
     }
     return s;
 }
@@ -950,21 +1043,21 @@ static VALUE
 rb_struct_each_pair(VALUE s)
 {
     VALUE members;
-    long i;
+    rb_len_t i;
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
     if (rb_block_pair_yield_optimizable()) {
-        for (i=0; i<RSTRUCT_LEN(s); i++) {
+        for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
             VALUE key = rb_ary_entry(members, i);
-            VALUE value = RSTRUCT_GET(s, i);
+            VALUE value = RSTRUCT_GET_RAW(s, i);
             rb_yield_values(2, key, value);
         }
     }
     else {
-        for (i=0; i<RSTRUCT_LEN(s); i++) {
+        for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
             VALUE key = rb_ary_entry(members, i);
-            VALUE value = RSTRUCT_GET(s, i);
+            VALUE value = RSTRUCT_GET_RAW(s, i);
             rb_yield(rb_assoc_new(key, value));
         }
     }
@@ -977,10 +1070,11 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
     VALUE cname = rb_class_path(rb_obj_class(s));
     VALUE members;
     VALUE str = prefix;
-    long i, len;
+    rb_len_t i, len;
     char first = RSTRING_PTR(cname)[0];
 
     if (recur || first != '#') {
+        rb_str_cat2(str, " ");
         rb_str_append(str, cname);
     }
     if (recur) {
@@ -988,7 +1082,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
     }
 
     members = rb_struct_members(s);
-    len = RSTRUCT_LEN(s);
+    len = RSTRUCT_LEN_RAW(s);
 
     for (i=0; i<len; i++) {
         VALUE slot;
@@ -997,19 +1091,19 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
         if (i > 0) {
             rb_str_cat2(str, ", ");
         }
-        else if (first != '#') {
+        else {
             rb_str_cat2(str, " ");
         }
         slot = RARRAY_AREF(members, i);
         id = SYM2ID(slot);
         if (rb_is_local_id(id) || rb_is_const_id(id)) {
-            rb_str_append(str, rb_id2str(id));
+            rb_str_append(str, rb_sym2str(slot));
         }
         else {
             rb_str_append(str, rb_inspect(slot));
         }
         rb_str_cat2(str, "=");
-        rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
+        rb_str_append(str, rb_inspect(RSTRUCT_GET_RAW(s, i)));
     }
     rb_str_cat2(str, ">");
 
@@ -1031,7 +1125,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
 static VALUE
 rb_struct_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct "));
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct"));
 }
 
 /*
@@ -1050,7 +1144,7 @@ rb_struct_inspect(VALUE s)
 static VALUE
 rb_struct_to_a(VALUE s)
 {
-    return rb_ary_new4(RSTRUCT_LEN(s), RSTRUCT_CONST_PTR(s));
+    return rb_ary_new4(RSTRUCT_LEN_RAW(s), RSTRUCT_CONST_PTR(s));
 }
 
 /*
@@ -1063,14 +1157,14 @@ rb_struct_to_a(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    h = joe.to_h
- *    h # => {:name=>"Joe Smith", :address=>"123 Maple, Anytown NC", :zip=>12345}
+ *    h # => {name: "Joe Smith", address: "123 Maple, Anytown NC", zip: 12345}
  *
  *  If a block is given, it is called with each name/value pair;
  *  the block should return a 2-element array whose elements will become
  *  a key/value pair in the returned hash:
  *
  *    h = joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}
- *    h # => {:NAME=>"JOE SMITH", :ADDRESS=>"123 MAPLE, ANYTOWN NC", :ZIP=>"12345"}
+ *    h # => {NAME: "JOE SMITH", ADDRESS: "123 MAPLE, ANYTOWN NC", ZIP: "12345"}
  *
  *  Raises ArgumentError if the block returns an inappropriate value.
  *
@@ -1079,13 +1173,13 @@ rb_struct_to_a(VALUE s)
 static VALUE
 rb_struct_to_h(VALUE s)
 {
-    VALUE h = rb_hash_new_with_size(RSTRUCT_LEN(s));
+    VALUE h = rb_hash_new_capa(RSTRUCT_LEN_RAW(s));
     VALUE members = rb_struct_members(s);
-    long i;
+    rb_len_t i;
     int block_given = rb_block_given_p();
 
-    for (i=0; i<RSTRUCT_LEN(s); i++) {
-        VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET(s, i);
+    for (i=0; i<RSTRUCT_LEN_RAW(s); i++) {
+        VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET_RAW(s, i);
         if (block_given)
             rb_hash_set_pair(h, rb_yield_values(2, k, v));
         else
@@ -1103,19 +1197,25 @@ rb_struct_to_h(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    h = joe.deconstruct_keys([:zip, :address])
- *    h # => {:zip=>12345, :address=>"123 Maple, Anytown NC"}
+ *    h # => {zip: 12345, address: "123 Maple, Anytown NC"}
  *
  *  Returns all names and values if +array_of_names+ is +nil+:
  *
  *    h = joe.deconstruct_keys(nil)
- *    h # => {:name=>"Joseph Smith, Jr.", :address=>"123 Maple, Anytown NC", :zip=>12345}
+ *    h # => {name: "Joseph Smith, Jr.", address: "123 Maple, Anytown NC", zip: 12345}
  *
  */
 static VALUE
 rb_struct_deconstruct_keys(VALUE s, VALUE keys)
 {
+    return deconstruct_keys(s, keys, false);
+}
+
+static VALUE
+deconstruct_keys(VALUE s, VALUE keys, bool name_only)
+{
     VALUE h;
-    long i;
+    rb_len_t i;
 
     if (NIL_P(keys)) {
         return rb_struct_to_h(s);
@@ -1126,17 +1226,17 @@ rb_struct_deconstruct_keys(VALUE s, VALUE keys)
                  rb_obj_class(keys));
 
     }
-    if (RSTRUCT_LEN(s) < RARRAY_LEN(keys)) {
-        return rb_hash_new_with_size(0);
+    if (RSTRUCT_LEN_RAW(s) < RARRAY_LEN(keys)) {
+        return rb_hash_new();
     }
-    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    h = rb_hash_new_capa(RARRAY_LEN(keys));
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);
-        int i = rb_struct_pos(s, &key);
+        int i = rb_struct_pos(s, &key, name_only);
         if (i < 0) {
             return h;
         }
-        rb_hash_aset(h, key, RSTRUCT_GET(s, i));
+        rb_hash_aset(h, key, RSTRUCT_GET_RAW(s, i));
     }
     return h;
 }
@@ -1145,47 +1245,47 @@ rb_struct_deconstruct_keys(VALUE s, VALUE keys)
 VALUE
 rb_struct_init_copy(VALUE copy, VALUE s)
 {
-    long i, len;
+    rb_len_t i, len;
 
     if (!OBJ_INIT_COPY(copy, s)) return copy;
-    if (RSTRUCT_LEN(copy) != RSTRUCT_LEN(s)) {
+    if (RSTRUCT_LEN_RAW(copy) != RSTRUCT_LEN_RAW(s)) {
         rb_raise(rb_eTypeError, "struct size mismatch");
     }
 
-    for (i=0, len=RSTRUCT_LEN(copy); i<len; i++) {
-        RSTRUCT_SET(copy, i, RSTRUCT_GET(s, i));
+    for (i=0, len=RSTRUCT_LEN_RAW(copy); i<len; i++) {
+        RSTRUCT_SET_RAW(copy, i, RSTRUCT_GET_RAW(s, i));
     }
 
     return copy;
 }
 
 static int
-rb_struct_pos(VALUE s, VALUE *name)
+rb_struct_pos(VALUE s, VALUE *name, bool name_only)
 {
-    long i;
+    rb_len_t i;
     VALUE idx = *name;
 
     if (SYMBOL_P(idx)) {
         return struct_member_pos(s, idx);
     }
-    else if (RB_TYPE_P(idx, T_STRING)) {
+    else if (name_only || RB_TYPE_P(idx, T_STRING)) {
         idx = rb_check_symbol(name);
         if (NIL_P(idx)) return -1;
         return struct_member_pos(s, idx);
     }
     else {
-        long len;
-        i = NUM2LONG(idx);
-        len = RSTRUCT_LEN(s);
+        rb_len_t len;
+        i = NUM2LEN(idx);
+        len = RSTRUCT_LEN_RAW(s);
         if (i < 0) {
             if (i + len < 0) {
-                *name = LONG2FIX(i);
+                *name = LEN2NUM(i);
                 return -1;
             }
             i += len;
         }
         else if (len <= i) {
-            *name = LONG2FIX(i);
+            *name = LEN2NUM(i);
             return -1;
         }
         return (int)i;
@@ -1195,14 +1295,14 @@ rb_struct_pos(VALUE s, VALUE *name)
 static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
-    if (FIXNUM_P(idx)) {
-        long i = FIX2INT(idx), len = RSTRUCT_LEN(s);
+    if (RB_INTEGER_TYPE_P(idx)) {
+        rb_len_t i = NUM2LEN(idx), len = RSTRUCT_LEN_RAW(s);
         if (i < 0) {
-            rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
+            rb_raise(rb_eIndexError, "offset %"PRIdLEN" too small for struct(size:%"PRIdLEN")",
                      i, len);
         }
         else {
-            rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
+            rb_raise(rb_eIndexError, "offset %"PRIdLEN" too large for struct(size:%"PRIdLEN")",
                      i, len);
         }
     }
@@ -1240,9 +1340,9 @@ invalid_struct_pos(VALUE s, VALUE idx)
 VALUE
 rb_struct_aref(VALUE s, VALUE idx)
 {
-    int i = rb_struct_pos(s, &idx);
+    int i = rb_struct_pos(s, &idx, false);
     if (i < 0) invalid_struct_pos(s, idx);
-    return RSTRUCT_GET(s, i);
+    return RSTRUCT_GET_RAW(s, i);
 }
 
 /*
@@ -1278,34 +1378,34 @@ rb_struct_aref(VALUE s, VALUE idx)
 VALUE
 rb_struct_aset(VALUE s, VALUE idx, VALUE val)
 {
-    int i = rb_struct_pos(s, &idx);
+    int i = rb_struct_pos(s, &idx, false);
     if (i < 0) invalid_struct_pos(s, idx);
     rb_struct_modify(s);
-    RSTRUCT_SET(s, i, val);
+    RSTRUCT_SET_RAW(s, i, val);
     return val;
 }
 
 FUNC_MINIMIZED(VALUE rb_struct_lookup(VALUE s, VALUE idx));
-NOINLINE(static VALUE rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound));
+NOINLINE(static VALUE rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound, bool name_only));
 
 VALUE
 rb_struct_lookup(VALUE s, VALUE idx)
 {
-    return rb_struct_lookup_default(s, idx, Qnil);
+    return rb_struct_lookup_default(s, idx, Qnil, false);
 }
 
 static VALUE
-rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound)
+rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound, bool name_only)
 {
-    int i = rb_struct_pos(s, &idx);
+    int i = rb_struct_pos(s, &idx, name_only);
     if (i < 0) return notfound;
-    return RSTRUCT_GET(s, i);
+    return RSTRUCT_GET_RAW(s, i);
 }
 
 static VALUE
-struct_entry(VALUE s, long n)
+struct_entry(VALUE s, rb_len_t n)
 {
-    return rb_struct_aref(s, LONG2NUM(n));
+    return rb_struct_aref(s, LEN2NUM(n));
 }
 
 /*
@@ -1346,7 +1446,7 @@ struct_entry(VALUE s, long n)
 static VALUE
 rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 {
-    return rb_get_values_at(s, RSTRUCT_LEN(s), argc, argv, struct_entry);
+    return rb_get_values_at(s, RSTRUCT_LEN_RAW(s), argc, argv, struct_entry);
 }
 
 /*
@@ -1371,14 +1471,14 @@ static VALUE
 rb_struct_select(int argc, VALUE *argv, VALUE s)
 {
     VALUE result;
-    long i;
+    rb_len_t i;
 
     rb_check_arity(argc, 0, 0);
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     result = rb_ary_new();
-    for (i = 0; i < RSTRUCT_LEN(s); i++) {
-        if (RTEST(rb_yield(RSTRUCT_GET(s, i)))) {
-            rb_ary_push(result, RSTRUCT_GET(s, i));
+    for (i = 0; i < RSTRUCT_LEN_RAW(s); i++) {
+        if (RTEST(rb_yield(RSTRUCT_GET_RAW(s, i)))) {
+            rb_ary_push(result, RSTRUCT_GET_RAW(s, i));
         }
     }
 
@@ -1388,12 +1488,12 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 static VALUE
 recursive_equal(VALUE s, VALUE s2, int recur)
 {
-    long i, len;
+    rb_len_t i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    len = RSTRUCT_LEN(s);
+    len = RSTRUCT_LEN_RAW(s);
     for (i=0; i<len; i++) {
-        if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
+        if (!rb_equal(RSTRUCT_GET_RAW(s, i), RSTRUCT_GET_RAW(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
@@ -1403,7 +1503,7 @@ recursive_equal(VALUE s, VALUE s2, int recur)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns  +true+ if and only if the following are true; otherwise returns +false+:
+ *  Returns whether both the following are true:
  *
  *  - <tt>other.class == self.class</tt>.
  *  - For each member name +name+, <tt>other.name == self.name</tt>.
@@ -1425,7 +1525,7 @@ rb_struct_equal(VALUE s, VALUE s2)
     if (s == s2) return Qtrue;
     if (!RB_TYPE_P(s2, T_STRUCT)) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
-    if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
+    if (RSTRUCT_LEN_RAW(s) != RSTRUCT_LEN_RAW(s2)) {
         rb_bug("inconsistent struct"); /* should never happen */
     }
 
@@ -1454,14 +1554,14 @@ rb_struct_equal(VALUE s, VALUE s2)
 static VALUE
 rb_struct_hash(VALUE s)
 {
-    long i, len;
+    rb_len_t i, len;
     st_index_t h;
     VALUE n;
 
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
-    len = RSTRUCT_LEN(s);
+    len = RSTRUCT_LEN_RAW(s);
     for (i = 0; i < len; i++) {
-        n = rb_hash(RSTRUCT_GET(s, i));
+        n = rb_hash(RSTRUCT_GET_RAW(s, i));
         h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
@@ -1471,12 +1571,12 @@ rb_struct_hash(VALUE s)
 static VALUE
 recursive_eql(VALUE s, VALUE s2, int recur)
 {
-    long i, len;
+    rb_len_t i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    len = RSTRUCT_LEN(s);
+    len = RSTRUCT_LEN_RAW(s);
     for (i=0; i<len; i++) {
-        if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
+        if (!rb_eql(RSTRUCT_GET_RAW(s, i), RSTRUCT_GET_RAW(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
@@ -1506,7 +1606,7 @@ rb_struct_eql(VALUE s, VALUE s2)
     if (s == s2) return Qtrue;
     if (!RB_TYPE_P(s2, T_STRUCT)) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
-    if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
+    if (RSTRUCT_LEN_RAW(s) != RSTRUCT_LEN_RAW(s2)) {
         rb_bug("inconsistent struct"); /* should never happen */
     }
 
@@ -1528,7 +1628,7 @@ rb_struct_eql(VALUE s, VALUE s2)
 VALUE
 rb_struct_size(VALUE s)
 {
-    return LONG2FIX(RSTRUCT_LEN(s));
+    return LEN2NUM(RSTRUCT_LEN_RAW(s));
 }
 
 /*
@@ -1546,8 +1646,8 @@ rb_struct_size(VALUE s)
  *
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
- *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
- *   f.dig(:a, :a) # => {:b=>[1, 2, 3]}
+ *   f.dig(:a) # => #<struct Foo a={b: [1, 2, 3]}>
+ *   f.dig(:a, :a) # => {b: [1, 2, 3]}
  *   f.dig(:a, :a, :b) # => [1, 2, 3]
  *   f.dig(:a, :a, :b, 0) # => 1
  *   f.dig(:b, 0) # => nil
@@ -1555,8 +1655,8 @@ rb_struct_size(VALUE s)
  *  Given integer argument +n+,
  *  returns the object that is specified by +n+ and +identifiers+:
  *
- *   f.dig(0) # => #<struct Foo a={:b=>[1, 2, 3]}>
- *   f.dig(0, 0) # => {:b=>[1, 2, 3]}
+ *   f.dig(0) # => #<struct Foo a={b: [1, 2, 3]}>
+ *   f.dig(0, 0) # => {b: [1, 2, 3]}
  *   f.dig(0, 0, :b) # => [1, 2, 3]
  *   f.dig(0, 0, :b, 0) # => 1
  *   f.dig(:b, 0) # => nil
@@ -1689,15 +1789,11 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  */
 
 static VALUE
-rb_data_s_def(int argc, VALUE *argv, VALUE klass)
+rb_data_s_def(int argc, VALUE *argv, VALUE super)
 {
-    VALUE rest;
-    long i;
-    VALUE data_class;
-
-    rest = rb_ident_hash_new();
+    VALUE rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    for (i=0; i<argc; i++) {
+    for (int i = 0; i < argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid data member: %"PRIsVALUE, mem);
@@ -1710,13 +1806,17 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_hash_keys(rest);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE(rest);
-    data_class = anonymous_struct(klass);
-    setup_data(data_class, rest);
+
+    VALUE klass = anonymous_struct(super);
+    setup_data(klass, rest);
+
+    rb_class_inherited(super, klass);
+
     if (rb_block_given_p()) {
-        rb_mod_module_eval(0, 0, data_class);
+        rb_mod_module_eval(0, 0, klass);
     }
 
-    return data_class;
+    return klass;
 }
 
 VALUE
@@ -1730,7 +1830,20 @@ rb_data_define(VALUE super, ...)
     if (!super) super = rb_cData;
     VALUE klass = setup_data(anonymous_struct(super), ary);
     rb_vm_register_global_object(klass);
+    rb_class_inherited(super, klass);
     return klass;
+}
+
+static int
+data_hash_set_i(VALUE key, VALUE val, VALUE arg)
+{
+    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
+    int i = struct_hash_aset(key, val, args, true);
+    if (i >= 0 && !args->found[i]) {
+        args->found[i] = true;
+        args->missing_count--;
+    }
+    return ST_CONTINUE;
 }
 
 /*
@@ -1800,37 +1913,53 @@ rb_data_define(VALUE super, ...)
 static VALUE
 rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
-    VALUE klass = rb_obj_class(self);
     rb_struct_modify(self);
-    VALUE members = struct_ivar_get(klass, id_members);
-    size_t num_members = RARRAY_LEN(members);
+    rb_len_t num_members = RSTRUCT_LEN_RAW(self);
 
     if (argc == 0) {
         if (num_members > 0) {
-            rb_exc_raise(rb_keyword_error_new("missing", members));
+            rb_exc_raise(rb_keyword_error_new("missing", struct_s_members(rb_obj_class(self))));
         }
+        OBJ_FREEZE(self);
         return Qnil;
     }
     if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
         rb_error_arity(argc, 0, 0);
     }
 
-    if (RHASH_SIZE(argv[0]) < num_members) {
-        VALUE missing = rb_ary_diff(members, rb_hash_keys(argv[0]));
-        rb_exc_raise(rb_keyword_error_new("missing", missing));
+    VALUE found_buffer = 0;
+    bool *found = NULL;
+    if (num_members > 0) {
+        found = ALLOCV_N(bool, found_buffer, num_members);
+        MEMZERO(found, bool, num_members);
     }
-
-    struct struct_hash_set_arg arg;
+    struct struct_hash_set_arg arg = {
+        .self = self,
+        .found = found,
+        .missing_count = num_members,
+    };
     rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
-    arg.self = self;
-    arg.unknown_keywords = Qnil;
-    rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    rb_hash_foreach(argv[0], data_hash_set_i, (VALUE)&arg);
+
     // Freeze early before potentially raising, so that we don't leave an
     // unfrozen copy on the heap, which could get exposed via ObjectSpace.
     OBJ_FREEZE(self);
-    if (arg.unknown_keywords != Qnil) {
+    if (UNLIKELY(arg.missing_count > 0)) {
+        VALUE members = struct_s_members(rb_obj_class(self));
+        RUBY_ASSERT(RARRAY_LEN(members) == num_members);
+        VALUE missing = rb_ary_new_capa(arg.missing_count);
+        for (rb_len_t i = 0; i < num_members; i++) {
+            if (!found[i]) rb_ary_push(missing, RARRAY_AREF(members, i));
+        }
+        RUBY_ASSERT(RARRAY_LEN(missing) == arg.missing_count, "missing_count=%"PRIdLEN" but %"PRIdLEN, arg.missing_count, RARRAY_LEN(missing));
+        rb_exc_raise(rb_keyword_error_new("missing", missing));
+    }
+
+    ALLOCV_END(found_buffer);
+    if (UNLIKELY(arg.unknown_keywords)) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
+
     return Qnil;
 }
 
@@ -1909,14 +2038,14 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
 static VALUE
 rb_data_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data "));
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data"));
 }
 
 /*
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns  +true+ if +other+ is the same class as +self+, and all members are
+ *  Returns whether +other+ is the same class as +self+, and all members are
  *  equal.
  *
  *  Examples:
@@ -1990,7 +2119,7 @@ rb_data_inspect(VALUE s)
  *    distance = Measure[10, 'km']
  *
  *    distance.to_h
- *    #=> {:amount=>10, :unit=>"km"}
+ *    #=> {amount: 10, unit: "km"}
  *
  *  Like Enumerable#to_h, if the block is provided, it is expected to
  *  produce key-value pairs to construct a hash:
@@ -2064,8 +2193,8 @@ rb_data_inspect(VALUE s)
  *    Measure = Data.define(:amount, :unit)
  *
  *    distance = Measure[10, 'km']
- *    distance.deconstruct_keys(nil) #=> {:amount=>10, :unit=>"km"}
- *    distance.deconstruct_keys([:amount]) #=> {:amount=>10}
+ *    distance.deconstruct_keys(nil) #=> {amount: 10, unit: "km"}
+ *    distance.deconstruct_keys([:amount]) #=> {amount: 10}
  *
  *    # usage
  *    case distance
@@ -2085,7 +2214,11 @@ rb_data_inspect(VALUE s)
  *    end
  */
 
-#define rb_data_deconstruct_keys rb_struct_deconstruct_keys
+static VALUE
+rb_data_deconstruct_keys(VALUE s, VALUE keys)
+{
+    return deconstruct_keys(s, keys, true);
+}
 
 /*
  *  Document-class: Struct
@@ -2132,8 +2265,8 @@ rb_data_inspect(VALUE s)
  *
  *  First, what's elsewhere. Class \Struct:
  *
- *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ *  - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ *  - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *    which provides dozens of additional methods.
  *
  *  See also Data, which is a somewhat similar, but stricter concept for defining immutable
@@ -2268,9 +2401,5 @@ InitVM_Struct(void)
 void
 Init_Struct(void)
 {
-    id_members = rb_intern("__members__");
-    id_back_members = rb_intern("__members_back__");
-    id_keyword_init = rb_intern("__keyword_init__");
-
     InitVM(Struct);
 }

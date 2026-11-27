@@ -23,6 +23,10 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
     spec.dependencies
   end
 
+  def content_address # :nodoc:
+    spec.content_address
+  end
+
   ##
   # The required_ruby_version constraint for this specification
 

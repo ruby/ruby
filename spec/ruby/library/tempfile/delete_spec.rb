@@ -1,7 +1,15 @@
 require_relative '../../spec_helper'
-require_relative 'shared/unlink'
 require 'tempfile'
 
 describe "Tempfile#delete" do
-  it_behaves_like :tempfile_unlink, :delete
+  before :each do
+    @tempfile = Tempfile.new("specs")
+  end
+
+  it "unlinks self" do
+    @tempfile.close
+    path = @tempfile.path
+    @tempfile.delete
+    File.should_not.exist?(path)
+  end
 end

@@ -39,8 +39,8 @@ describe "Enumerable#zip" do
   end
 
   it "raises TypeError when some argument isn't Array and doesn't respond to #to_ary and #to_enum" do
-    -> { EnumerableSpecs::Numerous.new(1,2,3).zip(Object.new) }.should raise_error(TypeError, "wrong argument type Object (must respond to :each)")
-    -> { EnumerableSpecs::Numerous.new(1,2,3).zip(1) }.should raise_error(TypeError, "wrong argument type Integer (must respond to :each)")
-    -> { EnumerableSpecs::Numerous.new(1,2,3).zip(true) }.should raise_error(TypeError, "wrong argument type TrueClass (must respond to :each)")
+    -> { EnumerableSpecs::Numerous.new(1,2,3).zip(Object.new) }.should.raise(TypeError, "wrong argument type Object (must respond to :each)")
+    -> { EnumerableSpecs::Numerous.new(1,2,3).zip(1) }.should.raise(TypeError, "wrong argument type Integer (must respond to :each)")
+    -> { EnumerableSpecs::Numerous.new(1,2,3).zip(true) }.should.raise(TypeError, "wrong argument type TrueClass (must respond to :each)")
   end
 end

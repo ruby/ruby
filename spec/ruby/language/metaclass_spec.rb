@@ -16,17 +16,17 @@ describe "self in a metaclass body (class << obj)" do
   end
 
   it "raises a TypeError for numbers" do
-    -> { class << 1; self; end }.should raise_error(TypeError)
+    -> { class << 1; self; end }.should.raise(TypeError)
   end
 
   it "raises a TypeError for symbols" do
-    -> { class << :symbol; self; end }.should raise_error(TypeError)
+    -> { class << :symbol; self; end }.should.raise(TypeError)
   end
 
   it "is a singleton Class instance" do
     cls = class << mock('x'); self; end
     cls.is_a?(Class).should == true
-    cls.should_not equal(Object)
+    cls.should_not.equal?(Object)
   end
 end
 
@@ -57,20 +57,20 @@ describe "A constant on a metaclass" do
   end
 
   it "is not defined on the object's class" do
-    @object.class.const_defined?(:CONST).should be_false
+    @object.class.const_defined?(:CONST).should == false
   end
 
   it "is not defined in the metaclass opener's scope" do
     class << @object
       CONST
     end
-    -> { CONST }.should raise_error(NameError)
+    -> { CONST }.should.raise(NameError)
   end
 
   it "cannot be accessed via object::CONST" do
     -> do
       @object::CONST
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a NameError for anonymous_module::CONST" do
@@ -81,16 +81,16 @@ describe "A constant on a metaclass" do
 
     -> do
       @object::CONST
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "appears in the metaclass constant list" do
     constants = class << @object; constants; end
-    constants.should include(:CONST)
+    constants.should.include?(:CONST)
   end
 
   it "does not appear in the object's class constant list" do
-    @object.class.constants.should_not include(:CONST)
+    @object.class.constants.should_not.include?(:CONST)
   end
 
   it "is not preserved when the object is duped" do
@@ -98,14 +98,14 @@ describe "A constant on a metaclass" do
 
     -> do
       class << @object; CONST; end
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "is preserved when the object is cloned" do
     @object = @object.clone
 
     class << @object
-      CONST.should_not be_nil
+      CONST.should_not == nil
     end
   end
 end

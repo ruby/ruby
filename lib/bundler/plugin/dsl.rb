@@ -5,12 +5,11 @@ module Bundler
     # Dsl to parse the Gemfile looking for plugins to install
     class DSL < Bundler::Dsl
       class PluginGemfileError < PluginError; end
-      alias_method :_gem, :gem # To use for plugin installation as gem
 
       # So that we don't have to override all there methods to dummy ones
       # explicitly.
       # They will be handled by method_missing
-      [:gemspec, :gem, :install_if, :platforms, :env].each {|m| undef_method m }
+      [:gemspec, :install_if, :platforms, :env].each {|m| undef_method m }
 
       # This lists the plugins that was added automatically and not specified by
       # the user.
@@ -24,12 +23,11 @@ module Bundler
 
       def initialize
         super
-        @sources = Plugin::SourceList.new
         @inferred_plugins = [] # The source plugins inferred from :type
       end
 
-      def plugin(name, *args)
-        _gem(name, *args)
+      def gem(*args)
+        # Ignore regular dependencies when doing the plugins-only pre-parse
       end
 
       def method_missing(name, *args)

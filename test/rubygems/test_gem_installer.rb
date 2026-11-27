@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "installer_test_case"
+require "digest"
 
 class TestGemInstaller < Gem::InstallerTestCase
   def setup
@@ -58,6 +59,21 @@ class TestGemInstaller < Gem::InstallerTestCase
       wrapper = installer.app_script_text "executable"
       assert_equal expected, wrapper
     end
+  end
+
+  def test_app_script_text_escapes_executable_name
+    installer = setup_base_installer
+
+    malicious = "evil');system('id');#"
+    @spec.bindir = "bin"
+    write_file @spec.bin_file(malicious) do |io|
+      io.puts "#!/usr/bin/ruby"
+    end
+
+    wrapper = installer.app_script_text malicious
+
+    assert_includes wrapper, %q{Gem.activate_and_load_bin_path('a', 'evil\');system(\'id\');#', version)}
+    assert_includes wrapper, %q{load Gem.activate_bin_path('a', 'evil\');system(\'id\');#', version)}
   end
 
   def test_check_executable_overwrite
@@ -278,17 +294,19 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   def test_ensure_loadable_spec
     a, a_gem = util_gem "a", 2 do |s|
-      s.add_dependency "garbage ~> 5"
+      s.add_dependency "b"
     end
 
     installer = Gem::Installer.at a_gem
+    requirement = installer.spec.dependencies.first.requirement
+    requirement.instance_variable_set :@requirements, [["garbage", Gem::Version.new(5)]]
 
     e = assert_raise Gem::InstallError do
       installer.ensure_loadable_spec
     end
 
     assert_equal "The specification for #{a.full_name} is corrupt " \
-                 "(SyntaxError)", e.message
+                 "(Gem::Requirement::BadRequirementError)", e.message
   end
 
   def test_ensure_loadable_spec_security_policy
@@ -689,8 +707,11 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   def test_generate_bin_symlink_win32
     old_win_platform = Gem.win_platform?
-    Gem.win_platform = true
     old_alt_separator = File::ALT_SEPARATOR
+
+    omit "JRuby on Windows still creates the symlink so the wrapper branch is not exercised" if Gem.win_platform? && Gem.java_platform?
+
+    Gem.win_platform = true
     File.__send__(:remove_const, :ALT_SEPARATOR)
     File.const_set(:ALT_SEPARATOR, "\\")
 
@@ -743,6 +764,8 @@ class TestGemInstaller < Gem::InstallerTestCase
   end
 
   def test_generate_bin_with_dangling_symlink
+    omit "JRuby on Windows still creates the symlink so the wrapper branch is not exercised" if Gem.win_platform? && Gem.java_platform?
+
     gem_with_dangling_symlink = File.expand_path("packages/ascii_binder-0.1.10.1.gem", __dir__)
 
     installer = Gem::Installer.at(
@@ -759,8 +782,12 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     errors = @ui.error.split("\n")
     assert_equal "WARNING:  ascii_binder-0.1.10.1 ships with a dangling symlink named bin/ascii_binder pointing to missing bin/asciibinder file. Ignoring", errors.shift
-    assert_empty errors
-
+    if symlink_supported?
+      assert_empty errors
+    else
+      assert_match(/Unable to use symlinks, installing wrapper/i,
+                   errors.to_s)
+    end
     assert_empty @ui.output
   end
 
@@ -784,6 +811,186 @@ class TestGemInstaller < Gem::InstallerTestCase
     installer.generate_plugins
 
     assert File.exist?(plugin_path), "plugin not written"
+  end
+
+  def test_generate_plugins_for_content_addressed_gem_installs_stub_under_ruby_abi
+    ruby_abi = Gem.ruby_abi
+
+    _, a_gem = util_gem "a", 2, ruby_abi: ruby_abi do |spec|
+      spec.platform = "x86_64-linux"
+
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    root_plugin_path = File.join Gem.plugindir(@gemhome), "a_plugin.rb"
+    write_file root_plugin_path do |io|
+      io.write "# previous root plugin stub"
+    end
+
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+    plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+
+    assert_equal ruby_abi, spec.ruby_abi
+    assert_path_not_exist root_plugin_path
+    assert_path_exist plugin_path
+    assert_match %r{\Arequire_relative '../../gems/a-2-[0-9a-f]{8}/lib/rubygems_plugin\.rb'},
+                 File.read(plugin_path)
+  end
+
+  def test_generate_plugins_for_non_content_addressed_gem_removes_abi_scoped_stub
+    ruby_abi = Gem.ruby_abi
+    abi_plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+    write_file abi_plugin_path do |io|
+      io.write "# previous ABI plugin stub"
+    end
+
+    spec = quick_gem "a", 2 do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    util_build_gem spec
+
+    installer = Gem::Installer.at spec.cache_file, install_dir: @gemhome, force: true
+    installer.install
+    root_plugin_path = File.join Gem.plugindir(@gemhome), "a_plugin.rb"
+
+    assert_path_exist root_plugin_path
+    assert_path_not_exist abi_plugin_path
+    assert_match %r{\Arequire_relative '../gems/a-2/lib/rubygems_plugin\.rb'},
+                 File.read(root_plugin_path)
+  end
+
+  def test_generate_plugins_for_non_content_addressed_gem_without_plugin_removes_abi_scoped_stub
+    ruby_abi = Gem.ruby_abi
+
+    _, ca_gem = util_gem "a", 1, ruby_abi: ruby_abi do |spec|
+      spec.platform = "x86_64-linux"
+
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    Gem::Installer.at(ca_gem, install_dir: @gemhome, force: true).install
+    abi_plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+
+    assert_path_exist abi_plugin_path
+
+    spec = quick_gem "a", 2
+    util_build_gem spec
+
+    Gem::Installer.at(spec.cache_file, install_dir: @gemhome, force: true).install
+
+    assert_path_not_exist abi_plugin_path
+  end
+
+  def test_install_with_matching_content_address
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    ca_gem = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, ca_gem
+
+    installer = Gem::Installer.at ca_gem, install_dir: @gemhome, force: true,
+                                          content_address: address
+    spec = installer.install
+
+    assert_equal address, spec.content_address
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
+  end
+
+  def test_install_raises_when_content_address_is_not_carried_by_package
+    platform_spec, platform_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    Gem::Installer.at(platform_gem, install_dir: @gemhome, force: true).install
+    platform_gem_dir = File.join(@gemhome, "gems", platform_spec.full_name)
+    assert_path_exist platform_gem_dir
+
+    installer = Gem::Installer.at platform_gem, install_dir: @gemhome, force: true,
+                                                content_address: "deadbeef"
+
+    e = assert_raise Gem::InstallError do
+      installer.install
+    end
+
+    assert_match(/content address mismatch/, e.message)
+    assert_match(/expected deadbeef, got no content address/, e.message)
+    assert_path_exist platform_gem_dir
+  end
+
+  def test_plugin_stub_dir_for_content_addressed_gem_is_abi_scoped
+    spec = Gem::Specification.new "a", 2
+    spec.platform = "x86_64-linux"
+    spec.required_ruby_version = "~> 3.4.0"
+    spec.content_address = "abcdef12"
+
+    installer = util_installer spec, @gemhome
+
+    assert_equal File.join(@gemhome, "plugins", "3.4"),
+                 installer.send(:plugin_stub_dir_for, spec, File.join(@gemhome, "plugins"))
+  end
+
+  def test_plugin_stub_dir_for_spec_with_address_but_non_abi_requirement_is_not_abi_scoped
+    spec = Gem::Specification.new "a", 2
+    spec.platform = "x86_64-linux"
+    spec.required_ruby_version = ">= 3.0"
+    spec.content_address = "abcdef12"
+
+    installer = util_installer spec, @gemhome
+
+    assert_equal File.join(@gemhome, "plugins"),
+                 installer.send(:plugin_stub_dir_for, spec, File.join(@gemhome, "plugins"))
+  end
+
+  def test_ruby_abi_plugin_dir_for_non_content_addressed_gem_uses_running_abi
+    spec = Gem::Specification.new "a", 2
+
+    installer = util_installer spec, @gemhome
+
+    assert_equal File.join(@gemhome, "plugins", Gem.ruby_abi),
+                 installer.send(:ruby_abi_plugin_dir_for, spec, File.join(@gemhome, "plugins"))
+  end
+
+  def test_remove_plugins_for_content_addressed_gem_removes_stub_from_ruby_abi_dir
+    ruby_abi = Gem.ruby_abi
+
+    _, a_gem = util_gem "a", 2, ruby_abi: ruby_abi do |spec|
+      spec.platform = "x86_64-linux"
+
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+    plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+
+    assert_path_exist plugin_path
+
+    FileUtils.rm File.join(spec.gem_dir, "lib", "rubygems_plugin.rb")
+    installer.generate_plugins
+
+    assert_path_not_exist plugin_path
   end
 
   def test_generate_plugins_with_install_dir
@@ -1006,6 +1213,315 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_path_not_exist File.join(Gem.user_dir, "gems", @spec.full_name)
   end
 
+  def test_install_assigns_content_address_from_filename
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    # deliberately memoize the directory before installation, to prove the installation recalculates
+    installer.gem_dir
+    spec = installer.install
+
+    assert_equal address, spec.content_address
+    assert_equal "a-2-#{address}", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
+    assert_path_exist File.join(@gemhome, "cache", "a-2-#{address}.gem")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address}.gemspec")
+    assert_path_not_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
+  end
+
+  def test_install_raises_for_mismatched_content_address
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-deadbeef.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+
+    e = assert_raise Gem::InstallError do
+      installer.install
+    end
+
+    assert_match(/content address mismatch/, e.message)
+  end
+
+  def test_non_content_addressed_gems_install_as_expected
+    _, a_gem = util_gem "a", 2
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2.gemspec")
+  end
+
+  def test_numeric_version_not_treated_as_content_address
+    _, a_gem = util_gem "a", "20240101"
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-20240101", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-20240101")
+    assert_path_exist File.join(@gemhome, "specifications", "a-20240101.gemspec")
+  end
+
+  def test_normal_gem_with_hex_suffix_is_not_content_addressed
+    _, a_gem = util_gem "a", 2 do |spec|
+      spec.platform = Gem::Platform.new("x86-linux-deadbeef")
+    end
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2-x86-linux-deadbeef", spec.full_name
+  end
+
+  def test_content_address_not_set_without_required_ruby_version_and_platform
+    _, a_gem = util_gem "a", 2
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2", spec.full_name
+  end
+
+  def test_hex_suffix_without_matching_spec_prefix_is_not_content_addressed
+    _, a_gem = util_gem "a", 2
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "wrong_name-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2", spec.full_name
+  end
+
+  def test_content_address_not_set_with_only_required_ruby_version
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+    end
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+  end
+
+  def test_content_address_not_set_with_only_platform
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.platform = "x86_64-linux"
+    end
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+  end
+
+  def test_require_works_after_content_addressed_install
+    source_spec, a_gem = util_gem("a", 2) do |spec|
+      spec.files = ["lib/ca_activation_test.rb"]
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+    FileUtils.rm_rf source_spec.gem_dir
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    installer.install
+
+    Gem::Specification.reset
+
+    assert require "ca_activation_test"
+  end
+
+  def test_reinstalling_content_addressed_gem_is_idempotent
+    source_spec, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+    FileUtils.rm_rf source_spec.gem_dir
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    installer.install
+
+    installer2 = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec2 = installer2.install
+
+    assert_equal "a-2-#{address}", spec2.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address}.gemspec")
+    assert_equal 1, Dir[File.join(@gemhome, "gems", "a-2*")].size
+    assert_equal 1, Dir[File.join(@gemhome, "specifications", "3.4", "a-2*.gemspec")].size
+  end
+
+  def test_install_assigns_content_address_from_filename_with_full_sha
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{digest}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_equal digest, spec.content_address
+    assert_equal "a-2-#{digest}", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{digest}")
+    assert_path_exist File.join(@gemhome, "cache", "a-2-#{digest}.gem")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{digest}.gemspec")
+  end
+
+  def test_two_content_addressed_gems_with_same_name_version_coexist
+    _, gem1 = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+      spec.summary = "variant 1"
+    end
+    gem1_backup = File.join(@tempdir, "gem1_backup.gem")
+    FileUtils.cp gem1, gem1_backup
+
+    _, gem2 = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+      spec.summary = "variant 2"
+    end
+
+    FileUtils.rm_rf File.join(@gemhome, "gems", "a-2-x86_64-linux")
+    FileUtils.rm_rf File.join(@gemhome, "specifications", "a-2-x86_64-linux.gemspec")
+    Gem::Specification.reset
+
+    dir = File.dirname(gem1)
+    digest1 = Digest::SHA256.file(gem1_backup).hexdigest
+    digest2 = Digest::SHA256.file(gem2).hexdigest
+    refute_equal digest1, digest2
+
+    address1 = digest1[0, 8]
+    address2 = digest2[0, 8]
+    file1 = File.join(dir, "a-2-#{address1}.gem")
+    file2 = File.join(dir, "a-2-#{address2}.gem")
+    FileUtils.cp gem1_backup, file1
+    FileUtils.cp gem2, file2
+
+    Gem::Installer.at(file1, install_dir: @gemhome, force: true).install
+    Gem::Installer.at(file2, install_dir: @gemhome, force: true).install
+
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address1}")
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address2}")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address1}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address2}.gemspec")
+    assert_equal 2, Dir[File.join(@gemhome, "gems", "a-2-*")].size
+    assert_equal 2, Dir[File.join(@gemhome, "specifications", "3.4", "a-2-*.gemspec")].size
+  end
+
+  def test_sequential_content_addressed_installs_with_restrictive_dir_mode
+    pend "chmod not supported" if Gem.win_platform?
+
+    abi_spec_dir = File.join(@gemhome, "specifications", Gem.ruby_abi)
+    addresses = %w[a b].map do |name|
+      _, gem = util_gem(name, 2) do |spec|
+        spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+        spec.platform = Gem::Platform.local.to_s
+      end
+
+      address = Digest::SHA256.file(gem).hexdigest[0, 8]
+      filename = File.join(File.dirname(gem), "#{name}-2-#{address}.gem")
+      FileUtils.cp gem, filename
+
+      Gem::Installer.at(filename, install_dir: @gemhome, force: true, dir_mode: 0o555).install
+
+      [name, address]
+    end
+
+    addresses.each do |name, address|
+      assert_path_exist File.join(abi_spec_dir, "#{name}-2-#{address}.gemspec")
+    end
+
+    _, a_address = addresses.first
+    assert_equal 0o555, File.stat(File.join(@gemhome, "gems", "a-2-#{a_address}")).mode & 0o777
+    assert_equal 0o555, File.stat(abi_spec_dir).mode & 0o777
+  ensure
+    FileUtils.chmod(0o755, abi_spec_dir) if abi_spec_dir && File.directory?(abi_spec_dir)
+  end
+
+  def test_incompatible_abi_content_addressed_install_is_not_registered_in_memory
+    incompatible_abi = "1.0"
+    refute_equal Gem.ruby_abi, incompatible_abi
+
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> #{incompatible_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    filename = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    use_ui @ui do
+      Gem::Installer.at(filename, force: true).install
+    end
+
+    assert_path_exist File.join(@gemhome, "specifications", incompatible_abi, "a-2-#{address}.gemspec")
+    assert_empty Gem::Specification.find_all_by_name("a").map(&:full_name).grep(/#{address}/)
+    assert_match(/scoped to Ruby ABI #{incompatible_abi}/, @ui.output)
+  end
+
+  def test_current_abi_content_addressed_install_is_registered_in_memory
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    filename = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    Gem::Installer.at(filename, force: true).install
+
+    assert_includes Gem::Specification.find_all_by_name("a").map(&:full_name), "a-2-#{address}"
+  end
+
   def test_install
     installer = util_setup_installer
 
@@ -1058,6 +1574,30 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_same installer, @post_build_hook_arg
     assert_same installer, @post_install_hook_arg
     assert_same installer, @pre_install_hook_arg
+  end
+
+  def test_install_holds_lock_while_replacing_gem_files
+    installer = util_setup_installer {|s| s.executables.clear }
+    previous_file = File.join(installer.gem_dir, "previous")
+    FileUtils.touch previous_file
+
+    locked_path = nil
+    with_lock = lambda do |path, &install|
+      locked_path = path
+      assert_path_exist previous_file
+      install.call
+      assert_path_not_exist previous_file
+      assert_path_exist installer.spec.gem_build_complete_path
+      assert_path_exist installer.spec.cache_file
+    end
+
+    build_rake_in do
+      Gem.stub(:open_file_with_lock, with_lock) do
+        use_ui(@ui) { installer.install }
+      end
+    end
+
+    assert_equal File.join(@gemhome, "gems", ".#{@spec.full_name}"), locked_path
   end
 
   def test_install_creates_working_binstub
@@ -1472,6 +2012,39 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute_match(/I am a shiny gem!/, @ui.output)
   end
 
+  def test_install_sanitizes_post_install_message
+    # Use for_spec so the in-memory message reaches the installer verbatim;
+    # building a gem would escape the control characters during serialization.
+    @spec = setup_base_spec
+    @spec.post_install_message = "shiny \e]2;pwn\a gem"
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/shiny \.\]2;pwn\. gem/, @ui.output)
+    refute_match(/\e\]2;pwn/, @ui.output)
+  end
+
+  def test_install_handles_non_string_post_install_message
+    # post_install_message may be a non-String (the gemspec schema allows an
+    # array), so sanitizing must not assume it responds to gsub.
+    @spec = setup_base_spec
+    @spec.post_install_message = %w[one two]
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/one/, @ui.output)
+  end
+
   def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 
@@ -1821,6 +2394,46 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute defined?(::Object::FROM_EVAL)
   end
 
+  # Psych restores a version from gem metadata through
+  # Gem::Version#yaml_initialize, which skips the checks in #initialize.
+  def test_pre_install_checks_malicious_version_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    version = Gem::Version.allocate
+    version.yaml_initialize nil, "version" => "1\n::Object.const_set(:FROM_EVAL, true)#"
+    spec.version = version
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1\n::Object.const_set(:FROM_EVAL, true)#> has an invalid version", e.message
+    end
+    refute defined?(::Object::FROM_EVAL)
+  end
+
+  def test_pre_install_checks_accepts_real_versions
+    %w[1 1.0.0 1.0.0.a 1.0.0-rc.1 0.1.0.pre.20260918].each do |version|
+      spec = util_spec "a", version
+
+      util_build_gem spec
+
+      installer = Gem::Installer.at spec.cache_file,
+                                    install_dir: @gemhome,
+                                    user_install: false,
+                                    force: true
+
+      use_ui @ui do
+        assert_equal spec, installer.install, version
+      end
+
+      assert_path_exist File.join(@gemhome, "gems", spec.full_name), version
+    end
+  end
+
   def test_pre_install_checks_malicious_require_paths_before_eval
     spec = util_spec "malicious", "1"
     def spec.full_name # so the spec is buildable
@@ -1839,31 +2452,23 @@ class TestGemInstaller < Gem::InstallerTestCase
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid require_paths", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
   def test_pre_install_checks_malicious_extensions_before_eval
-    pend "mswin environment disallow to create file contained the carriage return code." if Gem.win_platform?
-
     spec = util_spec "malicious", "1"
-    def spec.full_name # so the spec is buildable
-      "malicious-1"
-    end
-
     def spec.validate(*args); end
     spec.extensions = ["malicious\n``"]
 
-    util_build_gem spec
-
-    gem = File.join(@gemhome, "cache", spec.file_name)
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
 
     use_ui @ui do
-      installer = Gem::Installer.at gem
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid extensions", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
@@ -1874,6 +2479,7 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
 
     def spec.validate(*args); end
+    spec.add_dependency "b"
     spec.specification_version = "malicious\n``"
 
     util_build_gem spec
@@ -1885,18 +2491,35 @@ class TestGemInstaller < Gem::InstallerTestCase
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid specification_version", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
   def test_pre_install_checks_malicious_dependencies_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.add_dependency "b", "> 5"
+    spec.dependencies.first.instance_variable_set :@type, :foo
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_executables_before_eval
     spec = util_spec "malicious", "1"
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
 
     def spec.validate(*args); end
-    spec.add_dependency "b\nfoo", "> 5"
+    spec.executables = ["../../../tmp/malicious"]
 
     util_build_gem spec
 
@@ -1904,11 +2527,64 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     use_ui @ui do
       installer = Gem::Installer.at gem
-      installer.ignore_dependencies = true
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid dependencies", e.message
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_bindir_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+
+    def spec.validate(*args); end
+    spec.bindir = "../../../tmp/malicious"
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, "cache", spec.file_name)
+
+    use_ui @ui do
+      installer = Gem::Installer.at gem
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_executable
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.executables = [nil]
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_bindir
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.bindir = true
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
     end
   end
 
@@ -1929,6 +2605,62 @@ class TestGemInstaller < Gem::InstallerTestCase
 
       assert_equal "x86-mswin32\n system('id > /tmp/nyangawa')# is an invalid platform", e.message
       assert_empty @ui.output
+    end
+  end
+
+  # Psych assigns @cpu/@os/@version directly, so a platform coming from gem
+  # metadata never goes through Gem::Platform#initialize.
+  def test_pre_install_checks_traversal_platform_from_array
+    spec = util_spec "a", "1"
+    def spec.validate(*args); end
+    spec.platform = Gem::Platform.new([nil, "../../../../tmp/X", nil])
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "../../../../tmp/X is an invalid platform", e.message
+    end
+  end
+
+  # Gem::Platform#initialize normalizes the os but keeps the cpu verbatim.
+  def test_pre_install_checks_traversal_platform_from_string
+    spec = util_spec "a", "1"
+    def spec.validate(*args); end
+    spec.platform = Gem::Platform.new("../../../../tmp/X-linux")
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "../../../../tmp/X-linux is an invalid platform", e.message
+    end
+  end
+
+  def test_pre_install_checks_accepts_real_platforms
+    %w[x86_64-linux arm64-darwin-23 x64-mingw-ucrt java ruby].each do |platform|
+      spec = util_spec "a", "1" do |s|
+        s.platform = platform
+      end
+
+      util_build_gem spec
+
+      installer = Gem::Installer.at spec.cache_file,
+                                    install_dir: @gemhome,
+                                    user_install: false,
+                                    force: true
+
+      use_ui @ui do
+        assert_equal spec, installer.install, platform
+      end
+
+      assert_path_exist File.join(@gemhome, "gems", spec.full_name), platform
     end
   end
 
@@ -2436,6 +3168,136 @@ class TestGemInstaller < Gem::InstallerTestCase
     installer = util_installer(gem, @gemhome)
     assert_respond_to(installer, :gem)
     assert_kind_of(String, installer.gem)
+  end
+
+  def test_install_no_build_extension
+    installer = util_setup_installer
+
+    gemdir = File.join @gemhome, "gems", @spec.full_name
+
+    installer.options[:build_extension] = false
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_path_exist gemdir
+    assert_path_not_exist File.join(@spec.extension_dir, "gem.build_complete")
+    assert_match "contains native extensions that were not built", @ui.error
+    assert_match "gem pristine #{@spec.name} --extensions", @ui.error
+  end
+
+  def test_install_no_build_extension_without_extensions
+    spec = quick_gem "b", 2
+
+    util_build_gem spec
+
+    installer = util_installer spec, @gemhome
+    installer.options[:build_extension] = false
+
+    use_ui @ui do
+      installer.install
+    end
+
+    refute_match "contains native extensions", @ui.error
+  end
+
+  def test_install_no_install_plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    refute File.exist?(plugin_path), "plugin must not be written when --no-install-plugin"
+    assert_match "contains plugins that were not installed", @ui.error
+    assert_match "gem pristine #{@spec.name} --only-plugins", @ui.error
+  end
+
+  def test_install_no_install_plugin_skips_load_plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "$no_install_plugin_test_loaded = true"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    # Simulate a pre-existing plugin wrapper from a previous install
+    FileUtils.mkdir_p Gem.plugindir
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    File.write(plugin_path, "require_relative '../../gems/#{@spec.full_name}/lib/rubygems_plugin'")
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    refute defined?($no_install_plugin_test_loaded) && $no_install_plugin_test_loaded,
+           "plugin must not be loaded when --no-install-plugin"
+  ensure
+    $no_install_plugin_test_loaded = nil
+  end
+
+  def test_install_no_install_plugin_without_plugins
+    installer = util_setup_installer
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    refute_match "contains plugins", @ui.error
+  end
+
+  def test_install_no_install_plugin_removes_stale_wrappers
+    # First install a version with a plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# plugin code"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    assert File.exist?(plugin_path), "plugin wrapper should exist after first install"
+
+    # Now install a new version without plugins, using --no-install-plugin
+    spec2 = quick_gem "a", 3
+    util_build_gem spec2
+
+    installer2 = util_installer spec2, @gemhome
+    installer2.options[:install_plugin] = false
+
+    use_ui @ui do
+      installer2.install
+    end
+
+    refute File.exist?(plugin_path), "stale plugin wrapper must be removed"
   end
 
   private

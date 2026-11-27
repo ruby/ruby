@@ -30,6 +30,7 @@ module Lrama
       def create_instantiate_rule(sym)
         Lrama::Lexer::Token::InstantiateRule.new(
           s_value: sym.s_value,
+          alias_name: sym.alias_name,
           location: sym.location,
           args: resolve_args(sym.args),
           lhs_tag: sym.lhs_tag

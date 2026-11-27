@@ -6,8 +6,8 @@ describe "Delegator#equal?" do
     obj = mock('base')
     delegator = DelegateSpecs::Delegator.new(obj)
     obj.should_not_receive(:equal?)
-    delegator.equal?(obj).should be_false
-    delegator.equal?(nil).should be_false
-    delegator.equal?(delegator).should be_true
+    delegator.equal?(obj).should == false
+    delegator.equal?(nil).should == false
+    delegator.equal?(delegator).should == true
   end
 end

@@ -1,0 +1,105 @@
+/**
+ * @file string_query.h
+ *
+ * Functions for querying properties of strings, such as whether they are valid
+ * local variable names, constant names, or method names.
+ */
+#ifndef PRISM_STRING_QUERY_H
+#define PRISM_STRING_QUERY_H
+
+#include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Represents the results of a slice query.
+ */
+typedef enum {
+    /** Returned if the version given to a slice query was invalid. */
+    PM_STRING_QUERY_ERROR_VERSION = -2,
+
+    /** Returned if the encoding given to a slice query was invalid. */
+    PM_STRING_QUERY_ERROR = -1,
+
+    /** Returned if the result of the slice query is false. */
+    PM_STRING_QUERY_FALSE,
+
+    /** Returned if the result of the slice query is true. */
+    PM_STRING_QUERY_TRUE
+} pm_string_query_t;
+
+/**
+ * Check that the slice is a valid local variable name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @param encoding_length The length of the encoding name in bytes.
+ * @param version The version of Ruby to answer for, as pm_options_version_set
+ *   reads it, such as "3.4" or "latest". NULL is the latest version.
+ * @param version_length The length of the version in bytes, or 0 for NULL.
+ * @returns PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, PM_STRING_QUERY_ERROR if the encoding was invalid, and
+ *   PM_STRING_QUERY_ERROR_VERSION if the version was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) PRISM_NONNULL(1, 3);
+
+/**
+ * Check that the slice is a valid constant name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @param encoding_length The length of the encoding name in bytes.
+ * @param version The version of Ruby to answer for, as pm_options_version_set
+ *   reads it, such as "3.4" or "latest". NULL is the latest version.
+ * @param version_length The length of the version in bytes, or 0 for NULL.
+ * @returns PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, PM_STRING_QUERY_ERROR if the encoding was invalid, and
+ *   PM_STRING_QUERY_ERROR_VERSION if the version was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) PRISM_NONNULL(1, 3);
+
+/**
+ * Check that the slice is a valid method name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @param encoding_length The length of the encoding name in bytes.
+ * @param version The version of Ruby to answer for, as pm_options_version_set
+ *   reads it, such as "3.4" or "latest". NULL is the latest version.
+ * @param version_length The length of the version in bytes, or 0 for NULL.
+ * @returns PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, PM_STRING_QUERY_ERROR if the encoding was invalid, and
+ *   PM_STRING_QUERY_ERROR_VERSION if the version was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) PRISM_NONNULL(1, 3);
+
+/**
+ * Check that the slice is a keyword.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @param encoding_length The length of the encoding name in bytes.
+ * @param version The version of Ruby to answer for, as pm_options_version_set
+ *   reads it, such as "3.4" or "latest". NULL is the latest version.
+ * @param version_length The length of the version in bytes, or 0 for NULL.
+ * @returns PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, PM_STRING_QUERY_ERROR if the encoding was invalid, and
+ *   PM_STRING_QUERY_ERROR_VERSION if the version was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_keyword(const uint8_t *source, size_t length, const char *encoding_name, size_t encoding_length, const char *version, size_t version_length) PRISM_NONNULL(1, 3);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

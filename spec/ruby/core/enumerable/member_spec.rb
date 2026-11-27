@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/include'
 
 describe "Enumerable#member?" do
-  it_behaves_like :enumerable_include, :member?
+  it "is an alias of Enumerable#include?" do
+    Enumerable.instance_method(:member?).should == Enumerable.instance_method(:include?)
+  end
 end

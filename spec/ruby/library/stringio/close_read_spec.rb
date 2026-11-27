@@ -7,12 +7,12 @@ describe "StringIO#close_read" do
   end
 
   it "returns nil" do
-    @io.close_read.should be_nil
+    @io.close_read.should == nil
   end
 
   it "prevents further reading" do
     @io.close_read
-    -> { @io.read(1) }.should raise_error(IOError)
+    -> { @io.read(1) }.should.raise(IOError)
   end
 
   it "allows further writing" do
@@ -22,7 +22,7 @@ describe "StringIO#close_read" do
 
   it "raises an IOError when in write-only mode" do
     io = StringIO.new(+"example", "w")
-    -> { io.close_read }.should raise_error(IOError)
+    -> { io.close_read }.should.raise(IOError)
 
     io = StringIO.new("example")
     io.close_read

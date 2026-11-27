@@ -105,6 +105,19 @@ mod autogened {
 }
 pub use autogened::*;
 
+#[cfg(not(test))]
+pub fn const_path_ids(const_path: rb_const_path_t) -> impl Iterator<Item = ID> {
+    (0..)
+        .map(move |idx| unsafe { rb_jit_const_path_aref(const_path, idx) })
+        .take_while(|&id| id != 0)
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn const_path_ids(_const_path: rb_const_path_t) -> impl Iterator<Item = ID> {
+    std::iter::empty()
+}
+
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
 
@@ -117,6 +130,9 @@ extern "C" {
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
+
+    pub fn rb_jit_iseq_mark_ep_escape_recorded(iseq: IseqPtr);
+    pub fn rb_jit_iseq_ep_escape_recorded_p(iseq: IseqPtr) -> bool;
 
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
@@ -204,7 +220,6 @@ pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
 pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
 pub use rb_RSTRUCT_LEN as RSTRUCT_LEN;
-pub use rb_RSTRUCT_SET as RSTRUCT_SET;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
@@ -444,8 +459,8 @@ impl VALUE {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
 
-    pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_yjit_shape_obj_too_complex_p(self) }
+    pub fn shape_complex(self) -> bool {
+        unsafe { rb_yjit_shape_obj_complex_p(self) }
     }
 
     pub fn shape_id_of(self) -> u32 {
@@ -453,9 +468,7 @@ impl VALUE {
     }
 
     pub fn embedded_p(self) -> bool {
-        unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
-        }
+        unsafe { rb_yjit_shape_obj_embedded_p(self) }
     }
 
     pub fn as_isize(self) -> isize {
@@ -598,9 +611,16 @@ impl From<VALUE> for u16 {
     }
 }
 
+/// Check whether a control frame has an escaped environment
+pub unsafe fn cfp_env_has_escaped(cfp: *mut rb_control_frame_struct) -> bool {
+    use crate::utils::IntoUsize;
+    let ep = get_cfp_ep(cfp);
+    0 != ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 & VM_ENV_FLAG_ESCAPED.as_usize()
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
-    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
+    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len().try_into().unwrap()) }
 }
 
 /// Produce a Ruby symbol from a Rust string slice
@@ -742,12 +762,6 @@ mod manual_defs {
     pub const VM_CALL_ZSUPER : u32 = 1 << VM_CALL_ZSUPER_bit;
     pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
-    // From internal/struct.h - in anonymous enum, so we can't easily import it
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3 |RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
-
-    // From iseq.h - via a different constant, which seems to confuse bindgen
-    pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER7 as usize;
-
     // We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
     // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
     pub const RUBY_OFFSET_RBASIC_FLAGS: i32 = 0; // struct RBasic, field "flags"
@@ -756,8 +770,8 @@ mod manual_defs {
     pub const RUBY_OFFSET_RARRAY_AS_HEAP_PTR: i32 = 32; // struct RArray, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RARRAY_AS_ARY: i32 = 16; // struct RArray, subfield "as.ary"
 
-    pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
-    pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
+    pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 32; // struct RStruct, subfield "as.heap.ptr"
+    pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 24; // struct RStruct, subfield "as.ary"
 
     pub const RUBY_OFFSET_RSTRING_AS_HEAP_PTR: i32 = 24; // struct RString, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRING_AS_ARY: i32 = 24; // struct RString, subfield "as.embed.ary"

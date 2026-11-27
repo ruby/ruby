@@ -71,6 +71,7 @@ File.foreach "config.status" do |line|
     when /^arch$/; if val.empty? then val = arch else arch = val end
     when /^sitearch$/; val = '$(arch)' if val.empty?
     when /^DESTDIR$/; next
+    when /^PROGRAM_LIBS$/; next
     when /RUBYGEMS/; next
     end
     case val

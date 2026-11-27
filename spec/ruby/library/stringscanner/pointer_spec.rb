@@ -1,11 +1,14 @@
 require_relative '../../spec_helper'
-require_relative 'shared/pos'
 require 'strscan'
 
 describe "StringScanner#pointer" do
-  it_behaves_like :strscan_pos, :pointer
+  it "is an alias of StringScanner#pos" do
+    StringScanner.instance_method(:pointer).should == StringScanner.instance_method(:pos)
+  end
 end
 
 describe "StringScanner#pointer=" do
-  it_behaves_like :strscan_pos_set, :pointer=
+  it "is an alias of StringScanner#pos=" do
+    StringScanner.instance_method(:pointer=).should == StringScanner.instance_method(:pos=)
+  end
 end

@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "URI.parse" do
 
   it "returns a URI::HTTP object when parsing an HTTP URI" do
-    URI.parse("http://www.example.com/").should be_kind_of(URI::HTTP)
+    URI.parse("http://www.example.com/").should.is_a?(URI::HTTP)
   end
 
   it "populates the components of a parsed URI::HTTP, setting the port to 80 by default" do
@@ -47,7 +47,7 @@ describe "URI.parse" do
   end
 
   it "returns a URI::HTTPS object when parsing an HTTPS URI" do
-    URI.parse("https://important-intern-net.net").should be_kind_of(URI::HTTPS)
+    URI.parse("https://important-intern-net.net").should.is_a?(URI::HTTPS)
   end
 
   it "sets the port of a parsed https URI to 443 by default" do
@@ -57,7 +57,7 @@ describe "URI.parse" do
   it "populates the components of a parsed URI::FTP object" do
     # generic, empty password.
     url = URI.parse("ftp://anonymous@ruby-lang.org/pub/ruby/1.8/ruby-1.8.6.tar.bz2;type=i")
-    url.should be_kind_of(URI::FTP)
+    url.should.is_a?(URI::FTP)
     URISpec.components(url).should == {
       scheme: "ftp",
       userinfo: "anonymous",
@@ -69,7 +69,7 @@ describe "URI.parse" do
 
     # multidomain, no user or password
     url = URI.parse('ftp://ftp.is.co.za/rfc/rfc1808.txt')
-    url.should be_kind_of(URI::FTP)
+    url.should.is_a?(URI::FTP)
     URISpec.components(url).should == {
       scheme: "ftp",
       userinfo: nil,
@@ -81,7 +81,7 @@ describe "URI.parse" do
 
     # empty user
     url = URI.parse('ftp://:pass@localhost/')
-    url.should be_kind_of(URI::FTP)
+    url.should.is_a?(URI::FTP)
     URISpec.components(url).should == {
       scheme: "ftp",
       userinfo: ":pass",
@@ -97,7 +97,7 @@ describe "URI.parse" do
     #taken from http://www.faqs.org/rfcs/rfc2255.html 'cause I don't really know what an LDAP url looks like
     ldap_uris = %w{ ldap:///o=University%20of%20Michigan,c=US ldap://ldap.itd.umich.edu/o=University%20of%20Michigan,c=US ldap://ldap.itd.umich.edu/o=University%20of%20Michigan,c=US?postalAddress ldap://host.com:6666/o=University%20of%20Michigan,c=US??sub?(cn=Babs%20Jensen) ldap://ldap.itd.umich.edu/c=GB?objectClass?one ldap://ldap.question.com/o=Question%3f,c=US?mail ldap://ldap.netscape.com/o=Babsco,c=US??(int=%5c00%5c00%5c00%5c04) ldap:///??sub??bindname=cn=Manager%2co=Foo ldap:///??sub??!bindname=cn=Manager%2co=Foo }
     ldap_uris.each do |ldap_uri|
-      URI.parse(ldap_uri).should be_kind_of(URI::LDAP)
+      URI.parse(ldap_uri).should.is_a?(URI::LDAP)
     end
   end
 
@@ -115,7 +115,7 @@ describe "URI.parse" do
   end
 
   it "returns a URI::MailTo object when passed a mailto URI" do
-    URI.parse("mailto:spam@mailinator.com").should be_kind_of(URI::MailTo)
+    URI.parse("mailto:spam@mailinator.com").should.is_a?(URI::MailTo)
   end
 
   it "populates the components of a parsed URI::MailTo object" do
@@ -145,7 +145,7 @@ describe "URI.parse" do
 
     # gopher
     gopher = URI.parse('gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles')
-    gopher.should be_kind_of(URI::Generic)
+    gopher.should.is_a?(URI::Generic)
 
     URISpec.components(gopher).should == {
       scheme: "gopher",
@@ -161,7 +161,7 @@ describe "URI.parse" do
 
     # news
     news = URI.parse('news:comp.infosystems.www.servers.unix')
-    news.should be_kind_of(URI::Generic)
+    news.should.is_a?(URI::Generic)
     URISpec.components(news).should == {
       scheme: "news",
       userinfo: nil,
@@ -176,7 +176,7 @@ describe "URI.parse" do
 
     # telnet
     telnet = URI.parse('telnet://melvyl.ucop.edu/')
-    telnet.should be_kind_of(URI::Generic)
+    telnet.should.is_a?(URI::Generic)
     URISpec.components(telnet).should == {
       scheme: "telnet",
       userinfo: nil,
@@ -191,9 +191,9 @@ describe "URI.parse" do
 
     # files
     file_l = URI.parse('file:///foo/bar.txt')
-    file_l.should be_kind_of(URI::Generic)
+    file_l.should.is_a?(URI::Generic)
     file = URI.parse('file:/foo/bar.txt')
-    file.should be_kind_of(URI::Generic)
+    file.should.is_a?(URI::Generic)
   end
 
   it "doesn't raise errors on URIs which has underscore in reg_name" do

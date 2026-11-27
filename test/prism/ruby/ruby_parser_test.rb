@@ -13,7 +13,7 @@ rescue LoadError
   return
 end
 
-module Prism
+module Ruby::Prism
   class RubyParserTest < TestCase
     todos = [
       "character_literal.txt",
@@ -37,6 +37,14 @@ module Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "endless_method_not.txt",
+      "endless_method_rescue_modifier.txt",
+      # A class body inside a loop condition can contain a do block.
+      "class_in_loop_condition.txt",
+      # A numbered parameter in a block passed to a call named _1.
+      "numbered_parameter_calls.txt",
+      "heredoc_dedent_line_continuation.txt",
+      "heredoc_percent_newline_delimiter.txt",
       "heredoc_percent_q_newline_delimiter.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
@@ -45,7 +53,9 @@ module Prism
       "multi_write.txt",
       "not.txt",
       "patterns.txt",
+      "percent_array_newline_delimiter.txt",
       "regex.txt",
+      "regex_escaped_crlf.txt",
       "seattlerb/and_multi.txt",
       "seattlerb/heredoc__backslash_dos_format.txt",
       "seattlerb/heredoc_bad_hex_escape.txt",
@@ -57,9 +67,12 @@ module Prism
       "spanning_heredoc_newlines.txt",
       "spanning_heredoc.txt",
       "symbols.txt",
+      "ternary_operator_non_ascii.txt",
       "tilde_heredocs.txt",
       "unary_method_calls.txt",
       "unparser/corpus/literal/literal.txt",
+      "unparser/corpus/literal/block.txt",
+      "unparser/corpus/literal/since/27.txt",
       "while.txt",
       "whitequark/cond_eflipflop.txt",
       "whitequark/cond_iflipflop.txt",
@@ -73,28 +86,42 @@ module Prism
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
       "whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt",
       "whitequark/pattern_matching_single_line.txt",
+      "whitequark/numbered_args_after_27.txt",
       "whitequark/ruby_bug_11989.txt",
+      "whitequark/ruby_bug_15789.txt",
       "whitequark/ruby_bug_18878.txt",
       "whitequark/ruby_bug_19281.txt",
       "whitequark/slash_newline_in_heredocs.txt",
 
       "3.3-3.3/block_args_in_array_assignment.txt",
+      "3.3-3.3/it.txt",
+      "3.3-3.3/it_indirect_writes.txt",
+      "3.3-3.3/it_read_and_assignment.txt",
       "3.3-3.3/it_with_ordinary_parameter.txt",
       "3.3-3.3/keyword_args_in_array_assignment.txt",
       "3.3-3.3/return_in_sclass.txt",
 
-      "3.4/circular_parameters.txt",
-
-      "4.0/endless_methods_command_call.txt",
-      "4.0/leading_logical.txt",
+      "3.3-4.0/void_value.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
     ]
 
-    Fixture.each(except: failures) do |fixture|
+    Fixture.each_for_version(version: "3.3", except: failures) do |fixture|
       define_method(fixture.test_name) do
         assert_ruby_parser(fixture, todos.include?(fixture.path))
+      end
+    end
+
+    def test_comments_with_multibyte_characters
+      [
+        "# ああああああ\ndef x; end\n",
+        "# あああああああ\ndef x; end\n",
+        "# é\n# 日本語\n\n# ü\ndef x; end\n"
+      ].each do |source|
+        expected = ::RubyParser.new.parse(source)
+        actual = Ruby::Prism::Translation::RubyParser.new.parse(source)
+        assert_comments(expected, actual)
       end
     end
 
@@ -103,7 +130,7 @@ module Prism
     def assert_ruby_parser(fixture, allowed_failure)
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
-      actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      actual = Ruby::Prism::Translation::RubyParser.new.parse(source, fixture.path)
       on_failure = -> { message(expected, actual) }
 
       if !allowed_failure
@@ -112,9 +139,19 @@ module Prism
         unless actual.nil?
           assert_equal(expected.line, actual.line, on_failure)
           assert_equal(expected.file, actual.file, on_failure)
+          assert_comments(expected, actual)
         end
       elsif expected == actual && expected.line && actual.line && expected.file == actual.file
         puts "#{name} now passes"
+      end
+    end
+
+    def assert_comments(expected, actual)
+      assert_equal(expected.comments, actual.comments, "comments mismatch on #{expected.inspect}")
+
+      expected.each_with_index do |child, index|
+        next unless child.is_a?(Sexp) && actual[index].is_a?(Sexp)
+        assert_comments(child, actual[index])
       end
     end
 

@@ -1,7 +1,24 @@
-use crate::asm::CodeBlock;
+use crate::{asm::CodeBlock, options::DumpDisasm, virtualmem::CodePtr};
 
-pub const BOLD_BEGIN: &str = "\x1b[1m";
-pub const BOLD_END: &str = "\x1b[22m";
+/// Dump disassembly for a range in a [CodeBlock].
+pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
+    let disasm = disasm_addr_range(cb, start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
+    if disasm.is_empty() {
+        return;
+    }
+
+    match dump_disasm {
+        DumpDisasm::Stdout => println!("{disasm}"),
+        DumpDisasm::File(fd) => {
+            use std::io::Write;
+            use std::os::unix::io::{FromRawFd, IntoRawFd};
+
+            let mut file = unsafe { std::fs::File::from_raw_fd(*fd) };
+            file.write_all(disasm.as_bytes()).unwrap();
+            let _ = file.into_raw_fd();
+        }
+    }
+}
 
 pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     use std::fmt::Write;
@@ -36,12 +53,16 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
+    let colors = crate::ttycolors::get_colors();
+    let bold_begin = colors.bold_begin;
+    let bold_end = colors.bold_end;
+
     // For each instruction in this block
     for insn in insns.as_ref() {
         // Comments for this block
         if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
             for comment in comment_list {
-                writeln!(&mut out, "  {BOLD_BEGIN}# {comment}{BOLD_END}").unwrap();
+                writeln!(&mut out, "  {bold_begin}# {comment}{bold_end}").unwrap();
             }
         }
         writeln!(&mut out, "  {}", format!("{insn}").trim()).unwrap();

@@ -88,7 +88,6 @@
 #define FL_USER19       RBIMPL_CAST((VALUE)(unsigned int)RUBY_FL_USER19) /**< @old{RUBY_FL_USER19} */
 
 #define ELTS_SHARED          RUBY_ELTS_SHARED     /**< @old{RUBY_ELTS_SHARED} */
-#define RB_OBJ_FREEZE        rb_obj_freeze_inline /**< @alias{rb_obj_freeze_inline} */
 
 /** @cond INTERNAL_MACRO */
 #define RUBY_ELTS_SHARED     RUBY_ELTS_SHARED
@@ -105,11 +104,10 @@
 #define RB_FL_TEST_RAW       RB_FL_TEST_RAW
 #define RB_FL_UNSET          RB_FL_UNSET
 #define RB_FL_UNSET_RAW      RB_FL_UNSET_RAW
+#define RB_OBJ_FREEZE        RB_OBJ_FREEZE
 #define RB_OBJ_FREEZE_RAW    RB_OBJ_FREEZE_RAW
 #define RB_OBJ_FROZEN        RB_OBJ_FROZEN
 #define RB_OBJ_FROZEN_RAW    RB_OBJ_FROZEN_RAW
-#define RB_OBJ_UNTRUST       RB_OBJ_TAINT
-#define RB_OBJ_UNTRUSTED     RB_OBJ_TAINTED
 /** @endcond */
 
 /**
@@ -134,15 +132,6 @@
 #define OBJ_FREEZE_RAW  RB_OBJ_FREEZE_RAW  /**< @old{RB_OBJ_FREEZE_RAW} */
 #define OBJ_FROZEN      RB_OBJ_FROZEN      /**< @old{RB_OBJ_FROZEN} */
 #define OBJ_FROZEN_RAW  RB_OBJ_FROZEN_RAW  /**< @old{RB_OBJ_FROZEN_RAW} */
-#define OBJ_INFECT      RB_OBJ_INFECT      /**< @old{RB_OBJ_INFECT} */
-#define OBJ_INFECT_RAW  RB_OBJ_INFECT_RAW  /**< @old{RB_OBJ_INFECT_RAW} */
-#define OBJ_TAINT       RB_OBJ_TAINT       /**< @old{RB_OBJ_TAINT} */
-#define OBJ_TAINTABLE   RB_OBJ_TAINTABLE   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_TAINTED     RB_OBJ_TAINTED     /**< @old{RB_OBJ_TAINTED} */
-#define OBJ_TAINTED_RAW RB_OBJ_TAINTED_RAW /**< @old{RB_OBJ_TAINTED_RAW} */
-#define OBJ_TAINT_RAW   RB_OBJ_TAINT_RAW   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_UNTRUST     RB_OBJ_UNTRUST     /**< @old{RB_OBJ_TAINT} */
-#define OBJ_UNTRUSTED   RB_OBJ_UNTRUSTED   /**< @old{RB_OBJ_TAINTED} */
 /** @} */
 
 /**
@@ -216,11 +205,11 @@ ruby_fl_type {
     RUBY_FL_PROMOTED    = (1<<5),
 
     /**
-     * This flag meaning is type dependent, currently only used by T_DATA.
+     * This flag is no longer in use
      *
      * @internal
      */
-    RUBY_FL_USERPRIV0    = (1<<6),
+    RUBY_FL_UNUSED6      = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
@@ -366,6 +355,8 @@ ruby_fl_type {
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
+
+RBIMPL_ATTR_DEPRECATED_EXT(("only for internal use"))
 /**
  * This is an  implementation detail of #RB_OBJ_FREEZE().  People  don't use it
  * directly.
@@ -374,6 +365,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @post        `klass` gets frozen.
  */
 void rb_freeze_singleton_class(VALUE klass);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -752,6 +744,18 @@ static inline void
 RB_OBJ_FREEZE_RAW(VALUE obj)
 {
     rb_obj_freeze_inline(obj);
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Freeze the given object if it is not frozen yet.
+ *
+ * @param[out]  obj  Object in question.
+ */
+static inline void
+RB_OBJ_FREEZE(VALUE obj)
+{
+    if (!RB_OBJ_FROZEN(obj)) RB_OBJ_FREEZE_RAW(obj);
 }
 
 #endif /* RBIMPL_FL_TYPE_H */

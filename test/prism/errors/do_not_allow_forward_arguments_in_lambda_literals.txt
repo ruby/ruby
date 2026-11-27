@@ -1,3 +1,13 @@
 ->(...) {}
-   ^~~ unexpected ... when the parent method is not forwarding
+   ^~~ unexpected ... in lambda argument
+
+def foo(...)
+  ->(...) {}
+     ^~~ unexpected ... in lambda argument
+end
+
+def foo
+  ->(...) {}
+     ^~~ unexpected ... in lambda argument
+end
 

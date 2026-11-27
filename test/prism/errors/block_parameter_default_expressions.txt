@@ -1,0 +1,17 @@
+m { |x = def f = 1| x }
+         ^~~~~~~ unexpected endless method definition; expected a default value for a parameter
+                     ^ expected the block parameters to end with `|`
+
+m { |x: def f = 1| x }
+        ^~~~~~~ unexpected endless method definition; expected a default value for a parameter
+                    ^ expected the block parameters to end with `|`
+
+m { |x = -2**2| x }
+           ^~ unexpected exponentiation; expected a default value for a parameter
+
+m { |x: -2**2| x }
+          ^~ unexpected exponentiation; expected a default value for a parameter
+
+m { |x = begin; rescue => defined? v; end| x }
+                          ^~~~~~~~~~ unexpected write target
+

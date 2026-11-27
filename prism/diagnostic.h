@@ -1,0 +1,121 @@
+/**
+ * @file diagnostic.h
+ *
+ * A list of diagnostics generated during parsing.
+ */
+#ifndef PRISM_DIAGNOSTIC_H
+#define PRISM_DIAGNOSTIC_H
+
+#include "prism/compiler/exported.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
+
+#include "prism/ast.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * An opaque pointer to a diagnostic generated during parsing.
+ */
+typedef struct pm_diagnostic_t pm_diagnostic_t;
+
+/**
+ * The levels of errors generated during parsing.
+ */
+typedef enum {
+    /** For errors that should raise a syntax error. */
+    PM_ERROR_LEVEL_SYNTAX = 0,
+
+    /** For errors that should raise an argument error. */
+    PM_ERROR_LEVEL_ARGUMENT = 1,
+
+    /** For errors that should raise a load error. */
+    PM_ERROR_LEVEL_LOAD = 2,
+
+    /**
+     * For errors that should raise a system stack error. These mean that the
+     * parser ran out of the stack it was given, not that the source is
+     * invalid, so the same source may parse with more stack.
+     */
+    PM_ERROR_LEVEL_STACK = 3,
+
+    /** For errors that should raise an encoding compatibility error. */
+    PM_ERROR_LEVEL_ENCODING_COMPATIBILITY = 4
+} pm_error_level_t;
+
+/**
+ * The levels of warnings generated during parsing.
+ */
+typedef enum {
+    /** For warnings which should be emitted if $VERBOSE != nil. */
+    PM_WARNING_LEVEL_DEFAULT = 0,
+
+    /** For warnings which should be emitted if $VERBOSE == true. */
+    PM_WARNING_LEVEL_VERBOSE = 1
+} pm_warning_level_t;
+
+/**
+ * Get the type of the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the type of.
+ * @returns The type of the given diagnostic. Note that this is a string
+ *     representation of an internal ID, and is not meant to be relied upon as a
+ *     stable identifier for the diagnostic. We do not guarantee that these will
+ *     not change in the future. This is meant to be used for debugging and
+ *     error reporting purposes, and not for programmatic checks.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_type(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the location of the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the location of.
+ * @returns The location of the given diagnostic.
+ */
+PRISM_EXPORTED_FUNCTION pm_location_t pm_diagnostic_location(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the message of the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the message of.
+ * @returns The message of the given diagnostic.
+ */
+PRISM_EXPORTED_FUNCTION const char * pm_diagnostic_message(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the error level associated with the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the error level of.
+ * @returns The error level of the given diagnostic. If the diagnostic was a
+ *     warning, or is in any way not an error, then the return value is
+ *     undefined and should not be relied upon.
+ */
+PRISM_EXPORTED_FUNCTION pm_error_level_t pm_diagnostic_error_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the warning level associated with the given diagnostic.
+ *
+ * @param diagnostic The diagnostic to get the warning level of.
+ * @returns The warning level of the given diagnostic. If the diagnostic was an
+ *     error, or is in any way not a warning, then the return value is
+ *     undefined and should not be relied upon.
+ */
+PRISM_EXPORTED_FUNCTION pm_warning_level_t pm_diagnostic_warning_level(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+/**
+ * Get the diagnostic that follows the given diagnostic among the errors or the
+ * warnings of the parser that produced it.
+ *
+ * @param diagnostic The diagnostic to get the successor of.
+ * @returns The next diagnostic of the same kind, or NULL if the given
+ *     diagnostic is the last one.
+ */
+PRISM_EXPORTED_FUNCTION const pm_diagnostic_t * pm_diagnostic_next(const pm_diagnostic_t *diagnostic) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -1,6 +1,11 @@
 require_relative "../../spec_helper"
-require_relative 'shared/abs'
 
 describe "Rational#abs" do
-  it_behaves_like :rational_abs, :abs
+  it "returns self's absolute value" do
+    Rational(3, 4).abs.should == Rational(3, 4)
+    Rational(-3, 4).abs.should == Rational(3, 4)
+    Rational(3, -4).abs.should == Rational(3, 4)
+
+    Rational(bignum_value, -bignum_value).abs.should == Rational(bignum_value, bignum_value)
+  end
 end

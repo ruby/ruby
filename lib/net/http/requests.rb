@@ -19,9 +19,9 @@
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -52,9 +52,9 @@ end
 #
 # - Request body: optional.
 # - Response body: no.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -87,9 +87,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: no.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: no.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
 #
 # Related:
 #
@@ -123,9 +123,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -157,9 +157,9 @@ end
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -189,9 +189,9 @@ end
 #
 # - Request body: optional.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -221,9 +221,9 @@ end
 #
 # - Request body: no.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: yes.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -256,9 +256,9 @@ end
 #
 # - Request body: yes.
 # - Response body: yes.
-# - {Safe}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Safe_methods]: no.
-# - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: no.
-# - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: no.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: no.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: no.
 #
 # Related:
 #
@@ -267,6 +267,41 @@ end
 class Net::HTTP::Patch < Net::HTTPRequest
   # :stopdoc:
   METHOD = 'PATCH'
+  REQUEST_HAS_BODY = true
+  RESPONSE_HAS_BODY = true
+end
+
+# \Class for representing
+# {HTTP method QUERY}[https://www.rfc-editor.org/rfc/rfc10008.html]:
+#
+#   require 'net/http'
+#   uri = URI('http://example.com')
+#   hostname = uri.hostname # => "example.com"
+#   uri.path = '/posts'
+#   req = Net::HTTP::Query.new(uri) # => #<Net::HTTP::Query QUERY>
+#   req.body = '{"title": "foo","body": "bar","userId": 1}'
+#   req.content_type = 'application/json'
+#   res = Net::HTTP.start(hostname) do |http|
+#     http.request(req)
+#   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
+# Properties:
+#
+# - Request body: yes.
+# - Response body: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
+#
+# Related:
+#
+# - Net::HTTP#query: sends +QUERY+ request, returns response object.
+#
+class Net::HTTP::Query < Net::HTTPRequest
+  # :stopdoc:
+  METHOD = 'QUERY'
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
 end

@@ -13,14 +13,48 @@ describe 'String#+@' do
     output.should == 'foobar'
   end
 
-  it 'returns self if the String is not frozen' do
-    input  = 'foo'
+  it 'returns a mutable String itself' do
+    input = String.new("foo")
     output = +input
 
-    output.equal?(input).should == true
+    output.should.equal?(input)
+
+    input << "bar"
+    output.should == "foobar"
   end
 
-  it 'returns mutable copy despite freeze-magic-comment in file' do
-    ruby_exe(fixture(__FILE__, "freeze_magic_comment.rb")).should == 'mutable'
+  context 'if file has "frozen_string_literal: true" magic comment' do
+    it 'returns mutable copy of a literal' do
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment.rb")).should == 'mutable'
+    end
+  end
+
+  context 'if file has "frozen_string_literal: false" magic comment' do
+    it 'returns literal string itself' do
+      input  = 'foo'
+      output = +input
+
+      output.equal?(input).should == true
+    end
+  end
+
+  context 'if file has no frozen_string_literal magic comment' do
+    ruby_version_is ''...'3.4' do
+      it 'returns literal string itself' do
+        eval(<<~RUBY).should == true
+          s = "foo"
+          s.equal?(+s)
+        RUBY
+      end
+    end
+
+    ruby_version_is '3.4' do
+      it 'returns mutable copy of a literal' do
+        eval(<<~RUBY).should == false
+          s = "foo"
+          s.equal?(+s)
+        RUBY
+      end
+    end
   end
 end

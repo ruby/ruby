@@ -321,6 +321,12 @@ pub fn brk(cb: &mut CodeBlock, imm16: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// UDF - permanently undefined instruction
+pub fn udf(cb: &mut CodeBlock, imm16: u16) {
+    let bytes: [u8; 4] = Udf::udf(imm16).into();
+    cb.write_bytes(&bytes);
+}
+
 /// CMP - compare rn and rm, update flags
 pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rn, rm) {
@@ -383,6 +389,22 @@ pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             LogicalImm::eor(rd.reg_no, rn.reg_no, bitmask_imm, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to eor instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STADD - atomically add rs to the value at [rn], discarding the old value, with
+/// no ordering constraints (relaxed). Requires FEAT_LSE. This is an alias of
+/// LDADD with the zero register as the destination.
+pub fn stadd(cb: &mut CodeBlock, rs: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rs, rn) {
+        (A64Opnd::Reg(rs), A64Opnd::Reg(rn)) => {
+            assert!(rs.num_bits == rn.num_bits, "All operands must be of the same size.");
+
+            Atomic::ldadd(rs.reg_no, XZR_REG.reg_no, rn.reg_no, rs.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stadd instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -625,11 +647,44 @@ pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDURSB - load a byte from memory, sign-extend it, and write it to a register
+pub fn ldursb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rn.num_bits, 8, "Expected the memory operand to be 8 bits");
+            assert_eq!(rt.num_bits, 64, "Expected the destination register to be 64 bits");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldursb(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldursb instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDURSH - load a halfword from memory, sign-extend it, and write it to a register
+pub fn ldursh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rn.num_bits, 16, "Expected the memory operand to be 16 bits");
+            assert_eq!(rt.num_bits, 64, "Expected the destination register to be 64 bits");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldursh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldursh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDURSW - load a 32-bit memory address into a register and sign-extend it
 pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
-            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert_eq!(rn.num_bits, 32, "Expected the memory operand to be 32 bits");
+            assert_eq!(rt.num_bits, 64, "Expected the destination register to be 64 bits");
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::ldursw(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
@@ -880,12 +935,15 @@ pub fn stlxr(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
 }
 
 /// STP (signed offset) - store a pair of registers to memory
+///
+/// Unlike LDP, STP with the same source register twice is well-defined
+/// (e.g. `stp xzr, xzr` is a common way to zero 16 bytes), so the pair is
+/// not asserted to be distinct.
 pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
-            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::stp(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -896,12 +954,15 @@ pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
 }
 
 /// STP (pre-index) - store a pair of registers to memory, update the base pointer before loading it
+///
+/// Unlike LDP, STP with the same source register twice is well-defined; see [stp].
 pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
-            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
+            assert!( !(rn.base_reg_no != 31 && (rn.base_reg_no == rt1.reg_no || rn.base_reg_no == rt2.reg_no)),
+                "Behavior is unpredictable when storing and writing back to the same register ({})", rn.base_reg_no);
 
             RegisterPair::stp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -912,12 +973,15 @@ pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
 }
 
 /// STP (post-index) - store a pair of registers to memory, update the base pointer after loading it
+///
+/// Unlike LDP, STP with the same source register twice is well-defined; see [stp].
 pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
-            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
+            assert!( !(rn.base_reg_no != 31 && (rn.base_reg_no == rt1.reg_no || rn.base_reg_no == rt2.reg_no)),
+                "Behavior is unpredictable when storing and writing back to the same register ({})", rn.base_reg_no);
 
             RegisterPair::stp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -1108,6 +1172,21 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// SXTH - sign extend the lowest halfword of a register into a register
+pub fn sxth(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert_eq!(rd.num_bits, 64, "rd must be 64-bits wide.");
+            assert_eq!(rn.num_bits, 32, "rn must be 32-bits wide.");
+
+            SBFM::sxth(rd.reg_no, rn.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to sxth instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// SXTW - sign extend a 32-bit register into a 64-bit register
 pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn) {
@@ -1118,6 +1197,34 @@ pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
             SBFM::sxtw(rd.reg_no, rn.reg_no).into()
         },
         _ => panic!("Invalid operand combination to sxtw instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// REV - reverse the bytes of a register
+pub fn rev(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+
+            Rev::rev(rd.reg_no, rn.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to rev instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// REV16 - reverse the bytes within each halfword of a register
+pub fn rev16(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+
+            Rev::rev16(rd.reg_no, rn.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to rev16 instruction")
     };
 
     cb.write_bytes(&bytes);
@@ -1447,7 +1554,7 @@ mod tests {
             cbz(cb, X0, offset);
             cbz(cb, W0, offset);
         });
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: cbz x0, #0xfffffffffffffffc
         0x4: cbz w0, #0
         ");
@@ -1461,7 +1568,7 @@ mod tests {
             cbnz(cb, X20, offset);
             cbnz(cb, W20, offset);
         });
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: cbnz x20, #8
         0x4: cbnz w20, #0xc
         ");
@@ -1522,6 +1629,13 @@ mod tests {
         let cb = compile(|cb| eor(cb, W9, W1, A64Opnd::new_uimm(0x80000001)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: eor w9, w1, #0x80000001");
         assert_snapshot!(cb.hexdump(), @"29040152");
+    }
+
+    #[test]
+    fn test_stadd() {
+        let cb = compile(|cb| stadd(cb, X10, X12));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: stadd x10, [x12]");
+        assert_snapshot!(cb.hexdump(), @"9f012af8");
     }
 
     #[test]
@@ -1614,7 +1728,7 @@ mod tests {
             ldurh(cb, W10, A64Opnd::new_mem(64, X1, 0));
             ldurh(cb, W10, A64Opnd::new_mem(64, X1, 123));
         });
-        assert_disasm_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @"
         0x0: ldurh w10, [x1]
         0x4: ldurh w10, [x1, #0x7b]
         ");
@@ -1636,8 +1750,22 @@ mod tests {
     }
 
     #[test]
+    fn test_ldursb() {
+        let cb = compile(|cb| ldursb(cb, X10, A64Opnd::new_mem(8, X11, 123)));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursb x10, [x11, #0x7b]");
+        assert_snapshot!(cb.hexdump(), @"6ab18738");
+    }
+
+    #[test]
+    fn test_ldursh() {
+        let cb = compile(|cb| ldursh(cb, X10, A64Opnd::new_mem(16, X11, 123)));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursh x10, [x11, #0x7b]");
+        assert_snapshot!(cb.hexdump(), @"6ab18778");
+    }
+
+    #[test]
     fn test_ldursw() {
-        let cb = compile(|cb| ldursw(cb, X10, A64Opnd::new_mem(64, X11, 123)));
+        let cb = compile(|cb| ldursw(cb, X10, A64Opnd::new_mem(32, X11, 123)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ldursw x10, [x11, #0x7b]");
         assert_snapshot!(cb.hexdump(), @"6ab187b8");
     }
@@ -1666,7 +1794,7 @@ mod tests {
     #[test]
     fn test_mov_immediate() {
         let cb = compile(|cb| mov(cb, X10, A64Opnd::new_uimm(0x5555555555555555)));
-        assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr x10, xzr, #0x5555555555555555");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: mov x10, #0x5555555555555555");
         assert_snapshot!(cb.hexdump(), @"eaf300b2");
     }
 
@@ -1775,6 +1903,27 @@ mod tests {
     }
 
     #[test]
+    fn test_rev() {
+        let cb = compile(|cb| rev(cb, X10, X11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev x10, x11");
+        assert_snapshot!(cb.hexdump(), @"6a0dc0da");
+    }
+
+    #[test]
+    fn test_rev_32b() {
+        let cb = compile(|cb| rev(cb, W10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev w10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a09c05a");
+    }
+
+    #[test]
+    fn test_rev16() {
+        let cb = compile(|cb| rev16(cb, W10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev16 w10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a05c05a");
+    }
+
+    #[test]
     fn test_ret_none() {
         let cb = compile(|cb| ret(cb, A64Opnd::None));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: ret");
@@ -1814,6 +1963,26 @@ mod tests {
         let cb = compile(|cb| stp_post(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp x10, x11, [x12], #0xd0");
         assert_snapshot!(cb.hexdump(), @"8a2d8da8");
+    }
+
+    #[test]
+    fn test_stp_pre_same_reg() {
+        // Unlike LDP, storing the same register twice is well-defined.
+        let cb = compile(|cb| stp_pre(cb, X31, X31, A64Opnd::new_mem(64, X31, -16)));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp xzr, xzr, [sp, #-0x10]!");
+        assert_snapshot!(cb.hexdump(), @"ff7fbfa9");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_stp_pre_write_back_to_source() {
+        compile(|cb| stp_pre(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_stp_post_write_back_to_source() {
+        compile(|cb| stp_post(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
     }
 
     #[test]
@@ -1919,6 +2088,13 @@ mod tests {
         let cb = compile(|cb| subs(cb, X0, X1, A64Opnd::new_uimm(7)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: subs x0, x1, #7");
         assert_snapshot!(cb.hexdump(), @"201c00f1");
+    }
+
+    #[test]
+    fn test_sxth() {
+        let cb = compile(|cb| sxth(cb, X10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sxth x10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a3d4093");
     }
 
     #[test]

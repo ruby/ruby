@@ -13,6 +13,6 @@ describe "Matrix::LUPDecomposition#p" do
   end
 
   it "returns a permutation matrix" do
-    @p.permutation?.should be_true
+    @p.permutation?.should == true
   end
 end

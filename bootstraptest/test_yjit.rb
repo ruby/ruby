@@ -2483,6 +2483,32 @@ assert_equal '[0, 2]', %q{
   B.new.foo
 }
 
+# invokesuper in a weird block
+assert_equal '["block->A#itself", "block->singleton#itself"]', %q{
+  # This test runs the same block as first as a block and then as a method,
+  # testing the routine that finds the currently running method, which is
+  # relevant for `super`.
+  class BlockIseqDuality
+    prepend(Module.new do
+      def itself
+        nested = -> { "block->" + super() }
+        @singleton_itself.define_singleton_method(:itself, &nested)
+        nested
+      end
+    end)
+
+    attr_reader :singleton_itself
+    def initialize = (@singleton_itself = "singleton#itself")
+
+    def itself = "A#itself"
+  end
+
+  tester = BlockIseqDuality.new
+  super_lambda = tester.itself
+  super_lambda.call # warmup
+  [super_lambda.call, tester.singleton_itself.itself]
+}
+
 # invokesuper zsuper in a bmethod
 assert_equal 'ok', %q{
   class Foo
@@ -3757,6 +3783,128 @@ assert_equal 'ok', %q{
   foo(s) rescue :ok
 }
 
+# struct aset returns the assigned value
+assert_equal '42', %q{
+  def foo(s)
+    x = (s.foo = 42)
+    x
+  end
+
+  S = Struct.new(:foo)
+  foo(S.new)
+  foo(S.new)
+}
+
+# struct aset on a frozen struct raises FrozenError (embedded)
+assert_equal 'ok', %q{
+  def foo(s)
+    s.foo = 123
+  end
+
+  S = Struct.new(:foo)
+  foo(S.new(1)) # compile the inline store on a non-frozen receiver
+  foo(S.new(2))
+  frozen = S.new(3).freeze
+  begin
+    foo(frozen)
+    :bad
+  rescue FrozenError
+    :ok
+  end
+}
+
+# struct aset on a frozen struct raises FrozenError (non-embedded)
+assert_equal 'ok', %q{
+  def foo(s)
+    s.m1 = 1
+  end
+
+  max_alloc_size, rbasic_size, rvalue_overhead = GC::INTERNAL_CONSTANTS.fetch_values(
+        :RVARGC_MAX_ALLOCATE_SIZE,
+        :RBASIC_SIZE,
+        :RVALUE_OVERHEAD
+      ) { skip(:ok) }
+  max_embedded_members = (max_alloc_size - rbasic_size - rvalue_overhead) / 8
+  S = Struct.new(*(1..(max_embedded_members + 1)).map { |i| :"m#{i}" })
+  foo(S.new) # compile the inline store on a non-frozen receiver
+  foo(S.new)
+  frozen = S.new.freeze
+  begin
+    foo(frozen)
+    :bad
+  rescue FrozenError
+    :ok
+  end
+}
+
+# struct aset writing nil and false skips the write barrier
+assert_equal '[nil, false, true]', %q{
+  def foo(s)
+    s.a = nil
+    s.b = false
+    s.c = true
+  end
+
+  S = Struct.new(:a, :b, :c)
+  s = S.new(1, 2, 3)
+  foo(s)
+  s = S.new(1, 2, 3)
+  foo(s)
+  [s.a, s.b, s.c]
+}
+
+# struct aset writing heap objects exercises the write barrier and survives GC (embedded)
+assert_equal '["foo", [1, 2], {k: :v}, "bar", "baz"]', %q{
+  def foo(s, a, b, c, d, e)
+    s.m1 = a
+    s.m2 = b
+    s.m3 = c
+    s.m4 = d
+    s.m5 = e
+  end
+
+  S = Struct.new(*(1..5).map { |i| :"m#{i}" })
+  s = S.new
+  foo(s, "f", [], {}, "b", "z") # compile
+  GC.start
+  GC.start # promote s to the old generation
+  foo(s, "fo" + "o", [1, 2], { k: :v }, "ba" + "r", "ba" + "z")
+  GC.start # a missing write barrier would lose the young objects here
+  [s.m1, s.m2, s.m3, s.m4, s.m5]
+}
+
+# struct aset via .send (VM_CALL_OPT_SEND)
+assert_equal '7', %q{
+  def foo(s)
+    s.send(:foo=, 7)
+  end
+
+  S = Struct.new(:foo)
+  s = S.new
+  foo(s)
+  s = S.new
+  foo(s)
+  s.foo
+}
+
+# struct aset via .send on a frozen struct still raises FrozenError
+assert_equal 'ok', %q{
+  def foo(s)
+    s.send(:foo=, 7)
+  end
+
+  S = Struct.new(:foo)
+  foo(S.new) # compile the .send path on a non-frozen receiver
+  foo(S.new)
+  frozen = S.new(1).freeze
+  begin
+    foo(frozen)
+    :bad
+  rescue FrozenError
+    :ok
+  end
+}
+
 # File.join is a cfunc accepting variable arguments as a Ruby array (argc = -2)
 assert_equal 'foo/bar', %q{
   def foo
@@ -3952,6 +4100,18 @@ assert_equal 'foo', %q{
     block.call
   end
   foo { "foo" }
+}
+
+# getblockparamproxy in a non-main Ractor, guarding on the proxy's singleton class
+assert_equal 'ok', %q{
+  def instrument(&block)
+    tap { block&.call(1) }
+  end
+
+  Ractor.new do
+    1_000.times { instrument { it + 1 } }
+    :ok
+  end.value
 }
 
 # getblockparam
@@ -4605,6 +4765,25 @@ assert_equal '[2, 4611686018427387904]', %q{
 # Integer pred and overflow
 assert_equal '[0, -4611686018427387905]', %q{
   [1.pred, -4611686018427387904.pred]
+}
+
+# Integer results just out of the Fixnum range where long is 32-bit
+assert_equal '[true, true, true, true, true, true]', %q{
+  def plus(a) = a + 1
+  def minus(a) = a - 1
+  def mult(a) = a * a
+  def succ(a) = a.succ
+  def pred(a) = a.pred
+  def lshift(a) = a << 30
+
+  [
+    plus(1073741823) == 1073741824,
+    minus(-1073741824) == -1073741825,
+    mult(32768) == 1073741824,
+    succ(1073741823) == 1073741824,
+    pred(-1073741824) == -1073741825,
+    lshift(1) == 1073741824,
+  ]
 }
 
 # Integer right shift
@@ -5459,4 +5638,73 @@ assert_normal_exit %q{
   def test = foo(1)
   test
   test
+}
+
+# regression test for tracing invalidation with on-stack compiled methods
+# Exercises the on_stack_iseqs path in rb_yjit_tracing_invalidate_all
+# where delayed deallocation must not create aliasing &mut references
+# to IseqPayload (use-after-free of version_map backing storage).
+assert_normal_exit %q{
+  def deep = 42
+  def mid = deep
+  def outer = mid
+
+  # Compile all three methods with YJIT
+  10.times { outer }
+
+  # Enable tracing from within a call chain so that outer/mid/deep
+  # are on the stack when rb_yjit_tracing_invalidate_all runs.
+  # This triggers the on_stack_iseqs (delayed deallocation) path.
+  def deep
+    TracePoint.new(:line) {}.enable
+    42
+  end
+
+  outer
+
+  # After invalidation, verify YJIT can recompile and run correctly
+  def deep = 42
+  10.times { outer }
+}
+
+# regression test for tracing invalidation with on-stack fibers
+# Suspended fibers have iseqs on their stack that must survive invalidation.
+assert_equal '42', %q{
+  def compiled_method
+    Fiber.yield
+    42
+  end
+
+  # Compile the method
+  10.times { compiled_method rescue nil }
+
+  fiber = Fiber.new { compiled_method }
+  fiber.resume # suspends inside compiled_method — it's now on the fiber's stack
+
+  # Enable tracing while compiled_method is on the fiber's stack.
+  # This triggers rb_yjit_tracing_invalidate_all with on-stack iseqs.
+  TracePoint.new(:call) {}.enable
+
+  # Resume the fiber — compiled_method's iseq must still be valid
+  fiber.resume.to_s
+}
+
+# regression test for register mapping of methods with over 256 locals
+# [Bug #22074]
+assert_equal "ok", %q{
+  source = +"def many_locals\n"
+  source << "  total = 0\n"
+
+  128.times do |i|
+    source << "  y#{i} = 1\n"
+    source << "  x#{i} = Object.new\n"
+  end
+
+  source << "  total += 1\n"
+  source << "  raise total.inspect unless total == 1\n"
+  source << "end\n"
+
+  eval(source)
+  many_locals
+  "ok"
 }

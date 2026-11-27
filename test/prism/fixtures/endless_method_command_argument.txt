@@ -1,0 +1,3 @@
+outer def f = g(x) {} rescue a do end, z
+
+case v; in 0; def f = g (x) {} in Integer; end

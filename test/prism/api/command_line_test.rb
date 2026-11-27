@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class CommandLineTest < TestCase
     def test_command_line_p
-      program = Prism.parse("1", command_line: "p").value
+      program = Ruby::Prism.parse("1", command_line: "p").value
       statements = program.statements.body
 
       assert_equal 2, statements.length
@@ -14,7 +14,7 @@ module Prism
     end
 
     def test_command_line_n
-      program = Prism.parse("1", command_line: "n").value
+      program = Ruby::Prism.parse("1", command_line: "n").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -30,7 +30,7 @@ module Prism
     end
 
     def test_command_line_a
-      program = Prism.parse("1", command_line: "na").value
+      program = Ruby::Prism.parse("1", command_line: "na").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -41,8 +41,18 @@ module Prism
       assert_equal :$F, statement.name
     end
 
+    def test_autosplit_location_covers_parsed_statements
+      io = StringIO.new("# comment\n1\n2\n__END__\ndata\n")
+      result = Ruby::Prism.parse_stream(io, command_line: "pna")
+      split = result.statement.statements.body.first.value
+
+      assert_equal :split, split.name
+      assert_equal "1\n2", split.location.slice
+      assert_equal "data\n", io.read
+    end
+
     def test_command_line_l
-      program = Prism.parse("1", command_line: "nl").value
+      program = Ruby::Prism.parse("1", command_line: "nl").value
       statements = program.statements.body
 
       assert_equal 1, statements.length
@@ -62,15 +72,19 @@ module Prism
     end
 
     def test_command_line_e
-      result = Prism.parse("1 if 2..3")
+      result = Ruby::Prism.parse("1 if 2..3")
       assert_equal 2, result.warnings.length
 
-      result = Prism.parse("1 if 2..3", command_line: "e")
+      result = Ruby::Prism.parse("1 if 2..3", command_line: "e")
       assert_equal 0, result.warnings.length
     end
 
+    def test_command_line_rejects_embedded_nul
+      assert_raise(ArgumentError) { Ruby::Prism.parse("1", command_line: "e\0n") }
+    end
+
     def test_command_line_x_implicit
-      result = Prism.parse_statement(<<~RUBY, main_script: true)
+      result = Ruby::Prism.parse_statement(<<~RUBY, main_script: true)
         #!/bin/bash
         exit 1
 
@@ -82,7 +96,7 @@ module Prism
     end
 
     def test_command_line_x_explicit
-      result = Prism.parse_statement(<<~RUBY, command_line: "x")
+      result = Ruby::Prism.parse_statement(<<~RUBY, command_line: "x")
         exit 1
 
         #!/usr/bin/env ruby
@@ -93,7 +107,7 @@ module Prism
     end
 
     def test_command_line_x_implicit_fail
-      result = Prism.parse(<<~RUBY, main_script: true)
+      result = Ruby::Prism.parse(<<~RUBY, main_script: true)
         #!/bin/bash
         exit 1
       RUBY
@@ -102,8 +116,26 @@ module Prism
       assert_equal :load, result.errors.first.level
     end
 
+    def test_bom_before_shebang_in_main_script
+      result = Ruby::Prism.parse("\uFEFF#!ruby\n# encoding: US-ASCII\n1\n", main_script: true)
+
+      assert_predicate result, :success?
+      assert_equal Encoding::UTF_8, result.encoding
+      assert_equal 1, result.statement.value
+    end
+
+    def test_command_line_x_skips_bom_prefixed_shebang
+      source = "\uFEFF#!ruby -w\n1\n"
+      result = Ruby::Prism.parse(source, command_line: "x")
+      assert_equal [:script_not_found], result.errors.map(&:type)
+
+      result = Ruby::Prism.parse(source + "#!ruby\n2\n", command_line: "x")
+      assert_predicate result, :success?
+      assert_equal [2], result.value.statements.body.map(&:value)
+    end
+
     def test_command_line_x_explicit_fail
-      result = Prism.parse(<<~RUBY, command_line: "x")
+      result = Ruby::Prism.parse(<<~RUBY, command_line: "x")
         exit 1
       RUBY
 

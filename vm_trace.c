@@ -92,11 +92,26 @@ static void clean_hooks(rb_hook_list_t *list);
 void
 rb_hook_list_free(rb_hook_list_t *hooks)
 {
+    for (rb_event_hook_t *hook = hooks->hooks; hook; hook = hook->next) {
+        hook->hook_flags |= RUBY_EVENT_HOOK_FLAG_DELETED;
+    }
     hooks->need_clean = true;
 
     if (hooks->running == 0) {
         clean_hooks(hooks);
     }
+}
+
+size_t
+rb_hook_list_memsize(const rb_hook_list_t *hooks)
+{
+    size_t size = 0;
+    const rb_event_hook_t *hook = hooks->hooks;
+    while (hook) {
+        size += sizeof(rb_event_hook_t);
+        hook = hook->next;
+    }
+    return size;
 }
 
 /* ruby_vm_event_flags management */
@@ -129,8 +144,12 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     rb_execution_context_t *ec = rb_current_execution_context(false);
     unsigned int lev;
 
-    // Can't enter VM lock during freeing of ractor hook list on MMTK, where ec == NULL.
-    if (ec) {
+    // Lock only with a current Ractor.  ec is NULL in MMTk's hook-list free; a global
+    // GC's sweep frees dead Ractors' hook lists with GET_RACTOR() == NULL (locking =
+    // NULL deref, and the barrier already excludes); in VM destruct's free-at-exit walk
+    // the thread structs are freed first (GET_RACTOR() = UAF) and it is single-threaded.
+    const bool vm_locked_here = ec && !ruby_vm_during_cleanup && GET_RACTOR() != NULL;
+    if (vm_locked_here) {
         RB_VM_LOCK_ENTER_LEV(&lev);
         rb_vm_barrier();
     }
@@ -146,7 +165,8 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     // as for all ractors. That's not how it works right now, so we shouldn't rely on it apart from the
     // internal events. Since it doesn't work like this, we have to track more state with `ruby_vm_iseq_events_enabled`,
     // `ruby_vm_c_events_enabled`, etc.
-    rb_event_flag_t new_events_global = (ruby_vm_event_flags & ~prev_events) | new_events;
+    rb_event_flag_t prev_events_global = ruby_vm_event_flags;
+    rb_event_flag_t new_events_global = (prev_events_global & ~prev_events) | new_events;
     ruby_vm_event_flags = new_events_global;
 
     // Modify ISEQs or CCs to enable tracing
@@ -166,13 +186,20 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     }
     ruby_vm_iseq_events_enabled += change_iseq_events;
     if (change_c_events < 0) {
-        RUBY_ASSERT(ruby_vm_c_events_enabled >= (unsigned int)(-change_iseq_events));
+        RUBY_ASSERT(ruby_vm_c_events_enabled >= (unsigned int)(-change_c_events));
     }
     ruby_vm_c_events_enabled += change_c_events;
 
     ruby_vm_event_enabled_global_flags |= new_events; // NOTE: this is only ever added to
     if (new_events_global & RUBY_INTERNAL_EVENT_MASK) {
         rb_objspace_set_event_hook(new_events_global);
+    }
+
+    // ZJIT's inline allocation fast path bypasses rb_newobj, so it can't fire the
+    // NEWOBJ internal event. Enabling such a hook invalidates the fast path code so
+    // allocation falls back to the interpreter, which fires the event.
+    if ((new_events_global & RUBY_INTERNAL_EVENT_NEWOBJ) && !(prev_events_global & RUBY_INTERNAL_EVENT_NEWOBJ)) {
+        rb_zjit_invalidate_newobj_hook();
     }
 
     // Invalidate JIT code as needed
@@ -185,7 +212,7 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
         rb_zjit_tracing_invalidate_all();
     }
 
-    if (ec) {
+    if (vm_locked_here) {
         RB_VM_LOCK_LEAVE_LEV(&lev);
     }
 }
@@ -340,7 +367,7 @@ clean_hooks(rb_hook_list_t *list)
                     change_c_events--;
                 }
             }
-            xfree(hook);
+            SIZED_FREE(hook);
         }
         else {
             list->events |= hook->events; /* update active events */
@@ -350,7 +377,7 @@ clean_hooks(rb_hook_list_t *list)
 
     if (hook_list_targeted_p(list)) {
         if (list->events == 0) {
-            ruby_xfree(list);
+            SIZED_FREE(list);
         }
     }
     else {
@@ -497,10 +524,12 @@ exec_hooks_unprotected(const rb_execution_context_t *ec, rb_hook_list_t *list, c
 }
 
 static int
-exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_protected(rb_execution_context_t *ec_arg, rb_hook_list_t *list_arg, const rb_trace_arg_t *trace_arg)
 {
     enum ruby_tag_type state;
     volatile int raised;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_hook_list_t * volatile list = list_arg;
 
     if (exec_hooks_precheck(ec, list, trace_arg) == 0) return 0;
 
@@ -812,7 +841,7 @@ get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
 
     if (cfp) {
-        const rb_iseq_t *iseq = cfp->iseq;
+        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
         *pathp = rb_iseq_path(iseq);
 
         if (event & (RUBY_EVENT_CLASS |
@@ -862,7 +891,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (self && (filename != Qnil) &&
         event != RUBY_EVENT_C_CALL &&
         event != RUBY_EVENT_C_RETURN &&
-        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq))) {
+        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)CFP_ISEQ(ec->cfp), imemo_iseq))) {
         argv[4] = rb_binding_new();
     }
     argv[5] = klass ? klass : Qnil;
@@ -890,22 +919,23 @@ typedef struct rb_tp_struct {
 } rb_tp_t;
 
 static void
-tp_mark(void *ptr)
+tp_mark_and_move(void *ptr)
 {
     rb_tp_t *tp = ptr;
-    rb_gc_mark(tp->proc);
-    rb_gc_mark(tp->local_target_set);
-    if (tp->target_th) rb_gc_mark(tp->target_th->self);
+    rb_gc_mark_and_move(&tp->proc);
+    rb_gc_mark_and_move(&tp->local_target_set);
+    if (tp->target_th) rb_gc_mark_and_move(&tp->target_th->self);
 }
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
     {
-        tp_mark,
+        tp_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // Nothing allocated externally, so don't need a memsize function
+        tp_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -1041,7 +1071,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
             if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK && !VM_FRAME_LAMBDA_P(cfp)) {
                 is_proc = 1;
             }
-            return rb_iseq_parameters(cfp->iseq, is_proc);
+            return rb_iseq_parameters(CFP_ISEQ(cfp), is_proc);
         }
         break;
       }
@@ -1103,7 +1133,7 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     }
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
-    if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
+    if (cfp && imemo_type_p((VALUE)CFP_ISEQ(cfp), imemo_iseq)) {
         return rb_vm_make_binding(trace_arg->ec, cfp);
     }
     else {
@@ -1117,15 +1147,18 @@ rb_tracearg_self(rb_trace_arg_t *trace_arg)
     return trace_arg->self;
 }
 
+static void
+check_event_support(rb_trace_arg_t *trace_arg, rb_event_flag_t supported)
+{
+    if (!(trace_arg->event & supported)) {
+        rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+}
+
 VALUE
 rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_return_value: unreachable");
     }
@@ -1135,12 +1168,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
@@ -1152,14 +1180,9 @@ rb_tracearg_eval_script(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
-    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_SCRIPT_COMPILED);
     if (UNDEF_P(data)) {
-        rb_bug("rb_tracearg_raised_exception: unreachable");
+        rb_bug("rb_tracearg_eval_script: unreachable");
     }
     if (rb_obj_is_iseq(data)) {
         return Qnil;
@@ -1176,14 +1199,9 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
-    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_SCRIPT_COMPILED);
     if (UNDEF_P(data)) {
-        rb_bug("rb_tracearg_raised_exception: unreachable");
+        rb_bug("rb_tracearg_instruction_sequence: unreachable");
     }
 
     if (rb_obj_is_iseq(data)) {
@@ -1201,12 +1219,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_object(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_object: unreachable");
     }
@@ -1357,7 +1370,7 @@ rb_method_def_local_hooks(rb_method_definition_t *def, rb_ractor_t *cr, bool cre
     else if (create) {
         hook_list = ZALLOC(rb_hook_list_t);
         hook_list->type = hook_list_type_targeted_def;
-        st_insert(cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
+        st_insert(&cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
     }
     return hook_list;
 }
@@ -1413,7 +1426,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
             rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
             if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-                iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
+                ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
                 rb_clear_bf_ccs();
             }
 
@@ -1657,8 +1670,8 @@ static VALUE
 tracepoint_new_s(rb_execution_context_t *ec, VALUE self, VALUE args)
 {
     rb_event_flag_t events = 0;
-    long i;
-    long argc = RARRAY_LEN(args);
+    rb_len_t i;
+    rb_len_t argc = RARRAY_LEN(args);
 
     if (argc > 0) {
         for (i=0; i<argc; i++) {
@@ -1796,61 +1809,11 @@ Init_vm_trace(void)
 }
 
 /*
- * Ruby actually has two separate mechanisms for enqueueing work from contexts
- * where it is not safe to run Ruby code, to run later on when it is safe. One
- * is async-signal-safe but more limited, and accessed through the
- * `rb_postponed_job_preregister` and `rb_postponed_job_trigger` functions. The
- * other is more flexible but cannot be used in signal handlers, and is accessed
- * through the `rb_workqueue_register` function.
- *
- * The postponed job functions form part of Ruby's extension API, but the
- * workqueue functions are for internal use only.
+ * Work enqueued from a context where it is not safe to run Ruby code, to run
+ * later on when it is safe.  Registering is async-signal-safe, and is part of
+ * Ruby's extension API: rb_postponed_job_preregister and
+ * rb_postponed_job_trigger.
  */
-
-struct rb_workqueue_job {
-    struct ccan_list_node jnode; /* <=> vm->workqueue */
-    rb_postponed_job_func_t func;
-    void *data;
-};
-
-// Used for VM memsize reporting. Returns the size of a list of rb_workqueue_job
-// structs. Defined here because the struct definition lives here as well.
-size_t
-rb_vm_memsize_workqueue(struct ccan_list_head *workqueue)
-{
-    struct rb_workqueue_job *work = 0;
-    size_t size = 0;
-
-    ccan_list_for_each(workqueue, work, jnode) {
-        size += sizeof(struct rb_workqueue_job);
-    }
-
-    return size;
-}
-
-/*
- * thread-safe and called from non-Ruby thread
- * returns FALSE on failure (ENOMEM), TRUE otherwise
- */
-int
-rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data)
-{
-    struct rb_workqueue_job *wq_job = malloc(sizeof(*wq_job));
-    rb_vm_t *vm = GET_VM();
-
-    if (!wq_job) return FALSE;
-    wq_job->func = func;
-    wq_job->data = data;
-
-    rb_nativethread_lock_lock(&vm->workqueue_lock);
-    ccan_list_add_tail(&vm->workqueue, &wq_job->jnode);
-    rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-    // TODO: current implementation affects only main ractor
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(rb_vm_main_ractor_ec(vm));
-
-    return TRUE;
-}
 
 #define PJOB_TABLE_SIZE              (sizeof(rb_atomic_t) * CHAR_BIT)
 /* pre-registered jobs table, for async-safe jobs */
@@ -1864,16 +1827,7 @@ typedef struct rb_postponed_job_queue {
     rb_atomic_t triggered_bitset;
 } rb_postponed_job_queues_t;
 
-void
-rb_vm_postponed_job_queue_init(rb_vm_t *vm)
-{
-    /* use mimmalloc; postponed job registration is a dependency of objspace, so this gets
-     * called _VERY_ early inside Init_BareVM */
-    rb_postponed_job_queues_t *pjq = ruby_mimmalloc(sizeof(rb_postponed_job_queues_t));
-    pjq->triggered_bitset = 0;
-    memset(pjq->table, 0, sizeof(pjq->table));
-    vm->postponed_job_queue = pjq;
-}
+static rb_postponed_job_queues_t postponed_job_queue;
 
 static rb_execution_context_t *
 get_valid_ec(rb_vm_t *vm)
@@ -1886,23 +1840,16 @@ get_valid_ec(rb_vm_t *vm)
 void
 rb_vm_postponed_job_atfork(void)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_postponed_job_queues_t *pjq = vm->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     /* make sure we set the interrupt flag on _this_ thread if we carried any pjobs over
-     * from the other side of the fork */
-    if (pjq->triggered_bitset) {
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
+     * from the other side of the fork (including jobs that targeted the
+     * forking Ractor, which is the child's main Ractor now; jobs targeted
+     * at any other Ractor die with it) */
+    rb_execution_context_t *ec = get_valid_ec(GET_VM());
+    if (pjq->triggered_bitset || rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
     }
 
-}
-
-/* Frees the memory managed by the postponed job infrastructure at shutdown */
-void
-rb_vm_postponed_job_free(void)
-{
-    rb_vm_t *vm = GET_VM();
-    ruby_xfree(vm->postponed_job_queue);
-    vm->postponed_job_queue = NULL;
 }
 
 // Used for VM memsize reporting. Returns the total size of the postponed job
@@ -1926,7 +1873,7 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
      * of concurrent calls to both _preregister and _register functions on the same
      * func, however, the data may get mixed up between them. */
 
-    rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     for (unsigned int i = 0; i < PJOB_TABLE_SIZE; i++) {
         /* Try and set this slot to equal `func` */
         rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i].func, NULL, (void *)(uintptr_t)func);
@@ -1951,57 +1898,57 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
 void
 rb_postponed_job_trigger(rb_postponed_job_handle_t h)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_postponed_job_queues_t *pjq = vm->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
 
     RUBY_ATOMIC_OR(pjq->triggered_bitset, (((rb_atomic_t)1UL) << h));
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
 }
 
-
-static int
-pjob_register_legacy_impl(unsigned int flags, rb_postponed_job_func_t func, void *data)
+/* Like rb_postponed_job_trigger(), but run the job on running_ractor
+ * instead of the caller's or the main Ractor: set the handle's bit in that
+ * Ractor's mask and post a POSTPONED_JOB interrupt to its running EC (or
+ * its main thread's EC before it starts). Delivery is lazy: the target is
+ * not unblocked, and a job for a Ractor that exits first is discarded.
+ *
+ * rb_postponed_job_trigger() is safe from a signal handler or any thread
+ * because it only touches the VM-global queue and the caller's or main EC.
+ * This one dereferences running_ractor and its EC, so the caller must keep
+ * running_ractor alive and running for the whole call: holding its VALUE
+ * is not enough, and a terminated Ractor is unsafe. The main Ractor is
+ * always safe. */
+void
+rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor)
 {
-    /* We _know_ calling preregister from a signal handler like this is racy; what is
-     * and is not promised is very exhaustively documented in debug.h */
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, func, data);
-    if (h == POSTPONED_JOB_HANDLE_INVALID) {
-        return 0;
+    VM_ASSERT(rb_ractor_p(running_ractor));
+    rb_ractor_t *r = (rb_ractor_t *)DATA_PTR(running_ractor);
+
+    RUBY_ATOMIC_OR(r->postponed_job_triggered_bits, (((rb_atomic_t)1UL) << h));
+
+    /* Read after the OR: a thread taking the GVL publishes running_ec, then reads the
+     * mask (rb_ractor_thread_switch), so one of us flags it.  Whichever of the target's
+     * threads checks interrupts first drains the whole per-Ractor mask. */
+    rb_execution_context_t *target_ec = RUBY_ATOMIC_PTR_LOAD(r->threads.running_ec);
+    if (target_ec == NULL && r->threads.main) {
+        target_ec = r->threads.main->ec;
     }
-    rb_postponed_job_trigger(h);
-    return 1;
+    if (target_ec) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(target_ec);
+    }
 }
-
-int
-rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
-int
-rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
 
 void
-rb_postponed_job_flush(rb_vm_t *vm)
+rb_postponed_job_flush(void)
 {
-    rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
+    rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     rb_execution_context_t *ec = GET_EC();
     const rb_atomic_t block_mask = POSTPONED_JOB_INTERRUPT_MASK | TRAP_INTERRUPT_MASK;
     volatile rb_atomic_t saved_mask = ec->interrupt_mask & block_mask;
     VALUE volatile saved_errno = ec->errinfo;
-    struct ccan_list_head tmp;
 
-    ccan_list_head_init(&tmp);
+    volatile rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
 
-    rb_nativethread_lock_lock(&vm->workqueue_lock);
-    ccan_list_append_list(&tmp, &vm->workqueue);
-    rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-    rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
+    /* jobs targeted at this Ractor (rb_postponed_job_trigger_for_ractor) */
+    triggered_bits |= RUBY_ATOMIC_EXCHANGE(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, 0);
 
     ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
@@ -2013,18 +1960,10 @@ rb_postponed_job_flush(rb_vm_t *vm)
             while (triggered_bits) {
                 unsigned int i = bit_length(triggered_bits) - 1;
                 triggered_bits ^= ((1UL) << i); /* toggle ith bit off */
-                rb_postponed_job_func_t func = pjq->table[i].func;
-                void *data = pjq->table[i].data;
-                (func)(data);
-            }
-
-            /* execute workqueue jobs */
-            struct rb_workqueue_job *wq_job;
-            while ((wq_job = ccan_list_pop(&tmp, struct rb_workqueue_job, jnode))) {
-                rb_postponed_job_func_t func = wq_job->func;
-                void *data = wq_job->data;
-
-                free(wq_job);
+                /* Read atomically to pair with the atomic CAS/EXCHANGE stores in
+                 * rb_postponed_job_preregister, which can run on another thread. */
+                rb_postponed_job_func_t func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_LOAD(pjq->table[i].func);
+                void *data = RUBY_ATOMIC_PTR_LOAD(pjq->table[i].data);
                 (func)(data);
             }
         }
@@ -2034,19 +1973,12 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ec->interrupt_mask &= ~(saved_mask ^ block_mask);
     ec->errinfo = saved_errno;
 
-    /* If we threw an exception, there might be leftover workqueue items; carry them over
-     * to a subsequent execution of flush */
-    if (!ccan_list_empty(&tmp)) {
-        rb_nativethread_lock_lock(&vm->workqueue_lock);
-        ccan_list_prepend_list(&vm->workqueue, &tmp);
-        rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
-    }
-    /* likewise with any remaining-to-be-executed bits of the preregistered postponed
-     * job table */
+    /* If we threw an exception, carry the bits that did not run yet over to a subsequent
+     * flush.  A merged bit can carry a Ractor-directed job that must not run on another
+     * Ractor (rb_postponed_job_trigger_for_ractor), so re-post it to this Ractor's own mask
+     * rather than to the global bitset. */
     if (triggered_bits) {
-        RUBY_ATOMIC_OR(pjq->triggered_bitset, triggered_bits);
+        RUBY_ATOMIC_OR(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, triggered_bits);
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
 }

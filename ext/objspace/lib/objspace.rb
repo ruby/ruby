@@ -70,7 +70,7 @@ module ObjectSpace
   # If _shapes_ is +false+, no shapes are dumped.
   #
   # To only dump objects allocated past a certain point you can combine _since_ and _shapes_:
-  #   ObjectSpace.trace_object_allocations
+  #   ObjectSpace.trace_object_allocations_start
   #   GC.start
   #   gc_generation = GC.count
   #   shape_generation = RubyVM.stat(:next_shape_id)

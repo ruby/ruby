@@ -1,0 +1,53 @@
+/**
+ * @file magic_comments.h
+ *
+ * Types and functions related to magic comments found during parsing.
+ */
+#ifndef PRISM_MAGIC_COMMENTS_H
+#define PRISM_MAGIC_COMMENTS_H
+
+#include "prism/compiler/exported.h"
+#include "prism/compiler/nonnull.h"
+
+#include "prism/ast.h"
+
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** An opaque pointer to a magic comment found while parsing. */
+typedef struct pm_magic_comment_t pm_magic_comment_t;
+
+/**
+ * Returns the location of the key associated with the given magic comment.
+ *
+ * @param magic_comment the magic comment whose key location we want to get
+ * @returns the location of the key associated with the given magic comment
+ */
+PRISM_EXPORTED_FUNCTION pm_location_t pm_magic_comment_key(const pm_magic_comment_t *magic_comment) PRISM_NONNULL(1);
+
+/**
+ * Returns the location of the value associated with the given magic comment.
+ *
+ * @param magic_comment the magic comment whose value location we want to get
+ * @returns the location of the value associated with the given magic comment
+ */
+PRISM_EXPORTED_FUNCTION pm_location_t pm_magic_comment_value(const pm_magic_comment_t *magic_comment) PRISM_NONNULL(1);
+
+/**
+ * Returns the magic comment that follows the given magic comment among the
+ * magic comments associated with the parser that found it.
+ *
+ * @param magic_comment the magic comment whose successor we want to get
+ * @returns the next magic comment, or NULL if the given magic comment is the
+ *     last one
+ */
+PRISM_EXPORTED_FUNCTION const pm_magic_comment_t * pm_magic_comment_next(const pm_magic_comment_t *magic_comment) PRISM_NONNULL(1);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

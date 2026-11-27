@@ -10,8 +10,8 @@ describe "StringIO#gets" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      @io.gets(">").should be_nil
-      @io.gets(">").should be_nil
+      @io.gets(">").should == nil
+      @io.gets(">").should == nil
     end
   end
 
@@ -22,8 +22,8 @@ describe "StringIO#gets" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      @io.gets(3).should be_nil
-      @io.gets(3).should be_nil
+      @io.gets(3).should == nil
+      @io.gets(3).should == nil
     end
   end
 
@@ -34,8 +34,8 @@ describe "StringIO#gets" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      @io.gets(">", 3).should be_nil
-      @io.gets(">", 3).should be_nil
+      @io.gets(">", 3).should == nil
+      @io.gets(">", 3).should == nil
     end
   end
 
@@ -46,8 +46,8 @@ describe "StringIO#gets" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      @io.gets.should be_nil
-      @io.gets.should be_nil
+      @io.gets.should == nil
+      @io.gets.should == nil
     end
   end
 

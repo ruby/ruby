@@ -131,6 +131,11 @@ class TestEtc < Test::Unit::TestCase
     }
   end
 
+  def test_uname_release_on_windows
+    release = IO.popen(%w[cmd.exe /c ver], "rb", &:read)[/\d+\.\d+\.\d+/]
+    assert_equal(release, Etc.uname[:release])
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_sysconf
     begin
       Etc.sysconf
@@ -153,7 +158,7 @@ class TestEtc < Test::Unit::TestCase
 
   def test_pathconf
     begin
-      Etc.confstr
+      $stdin.pathconf
     rescue NotImplementedError
       return
     rescue ArgumentError
@@ -167,11 +172,14 @@ class TestEtc < Test::Unit::TestCase
   def test_nprocessors
     n = Etc.nprocessors
     assert_operator(1, :<=, n)
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_operator(Integer(ENV.fetch("NUMBER_OF_PROCESSORS")), :<=, n)
+    end
   end
 
   def test_sysconfdir
     assert_operator(File, :absolute_path?, Etc.sysconfdir)
-  end if File.method_defined?(:absolute_path?)
+  end
 
   # All Ractor-safe methods should be tested here
   def test_ractor_parallel

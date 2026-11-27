@@ -7,12 +7,6 @@ module Bundler
   end
 
   class CLI::Gem
-    TEST_FRAMEWORK_VERSIONS = {
-      "rspec" => "3.0",
-      "minitest" => "5.16",
-      "test-unit" => "3.0",
-    }.freeze
-
     DEFAULT_GITHUB_USERNAME = "[USERNAME]"
 
     attr_reader :options, :gem_name, :thor, :name, :target, :extension
@@ -117,7 +111,6 @@ module Bundler
 
       if test_framework = ask_and_set_test_framework
         config[:test] = test_framework
-        config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
 
         case test_framework
         when "rspec"
@@ -158,6 +151,9 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
+        if extension == "rust"
+          templates.merge!("github/workflows/build-gems.yml.tt" => ".github/workflows/build-gems.yml")
+        end
         config[:ignore_paths] << ".github/"
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
@@ -200,12 +196,10 @@ module Bundler
       config[:linter] = ask_and_set_linter
       case config[:linter]
       when "rubocop"
-        config[:linter_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
         config[:ignore_paths] << ".rubocop.yml"
       when "standard"
-        config[:linter_version] = standard_version
         Bundler.ui.info "Standard enabled in config"
         templates.merge!("standard.yml.tt" => ".standard.yml")
         config[:ignore_paths] << ".standard.yml"
@@ -228,6 +222,7 @@ module Bundler
         templates.merge!(
           "Cargo.toml.tt" => "Cargo.toml",
           "ext/newgem/Cargo.toml.tt" => "ext/#{name}/Cargo.toml",
+          "ext/newgem/build.rs.tt" => "ext/#{name}/build.rs",
           "ext/newgem/extconf-rust.rb.tt" => "ext/#{name}/extconf.rb",
           "ext/newgem/src/lib.rs.tt" => "ext/#{name}/src/lib.rs",
         )
@@ -252,8 +247,7 @@ module Bundler
 
       if use_git
         Bundler.ui.info "\nInitializing git repo in #{target}"
-        require "shellwords"
-        `git init #{target.to_s.shellescape}`
+        IO.popen(["git", "init", target.to_s], &:read)
 
         config[:git_default_branch] = File.read("#{target}/.git/HEAD").split("/").last.chomp
       end
@@ -284,7 +278,7 @@ module Bundler
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
       Bundler.ui.info "\nGem '#{name}' was successfully created. " \
-        "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
+        "For more information on making a RubyGem visit https://guides.rubygems.org/make-your-own-gem/"
     end
 
     private
@@ -435,6 +429,10 @@ module Bundler
         exit 1
       end
 
+      if /[A-Z]/.match?(name)
+        Bundler.ui.warn "Gem names with capital letters are not recommended. Please use only lowercase letters, numbers, and hyphens."
+      end
+
       constant_name = constant_array.join("::")
 
       existing_constant = constant_array.inject(Object) do |c, s|
@@ -462,14 +460,6 @@ module Bundler
 
     def required_ruby_version
       "3.2.0"
-    end
-
-    def rubocop_version
-      "1.21"
-    end
-
-    def standard_version
-      "1.3"
     end
 
     def github_username(git_username)

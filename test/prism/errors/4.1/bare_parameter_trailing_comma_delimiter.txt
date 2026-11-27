@@ -1,0 +1,7 @@
+def f &nil,; end
+          ^ unexpected `,` in parameters
+
+def f x,
+        ^ expected a delimiter to close the parameters
+end
+

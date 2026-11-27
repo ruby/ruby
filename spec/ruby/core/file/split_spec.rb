@@ -44,12 +44,12 @@ describe "File.split" do
   end
 
   it "raises an ArgumentError when not passed a single argument" do
-    -> { File.split }.should raise_error(ArgumentError)
-    -> { File.split('string', 'another string') }.should raise_error(ArgumentError)
+    -> { File.split }.should.raise(ArgumentError)
+    -> { File.split('string', 'another string') }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError if the argument is not a String type" do
-    -> { File.split(1) }.should raise_error(TypeError)
+    -> { File.split(1) }.should.raise(TypeError)
   end
 
   it "coerces the argument with to_str if it is not a String type" do
@@ -60,5 +60,12 @@ describe "File.split" do
 
   it "accepts an object that has a #to_path method" do
     File.split(mock_to_path("")).should == [".", ""]
+  end
+
+  it "preserves the encoding of the path" do
+    path = "/foo/bar".encode(Encoding::EUC_JP)
+    dir, file = File.split(path)
+    dir.encoding.should == Encoding::EUC_JP
+    file.encoding.should == Encoding::EUC_JP
   end
 end

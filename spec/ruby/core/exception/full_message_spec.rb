@@ -6,10 +6,10 @@ describe "Exception#full_message" do
     e.set_backtrace(["a.rb:1", "b.rb:2"])
 
     full_message = e.full_message
-    full_message.should include "RuntimeError"
-    full_message.should include "Some runtime error"
-    full_message.should include "a.rb:1"
-    full_message.should include "b.rb:2"
+    full_message.should.include? "RuntimeError"
+    full_message.should.include? "Some runtime error"
+    full_message.should.include? "a.rb:1"
+    full_message.should.include? "b.rb:2"
   end
 
   it "supports :highlight option and adds escape sequences to highlight some strings" do
@@ -36,6 +36,11 @@ describe "Exception#full_message" do
 
     e.full_message(order: :top,    highlight: false).should =~ /a.rb:1.*b.rb:2/m
     e.full_message(order: :bottom, highlight: false).should =~ /b.rb:2.*a.rb:1/m
+  end
+
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { StandardError.new("").full_message(highlight: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { StandardError.new("").full_message(highlight: 'false') }.should.raise ArgumentError, /expected true or false/
   end
 
   it "shows the caller if the exception has no backtrace" do
@@ -141,8 +146,8 @@ describe "Exception#full_message" do
       exception = e
     end
 
-    exception.full_message.should include "main exception"
-    exception.full_message.should include "the cause"
+    exception.full_message.should.include? "main exception"
+    exception.full_message.should.include? "the cause"
   end
 
   it 'contains all the chain of exceptions' do
@@ -160,9 +165,9 @@ describe "Exception#full_message" do
       exception = e
     end
 
-    exception.full_message.should include "last exception"
-    exception.full_message.should include "intermediate exception"
-    exception.full_message.should include "origin exception"
+    exception.full_message.should.include? "last exception"
+    exception.full_message.should.include? "intermediate exception"
+    exception.full_message.should.include? "origin exception"
   end
 
   it "relies on #detailed_message" do
@@ -219,8 +224,8 @@ describe "Exception#full_message" do
     end
 
     full_message = e.full_message
-    full_message.should include "RuntimeError"
-    full_message.should include "Some runtime error"
-    full_message.should include "Some other runtime error"
+    full_message.should.include? "RuntimeError"
+    full_message.should.include? "Some runtime error"
+    full_message.should.include? "Some other runtime error"
   end
 end

@@ -129,6 +129,14 @@ class TestRipper::Ripper < Test::Unit::TestCase
     end;
   end
 
+  def test_incompatible_encoding_string_content
+    src = "`\xF8\n\xC0\\u".b
+    assert_nil(Ripper.sexp(src))
+    ripper = Ripper.new(src)
+    ripper.parse
+    assert_predicate(ripper, :error?)
+  end
+
   # https://bugs.jruby.org/4176
   def test_dedent_string
     col = Ripper.dedent_string '  hello'.dup, 0
@@ -167,41 +175,52 @@ end
     assert_empty(lex)
   end
 
-  def test_no_memory_leak
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      2_000_000.times do
+  def test_empty_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("")
       end
-    end;
+    };
+  end
 
+  def test_unclosed_class_no_memory_leak
     # [Bug #19835]
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("class Foo")
       end
-    end;
+    };
+  end
 
+  def test_unclosed_lambda_no_memory_leak
     # [Bug #19836]
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("-> {")
       end
-    end;
+    };
+  end
 
+  def test_lambda_it_no_memory_leak
     # [Bug #21004]
-    assert_no_memory_leak(%w(-rripper), "", <<~RUBY, rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.parse("-> do it end")
       end
-    RUBY
+    };
   end
 
   def test_sexp_no_memory_leak
-    assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
-      1_000_000.times do
+    assert_no_memory_leak(%w(-rripper), "", "#{<<-"{#"}\n#{<<-'};'}", rss: true, samples: 2..100)
+    {#
+      1000.times do
         Ripper.sexp("")
       end
-    end;
+    };
   end
 
   class TestInput < self
@@ -223,5 +242,14 @@ end
 
   def state(name)
     Ripper::Lexer::State.new(Ripper.const_get(name))
+  end
+end if ripper_test
+
+class TestRipper::DSL < Test::Unit::TestCase
+  def test_array_elements_are_values
+    require_relative "../../ext/ripper/tools/dsl"
+
+    code = DSL.line?("/*% ripper: [$:$, 0] %*/").generate
+    assert_include(code, "rb_ary_new_from_args(2, (VALUE)0|(p->s_lvalue), (VALUE)0|(0))")
   end
 end if ripper_test

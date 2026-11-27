@@ -9,6 +9,7 @@
 #include "internal.h"
 #include "internal/hash.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/memory_view.h"
 #include "ruby/util.h"
 #include "vm_sync.h"
@@ -65,7 +66,7 @@ const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
         exported_object_registry_free,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static int
@@ -101,6 +102,7 @@ register_exported_object(VALUE obj)
 {
     RB_VM_LOCKING() {
         st_update(exported_object_table, (st_data_t)obj, exported_object_add_ref, 0);
+        RB_OBJ_WRITTEN(rb_memory_view_exported_object_registry, Qundef, obj);
     }
 }
 
@@ -124,7 +126,7 @@ static const rb_data_type_t memory_view_entry_data_type = {
         0,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 /* Register memory view functions for the given class */
@@ -153,6 +155,12 @@ rb_memory_view_is_row_major_contiguous(const rb_memory_view_t *view)
     const ssize_t *strides = view->strides;
     ssize_t n = view->item_size;
     ssize_t i;
+    if (!strides) {
+        return true;
+    }
+    if (ndim == 1) {
+        return strides[0] == n;
+    }
     for (i = ndim - 1; i >= 0; --i) {
         if (strides[i] != n) return false;
         n *= shape[i];
@@ -167,13 +175,37 @@ rb_memory_view_is_column_major_contiguous(const rb_memory_view_t *view)
     const ssize_t ndim = view->ndim;
     const ssize_t *shape = view->shape;
     const ssize_t *strides = view->strides;
-    ssize_t n = view->item_size;
     ssize_t i;
-    for (i = 0; i < ndim; ++i) {
-        if (strides[i] != n) return false;
-        n *= shape[i];
+    if (strides) {
+        ssize_t n = view->item_size;
+        if (ndim == 1) {
+            return strides[0] == n;
+        }
+        for (i = 0; i < ndim; ++i) {
+            if (strides[i] != n) return false;
+            n *= shape[i];
+        }
+        return true;
     }
-    return true;
+    else {
+        if (ndim == 1) {
+            return true;
+        }
+        if (!shape) {
+            return false;
+        }
+
+        bool trivial = true;
+        for (i = 0; i < ndim; ++i) {
+            if (shape[i] > 1) {
+                if (!trivial) {
+                    return false;
+                }
+                trivial = false;
+            }
+        }
+        return true;
+    }
 }
 
 /* Initialize strides array to represent the specified contiguous array. */
@@ -446,6 +478,12 @@ rb_memory_view_parse_item_format(const char *format,
         ssize_t i = 0, offset = 0;
         const char *p = format;
         while (*p) {
+            // ignore spaces
+            if (ISSPACE(*p)) {
+                while (ISSPACE(*p)) ++p;
+                continue;
+            }
+
             const int type_char = *p;
 
             bool native_size_p;
@@ -845,7 +883,7 @@ rb_memory_view_release(rb_memory_view_t* view)
         if (rv) {
             unregister_exported_object(view->obj);
             view->obj = Qnil;
-            xfree((void *)view->item_desc.components);
+            SIZED_FREE_N((rb_memory_view_item_component_t *)view->item_desc.components, view->item_desc.length);
         }
         return rv;
     }

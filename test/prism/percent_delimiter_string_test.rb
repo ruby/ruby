@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   module PercentDelimiterTests
     def test_newline_terminator_with_lf_crlf
       str = l "\n123456\r\n"
@@ -58,8 +58,8 @@ module Prism
     include PercentDelimiterTests
 
     def find_node(str)
-      tree = Prism.parse str
-      tree.value.breadth_first_search { |x| Prism::StringNode === x }
+      tree = Ruby::Prism.parse str
+      tree.value.breadth_first_search { |x| Ruby::Prism::StringNode === x }
     end
 
     def l(str)
@@ -75,8 +75,8 @@ module Prism
     end
 
     def find_node(str)
-      tree = Prism.parse str
-      tree.value.breadth_first_search { |x| Prism::RegularExpressionNode === x }
+      tree = Ruby::Prism.parse str
+      tree.value.breadth_first_search { |x| Ruby::Prism::RegularExpressionNode === x }
     end
   end
 end

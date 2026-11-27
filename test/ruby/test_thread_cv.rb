@@ -70,7 +70,7 @@ class TestThreadConditionVariable < Test::Unit::TestCase
         end
       end
     end
-    sleep 0.1
+    Thread.pass until threads.all?(&:stop?)
     mutex.synchronize do
       result << "P1"
       condvar.broadcast

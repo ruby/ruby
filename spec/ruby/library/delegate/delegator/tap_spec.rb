@@ -11,6 +11,6 @@ describe "Delegator#tap" do
       yielded << x
     end
     yielded.size.should == 1
-    yielded[0].equal?(delegator).should be_true
+    yielded[0].equal?(delegator).should == true
   end
 end

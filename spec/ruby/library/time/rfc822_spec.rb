@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/rfc2822'
 require 'time'
 
 describe "Time.rfc822" do
-  it_behaves_like :time_rfc2822, :rfc822
+  it "is an alias of Time.rfc2822" do
+    Time.method(:rfc822).should == Time.method(:rfc2822)
+  end
 end

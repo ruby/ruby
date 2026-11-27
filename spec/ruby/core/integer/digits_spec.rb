@@ -19,15 +19,15 @@ describe "Integer#digits" do
   end
 
   it "raises ArgumentError when calling with a radix less than 2" do
-    -> { 12345.digits(1) }.should raise_error(ArgumentError)
+    -> { 12345.digits(1) }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError when calling with a negative radix" do
-    -> { 12345.digits(-2) }.should raise_error(ArgumentError)
+    -> { 12345.digits(-2) }.should.raise(ArgumentError)
   end
 
   it "raises Math::DomainError when calling digits on a negative number" do
-    -> { -12345.digits(7) }.should raise_error(Math::DomainError)
+    -> { -12345.digits(7) }.should.raise(Math::DomainError)
   end
 
   it "returns integer values > 9 when base is above 10" do

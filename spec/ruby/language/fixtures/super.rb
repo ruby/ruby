@@ -266,7 +266,7 @@ module SuperSpecs
 
       # Use this so that we can see collect all supers that we see.
       # One bug that arises is that we call Alias2#name from Alias2#name
-      # as it's superclass. In that case, either we get a runaway recursion
+      # as its superclass. In that case, either we get a runaway recursion
       # super OR we get the return value being [:alias2, :alias2, :alias1]
       # rather than [:alias2, :alias1].
       #

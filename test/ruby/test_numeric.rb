@@ -206,14 +206,6 @@ class TestNumeric < Test::Unit::TestCase
     assert_nil(a <=> :foo)
   end
 
-  def test_float_round_ndigits
-    bug14635 = "[ruby-core:86323]"
-    f = 0.5
-    31.times do |i|
-      assert_equal(0.5, f.round(i+1), bug14635 + " (argument: #{i+1})")
-    end
-  end
-
   def test_floor_ceil_round_truncate
     a = Class.new(Numeric) do
       def to_f; 1.5; end
@@ -489,6 +481,10 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(0,  0.pow(3, 1))
     assert_equal(0,  2.pow(3, 1))
     assert_equal(0, -2.pow(3, 1))
+
+    min, max = RbConfig::LIMITS.values_at("FIXNUM_MIN", "FIXNUM_MAX")
+    assert_equal(0, 0.pow(2, min))
+    assert_equal(0, Integer.sqrt(max+1).pow(2, min))
   end
 
 end

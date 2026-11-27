@@ -4,7 +4,7 @@ require 'pathname'
 describe "Pathname#realpath" do
 
   it "returns a Pathname" do
-    Pathname.pwd.realpath.should be_an_instance_of(Pathname)
+    Pathname.pwd.realpath.should.instance_of?(Pathname)
   end
 
 end

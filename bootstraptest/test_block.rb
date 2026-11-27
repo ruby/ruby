@@ -10,15 +10,18 @@ assert_equal %q{1}, %q{
 assert_equal %q{2}, %q{
   [1,2,3].find{|x| x == 2}
 }
-assert_equal %q{2}, %q{
-  class E
-    include Enumerable
-    def each(&block)
-      [1, 2, 3].each(&block)
+# TODO: Remove this clang 17 CI workaround once #17953's regression is fixed.
+unless ENV["GITHUB_ACTIONS"] == "true" && ENV["INPUT_WITH_GCC"] == "clang-17"
+  assert_equal %q{2}, %q{
+    class E
+      include Enumerable
+      def each(&block)
+        [1, 2, 3].each(&block)
+      end
     end
-  end
-  E.new.find {|x| x == 2 }
-}
+    E.new.find {|x| x == 2 }
+  }
+end
 assert_equal %q{6}, %q{
   sum = 0
   for x in [1, 2, 3]

@@ -7,7 +7,7 @@ describe "Module.new" do
   end
 
   it "creates a module without a name" do
-    Module.new.name.should be_nil
+    Module.new.name.should == nil
   end
 
   it "creates a new Module and passes it to the provided block" do

@@ -1,11 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/concat'
 require 'strscan'
 
 describe "StringScanner#concat" do
-  it_behaves_like :strscan_concat, :concat
-end
-
-describe "StringScanner#concat when passed an Integer" do
-  it_behaves_like :strscan_concat_fixnum, :concat
+  it "is an alias of StringScanner#<<" do
+    StringScanner.instance_method(:concat).should == StringScanner.instance_method(:<<)
+  end
 end

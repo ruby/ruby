@@ -3,6 +3,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
+use std::collections::HashMap;
 use crate::{cruby::*, payload::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
 use crate::distribution::{Distribution, DistributionSummary};
 use crate::stats::Counter::profile_time_ns;
@@ -12,7 +13,7 @@ use crate::stats::with_time_stat;
 struct Profiler {
     cfp: CfpPtr,
     iseq: IseqPtr,
-    insn_idx: usize,
+    insn_idx: YarvInsnIdx,
 }
 
 impl Profiler {
@@ -58,9 +59,11 @@ pub extern "C" fn rb_zjit_profile_insn(bare_opcode: u32, ec: EcPtr) {
 }
 
 /// Profile a YARV instruction
-fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
-    let profiler = &mut Profiler::new(ec);
-    let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
+fn profile_insn_sample(
+    bare_opcode: ruby_vminsn_type,
+    profiler: &mut Profiler,
+    profile: &mut IseqProfile,
+) -> bool {
     match bare_opcode {
         YARVINSN_opt_nil_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_plus  => profile_operands(profiler, profile, 2),
@@ -78,10 +81,11 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_aref  => profile_operands(profiler, profile, 2),
+        YARVINSN_newrange  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_ltlt  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
-        YARVINSN_getinstancevariable => profile_self(profiler, profile),
+        YARVINSN_getinstancevariable => profile_self_shape(profiler, profile),
         YARVINSN_setinstancevariable => profile_self(profiler, profile),
         YARVINSN_definedivar   => profile_self(profiler, profile),
         YARVINSN_opt_regexpmatch2    => profile_operands(profiler, profile, 2),
@@ -89,68 +93,185 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_length    => profile_operands(profiler, profile, 1),
         YARVINSN_opt_size      => profile_operands(profiler, profile, 1),
         YARVINSN_opt_succ      => profile_operands(profiler, profile, 1),
+        YARVINSN_expandarray   => profile_operands(profiler, profile, 1),
         YARVINSN_invokeblock   => profile_block_handler(profiler, profile),
+        YARVINSN_invokesuper   => profile_invokesuper(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-            let argc = unsafe { vm_ci_argc((*cd).ci) };
+            let argc = num_arguments_on_stack(cd);
             // Profile all the arguments and self (+1).
-            profile_operands(profiler, profile, (argc + 1) as usize);
+            profile_operands(profiler, profile, argc + 1);
+            profile_splat_length(profiler, profile, unsafe { (*cd).ci });
         }
-        _ => {}
+        _ => return false,
     }
 
-    // Once we profile the instruction num_profiles times, we stop profiling it.
-    profile.num_profiles[profiler.insn_idx] = profile.num_profiles[profiler.insn_idx].saturating_add(1);
-    if profile.num_profiles[profiler.insn_idx] == get_option!(num_profiles) {
+    true
+}
+
+/// Profile a YARV instruction
+fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
+    let profiler = &mut Profiler::new(ec);
+    let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
+    let _ = profile_insn_sample(bare_opcode, profiler, profile);
+
+    // Once we profile the instruction enough times, we stop profiling it.
+    let entry = profile.entry_mut(profiler.insn_idx);
+    entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
+    if entry.profiles_remaining == 0 {
         unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
 }
 
-const DISTRIBUTION_SIZE: usize = 4;
+/// Reset existing profile counters and install profiling instructions throughout an ISEQ.
+/// Newly reached instructions initialize their counters from the same option.
+pub(crate) fn reset_profiles_remaining(iseq: IseqPtr) {
+    let profile = &mut get_or_create_iseq_payload(iseq).profile;
+    let num_profiles = get_option!(num_profiles);
+    for entry in &mut profile.entries {
+        entry.profiles_remaining = num_profiles;
+    }
+    unsafe { rb_zjit_profile_enable(iseq) };
+}
+
+/// Return the argc as stated in the calldata plus:
+/// * 1 if there is an explicit blockarg, since that will be passed on the stack
+pub fn num_arguments_on_stack(cd: *const rb_call_data) -> usize {
+    let ci = unsafe { (*cd).ci };
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    let has_blockarg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+    (unsafe { vm_ci_argc(ci) }) as usize + has_blockarg as usize
+}
+
+pub const DISTRIBUTION_SIZE: usize = 8;
 
 pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
 pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTION_SIZE>;
 
+pub type SplatLength = u32;
+
+/// `None` records an unknown length so this distribution covers the same
+/// executions as the operand type profile.
+pub type SplatLengthDistribution = Distribution<Option<SplatLength>, DISTRIBUTION_SIZE>;
+
+pub type SplatLengthDistributionSummary = DistributionSummary<Option<SplatLength>, DISTRIBUTION_SIZE>;
+
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(n, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        // Allocate exactly `n` distributions. A plain `resize` on an empty Vec rounds the capacity
+        // up to 4 elements, which might waste space.
+        entry.opnd_types = vec![TypeDistribution::new(); n];
     }
 
-    for (i, profile_type) in types.iter_mut().enumerate() {
+    for (i, profile_type) in entry.opnd_types.iter_mut().enumerate() {
         let obj = profiler.peek_at_stack((n - i - 1) as isize);
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
-        VALUE::from(profiler.iseq).write_barrier(ty.class());
-        profile_type.observe(ty);
+        observe_profiled_type(profiler, profile_type, obj, ty);
     }
 }
 
+/// Record the ProfiledType of `obj` unless its class is the singleton class of a non-Module object that may be collected.
+fn observe_profiled_type(profiler: &Profiler, distribution: &mut TypeDistribution, obj: VALUE, ty: ProfiledType) {
+    let class = ty.class();
+
+    // A singleton class belongs to one object, so specializing on it doesn't help other objects.
+    if class.is_singleton_class()
+        && obj != unsafe { rb_vm_top_self() }
+        && obj != unsafe { rb_block_param_proxy }
+        && !unsafe { RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE) }
+    {
+        distribution.observe_other();
+        return;
+    }
+
+    VALUE::from(profiler.iseq).write_barrier(class);
+    distribution.observe(ty);
+}
+
+fn profile_splat_length(profiler: &mut Profiler, profile: &mut IseqProfile, ci: *const rb_callinfo) {
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    // Only call sites with VM_CALL_ARGS_SPLAT have a splat array on the stack.
+    if flags & VM_CALL_ARGS_SPLAT == 0 {
+        return;
+    }
+
+    let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+    let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+    // Starting at the top of the stack, skip the block argument, keyword-splat
+    // hash, and explicit keyword values to reach the splat array.
+    let splat_pos = usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0)
+        + usize::from(flags & VM_CALL_KW_SPLAT != 0)
+        + caller_kw_count;
+    let splat_array = profiler.peek_at_stack(splat_pos as isize);
+    let length = if unsafe { RB_TYPE_P(splat_array, RUBY_T_ARRAY) } {
+        SplatLength::try_from(unsafe { rb_jit_array_len(splat_array) }).ok()
+    } else {
+        None
+    };
+    profile.splat_lengths.entry(profiler.insn_idx)
+        .or_insert_with(SplatLengthDistribution::new).observe(length);
+}
+
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(1, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types = vec![TypeDistribution::new()];
     }
     let obj = profiler.peek_at_self();
     // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
     // drop them or something
     let ty = ProfiledType::new(obj);
-    VALUE::from(profiler.iseq).write_barrier(ty.class());
-    types[0].observe(ty);
+    observe_profiled_type(profiler, &mut entry.opnd_types[0], obj, ty);
+}
+
+/// Profile the shape of self, but not its class. ivar reads dispatch on shape alone, so the class
+/// is not needed. Since we don't retain the class, we can record receivers with singleton classes
+/// too (see observe_profiled_type).
+fn profile_self_shape(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types = vec![TypeDistribution::new()];
+    }
+    let obj = profiler.peek_at_self();
+    entry.opnd_types[0].observe(ProfiledType::shape_only(obj));
 }
 
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
-    let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.is_empty() {
-        types.resize(1, TypeDistribution::new());
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types = vec![TypeDistribution::new()];
     }
-    let obj = profiler.peek_at_block_handler();
-    let ty = ProfiledType::object(obj);
+    let ty = ProfiledType::block_handler(profiler.peek_at_block_handler());
     VALUE::from(profiler.iseq).write_barrier(ty.class());
-    types[0].observe(ty);
+    entry.opnd_types[0].observe(ty);
+}
+
+fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let cme = unsafe { rb_vm_frame_method_entry(profiler.cfp) };
+    let cme_value = VALUE(cme as usize);  // CME is a T_IMEMO, which is a VALUE
+
+    profile.super_cme.entry(profiler.insn_idx)
+        .or_insert_with(|| TypeDistribution::new()).observe(ProfiledType::object(cme_value));
+
+    unsafe { rb_gc_writebarrier(profiler.iseq.into(), cme_value) };
+
+    let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
+    // super(&block) and super { } pass their own block, so the frame's block doesn't matter
+    let passes_own_block = unsafe { rb_vm_ci_flag((*cd).ci) } & VM_CALL_ARGS_BLOCKARG != 0
+        || !profiler.insn_opnd(1).as_iseq().is_null();
+    if !passes_own_block && !profiler.peek_at_block_handler().nil_p() {
+        profile.entry_mut(profiler.insn_idx).super_saw_block = true;
+    }
+    let argc = num_arguments_on_stack(cd);
+
+    // Profile all the arguments and self (+1).
+    profile_operands(profiler, profile, argc + 1);
+    profile_splat_length(profiler, profile, unsafe { (*cd).ci });
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -167,6 +288,12 @@ impl Flags {
     const IS_STRUCT_EMBEDDED: u32 = 1 << 3;
     /// Set if the ProfiledType is used for profiling specific objects, not just classes/shapes
     const IS_OBJECT_PROFILING: u32 = 1 << 4;
+    /// The profiled block handler is an IFUNC. The imemo itself is not retained.
+    const IS_IFUNC_BLOCK_HANDLER: u32 = 1 << 5;
+    /// The profiled block handler is a Proc. The Proc object itself is not retained.
+    const IS_PROC_BLOCK_HANDLER: u32 = 1 << 6;
+    /// Only the shape and layout flags were recorded; the class is not retained.
+    const IS_SHAPE_ONLY: u32 = 1 << 7;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -176,6 +303,9 @@ impl Flags {
     pub fn is_t_object(self) -> bool { (self.0 & Self::IS_T_OBJECT) != 0 }
     pub fn is_struct_embedded(self) -> bool { (self.0 & Self::IS_STRUCT_EMBEDDED) != 0 }
     pub fn is_object_profiling(self) -> bool { (self.0 & Self::IS_OBJECT_PROFILING) != 0 }
+    pub fn is_ifunc_block_handler(self) -> bool { (self.0 & Self::IS_IFUNC_BLOCK_HANDLER) != 0 }
+    pub fn is_proc_block_handler(self) -> bool { (self.0 & Self::IS_PROC_BLOCK_HANDLER) != 0 }
+    pub fn is_shape_only(self) -> bool { (self.0 & Self::IS_SHAPE_ONLY) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -210,40 +340,33 @@ impl ProfiledType {
         Self { class: obj, shape: INVALID_SHAPE_ID, flags }
     }
 
+    /// Profile an untagged block handler. ISEQ, Symbol, and no-block handlers are profiled as the object itself.
+    /// IFUNC and Proc handlers are recorded only as a flag to avoid retaining them and to reduce GC marking pressure.
+    fn block_handler(block_handler: VALUE) -> Self {
+        let flag = if unsafe { rb_IMEMO_TYPE_P(block_handler, imemo_ifunc) == 1 } {
+            Flags::IS_IFUNC_BLOCK_HANDLER
+        } else if unsafe { rb_obj_is_proc(block_handler).test() } {
+            Flags::IS_PROC_BLOCK_HANDLER
+        } else {
+            return Self::object(block_handler);
+        };
+        let mut ty = Self::object(Qnil);
+        ty.flags.0 |= flag;
+        ty
+    }
+
     /// Profile the class and shape of the given object
     fn new(obj: VALUE) -> Self {
-        if obj == Qfalse {
-            return Self { class: unsafe { rb_cFalseClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj == Qtrue {
-            return Self { class: unsafe { rb_cTrueClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj == Qnil {
-            return Self { class: unsafe { rb_cNilClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.fixnum_p() {
-            return Self { class: unsafe { rb_cInteger },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.flonum_p() {
-            return Self { class: unsafe { rb_cFloat },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.static_sym_p() {
-            return Self { class: unsafe { rb_cSymbol },
+        // Qundef must never escape the VM internals; rb_class_of(Qundef) is undefined
+        debug_assert_ne!(obj, Qundef, "should not profile Qundef");
+        if obj.special_const_p() {
+            return Self { class: obj.class_of(),
                           shape: INVALID_SHAPE_ID,
                           flags: Flags::immediate() };
         }
         let mut flags = Flags::none();
-        if obj.embedded_p() {
+        let shape = obj.shape_id_of();
+        if shape.layout() == ShapeLayout::RObject {
             flags.0 |= Flags::IS_EMBEDDED;
         }
         if obj.struct_embedded_p() {
@@ -252,7 +375,15 @@ impl ProfiledType {
         if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
             flags.0 |= Flags::IS_T_OBJECT;
         }
-        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
+        Self { class: obj.class_of(), shape, flags }
+    }
+
+    /// Profile the shape and layout flags of the given object, but not its class.
+    fn shape_only(obj: VALUE) -> Self {
+        let mut ty = Self::new(obj);
+        ty.class = Qnil;
+        ty.flags.0 |= Flags::IS_SHAPE_ONLY;
+        ty
     }
 
     pub fn empty() -> Self {
@@ -264,6 +395,7 @@ impl ProfiledType {
     }
 
     pub fn class(&self) -> VALUE {
+        debug_assert!(!self.flags.is_shape_only(), "shape-only ProfiledType has no class");
         self.class
     }
 
@@ -277,6 +409,17 @@ impl ProfiledType {
 
     pub fn is_fixnum(&self) -> bool {
         self.class == unsafe { rb_cInteger } && self.flags.is_immediate()
+    }
+
+    /// Whether the profiled class is exactly Proc (subclasses return false).
+    ///
+    /// This is stricter than the interpreter, which accepts anything for which
+    /// `rb_obj_is_proc()` is true. That checks the object's typed data type, not its
+    /// class, so Proc subclasses pass. We use the class as a conservative approximation:
+    /// Proc has no allocator, so an object whose class is exactly Proc always has
+    /// `proc_data_type`. Subclasses fall back to a dynamic send.
+    pub fn is_proc(&self) -> bool {
+        self.class == unsafe { rb_cProc }
     }
 
     pub fn is_string(&self) -> bool {
@@ -317,48 +460,123 @@ impl ProfiledType {
     }
 }
 
+/// Per-instruction profile entry, stored sparsely in a sorted Vec.
+#[derive(Debug)]
+pub struct ProfileEntry {
+    /// YARV instruction index
+    insn_idx: u32,
+    /// Type information of YARV instruction operands
+    opnd_types: Vec<TypeDistribution>,
+    /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
+    profiles_remaining: NumProfiles,
+    /// `super` ran in a frame with a block, which it passes on
+    super_saw_block: bool,
+}
+
 #[derive(Debug)]
 pub struct IseqProfile {
-    /// Type information of YARV instruction operands, indexed by the instruction index
-    opnd_types: Vec<Vec<TypeDistribution>>,
+    /// Sparse storage of per-instruction profile data, sorted by instruction index.
+    /// Only instructions that have actually been profiled have entries here.
+    entries: Vec<ProfileEntry>,
 
-    /// Number of profiled executions for each YARV instruction, indexed by the instruction index
-    num_profiles: Vec<NumProfiles>,
+    /// Method entries for `super` calls (stored as VALUE to be GC-safe)
+    super_cme: HashMap<YarvInsnIdx, TypeDistribution>,
+
+    /// Observed lengths of caller splat arrays for call instructions.
+    splat_lengths: HashMap<YarvInsnIdx, SplatLengthDistribution>,
 }
 
 impl IseqProfile {
-    pub fn new(iseq_size: u32) -> Self {
+    pub fn new() -> Self {
         Self {
-            opnd_types: vec![vec![]; iseq_size as usize],
-            num_profiles: vec![0; iseq_size as usize],
+            entries: Vec::new(),
+            super_cme: HashMap::new(),
+            splat_lengths: HashMap::new(),
         }
     }
 
+    /// Get or create a mutable profile entry for the given instruction index.
+    pub fn entry_mut(&mut self, insn_idx: YarvInsnIdx) -> &mut ProfileEntry {
+        let idx = insn_idx as u32;
+        match self.entries.binary_search_by_key(&idx, |e| e.insn_idx) {
+            Ok(i) => &mut self.entries[i],
+            Err(i) => {
+                self.entries.insert(i, ProfileEntry {
+                    insn_idx: idx,
+                    opnd_types: Vec::new(),
+                    profiles_remaining: get_option!(num_profiles),
+                    super_saw_block: false,
+                });
+                &mut self.entries[i]
+            }
+        }
+    }
+
+    /// Get a profile entry for the given instruction index (read-only).
+    fn entry(&self, insn_idx: YarvInsnIdx) -> Option<&ProfileEntry> {
+        let idx = insn_idx as u32;
+        self.entries.binary_search_by_key(&idx, |e| e.insn_idx)
+            .ok().map(|i| &self.entries[i])
+    }
+
     /// Get profiled operand types for a given instruction index
-    pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[TypeDistribution]> {
-        self.opnd_types.get(insn_idx).map(|v| &**v)
+    pub fn get_operand_types(&self, insn_idx: YarvInsnIdx) -> Option<&[TypeDistribution]> {
+        self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())
+    }
+
+    pub fn get_splat_length_summary(&self, insn_idx: YarvInsnIdx) -> Option<SplatLengthDistributionSummary> {
+        self.splat_lengths.get(&insn_idx)
+            .map(SplatLengthDistributionSummary::new)
+    }
+
+    pub fn get_super_method_entry(&self, insn_idx: YarvInsnIdx) -> Option<*const rb_callable_method_entry_t> {
+        let Some(entry) = self.super_cme.get(&insn_idx) else { return None };
+        let summary = TypeDistributionSummary::new(entry);
+
+        if summary.is_monomorphic() {
+            Some(summary.bucket(0).class.0 as *const rb_callable_method_entry_t)
+        } else {
+            None
+        }
+    }
+
+    pub fn super_saw_block(&self, insn_idx: YarvInsnIdx) -> bool {
+        self.entry(insn_idx).is_some_and(|e| e.super_saw_block)
     }
 
     /// Run a given callback with every object in IseqProfile
     pub fn each_object(&self, callback: impl Fn(VALUE)) {
-        for operands in &self.opnd_types {
-            for distribution in operands {
+        for entry in &self.entries {
+            for distribution in &entry.opnd_types {
                 for profiled_type in distribution.each_item() {
                     // If the type is a GC object, call the callback
                     callback(profiled_type.class);
                 }
             }
         }
+
+        for super_cme_values in self.super_cme.values() {
+            for profiled_type in super_cme_values.each_item() {
+                callback(profiled_type.class)
+            }
+        }
     }
 
-    /// Run a given callback with a mutable reference to every object in IseqProfile
+    /// Run a given callback with a mutable reference to every object in IseqProfile.
     pub fn each_object_mut(&mut self, callback: impl Fn(&mut VALUE)) {
-        for operands in &mut self.opnd_types {
-            for distribution in operands {
+        for entry in &mut self.entries {
+            for distribution in &mut entry.opnd_types {
                 for ref mut profiled_type in distribution.each_item_mut() {
                     // If the type is a GC object, call the callback
                     callback(&mut profiled_type.class);
                 }
+            }
+        }
+
+        // Update CME references if they move during compaction.
+        for super_cme_values in self.super_cme.values_mut() {
+            for ref mut profiled_type in super_cme_values.each_item_mut() {
+                callback(&mut profiled_type.class)
             }
         }
     }

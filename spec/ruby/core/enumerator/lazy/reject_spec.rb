@@ -2,8 +2,16 @@
 
 require_relative '../../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../../enumerable/shared/value_packing'
 
 describe "Enumerator::Lazy#reject" do
+  describe "value packing of source yields (matches Enumerable#reject)" do
+    before :each do
+      @take = -> e { e.lazy.reject { false } }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   before :each do
     @yieldsmixed = EnumeratorLazySpecs::YieldsMixed.new.to_enum.lazy
     @eventsmixed = EnumeratorLazySpecs::EventsMixed.new.to_enum.lazy
@@ -16,8 +24,8 @@ describe "Enumerator::Lazy#reject" do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.reject {}
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "sets #size to nil" do
@@ -42,7 +50,7 @@ describe "Enumerator::Lazy#reject" do
 
     -> {
       lazy.first
-    }.should raise_error(RuntimeError, "foo")
+    }.should.raise(RuntimeError, "foo")
   end
 
   it "calls the block with a gathered array when yield with multiple arguments" do
@@ -52,7 +60,7 @@ describe "Enumerator::Lazy#reject" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    -> { @yieldsmixed.reject }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.reject }.should.raise(ArgumentError)
   end
 
   describe "on a nested Lazy" do

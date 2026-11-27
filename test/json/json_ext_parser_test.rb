@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative 'test_helper'
 
 class JSONExtParserTest < Test::Unit::TestCase
@@ -26,7 +27,7 @@ class JSONExtParserTest < Test::Unit::TestCase
 
     ex = assert_raise(ParserError) { parse('-Infinity something') }
     unless RUBY_PLATFORM =~ /java/
-      assert_equal "unexpected token '-Infinity' at line 1 column 1", ex.message
+      assert_equal "invalid number: '-Infinity' at line 1 column 1", ex.message
     end
 
     ex = assert_raise(ParserError) { parse('NaN something') }

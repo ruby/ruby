@@ -185,12 +185,14 @@ define rp
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
-    if ((struct RTypedData *)($arg0))->type & 1
-      printf "%sT_DATA%s(%s): ", $color_type, $color_end, ((const rb_data_type_t *)(((struct RTypedData *)($arg0))->type & ~1))->wrap_struct_name
-      print (struct RTypedData *)($arg0)
+    set $data = (struct RTypedData *)($arg0)
+    set $type = (const rb_data_type_t *)($data->type & ~1)
+    printf "%sT_DATA%s(%s): ", $color_type, $color_end, $type->wrap_struct_name
+    print *$type
+    if ($data->type & 1)
+      print (void *)&$data->data
     else
-      printf "%sT_DATA%s: ", $color_type, $color_end
-      print (struct RData *)($arg0)
+      print $data
     end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MATCH
@@ -235,7 +237,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_IMEMO
     printf "%sT_IMEMO%s(", $color_type, $color_end
-    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&RUBY_IMEMO_MASK)
+    output (enum imemo_type)(($flags&RUBY_IMEMO_MASK)>>RUBY_FL_USHIFT)
     printf "): "
     rp_imemo $arg0
   else
@@ -537,7 +539,7 @@ document rp_class
 end
 
 define rp_imemo
-  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & RUBY_IMEMO_MASK)
+  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags & RUBY_IMEMO_MASK) >> RUBY_FL_USHIFT)
   if $flags == imemo_cref
     printf "(rb_cref_t *) %p\n", (void*)$arg0
     print *(rb_cref_t *)$arg0
@@ -970,10 +972,31 @@ document rb_ps_vm
 Dump all threads in a (rb_vm_t*) and their callstacks
 end
 
+# CFP_ISEQ() and CFP_PC() in zjit.h, written without calling a function so
+# that they work on a core file too. Sets $iseq and $cfp_pc.
+define cfp_iseq_pc
+  set $iseq = $arg0->_iseq
+  set $cfp_pc = $arg0->pc
+  python gdb.set_convenience_variable('zjit_built', gdb.lookup_global_symbol('rb_zjit_entry') is not None)
+  if $zjit_built
+    if rb_zjit_entry && $arg0->jit_return
+      if (VALUE)$arg0->jit_return == 1
+        # ZJIT_JIT_RETURN_C_FRAME
+        set $iseq = 0
+        set $cfp_pc = 0
+      else
+        set $jit_frame = ((zjit_jit_frame_t **)$arg0->jit_return)[-1]
+        set $iseq = $jit_frame->iseq
+        set $cfp_pc = $jit_frame->pc
+      end
+    end
+  end
+end
+
 define print_lineno
   set $cfp = $arg0
-  set $iseq = $cfp->iseq
-  set $pos = $cfp->pc - $iseq->body->iseq_encoded
+  cfp_iseq_pc $cfp
+  set $pos = $cfp_pc - $iseq->body->iseq_encoded
   if $pos != 0
     set $pos = $pos - 1
   end
@@ -981,49 +1004,35 @@ define print_lineno
   set $index = 0
   set $size = $iseq->body->insns_info.size
   set $table = $iseq->body->insns_info.body
-  set $positions = $iseq->body->insns_info.positions
   #printf "size: %d\n", $size
   if $size == 0
   else
   if $size == 1
     printf "%d", $table[0].line_no
   else
-    if $positions
-      # get_insn_info_linear_search
-      set $index = 1
-      while $index < $size
-        #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $positions[$i], $table[$i].line_no, $pos
-        if $positions[$index] > $pos
-          loop_break
-        end
-        set $index = $index + 1
-        if $positions[$index] == $pos
-          loop_break
-        end
-      end
+    # get_insn_info_succinct_bitvector (VM_INSN_INFO_TABLE_IMPL == 2).
+    # insns_info.positions and insns_info.succ_index_table share a union, and
+    # an iseq running on the stack always has succ_index_table.
+    set $sd = $iseq->body->insns_info.positions_or_succ_index_table.succ_index_table
+    set $immediate_table_size = sizeof($sd->imm_part) / sizeof(uint64_t) * 9
+    if $pos < $immediate_table_size
+      set $i = $pos / 9
+      set $j = $pos % 9
+      set $index = ((int)($sd->imm_part[$i] >> ($j * 7))) & 0x7f
     else
-      # get_insn_info_succinct_bitvector
-      set $sd = $iseq->body->insns_info.succ_index_table
-      set $immediate_table_size = sizeof($sd->imm_part) / sizeof(uint64_t) * 9
-      if $pos < $immediate_table_size
-        set $i = $pos / 9
-        set $j = $pos % 9
-        set $index = ((int)($sd->imm_part[$i] >> ($j * 7))) & 0x7f
-      else
-        set $block_index = ($pos - $immediate_table_size) / 512
-        set $block = &$sd->succ_part[$block_index]
-        set $block_bit_index = ($pos - $immediate_table_size) % 512
-        set $small_block_index = $block_bit_index / 64
-        set $small_block_popcount = $small_block_index == 0 ? 0 : (((int)($block->small_block_ranks >> (($small_block_index - 1) * 9))) & 0x1ff)
-        set $x = $block->bits[$small_block_index] << (63 - $block_bit_index % 64)
-        set $x = ($x & 0x5555555555555555) + ($x >> 1 & 0x5555555555555555)
-        set $x = ($x & 0x3333333333333333) + ($x >> 2 & 0x3333333333333333)
-        set $x = ($x & 0x0707070707070707) + ($x >> 4 & 0x0707070707070707)
-        set $x = ($x & 0x001f001f001f001f) + ($x >> 8 & 0x001f001f001f001f)
-        set $x = ($x & 0x0000003f0000003f) + ($x >>16 & 0x0000003f0000003f)
-        set $popcnt = ($x & 0x7f) + ($x >>32 & 0x7f)
-        set $index = $block->rank + $small_block_popcount + $popcnt
-      end
+      set $block_index = ($pos - $immediate_table_size) / 512
+      set $block = &$sd->succ_part[$block_index]
+      set $block_bit_index = ($pos - $immediate_table_size) % 512
+      set $small_block_index = $block_bit_index / 64
+      set $small_block_popcount = $small_block_index == 0 ? 0 : (((int)($block->small_block_ranks >> (($small_block_index - 1) * 9))) & 0x1ff)
+      set $x = $block->bits[$small_block_index] << (63 - $block_bit_index % 64)
+      set $x = ($x & 0x5555555555555555) + ($x >> 1 & 0x5555555555555555)
+      set $x = ($x & 0x3333333333333333) + ($x >> 2 & 0x3333333333333333)
+      set $x = ($x & 0x0707070707070707) + ($x >> 4 & 0x0707070707070707)
+      set $x = ($x & 0x001f001f001f001f) + ($x >> 8 & 0x001f001f001f001f)
+      set $x = ($x & 0x0000003f0000003f) + ($x >>16 & 0x0000003f0000003f)
+      set $popcnt = ($x & 0x7f) + ($x >>32 & 0x7f)
+      set $index = $block->rank + $small_block_popcount + $popcnt
     end
     printf "%d", $table[$index-1].line_no
   end
@@ -1053,31 +1062,16 @@ define print_id
   else
     set $serial = (rb_id_serial_t)$id
   end
-  if $serial && $serial <= ruby_global_symbols.last_id
+  if $serial && $serial < ruby_global_symbols.next_id
     set $idx = $serial / ID_ENTRY_UNIT
-    set $ids = (struct RArray *)ruby_global_symbols.ids
-    set $flags = $ids->basic.flags
-    if ($flags & RUBY_FL_USER1)
-      set $idsptr = $ids->as.ary
-      set $idslen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-    else
-      set $idsptr = $ids->as.heap.ptr
-      set $idslen = $ids->as.heap.len
-    end
-    if $idx < $idslen
-      set $t = 0
-      set $ary = (struct RArray *)$idsptr[$idx]
-      if $ary != RUBY_Qnil
-        set $flags = $ary->basic.flags
-        if ($flags & RUBY_FL_USER1)
-          set $aryptr = $ary->as.ary
-          set $arylen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-        else
-          set $aryptr = $ary->as.heap.ptr
-          set $arylen = $ary->as.heap.len
-        end
-        set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
-        if $result != RUBY_Qnil
+    set $dir = (struct id_entry_dir *)((struct RTypedData *)ruby_global_symbols.ids)->data
+    if $idx < $dir->capa
+      set $bucket = $dir->entries[$idx]
+      if $bucket
+        # rb_darray(struct sym_id_entry)
+        set $entries = (struct sym_id_entry *)((rb_darray_meta_t *)((struct RTypedData *)$bucket)->data + 1)
+        set $result = $entries[$serial % ID_ENTRY_UNIT].str
+        if $result
           print_string $result
         else
           echo undef
@@ -1110,16 +1104,17 @@ define rb_ps_thread
   set $cfp = $ps_thread_th->ec->cfp
   set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec->vm_stack_size)-1
   while $cfp < $cfpend
-    if $cfp->iseq
-      if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
+    cfp_iseq_pc $cfp
+    if $iseq
+      if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & (RUBY_IMEMO_MASK | RUBY_T_MASK))
         printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
-        output/a $cfp->iseq.body
+        output/a $iseq.body
         set print symbol-filename off
         printf "\n"
       else
-      if $cfp->pc
-        set $location = $cfp->iseq->body->location
+      if $cfp_pc
+        set $location = $iseq->body->location
         printf "%d:", $cfpend-$cfp
         print_pathobj $location.pathobj
         printf ":"

@@ -7,6 +7,7 @@ end
 
 module MSpecMatchers
   private def have_instance_variable(variable)
+    MSpec.deprecate __method__, '.should.instance_variable_defined?'
     HaveInstanceVariableMatcher.new(variable)
   end
 end

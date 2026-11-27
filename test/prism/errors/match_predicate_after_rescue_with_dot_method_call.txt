@@ -1,3 +1,4 @@
 'a' rescue 2 in 3.upcase
                  ^ unexpected '.', expecting end-of-input
+                 ^ unexpected '.', ignoring it
 

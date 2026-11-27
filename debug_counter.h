@@ -107,6 +107,7 @@ RB_DEBUG_COUNTER(ccf_iseq_bmethod)
 RB_DEBUG_COUNTER(ccf_noniseq_bmethod)
 RB_DEBUG_COUNTER(ccf_opt_send_complex)
 RB_DEBUG_COUNTER(ccf_opt_send_simple)
+RB_DEBUG_COUNTER(ccf_uncached)
 
 /*
  * control frame push counts.
@@ -240,7 +241,7 @@ RB_DEBUG_COUNTER(obj_wb_unprotect)
 
 RB_DEBUG_COUNTER(obj_obj_embed)
 RB_DEBUG_COUNTER(obj_obj_ptr)
-RB_DEBUG_COUNTER(obj_obj_too_complex)
+RB_DEBUG_COUNTER(obj_obj_complex)
 
 RB_DEBUG_COUNTER(obj_str_ptr)
 RB_DEBUG_COUNTER(obj_str_embed)
@@ -305,6 +306,7 @@ RB_DEBUG_COUNTER(obj_imemo_ment)
 RB_DEBUG_COUNTER(obj_imemo_iseq)
 RB_DEBUG_COUNTER(obj_imemo_env)
 RB_DEBUG_COUNTER(obj_imemo_tmpbuf)
+RB_DEBUG_COUNTER(obj_imemo_cvar_entry)
 RB_DEBUG_COUNTER(obj_imemo_cref)
 RB_DEBUG_COUNTER(obj_imemo_svar)
 RB_DEBUG_COUNTER(obj_imemo_throw_data)
@@ -314,6 +316,8 @@ RB_DEBUG_COUNTER(obj_imemo_callinfo)
 RB_DEBUG_COUNTER(obj_imemo_callcache)
 RB_DEBUG_COUNTER(obj_imemo_constcache)
 RB_DEBUG_COUNTER(obj_imemo_fields)
+RB_DEBUG_COUNTER(obj_imemo_subclasses)
+RB_DEBUG_COUNTER(obj_imemo_cdhash)
 
 RB_DEBUG_COUNTER(opt_new_hit)
 RB_DEBUG_COUNTER(opt_new_miss)

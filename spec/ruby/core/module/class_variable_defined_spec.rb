@@ -19,13 +19,13 @@ describe "Module#class_variable_defined?" do
     obj = mock("metaclass class variable")
     meta = obj.singleton_class
     meta.send :class_variable_set, :@@var, 1
-    meta.send(:class_variable_defined?, :@@var).should be_true
+    meta.send(:class_variable_defined?, :@@var).should == true
   end
 
   it "returns false if the class variable is not defined in a metaclass" do
     obj = mock("metaclass class variable")
     meta = obj.singleton_class
-    meta.class_variable_defined?(:@@var).should be_false
+    meta.class_variable_defined?(:@@var).should == false
   end
 
   it "returns true if a class variables with the given name is defined in an included module" do
@@ -44,11 +44,11 @@ describe "Module#class_variable_defined?" do
 
     -> {
       c.class_variable_defined?(:invalid_name)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
 
     -> {
       c.class_variable_defined?("@invalid_name")
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
   it "converts a non string/symbol name to string using to_str" do
@@ -62,11 +62,11 @@ describe "Module#class_variable_defined?" do
     o = mock('123')
     -> {
       c.class_variable_defined?(o)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
 
     o.should_receive(:to_str).and_return(123)
     -> {
       c.class_variable_defined?(o)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 end

@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/month'
 require 'date'
 
 describe "Date#mon" do
-  it_behaves_like :date_month, :mon
+  it "is an alias of Date#month" do
+    Date.instance_method(:mon).should == Date.instance_method(:month)
+  end
 end

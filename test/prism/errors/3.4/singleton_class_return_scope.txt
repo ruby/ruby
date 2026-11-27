@@ -1,0 +1,9 @@
+-> { class << self; return; end }
+                    ^~~~~~ Invalid return in class/module body
+
+m { class << self; x; rescue; return; end }
+                              ^~~~~~ Invalid return in class/module body
+
+def f; class << self; class << self; return; end; end; end
+                                     ^~~~~~ Invalid return in class/module body
+

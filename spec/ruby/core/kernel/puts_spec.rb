@@ -15,7 +15,7 @@ describe "Kernel#puts" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:puts)
+    Kernel.private_instance_methods(false).should.include?(:puts)
   end
 
   it "delegates to $stdout.puts" do
@@ -25,5 +25,7 @@ describe "Kernel#puts" do
 end
 
 describe "Kernel.puts" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:puts)
+  end
 end

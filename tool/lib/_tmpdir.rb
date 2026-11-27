@@ -21,73 +21,86 @@ rescue Errno::EEXIST
 end
 # warn "tmpdir(#{tmpdir.size}) = #{tmpdir}"
 
+# Bundler's spec helpers walk up the directory tree looking for `.bundle`,
+# stopping once they see a `tmp` directory (Bundler::SharedHelpers#search_up).
+# On Windows the temp dir lives under the user home (%LOCALAPPDATA%\Temp), so
+# without a `tmp` marker the search escapes the sandbox and picks up the real
+# ~/.bundle. Create one so the search stops at the temp root.
+Dir.mkdir(File.join(tmpdir, "tmp"))
+
 pid = $$
 END {
   if pid == $$
     begin
+      Dir.rmdir(File.join(tmpdir, "tmp"))
       Dir.rmdir(tmpdir)
     rescue Errno::ENOENT
     rescue Errno::ENOTEMPTY
-      require_relative "colorize"
-      colorize = Colorize.new
-      ls = Struct.new(:colorize) do
-        def mode_inspect(m, s)
-          [
-            (m & 0o4 == 0 ? ?- : ?r),
-            (m & 0o2 == 0 ? ?- : ?w),
-            (m & 0o1 == 0 ? (s ? s.upcase : ?-) : (s || ?x)),
-          ]
-        end
-        def decorate_path(path, st)
-          case
-          when st.directory?
-            color = "bold;blue"
-            type = "/"
-          when st.symlink?
-            color = "bold;cyan"
+      unless $no_report_tmpdir ||= nil
+        require_relative "colorize"
+        colorize = Colorize.new
+        ls = Struct.new(:colorize) do
+          def mode_inspect(m, s)
+            [
+              (m & 0o4 == 0 ? ?- : ?r),
+              (m & 0o2 == 0 ? ?- : ?w),
+              (m & 0o1 == 0 ? (s ? s.upcase : ?-) : (s || ?x)),
+            ]
+          end
+          def decorate_path(path, st)
+            case
+            when st.directory?
+              color = "bold;blue"
+              type = "/"
+            when st.symlink?
+              color = "bold;cyan"
             # type = "@"
-          when st.executable?
-            color = "bold;green"
-            type = "*"
-          when path.end_with?(".gem")
-            color = "green"
-          end
-          colorize.decorate(path, color) + (type || "")
-        end
-        def list_tree(parent, indent = "", &block)
-          children = Dir.children(parent).map do |child|
-            [child, path = File.join(parent, child), File.lstat(path)]
-          end
-          nlink_width = children.map {|child, path, st| st.nlink}.max.to_s.size
-          size_width = children.map {|child, path, st| st.size}.max.to_s.size
-
-          children.each do |child, path, st|
-            m = st.mode
-            m = [
-              (st.file? ? ?- : st.ftype[0]),
-              mode_inspect(m >> 6, (?s unless m & 04000 == 0)),
-              mode_inspect(m >> 3, (?s unless m & 02000 == 0)),
-              mode_inspect(m,      (?t unless m & 01000 == 0)),
-            ].join("")
-            warn sprintf("%s* %s %*d %*d %s % s%s",
-                         indent, m, nlink_width, st.nlink, size_width, st.size,
-                         st.mtime.to_s, decorate_path(child,  st),
-                         (" -> " + decorate_path(File.readlink(path), File.stat(path)) if
-                           st.symlink?))
-            if st.directory?
-              list_tree(File.join(parent, child), indent + "  ", &block)
+            when st.executable?
+              color = "bold;green"
+              type = "*"
+            when path.end_with?(".gem")
+              color = "green"
             end
-            yield path, st if block
+            colorize.decorate(path, color) + (type || "")
           end
-        end
-      end.new(colorize)
-      warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
-      Dir.chdir(tmpdir) do
-        ls.list_tree(".") do |path, st|
-          if st.directory?
-            Dir.rmdir(path)
-          else
-            File.unlink(path)
+          def list_tree(parent, indent = "", &block)
+            children = Dir.children(parent).map do |child|
+              [child, path = File.join(parent, child), File.lstat(path)]
+            end
+            nlink_width = children.map {|child, path, st| st.nlink}.max.to_s.size
+            size_width = children.map {|child, path, st| st.size}.max.to_s.size
+
+            children.each do |child, path, st|
+              m = st.mode
+              m = [
+                (st.file? ? ?- : st.ftype[0]),
+                mode_inspect(m >> 6, (?s unless m & 04000 == 0)),
+                mode_inspect(m >> 3, (?s unless m & 02000 == 0)),
+                mode_inspect(m,      (?t unless m & 01000 == 0)),
+              ].join("")
+              warn sprintf("%s* %s %*d %*d %s % s%s",
+                           indent, m, nlink_width, st.nlink, size_width, st.size,
+                           st.mtime.to_s, decorate_path(child,  st),
+                           (" -> " + decorate_path(File.readlink(path), File.stat(path)) if
+                             st.symlink?))
+              if st.directory?
+                list_tree(File.join(parent, child), indent + "  ", &block)
+              end
+              yield path, st if block
+            end
+          end
+        end.new(colorize)
+        warn colorize.notice("Children under ")+colorize.fail(tmpdir)+":"
+        Dir.chdir(tmpdir) do
+          ls.list_tree(".") do |path, st|
+            if st.directory?
+              Dir.rmdir(path)
+            else
+              File.unlink(path)
+            end
+          rescue Errno::EACCES
+            # On Windows, a killed process may still hold file locks briefly.
+            # Ignore and let FileUtils.rm_rf handle it below.
           end
         end
       end
@@ -97,4 +110,5 @@ END {
   end
 }
 
-ENV["TMPDIR"] = ENV["SPEC_TEMP_DIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
+ENV["TMPDIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
+ENV["SPEC_TEMP_DIR"] = File.join(tmpdir, "spec")

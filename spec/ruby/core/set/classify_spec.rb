@@ -13,7 +13,7 @@ describe "Set#classify" do
 
   it "returns an Enumerator when passed no block" do
     enum = @set.classify
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
 
     classified = enum.each { |x| x.length }
     classified.should == { 3 => Set["one", "two"], 4 => Set["four"], 5 => Set["three"] }
@@ -22,5 +22,21 @@ describe "Set#classify" do
   it "classifies the Objects in self based on the block's return value" do
     classified = @set.classify { |x| x.length }
     classified.should == { 3 => Set["one", "two"], 4 => Set["four"], 5 => Set["three"] }
+  end
+
+  ruby_version_is "4.1" do
+    it "retains compare_by_identity flag" do
+      set = Set["one", "two"].compare_by_identity
+      classified = set.classify { |x| x.length }
+      classified.values.each { |s| s.compare_by_identity?.should == true }
+    end
+  end
+
+  ruby_version_is ""..."4.0" do
+    it "does not retain compare_by_identity flag" do
+      set = Set["one", "two"].compare_by_identity
+      classified = set.classify { |x| x.length }
+      classified.values.each { |s| s.compare_by_identity?.should == false }
+    end
   end
 end

@@ -64,6 +64,18 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_false(p7.verify([@ca_cert], OpenSSL::X509::Store.new))
   end
 
+  def test_signed_verify_callback
+    data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data)
+
+    p7 = OpenSSL::PKCS7.new(tmp)
+    store = OpenSSL::X509::Store.new
+    store.verify_callback = proc { raise "verify_callback" }
+    assert_raise_with_message(RuntimeError, "verify_callback") {
+      p7.verify([], store)
+    }
+  end
+
   def test_signed_flags
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
@@ -238,8 +250,6 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     assert_equal(@ee2_cert.serial, recip[1].serial)
     assert_equal(data, p7.decrypt(@ee2_key, @ee2_cert))
 
-    assert_equal(data, p7.decrypt(@ee1_key))
-
     assert_raise(OpenSSL::PKCS7::PKCS7Error) {
       p7.decrypt(@ca_key, @ca_cert)
     }
@@ -248,6 +258,16 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     assert_raise_with_message(ArgumentError, /RC2-40-CBC/) {
       OpenSSL::PKCS7.encrypt(certs, data)
     }
+  end
+
+  def test_enveloped_decrypt_key_only
+    omit_on_fips # PKCS #1 v1.5 padding
+
+    data = "aaaaa\nbbbbb\nccccc\n"
+    cipher = "AES-128-CBC"
+
+    p7 = OpenSSL::PKCS7.encrypt([@ee1_cert], data, cipher, OpenSSL::PKCS7::BINARY)
+    assert_equal(data, p7.decrypt(@ee1_key))
   end
 
   def test_enveloped_add_recipient

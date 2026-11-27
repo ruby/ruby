@@ -6,6 +6,11 @@ require "date"
 require "rubygems/safe_marshal"
 
 class TestGemSafeMarshal < Gem::TestCase
+  unless method_defined?(:assert_linear_performance)
+    require "core_assertions"
+    include Test::Unit::CoreAssertions
+  end
+
   define_method("test_safe_load_marshal Date #<Date: 1994-12-09 ((2449696j,0s,0n),+0s,2299161j)>") { assert_safe_load_marshal "\x04\bU:\tDate[\vi\x00i\x03 a%i\x00i\x00i\x00f\f2299161" }
   define_method("test_safe_load_marshal Float 0.0") { assert_safe_load_marshal "\x04\bf\x060" }
   define_method("test_safe_load_marshal Float -0.0") { assert_safe_load_marshal "\x04\bf\a-0" }
@@ -239,6 +244,14 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_safe_load_as [0.0, a, 1.0, a]
   end
 
+  def test_link_after_bignum
+    i = 2**64
+    s = "s"
+    assert_safe_load_as [i, i]
+    assert_safe_load_as [i, s, "t", s]
+    assert_safe_load_as [Rational(i, 3), s, s]
+  end
+
   def test_hash_with_ivar
     h = { runtime: :development }
     h.instance_variable_set :@type, []
@@ -252,6 +265,8 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_hash_with_compare_by_identity
+    pend "Marshal.dump of a compare_by_identity Hash emits an unexpected ivar on jruby" if RUBY_ENGINE == "jruby"
+
     with_const(Gem::SafeMarshal, :PERMITTED_CLASSES, %w[Hash]) do
       assert_safe_load_as Hash.new.compare_by_identity.tap {|h|
                             h[+"a"] = 1
@@ -342,6 +357,62 @@ class TestGemSafeMarshal < Gem::TestCase
     end
   end
 
+  def test_large_bignum
+    [2**(8 * 40_000), 7**100_000].each do |i|
+      assert_safe_load_as i
+      assert_safe_load_as(-i)
+    end
+  end
+
+  def test_load_bignum_in_linear_time
+    pre = ->(n) { Marshal.dump(2**(8 * n)) }
+    assert_linear_performance([1_000, 10_000, 100_000], rehearsal: 10, pre: pre) do |dumped|
+      Gem::SafeMarshal.safe_load(dumped)
+    end
+  end
+
+  def test_bignum_unexpected_sign
+    e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::FormatError) do
+      Gem::SafeMarshal.safe_load("\x04\bl*\a\xFF\xFF\xFF\xFF")
+    end
+    assert_equal 'Unexpected sign for Bignum "*" (42)', e.message
+  end
+
+  def test_name_tuple_unmarshal_content_addressable_metadata
+    tuple = Gem::NameTuple.new(
+      "a",
+      Gem::Version.new("1"),
+      "x86_64-linux",
+      content_address: "abcdef12",
+      ruby_abi: "3.3"
+    )
+
+    unmarshalled_tuple = Gem::SafeMarshal.safe_load(Marshal.dump(tuple))
+
+    assert_equal "a", unmarshalled_tuple.name
+    assert_equal Gem::Version.new("1"), unmarshalled_tuple.version
+    assert_equal "x86_64-linux", unmarshalled_tuple.platform
+    assert_equal "abcdef12", unmarshalled_tuple.content_address
+    assert_equal "3.3", unmarshalled_tuple.ruby_abi
+    assert_equal "a-1-abcdef12", unmarshalled_tuple.full_name
+  end
+
+  def test_name_tuple_unmarshal_legacy_payload_without_content_addressable_metadata
+    tuple = Gem::NameTuple.allocate
+    tuple.instance_variable_set :@name, "a"
+    tuple.instance_variable_set :@version, Gem::Version.new("1")
+    tuple.instance_variable_set :@platform, "x86_64-linux"
+
+    unmarshalled_tuple = Gem::SafeMarshal.safe_load(Marshal.dump(tuple))
+
+    assert_equal "a", unmarshalled_tuple.name
+    assert_equal Gem::Version.new("1"), unmarshalled_tuple.version
+    assert_equal "x86_64-linux", unmarshalled_tuple.platform
+    assert_nil unmarshalled_tuple.content_address
+    assert_nil unmarshalled_tuple.ruby_abi
+    assert_equal "a-1-x86_64-linux", unmarshalled_tuple.full_name
+  end
+
   def test_gem_spec_unmarshall_license
     spec = Gem::Specification.new do |s|
       s.name = "hi"
@@ -421,10 +492,10 @@ class TestGemSafeMarshal < Gem::TestCase
     end
     assert_equal e.message, "Unexpected EOF"
 
-    e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
+    e = assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
       Gem::SafeMarshal.safe_load("\x04\x08[\x06")
     end
-    assert_equal e.message, "Unexpected EOF"
+    assert_equal e.message, "expected 1 elements, but only 0 bytes remain"
 
     e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
       Gem::SafeMarshal.safe_load("\004\010:\012")
@@ -457,6 +528,43 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_raise(Gem::SafeMarshal::Reader::EOFError) do
       Gem::SafeMarshal.safe_load("\004\010@\377")
     end
+    assert_raise(Gem::SafeMarshal::Reader::NegativeLengthError) do
+      Gem::SafeMarshal.safe_load("\004\010{\325")
+    end
+  end
+
+  def test_length_too_long
+    huge_length = "\x04#{[2_000_000_000].pack("V")}".b
+
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08[#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08{#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08}#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08I\"\x00#{huge_length}")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::LengthTooLongError) do
+      Gem::SafeMarshal.safe_load("\x04\x08o:\x06C#{huge_length}")
+    end
+
+    # lengths that fit within the remaining input still parse
+    assert_equal [1, 2, 3], Gem::SafeMarshal.safe_load("\x04\x08[\x08i\x06i\ai\x08")
+    assert_equal({ 1 => 2 }, Gem::SafeMarshal.safe_load("\x04\x08{\x06i\x06i\a"))
+  end
+
+  def test_date_user_defined_rejected
+    # Provide string as the inner payload, Date._load passes it raw to rb_marshal_load.
+    inner = Marshal.dump("exploit")
+    payload = "\x04\bu:\tDate" + (inner.bytesize + 5).chr + inner
+    e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnsupportedError) do
+      Gem::SafeMarshal.safe_load(payload)
+    end
+    assert_equal "Unsupported user-defined class Date in marshal stream @ root", e.message
   end
 
   def assert_safe_load_marshal(dumped, additional_methods: [], permitted_ivars: nil, equality: true, marshal_dump_equality: true,

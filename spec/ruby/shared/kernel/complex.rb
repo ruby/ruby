@@ -2,7 +2,7 @@
 describe :kernel_complex, shared: true do
 
   it "returns a Complex object" do
-    @object.send(@method, '9').should be_an_instance_of(Complex)
+    @object.send(@method, '9').should.instance_of?(Complex)
   end
 
   it "understands integers" do

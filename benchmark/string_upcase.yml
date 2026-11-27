@@ -7,6 +7,10 @@ prelude: |
   nonascii10 = nonascii1 * 10
   nonascii100 = nonascii10 * 10
   nonascii1000 = nonascii100 * 10
+  ascii8bit256 = (0..255).to_a.pack("C*")
+  ascii8bit2560 = ascii8bit256 * 10
+  ascii8bit25600 = ascii8bit2560 * 10
+  ascii8bit256000 = ascii8bit25600 * 10
 benchmark:
   upcase-1: str1.upcase
   upcase-10: str10.upcase
@@ -16,3 +20,7 @@ benchmark:
   upcase-nonascii10: nonascii10.upcase
   upcase-nonascii100: nonascii100.upcase
   upcase-nonascii1000: nonascii1000.upcase
+  upcase-ascii8bit-256: ascii8bit256.upcase
+  upcase-ascii8bit-2560: ascii8bit2560.upcase
+  upcase-ascii8bit-25600: ascii8bit25600.upcase
+  upcase-ascii8bit-256000: ascii8bit256000.upcase

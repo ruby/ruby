@@ -22,7 +22,7 @@ RSpec.describe "post bundle message" do
 
   describe "when installing to system gems" do
     before do
-      bundle "config set --local path.system true"
+      bundle_config "path.system true"
     end
 
     it "shows proper messages according to the configured groups" do
@@ -32,21 +32,21 @@ RSpec.describe "post bundle message" do
       expect(out).to include(bundle_complete_message)
       expect(out).to include(installed_gems_stats)
 
-      bundle "config set --local without emo"
+      bundle_config "without emo"
       bundle :install
       expect(out).to include(bundle_show_system_message)
       expect(out).to include("Gems in the group 'emo' were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include(installed_gems_stats)
 
-      bundle "config set --local without emo test"
+      bundle_config "without emo test"
       bundle :install
       expect(out).to include(bundle_show_system_message)
       expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
       expect(out).to include("4 Gemfile dependencies, 2 gems now installed.")
 
-      bundle "config set --local without emo obama test"
+      bundle_config "without emo obama test"
       bundle :install
       expect(out).to include(bundle_show_system_message)
       expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
@@ -69,28 +69,28 @@ RSpec.describe "post bundle message" do
     let(:bundle_path) { "./vendor" }
 
     it "shows proper messages according to the configured groups" do
-      bundle "config set --local path vendor"
+      bundle_config "path vendor"
       bundle :install
       expect(out).to include(bundle_show_path_message)
       expect(out).to_not include("Gems in the group")
       expect(out).to include(bundle_complete_message)
 
-      bundle "config set --local path vendor"
-      bundle "config set --local without emo"
+      bundle_config "path vendor"
+      bundle_config "without emo"
       bundle :install
       expect(out).to include(bundle_show_path_message)
       expect(out).to include("Gems in the group 'emo' were not installed")
       expect(out).to include(bundle_complete_message)
 
-      bundle "config set --local path vendor"
-      bundle "config set --local without emo test"
+      bundle_config "path vendor"
+      bundle_config "without emo test"
       bundle :install
       expect(out).to include(bundle_show_path_message)
       expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
       expect(out).to include(bundle_complete_message)
 
-      bundle "config set --local path vendor"
-      bundle "config set --local without emo obama test"
+      bundle_config "path vendor"
+      bundle_config "without emo obama test"
       bundle :install
       expect(out).to include(bundle_show_path_message)
       expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
@@ -102,7 +102,7 @@ RSpec.describe "post bundle message" do
     let(:bundle_path) { bundled_app("cache") }
 
     it "shows proper messages according to the configured groups" do
-      bundle "config set --local path #{bundle_path}"
+      bundle_config "path #{bundle_path}"
       bundle :install
       expect(out).to include("Bundled gems are installed into `./cache`")
       expect(out).to_not include("Gems in the group")
@@ -114,7 +114,7 @@ RSpec.describe "post bundle message" do
     let(:bundle_path) { tmp("not_bundled_app") }
 
     it "shows proper messages according to the configured groups" do
-      bundle "config set --local path #{bundle_path}"
+      bundle_config "path #{bundle_path}"
       bundle :install
       expect(out).to include("Bundled gems are installed into `#{tmp("not_bundled_app")}`")
       expect(out).to_not include("Gems in the group")
@@ -124,7 +124,7 @@ RSpec.describe "post bundle message" do
 
   describe "with misspelled or non-existent gem name" do
     before do
-      bundle "config set force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
     end
 
     it "should report a helpful error message" do
@@ -161,19 +161,19 @@ RSpec.describe "post bundle message" do
       expect(out).not_to include("Gems in the groups")
       expect(out).to include(bundle_updated_message)
 
-      bundle "config set --local without emo"
+      bundle_config "without emo"
       bundle :install
       bundle :update, all: true
       expect(out).to include("Gems in the group 'emo' were not updated")
       expect(out).to include(bundle_updated_message)
 
-      bundle "config set --local without emo test"
+      bundle_config "without emo test"
       bundle :install
       bundle :update, all: true
       expect(out).to include("Gems in the groups 'emo' and 'test' were not updated")
       expect(out).to include(bundle_updated_message)
 
-      bundle "config set --local without emo obama test"
+      bundle_config "without emo obama test"
       bundle :install
       bundle :update, all: true
       expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not updated")

@@ -1,0 +1,130 @@
+#include "ruby.h"
+#include "ruby/internal/has/feature.h"
+
+/*
+ * Regression test for a heap-use-after-free in rb_gc_unregister_address().
+ *
+ * This mirrors the pattern used by some C extensions (e.g. Nokogiri's XPath
+ * argument marshalling): a buffer is ruby_xcalloc()'d, the address of each of
+ * its slots is registered with rb_gc_register_address(), and later each slot
+ * is unregistered before the buffer is ruby_xfree()'d.
+ * https://github.com/sparklemotion/nokogiri/blob/fea733159ad8c0328c591125bb1fb30681859a0d/ext/nokogiri/xml_xpath_context.c#L231-L255
+ *
+ * A buggy rb_gc_unregister_address() wrote *through* the address being removed
+ * (corrupting the sibling slots) and failed to drop the entry from its internal
+ * list, leaving a dangling pointer into the freed buffer that the next GC would
+ * dereference.
+ *
+ * Returns true if unregistering one slot leaves the other registered slots
+ * untouched. The trailing ruby_xfree()+gc additionally reproduces the literal
+ * use-after-free for ASAN/Valgrind builds.
+ */
+static VALUE
+gc_unregister_address_keeps_siblings(VALUE self)
+{
+    const int n = 4;
+    VALUE *buf = ruby_xcalloc((size_t)n, sizeof(VALUE));
+    VALUE saved = rb_ary_new_capa(n);
+    VALUE result = Qtrue;
+
+    for (int i = 0; i < n; i++) {
+        buf[i] = rb_sprintf("registered address %d", i);
+        rb_gc_register_address(&buf[i]);
+        rb_ary_push(saved, buf[i]); /* keep the objects reachable */
+    }
+
+    /* Unregistering a middle slot must only update the internal list; it must
+     * not write through &buf[1] and corrupt the sibling slots. */
+    rb_gc_unregister_address(&buf[1]);
+    for (int i = 0; i < n; i++) {
+        if (i == 1) continue;
+        if (buf[i] != rb_ary_entry(saved, i)) result = Qfalse;
+    }
+
+    /* Clean up the way an extension would. With the bug, a dangling registered
+     * address into this freed buffer triggers a use-after-free in the GC. */
+    rb_gc_unregister_address(&buf[0]);
+    rb_gc_unregister_address(&buf[2]);
+    rb_gc_unregister_address(&buf[3]);
+    ruby_xfree(buf);
+    rb_gc();
+
+    RB_GC_GUARD(saved);
+    return result;
+}
+
+static VALUE static_slot;
+
+static VALUE
+gc_register_static(VALUE self, VALUE v)
+{
+    rb_gc_register_address(&static_slot);
+    static_slot = v;
+    return Qtrue;
+}
+
+static VALUE
+gc_unregister_static(VALUE self)
+{
+    rb_gc_unregister_address(&static_slot);
+    return Qnil;
+}
+
+static VALUE
+gc_static_slot_value(VALUE self)
+{
+    return static_slot;
+}
+
+static VALUE
+gc_static_slot_eq(VALUE self, VALUE v)
+{
+    if (!RB_TYPE_P(static_slot, T_STRING) || !RB_TYPE_P(v, T_STRING)) return Qfalse;
+    return rb_str_equal(static_slot, v);
+}
+
+static VALUE
+gc_assign_static(VALUE self, VALUE v)
+{
+    static_slot = v;
+    return v;
+}
+
+static VALUE
+gc_register_current_static(VALUE self)
+{
+    rb_gc_register_address(&static_slot);
+    return Qnil;
+}
+
+/* Mirrors the VM-side RB_GC_REGISTERED_ADDR_CHECK definition without including a
+ * private GC header: debug and ASAN builds record the registration-time value. */
+static VALUE
+gc_registered_address_check_enabled_p(VALUE self)
+{
+#if RUBY_DEBUG || defined(__SANITIZE_ADDRESS__) || RBIMPL_HAS_FEATURE(address_sanitizer)
+    return Qtrue;
+#else
+    return Qfalse;
+#endif
+}
+
+void
+Init_register(void)
+{
+    rb_ext_ractor_safe(true);
+
+    VALUE mBug = rb_define_module("Bug");
+    VALUE mGC = rb_define_module_under(mBug, "GC");
+    rb_define_singleton_method(mGC, "unregister_address_keeps_siblings?",
+                               gc_unregister_address_keeps_siblings, 0);
+    rb_define_singleton_method(mGC, "register_static", gc_register_static, 1);
+    rb_define_singleton_method(mGC, "unregister_static", gc_unregister_static, 0);
+    rb_define_singleton_method(mGC, "static_slot_value", gc_static_slot_value, 0);
+    rb_define_singleton_method(mGC, "assign_static", gc_assign_static, 1);
+    rb_define_singleton_method(mGC, "static_slot_eq?", gc_static_slot_eq, 1);
+    rb_define_singleton_method(mGC, "register_current_static",
+                               gc_register_current_static, 0);
+    rb_define_singleton_method(mGC, "registered_address_check_enabled?",
+                               gc_registered_address_check_enabled_p, 0);
+}

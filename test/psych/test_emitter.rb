@@ -17,6 +17,14 @@ module Psych
     end
 
     def test_set_canonical
+      if libfyaml?
+        # The libfyaml backend has no canonical mode and rejects enabling it.
+        assert_raise(NotImplementedError) { @emitter.canonical = true }
+        @emitter.canonical = false
+        assert_equal false, @emitter.canonical
+        return
+      end
+
       @emitter.canonical = true
       assert_equal true, @emitter.canonical
 

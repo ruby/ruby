@@ -105,24 +105,37 @@ describe :queue_deq, shared: true do
       q = @object.call
       -> {
         q.send(@method, timeout: "1")
-      }.should raise_error(TypeError, "no implicit conversion to float from string")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of String into Float")
 
       -> {
         q.send(@method, timeout: false)
-      }.should raise_error(TypeError, "no implicit conversion to float from false")
+      }.should raise_consistent_error(TypeError, "no implicit conversion of false into Float")
     end
 
     it "raise ArgumentError if non_block = true is passed too" do
       q = @object.call
       -> {
         q.send(@method, true, timeout: 1)
-      }.should raise_error(ArgumentError, "can't set a timeout if non_block is enabled")
+      }.should.raise(ArgumentError, "can't set a timeout if non_block is enabled")
     end
 
     it "returns nil for a closed empty queue" do
       q = @object.call
       q.close
       q.send(@method, timeout: 0).should == nil
+    end
+
+    it "returns nil for an empty queue that is closed before the timeout" do
+      q = @object.call
+
+      t = Thread.new {
+        q.send(@method, timeout: TIME_TOLERANCE * 2).should == nil
+      }
+      Thread.pass until t.status == "sleep" && q.num_waiting == 1
+      q.close
+      t.join(TIME_TOLERANCE).should == t
+    ensure
+      t&.kill
     end
   end
 
@@ -137,7 +150,7 @@ describe :queue_deq, shared: true do
 
     it "raises a ThreadError if the queue is empty" do
       q = @object.call
-      -> { q.send(@method, true) }.should raise_error(ThreadError)
+      -> { q.send(@method, true) }.should.raise(ThreadError)
     end
 
     it "removes an item from a closed queue" do
@@ -150,15 +163,15 @@ describe :queue_deq, shared: true do
     it "raises a ThreadError for a closed empty queue" do
       q = @object.call
       q.close
-      -> { q.send(@method, true) }.should raise_error(ThreadError)
+      -> { q.send(@method, true) }.should.raise(ThreadError)
     end
 
     it "converts true-ish non_blocking argument to true" do
       q = @object.call
 
-      -> { q.send(@method, true) }.should raise_error(ThreadError)
-      -> { q.send(@method, 1) }.should raise_error(ThreadError)
-      -> { q.send(@method, "") }.should raise_error(ThreadError)
+      -> { q.send(@method, true) }.should.raise(ThreadError)
+      -> { q.send(@method, 1) }.should.raise(ThreadError)
+      -> { q.send(@method, "") }.should.raise(ThreadError)
     end
   end
 end

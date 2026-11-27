@@ -21,7 +21,7 @@ describe "String#concat" do
 
   it "returns self when given no arguments" do
     str = +"hello"
-    str.concat.should equal(str)
+    str.concat.should.equal?(str)
     str.should == "hello"
   end
 end

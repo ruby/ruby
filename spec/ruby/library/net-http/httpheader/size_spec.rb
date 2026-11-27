@@ -1,8 +1,22 @@
 require_relative '../../../spec_helper'
 require 'net/http'
 require_relative 'fixtures/classes'
-require_relative 'shared/size'
 
 describe "Net::HTTPHeader#size" do
-  it_behaves_like :net_httpheader_size, :size
+  before :each do
+    @headers = NetHTTPHeaderSpecs::Example.new
+  end
+
+  it "returns the number of header entries in self" do
+    @headers.size.should.eql?(0)
+
+    @headers["a"] = "b"
+    @headers.size.should.eql?(1)
+
+    @headers["b"] = "b"
+    @headers.size.should.eql?(2)
+
+    @headers["c"] = "c"
+    @headers.size.should.eql?(3)
+  end
 end

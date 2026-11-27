@@ -8,7 +8,7 @@ describe :rb_ary_new2, shared: true do
   end
 
   it "raises an ArgumentError when the given argument is negative" do
-    -> { @s.send(@method, -1) }.should raise_error(ArgumentError)
+    -> { @s.send(@method, -1) }.should.raise(ArgumentError)
   end
 end
 
@@ -84,7 +84,7 @@ describe "C-API Array function" do
     end
 
     it "raises a FrozenError if the array is frozen" do
-      -> { @s.rb_ary_cat([].freeze, 1) }.should raise_error(FrozenError)
+      -> { @s.rb_ary_cat([].freeze, 1) }.should.raise(FrozenError)
     end
   end
 
@@ -120,7 +120,7 @@ describe "C-API Array function" do
 
     it "returns the original array" do
       a = [1,2,3]
-      @s.rb_ary_reverse(a).should equal(a)
+      @s.rb_ary_reverse(a).should.equal?(a)
     end
   end
 
@@ -131,7 +131,7 @@ describe "C-API Array function" do
     end
 
     it "raises a FrozenError if the array is frozen" do
-      -> { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(FrozenError)
+      -> { @s.rb_ary_rotate([].freeze, 1) }.should.raise(FrozenError)
     end
   end
 
@@ -166,7 +166,7 @@ describe "C-API Array function" do
       b = @s.rb_ary_dup(a)
 
       b.should == a
-      b.should_not equal(a)
+      b.should_not.equal?(a)
     end
   end
 
@@ -221,7 +221,7 @@ describe "C-API Array function" do
 
     it "raises an IndexError if the negative index is greater than the length" do
       a = [1, 2, 3]
-      -> { @s.rb_ary_store(a, -10, 5) }.should raise_error(IndexError)
+      -> { @s.rb_ary_store(a, -10, 5) }.should.raise(IndexError)
     end
 
     it "enlarges the array as needed" do
@@ -232,7 +232,7 @@ describe "C-API Array function" do
 
     it "raises a FrozenError if the array is frozen" do
       a = [1, 2, 3].freeze
-      -> { @s.rb_ary_store(a, 1, 5) }.should raise_error(FrozenError)
+      -> { @s.rb_ary_store(a, 1, 5) }.should.raise(FrozenError)
     end
   end
 
@@ -273,6 +273,17 @@ describe "C-API Array function" do
       b.should == [1, 2, 3]
       a.should == [1, 2, 3] # check a was not modified
     end
+
+    it "keeps Float elements alive across GC and later accesses" do
+      a = [1.5, 2.5, 3.5]
+      @s.RARRAY_PTR_iterate(a) { |e| }
+      GC.start
+      b = []
+      @s.RARRAY_PTR_iterate(a) do |e|
+        b << e
+      end
+      b.should == [1.5, 2.5, 3.5]
+    end
   end
 
   describe "RARRAY_LEN" do
@@ -307,11 +318,11 @@ describe "C-API Array function" do
 
   describe "rb_ary_includes" do
     it "returns true if the array includes the element" do
-      @s.rb_ary_includes([1, 2, 3], 2).should be_true
+      @s.rb_ary_includes([1, 2, 3], 2).should == true
     end
 
     it "returns false if the array does not include the element" do
-      @s.rb_ary_includes([1, 2, 3], 4).should be_false
+      @s.rb_ary_includes([1, 2, 3], 4).should == false
     end
   end
 
@@ -322,7 +333,7 @@ describe "C-API Array function" do
     end
 
     it "returns nil for an out of range index" do
-      @s.rb_ary_aref([1, 2, 3], 6).should be_nil
+      @s.rb_ary_aref([1, 2, 3], 6).should == nil
     end
 
     it "returns a new array where the first argument is the index and the second is the length" do
@@ -335,7 +346,7 @@ describe "C-API Array function" do
     end
 
     it "returns nil when the start of a range is out of bounds" do
-      @s.rb_ary_aref([1, 2, 3, 4], 6..10).should be_nil
+      @s.rb_ary_aref([1, 2, 3, 4], 6..10).should == nil
     end
 
     it "returns an empty array when the start of a range equals the last element" do
@@ -343,7 +354,7 @@ describe "C-API Array function" do
     end
   end
 
-  ruby_version_is ""..."4.0" do
+  ruby_version_is ""..."4.1" do
     describe "rb_iterate" do
       it "calls an callback function as a block passed to an method" do
         s = [1,2,3,4]
@@ -352,7 +363,7 @@ describe "C-API Array function" do
         s2.should == s
 
         # Make sure they're different objects
-        s2.equal?(s).should be_false
+        s2.equal?(s).should == false
       end
 
       it "calls a function with the other function available as a block" do
@@ -376,6 +387,10 @@ describe "C-API Array function" do
 
         s2.should == [1,2,3,4]
       end
+
+      it "passes non-Ruby pointers to the iteration and block callbacks" do
+        @s.rb_iterate_with_pointer.should == [14]
+      end
     end
   end
 
@@ -387,7 +402,7 @@ describe "C-API Array function" do
       s2.should == s
 
       # Make sure they're different objects
-      s2.equal?(s).should be_false
+      s2.equal?(s).should == false
     end
 
     it "calls a function with the other function available as a block" do
@@ -422,7 +437,7 @@ describe "C-API Array function" do
 
     it "returns nil if the element is not in the array" do
       ary = [1, 2, 3, 4]
-      @s.rb_ary_delete(ary, 5).should be_nil
+      @s.rb_ary_delete(ary, 5).should == nil
       ary.should == [1, 2, 3, 4]
     end
   end
@@ -437,7 +452,7 @@ describe "C-API Array function" do
     it "freezes the object exactly like Kernel#freeze" do
       ary = [1,2]
       @s.rb_ary_freeze(ary)
-      ary.frozen?.should be_true
+      ary.frozen?.should == true
     end
   end
 
@@ -457,12 +472,12 @@ describe "C-API Array function" do
     end
 
     it "returns nil if the index is out of bounds" do
-      @s.rb_ary_delete_at(@array, 4).should be_nil
+      @s.rb_ary_delete_at(@array, 4).should == nil
       @array.should == [1, 2, 3, 4]
     end
 
     it "returns nil if the negative index is out of bounds" do
-      @s.rb_ary_delete_at(@array, -5).should be_nil
+      @s.rb_ary_delete_at(@array, -5).should == nil
       @array.should == [1, 2, 3, 4]
     end
   end
@@ -473,7 +488,7 @@ describe "C-API Array function" do
 
       it "returns the given array" do
         array = [1, 2, 3]
-        @s.rb_ary_to_ary(array).should equal(array)
+        @s.rb_ary_to_ary(array).should.equal?(array)
       end
 
     end
@@ -519,7 +534,7 @@ describe "C-API Array function" do
     end
 
     it "returns nil if the begin index is out of bound" do
-      @s.rb_ary_subseq([1, 2, 3, 4, 5], 6, 3).should be_nil
+      @s.rb_ary_subseq([1, 2, 3, 4, 5], 6, 3).should == nil
     end
 
     it "returns the existing subsequence of the length is out of bounds" do
@@ -527,7 +542,7 @@ describe "C-API Array function" do
     end
 
     it "returns nil if the size is negative" do
-      @s.rb_ary_subseq([1, 2, 3, 4, 5], 1, -1).should be_nil
+      @s.rb_ary_subseq([1, 2, 3, 4, 5], 1, -1).should == nil
     end
   end
 end

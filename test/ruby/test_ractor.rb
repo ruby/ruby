@@ -2,6 +2,77 @@
 require 'test/unit'
 
 class TestRactor < Test::Unit::TestCase
+  # Spawning from a Ractor must not block on the main Ractor's $stdout
+  def test_spawn_does_not_contend_on_main_ractors_stdout
+    assert_separately([], <<~'RUBY', timeout: 60)
+      $stdout = File.open(File::NULL, "w")
+      writer = Thread.new { loop { $stdout.write("x" * 100 + "\n"); $stdout.flush } }
+      r = Ractor.new { 20.times { system(EnvUtil.rubybin, "-e", "") }; :done }
+      assert_equal :done, r.value
+      writer.kill.join
+    RUBY
+  end
+
+  # Resolving an aliased, complemented method entry used to run unserialized.
+  # The alias definition is shared between the module's own entry and the
+  # complemented entry created for the includer, so every Ractor read
+  # reference_count != 1 and called rb_method_definition_set(), which releases
+  # me->def.  That released the shared definition once per Ractor instead of
+  # once: it was freed while the module's own entry still pointed at it, giving
+  # a use-after-free on `def`.
+  def test_concurrent_aliased_method_entry_resolution
+    assert_ractor(<<~'RUBY', timeout: 120)
+      ROUNDS = 1000
+      N_RACT = 8
+
+      src = +""
+      ROUNDS.times do |i|
+        src << "module M#{i}; def foo#{i}; #{i}; end; alias bar#{i} foo#{i}; end\n"
+        src << "class C#{i}; include M#{i}; end\n"
+      end
+      eval(src)
+
+      targets = Ractor.make_shareable(ROUNDS.times.map { |i| [Object.const_get(:"C#{i}"), :"bar#{i}"] })
+
+      rs = N_RACT.times.map do
+        Ractor.new(targets) do |targets|
+          targets.each { |klass, mid| klass.new.__send__(mid) }
+          :ok
+        end
+      end
+      assert_equal [:ok] * N_RACT, rs.map(&:value)
+    RUBY
+  end
+
+  def test_alive_p
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      r << :done
+      r.join
+      assert_not_predicate r, :alive?
+
+      r = Ractor.new do
+        Thread.current.report_on_exception = false
+        raise "boom"
+      end
+      assert_raise(Ractor::RemoteError) { r.join }
+      assert_not_predicate r, :alive?
+    RUBY
+  end
+
+  def test_alive_p_after_fork
+    omit "fork not supported" unless Process.respond_to?(:fork)
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      assert_predicate r, :alive?
+      pid = fork { exit!(r.alive? ? 1 : 0) }
+      _, st = Process.wait2(pid)
+      assert_predicate st, :success?
+      assert_predicate r, :alive?
+    RUBY
+  end
+
   def test_shareability_of_iseq_proc
     assert_raise Ractor::IsolationError do
       foo = []
@@ -42,12 +113,128 @@ class TestRactor < Test::Unit::TestCase
 =end
   end
 
+  def test_shareable_proc_define_method_super_method_missing
+    assert_ractor(<<~'RUBY', timeout: 30)
+      iterations = 1_000_000
+
+      class SuperFromShareableProcMethodMissingBase
+        def method_missing(mid, *) = mid
+      end
+
+      class SuperFromShareableProcMethodMissingChild < SuperFromShareableProcMethodMissingBase
+        BODY = Ractor.shareable_proc { super() }
+        define_method(:foo, &BODY)
+        define_method(:bar, &BODY)
+      end
+
+      [:foo, :bar].map do |mid|
+        Ractor.new(mid, iterations) do |mid, iterations|
+          obj = SuperFromShareableProcMethodMissingChild.new
+          iterations.times do
+            got = obj.__send__(mid)
+            raise "#{mid} returned #{got.inspect}" unless got == mid
+          end
+        end
+      end.each(&:value)
+    RUBY
+  end
+
+  def test_shareable_proc_define_method_super_method_entry
+    assert_ractor(<<~'RUBY', timeout: 30)
+      iterations = 1_000_000
+
+      class SuperFromShareableProcBase
+        def foo = :foo
+        def bar = :bar
+      end
+
+      class SuperFromShareableProcChild < SuperFromShareableProcBase
+        BODY = Ractor.shareable_proc { super() }
+        define_method(:foo, &BODY)
+        define_method(:bar, &BODY)
+      end
+
+      [:foo, :bar].map do |mid|
+        Ractor.new(mid, iterations) do |mid, iterations|
+          obj = SuperFromShareableProcChild.new
+          iterations.times do
+            got = obj.__send__(mid)
+            raise "#{mid} returned #{got.inspect}" unless got == mid
+          end
+        end
+      end.each(&:value)
+    RUBY
+  end
+
+  def test_shareable_proc_argument_forward
+    assert_ractor(<<~'RUBY')
+      def foo(*a) = a
+      def bar(...) = Ractor.shareable_proc { foo(...) }
+
+      pr = bar(1, 2)
+      assert_equal([1, 2], pr.call)
+    RUBY
+  end
+
   def test_shareability_error_uses_inspect
     x = (+"").instance_exec { method(:to_s) }
     def x.to_s
       raise "this should not be called"
     end
     assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()> because it refers unshareable objects", exception: Ractor::Error)
+  end
+
+  def test_sending_exception_with_backtrace
+    assert_ractor(<<~'RUBY')
+      def build_error
+        raise "Test"
+      rescue => error
+        error
+      end
+
+      error = build_error
+      refute_empty error.backtrace
+      refute_empty error.backtrace_locations
+
+      backtrace, backtrace_locations = Ractor.new(error) do |error2|
+        [error2.backtrace, error2.backtrace_locations]
+      end.value
+
+      assert_equal error.backtrace, backtrace
+      refute_empty backtrace_locations
+    RUBY
+  end
+
+  def test_sending_exception_with_array_backtrace
+    assert_ractor(<<~'RUBY')
+      error = StandardError.new
+      error.set_backtrace(["foo", "bar"])
+      refute_empty error.backtrace
+      assert_nil error.backtrace_locations
+
+      backtrace, backtrace_locations = Ractor.new(error) do |error2|
+        [error2.backtrace, error2.backtrace_locations]
+      end.value
+
+      assert_equal error.backtrace, backtrace
+      assert_nil backtrace_locations
+    RUBY
+  end
+
+  def test_sending_object_with_broken_clone
+    # Ractor copy used to call the user-visible #clone, and one returning self handed
+    # the receiver the sender's object. #clone is no longer called at all; the
+    # singleton class that defining it creates is dropped, as #dup would.
+    assert_ractor(<<~'RUBY')
+      o = Object.new
+      def o.clone
+        raise "clone called"
+      end
+      copy = Ractor.new(o) { |x| x }.value
+      refute_same o, copy
+      assert_instance_of Object, copy
+      assert_empty copy.singleton_methods
+    RUBY
   end
 
   def test_default_thread_group
@@ -59,6 +246,52 @@ class TestRactor < Test::Unit::TestCase
       ractor_id = Ractor.new { Thread.current.group.object_id }.value
       refute_equal main_ractor_id, ractor_id
     end;
+  end
+  def test_ractor_with_live_threads_terminates_without_waiting
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # A Ractor that ends while a thread of its own is still running used to sit out
+      # the one second poll in rb_thread_terminate_all(), once per Ractor.  Measure
+      # against the same Ractors without a live thread, so that a busy machine, which
+      # makes both of them slow, does not decide this.
+      n = 5
+      elapsed = ->(&blk) {
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        n.times { blk.call }
+        Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+      }
+
+      base = elapsed.call { assert_equal :done, Ractor.new { :done }.value }
+      live = elapsed.call { assert_equal :done, Ractor.new { Thread.new { sleep 10 }; :done }.value }
+
+      # the bug costs a second per Ractor, so #{n} seconds here
+      assert_operator live, :<, base + 2.0,
+                      "#{n} Ractors with a live thread took #{live}s, without one #{base}s"
+    RUBY
+  end
+
+
+  def test_new_port_during_teardown
+    assert_in_out_err(%w[-W0], <<~'RUBY', %w[closed done], [], success: true)
+      worker = Ractor.new do
+        ready = Thread::Queue.new
+        Thread.new do
+          begin
+            ready << true
+            sleep
+          ensure
+            begin
+              Ractor::Port.new
+            rescue Ractor::ClosedError
+              puts "closed"
+            end
+          end
+        end
+        ready.pop
+        :done
+      end
+      puts worker.value
+    RUBY
   end
 
   def test_class_instance_variables
@@ -81,6 +314,242 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+
+  def test_class_variables
+    # [Bug #22072]
+    assert_ractor(<<~'RUBY')
+      module Foo
+        def self.foo = @@foo
+      end
+
+      Foo.class_variable_set(:@@foo, 1)
+
+      10.times { |i| Foo.class_variable_set(:"@@bar#{i}", i) }
+
+      assert_equal(Foo.foo, 1)
+    RUBY
+  end
+
+  # [Bug #22419] a deep-frozen class field is made shareable by its owner Ractor
+  def test_read_frozen_class_fields_of_main
+    assert_ractor(<<~'RUBY')
+      class C
+        @iv = Set[1, 2].freeze
+        CONST = ["c".dup.freeze].freeze
+        SET = Set[:a].freeze
+        @@cv = ["v".dup.freeze].freeze
+        def self.cv = @@cv
+      end
+      r = Ractor.new { [C.instance_variable_get(:@iv).include?(1), C::CONST, C::SET.include?(:a), C.cv] }.value
+      assert_equal [true, ["c"], true, ["v"]], r
+      assert_predicate C::CONST, :frozen?
+      assert Ractor.shareable?(C::CONST)
+    RUBY
+  end
+
+  def test_kept_reply_port_passes_verify
+    assert_ractor(<<~'RUBY')
+      owner = Ractor.new { c = Class.new; c.const_set(:V, ["x".dup.freeze].freeze); Ractor.main << c; Ractor.receive }
+      c = Ractor.receive
+      sleep 0.1 # let the owner block in Ractor.receive, so main waits on its kept reply port
+      assert_equal ["x"], c::V
+      GC.verify_internal_consistency # the Ractor object (shareable) refers to that port
+      owner << :done
+      owner.join
+    RUBY
+  end
+
+  def test_join_on_kept_reply_port
+    assert_ractor(<<~'RUBY')
+      # many joins reuse one port; a Ractor that terminated before the join answers at once
+      rs = 50.times.map { Ractor.new { 1 } }
+      rs.each(&:join)
+      rs.each(&:join)
+      GC.verify_internal_consistency # the Ractor object (shareable) refers to the kept port
+
+      # a join given up while the token may still come: the next join must not see that token
+      r = Ractor.new { Ractor.receive }
+      th = Thread.new { r.join }
+      Thread.pass until th.status == "sleep"
+      th.kill.join
+      r << :go
+      assert_same r, r.join
+      Ractor.new { Ractor.receive }.tap { |r2| r2 << :go }.join
+      assert_equal 1, Ractor.new { 1 }.value
+
+      # two threads joining at once: one has the kept port, the other makes its own
+      r1, r2 = Ractor.new { Ractor.receive }, Ractor.new { Ractor.receive }
+      t1 = Thread.new { r1.join }
+      t2 = Thread.new { r2.join }
+      Thread.pass until t1.status == "sleep" && t2.status == "sleep"
+      r2 << :go; t2.join
+      r1 << :go; t1.join
+      assert_raise(Ractor::RemoteError) { Ractor.new { Thread.current.report_on_exception = false; raise "boom" }.join }
+    RUBY
+  end
+
+  def test_require_on_kept_reply_port
+    assert_ractor(<<~'RUBY')
+      # require asks main and waits on the kept port of the requesting Ractor, many times
+      r = Ractor.new do
+        20.times.map { require "set"; require "English" }
+        begin
+          require "no_such_feature_#{$$}"
+        rescue LoadError => e
+          e.class
+        end
+      end
+      assert_equal LoadError, r.value
+    RUBY
+  end
+
+  def test_port_cannot_be_reinitialized
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      assert_raise(TypeError) { Ractor::Port.allocate }
+      assert_raise(TypeError) { port.dup }
+      assert_raise(TypeError) { port.clone }
+      assert_raise(FrozenError) { port.__send__(:initialize_copy, Ractor::Port.new) }
+
+      # another Ractor must not be able to take the port over
+      r = Ractor.new(port) do |pt|
+        pt.__send__(:initialize)
+        pt.receive(timeout: 0)
+      rescue Ractor::Error
+        :not_owner
+      end
+      assert_equal :not_owner, r.value
+
+      port << :ok
+      assert_equal :ok, port.receive
+    RUBY
+  end
+
+  def test_read_frozen_class_fields_of_non_main
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      owner = Ractor.new(port) do |pt|
+        c = Class.new
+        c.instance_variable_set(:@iv, ["i".dup.freeze].freeze)
+        c.const_set(:CONST, ["c".dup.freeze].freeze)
+        c.class_variable_set(:@@cv, ["v".dup.freeze].freeze)
+        pt << c
+        Ractor.receive
+      end
+      c = port.receive
+      read = ->(k) { [k.instance_variable_get(:@iv), k::CONST, k.class_variable_get(:@@cv)] }
+      assert_equal [["i"], ["c"], ["v"]], read.(c)
+      assert_equal [["i"], ["c"], ["v"]], Ractor.new(c) { |k| [k.instance_variable_get(:@iv), k::CONST, k.class_variable_get(:@@cv)] }.value
+      owner << :done
+      owner.join
+    RUBY
+  end
+
+  def test_read_frozen_class_fields_of_terminated_owner
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      owner = Ractor.new(port) do |pt|
+        c = Class.new
+        c.instance_variable_set(:@iv, [Set[1].freeze, "i".dup.freeze].freeze)
+        c.const_set(:CONST, ["c".dup.freeze].freeze)
+        # a Set's elements are reached through its T_DATA mark function
+        c.const_set(:SET, Set[["s".dup.freeze].freeze].freeze)
+        c.const_set(:BAD_SET, Set[[+"b"]].freeze)
+        pt << c
+        :done
+      end
+      c = port.receive
+      Thread.pass until owner.inspect.include?("terminated")
+      # nobody has absorbed the owner's objspace yet
+      r = Ractor.new(c) { |k| [k.instance_variable_get(:@iv)[0].include?(1), k::CONST] }.value
+      assert_equal [true, ["c"]], r
+      r = Ractor.new(c) { |k| [Ractor.shareable?(k::SET.first), (k::BAD_SET rescue $!.class)] }.value
+      assert_equal [true, Ractor::IsolationError], r
+      assert_equal :done, owner.value
+      GC.start
+      assert_equal ["c"], c::CONST
+    RUBY
+  end
+
+  # The owner makes a frozen class field shareable while other Ractors may be reading it.
+  # It must flag the root last or else  a reader taking the FL_SHAREABLE fast path sees a
+  # shareable root with unshareable children.
+  def test_read_frozen_class_field_while_owner_makes_it_shareable
+    assert_ractor(<<~'RUBY', timeout: 60)
+      class Box
+        def self.data = @data
+      end
+      graph = -> { Array.new(50_000) { |i| "s#{i}".freeze }.freeze }
+      Box.instance_variable_set(:@data, graph.())
+
+      duration = 0.5
+      readers = 4.times.map do |i|
+        Ractor.new(duration, i.zero?) do |duration, trigger|
+          torn = 0
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+          while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+            v = Box.data
+            torn += 1 if Ractor.shareable?(v) && !Ractor.shareable?(v.last)
+            sleep(rand * 0.05) unless trigger
+          end
+          torn
+        end
+      end
+
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+      while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+        Box.instance_variable_set(:@data, graph.())
+      end
+
+      assert_equal [0] * readers.size, readers.map(&:value)
+    RUBY
+  end
+
+  # Like the above, but the torn node is an interior node of one class field's graph that is
+  # also another class field's root. Every node, not just the root, must be flagged after
+  # its children.
+  def test_read_frozen_class_field_interior_while_owner_makes_it_shareable
+    assert_ractor(<<~'RUBY', timeout: 60)
+      class Box
+        def self.outer = @outer
+        def self.inner = @inner
+      end
+      publish = -> {
+        inner = Array.new(50_000) { |i| "s#{i}".freeze }.freeze
+        Box.instance_variable_set(:@inner, inner)
+        Box.instance_variable_set(:@outer, [inner].freeze)
+      }
+      publish.()
+
+      duration = 0.5
+      triggers = 2.times.map do
+        Ractor.new(duration) do |duration|
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+          Box.outer while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          0
+        end
+      end
+      readers = 4.times.map do
+        Ractor.new(duration) do |duration|
+          torn = 0
+          deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+          while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+            v = Box.inner
+            torn += 1 if Ractor.shareable?(v) && !Ractor.shareable?(v.last)
+            sleep(rand * 0.05)
+          end
+          torn
+        end
+      end
+
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+      publish.() while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+
+      assert_equal [0] * readers.size, readers.map(&:value)
+      triggers.each(&:join)
+    RUBY
+  end
+
   def test_struct_instance_variables
     assert_ractor(<<~'RUBY')
       StructIvar = Struct.new(:member) do
@@ -99,13 +568,253 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_objects
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      # An unshareable object arrives as an equal copy.
+      def assert_copy(obj)
+        copy = echo(obj)
+        refute_same obj, copy
+        assert_instance_of obj.class, copy
+        assert_equal obj, copy
+      end
+
+      # A shareable object arrives as itself.
+      def assert_shared(obj)
+        assert_same obj, echo(obj)
+      end
+
+      assert_copy Time.at(0)
+      assert_copy Time.now
+      assert_copy [Time.now]
+      assert_shared Ractor::Port.new
+      assert_copy [Ractor::Port.new]
+      assert_copy [Time.now, Ractor::Port.new]
+      # Dump hooks run after the courier is sized, so enough of them make it grow.
+      assert_copy Array.new(2000) { |i| Time.at(i) }
+      # Set has no dump hook of its own; it goes through its rb_marshal_define_compat entry.
+      assert_copy Set.new
+      assert_copy Set[1,2,3]
+      assert_copy Set[+"a", [+"b"], {+"c" => Set[+"d"]}]
+      assert_copy Set[1].compare_by_identity
+      assert_copy Class.new(Set)[1, 2]
+      assert_equal true, echo(Set[1].compare_by_identity).compare_by_identity?
+      set = Set[Ractor::Port.new, Ractor::Port.new]   # Marshal cannot carry a Port
+      assert_equal set.to_a, echo(set).to_a
+
+      # Time#_dump keeps these as ivars on the dumped string; Time#== ignores the last two.
+      time = Time.at(0, 123456789, :nsec, in: "+09:00")
+      copy = echo(time)
+      assert_equal time.nsec, copy.nsec
+      assert_equal time.utc_offset, copy.utc_offset
+      assert_equal time.zone, copy.zone
+
+      # Ivars on the object itself land on what _load returned.
+      time.instance_variable_set(:@ivar, +"ivar")
+      assert_equal "ivar", echo(time).instance_variable_get(:@ivar)
+
+      # Every reference to a _load'ed object resolves to the one copy.
+      copy_time, copy_hash = echo([time, { time => time }])
+      assert_same copy_time, copy_hash.keys[0]
+      assert_same copy_time, copy_hash[time]
+    RUBY
+  end
+
+  def test_sending_regexps
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      # A Regexp is frozen from birth, so shareable: only a subclass instance is copied.
+      re = /a/
+      assert_same re, echo(re)
+      assert_same re, echo([re])[0]
+      class MyRegexp < Regexp; end
+      re = MyRegexp.new("a", "i")
+      re.instance_variable_set(:@ivar, +"ivar")
+      copy = echo(re)
+      refute_same re, copy
+      assert_instance_of MyRegexp, copy
+      assert_equal re, copy
+      assert_equal Regexp::IGNORECASE, copy.options
+      assert_equal "ivar", copy.instance_variable_get(:@ivar)
+      refute_same re.instance_variable_get(:@ivar), copy.instance_variable_get(:@ivar)
+      copy = echo([re, re])
+      assert_same copy[0], copy[1]
+
+      re = MyRegexp.new("\u3042")
+      copy = echo(re)
+      assert_equal Encoding::UTF_8, copy.encoding
+      assert_predicate copy, :fixed_encoding?
+      assert_equal "\u3042".b, copy.source.b
+
+      # A frozen one is shareable again, however its class.
+      re = MyRegexp.new("a").freeze
+      assert_same re, echo(re)
+    RUBY
+  end
+
+  def test_regexp_match_encodings
+    assert_ractor(<<~'RUBY')
+      re = Regexp.new('(?<letter>.)a', Regexp::IGNORECASE)
+      ractors = Array.new(4) do
+        Ractor.new(re) do |re|
+          strings = ["\u3042A", "\u3042A".encode("EUC-JP")]
+          Ractor.receive
+          20.times do
+            strings.each do |str|
+              raise "incorrect capture" unless re.match(str)[:letter] == str[0]
+            end
+          end
+        end
+      end
+      ractors.each {|r| r.send(true)}
+      ractors.each(&:value)
+    RUBY
+  end
+
+  def test_sending_hash_with_shared_key
+    # A key that was already reached elsewhere in the graph must be complete before the
+    # hash inserts it, or it is inserted under the wrong #hash.
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      key = { 1 => 2 }
+      copy_key, copy_hash = echo([key, { key => 1 }])
+      assert_equal key, copy_key
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+
+      # The same for a key hashed by an ivar that is itself copied.
+      class ByValue
+        attr_reader :v
+        def initialize(v) = @v = v
+        def hash = @v.hash
+        def eql?(other) = other.is_a?(ByValue) && @v == other.v
+      end
+      key = ByValue.new(+"abc")
+      copy_key, copy_hash = echo([key, { key => 1 }])
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+    RUBY
+  end
+
+  def test_failed_send_leaves_receiver_usable
+    # The courier built so far is freed once, not again with the basket.
+    assert_ractor(<<~'RUBY')
+      ractor = Ractor.new { Ractor.receive }
+      assert_raise(Ractor::Error) { ractor.send([proc {}]) }
+      ractor.send(42)
+      assert_equal 42, ractor.value
+    RUBY
+  end
+
+  def test_sending_hook_payloads_under_gc_stress
+    # A dump hook's payload is garbage once captured. A later payload allocated into
+    # its slot must not be taken for the one already seen.
+    assert_ractor(<<~'RUBY', timeout: 60)
+      GC.stress = true
+      times = Array.new(200) { |i| Time.at(i) }
+      assert_equal (0...200).to_a, Ractor.new(times) { |x| x.map(&:to_i) }.value
+    RUBY
+  end
+
+  def test_sending_object_compacted_during_build
+    # A source captured before a dump hook compacts the heap is still found when the
+    # message references it again after.
+    assert_ractor(<<~'RUBY')
+      class CompactingTime < Time
+        def _dump(limit)
+          begin
+            GC.compact
+          rescue NotImplementedError
+          end
+          super
+        end
+      end
+      junk = Array.new(50_000) { +"j" }
+      str = +"x" * 1000
+      msg = [str, CompactingTime.now, str]
+      junk.clear
+      GC.start(full_mark: false, immediate_sweep: true)
+      port = Ractor::Port.new
+      port.send(msg)
+      copy = port.receive
+      assert_same copy[0], copy[2]
+    RUBY
+  end
+
   def test_move_nested_hash_during_gc_with_yjit
-    assert_ractor(<<~'RUBY', args: [{ "RUBY_YJIT_ENABLE" => "1" }])
+    assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
       hash = { foo: { bar: "hello" }, baz: { qux: "there" } }
       result = Ractor.new { Ractor.receive }.send(hash, move: true).value
       assert_equal "hello", result[:foo][:bar]
       assert_equal "there", result[:baz][:qux]
+    RUBY
+  end
+
+  def test_create_many_ports_with_gc_stress
+    # Rebuilding the ports table on insertion can run GC under the ractor lock.
+    # It is a prohibited lock ordering, asserted in vm_lock_enter() on RUBY_DEBUG builds.
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive } # enter multi-ractor mode and keep it
+      begin
+        GC.stress = true
+        ports = 40.times.map { Ractor::Port.new }
+      ensure
+        GC.stress = false
+      end
+      assert_equal 40, ports.count
+      ports.each(&:close)
+      r.send(nil)
+      r.join
+    RUBY
+  end
+
+  def test_fork_child_gc_pins_shareable_objects
+    # A forked child re-enters single-Ractor mode while the Ractors it had before the
+    # fork leave their objspaces behind, so its local GC still has to pin shareable
+    # objects instead of collecting them.
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      Ractor.new(port) { |p| p << Ractor::Port.new; Ractor.receive }
+      foreign_port = port.receive # a Port owned by, and allocated in, the other Ractor
+      pid = fork { 100_000.times { +"x" }; exit!(0) }
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+      assert_instance_of Ractor::Port, foreign_port
+    RUBY
+  end if Process.respond_to?(:fork)
+
+  def test_concurrent_binwrite_shareable_string
+    # [Bug #22382]
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tmpdir"
+
+      Dir.mktmpdir do |dir|
+        50.times do
+          str = Ractor.make_shareable(Random.bytes(512 * 1024))
+
+          go = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.02
+          12.times.map do |n|
+            Ractor.new(str, File.join(dir, "w#{n}"), go) do |s, path, at|
+              Thread.pass until Process.clock_gettime(Process::CLOCK_MONOTONIC) >= at
+              File.binwrite(path, s)
+            end
+          end.each(&:join)
+
+          GC.start
+        end
+
+        assert_equal 512 * 1024, File.size(File.join(dir, "w0"))
+      end
     RUBY
   end
 
@@ -119,6 +828,28 @@ class TestRactor < Test::Unit::TestCase
       assert_equal Ractor::IsolationError, ractor.value.class
     RUBY
   end if Process.respond_to?(:fork)
+
+  def test_at_exit_raise_isolation_error
+    assert_ractor(<<~'RUBY')
+      ractor = Ractor.new do
+        at_exit { }
+      rescue Ractor::IsolationError => e
+        e
+      end
+      assert_equal Ractor::IsolationError, ractor.value.class
+    RUBY
+  end
+
+  def test_END_raise_isolation_error
+    assert_ractor(<<~'RUBY', ignore_stderr: true)
+      ractor = Ractor.new do
+        END { nil }
+      rescue Ractor::IsolationError => e
+        e
+      end
+      assert_equal Ractor::IsolationError, ractor.value.class
+    RUBY
+  end
 
   def test_require_raises_and_no_ractor_belonging_issue
     assert_ractor(<<~'RUBY')
@@ -139,6 +870,198 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # The main Ractor can't copy the exception back, so it must send that error instead
+  def test_require_raises_uncopyable_exception
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tempfile"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("e = RuntimeError.new('uh oh'); e.instance_variable_set(:@m, Mutex.new); raise e")
+      f.flush
+      err = Ractor.new(f.path) do |path|
+        require path
+      rescue Exception => e
+        e.class
+      end.value
+      assert_equal Ractor::Error, err
+    RUBY
+  end
+
+  def test_require_already_loaded_with_extension
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      results = Ractor.new do
+        [require("tmpdir"), require("tmpdir.rb")]
+      end.value
+      assert_equal [false, false], results
+    RUBY
+  end
+
+  # Init_pathname() does rb_provide("pathname.so"), so the features index has a
+  # match for "pathname" while lib/pathname.rb is still unloaded. A non-.rb match
+  # is not "already loaded": search_required() goes on to find the shadowing .rb
+  # and load it, so the fast path must decline rather than answer false.
+  def test_require_provided_so_with_shadowing_rb_still_loads
+    assert_ractor(<<~'RUBY')
+      refute Pathname.instance_methods.include?(:find), "lib/pathname.rb preloaded"
+      assert_equal true, Ractor.new { require "pathname" }.value
+      assert_include Pathname.instance_methods, :find
+    RUBY
+  end
+
+  def test_require_not_loaded_still_loads_from_ractor
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      f = Tempfile.new(["fast_path_miss", ".rb"])
+      f.write("FAST_PATH_MISS = 42")
+      f.flush
+      result = Ractor.new(f.path) do |path|
+        [require(path), require(path)]
+      end.value
+      assert_equal [true, false], result
+      assert_equal 42, FAST_PATH_MISS
+    RUBY
+  end
+
+  # Makes a require that reached the main Ractor observable.  The hand-off calls
+  # Kernel#require there (require_body() in ractor.c), while a require the fast path
+  # answers never leaves the requiring Ractor -- so with the answer alone being the
+  # same either way, an entry here is what shows the fast path declined.  Recording
+  # into Ractor-local storage keeps each Ractor's list to itself and shareable.
+  MAIN_RACTOR_REQUIRE_RECORDER = <<~'RUBY'
+    old = $-w; $-w = nil
+    module Kernel
+      alias __require_without_recording require
+      def require(feature)
+        (Ractor.current[:required] ||= []) << feature.to_s
+        __require_without_recording(feature)
+      end
+    end
+    $-w = old
+
+    def requires_served_by_main_ractor
+      Ractor.current[:required] = []
+      result = yield
+      [result, Ractor.current[:required]]
+    end
+  RUBY
+
+  # The next three make one of the fast path's guards decline. require must still
+  # give the right answer, by falling back to the main Ractor as before.
+  def test_require_fast_path_declines_on_relative_load_path
+    # A relative $LOAD_PATH entry leaves load_path_check_cache set, so
+    # expanded_load_path_current_p() stays false and the probe gets no expanded load
+    # path -- which a short name needs to match the absolute path in
+    # $LOADED_FEATURES.
+    assert_ractor(MAIN_RACTOR_REQUIRE_RECORDER + <<~'RUBY')
+      require "tmpdir"
+      $LOAD_PATH.unshift(".")
+      result, served = requires_served_by_main_ractor do
+        Ractor.new { require "tmpdir" }.value
+      end
+      assert_equal false, result
+      assert_include served, "tmpdir"
+    RUBY
+  end
+
+  def test_require_fast_path_declines_on_mutated_loaded_features
+    # Pushing to $LOADED_FEATURES breaks its sharing with the snapshot, which is
+    # how the probe detects that the features index is stale.
+    assert_ractor(MAIN_RACTOR_REQUIRE_RECORDER + <<~'RUBY')
+      require "tmpdir"
+      $LOADED_FEATURES << "not_a_real_feature_xyz.rb"
+      result, served = requires_served_by_main_ractor do
+        Ractor.new { require "tmpdir" }.value
+      end
+      assert_equal false, result
+      assert_include served, "tmpdir"
+    RUBY
+  end
+
+  def test_require_fast_path_declines_on_dot_relative_feature
+    # "./foo" is expanded against Dir.pwd by feature_provided(), which the probe
+    # does not do, so it must hand these to the main Ractor.
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      f = Tempfile.new(["fast_path_dot_rel", ".rb"])
+      f.write("DOT_REL_LOADED = 1")
+      f.flush
+      dir, base = File.split(f.path)
+      Dir.chdir(dir) do
+        assert_equal true, Ractor.new(base) { |b| require("./#{b}") }.value
+      end
+      assert_equal 1, DOT_REL_LOADED
+    RUBY
+  end
+
+  def test_require_fast_path_declines_when_only_the_so_is_loaded
+    # An already-loaded "foo.so" does not make `require "foo"` a no-op: after
+    # that 's' match search_required() keeps going, resolves a foo.rb on
+    # $LOAD_PATH and loads it.  The probe short-circuits only on an 'r' match,
+    # so a Ractor must reach the same answer.
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        # $LOAD_PATH entries are realpath-expanded, so the fake feature below
+        # has to be rooted at the realpath to match through loaded_feature_path.
+        dir = File.realpath(dir)
+        File.write(File.join(dir, "so_shadowed_feature.rb"), "SO_SHADOWED = 42")
+        $LOAD_PATH.unshift(dir)
+        # Stand in for a C extension required by explicit extension, with the
+        # same-named .rb not loaded yet.
+        $LOADED_FEATURES << File.join(dir, "so_shadowed_feature.so")
+        # Rebuild the features index and expanded load path that the probe
+        # requires to be current, so the fast path is live for the Ractor.
+        require "tmpdir"
+
+        assert_equal true, Ractor.new { require "so_shadowed_feature" }.value
+        assert_equal 42, SO_SHADOWED
+      end
+    RUBY
+  end
+
+  def test_require_fast_path_declines_on_unrecognized_extension
+    # search_required() makes no already-provided probe at all for an extension
+    # it does not recognize, so neither may the fast path.
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        dir = File.realpath(dir)
+        File.write(File.join(dir, "weird.json.rb"), "WEIRD_JSON = 7")
+        $LOAD_PATH.unshift(dir)
+        $LOADED_FEATURES << File.join(dir, "weird.json")
+        require "tmpdir"
+
+        assert_equal true, Ractor.new { require "weird.json" }.value
+        assert_equal 7, WEIRD_JSON
+      end
+    RUBY
+  end
+
+  def test_require_concurrent_while_load_path_churns
+    # Exercises the probe against a main Ractor that is repeatedly invalidating
+    # and rebuilding the expanded load path underneath it.
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tmpdir"
+      stop = false
+      churn = Thread.new do
+        until stop
+          $LOAD_PATH.unshift("/nonexistent_xyz")
+          $LOAD_PATH.delete("/nonexistent_xyz")
+          sleep 0.001
+        end
+      end
+      begin
+        rs = 4.times.map do
+          Ractor.new { 100.times.map { require "tmpdir" }.uniq }
+        end
+        assert_equal [[false]] * 4, rs.map(&:value)
+      ensure
+        stop = true
+        churn.join
+      end
+    RUBY
+  end
+
   def test_require_non_string
     assert_ractor(<<~'RUBY')
       require "tempfile"
@@ -154,9 +1077,139 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Ex: Rubygems redefines require before single-ractor mode is cancelled. The redefined require
+  # from a gem like rubygems should run in the main Ractor regardless of whether the gem is loaded
+  # before or after single ractor mode is cancelled.
+  #
+  # Uses assert_separately rather than assert_ractor: these tests must start out in single-ractor
+  # mode, and assert_ractor cancels it by creating a Ractor before the test body runs.
+  def test_redefined_require_before_single_ractor_mode_cancelled
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      refute defined?(Gem), "rubygems must not be loaded"
+      refute Object.private_method_defined?(:__ractor_original_require), "must still be in single-ractor mode"
+
+      require "tempfile"
+      require "pathname"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("")
+      f.flush
+      old = $-w; $-w = nil
+      class << Ractor
+        alias __orig_ractor_require _require
+        def _require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          __orig_ractor_require(feature)
+        end
+      end
+      module Kernel
+        alias some_original_require require
+        def require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          some_original_require(feature)
+        end
+      end
+      $-w = old
+      result = Ractor.new(f.path) do |path|
+        require Pathname.new(path)
+        Ractor.current[:required]
+      end.value
+      assert_equal [["Ractor", :_require, f.path]], result
+      assert_equal ["nil", :require, f.path], Ractor.current[:required]&.first
+    RUBY
+  end
+
+  # Ex: Rubygems redefines require after single-ractor mode is cancelled. The redefined require
+  # from a gem like rubygems should run in the main Ractor regardless of whether the gem is loaded
+  # before or after single ractor mode is cancelled.
+  #
+  # Uses assert_separately rather than assert_ractor: these tests must start out in single-ractor
+  # mode, and assert_ractor cancels it by creating a Ractor before the test body runs.
+  def test_redefined_require_after_single_ractor_mode_cancelled
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      refute defined?(Gem), "rubygems must not be loaded"
+      refute Object.private_method_defined?(:__ractor_original_require), "must still be in single-ractor mode"
+
+      require "tempfile"
+      require "pathname"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("")
+      f.flush
+      # The second Ractor below must require a *different* file: a require of an
+      # already-loaded feature is answered inside the requiring Ractor and never
+      # reaches the main one, so it would not exercise Kernel#require at all.
+      f2 = Tempfile.new(["file_to_require_from_ractor2", ".rb"])
+      f2.write("")
+      f2.flush
+      old = $-w; $-w = nil
+      class << Ractor
+        alias __orig_ractor_require _require
+        def _require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          __orig_ractor_require(feature)
+        end
+      end
+      $-w = old
+      result = Ractor.new(f.path) do |path|
+        require Pathname.new(path)
+        Ractor.current[:required]
+      end.value
+      assert_equal [["Ractor", :_require, f.path]], result
+      assert_nil Ractor.current[:required]
+      old = $-w; $-w = nil
+      module Kernel
+        alias some_original_require require
+        def require(feature)
+          (Ractor.current[:required] ||= []) << [self.inspect, __method__, feature.to_s]
+          some_original_require(feature)
+        end
+      end
+      $-w = old
+      result = Ractor.new(f2.path) do |path|
+        require Pathname.new(path)
+        Ractor.current[:required]
+      end.value
+      assert_equal [["Ractor", :_require, f2.path]], result
+      assert_equal ["nil", :require, f2.path], Ractor.current[:required]&.first
+    RUBY
+  end
+
+  # A require of an already-loaded feature is answered inside the requiring
+  # Ractor, so it must not dispatch require again in the main Ractor.
+  def test_require_already_loaded_skips_main_ractor_dispatch
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      refute defined?(Gem), "rubygems must not be loaded"
+
+      require "tempfile"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("")
+      f.flush
+      old = $-w; $-w = nil
+      module Kernel
+        alias some_original_require require
+        def require(feature)
+          (Ractor.current[:required] ||= []) << feature.to_s
+          some_original_require(feature)
+        end
+      end
+      $-w = old
+
+      # Cold: crosses to the main Ractor, which dispatches the redefined require.
+      assert_equal true, Ractor.new(f.path) { |path| require path }.value
+      assert_equal [f.path], Ractor.current[:required]
+
+      Ractor.current[:required] = nil
+      # Warm: answered locally, so nothing runs in the main Ractor.
+      assert_equal false, Ractor.new(f.path) { |path| require path }.value
+      assert_nil Ractor.current[:required]
+    RUBY
+  end
+
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
-    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
+    omit 'unstable on windows' if RUBY_PLATFORM =~ /mswin|mingw/
     assert_ractor(<<~'RUBY', timeout: 90)
       THREADS = 10
       JOBS_PER_THREAD = 50
@@ -201,6 +1254,35 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_mn_threads
+    # Ideally, we would assert that vm->ractor.sched.max_cpu equals sysconf(_SC_NPROCESSORS_ONLN)
+    # when RUBY_MAX_CPU is not set.
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MN_THREADS" => "1" }])
+      require "etc"
+      n = Etc.respond_to?(:nprocessors) ? Etc.nprocessors : 8
+      rs = n.times.map { Ractor.new { :ok } }
+      assert_equal [:ok] * n, rs.map(&:value)
+    RUBY
+  end
+
+  # A shared native thread that comes back from a blocking region to a full
+  # pool retires, and must not leave the count again if it blocks once more
+  # before it gets back to its loop: the pool would look a thread short, the
+  # timer thread would make another, and the extra would never end.
+  def test_shared_native_threads_stay_capped_across_blocking_io
+    omit "needs /proc/self/status" unless File.exist?("/proc/self/status")
+    omit 'Other GCs can use more threads (ex: MMTk)' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "4" }], timeout: 60)
+      200.times do
+        # Dir.children releases the GVL around opendir and readdir
+        8.times.map { Ractor.new { 4.times { Dir.children("/") } } }.each(&:value)
+      end
+      threads = File.read("/proc/self/status")[/^Threads:\s+(\d+)/, 1].to_i
+      # max_cpu shared threads, the main and timer threads, and some slack
+      assert_operator threads, :<=, 4 + 2 + 4
+    RUBY
+  end
+
   def test_symbol_proc_is_shareable
     pr = :symbol.to_proc
     assert_make_shareable(pr)
@@ -211,6 +1293,556 @@ class TestRactor < Test::Unit::TestCase
     h = Hash.new { self }
     pr = h.to_proc
     assert_unshareable(pr, /not supported yet/, exception: RuntimeError)
+  end
+
+  def test_copy_unshareable_object_error_message
+    assert_ractor(<<~'RUBY')
+      pr = proc {}
+      err = assert_raise(Ractor::Error) do
+        Ractor.new(pr) {}.join
+      end
+      assert_match(/can not copy Proc object/, err.message)
+    RUBY
+  end
+
+  def test_ractor_new_allows_reading_shareable_outer_variables
+    assert_ractor(<<~'RUBY')
+      channel = Ractor::Port.new
+      r = Ractor.new(channel) do
+        inbound_work = Ractor::Port.new
+        channel << inbound_work
+      end
+      assert_kind_of Ractor::Port, channel.receive
+      r.join
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_unshareable_outer_variables_are_accessed
+    assert_ractor(<<~'RUBY')
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object \[\]/) do
+        list = []
+        Ractor.new { list }
+      end
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_reassigned
+    assert_ractor(<<~'RUBY')
+      assert_raise_with_message(Ractor::IsolationError, /'n' may be reassigned/) do
+        n = 1
+        Ractor.new { n }
+        n = 2
+      end
+    RUBY
+  end
+
+  def test_ractor_new_does_not_modify_the_block
+    assert_ractor(<<~'RUBY')
+      pr = proc { 42 }
+      assert_equal 42, Ractor.new(&pr).value
+      assert_not_predicate pr, :frozen?
+      assert_not_operator Ractor, :shareable?, pr
+      assert_equal 42, Ractor.new(&pr).value
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_proc_uses_yield
+    assert_ractor(<<~'RUBY')
+      def ractor_with_yield
+        Ractor.new do
+          yield
+        end
+      end
+      assert_raise(Ractor::IsolationError) { ractor_with_yield }
+    RUBY
+  end
+
+  def test_ractor_new_with_method_proc_is_not_supported
+    assert_ractor(<<~'RUBY')
+      def ractor_body = :ok
+      assert_raise_with_message(RuntimeError, /not supported yet/) do
+        Ractor.new(&method(:ractor_body))
+      end
+    RUBY
+  end
+
+  def test_ractor_does_not_inherit_fiber_storage
+    assert_ractor(<<~'RUBY')
+      Fiber[:key] = "creator"
+      assert_nil Ractor.new { Fiber[:key] }.value
+    RUBY
+  end
+
+  def test_detailed_message_in_ractor
+    # The error decoration gems (error_highlight, did_you_mean, and
+    # syntax_suggest) are loaded lazily on the first error display. In a
+    # non-main Ractor the require is delegated to the main Ractor, so the
+    # decorations must appear there too. [Feature #21951]
+    assert_ractor(<<~'RUBY', args: ["--enable=gems"], ignore_stderr: true)
+      message = Ractor.new do
+        begin
+          1.timess
+        rescue NoMethodError => e
+          e.detailed_message(highlight: false)
+        end
+      end.value
+      assert_include(message, "timess")
+      assert_include(message, "Did you mean?")
+    RUBY
+  end
+
+  # With per-Ractor GC, registering, storing and running a finalizer all belong to the
+  # object's Ractor, so defining one on another Ractor's object (shareable included) is
+  # rejected.
+  def test_define_finalizer_on_foreign_object
+    omit 'per-Ractor objspace semantics of the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      r = Ractor.new do
+        results = []
+        own = Object.new
+        ObjectSpace.define_finalizer(own, proc {})
+        results << :own_ok
+        begin
+          ObjectSpace.define_finalizer(String, proc {})  # main's class
+          results << :define_did_not_raise
+        rescue Ractor::IsolationError
+          results << :define_raised
+        end
+        begin
+          ObjectSpace.undefine_finalizer(String)
+          results << :undefine_did_not_raise
+        rescue Ractor::IsolationError
+          results << :undefine_raised
+        end
+        results
+      end
+      assert_equal [:own_ok, :define_raised, :undefine_raised], r.value
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  # ObjectSpace.each_object enumerates every object in the calling Ractor's own objspace plus
+  # the shareable objects of other live Ractors (never their unshareable ones).
+  def test_each_object_own_all_and_foreign_shareables
+    omit 'per-Ractor objspace semantics of the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      class Marker; end
+      main_un = 5.times.map { Marker.new }
+      main_sh = 3.times.map { Ractor.make_shareable(Marker.new) }
+      ready = Ractor::Port.new
+      ch = Ractor.new(ready) do |ready_port|
+        un = 7.times.map { Marker.new }               # unshareable: must not be visible
+        sh = 4.times.map { Ractor.make_shareable(Marker.new) }
+        ready_port << :built
+        Ractor.receive                                # keep this objspace alive
+        [un.size, sh.size]
+      end
+      ready.receive                                   # the child finished building markers
+
+      seen = 0
+      ObjectSpace.each_object(Marker) { seen += 1 }
+      # own 8 (5 unshareable + 3 shareable) + the child's 4 shareable
+      assert_equal 12, seen
+
+      ch.send(:go)
+      ch.value
+      # keep the roots alive across the scan
+      assert_equal 5, main_un.size
+      assert_equal 3, main_sh.size
+    RUBY
+  end
+
+  # A Ractor.new that fails with an uncopyable argument (stillborn) must still clean
+  # up the half-created objspace (regression guard for double enumeration /
+  # use-after-free).
+  def test_stillborn_ractor_gc
+    assert_ractor(<<~'RUBY', timeout: 60)
+      x = Thread.current # an uncopyable argument makes Ractor.new raise Ractor::Error
+      worker = Ractor.new { loop { break if Ractor.receive == :quit } }
+      assert_raise(Ractor::Error) { Ractor.new(x) { } }
+      10.times { GC.start; 500.times { Object.new } }
+      GC.verify_internal_consistency
+      worker.send(:quit)
+      worker.value
+      100.times do |i|
+        assert_raise(Ractor::Error) { Ractor.new(x) { } }
+        if (i % 20).zero?
+          Ractor.new { :ok }.value
+          GC.start
+        end
+      end
+      GC.start
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  # A thread that released the GVL keeps its EC, so it still resolves an objspace to
+  # charge its frees to.  It must not be sent to the objspace of a child Ractor being
+  # built by another thread of the same Ractor: a stillborn child frees that objspace.
+  def test_stillborn_ractor_with_free_off_gvl
+    assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
+      x = Thread.current # an uncopyable argument makes Ractor.new raise Ractor::Error
+      stop = false
+      ready = Queue.new
+      freers = 4.times.map do
+        Thread.new do
+          ready << :up
+          Bug::Thread.xfree_without_gvl(2_000) until stop
+        end
+      end
+      freers.size.times { ready.pop } # all of them are churning before we start
+      2_000.times do
+        begin
+          Ractor.new(x) { }
+        rescue Ractor::Error
+        end
+      end
+      stop = true
+      freers.each(&:join)
+      GC.start
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  # Moving a CoW shared-root String must not steal its buffer (regression guard for the
+  # remaining sharers reading freed memory).
+  def test_move_shared_root_string_keeps_buffer
+    assert_ractor(<<~'RUBY', timeout: 60)
+      10.times do
+        r = Ractor.new { Ractor.receive.bytesize; :done }
+        f = "x" * 4096
+        f.instance_variable_set(:@x, []) # unshareable ivar => moved, not passed by reference
+        f.freeze
+        g = f.dup                # shares f's buffer -> f is a shared root
+        h = f[10, 3000]          # a long substring shares the buffer too
+        r.send(f, move: true)
+        r.value
+        GC.start
+        10.times { "z" * 4096 }
+        assert_equal "x" * 4096, g
+        assert_equal "x" * 3000, h
+      end
+    RUBY
+  end
+
+  # [Bug #22460] Ractor.shareable? must not replace the buffer of a frozen shared array.
+  def test_shareable_p_keeps_frozen_shared_array_buffer
+    assert_ractor(<<~'RUBY')
+      o = Object.new
+      a = Array.new(200) { it }
+      a[50] = o
+      b = a.pop(150)
+      o.define_singleton_method(:to_s) { Ractor.shareable?(b); "x" }
+      b.freeze
+      assert_nothing_raised { assert_equal "x 51", "%1$s %2$s" % b }
+    RUBY
+  end
+
+  # Ractor::Port.new must not deadlock under GC.stress (regression guard for a stress GC
+  # triggered by malloc while the ractor lock is held).
+  def test_port_new_under_gc_stress
+    assert_ractor(<<~'RUBY', timeout: 90)
+      GC.stress = true
+      ports = 4.times.map { Ractor::Port.new }
+      GC.stress = false
+      assert_equal 4, ports.size
+    RUBY
+  end
+
+  def test_gc_stress_pooled_pages_no_crash
+    assert_separately([{"RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.1"}, "-W0"], __FILE__, __LINE__, <<-'RUBY')
+      r = Ractor.new do
+        GC.stress = true
+        +""
+      end
+      assert_equal "", r.value
+    RUBY
+  end
+  def test_port_receive_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      port = Ractor::Port.new
+
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      assert_nil port.receive(timeout: 0.1)
+      assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0, :>=, 0.1
+
+      # a message that is already there wins over the timeout
+      port << :a
+      assert_equal :a, port.receive(timeout: 10)
+
+      # timeout: 0 polls
+      assert_nil port.receive(timeout: 0)
+      port << :b
+      assert_equal :b, port.receive(timeout: 0)
+    RUBY
+  end
+
+  def test_receive_timeout_on_mn_thread
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # a Ractor's thread is an M:N thread: the timeout must not need a native thread
+      r = Ractor.new do
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        [Ractor.receive(timeout: 0.1), Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0]
+      end
+      v, elapsed = r.value
+      assert_nil v
+      assert_operator elapsed, :>=, 0.1
+    RUBY
+  end
+
+  def test_select_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      p1, p2 = Ractor::Port.new, Ractor::Port.new
+      assert_nil Ractor.select(p1, p2, timeout: 0.1)
+
+      p2 << :b
+      assert_equal [p2, :b], Ractor.select(p1, p2, timeout: 10)
+    RUBY
+  end
+
+  def test_select_on_port_of_other_ractor
+    assert_ractor(<<~'RUBY')
+      mine = Ractor::Port.new
+      r = Ractor.new { Ractor.main << Ractor::Port.new; Ractor.receive }
+      foreign = Ractor.receive
+      mine << :secret
+
+      assert_raise(Ractor::Error) { Ractor.select(foreign, timeout: 0) }
+      assert_equal :secret, mine.receive(timeout: 0)
+
+      r << :done
+      r.join
+    RUBY
+  end
+
+  def test_receive_timeout_racing_with_send
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # the timeout and a send aim at the same instant: both wake the waiter
+      results = []
+      100.times do
+        port = Ractor::Port.new
+        th = Thread.new(port) {|p| sleep 0.001; p << :msg }
+        results << port.receive(timeout: 0.001)
+        th.join
+      end
+      assert_empty results.uniq - [:msg, nil]
+    RUBY
+  end
+
+
+  # Moving a Hash that has Hash keys must not lose entries (regression guard for inserting a
+  # key before its contents are filled in, which corrupts its hash value).
+  def test_move_hash_with_hash_keys
+    assert_ractor(<<~'RUBY', timeout: 60)
+      k1 = { a: 1 }; k2 = { b: 2 }
+      h = { k1 => :v1, k2 => :v2, { c: { d: 3 } } => :v3 }
+      r = Ractor.new { Ractor.receive }
+      r.send(h, move: true)
+      m = r.value
+      assert_equal 3, m.size
+      assert_equal :v1, m[{ a: 1 }]
+      assert_equal :v2, m[{ b: 2 }]
+      assert_equal :v3, m[{ c: { d: 3 } }]
+    RUBY
+  end
+
+  # A copy send's in-flight snapshot must not be moved by GC.compact (the global
+  # generic_fields entries and the dedup table are keyed by address; YJIT reproduced this
+  # deterministically).
+  def test_copy_genivar_snapshot_survives_compact
+    omit 'GC.compact is unimplemented' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY', timeout: 60, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
+      port = Ractor::Port.new
+      w = Ractor.new(port) do |po|
+        mm = Ractor.receive
+        res = mm.map { |ss| [ss, ss.frozen?, ss.instance_variable_get(:@sku)] }
+        po.send(res)
+      end
+      items = 4.times.map do |i|
+        s = +"item-#{i}"
+        s.instance_variable_set(:@sku, "SKU#{1000 + i}")
+        s.freeze
+      end
+      w.send(items)
+      GC.compact
+      res = port.receive
+      res.each_with_index do |(txt, fz, sku), i|
+        assert_equal "item-#{i}", txt
+        assert fz
+        assert_equal "SKU#{1000 + i}", sku
+      end
+    RUBY
+  end
+
+  # A monitor entry holds a port of the monitoring Ractor, and the exit token is sent
+  # through it, so that Ractor's wrapper must stay alive while the entry exists.
+  def test_monitor_keeps_the_monitoring_ractor_alive
+    assert_ractor(<<~'RUBY', timeout: 60)
+      long = Ractor.new { Ractor.receive }
+      Ractor.new(long) { |l| l.monitor(Ractor::Port.new) }.value
+      GC.start                 # used to collect the monitoring Ractor's wrapper
+      3000.times { Object.new }
+      GC.start(full_mark: true)
+      long.send(:bye)
+      assert_equal :bye, long.value
+    RUBY
+  end
+
+  # Port IDs are per-Ractor, so two monitoring Ractors can have the same port ID.
+  # Ractor#unmonitor must match both the owning Ractor and the port ID, otherwise
+  # it can remove a different Ractor's monitor entry.
+  def test_unmonitor_does_not_remove_other_ractors_monitor
+    assert_ractor(<<~'RUBY', timeout: 15)
+      target = Ractor.new { Ractor.receive }
+
+      b = Ractor.new(target) do |t|
+        t.monitor(p = Ractor::Port.new)
+        Ractor.main << :ready
+        p.receive == [t, :exited]
+      end
+
+      Ractor.receive  # b's monitor is registered
+
+      a = Ractor.new(target) do |t|
+        t.monitor(p = Ractor::Port.new)
+        t.unmonitor(p)
+        t << :terminate
+        p.close
+        begin; p.receive; rescue Ractor::ClosedError; :ok; end
+      end
+
+      assert_equal :ok, a.value
+      assert_equal true, b.value
+    RUBY
+  end
+
+  # move must preserve the class of a String/Array/Hash subclass.
+  def test_move_preserves_subclass
+    assert_ractor(<<~'RUBY', timeout: 60)
+      class MyStr < String; end
+      class MyArr < Array; end
+      class MyHash < Hash; end
+      s = MyStr.new("hello"); a = MyArr.new([1, 2]); h = MyHash.new; h[:k] = 1
+      r = Ractor.new { 3.times.map { Ractor.receive } }
+      r.send(s, move: true); r.send(a, move: true); r.send(h, move: true)
+      rs, ra, rh = r.value
+      assert_equal [MyStr, MyArr, MyHash], [rs.class, ra.class, rh.class]
+      assert_equal "hello", rs
+      assert_equal [1, 2], ra
+      assert_equal 1, rh[:k]
+    RUBY
+  end
+
+  def test_move_preflight_matchdata_leaves_graph_intact
+    assert_ractor(<<~'RUBY', timeout: 60)
+      sibling = +"hello"
+      m = "foo".match(Class.new(Regexp).new("o"))
+      r = Ractor.new { Ractor.receive }
+      refute Ractor.shareable?(m.regexp), "the Regexp subclass must be unshareable for this test"
+      r.send([sibling, m], move: true) rescue Ractor::Error # the Regexp subclass is unshareable
+      assert_equal "hello", sibling
+    RUBY
+  end
+
+  def test_bignum_to_s
+    assert_ractor(<<~'RUBY')
+      8.times.map do
+        Ractor.new do
+          1_000.times do |i|
+            v = (2**96 - 1) + i
+            s = v.to_s
+            # round-trip through str2big (uses the same cache)
+            raise "bad to_s: #{s.inspect}" unless Integer(s) == v
+          end
+        end
+      end.each(&:join)
+    RUBY
+  end
+
+  def test_io_is_not_shareable
+    io = File.open(IO::NULL)
+    begin
+      assert_unshareable(io, "can not make shareable object for #{io.inspect}",
+                         exception: Ractor::Error)
+      # freezing an IO does not make it shareable either
+      io.freeze
+      refute Ractor.shareable?(io)
+      assert_raise(Ractor::Error) { Ractor.make_shareable(io) }
+    ensure
+      io.close
+    end
+  end
+
+  # Ractor.make_shareable reaches a T_DATA's references through its GC mark function
+  # (rb_objspace_reachable_objects_from_local), and the walk's callback runs #freeze on
+  # every child it is handed.  So arbitrary Ruby -- allocation, a GC, a compaction, a
+  # raise -- runs while the parent's dmark is still on the stack.  Set is the vector: a
+  # T_DATA with a non-declarative dmark and RUBY_TYPED_FROZEN_SHAREABLE, so its elements
+  # are reachable only through that walk.
+  def test_make_shareable_data_child_freeze_runs_gc
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      require 'objspace'
+      # If Set stops being a T_DATA, this no longer covers the mark function walk.
+      assert_include ObjectSpace.dump(Set.new), '"type":"DATA"'
+
+      frozen = 0
+      klass = Class.new do
+        define_method(:freeze) do
+          frozen += 1
+          GC.start
+          super()
+        end
+      end
+
+      5.times do
+        set = Set.new(Array.new(10) { klass.new })
+        Ractor.make_shareable(set)
+        assert Ractor.shareable?(set), "the Set should have become shareable"
+        set.each { |e| assert Ractor.shareable?(e), "an element should have become shareable" }
+      end
+      assert_equal 5 * 10, frozen, "not all elements were not reached through the mark function"
+      GC.start
+    RUBY
+  end
+
+  def test_make_shareable_data_child_freeze_runs_compaction
+    omit "GC compaction not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      compactor = Class.new do
+        def freeze
+          GC.compact
+          super
+        end
+      end
+
+      set = Set.new(Array.new(10) { compactor.new })
+      Ractor.make_shareable(set)
+      assert Ractor.shareable?(set)
+    RUBY
+  end
+
+  # An exception out of the walk's callback longjmps through the mark function.  The mark
+  # redirect has to be restored on the way out: if it leaks, the next real GC hands its
+  # marking to obj_traverse instead of marking, and the heap is corrupted.
+  def test_make_shareable_data_child_freeze_can_raise
+    raiser = Class.new do
+      def freeze
+        raise "boom"
+      end
+    end
+    10.times do
+      set = Set.new([raiser.new])
+      assert_raise_with_message(RuntimeError, "boom") { Ractor.make_shareable(set) }
+      refute Ractor.shareable?(set), "despite raising, the Set became shareable"
+    end
+    GC.start
   end
 
   def assert_make_shareable(obj)
@@ -225,5 +1857,450 @@ class TestRactor < Test::Unit::TestCase
       Ractor.make_shareable(obj)
     end
     refute Ractor.shareable?(obj), "despite raising, object became shareable"
+  end
+  # $~ can hold the MatchData that a move hollows out in place.  The husk keeps
+  # the old RMatch body, so a later match must allocate instead of reusing it
+  # (a reused husk stays frozen and keeps its Ractor::MovedObject shape).
+  def test_move_matchdata_kept_in_backref
+    assert_ractor(<<~'RUBY', timeout: 60)
+      r = Ractor.new { Ractor.receive }
+      "abc123xyz".match(/([a-z]+)(\d+)/)      # $~ holds the MatchData
+      r.send($~, move: true)                   # husked in place; $~ still points at it
+      m = "qqq777".match(/([a-z]+)(\d+)/)
+      assert_instance_of MatchData, m
+      refute_predicate m, :frozen?
+      assert_equal ["qqq777", "qqq", "777"], [m[0], m[1], m[2]]
+      r.value
+    RUBY
+  end
+
+  # String#dup of a frozen string shares the original's bytes, and for an embedded
+  # string those bytes live in its slot.  Moving the original must leave that slot
+  # alone: the sharer reads it for as long as it lives.
+  def test_move_string_sharing_its_embedded_bytes
+    assert_ractor(<<~'RUBY', timeout: 60)
+      [24, 100, 300].each do |len|
+        r = Ractor.new { Ractor.receive }
+        str = "x" * len
+        str.instance_variable_set(:@iv, [])   # unshareable, so it is moved
+        str.freeze
+        dup = str.dup                         # reads str's bytes in place
+        r.send(str, move: true)
+        assert_equal "x" * len, dup, "corrupted for length #{len}"
+        r.value
+      end
+    RUBY
+  end
+
+  # A frozen array is handed out as a shared root as it is, so a subseq of an embedded
+  # one reads the elements out of its slot.  Moving the original must leave that slot
+  # alone, and must not let it move afterwards: the sharer has no other copy.
+  def test_move_array_sharing_its_embedded_elements
+    assert_ractor(<<~'RUBY', timeout: 60)
+      [8, 20, 40].each do |len|
+        r = Ractor.new { Ractor.receive }
+        ary = Array.new(len) { |i| i + 1 }    # embedded
+        ary.instance_variable_set(:@iv, [])   # unshareable, so it is moved
+        ary.freeze
+        sharer = ary[1, len - 2]              # reads ary's elements in place
+        r.send(ary, move: true)
+        assert_equal (2..len - 1).to_a, sharer, "corrupted for length #{len}"
+
+        begin
+          GC.verify_compaction_references(expand_heap: true, toward: :empty)
+        rescue NotImplementedError
+          # no compaction on this platform
+        end
+        assert_equal (2..len - 1).to_a, sharer, "corrupted by compaction, length #{len}"
+        r.value
+      end
+    RUBY
+  end
+
+  def test_io_priority_wait_on_mn_thread
+    # A timeout-less IO#wait(IO::PRIORITY) on an M:N thread must take the
+    # blocking path: the M:N scheduler has no event for POLLPRI and used to
+    # register nothing yet park the thread forever.
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      require 'socket'
+      r = Ractor.new do
+        serv = TCPServer.new("127.0.0.1", 0)
+        c = TCPSocket.new("127.0.0.1", serv.addr[1])
+        s = serv.accept
+        t = Thread.new { c.wait(IO::PRIORITY, nil) }
+        sleep 0.5
+        s.send("!", Socket::MSG_OOB)
+        woken = t.join(5)
+        [serv, c, s].each(&:close)
+        woken ? :ok : :timeout
+      end
+      assert_equal :ok, r.value
+    RUBY
+  end
+  def test_port_queue_dropped_when_port_unreachable
+    omit 'not fixed for mmtk: it never calls rb_ractor_finish_marking, where the reap runs' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      200.times do
+        port = Ractor::Port.new
+        Ractor.new(port) { |p| p << Ractor::Port.new; nil }.join
+      end
+      8.times { GC.start }
+      # A dropped message holding a port used to root the sending Ractor, and with it
+      # that Ractor's whole objspace, for the life of the process: every one of the 200
+      # survived.  A few of the last still can -- the reap needs a second full mark, and
+      # a conservative stack scan holds whatever it holds -- so this is not exact.
+      assert_operator ObjectSpace.each_object(Ractor).count, :<, 20
+    RUBY
+  end
+
+
+  def test_move_object_with_finalizer
+    # The moved-from shell keeps its finalizer table entry, so it has to keep
+    # FL_FINALIZE with it; the two disagreeing failed an assertion at shutdown.
+    assert_normal_exit(<<~'RUBY', '[Bug #21368]')
+      Warning[:experimental] = false
+      r = Ractor.new { Ractor.receive }
+      1000.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o, proc { |id| })
+        r.send(o, move: true)
+      end
+    RUBY
+
+    assert_in_out_err(%w[-W0], <<~'RUBY', %w[sent finalized], [], '[Bug #21368]')
+      r = Ractor.new { Ractor.receive }
+      o = Object.new
+      ObjectSpace.define_finalizer(o, proc { |id| $stdout.puts "finalized" })
+      r.send(o, move: true)
+      $stdout.puts "sent"
+    RUBY
+  end
+
+  def test_attached_object_of_unshareable_object
+    omit 'objspace per Ractor is how an object\'s owner is known' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      # A singleton class is shareable whatever it is attached to, so sending one used to
+      # hand the attached object to another Ractor through #attached_object.
+      o = Object.new
+      assert_equal true, Ractor.shareable?(o.singleton_class)
+      assert_same o, o.singleton_class.attached_object
+
+      r = Ractor.new(o.singleton_class) do |sc|
+        begin
+          sc.attached_object
+        rescue Ractor::IsolationError
+          :isolated
+        end
+      end
+      assert_equal :isolated, r.value
+
+      # A shareable attached object, and a Ractor's own unshareable one, are fine.
+      shareable = Ractor.make_shareable(Object.new)
+      assert_same shareable, Ractor.new(shareable.singleton_class) { |sc| sc.attached_object }.value
+      assert_same String, Ractor.new(String.singleton_class) { |sc| sc.attached_object }.value
+      assert_equal true, Ractor.new { own = Object.new; own.singleton_class.attached_object.equal?(own) }.value
+    RUBY
+  end
+
+  # The ractor-local GC tests below run through assert_separately rather than
+  # assert_ractor: -W0 silences the experimental-Ractor warning on its own, so the
+  # child does not need assert_ractor's warm-up Ractor, whose objspace would linger
+  # as a zombie and perturb what these tests measure.
+  RACTOR_GC_HELPER = File.expand_path('ractor_gc_helper.rb', __dir__)
+
+  def test_incremental_marking_in_main_and_non_main_ractors
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r-test-/gc/disable -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      _blocker = Ractor.new { Ractor.receive }
+
+      assert_equal :marking, start_local_incremental_major
+
+      # Creating a Ractor that is not the first one must leave the creator's mark running:
+      # vm_insert_ractor0 rests only on the 1 -> 2 transition, which _blocker consumed.
+      # (test_first_ractor_new_settles_creator_mid_mark covers the other side.)  The local
+      # disable rules out a collection started behind the assertion's back by the malloc
+      # accounting of Ractor creation; unlike GC.disable it leaves the cycle running.
+      slots_before = GC.stat(:total_allocated_objects)
+      state_after_new = without_local_gc do
+        Ractor.new { Ractor.receive }
+        GC.latest_gc_info(:state)
+      end
+      creator_slots = GC.stat(:total_allocated_objects) - slots_before
+      assert_equal :marking, state_after_new
+      # Incremental marking still advances on page exhaustion inside that window, so the
+      # assertion also needs Ractor creation to cost its creator far less than draining a
+      # mark (~5_000 slots; measured 13).  Fail on the premise if that ever changes.
+      assert_operator creator_slots, :<, 500
+
+      GC.start
+      assert_equal :none, GC.latest_gc_info(:state)
+      GC.verify_internal_consistency
+
+      entered, first_change, final, mark_steps, retained = value_of(Ractor.new do
+        working_set = retain_for_incremental_mark
+        child_entered = start_local_incremental_major
+        child_first_change, child_final, child_mark_steps = drain_incremental_cycle
+        [child_entered, child_first_change, child_final, child_mark_steps, working_set.sum(&:size)]
+      end)
+      assert_equal :marking, entered
+      assert_includes [:sweeping, :none], first_change
+      assert_equal :none, final
+      # The states above are reached whether or not the mark was incremental: a fresh Ractor
+      # objspace holds so little that its major marks everything in one step.  The working set
+      # is what gives the mark enough to do to be worth stepping, so assert it really was
+      # stepped, and that the Ractor still held the whole set while that happened.
+      assert_equal MARK_HEAP_ROUNDS * MARK_HEAP_OBJECTS_PER_ROUND, retained
+      assert_operator mark_steps, :>=, 2, 'non-main Ractor major mark was not incremental'
+    RUBY
+  end
+
+  def test_global_gc_supersedes_ractor_local_incremental_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      child = Ractor.new do
+        # Two WeakMaps, one of which goes unreachable, so the aborted mark has weak
+        # references to drop: marking a WeakMap queues it into objspace->weak_references,
+        # and that is the darray gc_abort_incremental_marking clears.  Ruby cannot say
+        # whether the mark reached either map before the global GC cut it short, so this
+        # is best-effort coverage; the assertion below only demands that the map still
+        # reachable afterwards resolves its key.
+        weak_map = ObjectSpace::WeakMap.new
+        key = Object.new
+        weak_map[key] = :live
+        doomed = ObjectSpace::WeakMap.new
+        doomed[key] = 1
+
+        # A working set large enough that the mark has real work left, and a couple of
+        # steps spent on it, so what the global GC below interrupts is provably a mark in
+        # flight rather than one that already finished on its own.
+        working_set = retain_for_incremental_mark
+        start_local_incremental_major
+        Ractor.main << advance_incremental_mark
+        doomed = nil
+        receive_from
+        after_global = GC.latest_gc_info(:state)
+        alive = weak_map[key]
+        GC.verify_internal_consistency
+        GC.start(full_mark: false)
+        again = start_local_incremental_major
+        [after_global, alive, again, working_set.sum(&:size)]
+      end
+
+      assert_equal :marking, receive_from(child)
+      GC.start
+      child << :continue
+
+      after_global, alive, again, retained = value_of(child)
+      assert_equal :none, after_global
+      assert_equal :live, alive
+      assert_equal :marking, again
+      assert_equal MARK_HEAP_ROUNDS * MARK_HEAP_OBJECTS_PER_ROUND, retained
+    RUBY
+  end
+
+  def test_global_gc_clears_pending_major_request
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      _blocker = Ractor.new { Ractor.receive }
+
+      EnvUtil.without_gc { request_local_major_gc }
+      assert_not_nil GC.latest_gc_info(:need_major_by)
+
+      # gc_start_global clears every objspace's need_major_gc in its step 5, and nothing
+      # in this test can put a flag back: the only writer of GPR_FLAG_MAJOR_BY_FORCE is
+      # objspace_absorb, which needs a join or an orphaned zombie objspace to merge
+      # (_blocker never terminates and no other Ractor is created), and the sweep's own
+      # GPR_FLAG_MAJOR_BY_NOFREE is ruled out by the last_major_gc step 5 just set.
+      GC.start
+      assert_nil GC.latest_gc_info(:need_major_by)
+      assert_equal :none, GC.latest_gc_info(:state)
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_fork_absorbs_mid_mark_zombie
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    omit 'fork is not supported' unless Process.respond_to?(:fork)
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      r = Ractor.new do
+        Ractor.main << start_local_incremental_major
+        Ractor.receive
+      end
+      assert_equal :marking, receive_from(r)
+
+      pid = fork_child do
+        # Only main survives the fork, so rb_ractor_terminate_atfork has already retired
+        # r and set its legacy value to nil (ractor_sync_terminate_atfork).  The join
+        # must reach the absorb at once rather than wait for a thread that is not there;
+        # checking the value pins that down, since an error raised before
+        # rb_gc_objspace_absorb_into_current would leave the merge below untested.
+        value = with_wait_bound('value of a Ractor that did not survive the fork') { r.value }
+        raise "Ractor#value after fork returned #{value.inspect}, not nil" unless value.nil?
+        GC.verify_internal_consistency
+        # r's pages were merged carrying the mark bits of a mark that never finished, so
+        # drive the merged heap with minors only: a major would re-derive those bits and
+        # hide a stale one.  gc_start_body honours the config over the absorb's own
+        # need_major_gc |= GPR_FLAG_MAJOR_BY_FORCE, which is what makes that possible.
+        GC.config(rgengc_allow_full_mark: false)
+        counts = [GC.stat(:count), GC.stat(:major_gc_count)]
+        400_000.times { Object.new }
+        raise "no collection ran after absorb" unless GC.stat(:count) > counts[0]
+        raise "a major collection ran with full marks disabled" unless GC.stat(:major_gc_count) == counts[1]
+        GC.verify_internal_consistency
+      end
+      assert_predicate wait_for_pid(pid), :success?
+    RUBY
+  end
+
+  def test_first_ractor_new_settles_creator_mid_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      wait_until_single_ractor
+
+      assert_equal :marking, start_local_incremental_major
+      Ractor.new { Ractor.receive }
+      assert_equal :none, GC.latest_gc_info(:state)
+      assert_equal :marking, start_local_incremental_major
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_ractor_join_absorbs_zombie_while_joiner_mid_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      zombie = Ractor.new { :done }
+
+      assert_equal :marking, start_local_incremental_major
+      # The join is the operation under test (it absorbs the zombie's objspace into a
+      # mid-mark joiner), so it is bounded in place rather than through Ractor.select,
+      # which would reach the value through that same path.
+      assert_equal :done, with_wait_bound('zombie join') { zombie.value }
+      assert_equal :none, GC.latest_gc_info(:state)
+      GC.verify_internal_consistency
+      assert_equal :marking, start_local_incremental_major
+    RUBY
+  end
+
+  def test_incremental_major_with_zombie_objspace
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      zombie = Ractor.new { 1000.times { Object.new } }
+      with_wait_bound('zombie join') { zombie.join }
+      wait_until_single_ractor
+
+      assert_equal :marking, start_local_incremental_major
+      assert_equal :none, finish_incremental_major
+      GC.verify_internal_consistency
+      assert_equal :marking, start_local_incremental_major
+    RUBY
+  end
+
+  def test_concurrent_incremental_marks_with_shareable_exchange
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      worker = Ractor.new do
+        results = []
+        3.times do
+          entered = start_local_incremental_major
+          Ractor.main << :ready
+          inbound = receive_from
+          Ractor.main << Ractor.make_shareable([inbound])
+          count_before = GC.stat(:count)
+          results << [entered, finish_incremental_major, GC.stat(:count) - count_before]
+        end
+        GC.verify_internal_consistency
+        results
+      end
+
+      main_results = []
+      3.times do
+        entered = start_local_incremental_major
+        assert_equal :ready, receive_from(worker)
+        worker << Ractor.make_shareable([:payload])
+        receive_from(worker)
+        count_before = GC.stat(:count)
+        main_results << [entered, finish_incremental_major, GC.stat(:count) - count_before]
+      end
+
+      (value_of(worker) + main_results).each do |entered, final, extra_cycles|
+        assert_equal :marking, entered
+        assert_equal :none, final
+        # finish_incremental_major drives the cycle it was handed to :none and stops there.
+        # A second cycle means the drain outran the handshake and the pair is no longer
+        # exchanging shareables across two marks that overlap, which is the whole premise.
+        assert_equal 0, extra_cycles, 'the drain started another cycle: the marks did not overlap'
+      end
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_writebarrier_foreign_objects_during_incremental_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r-test-/gc/writebarrier -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      box = Bug::GC::WriteBarrier::Box.new
+
+      Ractor.make_shareable(box)
+
+      worker = Ractor.new(box) do |box|
+        results = []
+        2.times do
+          entered = start_local_incremental_major
+          Ractor.main << :ready
+          inbound = receive_from
+
+          retained = Array.new(200) { [] }
+          200.times { |i| retained[i] << inbound }
+          retained = nil
+
+          # Local parent holding a foreign shareable child: re-greying it mid-mark must
+          # re-traverse it without touching the foreign child's GC state.
+          holder = [inbound]
+          Bug::GC::WriteBarrier.remember(holder)
+
+          mine = Object.new
+          box.store(mine)
+          mine_id = mine.object_id
+          mine = nil
+          # box is foreign to this Ractor, so this must be a no-op rather than a crash.
+          Bug::GC::WriteBarrier.remember(box)
+
+          Ractor.main << Ractor.make_shareable([:reply, mine_id])
+          results << [entered, finish_incremental_major, box.child.object_id == mine_id, holder[0]]
+        end
+        GC.verify_internal_consistency
+        results
+      end
+
+      main_retained = Array.new(200) { [] }
+      2.times do
+        entered = start_local_incremental_major
+        assert_equal :ready, receive_from(worker)
+        worker << Ractor.make_shareable([:payload])
+        reply = receive_from(worker)
+        200.times { |i| main_retained[i] << reply }
+        # Local parents now hold a foreign shareable child; the barrier's multi-Ractor
+        # bail-out leaves that edge to the shareable bits, so re-greying the parents
+        # mid-mark must re-traverse them safely.
+        Bug::GC::WriteBarrier.remember(main_retained)
+        # reply is foreign to the main Ractor, so this must be a no-op.
+        Bug::GC::WriteBarrier.remember(reply)
+        assert_equal :marking, entered
+        assert_equal :none, finish_incremental_major
+        assert_equal :reply, reply.first
+      end
+
+      value_of(worker).each do |entered, final, child_kept, held|
+        assert_equal :marking, entered
+        assert_equal :none, final
+        # mine was stored into a shareable box mid-mark from the objspace that owns it.
+        # The barrier bails out on that edge, so nothing greys mine; it survives the
+        # worker's mark only because the store set a shref bit that pinned_roots_mark
+        # picks up in gc_marks_finish.
+        assert child_kept, 'an unshareable stored into a shareable mid-mark was collected'
+        assert_equal [:payload], held
+      end
+      GC.verify_internal_consistency
+    RUBY
   end
 end

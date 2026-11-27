@@ -124,7 +124,7 @@ describe "Time#<=>" do
       def r.<=>(other); other <=> self; end
       r.should_receive(:<=>).once
 
-      (t <=> r).should be_nil
+      (t <=> r).should == nil
     end
   end
 end

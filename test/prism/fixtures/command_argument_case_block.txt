@@ -1,0 +1,11 @@
+receive case when ready then produce do :ok end end
+
+receive case value; when ready then produce do :ok end end
+
+receive case value; when ready; else produce do :ok end end
+
+receive case value; in Integer then produce do :ok end end
+
+receive case value; in Integer; else produce do :ok end end
+
+receive case value; in Integer then Produce do :first end; else collect item (x) {} do :second end; end do :outer end

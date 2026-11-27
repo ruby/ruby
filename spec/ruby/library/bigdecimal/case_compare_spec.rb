@@ -1,7 +1,9 @@
 require_relative '../../spec_helper'
-require_relative 'shared/eql'
+require 'bigdecimal'
 
 
 describe "BigDecimal#===" do
-  it_behaves_like :bigdecimal_eql, :===
+  it "is an alias of BigDecimal#==" do
+    BigDecimal.instance_method(:===).should == BigDecimal.instance_method(:==)
+  end
 end

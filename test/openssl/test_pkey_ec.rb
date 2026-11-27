@@ -80,6 +80,17 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal key.to_der, deserialized.to_der
   end
 
+  def test_get_param
+    unless openssl?(3, 0, 0) || OpenSSL::PKey::PKey.method_defined?(:get_param)
+      omit "EVP_PKEY_get_params() is not supported"
+    end
+    key = Fixtures.pkey("p256")
+    assert_equal("prime256v1", key.get_param("group"))
+    assert_equal(Encoding::UTF_8, key.get_param("group").encoding)
+    assert_equal(key.group.order, key.get_param("order"))
+    assert_kind_of(OpenSSL::BN, key.get_param("order"))
+  end
+
   def test_check_key
     omit_on_fips
 
@@ -343,6 +354,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.cofactor, group4.cofactor
     assert_equal group1.seed, group4.seed
     assert_equal group1.degree, group4.degree
+  end
+
+  def test_ec_group_initialize_error_message
+    # Test that passing 2 arguments raises the helpful error
+    e = assert_raise(ArgumentError) do
+      OpenSSL::PKey::EC::Group.new(:GFp, 123)
+    end
+
+    assert_equal("wrong number of arguments (given 2, expected 1 or 4)", e.message)
   end
 
   def test_ec_point

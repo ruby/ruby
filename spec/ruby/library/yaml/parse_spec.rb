@@ -4,7 +4,7 @@ require 'yaml'
 
 describe "YAML.parse with an empty string" do
   it "returns false" do
-    YAML.parse('').should be_false
+    YAML.parse('').should == false
   end
 end
 

@@ -21,7 +21,7 @@ describe "Module#ancestors" do
   end
 
   it "returns only modules and classes" do
-    class << ModuleSpecs::Child; self; end.ancestors.should include(ModuleSpecs::Internal, Class, Module, Object, Kernel)
+    class << ModuleSpecs::Child; self; end.ancestors.to_set.should >= Set[ModuleSpecs::Internal, Class, Module, Object, Kernel]
   end
 
   it "has 1 entry per module or class" do
@@ -45,7 +45,7 @@ describe "Module#ancestors" do
       child   = Class.new(parent)
       schild  = child.singleton_class
 
-      schild.ancestors.should include(schild,
+      schild.ancestors.to_set.should >= Set[schild,
                                       parent.singleton_class,
                                       Object.singleton_class,
                                       BasicObject.singleton_class,
@@ -53,14 +53,14 @@ describe "Module#ancestors" do
                                       Module,
                                       Object,
                                       Kernel,
-                                      BasicObject)
+                                      BasicObject]
 
     end
 
     describe 'for a standalone module' do
       it 'does not include Class' do
         s_mod = ModuleSpecs.singleton_class
-        s_mod.ancestors.should_not include(Class)
+        s_mod.ancestors.should_not.include?(Class)
       end
 
       it 'does not include other singleton classes' do
@@ -69,19 +69,19 @@ describe "Module#ancestors" do
         s_object = Object.singleton_class
         s_basic_object = BasicObject.singleton_class
 
-        s_standalone_mod.ancestors.should_not include(s_module, s_object, s_basic_object)
+        (s_standalone_mod.ancestors & [s_module, s_object, s_basic_object]).should.empty?
       end
 
       it 'includes its own singleton class' do
         s_mod = ModuleSpecs.singleton_class
 
-        s_mod.ancestors.should include(s_mod)
+        s_mod.ancestors.should.include?(s_mod)
       end
 
       it 'includes standard chain' do
         s_mod = ModuleSpecs.singleton_class
 
-        s_mod.ancestors.should include(Module, Object, Kernel, BasicObject)
+        s_mod.ancestors.to_set.should >= Set[Module, Object, Kernel, BasicObject]
       end
     end
   end

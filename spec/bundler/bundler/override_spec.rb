@@ -1,0 +1,290 @@
+# frozen_string_literal: true
+
+RSpec.describe "MatchMetadata override-aware checks" do
+  let(:spec_class) do
+    Class.new do
+      include Bundler::MatchMetadata
+      attr_accessor :name
+      def initialize(name, ruby_req, rubygems_req)
+        @name = name
+        @required_ruby_version = ruby_req
+        @required_rubygems_version = rubygems_req
+      end
+    end
+  end
+
+  it "matches_current_metadata? ignores overrides (strict path)" do
+    spec = spec_class.new("rails", Gem::Requirement.new("< #{Gem.ruby_version}"), Gem::Requirement.default)
+    overrides = [Bundler::Override.new("rails", :required_ruby_version, :ignore_upper)]
+    # Strict method MUST NOT apply overrides; guards SelfManager and other generic callers.
+    expect(spec.matches_current_metadata?).to be(false)
+    expect(spec.matches_current_metadata_with_overrides?(overrides)).to be(true)
+  end
+
+  it "matches_current_ruby_with_overrides? returns the strict result for an empty override list" do
+    spec = spec_class.new("rails", Gem::Requirement.new(">= #{Gem.ruby_version}"), Gem::Requirement.default)
+    expect(spec.matches_current_ruby_with_overrides?([])).to be(true)
+    expect(spec.matches_current_ruby_with_overrides?(nil)).to be(true)
+  end
+
+  it "matches_current_rubygems_with_overrides? honors :all override" do
+    spec = spec_class.new("rails", Gem::Requirement.default, Gem::Requirement.new("< #{Gem.rubygems_version}"))
+    overrides = [Bundler::Override.new(:all, :required_rubygems_version, :ignore_upper)]
+    expect(spec.matches_current_rubygems_with_overrides?(overrides)).to be(true)
+  end
+end
+
+RSpec.describe "LazySpecification override propagation" do
+  let(:overrides) { [Bundler::Override.new("rails", :required_ruby_version, :ignore_upper)] }
+
+  it "carries overrides forward from a source LazySpec via from_spec" do
+    src = Bundler::LazySpecification.new("rails", "8.0", Gem::Platform::RUBY)
+    src.overrides = overrides
+    derived = Bundler::LazySpecification.from_spec(src)
+    expect(derived.overrides).to eq(overrides)
+  end
+
+  it "does not call respond_to? on the source spec, avoiding gemspec lazy load" do
+    # If from_spec used respond_to?(:overrides), a RemoteSpec source would
+    # force-load the backing gemspec. Use a stand-in object whose
+    # respond_to? raises to prove it is never asked.
+    src = Object.new
+    src.define_singleton_method(:name) { "rails" }
+    src.define_singleton_method(:version) { Gem::Version.new("8.0") }
+    src.define_singleton_method(:platform) { Gem::Platform::RUBY }
+    src.define_singleton_method(:source) { nil }
+    src.define_singleton_method(:runtime_dependencies) { [] }
+    src.define_singleton_method(:required_ruby_version) { Gem::Requirement.default }
+    src.define_singleton_method(:required_rubygems_version) { Gem::Requirement.default }
+    src.define_singleton_method(:content_address) { nil }
+    src.define_singleton_method(:respond_to?) {|*| raise "from_spec must not call respond_to?" }
+    expect { Bundler::LazySpecification.from_spec(src) }.not_to raise_error
+  end
+end
+
+RSpec.describe Bundler::Override do
+  describe ".find_for" do
+    it "returns the matching override by target and field" do
+      a = described_class.new("rails", :version, ">= 8.0")
+      b = described_class.new("nokogiri", :version, :ignore_upper)
+      expect(described_class.find_for([a, b], "rails", :version)).to be(a)
+    end
+
+    it "returns nil when no override matches the target" do
+      a = described_class.new("rails", :version, ">= 8.0")
+      expect(described_class.find_for([a], "sinatra", :version)).to be_nil
+    end
+
+    it "returns nil when no override matches the field" do
+      a = described_class.new("rails", :version, ">= 8.0")
+      expect(described_class.find_for([a], "rails", :required_ruby_version)).to be_nil
+    end
+
+    it "returns nil for an empty overrides list" do
+      expect(described_class.find_for([], "rails", :version)).to be_nil
+    end
+
+    it "falls back to an :all override on the same field" do
+      a = described_class.new(:all, :required_ruby_version, :ignore_upper)
+      expect(described_class.find_for([a], "rails", :required_ruby_version)).to be(a)
+    end
+
+    it "prefers a per-gem override over a matching :all override" do
+      per_gem = described_class.new("rails", :required_ruby_version, ">= 3.4")
+      all_target = described_class.new(:all, :required_ruby_version, :ignore_upper)
+      expect(described_class.find_for([all_target, per_gem], "rails", :required_ruby_version)).to be(per_gem)
+    end
+
+    it "does not fall back to :all when the field differs" do
+      a = described_class.new(:all, :required_ruby_version, :ignore_upper)
+      expect(described_class.find_for([a], "rails", :required_rubygems_version)).to be_nil
+    end
+  end
+
+  describe "#apply_to" do
+    context "when operation is a version spec string" do
+      it "replaces the existing requirement entirely" do
+        override = described_class.new("rails", :version, ">= 8.0")
+        result = override.apply_to(Gem::Requirement.new(">= 1.0", "< 2.0"))
+        expect(result).to eq(Gem::Requirement.new(">= 8.0"))
+      end
+
+      it "ignores the existing requirement regardless of its content" do
+        override = described_class.new("rails", :version, "= 1.0")
+        result = override.apply_to(Gem::Requirement.new(">= 99.0"))
+        expect(result).to eq(Gem::Requirement.new("= 1.0"))
+      end
+    end
+
+    context "when operation is :ignore_upper" do
+      it "removes < and <= operators" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        result = override.apply_to(Gem::Requirement.new(">= 1.0", "< 2.0"))
+        expect(result).to eq(Gem::Requirement.new(">= 1.0"))
+      end
+
+      it "keeps >, >=, = operators" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        result = override.apply_to(Gem::Requirement.new("> 1.0", "<= 2.0"))
+        expect(result).to eq(Gem::Requirement.new("> 1.0"))
+      end
+
+      it "converts ~> to >= preserving the lower bound" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        result = override.apply_to(Gem::Requirement.new("~> 1.5"))
+        expect(result).to eq(Gem::Requirement.new(">= 1.5"))
+      end
+
+      it "preserves != exclusion constraints" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        result = override.apply_to(Gem::Requirement.new(">= 1.0", "!= 1.5.0", "< 2.0"))
+        expect(result).to eq(Gem::Requirement.new(">= 1.0", "!= 1.5.0"))
+      end
+
+      it "returns the default requirement when only upper bounds remain" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        result = override.apply_to(Gem::Requirement.new("< 2.0"))
+        expect(result).to eq(Gem::Requirement.default)
+      end
+
+      it "returns the default requirement when the input is nil" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        expect(override.apply_to(nil)).to eq(Gem::Requirement.default)
+      end
+
+      it "returns the default requirement when the input is already the default" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        expect(override.apply_to(Gem::Requirement.default)).to eq(Gem::Requirement.default)
+      end
+    end
+
+    context "when operation is nil" do
+      it "returns the default requirement" do
+        override = described_class.new("rails", :version, nil)
+        result = override.apply_to(Gem::Requirement.new(">= 1.0", "< 2.0"))
+        expect(result).to eq(Gem::Requirement.default)
+      end
+    end
+
+    context "when operation is unsupported" do
+      it "raises ArgumentError" do
+        override = described_class.new("rails", :version, 42)
+        expect { override.apply_to(Gem::Requirement.default) }.to raise_error(ArgumentError, /unsupported override operation/)
+      end
+    end
+
+    context "when the override rewrites a dependency" do
+      it "raises ArgumentError instead of reading the replacement as a requirement" do
+        override = described_class.new("grpc", :with, "grpc-lite", from: "a")
+        expect { override.apply_to(Gem::Requirement.default) }.to raise_error(ArgumentError, /rewrites a dependency/)
+      end
+    end
+  end
+
+  describe "#to_s" do
+    it "renders a field override" do
+      expect(described_class.new(:all, :required_ruby_version, :ignore_upper).to_s).to eq("override :all, required_ruby_version: :ignore_upper")
+    end
+
+    it "renders a with:/in: override with its version:" do
+      override = described_class.new("grpc", :with, "grpc-lite", from: "a", requirement: ">= 2")
+      expect(override.to_s).to eq(%(override "grpc", with: "grpc-lite", in: "a", version: ">= 2"))
+    end
+  end
+
+  describe "#to_lock" do
+    it "renders the override without the keyword or its location" do
+      override = described_class.new("rails", :version, ">= 8.0", source_location: caller_locations(0, 1).first)
+      expect(override.to_lock).to eq(%("rails", version: ">= 8.0"))
+    end
+
+    it "normalizes requirements" do
+      expect(described_class.new("rails", :version, ">=8").to_lock).to eq(%("rails", version: ">= 8"))
+      expect(described_class.new("rails", :version, "8.0").to_lock).to eq(%("rails", version: "= 8.0"))
+      expect(described_class.new("b", :with, "c", from: "a", requirement: ">=2").to_lock).to eq(%("b", with: "c", in: "a", version: ">= 2"))
+    end
+
+    it "keeps dropping a dependency distinct from replacing it with a gem named nil" do
+      expect(described_class.new("b", :with, nil, from: "a").to_lock).to eq(%("b", with: nil, in: "a"))
+      expect(described_class.new("b", :with, "nil", from: "a").to_lock).to eq(%("b", with: "nil", in: "a"))
+    end
+  end
+
+  describe ".from_lock" do
+    [
+      %(:all, required_ruby_version: :ignore_upper),
+      %("rails", version: ">= 8.0"),
+      %("rails", version: nil),
+      %("rails", required_rubygems_version: :ignore_upper),
+      %("b", with: nil, in: "a"),
+      %("b", with: "nil", in: "a"),
+      %("b", with: "c", in: "a", version: ">= 2"),
+    ].each do |line|
+      it "round-trips #{line}" do
+        expect(described_class.from_lock(line).to_lock).to eq(line)
+      end
+    end
+
+    it "reads the operation back with its type" do
+      expect(described_class.from_lock(%(:all, required_ruby_version: :ignore_upper)).operation).to eq(:ignore_upper)
+      expect(described_class.from_lock(%("b", with: nil, in: "a")).operation).to be_nil
+      expect(described_class.from_lock(%("b", with: "nil", in: "a")).operation).to eq("nil")
+    end
+
+    [
+      %(rails, version: ">= 8.0"),
+      %("rails"),
+      %("rails", version: ">= 8.0", required_ruby_version: nil),
+      %("rails", as: "y"),
+      %("b", in: "a"),
+      %("b", with: "c", in: nil),
+      %("b", with: "c", in: "a", as: "d"),
+      %("b", from: "a", to: nil),
+      %("b", with: "c"),
+      %("foo bar", version: nil),
+      %("rails", version: ">= 8.0") + "\n",
+    ].each do |line|
+      it "rejects #{line.inspect}" do
+        expect { described_class.from_lock(line) }.to raise_error(ArgumentError, /invalid override in lockfile/)
+      end
+    end
+
+    [
+      %("rails", version: "garbage"),
+      %("b", with: "c", in: "a", version: "garbage"),
+    ].each do |line|
+      it "rejects the ill-formed requirement in #{line}" do
+        expect { described_class.from_lock(line) }.to raise_error(Gem::Requirement::BadRequirementError)
+      end
+    end
+  end
+
+  describe ".rewrite_dependencies" do
+    let(:deps) { [Gem::Dependency.new("grpc", "~> 1.0"), Gem::Dependency.new("json", ">= 2")] }
+
+    it "drops a dependency when with: is nil" do
+      override = described_class.new("grpc", :with, nil, from: "a")
+      expect(described_class.rewrite_dependencies([override], "a", deps)).to eq([deps.last])
+    end
+
+    it "replaces a dependency and discards the parent's requirement" do
+      override = described_class.new("grpc", :with, "grpc-lite", from: "a")
+      expect(described_class.rewrite_dependencies([override], "a", deps)).to eq([Gem::Dependency.new("grpc-lite"), deps.last])
+    end
+
+    it "gives the replacement the override's version requirement" do
+      override = described_class.new("grpc", :with, "grpc-lite", from: "a", requirement: ">= 2")
+      expect(described_class.rewrite_dependencies([override], "a", deps).first).to eq(Gem::Dependency.new("grpc-lite", ">= 2"))
+    end
+
+    it "leaves the dependencies of other gems untouched" do
+      override = described_class.new("grpc", :with, nil, from: "a")
+      expect(described_class.rewrite_dependencies([override], "b", deps)).to eq(deps)
+    end
+
+    it "ignores overrides without in:" do
+      override = described_class.new("grpc", :version, nil)
+      expect(described_class.rewrite_dependencies([override], "a", deps)).to eq(deps)
+    end
+  end
+end

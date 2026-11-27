@@ -1,7 +1,6 @@
 require_relative '../../../spec_helper'
 require 'net/http'
 require_relative 'fixtures/classes'
-require_relative 'shared/set_range'
 
 describe "Net::HTTPHeader#range" do
   before :each do
@@ -23,26 +22,29 @@ describe "Net::HTTPHeader#range" do
   end
 
   it "returns nil when there is no 'Range' header entry" do
-    @headers.range.should be_nil
+    @headers.range.should == nil
   end
 
   it "raises a Net::HTTPHeaderSyntaxError when the 'Range' has an invalid format" do
     @headers["Range"] = "invalid"
-    -> { @headers.range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.range }.should.raise(Net::HTTPHeaderSyntaxError)
 
     @headers["Range"] = "bytes 123-abc"
-    -> { @headers.range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.range }.should.raise(Net::HTTPHeaderSyntaxError)
 
     @headers["Range"] = "bytes abc-123"
-    -> { @headers.range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.range }.should.raise(Net::HTTPHeaderSyntaxError)
   end
 
   it "raises a Net::HTTPHeaderSyntaxError when the 'Range' was not specified" do
     @headers["Range"] = "bytes=-"
-    -> { @headers.range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.range }.should.raise(Net::HTTPHeaderSyntaxError)
   end
 end
 
 describe "Net::HTTPHeader#range=" do
-  it_behaves_like :net_httpheader_set_range, :range=
+  it "is an alias of Net::HTTPHeader#set_range" do
+    Net::HTTPHeader.instance_method(:range=).should ==
+      Net::HTTPHeader.instance_method(:set_range)
+  end
 end

@@ -23,7 +23,9 @@ VALUE rb_file_expand_path_fast(VALUE, VALUE);
 VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
 VALUE rb_get_path_check_to_string(VALUE);
 VALUE rb_get_path_check_convert(VALUE);
+VALUE rb_get_path_check_no_convert(VALUE);
 int ruby_is_fd_loadable(int fd);
+char *rb_enc_path_skip_prefix_root(const char *path, const char *end, rb_encoding *enc);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* file.c (export) */
@@ -31,7 +33,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_readlink(VALUE path, rb_encoding *enc);
 #endif
 #ifdef __APPLE__
-VALUE rb_str_normalize_ospath(const char *ptr, long len);
+VALUE rb_str_normalize_ospath(const char *ptr, rb_len_t len);
 #endif
 RUBY_SYMBOL_EXPORT_END
 

@@ -20,7 +20,7 @@ describe "Array#each_index" do
 
   it "returns self" do
     a = [:a, :b, :c]
-    a.each_index { |i| }.should equal(a)
+    a.each_index { |i| }.should.equal?(a)
   end
 
   it "is not confused by removing elements from the front" do

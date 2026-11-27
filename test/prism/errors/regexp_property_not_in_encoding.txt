@@ -1,0 +1,6 @@
+# encoding: ascii-8bit
+/\p{Hiragana}/
+^~~~~~~~~~~~~~ invalid character property name {Hiragana}: /\p{Hiragana}/
+/\p{L}/
+^~~~~~~ invalid character property name {L}: /\p{L}/
+

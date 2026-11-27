@@ -19,11 +19,11 @@ describe "IO#getc" do
 
   it "returns nil when invoked at the end of the stream" do
     @io.read
-    @io.getc.should be_nil
+    @io.getc.should == nil
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.getc }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.getc }.should.raise(IOError)
   end
 end
 
@@ -37,6 +37,6 @@ describe "IO#getc" do
   end
 
   it "returns nil on empty stream" do
-    @io.getc.should be_nil
+    @io.getc.should == nil
   end
 end

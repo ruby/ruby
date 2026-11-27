@@ -2,8 +2,10 @@ require 'test/unit'
 require "securerandom"
 
 class TestObjectId < Test::Unit::TestCase
+  SomeClass = Class.new
+
   def setup
-    @obj = Object.new
+    @obj = SomeClass.new
   end
 
   def test_dup_new_id
@@ -140,7 +142,7 @@ end
 class TestObjectIdTooComplex < TestObjectId
   class TooComplex
     def initialize
-      @too_complex_obj_id_test = 1
+      @complex_obj_id_test = 1
     end
   end
 
@@ -155,7 +157,7 @@ class TestObjectIdTooComplex < TestObjectId
     @obj.instance_variable_set("@a#{rand(10_000)}", 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(@obj), :complex?)
     end
   end
 end
@@ -181,7 +183,7 @@ class TestObjectIdTooComplexClass < TestObjectId
     @obj.instance_variable_set("@test", 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(@obj), :complex?)
     end
   end
 end
@@ -202,7 +204,7 @@ class TestObjectIdTooComplexGeneric < TestObjectId
     @obj.instance_variable_set("@a#{rand(10_000)}", 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(@obj), :complex?)
     end
   end
 end
@@ -282,7 +284,7 @@ end
 class TestObjectIdStructTooComplex < TestObjectId
   StructTooComplex = Struct.new(:a) do
     def initialize
-      @too_complex_obj_id_test = 1
+      @complex_obj_id_test = 1
     end
   end
 
@@ -297,7 +299,7 @@ class TestObjectIdStructTooComplex < TestObjectId
     @obj.instance_variable_set("@a#{rand(10_000)}", 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(@obj), :complex?)
     end
   end
 end

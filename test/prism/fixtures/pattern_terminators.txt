@@ -1,0 +1,21 @@
+while a in b, do 1 end
+
+until a in b, do 1 end
+
+for x in a in b, do 1 end
+
+loop do a in b, end
+
+"#{a in b,}"
+
+while a in x: do 1 end
+
+while a in x: 1, do 1 end
+
+while a in x:, y: do 1 end
+
+loop do a in x: end
+
+"#{a in x:}"
+
+a in x: and 1

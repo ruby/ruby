@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "id.h"
+#include "internal/symbol.h"
 #include "ruby/encoding.h"
 
 #define DYNAMIC_ID_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
@@ -52,7 +53,6 @@ id_type(ID id)
     }
 }
 
-typedef uint32_t rb_id_serial_t;
 static const uint32_t RB_ID_SERIAL_MAX = /* 256M on LP32 */
     UINT32_MAX >>
     ((sizeof(ID)-sizeof(rb_id_serial_t))*CHAR_BIT < RUBY_ID_SCOPE_SHIFT ?
@@ -67,6 +67,15 @@ rb_id_to_serial(ID id)
     else {
         return (rb_id_serial_t)id;
     }
+}
+
+static inline ID
+rb_id_from_serial_and_type(rb_id_serial_t num, int type)
+{
+    if (type == -1) {
+        return num;
+    }
+    return ((ID)num << ID_SCOPE_SHIFT) | (rb_id_serial_t)type;
 }
 
 static inline int
@@ -109,7 +118,7 @@ is_global_name_punct(const int c)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-int rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
+int rb_enc_symname_type(const char *name, rb_len_t len, rb_encoding *enc, unsigned int allowed_attrset);
 size_t rb_sym_immortal_count(void);
 
 RUBY_SYMBOL_EXPORT_END

@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/proc.h"
@@ -50,8 +51,6 @@ wmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* The key and value of the table each take sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * (2 * sizeof(VALUE));
     }
 
     return size;
@@ -93,7 +92,7 @@ wmap_compact_table_replace_i(st_data_t *k, st_data_t *v, st_data_t d, int existi
 {
     RUBY_ASSERT((VALUE)*k == rb_gc_location((VALUE)*k));
 
-    *v = (st_data_t)rb_gc_location((VALUE)*v);
+    rb_gc_update_moved((VALUE *)v);
 
     return ST_CONTINUE;
 }
@@ -112,15 +111,38 @@ wmap_compact(void *ptr)
     }
 }
 
-const rb_data_type_t rb_weakmap_type = {
+static int
+rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    void *objspace = (void *)arg;
+
+    if (rb_gc_handle_weak_references_alive_p(objspace, key) &&
+            rb_gc_handle_weak_references_alive_p(objspace, val)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wmap_handle_weak_references(void *ptr, void *objspace)
+{
+    struct weakmap *w = ptr;
+
+    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)objspace);
+}
+
+static const rb_data_type_t rb_weakmap_type = {
     "weakmap",
     {
         NULL,
         wmap_free,
         wmap_memsize,
         wmap_compact,
+        wmap_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static int
@@ -140,27 +162,6 @@ static const struct st_hash_type wmap_hash_type = {
     wmap_hash,
 };
 
-static int
-rb_wmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    if (rb_gc_handle_weak_references_alive_p(key) &&
-            rb_gc_handle_weak_references_alive_p(val)) {
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-void
-rb_wmap_handle_weak_references(VALUE self)
-{
-    struct weakmap *w;
-    TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
-
-    st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
-}
-
 static VALUE
 wmap_allocate(VALUE klass)
 {
@@ -174,6 +175,40 @@ wmap_allocate(VALUE klass)
     return obj;
 }
 
+static int
+wmap_foreach_snapshot_i(st_data_t k, st_data_t v, st_data_t data)
+{
+    VALUE ary = (VALUE)data;
+
+    rb_ary_push(ary, (VALUE)k);
+    rb_ary_push(ary, (VALUE)v);
+
+    return ST_CONTINUE;
+}
+
+/* Calls func with each entry of the map. The entries are first copied into a
+ * hidden array, because func may run arbitrary code (or allocate and trigger
+ * a compaction) and modify the table under a running st_foreach, which can
+ * then visit entries twice or stop early. Entries removed before they are
+ * reached are skipped. */
+static void
+wmap_foreach(struct weakmap *w, void (*func)(VALUE key, VALUE val, VALUE arg), VALUE arg)
+{
+    VALUE ary = rb_ary_hidden_new(w->table->num_entries * 2);
+    st_foreach(w->table, wmap_foreach_snapshot_i, (st_data_t)ary);
+
+    for (long i = 0; i < RARRAY_LEN(ary); i += 2) {
+        VALUE key = RARRAY_AREF(ary, i);
+        st_data_t val;
+
+        if (st_lookup(w->table, (st_data_t)key, &val)) {
+            func(key, (VALUE)val, arg);
+        }
+    }
+
+    RB_GC_GUARD(ary);
+}
+
 static VALUE
 wmap_inspect_append(VALUE str, VALUE obj)
 {
@@ -185,13 +220,9 @@ wmap_inspect_append(VALUE str, VALUE obj)
     }
 }
 
-static int
-wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
+static void
+wmap_inspect_i(VALUE key, VALUE val, VALUE str)
 {
-    VALUE key = (VALUE)k;
-    VALUE val = (VALUE)v;
-    VALUE str = (VALUE)data;
-
     if (RSTRING_PTR(str)[0] == '#') {
         rb_str_cat2(str, ", ");
     }
@@ -203,10 +234,19 @@ wmap_inspect_i(st_data_t k, st_data_t v, st_data_t data)
     wmap_inspect_append(str, key);
     rb_str_cat2(str, " => ");
     wmap_inspect_append(str, val);
-
-    return ST_CONTINUE;
 }
 
+/* call-seq:
+ *   inspect -> new_string
+ *
+ * Returns a new string containing the \WeakMap entries:
+ *
+ *   m = ObjectSpace::WeakMap.new
+ *   m["one"] = 1
+ *   m["two"] = 2
+ *   m.inspect
+ *   # => "#<ObjectSpace::WeakMap:0x00007c457b2523e8: #<String:0x00007c457b2674f0> => 1, #<String:0x00007c457b27b8d8> => 2>"
+ */
 static VALUE
 wmap_inspect(VALUE self)
 {
@@ -216,7 +256,7 @@ wmap_inspect(VALUE self)
 
     VALUE str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
 
-    st_foreach(w->table, wmap_inspect_i, (st_data_t)str);
+    wmap_foreach(w, wmap_inspect_i, str);
 
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");
@@ -224,12 +264,10 @@ wmap_inspect(VALUE self)
     return str;
 }
 
-static int
-wmap_each_i(st_data_t k, st_data_t v, st_data_t _)
+static void
+wmap_each_i(VALUE key, VALUE val, VALUE _)
 {
-    rb_yield_values(2, (VALUE)k, (VALUE)v);
-
-    return ST_CONTINUE;
+    rb_yield_values(2, key, val);
 }
 
 /*
@@ -246,17 +284,15 @@ wmap_each(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    st_foreach(w->table, wmap_each_i, (st_data_t)0);
+    wmap_foreach(w, wmap_each_i, Qnil);
 
     return self;
 }
 
-static int
-wmap_each_key_i(st_data_t k, st_data_t _v, st_data_t _data)
+static void
+wmap_each_key_i(VALUE key, VALUE _val, VALUE _)
 {
-    rb_yield((VALUE)k);
-
-    return ST_CONTINUE;
+    rb_yield(key);
 }
 
 /*
@@ -273,17 +309,15 @@ wmap_each_key(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    st_foreach(w->table, wmap_each_key_i, (st_data_t)0);
+    wmap_foreach(w, wmap_each_key_i, Qnil);
 
     return self;
 }
 
-static int
-wmap_each_value_i(st_data_t k, st_data_t v, st_data_t _data)
+static void
+wmap_each_value_i(VALUE _key, VALUE val, VALUE _)
 {
-    rb_yield((VALUE)v);
-
-    return ST_CONTINUE;
+    rb_yield(val);
 }
 
 /*
@@ -300,7 +334,7 @@ wmap_each_value(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    st_foreach(w->table, wmap_each_value_i, (st_data_t)0);
+    wmap_foreach(w, wmap_each_value_i, Qnil);
 
     return self;
 }
@@ -328,7 +362,7 @@ wmap_keys(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new_capa(w->table->num_entries);
     st_foreach(w->table, wmap_keys_i, (st_data_t)ary);
 
     return ary;
@@ -357,7 +391,7 @@ wmap_values(VALUE self)
     struct weakmap *w;
     TypedData_Get_Struct(self, struct weakmap, &rb_weakmap_type, w);
 
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new_capa(w->table->num_entries);
     st_foreach(w->table, wmap_values_i, (st_data_t)ary);
 
     return ary;
@@ -383,7 +417,7 @@ wmap_aset(VALUE self, VALUE key, VALUE val)
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
 
-    return Qnil;
+    return val;
 }
 
 /* Retrieves a weakly referenced object with the given key */
@@ -495,6 +529,24 @@ wmap_size(VALUE self)
 #endif
 }
 
+VALUE
+rb_wmap_new_hidden(void)
+{
+    return wmap_allocate(0);
+}
+
+VALUE
+rb_wmap_lookup(VALUE self, VALUE key)
+{
+    return wmap_lookup(self, key);
+}
+
+void
+rb_wmap_aset(VALUE self, VALUE key, VALUE val)
+{
+    wmap_aset(self, key, val);
+}
+
 /* ===== WeakKeyMap =====
  *
  * WeakKeyMap contains one ST table which contains a pointer to the object as
@@ -550,8 +602,6 @@ wkmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* Each key of the table takes sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * sizeof(VALUE);
     }
 
     return size;
@@ -572,8 +622,8 @@ wkmap_compact_table_replace(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t _d
 {
     RUBY_ASSERT(existing);
 
-    *key_ptr = (st_data_t)rb_gc_location((VALUE)*key_ptr);
-    *val_ptr = (st_data_t)rb_gc_location((VALUE)*val_ptr);
+    rb_gc_update_moved((VALUE *)key_ptr);
+    rb_gc_update_moved((VALUE *)val_ptr);
 
     return ST_CONTINUE;
 }
@@ -588,15 +638,35 @@ wkmap_compact(void *ptr)
     }
 }
 
-const rb_data_type_t rb_weakkeymap_type = {
+static int
+rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (rb_gc_handle_weak_references_alive_p((void *)arg, key)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return ST_DELETE;
+    }
+}
+
+static void
+wkmap_handle_weak_references(void *ptr, void *objspace)
+{
+    struct weakkeymap *w = ptr;
+
+    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)objspace);
+}
+
+static const rb_data_type_t rb_weakkeymap_type = {
     "weakkeymap",
     {
         wkmap_mark,
         wkmap_free,
         wkmap_memsize,
         wkmap_compact,
+        wkmap_handle_weak_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static int
@@ -620,26 +690,6 @@ static const struct st_hash_type wkmap_hash_type = {
     wkmap_cmp,
     wkmap_hash,
 };
-
-static int
-rb_wkmap_handle_weak_references_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    if (rb_gc_handle_weak_references_alive_p(key)) {
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_DELETE;
-    }
-}
-
-void
-rb_wkmap_handle_weak_references(VALUE self)
-{
-    struct weakkeymap *w;
-    TypedData_Get_Struct(self, struct weakkeymap, &rb_weakkeymap_type, w);
-
-    st_foreach(w->table, rb_wkmap_handle_weak_references_i, (st_data_t)0);
-}
 
 static VALUE
 wkmap_allocate(VALUE klass)
@@ -831,7 +881,7 @@ wkmap_clear(VALUE self)
  *  call-seq:
  *    map.inspect -> new_string
  *
- *  Returns a new String containing informations about the map:
+ *  Returns a new String containing information about the map:
  *
  *    m = ObjectSpace::WeakKeyMap.new
  *    m[key] = value

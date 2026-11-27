@@ -5,13 +5,29 @@ prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
 prevs = [prev, prev.sub(/\.\d+\z/, '')]
 
 update = ->(list, type, desc = "updated") do
-  item = ->(mark = "* ") do
+  item = ->(mark = "* ", sub_bullets = {}) do
     "### The following #{type} gem#{list.size == 1 ? ' is' : 's are'} #{desc}.\n\n" +
-      list.map {|g, v|"#{mark}#{g} #{v}\n"}.join("") + "\n"
+      list.map {|g, v|
+        s = "#{mark}#{g} #{v}\n"
+        s += sub_bullets[g].join("") if sub_bullets[g]
+        s
+      }.join("") + "\n"
   end
-  news.sub!(/^(?:\*( +)|#+ *)?The following #{type} gems? (?:are|is) #{desc}\.\n+(?:(?(1) \1)\*( *).*\n)*\n*/) do
-    item["#{$1&.<< " "}*#{$2 || ' '}"]
-  end or news.sub!(/^## Stdlib updates(?:\n+The following.*(?:\n+( *\* *).*)*)*\n+\K/) do
+  news.sub!(/^(?:\*( +)|#+ *)?The following #{type} gems? (?:are|is) #{desc}\.\n+(?:(?:(?(1) \1)\*( *).*\n)(?:[ \t]+\*.*\n)*)*\n*/) do
+    mark = "#{$1&.dup&.<< " "}*#{$2 || ' '}"
+    # Parse existing sub-bullets from matched section
+    sb = {}; cg = nil
+    $~.to_s.each_line do |l|
+      if l =~ /^\* ([A-Za-z0-9_\-]+)\s/
+        cg = $1
+      elsif cg && l =~ /^\s+\*/
+        (sb[cg] ||= []) << l
+      else
+        cg = nil
+      end
+    end
+    item[mark, sb]
+  end or news.sub!(/^## Stdlib updates(?:\n+The following.*(?:\n+(?:( *\* *).*|[ \t]+\*.*))*)* *\n+\K/) do
     item[$1 || "* "]
   end
 end

@@ -1,0 +1,1 @@
+case :""; in %s::; :ok; end

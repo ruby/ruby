@@ -8,7 +8,7 @@ describe "File::Stat#ftype" do
 
   it "returns a String" do
     FileSpecs.normal_file do |file|
-      File.lstat(file).ftype.should be_kind_of(String)
+      File.lstat(file).ftype.should.is_a?(String)
     end
   end
 

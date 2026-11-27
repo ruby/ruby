@@ -1,0 +1,18 @@
+f x do end.()
+           ^ unexpected '('; expecting a message to send to the receiver
+
+f x do end&.()
+            ^ unexpected '('; expecting a message to send to the receiver
+
+f x do end::()
+            ^ unexpected '('; expecting a message to send to the receiver
+
+C::F x do end.()
+              ^ unexpected '('; expecting a message to send to the receiver
+
+C::F x do end&.()
+               ^ unexpected '('; expecting a message to send to the receiver
+
+C::F x do end::()
+               ^ unexpected '('; expecting a message to send to the receiver
+

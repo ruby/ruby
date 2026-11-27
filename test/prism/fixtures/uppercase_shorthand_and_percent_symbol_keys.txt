@@ -1,0 +1,5 @@
+{ Flag?: true, Status!: true }
+
+{ Flag: }
+
+{ %s:name: => 1 }

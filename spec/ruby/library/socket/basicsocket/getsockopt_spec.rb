@@ -7,7 +7,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   after :each do
-    @sock.closed?.should be_false
+    @sock.closed?.should == false
     @sock.close
   end
 
@@ -41,13 +41,13 @@ describe "BasicSocket#getsockopt" do
   end
 
   it "raises a SystemCallError with an invalid socket option" do
-    -> { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should.raise(Errno::ENOPROTOOPT)
   end
 
   it 'returns a Socket::Option using a constant' do
     opt = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
 
-    opt.should be_an_instance_of(Socket::Option)
+    opt.should.instance_of?(Socket::Option)
   end
 
   it 'returns a Socket::Option for a boolean option' do
@@ -59,7 +59,7 @@ describe "BasicSocket#getsockopt" do
   it 'returns a Socket::Option for a numeric option' do
     opt = @sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL)
 
-    opt.int.should be_kind_of(Integer)
+    opt.int.should.is_a?(Integer)
   end
 
   it 'returns a Socket::Option for a struct option' do
@@ -69,7 +69,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   it 'raises Errno::ENOPROTOOPT when requesting an invalid option' do
-    -> { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should.raise(Errno::ENOPROTOOPT)
   end
 
   describe 'using Symbols as arguments' do
@@ -160,6 +160,57 @@ describe "BasicSocket#getsockopt" do
     end
   end
 
+  platform_is_not :windows do
+    describe 'using Socket::SO_ERROR' do
+      before :each do
+        # a TCP port with nothing listening on it: bind one, remember it, release it again
+        server = TCPServer.new('127.0.0.1', 0)
+        @refused = Socket.sockaddr_in(server.addr[1], '127.0.0.1')
+        server.close
+
+        @connecting = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+      end
+
+      after :each do
+        @connecting.close unless @connecting.closed?
+      end
+
+      it 'returns 0 for a socket with no pending error' do
+        @connecting.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int.should == 0
+      end
+
+      it 'returns the error of a refused non-blocking connect that IO.select reported as writable' do
+        begin
+          @connecting.connect_nonblock(@refused)
+        rescue IO::WaitWritable
+          # select(2) reports a non-blocking connect that failed as writable and leaves the
+          # error on the socket, for getsockopt(SOL_SOCKET, SO_ERROR) to report
+          IO.select(nil, [@connecting], nil, 10).should == [[], [@connecting], []]
+
+          @connecting.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int.should ==
+            Errno::ECONNREFUSED::Errno
+        rescue Errno::ECONNREFUSED
+          # some platforms refuse a loopback connect straight away, and then there is no
+          # pending connect for select to report and no error left for getsockopt
+        end
+      end
+
+      it 'leaves the socket valid until it is closed after a refused non-blocking connect' do
+        begin
+          @connecting.connect_nonblock(@refused)
+        rescue IO::WaitWritable
+          IO.select(nil, [@connecting], nil, 10)
+          @connecting.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
+        rescue Errno::ECONNREFUSED
+        end
+
+        @connecting.closed?.should == false
+        @connecting.close
+        @connecting.closed?.should == true
+      end
+    end
+  end
+
   describe 'using a String based option' do
     it 'allows unpacking of a boolean option' do
       opt = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR).to_s
@@ -171,7 +222,7 @@ describe "BasicSocket#getsockopt" do
       opt   = @sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL).to_s
       array = opt.unpack('i')
 
-      array[0].should be_kind_of(Integer)
+      array[0].should.is_a?(Integer)
       array[0].should > 0
     end
 

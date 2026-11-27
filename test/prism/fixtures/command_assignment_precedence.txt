@@ -1,0 +1,23 @@
+not(a += f(x))
+
+a = b += f x
+
+a += f x
+
+if obj.fetch arg and ready; end
+
+x = obj.fetch(arg) and ready
+
+x = y ||= f(x, y) and ready
+
+case v; in 0; x = y = f 1 in 2; end
+
+case v; in 0; x = y = f(1) in 2; end
+
+x = f(v) {}, z
+
+x = (f (v) {}), z
+
+x = f v {}, z
+
+x = y ||= f x, y if ready

@@ -7,6 +7,7 @@ end
 
 module MSpecMatchers
   private def have_constant(variable)
+    MSpec.deprecate __method__, '.should.const_defined?'
     HaveConstantMatcher.new(variable)
   end
 end

@@ -16,7 +16,7 @@ describe "Rational#%" do
   end
 
   it "returns a Float value when the argument is Float" do
-    (Rational(7, 4) % 1.0).should be_kind_of(Float)
+    (Rational(7, 4) % 1.0).should.is_a?(Float)
     (Rational(7, 4) % 1.0).should == 0.75
     (Rational(7, 4) % 0.26).should be_close(0.19, 0.0001)
   end
@@ -24,20 +24,20 @@ describe "Rational#%" do
   it "raises ZeroDivisionError on zero denominator" do
     -> {
       Rational(3, 5) % Rational(0, 1)
-    }.should raise_error(ZeroDivisionError)
+    }.should.raise(ZeroDivisionError)
 
     -> {
       Rational(0, 1) % Rational(0, 1)
-    }.should raise_error(ZeroDivisionError)
+    }.should.raise(ZeroDivisionError)
 
     -> {
       Rational(3, 5) % 0
-    }.should raise_error(ZeroDivisionError)
+    }.should.raise(ZeroDivisionError)
   end
 
   it "raises a ZeroDivisionError when the argument is 0.0" do
     -> {
       Rational(3, 5) % 0.0
-    }.should raise_error(ZeroDivisionError)
+    }.should.raise(ZeroDivisionError)
   end
 end

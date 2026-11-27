@@ -1,18 +1,22 @@
 use std::sync::Mutex;
 
-use mmtk::{
-    scheduler::{GCWork, GCWorker, WorkBucketStage},
-    util::ObjectReference,
-    vm::ObjectTracerContext,
-};
+use mmtk::scheduler::GCWork;
+use mmtk::scheduler::GCWorker;
+use mmtk::scheduler::WorkBucketStage;
+use mmtk::util::ObjectReference;
+use mmtk::vm::ObjectTracerContext;
 
-use crate::{abi::GCThreadTLS, upcalls, Ruby};
+use crate::Ruby;
+use crate::abi::GCThreadTLS;
+use crate::upcalls;
 
 pub struct WeakProcessor {
+    non_parallel_obj_free_candidates: Mutex<Vec<ObjectReference>>,
+    parallel_obj_free_candidates: Vec<Mutex<Vec<ObjectReference>>>,
+
     /// Objects that needs `obj_free` called when dying.
     /// If it is a bottleneck, replace it with a lock-free data structure,
     /// or add candidates in batch.
-    obj_free_candidates: Mutex<Vec<ObjectReference>>,
     weak_references: Mutex<Vec<ObjectReference>>,
 }
 
@@ -25,32 +29,63 @@ impl Default for WeakProcessor {
 impl WeakProcessor {
     pub fn new() -> Self {
         Self {
-            obj_free_candidates: Mutex::new(Vec::new()),
+            non_parallel_obj_free_candidates: Mutex::new(Vec::new()),
+            parallel_obj_free_candidates: vec![Mutex::new(Vec::new())],
             weak_references: Mutex::new(Vec::new()),
         }
     }
 
-    /// Add an object as a candidate for `obj_free`.
-    ///
-    /// Multiple mutators can call it concurrently, so it has `&self`.
-    pub fn add_obj_free_candidate(&self, object: ObjectReference) {
-        let mut obj_free_candidates = self.obj_free_candidates.lock().unwrap();
-        obj_free_candidates.push(object);
+    pub fn init_parallel_obj_free_candidates(&mut self, num_workers: usize) {
+        debug_assert_eq!(self.parallel_obj_free_candidates.len(), 1);
+
+        for _ in 1..num_workers {
+            self.parallel_obj_free_candidates
+                .push(Mutex::new(Vec::new()));
+        }
     }
 
-    /// Add many objects as candidates for `obj_free`.
+    /// Add a batch of objects as candidates for `obj_free`.
     ///
-    /// Multiple mutators can call it concurrently, so it has `&self`.
-    pub fn add_obj_free_candidates(&self, objects: &[ObjectReference]) {
-        let mut obj_free_candidates = self.obj_free_candidates.lock().unwrap();
-        for object in objects.iter().copied() {
-            obj_free_candidates.push(object);
+    /// Amortizes mutex acquisition over the entire batch. Called when a
+    /// mutator's local buffer is flushed (buffer full or stop-the-world).
+    pub fn add_obj_free_candidates_batch(
+        &self,
+        objects: &[ObjectReference],
+        can_parallel_free: bool,
+    ) {
+        if objects.is_empty() {
+            return;
+        }
+
+        if can_parallel_free {
+            let num_buckets = self.parallel_obj_free_candidates.len();
+            for (idx, candidates) in self.parallel_obj_free_candidates.iter().enumerate() {
+                let mut bucket = candidates.lock().unwrap();
+                for &obj in objects.iter().skip(idx).step_by(num_buckets) {
+                    bucket.push(obj);
+                }
+            }
+        } else {
+            self.non_parallel_obj_free_candidates
+                .lock()
+                .unwrap()
+                .extend_from_slice(objects);
         }
     }
 
     pub fn get_all_obj_free_candidates(&self) -> Vec<ObjectReference> {
-        let mut obj_free_candidates = self.obj_free_candidates.lock().unwrap();
-        std::mem::take(obj_free_candidates.as_mut())
+        // let mut obj_free_candidates = self.obj_free_candidates.lock().unwrap();
+        let mut all_obj_free_candidates = self
+            .non_parallel_obj_free_candidates
+            .lock()
+            .unwrap()
+            .to_vec();
+
+        for candidates_mutex in &self.parallel_obj_free_candidates {
+            all_obj_free_candidates.extend(candidates_mutex.lock().unwrap().to_vec());
+        }
+
+        std::mem::take(all_obj_free_candidates.as_mut())
     }
 
     pub fn add_weak_reference(&self, object: ObjectReference) {
@@ -58,17 +93,32 @@ impl WeakProcessor {
         weak_references.push(object);
     }
 
+    pub fn weak_references_count(&self) -> usize {
+        self.weak_references.lock().unwrap().len()
+    }
+
     pub fn process_weak_stuff(
         &self,
         worker: &mut GCWorker<Ruby>,
         _tracer_context: impl ObjectTracerContext<Ruby>,
     ) {
-        worker.add_work(WorkBucketStage::VMRefClosure, ProcessObjFreeCandidates);
+        worker.add_work(
+            WorkBucketStage::VMRefClosure,
+            ProcessNonParallelObjFreeCanadidates {},
+        );
+
+        for index in 0..self.parallel_obj_free_candidates.len() {
+            worker.add_work(
+                WorkBucketStage::VMRefClosure,
+                ProcessParallelObjFreeCandidates { index },
+            );
+        }
+
         worker.add_work(WorkBucketStage::VMRefClosure, ProcessWeakReferences);
 
-        worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerObjIdTables);
+        worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerTable);
 
-        let global_tables_count = (crate::upcalls().global_tables_count)();
+        let global_tables_count = crate::upcalls::global_tables_count();
         let work_packets = (0..global_tables_count)
             .map(|i| Box::new(UpdateGlobalTables { idx: i }) as _)
             .collect();
@@ -80,36 +130,46 @@ impl WeakProcessor {
     }
 }
 
-struct ProcessObjFreeCandidates;
+fn process_obj_free_candidates(obj_free_candidates: &mut Vec<ObjectReference>) {
+    obj_free_candidates.retain_mut(|object| {
+        if object.is_reachable() {
+            let new_object = object.forward();
+            trace!("Forwarding obj_free candidate: {object} -> {new_object}");
+            *object = new_object;
+            true
+        } else {
+            upcalls::call_obj_free(*object);
+            false
+        }
+    });
+}
 
-impl GCWork<Ruby> for ProcessObjFreeCandidates {
+struct ProcessParallelObjFreeCandidates {
+    index: usize,
+}
+
+impl GCWork<Ruby> for ProcessParallelObjFreeCandidates {
     fn do_work(&mut self, _worker: &mut GCWorker<Ruby>, _mmtk: &'static mmtk::MMTK<Ruby>) {
-        // If it blocks, it is a bug.
+        let mut obj_free_candidates = crate::binding().weak_proc.parallel_obj_free_candidates
+            [self.index]
+            .try_lock()
+            .expect("Lock for parallel_obj_free_candidates should not be held");
+
+        process_obj_free_candidates(&mut obj_free_candidates);
+    }
+}
+
+struct ProcessNonParallelObjFreeCanadidates;
+
+impl GCWork<Ruby> for ProcessNonParallelObjFreeCanadidates {
+    fn do_work(&mut self, _worker: &mut GCWorker<Ruby>, _mmtk: &'static mmtk::MMTK<Ruby>) {
         let mut obj_free_candidates = crate::binding()
             .weak_proc
-            .obj_free_candidates
+            .non_parallel_obj_free_candidates
             .try_lock()
-            .expect("It's GC time.  No mutators should hold this lock at this time.");
+            .expect("Lock for non_parallel_obj_free_candidates should not be held");
 
-        let n_cands = obj_free_candidates.len();
-
-        debug!("Total: {n_cands} candidates");
-
-        // Process obj_free
-        let mut new_candidates = Vec::new();
-
-        for object in obj_free_candidates.iter().copied() {
-            if object.is_reachable() {
-                // Forward and add back to the candidate list.
-                let new_object = object.forward();
-                trace!("Forwarding obj_free candidate: {object} -> {new_object}");
-                new_candidates.push(new_object);
-            } else {
-                (upcalls().call_obj_free)(object);
-            }
-        }
-
-        *obj_free_candidates = new_candidates;
+        process_obj_free_candidates(&mut obj_free_candidates);
     }
 }
 
@@ -158,7 +218,7 @@ impl ProcessWeakReferences {
             }
 
             if object.is_reachable() {
-                (upcalls().handle_weak_references)(object, moving_gc);
+                upcalls::handle_weak_references(object, moving_gc);
 
                 true
             } else {
@@ -194,13 +254,13 @@ trait GlobalTableProcessingWork {
     }
 }
 
-struct UpdateFinalizerObjIdTables;
-impl GlobalTableProcessingWork for UpdateFinalizerObjIdTables {
+struct UpdateFinalizerTable;
+impl GlobalTableProcessingWork for UpdateFinalizerTable {
     fn process_table(&mut self) {
-        (crate::upcalls().update_finalizer_table)();
+        crate::upcalls::update_finalizer_table();
     }
 }
-impl GCWork<Ruby> for UpdateFinalizerObjIdTables {
+impl GCWork<Ruby> for UpdateFinalizerTable {
     fn do_work(&mut self, worker: &mut GCWorker<Ruby>, mmtk: &'static mmtk::MMTK<Ruby>) {
         GlobalTableProcessingWork::do_work(self, worker, mmtk);
     }
@@ -211,7 +271,10 @@ struct UpdateGlobalTables {
 }
 impl GlobalTableProcessingWork for UpdateGlobalTables {
     fn process_table(&mut self) {
-        (crate::upcalls().update_global_tables)(self.idx)
+        crate::upcalls::update_global_tables(
+            self.idx,
+            crate::mmtk().get_plan().current_gc_may_move_object(),
+        )
     }
 }
 impl GCWork<Ruby> for UpdateGlobalTables {

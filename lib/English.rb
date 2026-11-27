@@ -101,7 +101,7 @@ alias $DEFAULT_OUTPUT          $>
 # (in the case where there are no
 # arguments). <code>$<</code> supports methods similar to a
 # File object:
-# +inmode+, +close+,
+# +binmode+, +close+,
 # <code>closed?</code>, +each+,
 # <code>each_byte</code>, <code>each_line</code>,
 # +eof+, <code>eof?</code>, +file+,

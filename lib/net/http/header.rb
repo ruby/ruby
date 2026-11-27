@@ -193,11 +193,9 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
-        if key.to_s.bytesize > MAX_KEY_LENGTH
-          raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
-        end
+        validate_field_name(key)
         if value.to_s.bytesize > MAX_FIELD_LENGTH
-          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
         end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
@@ -263,21 +261,34 @@ module Net::HTTPHeader
   def add_field(key, val)
     stringified_downcased_key = key.downcase.to_s
     if @header.key?(stringified_downcased_key)
-      append_field_value(@header[stringified_downcased_key], val)
+      append_field_value(@header[stringified_downcased_key], val, key)
     else
       set_field(key, val)
     end
   end
 
   # :stopdoc:
+  private def validate_field_name(key)
+    if key.to_s.bytesize > MAX_KEY_LENGTH
+      raise ArgumentError, "too long (#{key.to_s.bytesize} bytes) header: #{key.to_s[0, 30].inspect}..."
+    end
+    if /[\x00-\x1f\x7f:]/n.match?(key.to_s.b)
+      raise ArgumentError, "header field name cannot include control characters or colon: #{key.to_s[0, 30].inspect}"
+    end
+  end
+
   private def set_field(key, val)
+    validate_field_name(key)
     case val
     when Enumerable
       ary = []
-      append_field_value(ary, val)
+      append_field_value(ary, val, key)
       @header[key.downcase.to_s] = ary
     else
       val = val.to_s # for compatibility use to_s instead of to_str
+      if val.bytesize > MAX_FIELD_LENGTH
+        raise ArgumentError, "header #{key} has too long field value: #{val.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
+      end
       if val.b.count("\r\n") > 0
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
@@ -285,12 +296,15 @@ module Net::HTTPHeader
     end
   end
 
-  private def append_field_value(ary, val)
+  private def append_field_value(ary, val, key)
     case val
     when Enumerable
-      val.each{|x| append_field_value(ary, x)}
+      val.each{|x| append_field_value(ary, x, key)}
     else
       val = val.to_s
+      if val.bytesize > MAX_FIELD_LENGTH
+        raise ArgumentError, "header #{key} has too long field value: #{val.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
+      end
       if /[\r\n]/n.match?(val.b)
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
@@ -617,11 +631,35 @@ module Net::HTTPHeader
   #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.content_length # => nil
   #
+  # The value must consist of digits only.
+  # Multiple <tt>'Content-Length'</tt> values are accepted
+  # only when they are all identical;
+  # otherwise Net::HTTPHeaderSyntaxError is raised.
+  # See {RFC 9110 Section 8.6}[https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6].
   def content_length
-    return nil unless key?('Content-Length')
-    len = self['Content-Length'].slice(/\d+/) or
-        raise Net::HTTPHeaderSyntaxError, 'wrong Content-Length format'
-    len.to_i
+    values = @header['content-length']
+    return nil if values.nil?
+
+    lengths = []
+    values.each do |value|
+      value = value.strip
+      if value.empty?
+        raise Net::HTTPHeaderSyntaxError,
+              "empty Content-Length value"
+      end
+      lengths.concat(value.split(/\s*,\s*/, -1))
+    end
+    if lengths.uniq.size != 1
+      raise Net::HTTPHeaderSyntaxError,
+            "Content-Length has multiple different values: " +
+            values.join(", ")
+    end
+    length = lengths.first
+    unless /\A\d+\z/.match?(length)
+      raise Net::HTTPHeaderSyntaxError,
+            "wrong Content-Length format: #{length}"
+    end
+    length.to_i
   end
 
   # Sets the value of field <tt>'Content-Length'</tt> to the given numeric;
@@ -647,7 +685,7 @@ module Net::HTTPHeader
   end
 
   # Returns +true+ if field <tt>'Transfer-Encoding'</tt>
-  # exists and has value <tt>'chunked'</tt>,
+  # exists and has <tt>'chunked'</tt> as its final transfer coding,
   # +false+ otherwise;
   # see {Transfer-Encoding response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#transfer-encoding-response-header]:
   #
@@ -655,10 +693,13 @@ module Net::HTTPHeader
   #   res['Transfer-Encoding'] # => "chunked"
   #   res.chunked?             # => true
   #
+  # <tt>'gzip, chunked'</tt> is chunked but <tt>'chunked, gzip'</tt> is not,
+  # because only the final transfer coding frames the message.
+  # See {RFC 9112 Section 6.3}[https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3].
   def chunked?
     return false unless @header['transfer-encoding']
     field = self['Transfer-Encoding']
-    (/(?:\A|[^\-\w])chunked(?![\-\w])/i =~ field) ? true : false
+    (/(?:\A|[^\-\w])chunked(?![\-\w])\s*(?:,\s*)*\z/i =~ field) ? true : false
   end
 
   # Returns a Range object representing the value of field
@@ -774,7 +815,7 @@ module Net::HTTPHeader
   #
   # Net::HTTPHeader#content_type= is an alias for Net::HTTPHeader#set_content_type.
   def set_content_type(type, params = {})
-    @header['content-type'] = [type + params.map{|k,v|"; #{k}=#{v}"}.join('')]
+    set_field('Content-Type', type + params.map{|k,v|"; #{k}=#{v}"}.join(''))
   end
 
   alias content_type= set_content_type

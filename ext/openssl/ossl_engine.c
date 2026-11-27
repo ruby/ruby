@@ -68,7 +68,7 @@ static const rb_data_type_t ossl_engine_type = {
     {
         0, ossl_engine_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -376,7 +376,8 @@ ossl_engine_set_default(VALUE self, VALUE flag)
     int f = NUM2INT(flag);
 
     GetEngine(self, e);
-    ENGINE_set_default(e, f);
+    if (!ENGINE_set_default(e, f))
+        ossl_raise(eEngineError, "ENGINE_set_default");
 
     return Qtrue;
 }

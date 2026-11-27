@@ -122,8 +122,6 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_inspect_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-
     EnvUtil.under_gc_compact_stress do
       assert_inspect_evaled(':testing')
     end
@@ -417,8 +415,9 @@ class TestSymbol < Test::Unit::TestCase
   def test_match_method
     assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
 
-    o = Regexp.new('foo')
-    def o.match(x, y, z); x + y + z; end
+    o = Class.new(Regexp) {
+      def match(x, y, z) = x + y + z
+    }.new('foo')
     assert_equal("foobarbaz", :"foo".match(o, "bar", "baz"))
     x = nil
     :"foo".match(o, "bar", "baz") {|y| x = y }

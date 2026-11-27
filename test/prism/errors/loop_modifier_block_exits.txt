@@ -1,0 +1,63 @@
+def f = (break) while x
+         ^~~~~ Invalid break
+
+def f = (break) until x
+         ^~~~~ Invalid break
+
+def f = (next) while x
+         ^~~~ Invalid next
+
+def f = (next) until x
+         ^~~~ Invalid next
+
+def f = (redo) while x
+         ^~~~ Invalid redo
+
+def f = (redo) until x
+         ^~~~ Invalid redo
+
+class << self; break; end while y
+               ^~~~~ Invalid break
+
+class << (break if x); break; end while y
+                       ^~~~~ Invalid break
+
+class << self; break; end until y
+               ^~~~~ Invalid break
+
+class << (break if x); break; end until y
+                       ^~~~~ Invalid break
+
+class << self; next; end while y
+               ^~~~ Invalid next
+
+class << (next if x); next; end while y
+                      ^~~~ Invalid next
+
+class << self; next; end until y
+               ^~~~ Invalid next
+
+class << (next if x); next; end until y
+                      ^~~~ Invalid next
+
+class << self; redo; end while y
+               ^~~~ Invalid redo
+
+class << (redo if x); redo; end while y
+                      ^~~~ Invalid redo
+
+class << self; redo; end until y
+               ^~~~ Invalid redo
+
+class << (redo if x); redo; end until y
+                      ^~~~ Invalid redo
+
+loop { def self.f; next 1; end }
+                   ^~~~~~ Invalid next
+
+until ready; def f = break; end
+                     ^~~~~ Invalid break
+
+-> { class << self; redo; end }
+                    ^~~~ Invalid redo
+

@@ -4,19 +4,19 @@ describe :kernel_sprintf_encoding, shared: true do
   it "can produce a string with valid encoding" do
     string = @method.call("good day %{valid}", valid: "e")
     string.encoding.should == Encoding::UTF_8
-    string.valid_encoding?.should be_true
+    string.valid_encoding?.should == true
   end
 
   it "can produce a string with invalid encoding" do
     string = @method.call("good day %{invalid}", invalid: "\x80")
     string.encoding.should == Encoding::UTF_8
-    string.valid_encoding?.should be_false
+    string.valid_encoding?.should == false
   end
 
   it "returns a String in the same encoding as the format String if compatible" do
     string = "%s".dup.force_encoding(Encoding::KOI8_U)
     result = @method.call(string, "dogs")
-    result.encoding.should equal(Encoding::KOI8_U)
+    result.encoding.should.equal?(Encoding::KOI8_U)
   end
 
   it "returns a String in the argument's encoding if format encoding is more restrictive" do
@@ -24,7 +24,7 @@ describe :kernel_sprintf_encoding, shared: true do
     argument = "b\303\274r".dup.force_encoding(Encoding::UTF_8)
 
     result = @method.call(string, argument)
-    result.encoding.should equal(Encoding::UTF_8)
+    result.encoding.should.equal?(Encoding::UTF_8)
   end
 
   it "raises Encoding::CompatibilityError if both encodings are ASCII compatible and there are not ASCII characters" do
@@ -33,7 +33,7 @@ describe :kernel_sprintf_encoding, shared: true do
 
     -> {
       @method.call(string, argument)
-    }.should raise_error(Encoding::CompatibilityError)
+    }.should.raise(Encoding::CompatibilityError)
   end
 
   describe "%c" do
@@ -52,7 +52,7 @@ describe :kernel_sprintf_encoding, shared: true do
 
       -> {
         @method.call(format, 1286)
-      }.should raise_error(RangeError, /out of char range/)
+      }.should.raise(RangeError, /out of char range/)
     end
 
     it "uses the encoding of the format string to interpret codepoints" do

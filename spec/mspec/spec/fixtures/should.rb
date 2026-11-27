@@ -40,7 +40,7 @@ MSpec.setup_env
 # Specs
 describe "MSpec expectation method #should" do
   it "accepts a matcher" do
-    :sym.should be_kind_of(Symbol)
+    0.4.should be_close(0.5, 0.2)
   end
 
   it "causes a failure to be recorded" do
@@ -59,7 +59,7 @@ end
 
 describe "MSpec expectation method #should_not" do
   it "accepts a matcher" do
-    "sym".should_not be_kind_of(Symbol)
+    0.1.should_not be_close(0.5, 0.2)
   end
 
   it "causes a failure to be recorded" do

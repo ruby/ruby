@@ -19,6 +19,7 @@ end
 
 module MSpecMatchers
   private def be_kind_of(expected)
+    MSpec.deprecate __method__, '.should.is_a?'
     BeKindOfMatcher.new(expected)
   end
 end

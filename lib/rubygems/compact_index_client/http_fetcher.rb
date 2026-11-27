@@ -1,0 +1,92 @@
+# frozen_string_literal: true
+
+require "rubygems/remote_fetcher"
+
+class Gem::CompactIndexClient
+  # Fetches compact index files relative to +base_uri+ using
+  # Gem::RemoteFetcher's connection infrastructure (proxy, TLS,
+  # connection pooling). Implements the fetcher interface expected by
+  # Gem::CompactIndexClient: #call(path, headers) returning a
+  # Gem::Net::HTTP response.
+  class HTTPFetcher
+    include Gem::Text
+
+    REDIRECT_LIMIT = 10
+    private_constant :REDIRECT_LIMIT
+
+    def initialize(base_uri, remote_fetcher = Gem::RemoteFetcher.fetcher)
+      base_uri = base_uri.to_s
+      base_uri += "/" unless base_uri.end_with?("/")
+      @base_uri = Gem::URI(base_uri)
+      @remote_fetcher = remote_fetcher
+    end
+
+    def call(path, headers = {})
+      fetch(@base_uri + path, headers, REDIRECT_LIMIT)
+    end
+
+    private
+
+    def fetch(uri, headers, redirects_remaining)
+      response = request(uri, headers)
+
+      case response
+      when Gem::Net::HTTPNotModified
+        response
+      when Gem::Net::HTTPSuccess
+        # The callers write the body into the cache, so a body-less success
+        # such as 204 would truncate the cached file.
+        raise bad_response(response, uri) unless response.class.body_permitted?
+
+        response
+      when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
+           Gem::Net::HTTPTemporaryRedirect, Gem::Net::HTTPPermanentRedirect
+        raise Gem::RemoteFetcher::FetchError.new("too many redirects", uri) if redirects_remaining.zero?
+
+        location = response["Location"]
+        raise Gem::RemoteFetcher::FetchError.new("redirecting but no redirect location was given", uri) unless location
+
+        redirect = uri + location
+        if https?(uri) && !https?(redirect)
+          raise Gem::RemoteFetcher::FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(redirect)}", uri)
+        end
+        # An absolute Location on the same origin drops the credentials that a
+        # relative one would have kept. Another port or scheme on the same host
+        # is a different protection space (RFC 9110, Section 11.5).
+        same_origin = [redirect.scheme, redirect.host, redirect.port] == [uri.scheme, uri.host, uri.port]
+        redirect.userinfo = uri.userinfo if same_origin && !redirect.userinfo
+
+        fetch(redirect, headers, redirects_remaining - 1)
+      when Gem::Net::HTTPRangeNotSatisfiable
+        raise bad_response(response, uri) unless headers.key?("Range")
+
+        # The local cache is longer than the remote file, refetch it whole. A
+        # matching ETag would otherwise turn the retry into a 304 and keep the
+        # oversized cache.
+        fetch(uri, headers.except("Range", "If-None-Match"), redirects_remaining)
+      else
+        raise bad_response(response, uri)
+      end
+    end
+
+    # The callers fall back to the Marshal index when a fetch fails, and they
+    # only recognize a failure that arrives as a FetchError.
+    def request(uri, headers)
+      @remote_fetcher.request(uri, Gem::Net::HTTP::Get) do |req|
+        headers.each {|name, value| req[name] = value }
+      end
+    rescue Gem::Timeout::Error, IOError, SocketError, SystemCallError,
+           *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
+      raise Gem::RemoteFetcher::FetchError.new("#{e.class}: #{e}", uri)
+    end
+
+    def bad_response(response, uri)
+      detail = clean_text(response["X-Error-Message"] || response.message)
+      Gem::RemoteFetcher::FetchError.new("bad response #{detail} #{response.code}", uri)
+    end
+
+    def https?(uri)
+      uri.scheme == "https"
+    end
+  end
+end

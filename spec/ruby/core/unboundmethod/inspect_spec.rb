@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/to_s'
 
 describe "UnboundMethod#inspect" do
-  it_behaves_like :unboundmethod_to_s, :inspect
+  it "is an alias of UnboundMethod#to_s" do
+    UnboundMethod.instance_method(:inspect).should == UnboundMethod.instance_method(:to_s)
+  end
 end

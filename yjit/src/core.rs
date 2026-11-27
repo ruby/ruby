@@ -34,7 +34,7 @@ use crate::invariants::*;
 pub const MAX_CTX_TEMPS: usize = 8;
 
 // Maximum number of local variable types or registers we keep track of
-const MAX_CTX_LOCALS: usize = 8;
+pub const MAX_CTX_LOCALS: usize = 8;
 
 /// An index into `ISEQ_BODY(iseq)->iseq_encoded`. Points
 /// to a YARV instruction or an instruction operand.
@@ -435,7 +435,7 @@ impl RegMapping {
 
         // If not, pick any other available register. Like default indexes, prefer
         // lower indexes for Stack, and higher indexes for Local.
-        let mut index_temps = self.0.iter().enumerate();
+        let mut index_temps = self.0[..num_regs].iter().enumerate();
         match opnd {
             RegOpnd::Stack(_) => index_temps.find(|(_, reg_opnd)| reg_opnd.is_none()),
             RegOpnd::Local(_) => index_temps.rev().find(|(_, reg_opnd)| reg_opnd.is_none()),
@@ -460,8 +460,10 @@ impl fmt::Debug for RegMapping {
     }
 }
 
-/// Maximum value of the chain depth (should fit in 5 bits)
-const CHAIN_DEPTH_MAX: u8 = 0b11111; // 31
+/// Maximum value of the chain depth (should fit in 9 bits)
+const CHAIN_DEPTH_MAX: u16 = 256;
+const DEFERRED_FLAG: u8 = 1 << 0;
+const RETURN_LANDING_FLAG: u8 = 1 << 1;
 
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
@@ -478,14 +480,11 @@ pub struct Context {
     reg_mapping: RegMapping,
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
-    // 6 bits, max 63
-    chain_depth: u8,
+    // 9 bits, max 256
+    chain_depth: u16,
 
-    // Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
-    is_return_landing: bool,
-
-    // Whether the compilation of this code has been deferred ([Self::is_deferred])
-    is_deferred: bool,
+    // Return-landing and deferred flags
+    flags: u8,
 
     // Type we track for self
     self_type: Type,
@@ -580,9 +579,9 @@ impl BitVector {
         self.push_uint(val as u64, 8);
     }
 
-    fn push_u5(&mut self, val: u8) {
-        assert!(val <= 0b11111);
-        self.push_uint(val as u64, 5);
+    fn push_u9(&mut self, val: u16) {
+        assert!(val <= 0b1_1111_1111);
+        self.push_uint(val as u64, 9);
     }
 
     fn push_u4(&mut self, val: u8) {
@@ -654,8 +653,8 @@ impl BitVector {
         self.read_uint(bit_idx, 8) as u8
     }
 
-    fn read_u5(&self, bit_idx: &mut usize) -> u8 {
-        self.read_uint(bit_idx, 5) as u8
+    fn read_u9(&self, bit_idx: &mut usize) -> u16 {
+        self.read_uint(bit_idx, 9) as u16
     }
 
     fn read_u4(&self, bit_idx: &mut usize) -> u8 {
@@ -1053,17 +1052,17 @@ impl Context {
             }
         }
 
-        bits.push_bool(self.is_deferred);
-        bits.push_bool(self.is_return_landing);
+        bits.push_bool(self.is_deferred());
+        bits.push_bool(self.is_return_landing());
 
         // The chain depth is most often 0 or 1
         if self.chain_depth < 2 {
             bits.push_u1(0);
-            bits.push_u1(self.chain_depth);
+            bits.push_u1(self.chain_depth.try_into().unwrap());
 
         } else {
             bits.push_u1(1);
-            bits.push_u5(self.chain_depth);
+            bits.push_u9(self.chain_depth);
         }
 
         // Encode the self type if known
@@ -1154,13 +1153,17 @@ impl Context {
             }
         }
 
-        ctx.is_deferred = bits.read_bool(&mut idx);
-        ctx.is_return_landing = bits.read_bool(&mut idx);
+        if bits.read_bool(&mut idx) {
+            ctx.flags |= DEFERRED_FLAG;
+        }
+        if bits.read_bool(&mut idx) {
+            ctx.flags |= RETURN_LANDING_FLAG;
+        }
 
         if bits.read_u1(&mut idx) == 0 {
-            ctx.chain_depth = bits.read_u1(&mut idx)
+            ctx.chain_depth = bits.read_u1(&mut idx).into()
         } else {
-            ctx.chain_depth = bits.read_u5(&mut idx)
+            ctx.chain_depth = bits.read_u9(&mut idx);
         }
 
         loop {
@@ -1769,12 +1772,41 @@ impl IseqPayload {
         // Turn it into an iterator that owns the blocks and return
         version_map.into_iter().flatten()
     }
+
+    /// Get or create all blocks for a particular place in an iseq.
+    fn get_or_create_version_list(&mut self, insn_idx: usize) -> &mut VersionList {
+        if insn_idx >= self.version_map.len() {
+            self.version_map.resize(insn_idx + 1, VersionList::default());
+        }
+
+        return self.version_map.get_mut(insn_idx).unwrap();
+    }
+
+    // We cannot deallocate blocks immediately after invalidation since patching
+    // the code for setting up return addresses does not affect outstanding return
+    // addresses that are on stack and will use invalidated branch pointers when
+    // hit. Example:
+    //   def foo(n)
+    //     if n == 2
+    //       # 1.times.each to create a cfunc frame to preserve the JIT frame
+    //       # which will return to a stub housed in an invalidated block
+    //       return 1.times.each { Object.define_method(:foo) {} }
+    //     end
+    //
+    //     foo(n + 1) # The block for this call houses the return branch stub
+    //   end
+    //   p foo(1)
+    pub fn delayed_deallocation(&mut self, blockref: BlockRef) {
+        block_assumptions_free(blockref);
+        unsafe { blockref.as_ref() }.set_iseq_null();
+        self.dead_blocks.push(blockref);
+    }
 }
 
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
 /// upholds aliasing rules and that the argument is a valid iseq.
 pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
-    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+    let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
     let payload: *mut IseqPayload = payload.cast();
     unsafe { payload.as_mut() }
 }
@@ -1784,7 +1816,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
-        let payload = rb_iseq_get_yjit_payload(iseq);
+        let payload = rb_iseq_get_jit_payload(iseq);
         if payload.is_null() {
             // Increment the compiled iseq count
             incr_counter!(compiled_iseq_count);
@@ -1795,7 +1827,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
             // We allocate in those cases anyways.
             let new_payload = IseqPayload::default();
             let new_payload = Box::into_raw(Box::new(new_payload));
-            rb_iseq_set_yjit_payload(iseq, new_payload as VoidPtr);
+            rb_iseq_set_jit_payload(iseq, new_payload as VoidPtr);
 
             new_payload
         } else {
@@ -1814,22 +1846,24 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
         // SAFETY: points to the local below
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
-        callback(iseq);
+        let callback: *mut *mut dyn FnMut(IseqPtr) -> bool = data.cast();
+        unsafe { (**callback)(iseq) };
     }
-    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    let mut data: *mut dyn FnMut(IseqPtr) = &mut callback;
+    let data: *mut *mut dyn FnMut(IseqPtr) = &mut data;
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), data.cast()) };
 }
 
 /// Iterate over all on-stack ISEQs
 pub fn for_each_on_stack_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
         // SAFETY: points to the local below
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
-        callback(iseq);
+        let callback: *mut *mut dyn FnMut(IseqPtr) -> bool = data.cast();
+        unsafe { (**callback)(iseq) };
     }
-    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    let mut data: *mut dyn FnMut(IseqPtr) = &mut callback;
+    let data: *mut *mut dyn FnMut(IseqPtr) = &mut data;
+    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), data.cast()) };
 }
 
 /// Iterate over all on-stack ISEQ payloads
@@ -1870,7 +1904,7 @@ pub extern "C" fn rb_yjit_iseq_free(iseq: IseqPtr) {
     iseq_free_invariants(iseq);
 
     let payload = {
-        let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+        let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
         if payload.is_null() {
             // Nothing to free.
             return;
@@ -1998,7 +2032,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
-    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+    let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
     let payload = if payload.is_null() {
         // Nothing to update.
         return;
@@ -2138,21 +2172,6 @@ fn get_version_list(blockid: BlockId) -> Option<&'static mut VersionList> {
         },
         _ => None
     }
-}
-
-/// Get or create all blocks for a particular place in an iseq.
-fn get_or_create_version_list(blockid: BlockId) -> &'static mut VersionList {
-    let payload = get_or_create_iseq_payload(blockid.iseq);
-    let insn_idx = blockid.idx.as_usize();
-
-    // Expand the version map as necessary
-    if insn_idx >= payload.version_map.len() {
-        payload
-            .version_map
-            .resize(insn_idx + 1, VersionList::default());
-    }
-
-    return payload.version_map.get_mut(insn_idx).unwrap();
 }
 
 /// Take all of the blocks for a particular place in an iseq
@@ -2343,15 +2362,21 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     // Function entry blocks must have stack size 0
     debug_assert!(!(block.iseq_range.start == 0 && Context::decode(block.ctx).stack_size > 0));
 
-    let version_list = get_or_create_version_list(block.get_blockid());
+    // Use a single payload reference for both version_map and pages access
+    // to avoid mutable aliasing UB from multiple get_iseq_payload calls.
+    let iseq_payload = get_or_create_iseq_payload(block.iseq.get());
+    let insn_idx = block.get_blockid().idx.as_usize();
 
-    // If this the first block being compiled with this block id
-    if version_list.len() == 0 {
-        incr_counter!(compiled_blockid_count);
+    {
+        let version_list = iseq_payload.get_or_create_version_list(insn_idx);
+
+        if version_list.is_empty() {
+            incr_counter!(compiled_blockid_count);
+        }
+
+        version_list.push(blockref);
+        version_list.shrink_to_fit();
     }
-
-    version_list.push(blockref);
-    version_list.shrink_to_fit();
 
     // By writing the new block to the iseq, the iseq now
     // contains new references to Ruby objects. Run write barriers.
@@ -2376,7 +2401,6 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     }
 
     // Mark code pages for code GC
-    let iseq_payload = get_iseq_payload(block.iseq.get()).unwrap();
     for page in cb.addrs_to_pages(block.start_addr, block.end_addr.get()) {
         iseq_payload.pages.insert(page);
     }
@@ -2443,8 +2467,8 @@ impl<'a> JITState<'a> {
         for cme in unsafe { blockref.as_ref() }.cme_dependencies.iter() {
             track_method_lookup_stability_assumption(blockref, cme.get());
         }
-        if let Some(idlist) = self.stable_constant_names_assumption {
-            track_stable_constant_names_assumption(blockref, idlist);
+        if let Some(const_path) = self.stable_constant_names_assumption {
+            track_stable_constant_names_assumption(blockref, const_path);
         }
         for klass in self.no_singleton_class_assumptions {
             track_no_singleton_class_assumption(blockref, klass);
@@ -2493,6 +2517,11 @@ impl Block {
     // Push an incoming branch ref and shrink the vector
     fn push_incoming(&self, branch: BranchRef) {
         self.incoming.push(branch);
+    }
+
+    /// Mark this block as dead by setting its iseq to null.
+    pub fn set_iseq_null(&self) {
+        self.iseq.replace(ptr::null());
     }
 
     // Compute the size of the block code
@@ -2551,13 +2580,13 @@ impl Context {
         self.reg_mapping = reg_mapping;
     }
 
-    pub fn get_chain_depth(&self) -> u8 {
+    pub fn get_chain_depth(&self) -> u16 {
         self.chain_depth
     }
 
     pub fn reset_chain_depth_and_defer(&mut self) {
         self.chain_depth = 0;
-        self.is_deferred = false;
+        self.flags &= !DEFERRED_FLAG;
     }
 
     pub fn increment_chain_depth(&mut self) {
@@ -2568,23 +2597,23 @@ impl Context {
     }
 
     pub fn set_as_return_landing(&mut self) {
-        self.is_return_landing = true;
+        self.flags |= RETURN_LANDING_FLAG;
     }
 
     pub fn clear_return_landing(&mut self) {
-        self.is_return_landing = false;
+        self.flags &= !RETURN_LANDING_FLAG;
     }
 
     pub fn is_return_landing(&self) -> bool {
-        self.is_return_landing
+        self.flags & RETURN_LANDING_FLAG != 0
     }
 
     pub fn mark_as_deferred(&mut self) {
-        self.is_deferred = true;
+        self.flags |= DEFERRED_FLAG;
     }
 
     pub fn is_deferred(&self) -> bool {
-        self.is_deferred
+        self.flags & DEFERRED_FLAG != 0
     }
 
     /// Get an operand for the adjusted stack pointer address
@@ -3156,7 +3185,7 @@ fn gen_block_series_body(
             for blockref in batch {
                 remove_block_version(&blockref);
                 // SAFETY: block was well connected because it was in a version_map
-                unsafe { free_block(blockref, false) };
+                unsafe { free_block(blockref, true) };
             }
 
             // Stop compiling
@@ -3310,7 +3339,7 @@ pub fn new_pending_entry() -> PendingEntryRef {
 }
 
 c_callable! {
-    /// Generated code calls this function with the SysV calling convention.
+    /// Generated code calls this function with the C calling convention.
     /// See [gen_entry_stub].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_compile_time(|| {
@@ -3503,7 +3532,7 @@ fn new_pending_branch(jit: &mut JITState, gen_fn: BranchGenFn) -> PendingBranchR
 }
 
 c_callable! {
-    /// Generated code calls this function with the SysV calling convention.
+    /// Generated code calls this function with the C calling convention.
     /// See [gen_branch_stub].
     fn branch_stub_hit(
         branch_ptr: *const c_void,
@@ -3784,6 +3813,7 @@ fn gen_branch_stub(
     //
     // Bake pointer to Branch into output code.
     // We make sure the block housing the branch is still alive when branch_stub_hit() is running.
+    // This relies on the trampoline doing its ccall first, before register allocation can reuse C_ARG_OPNDS.
     asm.mov(C_ARG_OPNDS[0], branch_struct_address.into());
     asm.mov(C_ARG_OPNDS[1], target_idx.into());
 
@@ -4298,35 +4328,14 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     // in this function before we removed it, so it's well connected.
     unsafe { remove_from_graph(*blockref) };
 
-    delayed_deallocation(*blockref);
+    if let Some(payload) = get_iseq_payload(id_being_invalidated.iseq) {
+        payload.delayed_deallocation(*blockref);
+    }
 
     ocb.unwrap().mark_all_executable();
     cb.mark_all_executable();
 
     incr_counter!(invalidation_count);
-}
-
-// We cannot deallocate blocks immediately after invalidation since patching the code for setting
-// up return addresses does not affect outstanding return addresses that are on stack and will use
-// invalidated branch pointers when hit. Example:
-//   def foo(n)
-//     if n == 2
-//       # 1.times.each to create a cfunc frame to preserve the JIT frame
-//       # which will return to a stub housed in an invalidated block
-//       return 1.times.each { Object.define_method(:foo) {} }
-//     end
-//
-//     foo(n + 1) # The block for this call houses the return branch stub
-//   end
-//   p foo(1)
-pub fn delayed_deallocation(blockref: BlockRef) {
-    block_assumptions_free(blockref);
-
-    let block = unsafe { blockref.as_ref() };
-    // Set null ISEQ on the block to signal that it's dead.
-    let iseq = block.iseq.replace(ptr::null());
-    let payload = get_iseq_payload(iseq).unwrap();
-    payload.dead_blocks.push(blockref);
 }
 
 trait RefUnchecked {
@@ -4368,6 +4377,7 @@ mod tests {
         // Check that we can store types in 4 bits,
         // and all local types in 32 bits
         assert_eq!(mem::size_of::<Type>(), 1);
+        assert_eq!(mem::size_of::<Context>(), 56);
         assert!(Type::BlockParamProxy as usize <= 0b1111);
         assert!(MAX_CTX_LOCALS * 4 <= 32);
     }

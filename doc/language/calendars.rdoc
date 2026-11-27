@@ -1,4 +1,4 @@
-== Julian and Gregorian Calendars
+= Julian and Gregorian Calendars
 
 The difference between the
 {Julian calendar}[https://en.wikipedia.org/wiki/Julian_calendar]
@@ -11,7 +11,7 @@ may matter to your program if it uses dates before the switchovers.
 
 A date will be different in the two calendars, in general.
 
-=== Different switchover dates
+== Different switchover dates
 
 The reasons for the difference are religious/political histories.
 
@@ -28,7 +28,7 @@ to be the earlier date or the later date (or neither).
 
 See also {a concrete example here}[rdoc-ref:DateTime@When+should+you+use+DateTime+and+when+should+you+use+Time-3F].
 
-=== Argument +start+
+== Argument +start+
 
 Certain methods in class \Date handle differences in the
 {Julian and Gregorian calendars}[rdoc-ref:@Julian+and+Gregorian+Calendars]

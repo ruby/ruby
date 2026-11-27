@@ -5,6 +5,6 @@ describe "String#unpack" do
     pos = (1 << PlatformGuard::POINTER_SIZE) - 99
     -> {
       "0123456789".unpack("@#{pos}C10")
-    }.should raise_error(RangeError, /pack length too big/)
+    }.should.raise(RangeError, /pack length too big/)
   end
 end

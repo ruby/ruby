@@ -27,35 +27,39 @@ describe "IO#reopen" do
   it "changes the class of the instance to the class of the object returned by #to_io" do
     obj = mock("io")
     obj.should_receive(:to_io).and_return(@other_io)
-    @io.reopen(obj).should be_an_instance_of(File)
+    @io.reopen(obj).should.instance_of?(File)
   end
 
   it "raises an IOError if the object returned by #to_io is closed" do
     obj = mock("io")
     obj.should_receive(:to_io).and_return(IOSpecs.closed_io)
-    -> { @io.reopen obj }.should raise_error(IOError)
+    -> { @io.reopen obj }.should.raise(IOError)
   end
 
   it "raises a TypeError if #to_io does not return an IO instance" do
     obj = mock("io")
     obj.should_receive(:to_io).and_return("something else")
-    -> { @io.reopen obj }.should raise_error(TypeError)
+    -> { @io.reopen obj }.should.raise(TypeError)
   end
 
   it "raises an IOError when called on a closed stream with an object" do
     @io.close
     obj = mock("io")
-    obj.should_not_receive(:to_io)
-    -> { @io.reopen(STDOUT) }.should raise_error(IOError)
+    obj.should_receive(:to_io).and_return(STDOUT)
+    -> { @io.reopen obj }.should.raise(IOError)
   end
 
   it "raises an IOError if the IO argument is closed" do
-    -> { @io.reopen(IOSpecs.closed_io) }.should raise_error(IOError)
+    -> { @io.reopen(IOSpecs.closed_io) }.should.raise(IOError)
   end
 
   it "raises an IOError when called on a closed stream with an IO" do
     @io.close
-    -> { @io.reopen(STDOUT) }.should raise_error(IOError)
+    -> { @io.reopen(STDOUT) }.should.raise(IOError)
+  end
+
+  it "raises ArgumentError when too many arguments are given" do
+    -> { @io.reopen(@other_name, "r", "excess argument") }.should.raise(ArgumentError)
   end
 end
 
@@ -77,12 +81,12 @@ describe "IO#reopen with a String" do
   it "does not raise an exception when called on a closed stream with a path" do
     @io.close
     @io.reopen @name, "r"
-    @io.closed?.should be_false
+    @io.closed?.should == false
     @io.gets.should == "Line 1: One\n"
   end
 
   it "returns self" do
-    @io.reopen(@name).should equal(@io)
+    @io.reopen(@name).should.equal?(@io)
   end
 
   it "positions a newly created instance at the beginning of the new stream" do
@@ -115,6 +119,41 @@ describe "IO#reopen with a String" do
     obj = mock('path')
     obj.should_receive(:to_path).and_return(@other_name)
     @io.reopen(obj)
+  end
+
+  platform_is :darwin do
+    it "opens a file when given a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("io_reopen_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        File.write(utf8_path, "ok")
+        @io = new_io @other_name, "r"
+        @io.reopen(non_utf8_path, "r")
+        @io.read.should == "ok"
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+
+    it "opens a file when given a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters when called on a closed stream" do
+      utf8_path = tmp("io_reopen_utf8_path_closed_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        File.write(utf8_path, "ok")
+        @io = new_io @other_name, "r"
+        @io.close
+        @io.reopen(non_utf8_path, "r")
+        @io.read.should == "ok"
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
   end
 end
 
@@ -170,6 +209,53 @@ describe "IO#reopen with a String" do
     @io.reopen(@other_name)
     File.should.exist?(@other_name)
   end
+
+  it "opens the file in read mode if the IO is read-only" do
+    touch(@name) { |f| f.write "original data" }
+    touch(@other_name) { |f| f.write "new data" }
+    @io = new_io @name, "r"
+
+    @io.reopen(@other_name)
+    -> { @io.write("overwrite content") }.should.raise(IOError)
+    @io.read.should == "new data"
+  end
+
+  it "opens the file in write mode if the IO is write-only" do
+    touch(@name) { |f| f.write "original data" }
+    touch(@other_name) { |f| f.write "new data" }
+    @io = new_io @name, "w"
+
+    @io.reopen(@other_name)
+    -> { @io.read }.should.raise(IOError)
+    @io.write("overwrite content").should == 17
+    @io.close
+    File.read(@other_name).should == "overwrite content"
+  end
+
+  it "opens the file in read-write mode if the IO is read-write" do
+    touch(@name) { |f| f.write "original data" }
+    touch(@other_name) { |f| f.write "new data" }
+    @io = new_io @name, "r+"
+
+    @io.reopen(@other_name)
+    @io.read.should == "new data"
+    @io.rewind
+    @io.write("overwrite content").should == 17
+    @io.close
+    File.read(@other_name).should == "overwrite content"
+  end
+
+  it "opens the file in append mode if the IO appends" do
+    touch(@name) { |f| f.write "original data" }
+    touch(@other_name) { |f| f.write "new data" }
+    @io = new_io @name, "a"
+
+    @io.reopen(@other_name)
+    -> { @io.read }.should.raise(IOError)
+    @io.write("overwrite content").should == 17
+    @io.close
+    File.read(@other_name).should == "new dataoverwrite content"
+  end
 end
 
 describe "IO#reopen with a String" do
@@ -188,7 +274,7 @@ describe "IO#reopen with a String" do
 
   it "raises an Errno::ENOENT if the file does not exist and the IO is not opened in write mode" do
     @io = new_io @name, "r"
-    -> { @io.reopen(@other_name) }.should raise_error(Errno::ENOENT)
+    -> { @io.reopen(@other_name) }.should.raise(Errno::ENOENT)
   end
 end
 
@@ -214,9 +300,9 @@ describe "IO#reopen with an IO at EOF" do
   end
 
   it "resets the EOF status to false" do
-    @io.eof?.should be_true
+    @io.eof?.should == true
     @io.reopen @other_io
-    @io.eof?.should be_false
+    @io.eof?.should == false
   end
 end
 
@@ -244,7 +330,7 @@ describe "IO#reopen with an IO" do
     # MRI actually changes the class of @io in the call to #reopen
     # but does not preserve the existing singleton class of @io.
     def @io.to_io; flunk; end
-    @io.reopen(@other_io).should be_an_instance_of(IO)
+    @io.reopen(@other_io).should.instance_of?(IO)
   end
 
   it "does not change the object_id" do
@@ -303,7 +389,7 @@ describe "IO#reopen with an IO" do
 
   it "may change the class of the instance" do
     @io.reopen @other_io
-    @io.should be_an_instance_of(File)
+    @io.should.instance_of?(File)
   end
 
   it "sets path equals to the other IO's path if other IO is File" do

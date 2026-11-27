@@ -3,17 +3,20 @@
 require_relative "../command"
 require_relative "../dependency_installer"
 require_relative "../gem_runner"
+require_relative "../local_remote_options"
 require_relative "../package"
 require_relative "../version_option"
 
 class Gem::Commands::ExecCommand < Gem::Command
   include Gem::VersionOption
+  include Gem::LocalRemoteOptions
 
   def initialize
     super "exec", "Run a command from a gem", {
       version: Gem::Requirement.default,
     }
 
+    add_source_option
     add_version_option
     add_prerelease_option "to be installed"
 
@@ -79,7 +82,7 @@ to the same gem path as user-installed gems.
   def handle_options(args)
     args = add_extra_args(args)
     check_deprecated_options(args)
-    @options = Marshal.load Marshal.dump @defaults # deep copy
+    @options = Gem::Util.deep_dup @defaults
     parser.order!(args) do |v|
       # put the non-option back at the front of the list of arguments
       args.unshift(v)
@@ -173,6 +176,9 @@ to the same gem path as user-installed gems.
   rescue Gem::InstallError => e
     alert_error "Error installing #{gem_name}:\n\t#{e.message}"
     terminate_interaction 1
+  rescue Gem::DependencyResolutionError => e
+    alert_error "Error installing #{gem_name}:\n\t#{e.message}"
+    terminate_interaction 2
   rescue Gem::GemNotFoundException => e
     show_lookup_failure e.name, e.version, e.errors, false
 

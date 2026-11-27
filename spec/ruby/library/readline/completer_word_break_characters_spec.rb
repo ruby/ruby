@@ -3,7 +3,7 @@ require_relative 'spec_helper'
 with_feature :readline do
   describe "Readline.completer_word_break_characters" do
     it "returns nil" do
-      Readline.completer_word_break_characters.should be_nil
+      Readline.completer_word_break_characters.should == nil
     end
   end
 

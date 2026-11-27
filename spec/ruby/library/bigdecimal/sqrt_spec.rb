@@ -45,37 +45,37 @@ describe "BigDecimal#sqrt" do
   it "raises ArgumentError when no argument is given" do
     -> {
       @one.sqrt
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError if a negative number is given" do
     -> {
       @one.sqrt(-1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError if 2 arguments are given" do
     -> {
       @one.sqrt(1, 1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises TypeError if nil is given" do
     -> {
       @one.sqrt(nil)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises TypeError if a string is given" do
     -> {
       @one.sqrt("stuff")
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises TypeError if a plain Object is given" do
     -> {
       @one.sqrt(Object.new)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "returns 1 if precision is 0 or 1" do
@@ -86,7 +86,7 @@ describe "BigDecimal#sqrt" do
   it "raises FloatDomainError on negative values" do
     -> {
       BigDecimal('-1').sqrt(10)
-    }.should raise_error(FloatDomainError)
+    }.should.raise(FloatDomainError)
   end
 
   it "returns positive infinity for infinity" do
@@ -96,13 +96,13 @@ describe "BigDecimal#sqrt" do
   it "raises FloatDomainError for negative infinity" do
     -> {
       @infinity_minus.sqrt(1)
-    }.should raise_error(FloatDomainError)
+    }.should.raise(FloatDomainError)
   end
 
   it "raises FloatDomainError for NaN" do
     -> {
       @nan.sqrt(1)
-    }.should raise_error(FloatDomainError)
+    }.should.raise(FloatDomainError)
   end
 
   it "returns 0 for 0, +0.0 and -0.0" do

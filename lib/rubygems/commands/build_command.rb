@@ -25,6 +25,12 @@ class Gem::Commands::BuildCommand < Gem::Command
     add_option "-o", "--output FILE", "output gem with the given filename" do |value, options|
       options[:output] = value
     end
+
+    add_ruby_abi_option("build")
+
+    add_option "--content-addressable", "build a content-addressable gem" do |_value, options|
+      options[:content_addressable] = true
+    end
   end
 
   def arguments # :nodoc:
@@ -51,6 +57,19 @@ with gem spec:
 Gems can be saved to a specified filename with the output option:
 
   $ gem build my_gem-1.0.gemspec --output=release.gem
+
+Use the --ruby-abi option to set a specific Ruby ABI for the gem being built:
+
+  $ gem build my_gem-1.0.gemspec --ruby-abi=3.4
+
+Use the --content-addressable option to build a content-addressable gem using
+the platform and required_ruby_version declared in the gemspec:
+
+  $ gem build my_gem-1.0.gemspec --content-addressable
+
+The options can be combined to set the Ruby ABI explicitly:
+
+  $ gem build my_gem-1.0.gemspec --ruby-abi=3.4 --content-addressable
 
     EOF
   end
@@ -84,11 +103,30 @@ Gems can be saved to a specified filename with the output option:
   def build_package(gemspec)
     spec = Gem::Specification.load(gemspec)
     if spec
+      # Gem::Specification#initialize applies --platform unless it is the local platform
+      if options[:added_platform] && spec.platform == Gem::Platform::RUBY && Gem.platforms.last == Gem::Platform.local
+        spec.platform = Gem::Platform.local
+      end
+
+      ruby_abi = options[:ruby_abi]
+      if ruby_abi
+        requirement = Gem::ContentAddress.ruby_abi_requirement(ruby_abi)
+        existing = spec.required_ruby_version
+
+        unless existing.none? || existing == requirement
+          alert_warning "required_ruby_version was changed from \"#{existing}\" to \"#{requirement}\" for this build " \
+            "because --ruby-abi #{ruby_abi} was given."
+        end
+
+        spec.required_ruby_version = requirement
+      end
+
       Gem::Package.build(
         spec,
         options[:force],
         options[:strict],
-        options[:output]
+        options[:output],
+        content_addressable: options[:content_addressable]
       )
     else
       alert_error "Error loading gemspec. Aborting."

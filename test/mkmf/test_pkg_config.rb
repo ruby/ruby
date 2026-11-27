@@ -45,7 +45,7 @@ class TestMkmfPkgConfig < TestMkmf
 
   def test_pkgconfig_with_libs_option_returns_output
     pend("skipping because pkg-config is not installed") unless PKG_CONFIG
-    expected = ["-L#{@fixtures_lib_dir}", "-ltest1-public"].sort
+    expected = [LIBPATHFLAG.strip % @fixtures_lib_dir, LIBARG % "test1-public"].sort
     actual = pkg_config("test1", "libs")
     assert_equal_sorted(expected, actual, MKMFLOG)
   end
@@ -59,7 +59,7 @@ class TestMkmfPkgConfig < TestMkmf
 
   def test_pkgconfig_with_multiple_options
     pend("skipping because pkg-config is not installed") unless PKG_CONFIG
-    expected = ["-L#{@fixtures_lib_dir}", "-ltest1-public", "-ltest1-private"].sort
+    expected = [LIBPATHFLAG.strip % @fixtures_lib_dir, LIBARG % "test1-public", LIBARG % "test1-private"].sort
     actual = pkg_config("test1", "libs", "static")
     assert_equal_sorted(expected, actual, MKMFLOG)
   end

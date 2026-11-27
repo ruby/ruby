@@ -38,6 +38,9 @@ module Bundler
         false
       end
 
+      def release_resolution_memory!
+      end
+
       private
 
       def log_specs(&block)

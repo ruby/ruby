@@ -9,9 +9,9 @@ describe "Regexp with character classes" do
     /\w/.match("_").to_a.should == ["_"]
 
     # Non-matches
-    /\w/.match(LanguageSpecs.white_spaces).should be_nil
-    /\w/.match(LanguageSpecs.non_alphanum_non_space).should be_nil
-    /\w/.match("\0").should be_nil
+    /\w/.match(LanguageSpecs.white_spaces).should == nil
+    /\w/.match(LanguageSpecs.non_alphanum_non_space).should == nil
+    /\w/.match("\0").should == nil
   end
 
   it "supports \\W (non-word character)" do
@@ -20,19 +20,19 @@ describe "Regexp with character classes" do
     /\W/.match("\0").to_a.should == ["\0"]
 
     # Non-matches
-    /\W/.match("a").should be_nil
-    /\W/.match("1").should be_nil
-    /\W/.match("_").should be_nil
+    /\W/.match("a").should == nil
+    /\W/.match("1").should == nil
+    /\W/.match("_").should == nil
   end
 
   it "supports \\s (space character)" do
     /\s+/.match(LanguageSpecs.white_spaces).to_a.should == [LanguageSpecs.white_spaces]
 
     # Non-matches
-    /\s/.match("a").should be_nil
-    /\s/.match("1").should be_nil
-    /\s/.match(LanguageSpecs.non_alphanum_non_space).should be_nil
-    /\s/.match("\0").should be_nil
+    /\s/.match("a").should == nil
+    /\s/.match("1").should == nil
+    /\s/.match(LanguageSpecs.non_alphanum_non_space).should == nil
+    /\s/.match("\0").should == nil
   end
 
   it "supports \\S (non-space character)" do
@@ -42,17 +42,17 @@ describe "Regexp with character classes" do
     /\S/.match("\0").to_a.should == ["\0"]
 
     # Non-matches
-    /\S/.match(LanguageSpecs.white_spaces).should be_nil
+    /\S/.match(LanguageSpecs.white_spaces).should == nil
   end
 
   it "supports \\d (numeric digit)" do
     /\d/.match("1").to_a.should == ["1"]
 
     # Non-matches
-    /\d/.match("a").should be_nil
-    /\d/.match(LanguageSpecs.white_spaces).should be_nil
-    /\d/.match(LanguageSpecs.non_alphanum_non_space).should be_nil
-    /\d/.match("\0").should be_nil
+    /\d/.match("a").should == nil
+    /\d/.match(LanguageSpecs.white_spaces).should == nil
+    /\d/.match(LanguageSpecs.non_alphanum_non_space).should == nil
+    /\d/.match("\0").should == nil
   end
 
   it "supports \\D (non-digit)" do
@@ -62,7 +62,7 @@ describe "Regexp with character classes" do
     /\D/.match("\0").to_a.should == ["\0"]
 
     # Non-matches
-    /\D/.match("1").should be_nil
+    /\D/.match("1").should == nil
   end
 
   it "supports [] (character class)" do
@@ -89,7 +89,7 @@ describe "Regexp with character classes" do
     /[^[:lower:]A-C]+/.match("abcABCDEF123def").to_a.should == ["DEF123"] # negated character class
     /[:alnum:]+/.match("a:l:n:u:m").to_a.should == ["a:l:n:u:m"] # should behave like regular character class composed of the individual letters
     /[\[:alnum:]+/.match("[:a:l:n:u:m").to_a.should == ["[:a:l:n:u:m"] # should behave like regular character class composed of the individual letters
-    -> { eval('/[[:alpha:]-[:digit:]]/') }.should raise_error(SyntaxError) # can't use character class as a start value of range
+    -> { eval('/[[:alpha:]-[:digit:]]/') }.should.raise(SyntaxError) # can't use character class as a start value of range
   end
 
   it "matches ASCII characters with [[:ascii:]]" do
@@ -99,8 +99,8 @@ describe "Regexp with character classes" do
 
   not_supported_on :opal do
     it "doesn't match non-ASCII characters with [[:ascii:]]" do
-      /[[:ascii:]]/.match("\u{80}").should be_nil
-      /[[:ascii:]]/.match("\u{9898}").should be_nil
+      /[[:ascii:]]/.match("\u{80}").should == nil
+      /[[:ascii:]]/.match("\u{9898}").should == nil
     end
   end
 
@@ -113,7 +113,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alnum:]]" do
-    "\u{3099}".match(/[[:alnum:]]/).should be_nil
+    "\u{3099}".match(/[[:alnum:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:alnum:]]" do
@@ -133,7 +133,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alpha:]]" do
-    "\u{3099}".match(/[[:alpha:]]/).should be_nil
+    "\u{3099}".match(/[[:alpha:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:alpha:]]" do
@@ -149,39 +149,39 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode control characters with [[:blank:]]" do
-    "\u{16}".match(/[[:blank:]]/).should be_nil
+    "\u{16}".match(/[[:blank:]]/).should == nil
   end
 
   it "doesn't match Unicode punctuation characters with [[:blank:]]" do
-    "\u{3F}".match(/[[:blank:]]/).should be_nil
+    "\u{3F}".match(/[[:blank:]]/).should == nil
   end
 
   it "doesn't match Unicode letter characters with [[:blank:]]" do
-    "à".match(/[[:blank:]]/).should be_nil
+    "à".match(/[[:blank:]]/).should == nil
   end
 
   it "doesn't match Unicode digits with [[:blank:]]" do
-    "\u{0660}".match(/[[:blank:]]/).should be_nil
+    "\u{0660}".match(/[[:blank:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:blank:]]" do
-    "\u{36F}".match(/[[:blank:]]/).should be_nil
+    "\u{36F}".match(/[[:blank:]]/).should == nil
   end
 
   it "doesn't Unicode letter characters with [[:cntrl:]]" do
-    "à".match(/[[:cntrl:]]/).should be_nil
+    "à".match(/[[:cntrl:]]/).should == nil
   end
 
   it "doesn't match Unicode digits with [[:cntrl:]]" do
-    "\u{0660}".match(/[[:cntrl:]]/).should be_nil
+    "\u{0660}".match(/[[:cntrl:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:cntrl:]]" do
-    "\u{36F}".match(/[[:cntrl:]]/).should be_nil
+    "\u{36F}".match(/[[:cntrl:]]/).should == nil
   end
 
   it "doesn't match Unicode punctuation characters with [[:cntrl:]]" do
-    "\u{3F}".match(/[[:cntrl:]]/).should be_nil
+    "\u{3F}".match(/[[:cntrl:]]/).should == nil
   end
 
   it "matches Unicode control characters with [[:cntrl:]]" do
@@ -189,15 +189,15 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode format characters with [[:cntrl:]]" do
-    "\u{2060}".match(/[[:cntrl:]]/).should be_nil
+    "\u{2060}".match(/[[:cntrl:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:cntrl:]]" do
-    "\u{E001}".match(/[[:cntrl:]]/).should be_nil
+    "\u{E001}".match(/[[:cntrl:]]/).should == nil
   end
 
   it "doesn't match Unicode letter characters with [[:digit:]]" do
-    "à".match(/[[:digit:]]/).should be_nil
+    "à".match(/[[:digit:]]/).should == nil
   end
 
   it "matches Unicode digits with [[:digit:]]" do
@@ -206,23 +206,23 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode marks with [[:digit:]]" do
-    "\u{36F}".match(/[[:digit:]]/).should be_nil
+    "\u{36F}".match(/[[:digit:]]/).should == nil
   end
 
   it "doesn't match Unicode punctuation characters with [[:digit:]]" do
-    "\u{3F}".match(/[[:digit:]]/).should be_nil
+    "\u{3F}".match(/[[:digit:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:digit:]]" do
-    "\u{16}".match(/[[:digit:]]/).should be_nil
+    "\u{16}".match(/[[:digit:]]/).should == nil
   end
 
   it "doesn't match Unicode format characters with [[:digit:]]" do
-    "\u{2060}".match(/[[:digit:]]/).should be_nil
+    "\u{2060}".match(/[[:digit:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:digit:]]" do
-    "\u{E001}".match(/[[:digit:]]/).should be_nil
+    "\u{E001}".match(/[[:digit:]]/).should == nil
   end
 
   it "matches Unicode letter characters with [[:graph:]]" do
@@ -243,7 +243,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode control characters with [[:graph:]]" do
-    "\u{16}".match(/[[:graph:]]/).should be_nil
+    "\u{16}".match(/[[:graph:]]/).should == nil
   end
 
   it "match Unicode format characters with [[:graph:]]" do
@@ -261,40 +261,40 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode uppercase letter characters with [[:lower:]]" do
-    "\u{100}".match(/[[:lower:]]/).should be_nil
-    "\u{130}".match(/[[:lower:]]/).should be_nil
-    "\u{405}".match(/[[:lower:]]/).should be_nil
+    "\u{100}".match(/[[:lower:]]/).should == nil
+    "\u{130}".match(/[[:lower:]]/).should == nil
+    "\u{405}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode title-case characters with [[:lower:]]" do
-    "\u{1F88}".match(/[[:lower:]]/).should be_nil
-    "\u{1FAD}".match(/[[:lower:]]/).should be_nil
-    "\u{01C5}".match(/[[:lower:]]/).should be_nil
+    "\u{1F88}".match(/[[:lower:]]/).should == nil
+    "\u{1FAD}".match(/[[:lower:]]/).should == nil
+    "\u{01C5}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode digits with [[:lower:]]" do
-    "\u{0660}".match(/[[:lower:]]/).should be_nil
-    "\u{FF12}".match(/[[:lower:]]/).should be_nil
+    "\u{0660}".match(/[[:lower:]]/).should == nil
+    "\u{FF12}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:lower:]]" do
-    "\u{36F}".match(/[[:lower:]]/).should be_nil
+    "\u{36F}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode punctuation characters with [[:lower:]]" do
-    "\u{3F}".match(/[[:lower:]]/).should be_nil
+    "\u{3F}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:lower:]]" do
-    "\u{16}".match(/[[:lower:]]/).should be_nil
+    "\u{16}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode format characters with [[:lower:]]" do
-    "\u{2060}".match(/[[:lower:]]/).should be_nil
+    "\u{2060}".match(/[[:lower:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:lower:]]" do
-    "\u{E001}".match(/[[:lower:]]/).should be_nil
+    "\u{E001}".match(/[[:lower:]]/).should == nil
   end
 
   it "matches Unicode lowercase letter characters with [[:print:]]" do
@@ -329,7 +329,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode control characters with [[:print:]]" do
-    "\u{16}".match(/[[:print:]]/).should be_nil
+    "\u{16}".match(/[[:print:]]/).should == nil
   end
 
   it "match Unicode format characters with [[:print:]]" do
@@ -342,30 +342,30 @@ describe "Regexp with character classes" do
 
 
   it "doesn't match Unicode lowercase letter characters with [[:punct:]]" do
-    "\u{FF41}".match(/[[:punct:]]/).should be_nil
-    "\u{1D484}".match(/[[:punct:]]/).should be_nil
-    "\u{E8}".match(/[[:punct:]]/).should be_nil
+    "\u{FF41}".match(/[[:punct:]]/).should == nil
+    "\u{1D484}".match(/[[:punct:]]/).should == nil
+    "\u{E8}".match(/[[:punct:]]/).should == nil
   end
 
   it "doesn't match Unicode uppercase letter characters with [[:punct:]]" do
-    "\u{100}".match(/[[:punct:]]/).should be_nil
-    "\u{130}".match(/[[:punct:]]/).should be_nil
-    "\u{405}".match(/[[:punct:]]/).should be_nil
+    "\u{100}".match(/[[:punct:]]/).should == nil
+    "\u{130}".match(/[[:punct:]]/).should == nil
+    "\u{405}".match(/[[:punct:]]/).should == nil
   end
 
   it "doesn't match Unicode title-case characters with [[:punct:]]" do
-    "\u{1F88}".match(/[[:punct:]]/).should be_nil
-    "\u{1FAD}".match(/[[:punct:]]/).should be_nil
-    "\u{01C5}".match(/[[:punct:]]/).should be_nil
+    "\u{1F88}".match(/[[:punct:]]/).should == nil
+    "\u{1FAD}".match(/[[:punct:]]/).should == nil
+    "\u{01C5}".match(/[[:punct:]]/).should == nil
   end
 
   it "doesn't match Unicode digits with [[:punct:]]" do
-    "\u{0660}".match(/[[:punct:]]/).should be_nil
-    "\u{FF12}".match(/[[:punct:]]/).should be_nil
+    "\u{0660}".match(/[[:punct:]]/).should == nil
+    "\u{FF12}".match(/[[:punct:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:punct:]]" do
-    "\u{36F}".match(/[[:punct:]]/).should be_nil
+    "\u{36F}".match(/[[:punct:]]/).should == nil
   end
 
   it "matches Unicode Pc characters with [[:punct:]]" do
@@ -398,38 +398,38 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode format characters with [[:punct:]]" do
-    "\u{2060}".match(/[[:punct:]]/).should be_nil
+    "\u{2060}".match(/[[:punct:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:punct:]]" do
-    "\u{E001}".match(/[[:punct:]]/).should be_nil
+    "\u{E001}".match(/[[:punct:]]/).should == nil
   end
 
   it "doesn't match Unicode lowercase letter characters with [[:space:]]" do
-    "\u{FF41}".match(/[[:space:]]/).should be_nil
-    "\u{1D484}".match(/[[:space:]]/).should be_nil
-    "\u{E8}".match(/[[:space:]]/).should be_nil
+    "\u{FF41}".match(/[[:space:]]/).should == nil
+    "\u{1D484}".match(/[[:space:]]/).should == nil
+    "\u{E8}".match(/[[:space:]]/).should == nil
   end
 
   it "doesn't match Unicode uppercase letter characters with [[:space:]]" do
-    "\u{100}".match(/[[:space:]]/).should be_nil
-    "\u{130}".match(/[[:space:]]/).should be_nil
-    "\u{405}".match(/[[:space:]]/).should be_nil
+    "\u{100}".match(/[[:space:]]/).should == nil
+    "\u{130}".match(/[[:space:]]/).should == nil
+    "\u{405}".match(/[[:space:]]/).should == nil
   end
 
   it "doesn't match Unicode title-case characters with [[:space:]]" do
-    "\u{1F88}".match(/[[:space:]]/).should be_nil
-    "\u{1FAD}".match(/[[:space:]]/).should be_nil
-    "\u{01C5}".match(/[[:space:]]/).should be_nil
+    "\u{1F88}".match(/[[:space:]]/).should == nil
+    "\u{1FAD}".match(/[[:space:]]/).should == nil
+    "\u{01C5}".match(/[[:space:]]/).should == nil
   end
 
   it "doesn't match Unicode digits with [[:space:]]" do
-    "\u{0660}".match(/[[:space:]]/).should be_nil
-    "\u{FF12}".match(/[[:space:]]/).should be_nil
+    "\u{0660}".match(/[[:space:]]/).should == nil
+    "\u{FF12}".match(/[[:space:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:space:]]" do
-    "\u{36F}".match(/[[:space:]]/).should be_nil
+    "\u{36F}".match(/[[:space:]]/).should == nil
   end
 
   it "matches Unicode Zs characters with [[:space:]]" do
@@ -445,17 +445,17 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode format characters with [[:space:]]" do
-    "\u{2060}".match(/[[:space:]]/).should be_nil
+    "\u{2060}".match(/[[:space:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:space:]]" do
-    "\u{E001}".match(/[[:space:]]/).should be_nil
+    "\u{E001}".match(/[[:space:]]/).should == nil
   end
 
   it "doesn't match Unicode lowercase characters with [[:upper:]]" do
-    "\u{FF41}".match(/[[:upper:]]/).should be_nil
-    "\u{1D484}".match(/[[:upper:]]/).should be_nil
-    "\u{E8}".match(/[[:upper:]]/).should be_nil
+    "\u{FF41}".match(/[[:upper:]]/).should == nil
+    "\u{1D484}".match(/[[:upper:]]/).should == nil
+    "\u{E8}".match(/[[:upper:]]/).should == nil
   end
 
   it "matches Unicode uppercase characters with [[:upper:]]" do
@@ -465,40 +465,40 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode title-case characters with [[:upper:]]" do
-    "\u{1F88}".match(/[[:upper:]]/).should be_nil
-    "\u{1FAD}".match(/[[:upper:]]/).should be_nil
-    "\u{01C5}".match(/[[:upper:]]/).should be_nil
+    "\u{1F88}".match(/[[:upper:]]/).should == nil
+    "\u{1FAD}".match(/[[:upper:]]/).should == nil
+    "\u{01C5}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode digits with [[:upper:]]" do
-    "\u{0660}".match(/[[:upper:]]/).should be_nil
-    "\u{FF12}".match(/[[:upper:]]/).should be_nil
+    "\u{0660}".match(/[[:upper:]]/).should == nil
+    "\u{FF12}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:upper:]]" do
-    "\u{36F}".match(/[[:upper:]]/).should be_nil
+    "\u{36F}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode punctuation characters with [[:upper:]]" do
-    "\u{3F}".match(/[[:upper:]]/).should be_nil
+    "\u{3F}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:upper:]]" do
-    "\u{16}".match(/[[:upper:]]/).should be_nil
+    "\u{16}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode format characters with [[:upper:]]" do
-    "\u{2060}".match(/[[:upper:]]/).should be_nil
+    "\u{2060}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:upper:]]" do
-    "\u{E001}".match(/[[:upper:]]/).should be_nil
+    "\u{E001}".match(/[[:upper:]]/).should == nil
   end
 
   it "doesn't match Unicode letter characters [^a-fA-F] with [[:xdigit:]]" do
-    "à".match(/[[:xdigit:]]/).should be_nil
-    "g".match(/[[:xdigit:]]/).should be_nil
-    "X".match(/[[:xdigit:]]/).should be_nil
+    "à".match(/[[:xdigit:]]/).should == nil
+    "g".match(/[[:xdigit:]]/).should == nil
+    "X".match(/[[:xdigit:]]/).should == nil
   end
 
   it "matches Unicode letter characters [a-fA-F] with [[:xdigit:]]" do
@@ -507,28 +507,28 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode digits [^0-9] with [[:xdigit:]]" do
-    "\u{0660}".match(/[[:xdigit:]]/).should be_nil
-    "\u{FF12}".match(/[[:xdigit:]]/).should be_nil
+    "\u{0660}".match(/[[:xdigit:]]/).should == nil
+    "\u{FF12}".match(/[[:xdigit:]]/).should == nil
   end
 
   it "doesn't match Unicode marks with [[:xdigit:]]" do
-    "\u{36F}".match(/[[:xdigit:]]/).should be_nil
+    "\u{36F}".match(/[[:xdigit:]]/).should == nil
   end
 
   it "doesn't match Unicode punctuation characters with [[:xdigit:]]" do
-    "\u{3F}".match(/[[:xdigit:]]/).should be_nil
+    "\u{3F}".match(/[[:xdigit:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:xdigit:]]" do
-    "\u{16}".match(/[[:xdigit:]]/).should be_nil
+    "\u{16}".match(/[[:xdigit:]]/).should == nil
   end
 
   it "doesn't match Unicode format characters with [[:xdigit:]]" do
-    "\u{2060}".match(/[[:xdigit:]]/).should be_nil
+    "\u{2060}".match(/[[:xdigit:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:xdigit:]]" do
-    "\u{E001}".match(/[[:xdigit:]]/).should be_nil
+    "\u{E001}".match(/[[:xdigit:]]/).should == nil
   end
 
   it "matches Unicode lowercase characters with [[:word:]]" do
@@ -570,22 +570,22 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't match Unicode No characters with [[:word:]]" do
-    "\u{17F0}".match(/[[:word:]]/).should be_nil
+    "\u{17F0}".match(/[[:word:]]/).should == nil
   end
   it "doesn't match Unicode punctuation characters with [[:word:]]" do
-    "\u{3F}".match(/[[:word:]]/).should be_nil
+    "\u{3F}".match(/[[:word:]]/).should == nil
   end
 
   it "doesn't match Unicode control characters with [[:word:]]" do
-    "\u{16}".match(/[[:word:]]/).should be_nil
+    "\u{16}".match(/[[:word:]]/).should == nil
   end
 
   it "doesn't match Unicode format characters with [[:word:]]" do
-    "\u{2060}".match(/[[:word:]]/).should be_nil
+    "\u{2060}".match(/[[:word:]]/).should == nil
   end
 
   it "doesn't match Unicode private-use characters with [[:word:]]" do
-    "\u{E001}".match(/[[:word:]]/).should be_nil
+    "\u{E001}".match(/[[:word:]]/).should == nil
   end
 
   it "matches unicode named character properties" do
@@ -617,12 +617,12 @@ describe "Regexp with character classes" do
   end
 
   it "supports negated property condition" do
-    "a".match(eval("/\P{L}/")).should be_nil
-    "1".match(eval("/\P{N}/")).should be_nil
+    "a".match(eval("/\P{L}/")).should == nil
+    "1".match(eval("/\P{N}/")).should == nil
   end
 
   it "raises a RegexpError for an unterminated unicode property" do
-    -> { Regexp.new('\p{') }.should raise_error(RegexpError)
+    -> { Regexp.new('\p{') }.should.raise(RegexpError)
   end
 
   it "supports \\X (unicode 9.0 with UTR #51 workarounds)" do

@@ -1,8 +1,35 @@
 require_relative '../../spec_helper'
-require_relative 'shared/pos'
 
 describe "ARGF.pos" do
-  it_behaves_like :argf_pos, :pos
+  before :each do
+    @file1 = fixture __FILE__, "file1.txt"
+    @file2 = fixture __FILE__, "file2.txt"
+  end
+
+  it "gives the correct position for each read operation" do
+    argf [@file1, @file2] do
+      size1 = File.size(@file1)
+      size2 = File.size(@file2)
+
+      @argf.read(2)
+      @argf.pos.should == 2
+      @argf.read(size1-2)
+      @argf.pos.should == size1
+      @argf.read(6)
+      @argf.pos.should == 6
+      @argf.rewind
+      @argf.pos.should == 0
+      @argf.read(size2)
+      @argf.pos.should == size2
+    end
+  end
+
+  it "raises an ArgumentError when called on a closed stream" do
+    argf [@file1] do
+      @argf.read
+      -> { @argf.pos }.should.raise(ArgumentError)
+    end
+  end
 end
 
 describe "ARGF.pos=" do

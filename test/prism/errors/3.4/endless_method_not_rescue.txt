@@ -1,0 +1,3 @@
+def f = not return rescue retry rescue return
+            ^~~~~~ unexpected void value expression
+

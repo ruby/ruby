@@ -1,0 +1,31 @@
+/**
+ * @file ast.hpp
+ *
+ * The mapping between node structs and node types, generated from the same
+ * configuration as ast.h so that it covers every node.
+ */
+#ifndef PRISM_AST_HPP
+#define PRISM_AST_HPP
+
+#include "prism/compiler/cplusplus.hpp"
+
+#include "prism/ast.h"
+#include "prism/node_type.hpp"
+
+#include <cstddef>
+#include <type_traits>
+
+namespace prism {
+
+/* Each node struct is cast to and from pm_node_t, which C++ allows only
+ * because the struct is standard-layout with pm_node_t as its first member. */
+<%- nodes.each do |node| -%>
+
+/** Maps pm_<%= node.human %>_t to <%= node.type %>. */
+template <> struct node_type<pm_<%= node.human %>_t> : std::integral_constant<pm_node_type_t, <%= node.type %>> {};
+static_assert(std::is_standard_layout_v<pm_<%= node.human %>_t> && offsetof(pm_<%= node.human %>_t, base) == 0, "pm_<%= node.human %>_t must begin with its pm_node_t");
+<%- end -%>
+
+}
+
+#endif

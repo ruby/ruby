@@ -158,7 +158,7 @@ RSpec.describe "bundle binstubs <gem>" do
 
   context "with the binstubs dir configured" do
     before do
-      bundle "config bin exec"
+      bundle_config "bin exec"
     end
 
     it "creates the binstubs in the configured dir" do
@@ -193,7 +193,7 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     it "generates a standalone binstub at the given path when configured" do
-      bundle "config bin foo"
+      bundle_config "bin foo"
       bundle "binstubs myrack --standalone"
       expect(bundled_app("foo/myrackup")).to exist
     end
@@ -313,7 +313,7 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "myrack"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle "binstubs myrack"
       expect(out).to include("Installing myrack 1.0.0")
       expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -325,7 +325,7 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "myrack"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle "binstubs myrack", env: { "BUNDLE_INSTALL" => "1" }
       expect(out).not_to include("Installing myrack 1.0.0")
     end

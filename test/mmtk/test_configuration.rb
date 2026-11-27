@@ -16,13 +16,13 @@ module MMTk
 
     %w(NoGC MarkSweep Immix).each do |plan|
       define_method(:"test_MMTK_PLAN_#{plan}") do
-        assert_separately([{ "MMTK_PLAN" => plan }], <<~RUBY)
+        assert_separately([{ "MMTK_PLAN" => plan, "MMTK_HEAP_MODE" => "fixed" }], <<~RUBY)
           assert_equal("#{plan}", GC.config[:mmtk_plan])
         RUBY
       end
     end
 
-    %w(fixed dynamic).each do |heap|
+    %w(fixed dynamic ruby cpu).each do |heap|
       define_method(:"test_MMTK_HEAP_MODE_#{heap}") do
         assert_separately([{ "MMTK_HEAP_MODE" => heap }], <<~RUBY)
           assert_equal("#{heap}", GC.config[:mmtk_heap_mode])

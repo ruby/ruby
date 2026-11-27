@@ -144,10 +144,71 @@ class TestSuper < Test::Unit::TestCase
   def test_keyword2
     assert_equal([{foo: "changed1"}, {foo: "changed2"}], Keyword2.new.keyword)
   end
+
+  def test_super_in_keyword_default
+    assert_ruby_status(["--parser=parse.y"], 'RubyVM::InstructionSequence.compile("def z(f:e, e:super[]) end")')
+  end
+
+  def test_super_in_keyword_default_forwarding
+    assert_separately(["--parser=parse.y"], <<~'RUBY')
+      class A
+        def m(*, **kw)
+          kw
+        end
+      end
+
+      class B < A
+        def m(a: 1, b: super)
+          b
+        end
+      end
+
+      assert_equal({a: 1, b: nil}, B.new.m)
+      assert_equal(2, B.new.m(b: 2))
+
+      class C < A
+        def m(a: 1, required:, b: super, **kw)
+          b
+        end
+      end
+
+      assert_equal({a: 1, required: 2, b: nil, x: 3}, C.new.m(required: 2, x: 3))
+      assert_equal(4, C.new.m(required: 2, b: 4, x: 3))
+
+      class D < A
+        def m(_a, _a: super)
+          _a
+        end
+      end
+
+      assert_equal({_a: 0}, D.new.m(0))
+      assert_equal(0, D.new.m(0, _a: 2))
+    RUBY
+  end
+
   def test_forwardable(...)
     assert_equal([[],[],[],[1]], Forward.new.forward())
     assert_equal([[],[1,2],[1,2],[1,1,2]], Forward.new.forward(1,2))
     assert_equal([[],[:test],[:test],[1,:test]], Forward.new.forward(:test, ...))
+  end
+
+  def test_forwardable_super_to_uncached_method
+    c = Class.new do
+      def self.attr_accessor(...) = super
+      def self.private(...) = super(...)
+      def self.include(...) = super
+
+      attr_accessor :a
+      private :a=
+      include Comparable
+    end
+    assert_send([c, :public_method_defined?, :a])
+    assert_send([c, :private_method_defined?, :a=])
+    assert_include(c.ancestors, Comparable)
+
+    base = Class.new { def self.decl(...) = attr_reader(...) }
+    d = Class.new(base) { def self.decl(*) = super; decl :b }
+    assert_send([d, :method_defined?, :b])
   end
 
   class A
@@ -667,6 +728,38 @@ class TestSuper < Test::Unit::TestCase
     assert_equal(:test, c.new.test)
   end
 
+  def test_super_with_prepended_module_after_include_method_caching
+    m = Module.new do
+      def test
+        :m
+      end
+    end
+
+    c = Class.new { include m }
+
+    m.prepend(Module.new do
+      def test
+        super
+      end
+    end)
+
+    # prime the super call-site cache through the prepended module
+    assert_equal(:m, c.new.test)
+
+    m.class_eval do
+      begin
+        verbose_bak, $VERBOSE = $VERBOSE, nil
+        def test
+          :redefined
+        end
+      ensure
+        $VERBOSE = verbose_bak
+      end
+    end
+
+    assert_equal(:redefined, c.new.test)
+  end
+
   class TestFor_super_with_modified_rest_parameter_base
     def foo *args
       args
@@ -758,6 +851,20 @@ class TestSuper < Test::Unit::TestCase
 
     inherited = inherited_class.new
     assert_equal 2, inherited.test # it may read index=1 while it should be index=2
+  end
+
+  def test_define_initialize_in_basic_object
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class ::BasicObject
+        alias_method :initialize, :initialize
+        def initialize
+          @bug = "[Bug #21992]"
+        end
+      end
+
+      assert_not_nil Object.new
+    end;
   end
 
   def test_super_in_basic_object

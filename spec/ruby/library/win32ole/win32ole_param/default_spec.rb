@@ -14,12 +14,12 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      -> { @params[0].default(1) }.should raise_error ArgumentError
+      -> { @params[0].default(1) }.should.raise ArgumentError
     end
 
     it "returns nil for each of WIN32OLE::Param for Shell's 'BrowseForFolder' method" do
       @params.each do |p|
-        p.default.should be_nil
+        p.default.should == nil
       end
     end
 

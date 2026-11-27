@@ -12,7 +12,7 @@ describe "IO::Buffer#transfer" do
       info = buffer.to_s
       @buffer = buffer.transfer
       @buffer.to_s.should == info
-      buffer.null?.should be_true
+      buffer.null?.should == true
     end
 
     it "transfers mapped memory to a new buffer, nullifying the original" do
@@ -20,7 +20,7 @@ describe "IO::Buffer#transfer" do
       info = buffer.to_s
       @buffer = buffer.transfer
       @buffer.to_s.should == info
-      buffer.null?.should be_true
+      buffer.null?.should == true
     end
   end
 
@@ -31,7 +31,7 @@ describe "IO::Buffer#transfer" do
         info = buffer.to_s
         @buffer = buffer.transfer
         @buffer.to_s.should == info
-        buffer.null?.should be_true
+        buffer.null?.should == true
       end
     end
   end
@@ -43,7 +43,7 @@ describe "IO::Buffer#transfer" do
         info = buffer.to_s
         @buffer = buffer.transfer
         @buffer.to_s.should == info
-        buffer.null?.should be_true
+        buffer.null?.should == true
       end
     end
 
@@ -53,24 +53,22 @@ describe "IO::Buffer#transfer" do
           info = buffer.to_s
           @buffer = buffer.transfer
           @buffer.to_s.should == info
-          buffer.null?.should be_true
+          buffer.null?.should == true
         end
-        @buffer.null?.should be_false
+        @buffer.null?.should == false
       end
     end
   end
 
-  ruby_version_is "3.3" do
-    context "with a String-backed buffer created with .string" do
-      it "transfers memory to a new buffer, breaking the transaction by nullifying the original" do
-        IO::Buffer.string(4) do |buffer|
-          info = buffer.to_s
-          @buffer = buffer.transfer
-          @buffer.to_s.should == info
-          buffer.null?.should be_true
-        end
-        @buffer.null?.should be_false
+  context "with a String-backed buffer created with .string" do
+    it "transfers memory to a new buffer, breaking the transaction by nullifying the original" do
+      IO::Buffer.string(4) do |buffer|
+        info = buffer.to_s
+        @buffer = buffer.transfer
+        @buffer.to_s.should == info
+        buffer.null?.should == true
       end
+      @buffer.null?.should == false
     end
   end
 
@@ -78,31 +76,46 @@ describe "IO::Buffer#transfer" do
     buffer_1 = IO::Buffer.new(4)
     buffer_2 = buffer_1.transfer
     @buffer = buffer_2.transfer
-    buffer_1.null?.should be_true
-    buffer_2.null?.should be_true
-    @buffer.null?.should be_false
+    buffer_1.null?.should == true
+    buffer_2.null?.should == true
+    @buffer.null?.should == false
+  end
+
+  ruby_version_is "4.1" do
+    it "raises FrozenError without transferring a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.transfer }.should.raise(FrozenError)
+      buffer.null?.should == false
+      buffer.get_string.should == "test"
+    end
   end
 
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     @buffer = IO::Buffer.new(4)
     @buffer.locked do
-      -> { @buffer.transfer }.should raise_error(IO::Buffer::LockedError, "Cannot transfer ownership of locked buffer!")
+      -> { @buffer.transfer }.should.raise(IO::Buffer::LockedError, "Cannot transfer ownership of locked buffer!")
     end
   end
 
   context "with a slice of a buffer" do
-    it "transfers source to a new slice, not touching the buffer" do
-      @buffer = IO::Buffer.new(4)
-      slice = @buffer.slice(0, 2)
-      @buffer.set_string("test")
+    ruby_version_is ""..."4.1" do
+      it "transfers source to a new slice, not touching the buffer" do
+        @buffer = IO::Buffer.new(4)
+        @buffer.set_string("test")
+        slice = @buffer.slice(0, 2)
+        slice.get_string.should == "te"
 
-      new_slice = slice.transfer
-      slice.null?.should be_true
-      new_slice.null?.should be_false
-      @buffer.null?.should be_false
+        new_slice = slice.transfer
+        slice.null?.should == true
+        new_slice.null?.should == false
+        @buffer.null?.should == false
 
-      new_slice.set_string("ea")
-      @buffer.get_string.should == "east"
+        new_slice.set_string("ea")
+        @buffer.get_string.should == "east"
+      end
     end
 
     it "nullifies buffer, invalidating the slice" do
@@ -110,9 +123,18 @@ describe "IO::Buffer#transfer" do
       slice = buffer.slice(0, 2)
       @buffer = buffer.transfer
 
-      slice.null?.should be_false
-      slice.valid?.should be_false
-      -> { slice.get_string }.should raise_error(IO::Buffer::InvalidatedError, "Buffer has been invalidated!")
+      slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the now-nullified source.
+        slice.null?.should == true
+      end
+
+      -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError, "Buffer has been invalidated!")
     end
   end
 end

@@ -19,6 +19,6 @@ describe "ThreadGroup#enclose" do
     thread_group.enclose
     -> do
       default_group.add(@thread)
-    end.should raise_error(ThreadError)
+    end.should.raise(ThreadError)
   end
 end

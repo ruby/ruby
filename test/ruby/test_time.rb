@@ -3,6 +3,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'delegate'
+require 'rbconfig/sizeof'
 
 class TestTime < Test::Unit::TestCase
   def setup
@@ -58,6 +59,21 @@ class TestTime < Test::Unit::TestCase
     assert_equal([0, 0, 0, 2, 1, 2000, 0, 2, false, "UTC"], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a)
   end
 
+  def test_new_with_zone_to_str
+    %w[UTC Z -00:00].each do |name|
+      zone = Object.new
+      zone.define_singleton_method(:to_str) {name}
+      assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], Time.new(2000, 1, 1, 0, 0, 0, zone).to_a, name)
+      assert_equal([0, 0, 0, 2, 1, 2000, 0, 2, false, "UTC"], Time.new(2000, 1, 1, 24, 0, 0, in: zone).to_a, name)
+      assert_predicate(Time.new("2000-01-01 00:00:00", in: zone), :utc?, name)
+      assert_equal(Time.utc(2000, 5, 2), Time.new(2000, 4, 31, 24, 0, 0, zone), name)
+    end
+
+    zone = Object.new
+    def zone.to_str; "+24:00"; end
+    assert_raise_with_message(ArgumentError, /utc_offset out of range/) {Time.new(2000, 1, 1, 0, 0, 0, zone)}
+  end
+
   def test_new_from_string
     assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
 
@@ -88,6 +104,18 @@ class TestTime < Test::Unit::TestCase
     }
     assert_raise_with_message(ArgumentError, /year must be 4 or more/) {
       Time.new("021-12-25 00:00:00.123456 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: 00") {
+      Time.new("00")
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: 00") {
+      Time.new("00 " + "x" * 1000)
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: 000") {
+      Time.new("000")
+    }
+    assert_raise_with_message(ArgumentError, "year must be 4 or more digits: +00") {
+      Time.new("+00")
     }
     assert_raise_with_message(ArgumentError, /fraction min is.*56\./) {
       Time.new("2020-12-25 00:56. +0900")
@@ -163,6 +191,18 @@ class TestTime < Test::Unit::TestCase
     }
     assert_raise_with_message(ArgumentError, /utc_offset/) {
       Time.new("2020-12-25 00:00:00 +09:00:60")
+    }
+  end
+
+  def test_new_from_string_modified_by_precision
+    str = "2020-12-25 00:00:00" + "0" * 1_000_000
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      str.clear
+      9
+    end
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(str, precision: obj)
     }
   end
 
@@ -722,7 +762,9 @@ class TestTime < Test::Unit::TestCase
     assert_predicate(zone, :valid_encoding?)
     if zone.ascii_only?
       assert_equal(Encoding::US_ASCII, zone.encoding)
-    else
+    elsif !/mswin|mingw/.match?(RUBY_PLATFORM)
+      # Windows takes the name from the CRT, which encodes it in the
+      # active code page rather than the locale one. [Bug #19383]
       enc = Encoding.default_internal || Encoding.find('locale')
       assert_equal(enc, zone.encoding)
     end
@@ -1100,6 +1142,25 @@ class TestTime < Test::Unit::TestCase
     assert_equal("  -0:55:00", t.strftime("%_10::z"), bug6323)
     assert_equal("-000:55:00", t.strftime("%10::z"), bug6323)
     assert_equal("-000000:55", t.strftime("%10:::z"))
+
+    t = Time.at(0, in: 0)
+    max = RbConfig::LIMITS["INT_MAX"]
+    all_assertions_foreach(nil, *%W[%#{max}z %#{max}:z %#{max}::z %#{max}:::z]) do |z|
+      assert_raise(Errno::ERANGE) {t.strftime(z)}
+    end
+  end
+
+  def test_strftime_drop_bytes_from_format
+    fmt = "x" * 1_000 + "%Z"
+    zone = Object.new
+    zone.define_singleton_method(:utc_to_local) { |t| t }
+    zone.define_singleton_method(:local_to_utc) { |t| t }
+    zone.define_singleton_method(:abbr) { |t| fmt[0, 5] = ""; "ZZ" }
+
+    assert_equal("x" * 1_000 + "ZZ", Time.at(0, in: zone).strftime(fmt))
+
+    fmt << "z" * 10
+    assert_equal("x" * 995 + "%Z" + "z" * 10, fmt)
   end
 
   def test_strftime_invalid_modifier
@@ -1421,7 +1482,7 @@ class TestTime < Test::Unit::TestCase
     # Time objects are common in some code, try to keep them small
     omit "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
     omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] > 0
-    omit "memsize is not accurate due to using malloc_usable_size" if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit "memsize is not accurate due to using malloc_usable_size" if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
     omit "Only run this test on 64-bit" if RbConfig::SIZEOF["void*"] != 8
 
     require 'objspace'
@@ -1433,7 +1494,13 @@ class TestTime < Test::Unit::TestCase
         RbConfig::SIZEOF["void*"] # Same size as VALUE
       end
     sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
-    expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
+    data_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] + sizeof_timew + sizeof_vtm
+    expect = data_size
+    if GC::INTERNAL_CONSTANTS[:HEAP_COUNT]
+      # Round up to the smallest slot size that fits
+      slot_sizes = GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times.map { |i| GC.stat_heap(i, :slot_size) }
+      expect = slot_sizes.find { |s| s >= data_size } || slot_sizes.last
+    end
     assert_operator ObjectSpace.memsize_of(t), :<=, expect
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"

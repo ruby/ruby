@@ -511,6 +511,9 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #ifndef ATOMIC_PTR_CAS
 #define ATOMIC_PTR_CAS(var, old, new) ((var) = (new), (void *)(old))
 #endif
+#ifndef RUBY_ATOMIC_PTR_LOAD
+#define RUBY_ATOMIC_PTR_LOAD(var) (var)
+#endif
 #ifndef LIKELY
 #define LIKELY(x) (x)
 #endif
@@ -863,10 +866,10 @@ pow5mult(Bigint *b, int k)
     }
 
 #define b_cache(var, addr, new_expr) \
-    if ((var = addr) != 0) {} else { \
+    if ((var = RUBY_ATOMIC_PTR_LOAD(addr)) != 0) {} else { \
         Bigint *tmp = 0; \
         ACQUIRE_DTOA_LOCK(1); \
-        if (!(var = addr) && (var = (new_expr)) != 0) { \
+        if (!(var = RUBY_ATOMIC_PTR_LOAD(addr)) && (var = (new_expr)) != 0) { \
             var->next = 0; \
             tmp = ATOMIC_PTR_CAS(addr, NULL, var); \
         } \
@@ -2680,7 +2683,7 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
     int denorm;
     ULong x;
 #endif
-    Bigint *b, *b1, *delta, *mlo = 0, *mhi = 0, *S;
+    Bigint *b, *b1, *delta, *mlo = 0, *mhi = 0, *S = 0;
     double ds;
     double_u d, d2, eps;
     char *s, *s0;

@@ -21,16 +21,16 @@ require 'English'
 
 ### Matched \Data
 
-|   Variable    |      \English       | Contains                          | Initially | Read-Only | Reset By        |
-|:-------------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
-|     `$~`      | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
-|     `$&`      |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
-|   `` $` ``    |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
-|     `$'`      |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
-|     `$+`      | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
-|     `$1`      |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
-|     `$2`      |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
-| <tt>$_n_</tt> |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
+| Variable  |      \English       | Contains                          | Initially | Read-Only | Reset By        |
+|:---------:|:-------------------:|-----------------------------------|:---------:|:---------:|-----------------|
+|   `$~`    | `$LAST_MATCH_INFO`  | \MatchData object or `nil`        |   `nil`   |    No     | Matcher methods |
+|   `$&`    |      `$MATCH`       | Matched substring or `nil`        |   `nil`   |    No     | Matcher methods |
+| `` $` ``  |    `$PRE_MATCH`     | Substring left of match or `nil`  |   `nil`   |    No     | Matcher methods |
+|   `$'`    |    `$POST_MATCH`    | Substring right of match or `nil` |   `nil`   |    No     | Matcher methods |
+|   `$+`    | `$LAST_PAREN_MATCH` | Last group matched or `nil`       |   `nil`   |    No     | Matcher methods |
+|   `$1`    |                     | First group matched or `nil`      |   `nil`   |   Yes     | Matcher methods |
+|   `$2`    |                     | Second group matched or `nil`     |   `nil`   |   Yes     | Matcher methods |
+|   `$n`    |                     | <i>n</i>th group matched or `nil` |   `nil`   |   Yes     | Matcher methods |
 
 ### Separators
 
@@ -133,7 +133,7 @@ These global variables store information about the most recent
 successful match in the current scope.
 
 For details and examples,
-see {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
+see [Regexp Global Variables].
 
 ### `$~` (\MatchData)
 
@@ -167,7 +167,7 @@ English - `$LAST_PAREN_MATCH`.
 
 ### `$1`, `$2`, \Etc. (Matched Group)
 
-For <tt>$_n_</tt> the <i>n</i>th group of the match.
+For <tt>$n</tt> the <i>n</i>th group of the match.
 
 No \English.
 
@@ -282,9 +282,9 @@ by Kernel#load and Kernel#require.
 Singleton method `$LOAD_PATH.resolve_feature_path(feature)`
 returns:
 
-- <tt>[:rb, _path_]</tt>, where `path` is the path to the Ruby file to be
+- <tt>[:rb, path]</tt>, where `path` is the path to the Ruby file to be
   loaded for the given `feature`.
-- <tt>[:so, _path_]</tt>, where `path` is the path to the shared object file
+- <tt>[:so, path]</tt>, where `path` is the path to the shared object file
   to be loaded for the given `feature`.
 - `nil` if there is no such `feature` and `path`.
 
@@ -341,7 +341,7 @@ Aliased as `$-d`.
 ### `$VERBOSE`
 
 Initially `true` if [command-line option `-v`] or
-[`-w`][command-line option `-w`] is given, otherwise initially `false`;
+[command-line option `-w`] is given, otherwise initially `false`;
 may be set to either value, or to `nil`, in the running program.
 
 When `true`, enables Ruby warnings.
@@ -597,14 +597,15 @@ Output:
 "Baz\n"
 ```
 
+[command-line option `-0`]: rdoc-ref:language/options.md@-0-set--input-record-separator
+[command-line option `-F`]: rdoc-ref:language/options.md@-f-set-input-field-separator
+[command-line option `-a`]: rdoc-ref:language/options.md@-a-split-input-lines-into-fields
+[command-line option `-d`]: rdoc-ref:language/options.md@-d-set-debug-to-true
+[command-line option `-i`]: rdoc-ref:language/options.md@-i-set-argf-in-place-mode
+[command-line option `-l`]: rdoc-ref:language/options.md@-l-set-output-record-separator-chop-lines
+[command-line option `-p`]: rdoc-ref:language/options.md@-p--n-with-printing
+[command-line option `-v`]: rdoc-ref:language/options.md@-v-print-version-set-verbose
+[command-line option `-w`]: rdoc-ref:language/options.md@-w-synonym-for--w1
 
-[command-line option `-0`]: rdoc-ref:language/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29
-[command-line option `-F`]: rdoc-ref:language/options.md@F-3A+Set+Input+Field+Separator
-[command-line option `-a`]: rdoc-ref:language/options.md@a-3A+Split+Input+Lines+into+Fields
-[command-line option `-d`]: rdoc-ref:language/options.md@d-3A+Set+-24DEBUG+to+true
-[command-line option `-i`]: rdoc-ref:language/options.md@i-3A+Set+ARGF+In-Place+Mode
-[command-line option `-l`]: rdoc-ref:language/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines
-[command-line option `-p`]: rdoc-ref:language/options.md@p-3A+-n-2C+with+Printing
-[command-line option `-v`]: rdoc-ref:language/options.md@v-3A+Print+Version-3B+Set+-24VERBOSE
-[command-line option `-w`]: rdoc-ref:language/options.md@w-3A+Synonym+for+-W1
+[Regexp Global Variables]: rdoc-ref:Regexp@Global+Variables
 

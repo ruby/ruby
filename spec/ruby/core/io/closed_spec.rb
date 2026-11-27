@@ -11,10 +11,10 @@ describe "IO#closed?" do
   end
 
   it "returns true on closed stream" do
-    IOSpecs.closed_io.closed?.should be_true
+    IOSpecs.closed_io.closed?.should == true
   end
 
   it "returns false on open stream" do
-    @io.closed?.should be_false
+    @io.closed?.should == false
   end
 end

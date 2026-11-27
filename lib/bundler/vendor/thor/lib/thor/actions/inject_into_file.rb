@@ -2,6 +2,38 @@ require_relative "empty_directory"
 
 class Bundler::Thor
   module Actions
+    WARNINGS = {unchanged_no_flag: "File unchanged! Either the supplied flag value not found or the content has already been inserted!"}
+
+    # Injects the given content into a file, raising an error if the contents of
+    # the file are not changed. Different from gsub_file, this method is reversible.
+    #
+    # ==== Parameters
+    # destination<String>:: Relative path to the destination root
+    # data<String>:: Data to add to the file. Can be given as a block.
+    # config<Hash>:: give :verbose => false to not log the status and the flag
+    #                for injection (:after or :before) or :force => true for
+    #                insert two or more times the same content.
+    #
+    # ==== Examples
+    #
+    #   insert_into_file "config/environment.rb", "config.gem :thor", :after => "Rails::Initializer.run do |config|\n"
+    #
+    #   insert_into_file "config/environment.rb", :after => "Rails::Initializer.run do |config|\n" do
+    #     gems = ask "Which gems would you like to add?"
+    #     gems.split(" ").map{ |gem| "  config.gem :#{gem}" }.join("\n")
+    #   end
+    #
+    def insert_into_file!(destination, *args, &block)
+      data = block_given? ? block : args.shift
+
+      config = args.shift || {}
+      config[:after] = /\z/ unless config.key?(:before) || config.key?(:after)
+      config = config.merge({error_on_no_change: true})
+
+      action InjectIntoFile.new(self, destination, data, config)
+    end
+    alias_method :inject_into_file!, :insert_into_file!
+
     # Injects the given content into a file. Different from gsub_file, this
     # method is reversible.
     #
@@ -21,8 +53,6 @@ class Bundler::Thor
     #     gems.split(" ").map{ |gem| "  config.gem :#{gem}" }.join("\n")
     #   end
     #
-    WARNINGS = {unchanged_no_flag: "File unchanged! Either the supplied flag value not found or the content has already been inserted!"}
-
     def insert_into_file(destination, *args, &block)
       data = block_given? ? block : args.shift
 
@@ -47,6 +77,7 @@ class Bundler::Thor
 
         @replacement = data.is_a?(Proc) ? data.call : data
         @flag = Regexp.escape(@flag) unless @flag.is_a?(Regexp)
+        @error_on_no_change = @config.fetch(:error_on_no_change, false)
       end
 
       def invoke!
@@ -59,6 +90,8 @@ class Bundler::Thor
         if exists?
           if replace!(/#{flag}/, content, config[:force])
             say_status(:invoke)
+          elsif @error_on_no_change
+            raise Bundler::Thor::Error, "The content of #{destination} did not change"
           elsif replacement_present?
             say_status(:unchanged, color: :blue)
           else

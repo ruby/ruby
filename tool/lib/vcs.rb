@@ -169,19 +169,7 @@ class VCS
     )
     last or raise VCS::NotFoundError, "last revision not found"
     changed or raise VCS::NotFoundError, "changed revision not found"
-    if modified
-      /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ modified or
-        raise "unknown time format - #{modified}"
-      match = $~[1..6].map { |x| x.to_i }
-      off = $7 ? "#{$7}:#{$8}" : "+00:00"
-      match << off
-      begin
-        modified = Time.new(*match)
-      rescue ArgumentError
-        modified = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
-      end
-      modified = modified.getlocal(@zone)
-    end
+    modified &&= parse_iso_date(modified)
     return last, changed, modified, *rest
   end
 
@@ -190,9 +178,9 @@ class VCS
     modified
   end
 
-  def relative_to(path)
+  def relative_to(path, srcdir = @srcdir)
     if path
-      srcdir = File.realpath(@srcdir)
+      srcdir = File.realpath(srcdir || @srcdir)
       path = File.realdirpath(path)
       list1 = srcdir.split(%r{/})
       list2 = path.split(%r{/})
@@ -208,6 +196,20 @@ class VCS
     else
       '.'
     end
+  end
+
+  def parse_iso_date(date)
+    /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ date or
+      raise "unknown time format - #{date}"
+    match = $~[1..6].map { |x| x.to_i }
+    off = $7 ? "#{$7}:#{$8}" : "+00:00"
+    match << off
+    begin
+      date = Time.new(*match)
+    rescue ArgumentError
+      date = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
+    end
+    date.getlocal(@zone)
   end
 
   def after_export(dir)
@@ -362,6 +364,11 @@ class VCS
       [last, changed, modified, branch, title]
     end
 
+    def author_date(path, srcdir = @srcdir)
+      log = cmd_read_at(srcdir, [[COMMAND, 'log', '-n1', '--pretty=%at', path]])
+      Time.at(log.to_i, in: @zone)
+    end
+
     def self.revision_name(rev)
       short_revision(rev)
     end
@@ -370,11 +377,15 @@ class VCS
       rev[0, 10]
     end
 
+    # The spelling git documents for GIT_CONFIG_SYSTEM and GIT_CONFIG_GLOBAL.
+    # Git for Windows 2.56.0 fails on "NUL".
+    NullConfig = "/dev/null"
+
     def without_gitconfig
       envs = (%w'HOME XDG_CONFIG_HOME' + ENV.keys.grep(/\AGIT_/)).each_with_object({}) do |v, h|
         h[v] = ENV.delete(v)
       end
-      ENV['GIT_CONFIG_SYSTEM'] = NullDevice
+      ENV['GIT_CONFIG_SYSTEM'] = NullConfig
       ENV['GIT_CONFIG_GLOBAL'] = global_config
       yield
     ensure
@@ -382,7 +393,7 @@ class VCS
     end
 
     def global_config
-      return NullDevice if SAFE_DIRECTORIES.empty?
+      return NullConfig if SAFE_DIRECTORIES.empty?
       unless @gitconfig
         @gitconfig = Tempfile.new(%w"vcs_ .gitconfig")
         @gitconfig.close
@@ -448,17 +459,19 @@ class VCS
     end
 
     def branch_beginning(url)
-      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
+      year = cmd_read(%W[ #{COMMAND} log -n1 --format=%cd --date=format:%Y #{url} --]).to_i
+      cmd_read(%W[ #{COMMAND} log --format=format:%H --reverse --since=#{year-1}-12-25
                    --author=matz --committer=matz --grep=started\\.$
-                   #{url.to_str} -- version.h include/ruby/version.h])
+                   #{url} -- version.h include/ruby/version.h])[/.*/]
     end
 
-    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: nil)
+    def export_changelog(url = '@', from = nil, to = nil, _path = nil, path: _path, base_url: true)
       from, to = [from, to].map do |rev|
         rev or next
         rev unless rev.empty?
       end
-      unless (from && /./.match(from)) or ((from = branch_beginning(url)) && /./.match(from))
+      to ||= url.to_str
+      unless from&.match?(/./) or (from = branch_beginning(to))&.match?(/./)
         warn "no starting commit found", uplevel: 1
         from = nil
       end
@@ -469,13 +482,13 @@ class VCS
       else
         warn "Could not fetch notes/commits tree", uplevel: 1
       end
-      to ||= url.to_str
       if from
         arg = ["#{from}^..#{to}"]
       else
         arg = ["--since=25 Dec 00:00:00", to]
       end
       if base_url == true
+        env = CHANGELOG_ENV
         remote, = upstream
         if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
           remote.chomp!
@@ -494,9 +507,10 @@ class VCS
     end
 
     LOG_FIX_REGEXP_SEPARATORS = '/!:;|,#%&'
+    CHANGELOG_ENV = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
 
     def changelog_formatter(path, arg, base_url = nil)
-      env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
+      env = CHANGELOG_ENV
       cmd = %W[#{COMMAND} log
         --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges
         --fixed-strings --invert-grep --grep=[ci\ skip] --grep=[skip\ ci]
@@ -590,15 +604,6 @@ class VCS
                 end
               end
               s = s.join('')
-            end
-
-            s.gsub!(%r[(?!<\w)([-\w]+/[-\w]+)(?:@(\h{8,40})|#(\d{5,}))\b]) do
-              path = defined?($2) ? "commit/#{$2}" : "pull/#{$3}"
-              "[#$&](https://github.com/#{$1}/#{path})"
-            end
-            if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
-              issue = "#{$1}pull/"
-              s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +|GH-)\K#(?=\d+\b)|\(\K#(?=\d+\))/) {issue}
             end
 
             s.gsub!(/ +\n/, "\n")

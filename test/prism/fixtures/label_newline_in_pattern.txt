@@ -1,0 +1,10 @@
+case x; in {} if m k:
+work value:
+next_value; end
+
+case x; in {} unless m k:
+work value:
+next_value; end
+
+def f opt: (x in {key: ^(m k:
+value)}); end

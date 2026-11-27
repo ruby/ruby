@@ -1,0 +1,44 @@
+prelude: |
+  # --- must NOT take any fast path: prove added precompute-loop checks don't regress ---
+  # all multibyte UTF-8 (VALID coderange). 7-bit gate bails at elem 0; same-encoding gate TAKES it.
+  mb_utf8       = Array.new(1000) { "café" }
+  # ASCII except a trailing multibyte elem: WORST CASE for 7-bit gate (scans all, then falls back).
+  tail_mb       = Array.new(1000) { "a" * 8 }; tail_mb[-1] = "café"
+  # non-String elements -> ary_join_1 (to_s). Gate bails at type check before coderange.
+  nonstr_int    = Array.new(1000) { |i| i }
+  # ASCII strings except a trailing Integer: precompute scans strings, then mixed fallback.
+  mixed_tail    = (Array.new(999) { "a" * 8 } << 42)
+  # UTF-16LE: not ASCII-compatible. Both gates bail immediately.
+  utf16         = Array.new(1000) { "ab".encode("UTF-16LE") }
+  # nested arrays -> recursive fallback.
+  nested        = Array.new(500)  { [1, 2] }
+
+  # 7-bit ASCII elements but a multibyte separator (3-byte em dash). Both gates bail at sep check.
+  ascii_elems   = Array.new(1000) { "a" * 8 }
+  sep_mb        = "—"
+
+  # --- fast-path ELIGIBLE variants: confirm benefit generalizes beyond single chars / find crossover ---
+  # frozen ASCII elements (read-only path).
+  frozen_elems  = Array.new(1000) { ("a" * 8).freeze }
+  # large elements: where memcpy should dominate and the win decays toward 1x.
+  big_e256      = Array.new(1000) { "a" * 256  }
+  big_e1k       = Array.new(1000) { "a" * 1024 }
+  big_e4k       = Array.new(1000) { "a" * 4096 }
+
+benchmark:
+  # regression (fallback / gate worst-case) — all use a 1-byte ASCII separator unless noted
+  reg_multibyte_utf8:   mb_utf8.join(" ")
+  reg_tail_multibyte:   tail_mb.join(" ")
+  reg_nonstring_int:    nonstr_int.join(" ")
+  reg_mixed_tail_int:   mixed_tail.join(" ")
+  reg_utf16:            utf16.join(" ".encode("UTF-16LE"))
+  reg_nested:           nested.join(" ")
+  reg_multibyte_sep:    ascii_elems.join(sep_mb)
+
+  # fast-path eligible variants
+  fp_frozen:            frozen_elems.join(" ")
+  fp_nosep:             ascii_elems.join
+  fp_multichar_sep:     ascii_elems.join(", ")
+  fp_big_e256:          big_e256.join(" ")
+  fp_big_e1k:           big_e1k.join(" ")
+  fp_big_e4k:           big_e4k.join(" ")

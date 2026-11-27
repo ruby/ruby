@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/class_eval'
 
 describe "Module#class_eval" do
-  it_behaves_like :module_class_eval, :class_eval
+  it "is an alias of Module#module_eval" do
+    Module.instance_method(:class_eval).should == Module.instance_method(:module_eval)
+  end
 end

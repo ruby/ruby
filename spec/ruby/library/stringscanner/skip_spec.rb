@@ -26,7 +26,7 @@ describe "StringScanner#skip" do
     it "returns nil when matching failed" do
       @s.skip(/(?<a>2008)/)
       @s.should_not.matched?
-      @s[:a].should be_nil
+      @s[:a].should == nil
     end
   end
 end

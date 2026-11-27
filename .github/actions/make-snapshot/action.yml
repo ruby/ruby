@@ -1,0 +1,77 @@
+name: 'make-snapshot'
+description: 'Make snapshot tarballs'
+inputs:
+  archname:
+    description: 'archname passed to tool/make-snapshot (e.g. snapshot-master)'
+    required: true
+  version:
+    description: 'Target Version'
+    required: false
+  shallow-since:
+    description: 'git fetch --shallow-since'
+    required: true
+    default: '2018-12-25 00:00:00'
+  fetch-branch:
+    description: 'fetch branch'
+    required: false
+  srcdir:
+    description: 'srcdir for tool/make-snapshot. Empty = clone ruby/ruby into ./ruby.'
+    required: false
+    default: ''
+  upload-artifact:
+    description: 'Upload Packages and Info as workflow artifacts. Pass "false" when callers run in a matrix that would collide on artifact names.'
+    required: false
+    default: 'true'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install libraries
+      run: |
+        set -x
+        sudo apt-get update -q || :
+        sudo apt-get install --no-install-recommends -q -y build-essential git bison autoconf ruby p7zip-full curl
+      shell: bash
+    - name: Checkout ruby/ruby for tool/make-snapshot
+      if: inputs.srcdir == ''
+      run: git clone --single-branch --depth=1 https://github.com/ruby/ruby ruby
+      shell: bash
+    - name: Fetch branches and notes (clone mode)
+      if: inputs.srcdir == ''
+      env:
+        SHALLOW_SINCE: ${{ inputs.shallow-since }}
+        FETCH_BRANCH: ${{ inputs.fetch-branch }}
+      run: |
+        set -x
+        cd ruby
+        git fetch --shallow-since="$SHALLOW_SINCE"
+        [ -n "$FETCH_BRANCH" ] && git fetch origin "+$FETCH_BRANCH:$FETCH_BRANCH"
+        git fetch origin '+refs/notes/commits:refs/notes/commits'
+        git fetch origin '+refs/notes/log-fix:refs/notes/log-fix'
+      shell: bash
+    - name: Fetch notes (local srcdir mode)
+      if: inputs.srcdir != ''
+      working-directory: ${{ inputs.srcdir }}
+      run: |
+        git fetch origin '+refs/notes/commits:refs/notes/commits' || :
+        git fetch origin '+refs/notes/log-fix:refs/notes/log-fix' || :
+      shell: bash
+    - name: Make snapshot
+      env:
+        ARCHNAME: ${{ inputs.archname }}
+        SRCDIR: ${{ inputs.srcdir }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        [ -z "$SRCDIR" ] && SRCDIR=ruby
+        ruby "$SRCDIR/tool/make-snapshot" "-archname=$ARCHNAME" -srcdir="$SRCDIR" -packages=gzip,xz,zip pkg $VERSION
+      shell: bash
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: Packages
+        path: pkg
+      if: ${{ inputs.upload-artifact == 'true' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: Info
+        path: pkg/info
+      if: ${{ inputs.upload-artifact == 'true' }}

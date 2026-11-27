@@ -35,3 +35,15 @@ foo
 not foo .. bar
 
 not (foo .. bar)
+
+not()
+
+not ()
+
+not(())
+
+not(
+)
+
+not
+()

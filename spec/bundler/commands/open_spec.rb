@@ -139,7 +139,7 @@ RSpec.describe "bundle open" do
         gem "foo"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle "open rails", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
       expect(out).to include("Installing foo 1.0")
     end
@@ -170,6 +170,35 @@ RSpec.describe "bundle open" do
     it "throws proper error when trying to open default gem" do
       bundle "open json", env: { "EDITOR" => "echo editor", "VISUAL" => "echo visual", "BUNDLER_EDITOR" => "echo bundler_editor" }
       expect(out).to include("Unable to open json because it's a default gem, so the directory it would normally be installed to does not exist.")
+    end
+  end
+
+  context "with a valid regexp for gem name" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
+      G
+    end
+
+    it "returns the exact match without prompting when requested" do
+      bundle "open myrack --exact-match", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
+      expect(out).to include("editor #{default_bundle_path("gems", "myrack-1.0.0")}")
+      expect(out).not_to include("0 : - exit -")
+    end
+
+    it "does not fall back to regexp matching when exact matching is requested" do
+      bundle "open rac --exact-match", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, raise_on_error: false
+      expect(err).to include("Could not find gem 'rac'.")
+      expect(out).not_to include("0 : - exit -")
+    end
+
+    it "presents alternatives without the exact match flag", :readline do
+      bundle "open rac", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
+      expect(out).to include("1 : myrack")
+      expect(out).to include("2 : myrack-obama")
+      expect(out).to include("0 : - exit -")
     end
   end
 end

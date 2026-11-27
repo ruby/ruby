@@ -1,0 +1,5 @@
+total -= total /2
+
+count += count +1
+
+mask &= mask &1

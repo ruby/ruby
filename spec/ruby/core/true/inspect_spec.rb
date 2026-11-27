@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "TrueClass#inspect" do
-  it "returns the string 'true'" do
-    true.inspect.should == "true"
+  it "is an alias of TrueClass#to_s" do
+    true.method(:inspect).should == true.method(:to_s)
   end
 end

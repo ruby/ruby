@@ -5,7 +5,7 @@ require_relative "test_helper"
 return if RUBY_PLATFORM !~ /linux/
 return if RUBY_PLATFORM =~ /powerpc64le/
 
-module Prism
+module Ruby::Prism
   #
   #  examine a prism dll or static archive for expected external symbols.
   #  these tests only work on a linux system right now.

@@ -16,14 +16,14 @@ BUILD_YJIT_LIBS = $(TOP_BUILD_DIR)/$(YJIT_LIBS)
 # In a YJIT-only build (no ZJIT)
 ifneq ($(strip $(YJIT_LIBS)),)
 yjit-libs: $(BUILD_YJIT_LIBS)
-$(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES)
+$(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES) target/.rustc-version
 	$(ECHO) 'building Rust YJIT (release mode)'
 	$(gnumake_recursive)$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 else ifneq ($(strip $(RLIB_DIR)),) # combo build
 # Absolute path to avoid VPATH ambiguity
 YJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libyjit.rlib
 
-$(YJIT_RLIB): $(YJIT_SRC_FILES)
+$(YJIT_RLIB): $(YJIT_SRC_FILES) target/.rustc-version
 	$(ECHO) 'building $(@F)'
 	$(gnumake_recursive)$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(YJIT_RUSTC_ARGS)
 

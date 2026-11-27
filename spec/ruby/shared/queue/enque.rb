@@ -13,6 +13,6 @@ describe :queue_enq, shared: true do
     q.close
     -> {
       q.send @method, Object.new
-    }.should raise_error(ClosedQueueError)
+    }.should.raise(ClosedQueueError)
   end
 end

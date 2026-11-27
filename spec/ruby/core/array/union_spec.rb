@@ -15,7 +15,7 @@ describe "Array#union" do
   end
 
   it "does not return subclass instances for Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].union.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].union.should.instance_of?(Array)
   end
 
   it "accepts multiple arguments" do

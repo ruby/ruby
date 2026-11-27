@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/divide'
 
 describe "Complex#quo" do
-  it_behaves_like :complex_divide, :quo
+  it "is an alias of Complex#/" do
+    Complex.instance_method(:quo).should == Complex.instance_method(:/)
+  end
 end

@@ -1,0 +1,6 @@
+def f; g(...x ? return : return); end
+                ^~~~~~ unexpected void value expression
+
+def f(...); g(...x ? ... : y); end
+                         ^ unexpected ':'; expected an expression after the operator
+

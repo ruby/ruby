@@ -12,9 +12,11 @@
 # guaranteed, the number of children nodes might change, there is no way to
 # access children nodes by name, etc.
 #
-# If you are looking for a stable API or an API working under multiple Ruby
-# implementations, consider using the _prism_ gem, which is the official
-# Ruby API to parse Ruby code.
+# Prism is the official Ruby API to parse Ruby code. It has a stable API
+# and is available on most Ruby implementations.
+# Therefore, it is the recommended replacement.
+# Using RubyVM::AbstractSyntaxTree is discouraged for new code for the reasons
+# above and because AbstractSyntaxTree might become deprecated in the future.
 #
 module RubyVM::AbstractSyntaxTree
 
@@ -328,5 +330,172 @@ module RubyVM::AbstractSyntaxTree
     def inspect
       Primitive.ast_location_inspect
     end
+  end
+end
+
+class RubyVM::InstructionSequence
+  #  call-seq:
+  #     iseq.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this instruction sequence was compiled from,
+  #  by re-parsing the source with the same parser that compiled it: a
+  #  Ruby::Prism::Node if it was compiled by prism, or a
+  #  RubyVM::AbstractSyntaxTree::Node if it was compiled by parse.y.
+  #
+  #  For a block, the block node is returned (a Ruby::Prism::BlockNode, or a
+  #  +SCOPE+ node with parse.y), not the method call the block is passed to.
+  #  That is, the node covers the code from <tt>{</tt> or +do+, consistently
+  #  with Proc#source_range.
+  #
+  #  Returns +nil+ whenever the node cannot be retrieved reliably. For
+  #  example: the source is not available (such as eval'ed code without
+  #  RubyVM.keep_script_lines enabled), or the source file has been modified
+  #  since it was compiled.
+  #
+  #  The node is a Ruby::Prism::Node, not a node of the prism gem:
+  #  Ruby::Prism is the parser built into the interpreter, so the returned
+  #  tree always corresponds to the running code regardless of which
+  #  version of the prism gem is installed.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    source_hash = self.source_hash
+    return nil unless source_hash
+
+    # When the source is kept in memory (RubyVM.keep_script_lines), use it
+    # instead of the file. This also works for eval'ed code.
+    if (lines = script_lines)
+      source = lines.join
+    else
+      path = absolute_path
+      return nil unless path && File.file?(path)
+    end
+
+    node_id = self.node_id
+    if Primitive.iseq_compiled_by_prism_p
+      # Ruby::Prism is the parser built into the interpreter, i.e., the very
+      # parser that parsed the source of this instruction sequence, so
+      # node_id always corresponds. The prism gem (if any) is not involved.
+      result = source ? Ruby::Prism.parse(source, version: "current") : Ruby::Prism.parse_file(path, version: "current")
+      return nil unless result.success?
+
+      # The instruction sequence stores a checksum of 0 as 1, because a source
+      # hash of 0 means that there is no source hash (see pm_parse_process).
+      checksum = result.source.checksum
+      checksum = 1 if checksum == 0
+      return nil if checksum != source_hash
+
+      root = result.value
+    else
+      begin
+        root = source ? RubyVM::AbstractSyntaxTree.parse(source, keep_script_lines: true) :
+                        RubyVM::AbstractSyntaxTree.parse_file(path, keep_script_lines: true)
+      rescue SyntaxError
+        # The source has been modified into invalid Ruby.
+        return nil
+      end
+      return nil unless Primitive.ast_node_source_hash(root) == source_hash
+
+      node = Primitive.ast_node_find(root, node_id)
+      # A block iseq refers to the ITER node, which also covers the method call.
+      # Return the SCOPE node of the block instead, like BlockNode for prism.
+      node = node.children[1] if node&.type == :ITER
+      return node
+    end
+
+    return root if root.node_id == node_id
+
+    queue = [root]
+    while (node = queue.shift)
+      node.compact_child_nodes.each do |child|
+        return child if child.node_id == node_id
+        queue << child
+      end
+    end
+
+    nil
+  end
+end
+
+class Proc
+  #  call-seq:
+  #     prc.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this proc was compiled from. See
+  #  RubyVM::InstructionSequence#syntax_tree for details and for when +nil+
+  #  is returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    RubyVM::InstructionSequence.of(self)&.syntax_tree
+  end
+end
+
+class Method
+  #  call-seq:
+  #     meth.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this method was compiled from. Returns
+  #  +nil+ for methods not written in Ruby. See
+  #  RubyVM::InstructionSequence#syntax_tree for other cases where +nil+ is
+  #  returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    RubyVM::InstructionSequence.of(self)&.syntax_tree
+  end
+end
+
+class UnboundMethod
+  #  call-seq:
+  #     meth.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node that this method was compiled from. Returns
+  #  +nil+ for methods not written in Ruby. See
+  #  RubyVM::InstructionSequence#syntax_tree for other cases where +nil+ is
+  #  returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    RubyVM::InstructionSequence.of(self)&.syntax_tree
+  end
+end
+
+class Thread::Backtrace::Location
+  #  call-seq:
+  #     location.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #
+  #  Returns the AST node at this location, by re-parsing the source file. See
+  #  RubyVM::InstructionSequence#syntax_tree for when +nil+ is returned.
+  #
+  #  This method is experimental and might change without notice.
+  def syntax_tree
+    iseq = Primitive.iseq_of_backtrace_location(self)
+    return nil unless iseq
+
+    node_id = Primitive.node_id_for_backtrace_location(self)
+    return nil unless node_id
+
+    scope = iseq.syntax_tree
+    return nil unless scope
+
+    # The location is the iseq itself, e.g., for an ArgumentError raised when
+    # calling a lambda. With parse.y, the node_id is then the one of the ITER
+    # node, which is not inside the SCOPE node returned for a block.
+    return scope if node_id == iseq.node_id
+
+    if scope.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      return Primitive.ast_node_find(scope, node_id)
+    end
+
+    queue = [scope]
+    while (node = queue.shift)
+      node.compact_child_nodes.each do |child|
+        return child if child.node_id == node_id
+        queue << child
+      end
+    end
+
+    nil
   end
 end

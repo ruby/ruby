@@ -7,7 +7,7 @@ describe "Array#drop" do
   end
 
   it "raises an ArgumentError if the number of elements specified is negative" do
-    -> { [1, 2].drop(-3) }.should raise_error(ArgumentError)
+    -> { [1, 2].drop(-3) }.should.raise(ArgumentError)
   end
 
   it "returns an empty Array if all elements are dropped" do
@@ -40,17 +40,17 @@ describe "Array#drop" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    -> { [1, 2].drop("cat") }.should raise_error(TypeError)
+    -> { [1, 2].drop("cat") }.should.raise(TypeError)
   end
 
   it "raises a TypeError when the passed argument isn't an integer and #to_int returns non-Integer" do
     obj = mock("to_int")
     obj.should_receive(:to_int).and_return("cat")
 
-    -> { [1, 2].drop(obj) }.should raise_error(TypeError)
+    -> { [1, 2].drop(obj) }.should.raise(TypeError)
   end
 
   it 'returns a Array instance for Array subclasses' do
-    ArraySpecs::MyArray[1, 2, 3, 4, 5].drop(1).should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3, 4, 5].drop(1).should.instance_of?(Array)
   end
 end

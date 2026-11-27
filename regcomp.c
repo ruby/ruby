@@ -2,8 +2,8 @@
   regcomp.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2013  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2002-2018  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -115,6 +115,12 @@ distance_multiply(OnigDistance d, int m)
 }
 
 static int
+distance_to_int(OnigDistance d)
+{
+  return d > INT_MAX_LIMIT ? (int )INT_MAX_LIMIT : (int )d;
+}
+
+static int
 bitset_is_empty(BitSetRef bs)
 {
   int i;
@@ -220,15 +226,32 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
 #endif /* USE_SUBEXP_CALL */
 
 
+/* Reject a write that would push the compiled program past the size its
+   offset type (int) can address.  This must run before every write to the
+   program buffer, not only in add_opcode(): the bulk writers below emit
+   class bodies and exact strings in a single BBUF_ADD, which never revisits
+   the per-instruction guard.  The arithmetic stays unsigned so a multi-GiB
+   payload cannot wrap the accounting and copy past the allocation. */
 static int
+check_compiled_program_size(regex_t* reg, OnigDistance add_len)
+{
+  if (reg->used > MAX_COMPILED_PROGRAM_SIZE ||
+      add_len > (OnigDistance )(MAX_COMPILED_PROGRAM_SIZE - reg->used))
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+  return 0;
+}
+
+ONIG_NODISCARD static int
 add_opcode(regex_t* reg, int opcode)
 {
+  int r = check_compiled_program_size(reg, 1);
+  if (r) return r;
   BBUF_ADD1(reg, opcode);
   return 0;
 }
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
-static int
+ONIG_NODISCARD static int
 add_state_check_num(regex_t* reg, int num)
 {
   StateCheckNumType n = (StateCheckNumType )num;
@@ -238,7 +261,7 @@ add_state_check_num(regex_t* reg, int num)
 }
 #endif
 
-static int
+ONIG_NODISCARD static int
 add_rel_addr(regex_t* reg, int addr)
 {
   RelAddrType ra = (RelAddrType )addr;
@@ -247,7 +270,7 @@ add_rel_addr(regex_t* reg, int addr)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_abs_addr(regex_t* reg, int addr)
 {
   AbsAddrType ra = (AbsAddrType )addr;
@@ -256,7 +279,7 @@ add_abs_addr(regex_t* reg, int addr)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_length(regex_t* reg, OnigDistance len)
 {
   LengthType l = (LengthType )len;
@@ -265,7 +288,7 @@ add_length(regex_t* reg, OnigDistance len)
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_mem_num(regex_t* reg, int num)
 {
   MemNumType n = (MemNumType )num;
@@ -275,7 +298,7 @@ add_mem_num(regex_t* reg, int num)
 }
 
 #if 0
-static int
+ONIG_NODISCARD static int
 add_pointer(regex_t* reg, void* addr)
 {
   PointerType ptr = (PointerType )addr;
@@ -285,14 +308,14 @@ add_pointer(regex_t* reg, void* addr)
 }
 #endif
 
-static int
+ONIG_NODISCARD static int
 add_option(regex_t* reg, OnigOptionType option)
 {
   BBUF_ADD(reg, &option, SIZE_OPTION);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
 {
   int r;
@@ -303,21 +326,25 @@ add_opcode_rel_addr(regex_t* reg, int opcode, int addr)
   return r;
 }
 
-static int
+ONIG_NODISCARD static int
 add_bytes(regex_t* reg, UChar* bytes, OnigDistance len)
 {
+  int r = check_compiled_program_size(reg, len);
+  if (r) return r;
   BBUF_ADD(reg, bytes, len);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_bitset(regex_t* reg, BitSetRef bs)
 {
+  int r = check_compiled_program_size(reg, SIZE_BITSET);
+  if (r) return r;
   BBUF_ADD(reg, bs, SIZE_BITSET);
   return 0;
 }
 
-static int
+ONIG_NODISCARD static int
 add_opcode_option(regex_t* reg, int opcode, OnigOptionType option)
 {
   int r;
@@ -394,6 +421,7 @@ compile_tree_empty_check(Node* node, regex_t* reg, int empty_info)
     r = add_mem_num(reg, reg->num_null_check); /* NULL CHECK ID */
     if (r) return r;
     reg->num_null_check++;
+    if ((MemNumType)reg->num_null_check <= 0) return ONIGERR_TOO_MANY_NULL_CHECK;
   }
 
   r = compile_tree(node, reg);
@@ -446,8 +474,12 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
                           regex_t* reg ARG_UNUSED, int ignore_case)
 {
   int len;
-  int op = select_str_opcode(mb_len, byte_len, ignore_case);
+  int op;
 
+  if (byte_len > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+
+  op = select_str_opcode(mb_len, byte_len, ignore_case);
   len = SIZE_OPCODE;
 
   if (op == OP_EXACTMBN)  len += SIZE_LENGTH;
@@ -458,25 +490,29 @@ add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, OnigDistance byte_len
   return len;
 }
 
-static int
+ONIG_NODISCARD static int
 add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
                    regex_t* reg, int ignore_case)
 {
+  int r;
   int op = select_str_opcode(mb_len, byte_len, ignore_case);
-  add_opcode(reg, op);
+  r = add_opcode(reg, op);
+  if (r) return r;
 
-  if (op == OP_EXACTMBN)
-    add_length(reg, mb_len);
+  if (op == OP_EXACTMBN) {
+    r = add_length(reg, (OnigDistance )mb_len);
+    if (r) return r;
+  }
 
   if (IS_NEED_STR_LEN_OP_EXACT(op)) {
     if (op == OP_EXACTN_IC)
-      add_length(reg, byte_len);
+      r = add_length(reg, byte_len);
     else
-      add_length(reg, byte_len / mb_len);
+      r = add_length(reg, byte_len / (OnigDistance )mb_len);
+    if (r) return r;
   }
 
-  add_bytes(reg, s, byte_len);
-  return 0;
+  return add_bytes(reg, s, byte_len);
 }
 
 
@@ -504,10 +540,15 @@ compile_length_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, sn->end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+      if (r < 0) return r;
       rlen += r;
+      if (rlen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       prev = p;
       blen = len;
       prev_len = len;
@@ -515,6 +556,7 @@ compile_length_string_node(Node* node, regex_t* reg)
     p += len;
   }
   r = add_compile_string_length(prev, prev_len, blen, reg, ambig);
+  if (r < 0) return r;
   rlen += r;
   return rlen;
 }
@@ -552,6 +594,8 @@ compile_string_node(Node* node, regex_t* reg)
     len = enclen(enc, p, end);
     if (len == prev_len || ambig) {
       blen += len;
+      if (blen > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     }
     else {
       r = add_compile_string(prev, prev_len, blen, reg, ambig);
@@ -576,25 +620,31 @@ compile_string_raw_node(StrNode* sn, regex_t* reg)
   return add_compile_string(sn->s, 1 /* sb */, sn->end - sn->s, reg, 0);
 }
 
-static int
+ONIG_NODISCARD static int
 add_multi_byte_cclass(BBuf* mbuf, regex_t* reg)
 {
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
-  add_length(reg, mbuf->used);
+  int r = add_length(reg, mbuf->used);
+  if (r) return r;
   return add_bytes(reg, mbuf->p, mbuf->used);
 #else
   int r, pad_size;
   UChar* p = BBUF_GET_ADD_ADDRESS(reg) + SIZE_LENGTH;
 
   GET_ALIGNMENT_PAD_SIZE(p, pad_size);
-  add_length(reg, mbuf->used + (WORD_ALIGNMENT_SIZE - 1));
-  if (pad_size != 0) add_bytes(reg, PadBuf, pad_size);
+  r = add_length(reg, mbuf->used + (WORD_ALIGNMENT_SIZE - 1));
+  if (r) return r;
+  if (pad_size != 0) {
+    r = add_bytes(reg, PadBuf, pad_size);
+    if (r) return r;
+  }
 
   r = add_bytes(reg, mbuf->p, mbuf->used);
+  if (r) return r;
 
   /* padding for return value from compile_length_cclass_node() to be fix. */
   pad_size = (WORD_ALIGNMENT_SIZE - 1) - pad_size;
-  if (pad_size != 0) add_bytes(reg, PadBuf, pad_size);
+  if (pad_size != 0) r = add_bytes(reg, PadBuf, pad_size);
   return r;
 #endif
 }
@@ -631,26 +681,29 @@ compile_cclass_node(CClassNode* cc, regex_t* reg)
 
   if (IS_NULL(cc->mbuf)) {
     if (IS_NCCLASS_NOT(cc))
-      add_opcode(reg, OP_CCLASS_NOT);
+      r = add_opcode(reg, OP_CCLASS_NOT);
     else
-      add_opcode(reg, OP_CCLASS);
+      r = add_opcode(reg, OP_CCLASS);
+    if (r) return r;
 
     r = add_bitset(reg, cc->bs);
   }
   else {
     if (ONIGENC_MBC_MINLEN(reg->enc) > 1 || bitset_is_empty(cc->bs)) {
       if (IS_NCCLASS_NOT(cc))
-        add_opcode(reg, OP_CCLASS_MB_NOT);
+        r = add_opcode(reg, OP_CCLASS_MB_NOT);
       else
-        add_opcode(reg, OP_CCLASS_MB);
+        r = add_opcode(reg, OP_CCLASS_MB);
+      if (r) return r;
 
       r = add_multi_byte_cclass(cc->mbuf, reg);
     }
     else {
       if (IS_NCCLASS_NOT(cc))
-        add_opcode(reg, OP_CCLASS_MIX_NOT);
+        r = add_opcode(reg, OP_CCLASS_MIX_NOT);
       else
-        add_opcode(reg, OP_CCLASS_MIX);
+        r = add_opcode(reg, OP_CCLASS_MIX);
+      if (r) return r;
 
       r = add_bitset(reg, cc->bs);
       if (r) return r;
@@ -703,6 +756,7 @@ compile_range_repeat_node(QtfrNode* qn, int target_len, int empty_info,
   if (r) return r;
   r = add_mem_num(reg, num_repeat); /* OP_REPEAT ID */
   reg->num_repeat++;
+  if ((MemNumType)reg->num_repeat <= 0) return ONIGERR_TOO_MANY_RANGE_REPEAT;
   if (r) return r;
   r = add_rel_addr(reg, target_len + SIZE_OP_REPEAT_INC);
   if (r) return r;
@@ -739,6 +793,10 @@ is_anychar_star_quantifier(QtfrNode* qn)
 }
 
 #define QUANTIFIER_EXPAND_LIMIT_SIZE   50
+/* (tlen * n <= QUANTIFIER_EXPAND_LIMIT_SIZE) without overflowing int: tlen
+   and n are each bounded by ONIG_MAX_REPEAT_NUM, but their product is not. */
+#define IS_EXPAND_LIMIT_OK(tlen, n) \
+  ((n) <= 0 || (tlen) <= QUANTIFIER_EXPAND_LIMIT_SIZE / (n))
 #define CKN_ON   (ckn > 0)
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
@@ -1003,7 +1061,7 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     mod_tlen = tlen;
 
   if (infinite &&
-      (qn->lower <= 1 || tlen * qn->lower <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+      (qn->lower <= 1 || IS_EXPAND_LIMIT_OK(tlen, qn->lower))) {
     if (qn->lower == 1 && tlen > QUANTIFIER_EXPAND_LIMIT_SIZE) {
       len = SIZE_OP_JUMP;
     }
@@ -1028,9 +1086,12 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
   else if (qn->upper == 0 && qn->is_referred != 0) { /* /(?<n>..){0}/ */
     len = SIZE_OP_JUMP + tlen;
   }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    len = 0;
+  }
   else if (!infinite && qn->greedy &&
-           (qn->upper == 1 || (tlen + SIZE_OP_PUSH) * qn->upper
-                                      <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+           (qn->upper == 1 ||
+            IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
     len = tlen * qn->lower;
     len += (SIZE_OP_PUSH + tlen) * (qn->upper - qn->lower);
   }
@@ -1080,7 +1141,7 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     mod_tlen = tlen;
 
   if (infinite &&
-      (qn->lower <= 1 || tlen * qn->lower <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+      (qn->lower <= 1 || IS_EXPAND_LIMIT_OK(tlen, qn->lower))) {
     if (qn->lower == 1 && tlen > QUANTIFIER_EXPAND_LIMIT_SIZE) {
       if (qn->greedy) {
 #ifdef USE_OP_PUSH_OR_JUMP_EXACT
@@ -1109,7 +1170,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
         r = add_opcode_rel_addr(reg, OP_PUSH_OR_JUMP_EXACT1,
                              mod_tlen + SIZE_OP_JUMP);
         if (r) return r;
-        add_bytes(reg, NSTR(qn->head_exact)->s, 1);
+        r = add_bytes(reg, NSTR(qn->head_exact)->s, 1);
+        if (r) return r;
         r = compile_tree_empty_check(qn->target, reg, empty_info);
         if (r) return r;
         r = add_opcode_rel_addr(reg, OP_JUMP,
@@ -1121,7 +1183,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
         r = add_opcode_rel_addr(reg, OP_PUSH_IF_PEEK_NEXT,
                                 mod_tlen + SIZE_OP_JUMP);
         if (r) return r;
-        add_bytes(reg, NSTR(qn->next_head_exact)->s, 1);
+        r = add_bytes(reg, NSTR(qn->next_head_exact)->s, 1);
+        if (r) return r;
         r = compile_tree_empty_check(qn->target, reg, empty_info);
         if (r) return r;
         r = add_opcode_rel_addr(reg, OP_JUMP,
@@ -1149,9 +1212,12 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     if (r) return r;
     r = compile_tree(qn->target, reg);
   }
+  else if (qn->upper == 0) { /* {0} and {0,0}? : never match the body */
+    r = 0;
+  }
   else if (!infinite && qn->greedy &&
-           (qn->upper == 1 || (tlen + SIZE_OP_PUSH) * qn->upper
-                                  <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+           (qn->upper == 1 ||
+            IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
     int n = qn->upper - qn->lower;
 
     r = compile_tree_n_times(qn->target, qn->lower, reg);
@@ -1346,6 +1412,7 @@ compile_enclose_node(EncloseNode* node, regex_t* reg)
       r = add_abs_addr(reg, (int )node->call_addr);
       if (r) return r;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return len;
       len += (SIZE_OP_MEMORY_START_PUSH + SIZE_OP_RETURN);
       if (BIT_STATUS_AT(reg->bt_mem_end, node->regnum))
         len += (IS_ENCLOSE_RECURSION(node)
@@ -1594,6 +1661,7 @@ compile_anchor_node(AnchorNode* node, regex_t* reg)
     {
       int n;
       len = compile_length_tree(node->target, reg);
+      if (len < 0) return ONIGERR_PARSER_BUG;
       r = add_opcode_rel_addr(reg, OP_PUSH_LOOK_BEHIND_NOT,
                            len + SIZE_OP_FAIL_LOOK_BEHIND_NOT);
       if (r) return r;
@@ -1632,23 +1700,24 @@ compile_length_tree(Node* node, regex_t* reg)
       r = compile_length_tree(NCAR(node), reg);
       if (r < 0) return r;
       len += r;
+      if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
     } while (IS_NOT_NULL(node = NCDR(node)));
     r = len;
     break;
 
   case NT_ALT:
-    {
-      int n = 0;
-      len = 0;
-      do {
-        r = compile_length_tree(NCAR(node), reg);
-        if (r < 0) return r;
-        len += r;
-        n++;
-      } while (IS_NOT_NULL(node = NCDR(node)));
-      r = len;
-      r += (SIZE_OP_PUSH + SIZE_OP_JUMP) * (n - 1);
-    }
+    len = 0;
+    do {
+      r = compile_length_tree(NCAR(node), reg);
+      if (r < 0) return r;
+      len += r;
+      if (IS_NOT_NULL(NCDR(node)))
+        len += SIZE_OP_PUSH + SIZE_OP_JUMP;
+      if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+        return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
+    } while (IS_NOT_NULL(node = NCDR(node)));
+    r = len;
     break;
 
   case NT_STR:
@@ -1711,6 +1780,8 @@ compile_length_tree(Node* node, regex_t* reg)
     break;
   }
 
+  if (r > (int )MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
   return r;
 }
 
@@ -1732,15 +1803,20 @@ compile_tree(Node* node, regex_t* reg)
       Node* x = node;
       len = 0;
       do {
-        len += compile_length_tree(NCAR(x), reg);
+        r = compile_length_tree(NCAR(x), reg);
+        if (r < 0) return r;
+        len += r;
         if (NCDR(x) != NULL) {
           len += SIZE_OP_PUSH + SIZE_OP_JUMP;
         }
+        if (len > (int )MAX_COMPILED_PROGRAM_SIZE)
+          return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
       } while (IS_NOT_NULL(x = NCDR(x)));
       pos = reg->used + len;  /* goal position */
 
       do {
         len = compile_length_tree(NCAR(node), reg);
+        if (len < 0) return ONIGERR_PARSER_BUG;
         if (IS_NOT_NULL(NCDR(node))) {
           r = add_opcode_rel_addr(reg, OP_PUSH, len + SIZE_OP_JUMP);
           if (r) break;
@@ -2061,17 +2137,17 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   BitStatusType loc;
   GroupNumRemap* map;
 
-  map = (GroupNumRemap* )xalloca(sizeof(GroupNumRemap) * (env->num_mem + 1));
+  map = (GroupNumRemap* )xmalloc(sizeof(GroupNumRemap) * (size_t )(env->num_mem + 1));
   CHECK_NULL_RETURN_MEMERR(map);
   for (i = 1; i <= env->num_mem; i++) {
     map[i].new_val = 0;
   }
   counter = 0;
   r = noname_disable_map(root, map, &counter);
-  if (r != 0) return r;
+  if (r != 0) goto end;
 
   r = renumber_by_map(*root, map, env->num_mem);
-  if (r != 0) return r;
+  if (r != 0) goto end;
 
   for (i = 1, pos = 1; i <= env->num_mem; i++) {
     if (map[i].new_val > 0) {
@@ -2091,7 +2167,10 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   env->num_mem = env->num_named;
   reg->num_mem = env->num_named;
 
-  return onig_renumber_name_table(reg, map);
+  r = onig_renumber_name_table(reg, map);
+ end:
+  xfree(map);
+  return r;
 }
 #endif /* USE_NAMED_GROUP */
 
@@ -2460,8 +2539,13 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
   case NT_LIST:
     do {
       r = get_char_length_tree1(NCAR(node), reg, &tlen, level);
-      if (r == 0)
-        *len = (int )distance_add(*len, tlen);
+      if (r == 0) {
+        OnigDistance d = distance_add((OnigDistance )*len, (OnigDistance )tlen);
+        if (d > INT_MAX_LIMIT)
+          r = GET_CHAR_LEN_VARLEN;
+        else
+          *len = (int )d;
+      }
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
 
@@ -2507,8 +2591,13 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       QtfrNode* qn = NQTFR(node);
       if (qn->lower == qn->upper) {
         r = get_char_length_tree1(qn->target, reg, &tlen, level);
-        if (r == 0)
-          *len = (int )distance_multiply(tlen, qn->lower);
+        if (r == 0) {
+          OnigDistance d = distance_multiply((OnigDistance )tlen, qn->lower);
+          if (d > INT_MAX_LIMIT)
+            r = GET_CHAR_LEN_VARLEN;
+          else
+            *len = (int )d;
+        }
       }
       else
         r = GET_CHAR_LEN_VARLEN;
@@ -4216,7 +4305,7 @@ restart:
 /* set skip map for Sunday's quick search */
 static int
 set_bm_skip(UChar* s, UChar* end, regex_t* reg,
-            UChar skip[], int** int_skip, int ignore_case)
+            UChar skip[], int ignore_case)
 {
   OnigDistance i, len;
   int clen, flen, n, j, k;
@@ -4225,94 +4314,60 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
   OnigEncoding enc = reg->enc;
 
   len = end - s;
-  if (len < ONIG_CHAR_TABLE_SIZE) {
-    if (ignore_case) {
-      for (i = 0; i < len; i += clen) {
-        p = s + i;
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-            p, end, items);
-        clen = enclen(enc, p, end);
-        if (p + clen > end)
-          clen = (int )(end - p);
-
-        for (j = 0; j < n; j++) {
-          if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
-            /* Different length isn't supported. Stop optimization at here. */
-            end = p;
-            goto endcheck;
-          }
-          flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
-          if (flen != clen) {
-            /* Different length isn't supported. Stop optimization at here. */
-            end = p;
-            goto endcheck;
-          }
-        }
-      }
-endcheck:
-      ;
-    }
-
-    len = end - s;
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
-      skip[i] = (UChar )(len + 1);
-    n = 0;
-    for (i = 0; i < len; i += clen) {
-      p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
-      clen = enclen(enc, p, end);
-      if (p + clen > end)
-        clen = (int )(end - p);
-
-      for (j = 0; j < clen; j++) {
-        skip[s[i + j]] = (UChar )(len - i - j);
-        for (k = 0; k < n; k++) {
-          ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
-          skip[buf[j]] = (UChar )(len - i - j);
-        }
-      }
-    }
-  }
-  else {
-# if OPT_EXACT_MAXLEN < ONIG_CHAR_TABLE_SIZE
+  if (len >= ONIG_CHAR_TABLE_SIZE) {
     /* This should not happen. */
     return ONIGERR_TYPE_BUG;
-# else
-    if (IS_NULL(*int_skip)) {
-      *int_skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
-      if (IS_NULL(*int_skip)) return ONIGERR_MEMORY;
-    }
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = (int )(len + 1);
+  }
 
-    n = 0;
+  if (ignore_case) {
     for (i = 0; i < len; i += clen) {
       p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
+      n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+	  p, end, items);
       clen = enclen(enc, p, end);
       if (p + clen > end)
         clen = (int )(end - p);
 
       for (j = 0; j < n; j++) {
-        if ((items[j].code_len != 1) || (items[j].byte_len != clen))
-          return 1;  /* different length isn't supported. */
-        flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf[j]);
-        if (flen != clen)
-          return 1;  /* different length isn't supported. */
-      }
-      for (j = 0; j < clen; j++) {
-        (*int_skip)[s[i + j]] = (int )(len - i - j);
-        for (k = 0; k < n; k++) {
-          (*int_skip)[buf[k][j]] = (int )(len - i - j);
-        }
+	if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
+	  /* Different length isn't supported. Stop optimization at here. */
+	  end = p;
+	  goto endcheck;
+	}
+	flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
+	if (flen != clen) {
+	  /* Different length isn't supported. Stop optimization at here. */
+	  end = p;
+	  goto endcheck;
+	}
       }
     }
-# endif
+endcheck:
+    len = end - s;
   }
-  return (int)len;
+
+  for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
+    skip[i] = (UChar )(len + 1);
+  n = 0;
+  for (i = 0; i < len; i += clen) {
+    p = s + i;
+    if (ignore_case)
+      n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+					     p, end, items);
+    clen = enclen(enc, p, end);
+    if (p + clen > end)
+      clen = (int )(end - p);
+
+    for (j = 0; j < clen; j++) {
+      skip[s[i + j]] = (UChar )(len - i - j);
+      for (k = 0; k < n; k++) {
+	ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
+	skip[buf[j]] = (UChar )(len - i - j);
+      }
+    }
+  }
+
+  return (int )len;
 }
 
 typedef struct {
@@ -4331,6 +4386,7 @@ typedef struct {
 typedef struct {
   int left_anchor;
   int right_anchor;
+  int head_asserts;
 } OptAncInfo;
 
 typedef struct {
@@ -4494,6 +4550,7 @@ clear_opt_anc_info(OptAncInfo* anc)
 {
   anc->left_anchor  = 0;
   anc->right_anchor = 0;
+  anc->head_asserts = 0;
 }
 
 static void
@@ -4508,9 +4565,18 @@ concat_opt_anc_info(OptAncInfo* to, OptAncInfo* left, OptAncInfo* right,
 {
   clear_opt_anc_info(to);
 
-  to->left_anchor = left->left_anchor;
+  to->left_anchor  = left->left_anchor;
+  to->head_asserts = left->head_asserts;
   if (left_len == 0) {
-    to->left_anchor |= right->left_anchor;
+    int right_left = right->left_anchor;
+
+    if ((left->head_asserts & ~ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_MASK;
+    else if ((left->head_asserts & ANCHOR_BEGIN_LINE) != 0)
+      right_left &= ~ANCHOR_ANYCHAR_STAR_ML;
+
+    to->left_anchor  |= right_left;
+    to->head_asserts |= right->head_asserts;
   }
 
   to->right_anchor = right->right_anchor;
@@ -4564,6 +4630,7 @@ alt_merge_opt_anc_info(OptAncInfo* to, OptAncInfo* add)
 {
   to->left_anchor  &= add->left_anchor;
   to->right_anchor &= add->right_anchor;
+  to->head_asserts |= add->head_asserts;
 }
 
 static int
@@ -4895,7 +4962,7 @@ concat_left_node_opt_info(OnigEncoding enc, NodeOptInfo* to, NodeOptInfo* add)
 
   if (to->expr.len > 0) {
     if (add->len.max > 0) {
-      if (to->expr.len > (int )add->len.max)
+      if ((OnigDistance )to->expr.len > add->len.max)
         to->expr.len = (int )add->len.max;
 
       if (to->expr.mmd.max == 0)
@@ -5086,6 +5153,10 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
     break;
 
   case NT_ANCHOR:
+    if ((NANCHOR(node)->type &
+         ~(ANCHOR_BEGIN_BUF | ANCHOR_BEGIN_POSITION | ANCHOR_KEEP)) != 0)
+      opt->anc.head_asserts |= NANCHOR(node)->type;
+
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:
     case ANCHOR_BEGIN_POSITION:
@@ -5298,18 +5369,24 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
 
   if (e->ignore_case > 0) {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
+      int orig_len = e->len;
       e->len = set_bm_skip(reg->exact, reg->exact_end, reg,
-                      reg->map, &(reg->int_map), 1);
-      reg->exact_end = reg->exact + e->len;
+                           reg->map, 1);
       if (e->len >= 3) {
+        reg->exact_end = reg->exact + e->len;
         reg->optimize = (allow_reverse != 0
                          ? ONIG_OPTIMIZE_EXACT_BM_IC : ONIG_OPTIMIZE_EXACT_BM_NOT_REV_IC);
       }
-      else if (e->len > 0) {
+      else {
+        /* Even if BM skip table can't be built (e.g., pattern starts with
+           's' or 'k' which have multi-byte case fold variants), we should
+           still use EXACT_IC optimization with the original pattern.
+           Without this fallback, patterns like /slackware/i have no
+           optimization at all, causing severe performance regression
+           especially with non-ASCII strings. See [Bug #21824] */
+        e->len = orig_len;  /* Restore original length for EXACT_IC */
         reg->optimize = ONIG_OPTIMIZE_EXACT_IC;
       }
-      else
-        return 0;
     }
     else {
       reg->optimize = ONIG_OPTIMIZE_EXACT_IC;
@@ -5318,7 +5395,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   else {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
       set_bm_skip(reg->exact, reg->exact_end, reg,
-                  reg->map, &(reg->int_map), 0);
+                  reg->map, 0);
       reg->optimize = (allow_reverse != 0
                      ? ONIG_OPTIMIZE_EXACT_BM : ONIG_OPTIMIZE_EXACT_BM_NOT_REV);
     }
@@ -5331,7 +5408,8 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   reg->dmax = e->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = (int )(reg->dmin + (reg->exact_end - reg->exact));
+    reg->threshold_len = distance_to_int(distance_add(reg->dmin,
+                       (OnigDistance )(reg->exact_end - reg->exact)));
   }
 
   return 0;
@@ -5350,7 +5428,7 @@ set_optimize_map_info(regex_t* reg, OptMapInfo* m)
   reg->dmax       = m->mmd.max;
 
   if (reg->dmin != ONIG_INFINITE_DISTANCE) {
-    reg->threshold_len = (int )(reg->dmin + 1);
+    reg->threshold_len = distance_to_int(distance_add(reg->dmin, 1));
   }
 }
 
@@ -5601,8 +5679,6 @@ onig_free_body(regex_t* reg)
   if (IS_NOT_NULL(reg)) {
     xfree(reg->p);
     xfree(reg->exact);
-    xfree(reg->int_map);
-    xfree(reg->int_map_backward);
     xfree(reg->repeat_range);
     onig_free(reg->chain);
 
@@ -5632,65 +5708,66 @@ dup_copy(const void *ptr, size_t size)
 }
 
 extern int
-onig_reg_copy(regex_t** nreg, regex_t* oreg)
+onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
 {
   if (IS_NOT_NULL(oreg)) {
-    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
-    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+    *nreg = *oreg;
 
-    *reg = *oreg;
+# define COPY_FAILED(mem, size) IS_NULL(nreg->mem = dup_copy(oreg->mem, size))
 
-# define COPY_FAILED(mem, size) IS_NULL(reg->mem = dup_copy(reg->mem, size))
-
-    if (IS_NOT_NULL(reg->exact)) {
-      size_t exact_size = reg->exact_end - reg->exact;
+    if (IS_NOT_NULL(oreg->exact)) {
+      size_t exact_size = oreg->exact_end - oreg->exact;
       if (COPY_FAILED(exact, exact_size))
         goto err;
-      (reg)->exact_end = (reg)->exact + exact_size;
+      (nreg)->exact_end = (nreg)->exact + exact_size;
     }
 
-    if (IS_NOT_NULL(reg->int_map)) {
-      if (COPY_FAILED(int_map, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
-        goto err_int_map;
-    }
-    if (IS_NOT_NULL(reg->int_map_backward)) {
-      if (COPY_FAILED(int_map_backward, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
-        goto err_int_map_backward;
-    }
-    if (IS_NOT_NULL(reg->p)) {
-      if (COPY_FAILED(p, reg->alloc))
+    if (IS_NOT_NULL(oreg->p)) {
+      if (COPY_FAILED(p, oreg->alloc))
         goto err_p;
     }
-    if (IS_NOT_NULL(reg->repeat_range)) {
-      if (COPY_FAILED(repeat_range, reg->repeat_range_alloc * sizeof(OnigRepeatRange)))
+    if (IS_NOT_NULL(oreg->repeat_range)) {
+      if (COPY_FAILED(repeat_range, oreg->repeat_range_alloc * sizeof(OnigRepeatRange)))
         goto err_repeat_range;
     }
-    if (IS_NOT_NULL(reg->name_table)) {
-      if (onig_names_copy(reg, oreg))
+    if (IS_NOT_NULL(oreg->name_table)) {
+      if (onig_names_copy(nreg, oreg))
         goto err_name_table;
     }
-    if (IS_NOT_NULL(reg->chain)) {
-      if (onig_reg_copy(&reg->chain, reg->chain))
+    if (IS_NOT_NULL(oreg->chain)) {
+      if (onig_reg_copy(&nreg->chain, oreg->chain))
         goto err_chain;
     }
     return 0;
 # undef COPY_FAILED
 
   err_chain:
-    onig_names_free(reg);
+    onig_names_free(nreg);
   err_name_table:
-    xfree(reg->repeat_range);
+    xfree(nreg->repeat_range);
   err_repeat_range:
-    xfree(reg->p);
+    xfree(nreg->p);
   err_p:
-    xfree(reg->int_map_backward);
-  err_int_map_backward:
-    xfree(reg->int_map);
-  err_int_map:
-    xfree(reg->exact);
+    xfree(nreg->exact);
   err:
-    xfree(reg);
     return ONIGERR_MEMORY;
+  }
+  return 0;
+}
+
+extern int
+onig_reg_copy(regex_t** nreg, regex_t* oreg)
+{
+  if (IS_NOT_NULL(oreg)) {
+    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+
+    int r = onig_reg_copy_body(reg, oreg);
+    if (r != 0) {
+      xfree(reg);
+      *nreg = NULL;
+    }
+    return r;
   }
   return 0;
 }
@@ -5703,8 +5780,6 @@ onig_memsize(const regex_t *reg)
     if (IS_NULL(reg)) return 0;
     if (IS_NOT_NULL(reg->p))                size += reg->alloc;
     if (IS_NOT_NULL(reg->exact))            size += reg->exact_end - reg->exact;
-    if (IS_NOT_NULL(reg->int_map))          size += sizeof(int) * ONIG_CHAR_TABLE_SIZE;
-    if (IS_NOT_NULL(reg->int_map_backward)) size += sizeof(int) * ONIG_CHAR_TABLE_SIZE;
     if (IS_NOT_NULL(reg->repeat_range))     size += reg->repeat_range_alloc * sizeof(OnigRepeatRange);
     if (IS_NOT_NULL(reg->chain))            size += onig_memsize(reg->chain);
 
@@ -5771,7 +5846,11 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   UnsetAddrList  uslist;
 #endif
 
-  if (IS_NOT_NULL(einfo)) einfo->par = (UChar* )NULL;
+  if (IS_NOT_NULL(einfo)) {
+    einfo->enc     = reg->enc;
+    einfo->par     = (UChar* )NULL;
+    einfo->par_end = (UChar* )NULL;
+  }
 
 #ifdef RUBY
   scan_env.sourcefile = sourcefile;
@@ -5900,6 +5979,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   r = compile_tree(root, reg);
   if (r == 0) {
     r = add_opcode(reg, OP_END);
+    if (r != 0) goto err_unset;
 #ifdef USE_SUBEXP_CALL
     if (scan_env.num_call > 0) {
       r = unset_addr_list_fix(&uslist, reg);
@@ -5969,6 +6049,12 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   if (IS_NULL(reg))
     return ONIGERR_INVALID_ARGUMENT;
 
+  (reg)->exact            = (UChar* )NULL;
+  (reg)->chain            = (regex_t* )NULL;
+  (reg)->p                = (UChar* )NULL;
+  (reg)->name_table       = (void* )NULL;
+  (reg)->repeat_range     = (OnigRepeatRange* )NULL;
+
   if (ONIGENC_IS_UNDEF(enc))
     return ONIGERR_DEFAULT_ENCODING_IS_NOT_SET;
 
@@ -5988,15 +6074,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->options          = option;
   (reg)->syntax           = syntax;
   (reg)->optimize         = 0;
-  (reg)->exact            = (UChar* )NULL;
-  (reg)->int_map          = (int* )NULL;
-  (reg)->int_map_backward = (int* )NULL;
-  (reg)->chain            = (regex_t* )NULL;
 
-  (reg)->p                = (UChar* )NULL;
   (reg)->alloc            = 0;
   (reg)->used             = 0;
-  (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
 

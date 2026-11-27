@@ -1021,9 +1021,21 @@ module URI
 
       # RFC2396, Section 5.2, 6), a)
       base_path << '' if base_path.last == '..'
-      while i = base_path.index('..')
-        base_path.slice!(i - 1, 2)
+      # Remove "<segment>/.." pairs in a single left-to-right pass (O(n)).
+      # This deliberately differs from the relative-path stack handling
+      # below: a leading ".." (one with no preceding segment left to
+      # cancel) discards the whole base path, reproducing the previous
+      # index/slice! implementation exactly.
+      reduced = []
+      base_path.each do |seg|
+        if seg == '..'
+          break if reduced.empty?
+          reduced.pop
+        else
+          reduced << seg
+        end
       end
+      base_path = reduced
 
       if (first = rel_path.first) and first.empty?
         base_path.clear

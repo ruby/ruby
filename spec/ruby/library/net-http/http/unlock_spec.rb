@@ -19,6 +19,6 @@ describe "Net::HTTP#unlock" do
   end
 
   it "returns a Net::HTTPResponse" do
-    @http.unlock("/request", "test=test").should be_kind_of(Net::HTTPResponse)
+    @http.unlock("/request", "test=test").should.is_a?(Net::HTTPResponse)
   end
 end

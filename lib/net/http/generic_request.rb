@@ -205,6 +205,15 @@ class Net::HTTPGenericRequest
     input
   end
 
+  # False when the body comes from an IO: an earlier attempt may have read from
+  # it, so sending the request again would send only what is left.
+  def body_replayable? # :nodoc: internal use only
+    return false if @body_stream
+    return true unless @body_data
+    @body_data.each { |_key, value| return false if value.respond_to?(:read) }
+    true
+  end
+
   def set_body_internal(str)   #:nodoc: internal use only
     raise ArgumentError, "both of body argument and HTTPRequest#body set" if str and (@body or @body_stream)
     self.body = str if str
@@ -294,6 +303,10 @@ class Net::HTTPGenericRequest
       raise ArgumentError,
           "Content-Length not given and Transfer-Encoding is not `chunked'"
     end
+    # Transfer-Encoding: chunked and Content-Length must not both be sent (RFC 9112 §6.1):
+    # emitting both is a request-smuggling primitive. When chunking, the chunk framing is
+    # authoritative, so drop any Content-Length the caller also set.
+    delete 'Content-Length' if chunked?
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
     if chunked?
@@ -316,6 +329,7 @@ class Net::HTTPGenericRequest
     opt[:boundary] ||= SecureRandom.urlsafe_base64(40)
     self.set_content_type(self.content_type, boundary: opt[:boundary])
     if chunked?
+      delete 'Content-Length'   # chunked framing is authoritative; never emit both (smuggling)
       write_header sock, ver, path
       encode_multipart_form_data(sock, params, opt)
     else
@@ -336,6 +350,9 @@ class Net::HTTPGenericRequest
     boundary = opt[:boundary]
     require 'securerandom' unless defined?(SecureRandom)
     boundary ||= SecureRandom.urlsafe_base64(40)
+    if /[\r\n]/.match?(boundary.to_s)
+      raise ArgumentError, "multipart boundary cannot include CR/LF"
+    end
     chunked_p = chunked?
 
     buf = +''
@@ -349,7 +366,10 @@ class Net::HTTPGenericRequest
       buf << "--#{boundary}\r\n"
       if filename
         filename = quote_string(filename, charset)
-        type = h[:content_type] || 'application/octet-stream'
+        type = (h[:content_type] || 'application/octet-stream').to_s
+        if /[\r\n]/.match?(type)
+          raise ArgumentError, "field content type cannot include CR/LF"
+        end
         buf << "Content-Disposition: form-data; " \
           "name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
           "Content-Type: #{type}\r\n\r\n"
@@ -384,6 +404,9 @@ class Net::HTTPGenericRequest
 
   def quote_string(str, charset)
     str = str.encode(charset, fallback:->(c){'&#%d;'%c.encode("UTF-8").ord}) if charset
+    if /[\r\n]/.match?(str)
+      raise ArgumentError, "multipart field name or filename cannot include CR/LF"
+    end
     str.gsub(/[\\"]/, '\\\\\&')
   end
 
@@ -402,14 +425,33 @@ class Net::HTTPGenericRequest
   def wait_for_continue(sock, ver)
     if ver >= '1.1' and @header['expect'] and
         @header['expect'].include?('100-continue')
-      if sock.io.to_io.wait_readable(sock.continue_timeout)
+      timeout = sock.continue_timeout
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout if timeout
+      informational_count = 0
+      while response_available?(sock, timeout)
         res = Net::HTTPResponse.read_new(sock)
-        unless res.kind_of?(Net::HTTPContinue)
-          res.decode_content = @decode_content
-          throw :response, res
+        break if res.kind_of?(Net::HTTPContinue)
+        if res.kind_of?(Net::HTTPInformation) && !res.kind_of?(Net::HTTPSwitchProtocol)
+          informational_count += 1
+          raise Net::HTTPBadResponse, 'too many informational responses' if
+            informational_count > Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+          if deadline
+            timeout = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            break if timeout <= 0
+          end
+          next
         end
+        res.decode_content = @decode_content
+        throw :response, res
       end
     end
+  end
+
+  def response_available?(sock, timeout)
+    return sock.wait_readable(timeout) if sock.respond_to?(:wait_readable)
+    sock.__send__(:rbuf_size) > 0 ||
+      (sock.io.respond_to?(:pending) && sock.io.pending > 0) ||
+      sock.io.to_io.wait_readable(timeout)
   end
 
   def write_header(sock, ver, path)

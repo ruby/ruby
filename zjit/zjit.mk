@@ -20,14 +20,14 @@ BUILD_ZJIT_LIBS = $(TOP_BUILD_DIR)/$(ZJIT_LIBS)
 
 # In a ZJIT-only build (no YJIT)
 ifneq ($(strip $(ZJIT_LIBS)),)
-$(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
+$(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES) target/.rustc-version
 	$(ECHO) 'building Rust ZJIT (release mode)'
 	$(gnumake_recursive)$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
 else ifneq ($(strip $(RLIB_DIR)),) # combo build
 # Absolute path to avoid VPATH ambiguity
 ZJIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libzjit.rlib
 
-$(ZJIT_RLIB): $(ZJIT_SRC_FILES)
+$(ZJIT_RLIB): $(ZJIT_SRC_FILES) target/.rustc-version
 	$(ECHO) 'building $(@F)'
 	$(gnumake_recursive)$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(ZJIT_RUSTC_ARGS)
 
@@ -51,23 +51,25 @@ update-zjit-bench:
 .PHONY: zjit-check
 zjit-check:
 	$(MAKE) zjit-test
-	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
+	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit_cli.rb'
 
 ZJIT_BINDGEN_DIFF_OPTS =
 
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-update
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-build zjit-test-update
 .PHONY: zjit-test-debug zjit-test-lldb zjit-test-gdb zjit-test-rr
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
 
 # Build env should roughly match what's used for miniruby to help with caching.
+# Setting INSTA_WORKSPACE_ROOT avoids a slow call to `cargo metadata` when testing.
 ZJIT_NEXTEST_ENV := RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
     RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
     MACOSX_DEPLOYMENT_TARGET=11.0 \
+    INSTA_WORKSPACE_ROOT='$(abspath $(top_srcdir))' \
     CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)'
 
 # We need `cargo nextest` for its one-process-per execution execution model
@@ -89,6 +91,13 @@ zjit-test: libminiruby.a
 		echo "Pending snapshots found. Accept with: make zjit-test-update"; \
 	fi; \
 	exit $$exit_code
+
+# Build the `make zjit-test` binary without running it.
+zjit-test-build: libminiruby.a
+	$(ECHO) 'building ZJIT test binary'
+	$(ZJIT_NEXTEST_ENV) $(CARGO) build --tests \
+		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
+		'--features=$(ZJIT_TEST_FEATURES)'
 
 # Accept all pending snapshots (requires cargo-insta)
 # Install with: cargo install cargo-insta
@@ -132,9 +141,15 @@ zjit-test-rr: libminiruby.a
 #  - Less likely to break since later stages of the build process also rely on miniruby.
 libminiruby.a: miniruby$(EXEEXT)
 	$(ECHO) linking static-library $@
-	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
+	$(Q) $(RM) $@
+	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS:$(RUST_LIBOBJ)=)
 
 libminiruby: libminiruby.a
+
+clean-libminiruby:
+	$(Q) $(RM) libminiruby.*
+
+clean-local:: clean-libminiruby
 
 endif # ifneq ($(strip $(CARGO)),
 endif # ifneq ($(ZJIT_SUPPORT),no)

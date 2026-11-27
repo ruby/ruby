@@ -11,7 +11,7 @@ describe "Hash#compare_by_identity" do
     @h[[1]] = :a
     @h[[1]].should == :a
     @h.compare_by_identity
-    @h[[1].dup].should be_nil
+    @h[[1].dup].should == nil
   end
 
   it "rehashes internally so that old keys can be looked up" do
@@ -27,21 +27,21 @@ describe "Hash#compare_by_identity" do
   it "returns self" do
     h = {}
     h[:foo] = :bar
-    h.compare_by_identity.should equal h
+    h.compare_by_identity.should.equal? h
   end
 
   it "has no effect on an already compare_by_identity hash" do
     @idh[:foo] = :bar
-    @idh.compare_by_identity.should equal @idh
+    @idh.compare_by_identity.should.equal? @idh
     @idh.should.compare_by_identity?
     @idh[:foo].should == :bar
   end
 
   it "uses the semantics of BasicObject#equal? to determine key identity" do
-    [1].should_not equal([1])
+    [1].should_not.equal?([1])
     @idh[[1]] = :c
     @idh[[1]] = :d
-    :bar.should equal(:bar)
+    :bar.should.equal?(:bar)
     @idh[:bar] = :e
     @idh[:bar] = :f
     @idh.values.should == [:c, :d, :f]
@@ -64,13 +64,13 @@ describe "Hash#compare_by_identity" do
   it "regards #dup'd objects as having different identities" do
     key = ['foo']
     @idh[key.dup] = :str
-    @idh[key].should be_nil
+    @idh[key].should == nil
   end
 
   it "regards #clone'd objects as having different identities" do
     key = ['foo']
     @idh[key.clone] = :str
-    @idh[key].should be_nil
+    @idh[key].should == nil
   end
 
   it "regards references to the same object as having the same identity" do
@@ -80,9 +80,19 @@ describe "Hash#compare_by_identity" do
     @h[o].should == :o
   end
 
+  it "regards two empty hashes equal, even if one isn't compare_by_identity" do
+    @h.should == @idh
+  end
+
+  it "doesn't regard two hashes equal when they differ only by compare_by_identity" do
+    @h[1] = 2
+    @idh[1] = 2
+    @h.should_not == @idh
+  end
+
   it "raises a FrozenError on frozen hashes" do
     @h = @h.freeze
-    -> { @h.compare_by_identity }.should raise_error(FrozenError)
+    -> { @h.compare_by_identity }.should.raise(FrozenError)
   end
 
   # Behaviour confirmed in https://bugs.ruby-lang.org/issues/1871
@@ -107,7 +117,7 @@ describe "Hash#compare_by_identity" do
     @idh[foo] = true
     @idh[foo] = true
     @idh.size.should == 1
-    @idh.keys.first.should equal foo
+    @idh.keys.first.should.equal? foo
   end
 
   # Check `#[]=` call with a String literal.
@@ -128,20 +138,20 @@ end
 describe "Hash#compare_by_identity?" do
   it "returns false by default" do
     h = {}
-    h.compare_by_identity?.should be_false
+    h.compare_by_identity?.should == false
   end
 
   it "returns true once #compare_by_identity has been invoked on self" do
     h = {}
     h.compare_by_identity
-    h.compare_by_identity?.should be_true
+    h.compare_by_identity?.should == true
   end
 
   it "returns true when called multiple times on the same ident hash" do
     h = {}
     h.compare_by_identity
-    h.compare_by_identity?.should be_true
-    h.compare_by_identity?.should be_true
-    h.compare_by_identity?.should be_true
+    h.compare_by_identity?.should == true
+    h.compare_by_identity?.should == true
+    h.compare_by_identity?.should == true
   end
 end

@@ -1,0 +1,54 @@
+#include "prism/internal/tokens.h"
+
+#include "prism/internal/assert.h"
+
+/**
+ * Returns a string representation of the given token type.
+ */
+const char *
+pm_token_type(pm_token_type_t token_type) {
+    switch (token_type) {
+<%- tokens.each do |token| -%>
+        case PM_TOKEN_<%= token.name %>:
+            return "<%= token.name %>";
+<%- end -%>
+        case PM_TOKEN_MAXIMUM:
+            PRISM_ASSERT(false && "unreachable");
+            return "";
+    }
+
+    // Provide a default, because some compilers can't determine that the above
+    // switch is exhaustive.
+    PRISM_ASSERT(false && "unreachable");
+    return "";
+}
+
+/* Store the diagnostic names back to back in token order. */
+static const uint8_t token_names[] =
+<%- tokens.each do |token| -%>
+    <%= Ruby::Prism::Template.c_string(token.diagnostic_name) %>
+<%- end -%>
+;
+
+/* Each name ends at the next offset. PM_TOKEN_MAXIMUM marks the end of the last name. */
+static const uint16_t token_name_offsets[PM_TOKEN_MAXIMUM + 1] = {
+<%- offset = 0 -%>
+<%- tokens.each do |token| -%>
+    [PM_TOKEN_<%= token.name %>] = <%= offset %>,
+<%- offset += token.diagnostic_name.bytesize -%>
+<%- end -%>
+<%- raise "token diagnostic names exceed uint16_t offsets" if offset > 0xffff -%>
+    [PM_TOKEN_MAXIMUM] = <%= offset %>
+};
+
+/* Return the name used for the token type in diagnostics. */
+pm_string_t
+pm_token_string(pm_token_type_t token_type) {
+    if (token_type < PM_TOKEN_EOF || token_type >= PM_TOKEN_MAXIMUM) {
+        PRISM_ASSERT(false && "unreachable");
+        return (pm_string_t) { (const uint8_t *) "", 0 };
+    }
+
+    size_t start = token_name_offsets[token_type];
+    return (pm_string_t) { token_names + start, token_name_offsets[token_type + 1] - start };
+}

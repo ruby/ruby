@@ -45,7 +45,7 @@ static const rb_data_type_t rb_node_type = {
     "AST/node",
     {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 struct ASTLocationData {
@@ -70,7 +70,7 @@ static const rb_data_type_t rb_location_type = {
     "AST/location",
     {location_gc_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 
@@ -179,15 +179,24 @@ rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, V
 
 static VALUE node_children(VALUE, const NODE*);
 
-static VALUE
-node_find(VALUE self, const int node_id)
+struct node_find_result {
+    VALUE node;
+    VALUE parent;
+};
+
+static bool
+node_find_with_parent(VALUE self, VALUE parent, const int node_id, struct node_find_result *result)
 {
     VALUE ary;
-    long i;
+    rb_len_t i;
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    if (nd_node_id(data->node) == node_id) return self;
+    if (nd_node_id(data->node) == node_id) {
+        result->node = self;
+        result->parent = parent;
+        return true;
+    }
 
     ary = node_children(data->ast_value, data->node);
 
@@ -195,15 +204,85 @@ node_find(VALUE self, const int node_id)
         VALUE child = RARRAY_AREF(ary, i);
 
         if (CLASS_OF(child) == rb_cNode) {
-            VALUE result = node_find(child, node_id);
-            if (RTEST(result)) return result;
+            if (node_find_with_parent(child, self, node_id, result)) return true;
         }
     }
 
-    return Qnil;
+    return false;
+}
+
+static VALUE
+node_find(VALUE self, const int node_id)
+{
+    struct node_find_result result = { Qnil, Qnil };
+    node_find_with_parent(self, Qnil, node_id, &result);
+    return result.node;
+}
+
+bool
+rb_ast_node_source_location(VALUE source, VALUE path, int first_lineno,
+                            int node_id, bool block_iseq, int iseq_node_id,
+                            rb_code_location_t *location)
+{
+    StringValue(source);
+    VALUE vparser = setup_vparser(Qfalse, Qfalse, Qfalse);
+    VALUE ast_value = rb_parser_compile_string_path(vparser, path, source, first_lineno);
+    VALUE ast = ast_parse_done(ast_value);
+
+    struct node_find_result result = { Qnil, Qnil };
+    if (!node_find_with_parent(ast, Qnil, node_id, &result)) return false;
+
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(result.node, struct ASTNodeData, &rb_node_type, data);
+    const NODE *node = data->node;
+
+    if (!NIL_P(result.parent)) {
+        struct ASTNodeData *parent_data;
+        TypedData_Get_Struct(result.parent, struct ASTNodeData, &rb_node_type, parent_data);
+        const NODE *parent = parent_data->node;
+
+        /* Prism's call node includes its literal block. */
+        if (nd_type(parent) == NODE_ITER && RNODE_ITER(parent)->nd_iter == node) {
+            node = parent;
+        }
+    }
+
+    /* Prism's block node excludes the call that produced the block. */
+    if (block_iseq && node_id == iseq_node_id && nd_type(node) == NODE_ITER) {
+        const NODE *scope = RNODE_ITER(node)->nd_body;
+        if (scope && nd_type(scope) == NODE_SCOPE) {
+            node = scope;
+        }
+    }
+
+    *location = *nd_code_loc(node);
+    return true;
+}
+
+static VALUE
+ast_node_find(rb_execution_context_t *ec, VALUE self, VALUE root, VALUE node_id)
+{
+    return node_find(root, NUM2INT(node_id));
+}
+
+static VALUE
+ast_node_source_hash(rb_execution_context_t *ec, VALUE self, VALUE node)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(node, struct ASTNodeData, &rb_node_type, data);
+
+    rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+    if (!ast->body.has_source_hash) return Qnil;
+    return ULL2NUM(ast->body.source_hash);
 }
 
 extern VALUE rb_e_script;
+
+static VALUE
+iseq_compiled_by_prism_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(ISEQ_BODY(rb_iseqw_to_iseq(self))->prism);
+}
 
 static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
@@ -220,6 +299,18 @@ node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE l
     }
 
     return INT2NUM(node_id);
+}
+
+static VALUE
+iseq_of_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
+{
+    if (!rb_frame_info_p(location)) {
+        rb_raise(rb_eTypeError, "Thread::Backtrace::Location object expected");
+    }
+
+    const rb_iseq_t *iseq = rb_get_iseq_from_frame_info(location);
+    if (!iseq) return Qnil;
+    return rb_iseqw_new(iseq);
 }
 
 static VALUE
@@ -257,7 +348,7 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
         rb_raise(rb_eRuntimeError, "cannot get AST for ISEQ compiled by prism");
     }
 
-    lines = ISEQ_BODY(iseq)->variable.script_lines;
+    lines = ISEQ_SCRIPT_LINES(iseq);
 
     VALUE path = rb_iseq_path(iseq);
     int e_option = RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0;
@@ -404,6 +495,19 @@ rest_arg(VALUE ast_value, const NODE *rest_arg)
     return NODE_NAMED_REST_P(rest_arg) ? NEW_CHILD(ast_value, rest_arg) : no_name_rest();
 }
 
+static ID
+node_colon_name(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_COLON2:
+        return RNODE_COLON2(node)->nd_mid;
+      case NODE_COLON3:
+        return RNODE_COLON3(node)->nd_mid;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 static VALUE
 node_children(VALUE ast_value, const NODE *node)
 {
@@ -497,7 +601,7 @@ node_children(VALUE ast_value, const NODE *node)
         if (RNODE_CDECL(node)->nd_vid) {
             return rb_ary_new_from_args(2, ID2SYM(RNODE_CDECL(node)->nd_vid), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
         }
-        return rb_ary_new_from_args(3, NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_else), ID2SYM(RNODE_COLON2(RNODE_CDECL(node)->nd_else)->nd_mid), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_else), ID2SYM(node_colon_name(RNODE_CDECL(node)->nd_else)), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
       case NODE_OP_ASGN1:
         return rb_ary_new_from_args(4, NEW_CHILD(ast_value, RNODE_OP_ASGN1(node)->nd_recv),
                                     ID2SYM(RNODE_OP_ASGN1(node)->nd_mid),
@@ -685,7 +789,7 @@ node_children(VALUE ast_value, const NODE *node)
                                             : var_name(ainfo->rest_arg)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, (NODE *)ainfo->kw_args)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, ainfo->kw_rest_arg)),
-                                        var_name(ainfo->block_arg));
+                                        (ainfo->no_blockarg ? Qfalse : var_name(ainfo->block_arg)));
         }
       case NODE_SCOPE:
         {

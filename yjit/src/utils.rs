@@ -134,7 +134,8 @@ yjit_print_iseq(const rb_iseq_t *iseq)
 }
 */
 
-#[cfg(target_arch = "aarch64")]
+// The x86_64 backend emits Win64 calls on Windows, which is what "C" means there.
+#[cfg(any(target_arch = "aarch64", windows))]
 macro_rules! c_callable {
     ($(#[$outer:meta])*
     fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
@@ -143,7 +144,7 @@ macro_rules! c_callable {
     };
 }
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", not(windows)))]
 macro_rules! c_callable {
     ($(#[$outer:meta])*
     fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
@@ -160,8 +161,6 @@ pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
         }
     }
 
-    asm.cpush_all();
-
     let argument = match opnd {
         Opnd::Mem(_) | Opnd::Reg(_) | Opnd::InsnOut { .. } => {
             // Sign-extend the value if necessary
@@ -176,7 +175,6 @@ pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
     };
 
     asm.ccall(print_int_fn as *const u8, vec![argument]);
-    asm.cpop_all();
 }
 
 /// Generate code to print a pointer
@@ -189,9 +187,7 @@ pub fn print_ptr(asm: &mut Assembler, opnd: Opnd) {
 
     assert!(opnd.rm_num_bits() == 64);
 
-    asm.cpush_all();
     asm.ccall(print_ptr_fn as *const u8, vec![opnd]);
-    asm.cpop_all();
 }
 
 /// Generate code to print a value
@@ -204,9 +200,7 @@ pub fn print_value(asm: &mut Assembler, opnd: Opnd) {
 
     assert!(matches!(opnd, Opnd::Value(_)));
 
-    asm.cpush_all();
     asm.ccall(print_value_fn as *const u8, vec![opnd]);
-    asm.cpop_all();
 }
 
 /// Generate code to print constant string to stdout
@@ -221,7 +215,6 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
         }
     }
 
-    asm.cpush_all();
 
     let string_data = asm.new_label("string_data");
     let after_string = asm.new_label("after_string");
@@ -233,13 +226,15 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
 
     let opnd = asm.lea_jump_target(string_data);
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
-
-    asm.cpop_all();
 }
 
 pub fn stdout_supports_colors() -> bool {
     // TODO(max): Use std::io::IsTerminal after upgrading Rust to 1.70
-    extern "C" { fn isatty(fd: c_int) -> c_int; }
+    extern "C" {
+        // UCRT's isatty returns 0x40 for any character device, NUL included
+        #[cfg_attr(windows, link_name = "rb_w32_isatty")]
+        fn isatty(fd: c_int) -> c_int;
+    }
     let stdout = 1;
     let is_terminal = unsafe { isatty(stdout) } == 1;
     is_terminal

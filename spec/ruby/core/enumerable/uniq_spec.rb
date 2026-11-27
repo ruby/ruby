@@ -1,7 +1,15 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/value_packing'
 
 describe 'Enumerable#uniq' do
+  describe "value packing of source yields" do
+    before :each do
+      @take = -> e { e.uniq }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   it 'returns an array that contains only unique elements' do
     [0, 1, 2, 3].to_enum.uniq { |n| n.even? }.should == [0, 1]
   end
@@ -25,8 +33,8 @@ describe 'Enumerable#uniq' do
     y = mock('1')
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).at_least(1).and_return(0)
-    y.should_receive(:hash).at_least(1).and_return(1)
+    x.should_receive(:hash).at_least(1).and_return(8)
+    y.should_receive(:hash).at_least(1).and_return(9)
 
     [x, y].to_enum.uniq.should == [x, y]
   end

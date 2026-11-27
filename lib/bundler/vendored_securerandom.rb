@@ -1,12 +1,18 @@
 # frozen_string_literal: true
 
-# Use RubyGems vendored copy when available. Otherwise fallback to Bundler
-# vendored copy. The vendored copy in Bundler can be removed once support for
-# RubyGems 3.5.18 is dropped.
+# Reuse RubyGems' vendored SecureRandom (Gem::SecureRandom). The Bundler gem
+# ships a copy under lib/rubygems/vendor, so this resolves even on RubyGems
+# versions that predate it. Fall back to the stdlib only when no vendored copy
+# is available at all. RubyGems' own file is required by path for the reason
+# given in vendored_uri.rb.
 
-begin
-  require "rubygems/vendored_securerandom"
-rescue LoadError
-  require_relative "vendor/securerandom/lib/securerandom"
-  Gem::SecureRandom = Bundler::SecureRandom
+unless defined?(Gem::SecureRandom)
+  rubygems_securerandom = File.join(Gem::RUBYGEMS_DIR, "rubygems/vendor/securerandom/lib/securerandom.rb")
+
+  begin
+    require File.exist?(rubygems_securerandom) ? rubygems_securerandom : "rubygems/vendor/securerandom/lib/securerandom"
+  rescue LoadError
+    require "securerandom"
+    Gem::SecureRandom = SecureRandom
+  end
 end

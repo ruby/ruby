@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class StaticLiteralsTest < TestCase
     def test_static_literals
       assert_warning("1")
@@ -49,6 +49,33 @@ module Prism
       assert_warning("__ENCODING__", "__ENCODING__", "#<Encoding:UTF-8>")
     end
 
+    def test_float_key_inspect
+      {
+        "1.23456789" => "1.23456789",
+        "1e-4" => "0.0001",
+        "1e-5" => "1.0e-05",
+        "1e6" => "1000000.0",
+        "1e15" => "1.0e+15",
+        "1000000000000000.2" => "1000000000000000.2",
+        "1e23" => "1.0e+23",
+        "2.98023223876953125e-8" => "2.9802322387695312e-08",
+        "4.89298916017815570e-296" => "4.8929891601781557e-296",
+        "5764607523034235e24" => "5.764607523034235e+39",
+        "5e-324" => "5.0e-324",
+        "2.2250738585072014e-308" => "2.2250738585072014e-308",
+        "1.7976931348623157e308" => "1.7976931348623157e+308",
+        "-0.0" => "-0.0",
+        "0.0i" => "(0+0.0i)",
+        "-0.0i" => "(0-0.0i)",
+        "1e999i" => "(0+Infinity*i)",
+        "-1e999i" => "(0-Infinity*i)"
+      }.each do |literal, expected|
+        result = Ruby::Prism.parse("{ #{literal} => 1, #{literal} => 2 }")
+        warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+        assert_equal "key #{expected} is duplicated and overwritten on line 1", warning&.message, literal
+      end
+    end
+
     private
 
     class NullWarning
@@ -60,14 +87,14 @@ module Prism
     def parse_warnings(left, right)
       warnings = []
 
-      warnings << (Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
+      warnings << (Ruby::Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
         {
           #{left} => 1,
           #{right} => 2
         }
       RUBY
 
-      warnings << (Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
+      warnings << (Ruby::Prism.parse(<<~RUBY, filepath: __FILE__).warnings.first || NullWarning.new)
         case foo
         when #{left}
         when #{right}

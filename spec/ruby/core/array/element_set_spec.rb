@@ -95,8 +95,8 @@ describe "Array#[]=" do
 
   it "checks frozen before attempting to coerce arguments" do
     a = [1,2,3,4].freeze
-    -> {a[:foo] = 1}.should raise_error(FrozenError)
-    -> {a[:foo, :bar] = 1}.should raise_error(FrozenError)
+    -> {a[:foo] = 1}.should.raise(FrozenError)
+    -> {a[:foo, :bar] = 1}.should.raise(FrozenError)
   end
 
   it "sets elements in the range arguments when passed ranges" do
@@ -197,25 +197,25 @@ describe "Array#[]=" do
 
     a[to .. from] = ["x"]
     a.should == [1, "a", "b", "x", "c", 4]
-    -> { a["a" .. "b"] = []  }.should raise_error(TypeError)
-    -> { a[from .. "b"] = [] }.should raise_error(TypeError)
+    -> { a["a" .. "b"] = []  }.should.raise(TypeError)
+    -> { a[from .. "b"] = [] }.should.raise(TypeError)
   end
 
   it "raises an IndexError when passed indexes out of bounds" do
     a = [1, 2, 3, 4]
-    -> { a[-5] = ""      }.should raise_error(IndexError)
-    -> { a[-5, -1] = ""  }.should raise_error(IndexError)
-    -> { a[-5, 0] = ""   }.should raise_error(IndexError)
-    -> { a[-5, 1] = ""   }.should raise_error(IndexError)
-    -> { a[-5, 2] = ""   }.should raise_error(IndexError)
-    -> { a[-5, 10] = ""  }.should raise_error(IndexError)
+    -> { a[-5] = ""      }.should.raise(IndexError)
+    -> { a[-5, -1] = ""  }.should.raise(IndexError)
+    -> { a[-5, 0] = ""   }.should.raise(IndexError)
+    -> { a[-5, 1] = ""   }.should.raise(IndexError)
+    -> { a[-5, 2] = ""   }.should.raise(IndexError)
+    -> { a[-5, 10] = ""  }.should.raise(IndexError)
 
-    -> { a[-5..-5] = ""  }.should raise_error(RangeError)
-    -> { a[-5...-5] = "" }.should raise_error(RangeError)
-    -> { a[-5..-4] = ""  }.should raise_error(RangeError)
-    -> { a[-5...-4] = "" }.should raise_error(RangeError)
-    -> { a[-5..10] = ""  }.should raise_error(RangeError)
-    -> { a[-5...10] = "" }.should raise_error(RangeError)
+    -> { a[-5..-5] = ""  }.should.raise(RangeError)
+    -> { a[-5...-5] = "" }.should.raise(RangeError)
+    -> { a[-5..-4] = ""  }.should.raise(RangeError)
+    -> { a[-5...-4] = "" }.should.raise(RangeError)
+    -> { a[-5..10] = ""  }.should.raise(RangeError)
+    -> { a[-5...10] = "" }.should.raise(RangeError)
 
     # ok
     a[0..-9] = [1]
@@ -239,7 +239,7 @@ describe "Array#[]=" do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array[0, 0] = [] }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array[0, 0] = [] }.should.raise(FrozenError)
   end
 end
 
@@ -349,12 +349,12 @@ describe "Array#[]= with [index, count]" do
 
   it "raises an IndexError when passed start and negative length" do
     a = [1, 2, 3, 4]
-    -> { a[-2, -1] = "" }.should raise_error(IndexError)
-    -> { a[0, -1] = ""  }.should raise_error(IndexError)
-    -> { a[2, -1] = ""  }.should raise_error(IndexError)
-    -> { a[4, -1] = ""  }.should raise_error(IndexError)
-    -> { a[10, -1] = "" }.should raise_error(IndexError)
-    -> { [1, 2, 3, 4,  5][2, -1] = [7, 8] }.should raise_error(IndexError)
+    -> { a[-2, -1] = "" }.should.raise(IndexError)
+    -> { a[0, -1] = ""  }.should.raise(IndexError)
+    -> { a[2, -1] = ""  }.should.raise(IndexError)
+    -> { a[4, -1] = ""  }.should.raise(IndexError)
+    -> { a[10, -1] = "" }.should.raise(IndexError)
+    -> { [1, 2, 3, 4,  5][2, -1] = [7, 8] }.should.raise(IndexError)
   end
 end
 

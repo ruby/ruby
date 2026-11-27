@@ -1,0 +1,5 @@
+loop { return m(1) do end.g }
+
+loop { break m(1) do end.g }
+
+loop { next m(1) do end.g }

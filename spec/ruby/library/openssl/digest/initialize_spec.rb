@@ -25,12 +25,12 @@ describe "OpenSSL::Digest#initialize" do
 
     version_is OpenSSL::VERSION, "4.0.0" do
       it "throws an error when called with an unknown digest" do
-        -> { OpenSSL::Digest.new("wd40") }.should raise_error(OpenSSL::Digest::DigestError, /wd40/)
+        -> { OpenSSL::Digest.new("wd40") }.should.raise(OpenSSL::Digest::DigestError, /wd40/)
       end
     end
 
     it "cannot be called with a symbol" do
-      -> { OpenSSL::Digest.new(:SHA1) }.should raise_error(TypeError)
+      -> { OpenSSL::Digest.new(:SHA1) }.should.raise(TypeError)
     end
   end
 
@@ -58,7 +58,7 @@ describe "OpenSSL::Digest#initialize" do
   end
 
   it "cannot be called with a digest class" do
-    -> { OpenSSL::Digest.new(OpenSSL::Digest::SHA1) }.should raise_error(TypeError)
+    -> { OpenSSL::Digest.new(OpenSSL::Digest::SHA1) }.should.raise(TypeError)
   end
 
   context "when called without an initial String argument" do

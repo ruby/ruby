@@ -1,5 +1,0 @@
-Returns the number of bytes in the string in +self+:
-
-  StringIO.new('hello').size     # => 5  # Five 1-byte characters.
-  StringIO.new('тест').size      # => 8  # Four 2-byte characters.
-  StringIO.new('こんにちは').size # => 15 # Five 3-byte characters.

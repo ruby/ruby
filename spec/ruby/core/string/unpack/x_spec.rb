@@ -24,11 +24,11 @@ describe "String#unpack with format 'X'" do
   end
 
   it "raises an ArgumentError when passed the '*' modifier if the remaining bytes exceed the bytes from the index to the start of the String" do
-    -> { "abcd".unpack("CX*C") }.should raise_error(ArgumentError)
+    -> { "abcd".unpack("CX*C") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the count exceeds the bytes from current index to the start of the String" do
-    -> { "\x01\x02\x03\x04".unpack("C3X4C") }.should raise_error(ArgumentError)
+    -> { "\x01\x02\x03\x04".unpack("C3X4C") }.should.raise(ArgumentError)
   end
 end
 
@@ -57,6 +57,20 @@ describe "String#unpack with format 'x'" do
   end
 
   it "raises an ArgumentError if the count exceeds the size of the String" do
-    -> { "\x01\x02\x03\x04".unpack("C2x3C") }.should raise_error(ArgumentError)
+    -> { "\x01\x02\x03\x04".unpack("C2x3C") }.should.raise(ArgumentError)
+  end
+
+  ruby_version_is "4.1" do
+    it "aligns to the given byte boundary with the '!' modifier" do
+      "\x01\x00\x00\x00\x02".unpack("C x!4 C").should == [1, 2]
+    end
+
+    it "aligns from the beginning of the String with '@!'" do
+      "z\x01\x00\x00\x02".unpack("C @!4 C", offset: 1).should == [1, 2]
+    end
+
+    it "aligns to a directive's alignment with the '!' modifier" do
+      [1, 2].pack("i< i").unpack("C x!i i").should == [1, 2]
+    end
   end
 end

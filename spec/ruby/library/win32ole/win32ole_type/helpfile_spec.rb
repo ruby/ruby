@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns an empty string" do
-      @ole_type.helpfile.should be_empty
+      @ole_type.helpfile.should.empty?
     end
 
   end

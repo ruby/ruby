@@ -1,0 +1,4 @@
+z = 1 rescue a, b = 1
+              ^ unexpected ',', expecting end-of-input
+              ^ unexpected ',', ignoring it
+

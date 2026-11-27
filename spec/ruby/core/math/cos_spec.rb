@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # cosine : (-Inf, Inf) --> (-1.0, 1.0)
 describe "Math.cos" do
   it "returns a float" do
-    Math.cos(Math::PI).should be_kind_of(Float)
+    Math.cos(Math::PI).should.is_a?(Float)
   end
 
   it "returns the cosine of the argument expressed in radians" do
@@ -16,11 +16,11 @@ describe "Math.cos" do
   end
 
   it "raises a TypeError unless the argument is Numeric and has #to_f" do
-    -> { Math.cos("test") }.should raise_error(TypeError)
+    -> { Math.cos("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.cos(nan_value).nan?.should be_true
+    Math.cos(nan_value).nan?.should == true
   end
 
   describe "coerces its argument with #to_f" do
@@ -31,14 +31,14 @@ describe "Math.cos" do
     end
 
     it "raises a TypeError if the given argument can't be converted to a Float" do
-      -> { Math.cos(nil) }.should raise_error(TypeError)
-      -> { Math.cos(:abc) }.should raise_error(TypeError)
+      -> { Math.cos(nil) }.should.raise(TypeError)
+      -> { Math.cos(:abc) }.should.raise(TypeError)
     end
 
     it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to a Float" do
       object = mock_numeric('mock-float')
       object.should_receive(:to_f).and_raise(NoMethodError)
-      -> { Math.cos(object) }.should raise_error(NoMethodError)
+      -> { Math.cos(object) }.should.raise(NoMethodError)
     end
   end
 end

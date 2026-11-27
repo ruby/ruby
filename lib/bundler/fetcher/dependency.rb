@@ -50,7 +50,7 @@ module Bundler
 
       def unmarshalled_dep_gems(gem_names)
         gem_list = []
-        gem_names.each_slice(Source::Rubygems::API_REQUEST_SIZE) do |names|
+        gem_names.each_slice(api_request_size) do |names|
           marshalled_deps = downloader.fetch(dependency_api_uri(names)).body
           gem_list.concat(Bundler.safe_load_marshal(marshalled_deps))
         end
@@ -73,6 +73,12 @@ module Bundler
         uri = fetch_uri + "api/v1/dependencies"
         uri.query = "gems=#{CGI.escape(gem_names.sort.join(","))}" if gem_names.any?
         uri
+      end
+
+      private
+
+      def api_request_size
+        Bundler.settings[:api_request_size]&.to_i || Source::Rubygems::API_REQUEST_SIZE
       end
     end
   end

@@ -30,6 +30,51 @@ class TestDateArith < Test::Unit::TestCase
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
   end
 
+  def test_fractional_day_deprecated
+    pat = /Date with fractional day is deprecated/
+    d = Date.new(2001, 2, 3)
+
+    [
+      -> { Date.new(2001, 2, 3.5) },
+      -> { Date.civil(2001, 2, Rational(7, 2)) },
+      -> { Date.jd(2451944.5) },
+      -> { Date.ordinal(2001, 34.5) },
+      -> { Date.commercial(2001, 5, Rational(3, 2)) },
+      -> { d + 0.5 },
+      -> { d + Rational(1, 2) },
+      -> { d - 0.5 },
+      -> { d - Rational(1, 2) },
+      -> { d.next_day(0.5) },
+      -> { d.prev_day(Rational(1, 2)) },
+      -> { d.step(d + 1, 0.5).to_a },
+    ].each do |pr|
+      assert_deprecated_warn(pat, &pr)
+    end
+
+    dt = DateTime.new(2001, 2, 3)
+    [
+      -> { Date.new(2001, 2, 3.0) },
+      -> { Date.jd(Rational(2451944)) },
+      -> { d + 1 },
+      -> { d + 1.0 },
+      -> { d + Rational(2, 1) },
+      -> { d - 1.0 },
+      -> { d >> 1 },
+      -> { d << 1 },
+      -> { d.next_day(2) },
+      -> { DateTime.new(2001, 2, 3.5) },
+      -> { DateTime.jd(2451944.5) },
+      -> { DateTime.ordinal(2001, 34.5) },
+      -> { DateTime.commercial(2001, 5, Rational(3, 2)) },
+      -> { dt + 0.5 },
+      -> { dt - Rational(1, 2) },
+      -> { dt.next_day(0.5) },
+      -> { dt.step(dt + 1, 0.5).to_a },
+    ].each do |pr|
+      assert_deprecated_warn("", &pr)
+    end
+  end
+
   def test__plus__ex
     e = TypeError
     assert_raise(e) do
@@ -69,6 +114,9 @@ class TestDateArith < Test::Unit::TestCase
     d = DateTime.new(2000,3,1) - 1.to_r/2
     assert_equal([2000, 2, 29, 12, 0, 0],
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+
+    d = Date.new(2001,2,3) - DateTime.new(2001,2,3,0,0,0,'-11:00')
+    assert_equal(-11.to_r/24, d)
   end
 
   def test__minus__ex
@@ -95,6 +143,19 @@ class TestDateArith < Test::Unit::TestCase
 		     Date.new(2001,1,17, Date::GREGORIAN)))
     assert_equal(0, (DateTime.new(2001,1,4,0,0,0,0,Date::JULIAN) <=>
 		     DateTime.new(2001,1,17,0,0,0,0,Date::GREGORIAN)))
+    assert_equal(0, (DateTime.new(2001,2,3,9,0,0,'+09:00') <=>
+		     DateTime.new(2001,2,3,0,0,0,'+00:00')))
+    assert_equal(-1, (DateTime.new(2001,2,3,0,0,0,'+09:00') <=>
+		      DateTime.new(2001,2,2,16,0,0,'+00:00')))
+    n = Class.new(Numeric) {def coerce(x) [self, x] end; def <=>(x) 5 end}.new
+    assert_equal(1, (Date.new(2000,1,1) <=> n))
+  end
+
+  def test__compare_nan
+    [Date.new(2000,1,1), DateTime.new(2000,1,1,12)].each do |d|
+      assert_nil(d <=> Float::NAN)
+      assert_equal(false, d == Float::NAN)
+    end
   end
 
   def test_prev
@@ -126,6 +187,19 @@ class TestDateArith < Test::Unit::TestCase
     d = Date.new(2000,1,31) << 14
     assert_equal([1998, 11, 30], [d.year, d.mon, d.mday])
 
+  end
+
+  def test_prev_month__ex
+    e = TypeError
+    assert_raise(e) do
+      Date.new(2000,1,31) << nil
+    end
+    assert_raise(e) do
+      Date.new(2000,1,31) << '1'
+    end
+    assert_raise(e) do
+      DateTime.new(2000,1,31) << nil
+    end
   end
 
   def test_prev_month__2
@@ -192,6 +266,21 @@ class TestDateArith < Test::Unit::TestCase
     assert_equal([2001, 1, 31], [d.year, d.mon, d.mday])
     d = Date.new(2000,1,31) >> 13
     assert_equal([2001, 2, 28], [d.year, d.mon, d.mday])
+    d = Date.new(1582,9,10) >> 1
+    assert_equal([1582, 10, 4], [d.year, d.mon, d.mday])
+  end
+
+  def test_next_month__ex
+    e = TypeError
+    assert_raise(e) do
+      Date.new(2000,1,31) >> nil
+    end
+    assert_raise(e) do
+      Date.new(2000,1,31) >> '1'
+    end
+    assert_raise(e) do
+      DateTime.new(2000,1,31) >> nil
+    end
   end
 
   def test_next_month__2
@@ -290,5 +379,16 @@ class TestDateArith < Test::Unit::TestCase
     a = []
     p.step(q, o) {|d| a << d}
     assert_empty(a)
+  end
+
+  def test_step__incomparable_limit
+    d = Date.new(2000,1,1)
+    [Float::NAN, Object.new].each do |limit|
+      no = proc {flunk("yielded for #{limit.inspect}")}
+      assert_raise(ArgumentError) { d.upto(limit, &no) }
+      assert_raise(ArgumentError) { d.downto(limit, &no) }
+      assert_raise(ArgumentError) { d.step(limit, 1, &no) }
+      assert_raise(ArgumentError) { d.step(limit, -1, &no) }
+    end
   end
 end

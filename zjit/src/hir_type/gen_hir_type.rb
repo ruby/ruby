@@ -47,8 +47,11 @@ end
 any = Type.new "Any"
 # Build the Ruby object universe.
 value = any.subtype "RubyValue"
+imemo = value.subtype "IMemo"
 undef_ = value.subtype "Undef"
+# TODO(max): Figure out if CME should be a subtype of IMemo
 value.subtype "CallableMethodEntry"  # rb_callable_method_entry_t*
+value.subtype "Iseq"  # rb_iseq_t*
 basic_object = value.subtype "BasicObject"
 basic_object_exact = basic_object.subtype "BasicObjectExact"
 basic_object_subclass = basic_object.subtype "BasicObjectSubclass"
@@ -63,6 +66,11 @@ $exact_c_names = {
   "BasicObjectExact" => "rb_cBasicObject",
 }
 
+$subclass_c_names = {
+  "ObjectSubclass" => "rb_cObject",
+  "BasicObjectSubclass" => "rb_cBasicObject",
+}
+
 $inexact_c_names = {
   "Object" => "rb_cObject",
   "BasicObject" => "rb_cBasicObject",
@@ -70,24 +78,27 @@ $inexact_c_names = {
 
 # Define a new type that can be subclassed (most of them).
 # If c_name is given, mark the rb_cXYZ object as equivalent to this exact type.
-def base_type name, c_name: nil
-  type = $object.subtype name
+def base_type name, base: $object, c_name: nil
+  type = base.subtype name
   exact = type.subtype(name+"Exact")
   subclass = type.subtype(name+"Subclass")
   if c_name
     $exact_c_names[exact.name] = c_name
-    $inexact_c_names[subclass.name] = c_name
+    $subclass_c_names[subclass.name] = c_name
+    $inexact_c_names[type.name] = c_name
   end
   $builtin_exact << exact.name
   $subclass << subclass.name
   [type, exact]
 end
 
-# Define a new type that cannot be subclassed.
+# Define a new type that has no subclasses and cannot be subclassed.
 # If c_name is given, mark the rb_cXYZ object as equivalent to this type.
 def final_type name, base: $object, c_name: nil
   if c_name
     $exact_c_names[name] = c_name
+    $subclass_c_names[name] = c_name
+    $inexact_c_names[name] = c_name
   end
   type = base.subtype name
   $builtin_exact << type.name
@@ -101,7 +112,9 @@ base_type "Range", c_name: "rb_cRange"
 base_type "Set", c_name: "rb_cSet"
 base_type "Regexp", c_name: "rb_cRegexp"
 module_class, _ = base_type "Module", c_name: "rb_cModule"
-class_ = final_type "Class", base: module_class, c_name: "rb_cClass"
+# Class cannot be subclassed by doing `class Sub < Class`,
+# but every metaclass is a subclass of `Class`. It's not final.
+base_type "Class", base: module_class, c_name: "rb_cClass"
 
 numeric, _ = base_type "Numeric", c_name: "rb_cNumeric"
 
@@ -140,6 +153,7 @@ unsigned = cvalue_int.subtype "CUnsigned"
   unsigned.subtype "CUInt#{width}"
 }
 unsigned.subtype "CShape"
+unsigned.subtype "CAttrIndex"
 
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0
@@ -178,10 +192,17 @@ add_union "BuiltinExact", $builtin_exact
 add_union "Subclass", $subclass
 add_union "BoolExact", [true_exact.name, false_exact.name]
 add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
+add_union "Falsy", [nil_exact.name, false_exact.name]
 $bits["HeapBasicObject"] = ["BasicObject & !Immediate"]
 $numeric_bits["HeapBasicObject"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Immediate"]
 $bits["HeapObject"] = ["Object & !Immediate"]
 $numeric_bits["HeapObject"] = $numeric_bits["Object"] & ~$numeric_bits["Immediate"]
+$bits["Truthy"] = ["BasicObject & !Falsy"]
+$numeric_bits["Truthy"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Falsy"]
+$bits["NotNil"] = ["BasicObject & !NilClass"]
+$numeric_bits["NotNil"] = $numeric_bits["BasicObject"] & ~$numeric_bits["NilClass"]
+$bits["NotString"] = ["BasicObject & !String"]
+$numeric_bits["NotString"] = $numeric_bits["BasicObject"] & ~$numeric_bits["String"]
 
 # ===== Finished generating the DAG; write Rust code =====
 
@@ -212,7 +233,13 @@ $exact_c_names.each {|type_name, c_name|
   puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
 }
 puts "  ];"
-$inexact_c_names = $inexact_c_names.to_a.sort_by {|name, _| $bits[name]}.to_h
+$subclass_c_names = $subclass_c_names.to_a.sort_by {|name, _| $numeric_bits[name.sub("Subclass", "")]}.to_h
+puts "  pub const SubclassBitsAndClass: [(u64, *const VALUE); #{$subclass_c_names.size}] = ["
+$subclass_c_names.each {|type_name, c_name|
+  puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
+}
+puts "  ];"
+$inexact_c_names = $inexact_c_names.to_a.sort_by {|name, _| $numeric_bits[name]}.to_h
 puts "  pub const InexactBitsAndClass: [(u64, *const VALUE); #{$inexact_c_names.size}] = ["
 $inexact_c_names.each {|type_name, c_name|
   puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"

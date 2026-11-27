@@ -246,7 +246,7 @@ module Lrama
         <<-STR
   case #{rule.id + 1}: /* #{rule.as_comment}  */
 #line #{code.line} "#{@grammar_file_path}"
-#{spaces}{#{rule.translated_code}}
+#{spaces}{#{rule.translated_code(@grammar)}}
 #line [@oline@] [@ofile@]
     break;
 

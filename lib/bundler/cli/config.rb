@@ -87,16 +87,21 @@ module Bundler
 
         if value.nil?
           warn_unused_scope "Ignoring --#{scope} since no value to set was given"
+          current_value = Bundler.settings[name]
 
           if options[:parseable]
             if value = Bundler.settings[name]
               Bundler.ui.info("#{name}=#{value}")
             end
-            return
+          else
+            confirm(name)
           end
 
-          confirm(name)
-          return
+          if current_value.nil? && !Bundler.settings.stored_outside_config_files?(name)
+            exit 1
+          else
+            return
+          end
         end
 
         Bundler.ui.info(message) if message
@@ -106,6 +111,8 @@ module Bundler
       def confirm_all
         if @options[:parseable]
           thor.with_padding do
+            # --parseable output is fed back to `bundle config set`, where a
+            # placeholder would be read back as the credential itself.
             Bundler.settings.all.each do |setting|
               val = Bundler.settings[setting]
               Bundler.ui.info "#{setting}=#{val}"
@@ -113,7 +120,7 @@ module Bundler
           end
         else
           Bundler.ui.confirm "Settings are listed in order of priority. The top value will be used.\n"
-          Bundler.settings.all.each do |setting|
+          Bundler.settings.all_including_stored_credentials.each do |setting|
             Bundler.ui.confirm setting
             show_pretty_values_for(setting)
             Bundler.ui.confirm ""

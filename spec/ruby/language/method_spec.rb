@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "A method send" do
   evaluate <<-ruby do
@@ -19,7 +20,7 @@ describe "A method send" do
       x = mock("splat argument")
       x.should_not_receive(:to_ary)
 
-      m(*x).should equal(x)
+      m(*x).should.equal?(x)
     end
 
     it "calls #to_a" do
@@ -40,7 +41,7 @@ describe "A method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { m(*x) }.should raise_error(TypeError)
+      -> { m(*x) }.should.raise(TypeError)
     end
   end
 
@@ -74,7 +75,7 @@ describe "A method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { m(*x, 2, 3) }.should raise_error(TypeError)
+      -> { m(*x, 2, 3) }.should.raise(TypeError)
     end
   end
 
@@ -108,13 +109,13 @@ describe "A method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { m(1, *x, 2, 3) }.should raise_error(TypeError)
+      -> { m(1, *x, 2, 3) }.should.raise(TypeError)
     end
 
     it "copies the splatted array" do
       args = [3, 4]
       m(1, 2, *args, 4, 5).should == [1, 2, [3, 4], 4, 5]
-      m(1, 2, *args, 4, 5)[2].should_not equal(args)
+      m(1, 2, *args, 4, 5)[2].should_not.equal?(args)
     end
 
     it "allows an array being splatted to be modified by another argument" do
@@ -153,7 +154,7 @@ describe "A method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { m(1, 2, *x) }.should raise_error(TypeError)
+      -> { m(1, 2, *x) }.should.raise(TypeError)
     end
   end
 
@@ -217,7 +218,7 @@ describe "An element assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o[*x] = 1 }.should raise_error(TypeError)
+      -> { @o[*x] = 1 }.should.raise(TypeError)
     end
   end
 
@@ -255,7 +256,7 @@ describe "An element assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o[*x, 2, 3] = 4 }.should raise_error(TypeError)
+      -> { @o[*x, 2, 3] = 4 }.should.raise(TypeError)
     end
   end
 
@@ -293,7 +294,7 @@ describe "An element assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o[1, 2, *x, 3] = 4 }.should raise_error(TypeError)
+      -> { @o[1, 2, *x, 3] = 4 }.should.raise(TypeError)
     end
   end
 
@@ -331,7 +332,7 @@ describe "An element assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o[1, 2, 3, *x] = 4 }.should raise_error(TypeError)
+      -> { @o[1, 2, 3, *x] = 4 }.should.raise(TypeError)
     end
   end
 end
@@ -368,7 +369,7 @@ describe "An attribute assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o.send :m=, *x, 1 }.should raise_error(TypeError)
+      -> { @o.send :m=, *x, 1 }.should.raise(TypeError)
     end
   end
 
@@ -403,7 +404,7 @@ describe "An attribute assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o.send :m=, *x, 2, 3, 4 }.should raise_error(TypeError)
+      -> { @o.send :m=, *x, 2, 3, 4 }.should.raise(TypeError)
     end
   end
 
@@ -438,7 +439,7 @@ describe "An attribute assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o.send :m=, 1, 2, *x, 3, 4 }.should raise_error(TypeError)
+      -> { @o.send :m=, 1, 2, *x, 3, 4 }.should.raise(TypeError)
     end
   end
 
@@ -473,7 +474,7 @@ describe "An attribute assignment method send" do
       x = mock("splat argument")
       x.should_receive(:to_a).and_return(1)
 
-      -> { @o.send :m=, 1, 2, 3, *x, 4 }.should raise_error(TypeError)
+      -> { @o.send :m=, 1, 2, 3, *x, 4 }.should.raise(TypeError)
     end
   end
 end
@@ -487,7 +488,7 @@ describe "A method" do
         end
       ruby
 
-      m.should be_nil
+      m.should == nil
     end
 
     evaluate <<-ruby do
@@ -495,7 +496,7 @@ describe "A method" do
         end
       ruby
 
-      m.should be_nil
+      m.should == nil
     end
   end
 
@@ -504,7 +505,7 @@ describe "A method" do
         def m(a) a end
       ruby
 
-      m((args = 1, 2, 3)).should equal(args)
+      m((args = 1, 2, 3)).should.equal?(args)
     end
 
     evaluate <<-ruby do
@@ -535,18 +536,18 @@ describe "A method" do
         def m() end
       ruby
 
-      m().should be_nil
-      m(*[]).should be_nil
-      m(**{}).should be_nil
+      m().should == nil
+      m(*[]).should == nil
+      m(**{}).should == nil
     end
 
     evaluate <<-ruby do
         def m(*) end
       ruby
 
-      m().should be_nil
-      m(1).should be_nil
-      m(1, 2, 3).should be_nil
+      m().should == nil
+      m(1).should == nil
+      m(1, 2, 3).should == nil
     end
 
     evaluate <<-ruby do
@@ -564,10 +565,10 @@ describe "A method" do
         def m(a:) a end
       ruby
 
-      -> { m() }.should raise_error(ArgumentError)
+      -> { m() }.should.raise(ArgumentError)
       m(a: 1).should == 1
       suppress_keyword_warning do
-        -> { m("a" => 1, a: 1) }.should raise_error(ArgumentError)
+        -> { m("a" => 1, a: 1) }.should.raise(ArgumentError)
       end
     end
 
@@ -575,7 +576,7 @@ describe "A method" do
         def m(a:, **kw) [a, kw] end
       ruby
 
-      -> { m(b: 1) }.should raise_error(ArgumentError)
+      -> { m(b: 1) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -590,9 +591,9 @@ describe "A method" do
         def m(**) end
       ruby
 
-      m().should be_nil
-      m(a: 1, b: 2).should be_nil
-      -> { m(1) }.should raise_error(ArgumentError)
+      m().should == nil
+      m(a: 1, b: 2).should == nil
+      -> { m(1) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -606,7 +607,7 @@ describe "A method" do
       suppress_warning {
         eval "m(**{a: 1, b: 2}, **{a: 4, c: 7})"
       }.should == { a: 4, b: 2, c: 7 }
-      -> { m(2) }.should raise_error(ArgumentError)
+      -> { m(2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -620,7 +621,7 @@ describe "A method" do
         def m(&b) b end
       ruby
 
-      m { }.should be_an_instance_of(Proc)
+      m { }.should.instance_of?(Proc)
     end
 
     evaluate <<-ruby do
@@ -650,9 +651,9 @@ describe "A method" do
         def m((*), (*)) end
       ruby
 
-      m(2, 3).should be_nil
-      m([2, 3, 4], [5, 6]).should be_nil
-      -> { m a: 1 }.should raise_error(ArgumentError)
+      m(2, 3).should == nil
+      m([2, 3, 4], [5, 6]).should == nil
+      -> { m a: 1 }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -745,7 +746,7 @@ describe "A method" do
 
       m(1, b: 2).should == [1, 2]
       suppress_keyword_warning do
-        -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+        -> { m("a" => 1, b: 2) }.should.raise(ArgumentError)
       end
     end
 
@@ -755,7 +756,7 @@ describe "A method" do
 
       m(2).should == [2, 1]
       m(1, b: 2).should == [1, 2]
-      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      -> { m("a" => 1, b: 2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -764,7 +765,7 @@ describe "A method" do
 
       m(1).should == 1
       m(1, a: 2, b: 3).should == 1
-      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      -> { m("a" => 1, b: 2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -773,7 +774,7 @@ describe "A method" do
 
       m(1).should == [1, {}]
       m(1, a: 2, b: 3).should == [1, {a: 2, b: 3}]
-      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      -> { m("a" => 1, b: 2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -848,8 +849,8 @@ describe "A method" do
         def m(a=1, (*b), (*c)) [a, b, c] end
       ruby
 
-      -> { m() }.should raise_error(ArgumentError)
-      -> { m(2) }.should raise_error(ArgumentError)
+      -> { m() }.should.raise(ArgumentError)
+      -> { m(2) }.should.raise(ArgumentError)
       m(2, 3).should == [1, [2], [3]]
       m(2, [3, 4], [5, 6]).should == [2, [3, 4], [5, 6]]
     end
@@ -890,7 +891,7 @@ describe "A method" do
 
       m(b: 2).should == [1, 2]
       m(2, b: 1).should == [2, 1]
-      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      -> { m("a" => 1, b: 2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -900,7 +901,7 @@ describe "A method" do
       m().should == [1, 2]
       m(2).should == [2, 2]
       m(b: 3).should == [1, 3]
-      -> { m("a" => 1, b: 2) }.should raise_error(ArgumentError)
+      -> { m("a" => 1, b: 2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -953,9 +954,9 @@ describe "A method" do
         def m(*, &b) b end
       ruby
 
-      m().should be_nil
-      m(1, 2, 3, 4).should be_nil
-      m(&(l = ->{})).should equal(l)
+      m().should == nil
+      m(1, 2, 3, 4).should == nil
+      m(&(l = ->{})).should.equal?(l)
     end
 
     evaluate <<-ruby do
@@ -973,7 +974,7 @@ describe "A method" do
 
       m(a: 1, b: 2).should == [1, 2]
       suppress_keyword_warning do
-        -> { m("a" => 1, a: 1, b: 2) }.should raise_error(ArgumentError)
+        -> { m("a" => 1, a: 1, b: 2) }.should.raise(ArgumentError)
       end
     end
 
@@ -984,7 +985,7 @@ describe "A method" do
       m(a: 1).should == [1, 1]
       m(a: 1, b: 2).should == [1, 2]
       suppress_keyword_warning do
-        -> { m("a" => 1, a: 1, b: 2) }.should raise_error(ArgumentError)
+        -> { m("a" => 1, a: 1, b: 2) }.should.raise(ArgumentError)
       end
     end
 
@@ -1101,15 +1102,25 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
+      def m(**nil); :ok; end;
+      ruby
+
+      m().should == :ok
+      -> { m(a: 1) }.should.raise(ArgumentError, 'no keywords accepted')
+      -> { m(**{a: 1}) }.should.raise(ArgumentError, 'no keywords accepted')
+      -> { m("a" => 1) }.should.raise(ArgumentError, 'no keywords accepted')
+    end
+
+    evaluate <<-ruby do
       def m(a, **nil); a end;
       ruby
 
       m({a: 1}).should == {a: 1}
       m({"a" => 1}).should == {"a" => 1}
 
-      -> { m(a: 1) }.should raise_error(ArgumentError, 'no keywords accepted')
-      -> { m(**{a: 1}) }.should raise_error(ArgumentError, 'no keywords accepted')
-      -> { m("a" => 1) }.should raise_error(ArgumentError, 'no keywords accepted')
+      -> { m(a: 1) }.should.raise(ArgumentError, 'no keywords accepted')
+      -> { m(**{a: 1}) }.should.raise(ArgumentError, 'no keywords accepted')
+      -> { m("a" => 1) }.should.raise(ArgumentError, 'no keywords accepted')
     end
 
     evaluate <<-ruby do
@@ -1126,6 +1137,18 @@ describe "A method" do
 
       result = m(1, {foo: :bar})
       result.should == [1, nil, nil, {foo: :bar}, nil, {}]
+    end
+
+    ruby_version_is "4.1" do
+      evaluate <<-ruby do
+        def m(a, &nil); a end;
+        ruby
+
+        m(1).should == 1
+
+        -> { m(1) {} }.should.raise(ArgumentError, 'no block accepted')
+        -> { m(1, &proc {}) }.should.raise(ArgumentError, 'no block accepted')
+      end
     end
   end
 
@@ -1147,7 +1170,7 @@ describe "A method" do
 
       -> do
         m(**h).should == {}
-      end.should raise_error(ArgumentError)
+      end.should.raise(ArgumentError)
     end
   end
 
@@ -1159,7 +1182,7 @@ describe "A method" do
       options = {a: 1}.freeze
       -> do
         m(options)
-      end.should raise_error(ArgumentError)
+      end.should.raise(ArgumentError)
     end
   end
 
@@ -1181,8 +1204,8 @@ context "when passing **nil into a method that accepts keyword arguments" do
       def m(**kw) kw; end
 
       h = nil
-      -> { m(a: 1, **h) }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
-      -> { m(a: 1, **nil) }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+      -> { m(a: 1, **h) }.should.raise(TypeError, "no implicit conversion of nil into Hash")
+      -> { m(a: 1, **nil) }.should.raise(TypeError, "no implicit conversion of nil into Hash")
     end
   end
 
@@ -1234,10 +1257,8 @@ describe "A method call with a space between method name and parentheses" do
       args.should == [true]
     end
 
-    ruby_version_is "3.3" do
-      it "supports multiple statements" do
-        eval("m (1; 2)").should == [2]
-      end
+    it "supports multiple statements" do
+      eval("m (1; 2)").should == [2]
     end
   end
 
@@ -1257,11 +1278,11 @@ describe "A method call with a space between method name and parentheses" do
     it "raises a syntax error" do
       -> {
         eval("m (1, 2)")
-      }.should raise_error(SyntaxError)
+      }.should.raise(SyntaxError)
 
       -> {
         eval("m (1, 2, 3)")
-      }.should raise_error(SyntaxError)
+      }.should.raise(SyntaxError)
     end
   end
 
@@ -1373,6 +1394,63 @@ describe "An endless method definition" do
       m("meow", num: 2).should == "meow" * 4
     end
   end
+
+  ripper_errors = -> source {
+    require 'ripper'
+    errors = []
+    parser = Class.new(Ripper) do
+      define_method(:on_parse_error) { |msg| errors << msg }
+    end
+    parser.new(source).parse
+    errors
+  }
+
+  context "with an operator name ending in `=`" do
+    it "defines the operator methods" do
+      eval <<-ruby
+        class LanguageSpecs::OpEndlessOperator
+          def ==(other) = "equal"
+          def ===(other) = "case-equal"
+          def !=(other) = "not-equal"
+          def <=(other) = "less-or-equal"
+          def >=(other) = "greater-or-equal"
+        end
+      ruby
+
+      obj = LanguageSpecs::OpEndlessOperator.new
+      obj.send(:==, 1).should == "equal"
+      obj.send(:===, 1).should == "case-equal"
+      obj.send(:!=, 1).should == "not-equal"
+      obj.send(:<=, 1).should == "less-or-equal"
+      obj.send(:>=, 1).should == "greater-or-equal"
+    end
+
+    it "is not reported as a parse error by Ripper" do
+      %w[== === != <= >=].each do |op|
+        ripper_errors.("class Example; def #{op}(other) = true; end").should == []
+      end
+    end
+  end
+
+  context "with a setter name" do
+    it "raises a SyntaxError" do
+      -> {
+        eval("class SetterEndless; def foo=(x) = x; end")
+      }.should.raise(SyntaxError, /setter method cannot be defined in an endless method definition/)
+      -> {
+        eval("class SetterEndless; def []=(k, v) = v; end")
+      }.should.raise(SyntaxError, /setter method cannot be defined in an endless method definition/)
+    end
+
+    ruby_version_is "3.4" do
+      it "is reported as a parse error by Ripper" do
+        ["def foo=(v) = v", "def []=(k, v) = v"].each do |src|
+          ripper_errors.("class Example; #{src}; end").should ==
+            ["setter method cannot be defined in an endless method definition"]
+        end
+      end
+    end
+  end
 end
 
 describe "Keyword arguments are now separated from positional arguments" do
@@ -1411,7 +1489,7 @@ describe "Keyword arguments are now separated from positional arguments" do
 
       -> {
         foo(1, 2, 3, { key: 42 })
-      }.should raise_error(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
+      }.should.raise(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
     end
   end
 
@@ -1424,7 +1502,7 @@ describe "Keyword arguments are now separated from positional arguments" do
 
         -> {
           foo(1, 2, 3, { key: 42 })
-        }.should raise_error(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
+        }.should.raise(ArgumentError, 'wrong number of arguments (given 4, expected 3)')
       end
     end
 
@@ -1621,12 +1699,12 @@ describe "warning about not used block argument" do
       # ensure that warning is emitted
       -> { m_that_does_not_use_block { } }.should complain(verbose: true)
 
-      warn_experimental = Warning[:strict_unused_block]
+      warn_strict_unused_block = Warning[:strict_unused_block]
       Warning[:strict_unused_block] = false
       begin
         -> { m_that_does_not_use_block { } }.should_not complain(verbose: true)
       ensure
-        Warning[:strict_unused_block] = warn_experimental
+        Warning[:strict_unused_block] = warn_strict_unused_block
       end
     end
 
@@ -1635,14 +1713,14 @@ describe "warning about not used block argument" do
         42
       end
 
-      warn_experimental = Warning[:strict_unused_block]
+      warn_strict_unused_block = Warning[:strict_unused_block]
       Warning[:strict_unused_block] = true
       begin
         -> {
           m_that_does_not_use_block { }
       }.should complain(/the block passed to 'm_that_does_not_use_block' defined at .+ may be ignored/)
       ensure
-        Warning[:strict_unused_block] = warn_experimental
+        Warning[:strict_unused_block] = warn_strict_unused_block
       end
     end
   end

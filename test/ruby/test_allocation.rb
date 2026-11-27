@@ -6,6 +6,10 @@ class TestAllocation < Test::Unit::TestCase
     # The namespace changes on i686 platform triggers a bug to allocate objects unexpectedly.
     # For now, skip these tests only on i686
     pend if RUBY_PLATFORM =~ /^i686/
+    # Allocations are measured as the difference in ObjectSpace.count_objects' live counts, so
+    # a GC during the measurement makes it negative.  mmtk's initial heap is small enough that
+    # a GC in the middle is the norm.
+    omit 'live-count deltas need an idle GC' unless GC.config[:implementation] == 'default'
   end
 
   def munge_checks(checks)
@@ -66,7 +70,11 @@ class TestAllocation < Test::Unit::TestCase
 
       #{checks}
 
-      assert_empty(failures)
+      if failures.empty?
+        assert true
+      else
+        assert false, failures.join("\\n")
+      end
     RUBY
   end
 
@@ -79,6 +87,15 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 0, "[*empty_array, 1, *empty_array]")
         check_allocations(1, 0, "[*empty_array, *empty_array]")
         check_allocations(1, 0, "[#{'1,'*100000}]")
+      RUBY
+    end
+
+    def test_hash_literal_keyword_splat
+      check_allocations(<<~RUBY)
+        check_allocations(0, 1, "{a: array1, **hash1}")
+        check_allocations(0, 1, "{**nil}")
+        check_allocations(0, 1, "{**hash1, **nil}")
+        check_allocations(0, 1, "{a: 1, **{}}")
       RUBY
     end
 

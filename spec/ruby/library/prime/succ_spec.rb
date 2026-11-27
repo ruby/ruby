@@ -1,7 +1,9 @@
 require_relative '../../spec_helper'
-require_relative 'shared/next'
 require 'prime'
 
 describe "Prime#succ" do
-  it_behaves_like :prime_next, :succ
+  it "is an alias of Prime#next" do
+    p = Prime.instance.each
+    p.method(:succ).should == p.method(:next)
+  end
 end

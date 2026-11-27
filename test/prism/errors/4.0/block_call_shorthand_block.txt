@@ -1,0 +1,30 @@
+f x do end.() do end
+              ^~ unexpected 'do', expecting end-of-input
+              ^~ unexpected 'do', ignoring it
+                 ^~~ unexpected 'end', ignoring it
+
+f x do end.() {}
+              ^ unexpected '{', expecting end-of-input
+              ^ unexpected '{', ignoring it
+               ^ unexpected '}', ignoring it
+
+f x do end&.() do end
+               ^~ unexpected 'do', expecting end-of-input
+               ^~ unexpected 'do', ignoring it
+                  ^~~ unexpected 'end', ignoring it
+
+f x do end&.() {}
+               ^ unexpected '{', expecting end-of-input
+               ^ unexpected '{', ignoring it
+                ^ unexpected '}', ignoring it
+
+f x do end::() do end
+               ^~ unexpected 'do', expecting end-of-input
+               ^~ unexpected 'do', ignoring it
+                  ^~~ unexpected 'end', ignoring it
+
+f x do end::() {}
+               ^ unexpected '{', expecting end-of-input
+               ^ unexpected '{', ignoring it
+                ^ unexpected '}', ignoring it
+

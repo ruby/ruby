@@ -1,0 +1,8 @@
+a rescue alias x y
+a rescue undef m
+a rescue END { b }
+a rescue retry
+alias x y rescue b
+undef m rescue b
+END { b } rescue b
+x = foo bar rescue retry

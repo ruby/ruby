@@ -33,8 +33,8 @@ describe "Kernel#instance_of?" do
   end
 
   it "raises a TypeError if given an object that is not a Class nor a Module" do
-    -> { @o.instance_of?(Object.new) }.should raise_error(TypeError)
-    -> { @o.instance_of?('KernelSpecs::InstanceClass') }.should raise_error(TypeError)
-    -> { @o.instance_of?(1) }.should raise_error(TypeError)
+    -> { @o.instance_of?(Object.new) }.should.raise(TypeError)
+    -> { @o.instance_of?('KernelSpecs::InstanceClass') }.should.raise(TypeError)
+    -> { @o.instance_of?(1) }.should.raise(TypeError)
   end
 end

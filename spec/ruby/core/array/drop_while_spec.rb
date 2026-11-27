@@ -19,6 +19,6 @@ describe "Array#drop_while" do
   end
 
   it 'returns a Array instance for Array subclasses' do
-    ArraySpecs::MyArray[1, 2, 3, 4, 5].drop_while { |n| n < 4 }.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3, 4, 5].drop_while { |n| n < 4 }.should.instance_of?(Array)
   end
 end

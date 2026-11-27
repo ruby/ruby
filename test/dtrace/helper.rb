@@ -115,7 +115,7 @@ module DTrace
       IO.popen(cmd, err: [:child, :out], &:readlines)
     end
 
-    def trap_probe d_program, ruby_program
+    def trap_probe d_program, ruby_program, env: {}
       if Hash === d_program
         d_program = d_program[IMPL] or
           omit "#{d_program} not implemented for #{IMPL}"
@@ -132,15 +132,17 @@ module DTrace
 
       d_path  = d.path
       rb_path = rb.path
-      cmd = "#{RUBYBIN} --disable=gems -I#{INCLUDE} #{rb_path}"
+      ruby_env = env
+      env_prefix = ruby_env.map {|key, val| "#{key}=#{val}" }
+      cmd = [*env_prefix, "#{RUBYBIN} --disable=gems -I#{INCLUDE} #{rb_path}"].join(" ")
       if IMPL == :stap
         cmd = %W(stap #{d_path} -c #{cmd})
       else
         cmd = [*DTRACE_CMD, "-q", "-s", d_path, "-c", cmd ]
       end
       if sudo = @@sudo
-        NEEDED_ENVS.each do |name|
-          if val = ENV[name]
+        (NEEDED_ENVS + ruby_env.keys).uniq.each do |name|
+          if val = ruby_env[name] || ENV[name]
             cmd.unshift("#{name}=#{val}")
           end
         end

@@ -36,7 +36,11 @@ describe "C-API Proc function" do
     it "calls the C function with arguments in argv" do
       @prc2.call(1, :foo).should == :foo
       @prc2.call(2, :foo, :bar).should == :bar
-      -> { @prc2.call(3, :foo, :bar) }.should raise_error(ArgumentError)
+      -> { @prc2.call(3, :foo, :bar) }.should.raise(ArgumentError)
+    end
+
+    it "passes non-Ruby pointers to the proc callback" do
+      @p.rb_proc_new_with_pointer.should == true
     end
 
     it "calls the C function with the block passed in blockarg" do
@@ -92,10 +96,25 @@ describe "C-API Proc function" do
       @p.rb_proc_call_kw(prc, [{b: 2}, {}]).should == [[{b: 2}], {}]
     end
 
+    ruby_version_is "4.1" do
+      it "passes keyword arguments to a Method proc" do
+        def @p.target(*args, **kw)
+          [args, kw]
+        end
+        prc = @p.method(:target).to_proc
+
+        @p.rb_proc_call_kw(prc, [{}]).should == [[], {}]
+        @p.rb_proc_call_kw(prc, [1, {}]).should == [[1], {}]
+        @p.rb_proc_call_kw(prc, [{b: 2}, {}]).should == [[{b: 2}], {}]
+        @p.rb_proc_call_kw(prc, [{a: 1}]).should == [[], {a: 1}]
+        @p.rb_proc_call_kw(prc, [{b: 2}, {a: 1}]).should == [[{b: 2}], {a: 1}]
+      end
+    end
+
     it "raises TypeError if the last argument is not a Hash" do
       -> {
         @p.rb_proc_call_kw(proc {}, [42])
-      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+      }.should.raise(TypeError, 'no implicit conversion of Integer into Hash')
     end
   end
 
@@ -122,10 +141,26 @@ describe "C-API Proc function" do
       @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {}], block).should == [[{b: 2}], {}, 42]
     end
 
+    ruby_version_is "4.1" do
+      it "passes keyword arguments and a block to a Method proc" do
+        def @p.target(*args, **kw, &block)
+          [args, kw, block.call(42)]
+        end
+        prc = @p.method(:target).to_proc
+        block = proc { |n| n }
+
+        @p.rb_proc_call_with_block_kw(prc, [{}], block).should == [[], {}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [1, {}], block).should == [[1], {}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {}], block).should == [[{b: 2}], {}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [{a: 1}], block).should == [[], {a: 1}, 42]
+        @p.rb_proc_call_with_block_kw(prc, [{b: 2}, {a: 1}], block).should == [[{b: 2}], {a: 1}, 42]
+      end
+    end
+
     it "raises TypeError if the last argument is not a Hash" do
       -> {
         @p.rb_proc_call_with_block_kw(proc {}, [42], proc {})
-      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+      }.should.raise(TypeError, 'no implicit conversion of Integer into Hash')
     end
 
     it "passes keyword arguments to the proc when a block is nil" do
@@ -138,19 +173,19 @@ describe "C-API Proc function" do
   describe "rb_obj_is_proc" do
     it "returns true for Proc" do
       prc = Proc.new {|a,b| a * b }
-      @p.rb_obj_is_proc(prc).should be_true
+      @p.rb_obj_is_proc(prc).should == true
     end
 
     it "returns true for subclass of Proc" do
       prc = Class.new(Proc).new {}
-      @p.rb_obj_is_proc(prc).should be_true
+      @p.rb_obj_is_proc(prc).should == true
     end
 
     it "returns false for non Proc instances" do
-      @p.rb_obj_is_proc("aoeui").should be_false
-      @p.rb_obj_is_proc(123).should be_false
-      @p.rb_obj_is_proc(true).should be_false
-      @p.rb_obj_is_proc([]).should be_false
+      @p.rb_obj_is_proc("aoeui").should == false
+      @p.rb_obj_is_proc(123).should == false
+      @p.rb_obj_is_proc(true).should == false
+      @p.rb_obj_is_proc([]).should == false
     end
   end
 end
@@ -172,17 +207,17 @@ describe "C-API when calling Proc.new from a C function" do
   it "raises an ArgumentError when the C function calls a Ruby method that calls Proc.new" do
     -> {
       @p.rb_Proc_new(2) { :called }
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   # Ruby -> C -> Ruby -> C -> rb_funcall(Proc.new)
   it "raises an ArgumentError when the C function calls a Ruby method and that method calls a C function that calls Proc.new" do
     def @p.redispatch() rb_Proc_new(0) end
-    -> { @p.rb_Proc_new(3) { :called } }.should raise_error(ArgumentError)
+    -> { @p.rb_Proc_new(3) { :called } }.should.raise(ArgumentError)
   end
 
   # Ruby -> C -> Ruby -> block_given?
   it "returns false from block_given? in a Ruby method called by the C function" do
-    @p.rb_Proc_new(6).should be_false
+    @p.rb_Proc_new(6).should == false
   end
 end

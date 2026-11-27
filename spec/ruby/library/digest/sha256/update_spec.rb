@@ -1,7 +1,8 @@
 require_relative '../../../spec_helper'
-require_relative 'shared/constants'
-require_relative 'shared/update'
+require 'digest'
 
 describe "Digest::SHA256#update" do
-  it_behaves_like :sha256_update, :update
+  it "is an alias of Digest::SHA256#<<" do
+    Digest::SHA256.instance_method(:update).should == Digest::SHA256.instance_method(:<<)
+  end
 end

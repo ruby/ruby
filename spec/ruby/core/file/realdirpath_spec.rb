@@ -61,7 +61,7 @@ platform_is_not :windows do
     it "raises an Errno::ELOOP if the symlink points to itself" do
       File.unlink @link
       File.symlink(@link, @link)
-      -> { File.realdirpath(@link) }.should raise_error(Errno::ELOOP)
+      -> { File.realdirpath(@link) }.should.raise(Errno::ELOOP)
     end
 
     it "returns the real (absolute) pathname if the file is absent" do
@@ -69,7 +69,7 @@ platform_is_not :windows do
     end
 
     it "raises Errno::ENOENT if the directory is absent" do
-      -> { File.realdirpath(@fake_file_in_fake_dir) }.should raise_error(Errno::ENOENT)
+      -> { File.realdirpath(@fake_file_in_fake_dir) }.should.raise(Errno::ENOENT)
     end
 
     it "returns the real (absolute) pathname if the symlink points to an absent file" do
@@ -77,7 +77,24 @@ platform_is_not :windows do
     end
 
     it "raises Errno::ENOENT if the symlink points to an absent directory" do
-      -> { File.realdirpath(@fake_link_to_fake_dir) }.should raise_error(Errno::ENOENT)
+      -> { File.realdirpath(@fake_link_to_fake_dir) }.should.raise(Errno::ENOENT)
+    end
+
+    platform_is :darwin do
+      it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+        dir = tmp("file_realdirpath_dir_\u{3042}")
+        utf8_file = File.join(dir, "file.txt")
+        # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+        non_utf8_file = utf8_file.encode(Encoding::Windows_31J)
+
+        begin
+          mkdir_p(dir)
+          touch(utf8_file)
+          File.realdirpath(non_utf8_file).should == File.realdirpath(utf8_file).encode(Encoding::Windows_31J)
+        ensure
+          rm_r dir
+        end
+      end
     end
   end
 end
@@ -99,6 +116,29 @@ platform_is :windows do
 
     it "returns the same path even if the last component does not exist" do
       File.realdirpath(@file).should == @file
+    end
+  end
+end
+
+describe "File.realdirpath" do
+  it "preserves the encoding of the path" do
+    path = __FILE__.encode(Encoding::EUC_JP)
+    File.realdirpath(path).encoding.should == Encoding::EUC_JP
+    dir = File.dirname(__FILE__).encode(Encoding::EUC_JP)
+    File.realdirpath(File.basename(path), dir).encoding.should == Encoding::EUC_JP
+  end
+
+  platform_is_not :windows do
+    it "retains the encoding of the resolved path when encoding conversion fails" do
+      dir = tmp("realdirpath_あ")
+      mkdir_p(dir)
+      begin
+        resolved = File.realdirpath(".".encode(Encoding::ISO_8859_1), dir)
+        resolved.encoding.should == dir.encoding
+        resolved.should.include?(dir)
+      ensure
+        rm_r dir
+      end
     end
   end
 end

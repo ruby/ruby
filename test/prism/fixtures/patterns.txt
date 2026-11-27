@@ -222,3 +222,9 @@ a in b, or c
 x => ^([*a.x])
 x => ^([**a.x])
 x => ^({ a: })
+
+case x; in (y) if z; end
+
+case x; in ((y)) unless (y); end
+
+case x; in (a) if (a) then a; in (b) unless (b) then b; end

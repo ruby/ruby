@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/length'
+require 'stringio'
 
 describe "StringIO#size" do
-  it_behaves_like :stringio_length, :size
+  it "is an alias of StringIO#length" do
+    StringIO.instance_method(:size).should == StringIO.instance_method(:length)
+  end
 end

@@ -12,9 +12,9 @@ describe "Kernel#frozen?" do
 
   describe "on true, false and nil" do
     it "returns true" do
-      true.frozen?.should be_true
-      false.frozen?.should be_true
-      nil.frozen?.should be_true
+      true.frozen?.should == true
+      false.frozen?.should == true
+      nil.frozen?.should == true
     end
   end
 
@@ -25,8 +25,8 @@ describe "Kernel#frozen?" do
     end
 
     it "returns true" do
-      @fixnum.frozen?.should be_true
-      @bignum.frozen?.should be_true
+      @fixnum.frozen?.should == true
+      @bignum.frozen?.should == true
     end
   end
 
@@ -36,7 +36,7 @@ describe "Kernel#frozen?" do
     end
 
     it "returns true" do
-      @float.frozen?.should be_true
+      @float.frozen?.should == true
     end
   end
 
@@ -46,31 +46,31 @@ describe "Kernel#frozen?" do
     end
 
     it "returns true" do
-      @symbol.frozen?.should be_true
+      @symbol.frozen?.should == true
     end
   end
 
   describe "on a Complex" do
     it "returns true" do
       c = Complex(1.3, 3.1)
-      c.frozen?.should be_true
+      c.frozen?.should == true
     end
 
     it "literal returns true" do
       c = eval "1.3i"
-      c.frozen?.should be_true
+      c.frozen?.should == true
     end
   end
 
   describe "on a Rational" do
     it "returns true" do
       r = Rational(1, 3)
-      r.frozen?.should be_true
+      r.frozen?.should == true
     end
 
     it "literal returns true" do
       r = eval "1/3r"
-      r.frozen?.should be_true
+      r.frozen?.should == true
     end
   end
 end

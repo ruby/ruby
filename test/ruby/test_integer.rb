@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/jit_support'
 
 class TestInteger < Test::Unit::TestCase
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
@@ -294,6 +295,24 @@ class TestInteger < Test::Unit::TestCase
     a = []
     assert_equal(y, y.upto(y+2) {|x| a << x })
     assert_equal([y, y+1, y+2], a)
+
+    a = []
+    1.upto(Float::NAN) {|x| a << x; break if a.size == 3 }
+    assert_equal([1, 2, 3], a)
+  end
+
+  def test_upto_comparator_returns_nil
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class Integer
+        def >(other)
+          nil
+        end
+      end
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { 1.upto(3.5) {} }
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { (2**64).upto(2**64+1) {} }
+    end;
   end
 
   def test_downto
@@ -309,6 +328,26 @@ class TestInteger < Test::Unit::TestCase
     a = []
     assert_equal(y, y.downto(y-2) {|x| a << x })
     assert_equal([y, y-1, y-2], a)
+
+    a = []
+    1.downto(Float::NAN) {|x| a << x; break if a.size == 3 }
+    assert_equal([1, 0, -1], a)
+  end
+
+  def test_downto_comparator_returns_nil
+    args = []
+    args << "--zjit" if JITSupport.zjit_enabled?
+    assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class Integer
+        def <(other)
+          nil
+        end
+      end
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { 1.downto(-3.5) {} }
+      assert_raise_with_message(ArgumentError, /comparator returned nil/) { (2**64).downto(2**64-1) {} }
+    end;
   end
 
   def test_times
@@ -632,6 +671,41 @@ class TestInteger < Test::Unit::TestCase
     }
   end
 
+  def test_bit_count
+    assert_equal(0, 0.bit_count)
+    assert_equal(1, 1.bit_count)
+    assert_equal(1, 2.bit_count)
+    assert_equal(2, 3.bit_count)
+    assert_equal(3, 7.bit_count)
+    assert_equal(3, 0b10101.bit_count)
+    assert_equal(8, 0xff.bit_count)
+    assert_equal(1, 0x100.bit_count)
+
+    # Fixnum boundaries
+    assert_equal(1, (2**30).bit_count)
+    assert_equal(1, (2**62).bit_count)
+
+    # Bignum
+    assert_equal(1, (2**64).bit_count)
+    assert_equal(64, (2**64-1).bit_count)
+    assert_equal(1, (2**1000).bit_count)
+    assert_equal(1000, (2**1000-1).bit_count)
+    assert_equal(2, (2**1000 + 2**500).bit_count)
+
+    0.upto(1000) {|i|
+      n = 2**i
+      assert_equal(1, n.bit_count, "(#{n}).bit_count")
+      assert_equal(i, (n-1).bit_count, "(#{n-1}).bit_count")
+      assert_equal(2, (n+1).bit_count, "(#{n+1}).bit_count") if i >= 1
+    }
+  end
+
+  def test_bit_count_for_negative_numbers
+    assert_raise(ArgumentError) { -1.bit_count }
+    assert_raise(ArgumentError) { -19.bit_count }
+    assert_raise(ArgumentError) { (-2**1000).bit_count }
+  end
+
   def test_digits
     assert_equal([0], 0.digits)
     assert_equal([1], 1.digits)
@@ -751,7 +825,7 @@ class TestInteger < Test::Unit::TestCase
 
     o = Object.new
     def o.to_int; Object.new; end
-    assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
+    assert_raise_with_message(TypeError, /can't convert Object into Integer/) {Integer.try_convert(o)}
   end
 
   def test_ceildiv

@@ -34,6 +34,15 @@ require "rbconfig"
 # Starting in RubyGems 2.0, a Specification can hold arbitrary
 # metadata.  See #metadata for restrictions on the format and size of metadata
 # items you may add to a specification.
+#
+# Specifications must be deterministic, as in the example above. For instance,
+# you cannot define attributes conditionally:
+#
+#   # INVALID: do not do this.
+#   unless RUBY_ENGINE == "jruby"
+#     s.extensions << "ext/example/extconf.rb"
+#   end
+#
 
 class Gem::Specification < Gem::BasicSpecification
   # REFACTOR: Consider breaking out this version stuff into a separate
@@ -317,29 +326,36 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # The license for this gem.
   #
-  # The license must be no more than 64 characters.
-  #
-  # This should just be the name of your license. The full text of the license
-  # should be inside of the gem (at the top level) when you build it.
-  #
-  # The simplest way is to specify the standard SPDX ID
-  # https://spdx.org/licenses/ for the license.
+  # The license must be no more than 64 characters, and should be a single
+  # SPDX license identifier from https://spdx.org/licenses/.
   # Ideally, you should pick one that is OSI (Open Source Initiative)
   # https://opensource.org/licenses/ approved.
   #
   # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at https://choosealicense.com/.
   #
-  # You can also use a custom license file along with your gemspec and specify
-  # a LicenseRef-<idstring>, where idstring is the name of the file containing
+  # The full text of the license should be inside of the gem (at the top
+  # level) when you build it.
+  #
+  # RubyGems validates the license against the SPDX license list when you
+  # run <tt>gem build</tt> and warns about unknown or deprecated identifiers.
+  # An identifier may carry a trailing <tt>+</tt> (this version or any later
+  # version) and a license exception joined with WITH, for example
+  # <tt>Apache-2.0 WITH LLVM-exception</tt>.
+  #
+  # Compound SPDX license expressions such as <tt>MIT OR Apache-2.0</tt> are
+  # not currently supported. RubyGems treats the whole string as a single
+  # identifier and warns that it is invalid. For a gem available under more
+  # than one license, set each license as a separate entry with #licenses=.
+  #
+  # For a license that has no SPDX identifier, use Nonstandard, or
+  # LicenseRef-<idstring> where idstring is the name of the file containing
   # the license text.
   #
   # You should specify a license for your gem so that people know how they are
   # permitted to use it and any restrictions you're placing on it.  Not
   # specifying a license means all rights are reserved; others have no right
   # to use the code for any purpose.
-  #
-  # You can set multiple licenses with #licenses=
   #
   # Usage:
   #   spec.license = 'MIT'
@@ -351,15 +367,20 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # The license(s) for the library.
   #
-  # Each license must be a short name, no more than 64 characters.
+  # Each entry must be a single SPDX license identifier, no more than 64
+  # characters. Entries are validated independently, so a compound expression
+  # such as <tt>MIT OR Apache-2.0</tt> is not valid as an entry. Listing the
+  # identifiers as separate array elements is currently the only way RubyGems
+  # supports declaring a dual- or multi-licensed gem.
   #
-  # This should just be the name of your license. The full
-  # text of the license should be inside of the gem when you build it.
+  # Note that the array itself does not state how the licenses combine.
+  # Include the full text of each license in the gem and describe the exact
+  # terms there.
   #
   # See #license= for more discussion
   #
   # Usage:
-  #   spec.licenses = ['MIT', 'GPL-2.0']
+  #   spec.licenses = ['MIT', 'GPL-2.0-only']
 
   def licenses=(licenses)
     @licenses = Array licenses
@@ -397,6 +418,13 @@ class Gem::Specification < Gem::BasicSpecification
   #   %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
 
   attr_accessor :metadata
+
+  ##
+  # The content address of this gem, a SHA-256 prefix of the gem file
+  # contents used in place of the platform in file and install names
+  # (e.g. "example-1.0-78be552b"), or +nil+ for non-content-addressable gems.
+
+  attr_accessor :content_address
 
   ######################################################################
   # :section: Optional gemspec attributes
@@ -523,7 +551,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_development_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_development_dependency 'example', '>= 1.1.4', '< 2'
   #
   # Development dependencies aren't installed by default and aren't
   # activated when a gem is required.
@@ -537,7 +565,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_dependency 'example', '>= 1.1.4', '< 2'
 
   def add_dependency(gem, *requirements)
     if requirements.uniq.size != requirements.size
@@ -545,6 +573,15 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     add_dependency_with_type(gem, :runtime, requirements)
+  end
+
+  ##
+  # Ruby ABI of the gem derived from required_ruby_version
+  # Only supports required_ruby_version in "~> X.Y.0" format (single pessimistic requirement with 3 segments)
+  # Returns nil if the required_ruby_version does not specify a single Ruby ABI
+
+  def ruby_abi
+    Gem::ContentAddress.ruby_abi_for(required_ruby_version)
   end
 
   ##
@@ -960,6 +997,15 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Return the best specification that contains the file matching +path+
+  # amongst the specs that are not loaded. This method is different than
+  # +find_inactive_by_path+ as it will filter out loaded specs by their name.
+
+  def self.find_unloaded_by_path(path)
+    specification_record.find_unloaded_by_path(path)
+  end
+
+  ##
+  # Return the best specification that contains the file matching +path+
   # amongst the specs that are not activated.
 
   def self.find_inactive_by_path(path)
@@ -1209,6 +1255,8 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       unresolved_deps.clear
+      # find_all_by_name above memoized the record, which would outlive dirs= and ignore its new dirs
+      @specification_record = nil
     end
     Gem.post_reset_hooks.each(&:call)
   end
@@ -1217,7 +1265,9 @@ class Gem::Specification < Gem::BasicSpecification
   # Keeps track of all currently known specifications
 
   def self.specification_record
-    @specification_record ||= Gem::SpecificationRecord.new(dirs)
+    @specification_record ||= Gem::SpecificationRecord.new(
+      Gem::SpecificationRecord.dirs_with_abi(dirs)
+    )
   end
 
   # DOC: This method needs documented or nodoc'd
@@ -1257,7 +1307,7 @@ class Gem::Specification < Gem::BasicSpecification
       raise unless message.include?("YAML::")
 
       unless Object.const_defined?(:YAML)
-        Object.const_set "YAML", Psych
+        Object.const_set "YAML", Module.new
         yaml_set = true
       end
 
@@ -1266,7 +1316,7 @@ class Gem::Specification < Gem::BasicSpecification
 
         YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey") && !YAML::Syck.const_defined?(:DefaultKey)
       elsif message.include?("YAML::PrivateType") && !YAML.const_defined?(:PrivateType)
-        YAML.const_set "PrivateType", Class.new
+        YAML.const_set "PrivateType", Class.new { attr_accessor :type_id, :value }
       end
 
       retry_count += 1
@@ -1324,7 +1374,8 @@ class Gem::Specification < Gem::BasicSpecification
     self.class === other &&
       name == other.name &&
       version == other.version &&
-      platform == other.platform
+      platform == other.platform &&
+      content_address == other.content_address
   end
 
   ##
@@ -1895,7 +1946,7 @@ class Gem::Specification < Gem::BasicSpecification
   # :startdoc:
 
   def hash # :nodoc:
-    name.hash ^ version.hash
+    [name, version, platform, content_address].hash
   end
 
   def init_with(coder) # :nodoc:
@@ -1931,6 +1982,7 @@ class Gem::Specification < Gem::BasicSpecification
     @loaded_from = nil
     @original_platform = nil
     @installed_by_version = nil
+    @content_address = nil
 
     set_nil_attributes_to_nil
     set_not_nil_attributes_to_default_values
@@ -1978,12 +2030,18 @@ class Gem::Specification < Gem::BasicSpecification
 
   def base_dir
     return Gem.dir unless loaded_from
-    @base_dir ||= if default_gem?
+    @base_dir ||= if default_gem? || loaded_from_abi_scoped_spec_dir?
       File.dirname File.dirname File.dirname loaded_from
     else
       File.dirname File.dirname loaded_from
     end
   end
+
+  def loaded_from_abi_scoped_spec_dir?
+    !loaded_from.nil? &&
+      Gem::SpecificationRecord.abi_scoped_spec_dir?(File.dirname(loaded_from))
+  end
+  private :loaded_from_abi_scoped_spec_dir?
 
   def inspect # :nodoc:
     if $DEBUG
@@ -2052,6 +2110,7 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
+    return false if RUBY_ENGINE == "jruby"
     return false if extensions.empty?
     return false if default_gem?
     return false if File.exist? gem_build_complete_path
@@ -2083,7 +2142,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return a NameTuple that represents this Specification
 
   def name_tuple
-    Gem::NameTuple.new name, version, original_platform
+    Gem::NameTuple.new name, version, original_platform, content_address: content_address
   end
 
   ##
@@ -2172,10 +2231,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets rdoc_options to +value+, ensuring it is an array.
+  # Sets rdoc_options to +value+, ensuring it is a flat array of strings.
+  # Handles malformed gemspecs where rdoc_options may be a Hash or contain Hashes.
 
   def rdoc_options=(options)
-    @rdoc_options = Array options
+    @rdoc_options = Array(options).flat_map do |opt|
+      opt.is_a?(Hash) ? opt.to_a.flatten.map(&:to_s) : opt
+    end
   end
 
   ##
@@ -2247,7 +2309,8 @@ class Gem::Specification < Gem::BasicSpecification
   # True if this gem has the same attributes as +other+.
 
   def same_attributes?(spec)
-    @@attributes.all? {|name, _default| send(name) == spec.send(name) }
+    @@attributes.all? {|name, _default| send(name) == spec.send(name) } &&
+      content_address == spec.content_address
   end
 
   private :same_attributes?
@@ -2275,11 +2338,14 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Returns the full path to the directory containing this spec's
-  # gemspec file. eg: /usr/local/lib/ruby/gems/1.8/specifications
-
+  # Full path to the directory containing this spec's gemspec file.
+  # ABI-scoped for content-addressed specs.
   def spec_dir
-    @spec_dir ||= File.join base_dir, "specifications"
+    @spec_dir ||= if loaded_from && Gem::ContentAddress.content_addressed?(self)
+      File.dirname loaded_from
+    else
+      Gem::SpecificationRecord.specification_dir_for(self, base_dir)
+    end
   end
 
   ##
@@ -2346,11 +2412,18 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
+    content_addressed = Gem::ContentAddress.content_addressed?(self)
+    gem_suffix = content_addressed ? content_address : platform
     result = []
     result << "# -*- encoding: utf-8 -*-"
-    result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{platform} #{raw_require_paths.join("\0")}"
+    result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{gem_suffix} #{raw_require_paths.join("\0")}"
     result << "#{Gem::StubSpecification::PREFIX}#{extensions.join "\0"}" unless
       extensions.empty?
+    result << "#{Gem::StubSpecification::TARGET_PREFIX}platform=#{platform}" if content_addressed
+    # Comments can't be escaped, so a newline would end the stub line early.
+    result.each do |line|
+      raise Gem::Exception, "stub line #{line.dump} contains a newline" if line.include?("\n")
+    end
     result << nil
     result << "Gem::Specification.new do |s|"
 
@@ -2359,6 +2432,7 @@ class Gem::Specification < Gem::BasicSpecification
     unless platform.nil? || platform == Gem::Platform::RUBY
       result << "  s.platform = #{ruby_code original_platform}"
     end
+    result << "  s.content_address = #{ruby_code content_address} if s.respond_to? :content_address=" if content_addressed
     result << ""
     result << "  s.required_rubygems_version = #{ruby_code required_rubygems_version} if s.respond_to? :required_rubygems_version="
 
@@ -2397,13 +2471,20 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     unless dependencies.empty?
+      unless Integer === specification_version
+        raise Gem::Exception, "invalid specification_version: #{specification_version.inspect}"
+      end
+
       result << nil
       result << "  s.specification_version = #{specification_version}"
       result << nil
 
       dependencies.each do |dep|
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{ruby_code dep.requirements_list})"
+        unless Gem::Dependency::TYPES.include?(dep.type)
+          raise Gem::Exception, "invalid dependency type: #{dep.type.inspect}"
+        end
+        result << "  s.add_#{dep.type}_dependency(#{ruby_code dep.name}, #{ruby_code dep.requirements_list})"
       end
     end
 
@@ -2437,24 +2518,28 @@ class Gem::Specification < Gem::BasicSpecification
   def to_yaml(opts = {}) # :nodoc:
     Gem.load_yaml
 
-    # Because the user can switch the YAML engine behind our
-    # back, we have to check again here to make sure that our
-    # psych code was properly loaded, and load it if not.
-    unless Gem.const_defined?(:NoAliasYAMLTree)
-      require_relative "psych_tree"
+    if Gem.use_psych?
+      # Because the user can switch the YAML engine behind our
+      # back, we have to check again here to make sure that our
+      # psych code was properly loaded, and load it if not.
+      unless Gem.const_defined?(:NoAliasYAMLTree)
+        require_relative "psych_tree"
+      end
+
+      builder = Gem::NoAliasYAMLTree.create
+      builder << self
+      ast = builder.tree
+
+      require "stringio"
+      io = StringIO.new
+      io.set_encoding Encoding::UTF_8
+
+      Psych::Visitors::Emitter.new(io).accept(ast)
+
+      io.string.gsub(/ !!null \n/, " \n")
+    else
+      Gem::YAMLSerializer.dump(self)
     end
-
-    builder = Gem::NoAliasYAMLTree.create
-    builder << self
-    ast = builder.tree
-
-    require "stringio"
-    io = StringIO.new
-    io.set_encoding Encoding::UTF_8
-
-    Psych::Visitors::Emitter.new(io).accept(ast)
-
-    io.string.gsub(/ !!null \n/, " \n")
   end
 
   ##
@@ -2531,6 +2616,10 @@ class Gem::Specification < Gem::BasicSpecification
         self.date = val
       when "platform"
         self.platform = val
+      when "rdoc_options"
+        self.rdoc_options = val
+      when "requirements"
+        self.requirements = val
       else
         instance_variable_set "@#{ivar}", val
       end

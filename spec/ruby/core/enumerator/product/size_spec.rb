@@ -51,4 +51,14 @@ describe "Enumerator::Product#size" do
     product = Enumerator::Product.new(1..2, enum)
     product.size.should == nil
   end
+
+  ruby_version_is "3.4" do
+    it "returns zero when any enumerable reports zero" do
+      enum = Enumerator::Product.new(1...1, ["A", "B"])
+      enum.size.should == 0
+
+      enum = Enumerator::Product.new(["A", "B"], 1...1)
+      enum.size.should == 0
+    end
+  end
 end

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/id2name'
 
 describe "Symbol#id2name" do
-  it_behaves_like :symbol_id2name, :id2name
+  it "is an alias of Symbol#to_s" do
+    Symbol.instance_method(:id2name).should == Symbol.instance_method(:to_s)
+  end
 end

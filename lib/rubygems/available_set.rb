@@ -96,29 +96,6 @@ class Gem::AvailableSet
   end
 
   ##
-  # Converts this AvailableSet into a RequestSet that can be used to install
-  # gems.
-  #
-  # If +development+ is :none then no development dependencies are installed.
-  # Other options are :shallow for only direct development dependencies of the
-  # gems in this set or :all for all development dependencies.
-
-  def to_request_set(development = :none)
-    request_set = Gem::RequestSet.new
-    request_set.development = development == :all
-
-    each_spec do |spec|
-      request_set.always_install << spec
-
-      request_set.gem spec.name, spec.version
-      request_set.import spec.development_dependencies if
-        development == :shallow
-    end
-
-    request_set
-  end
-
-  ##
   #
   # Used by the Resolver, the protocol to use a AvailableSet as a
   # search Set.
@@ -157,9 +134,5 @@ class Gem::AvailableSet
 
     @sorted = nil
     self
-  end
-
-  def inject_into_list(dep_list)
-    @set.each {|t| dep_list.add t.spec }
   end
 end

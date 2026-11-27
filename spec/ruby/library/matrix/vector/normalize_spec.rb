@@ -10,9 +10,9 @@ describe "Vector#normalize" do
   it "raises an error for zero vectors" do
     -> {
       Vector[].normalize
-    }.should raise_error(Vector::ZeroVectorError)
+    }.should.raise(Vector::ZeroVectorError)
     -> {
       Vector[0, 0, 0].normalize
-    }.should raise_error(Vector::ZeroVectorError)
+    }.should.raise(Vector::ZeroVectorError)
   end
 end

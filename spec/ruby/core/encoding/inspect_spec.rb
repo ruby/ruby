@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Encoding#inspect" do
   it "returns a String" do
-    Encoding::UTF_8.inspect.should be_an_instance_of(String)
+    Encoding::UTF_8.inspect.should.instance_of?(String)
   end
 
   ruby_version_is ""..."3.4" do

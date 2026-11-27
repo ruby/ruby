@@ -81,7 +81,7 @@ class TestFiber < Test::Unit::TestCase
       f.resume
       f.resume
     }
-    if respond_to?(:callcc)
+    if respond_to?(:callcc, true)
       assert_raise(RuntimeError){
         Fiber.new{
           @c = callcc{|c| @c = c}
@@ -497,6 +497,40 @@ class TestFiber < Test::Unit::TestCase
     assert_equal :ok, ret, '[Bug #14642]'
   end
 
+  def test_gc_during_nested_resume_yield
+    assert_normal_exit <<-'RUBY', '[Bug #22196]', timeout: 10
+      parent = child1 = child2 = nil
+
+      parent = Fiber.new do
+        child1 = Fiber.new do
+          parent.resume
+        end
+
+        child2 = Fiber.new do
+          GC.start
+          parent.resume
+        end
+
+        Fiber.yield
+
+        child1 = nil
+
+        Fiber.yield
+      end
+
+      parent.resume
+
+      child = child1
+      child1 = nil
+      child.resume
+      child = nil
+
+      child = child2
+      child2 = nil
+      child.resume
+    RUBY
+  end
+
   def test_machine_stack_gc
     assert_normal_exit <<-RUBY, '[Bug #14561]', timeout: 60
       enum = Enumerator.new { |y| y << 1 }
@@ -504,6 +538,47 @@ class TestFiber < Test::Unit::TestCase
       thread.join
       sleep 5     # pause until thread cache wait time runs out. Native thread exits.
       GC.start
+    RUBY
+  end
+
+  def test_fiber_pool_stack_acquire_failure
+    environment = {
+      "RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT" => "0",
+      "RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT" => "128"
+    }
+
+    # This program requires, effectively, at most one fiber stack, since the fiber immediately becomes unreachable.
+    assert_separately([environment], <<~RUBY, timeout: 30)
+      GC.disable
+      count_before = GC.count
+
+      # Create more fibers than the pool can handle (but they become immediately unreachable):
+      assert_nothing_raised do
+        256.times do
+          Fiber.new{Fiber.yield}.resume
+        end
+      end
+
+      # Major GC should have happened at least once:
+      assert_operator(GC.count, :>, count_before)
+    RUBY
+  end
+
+  def test_fiber_pool_stack_acquire_failure_at_maximum_count
+    environment = {
+      "RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT" => "128"
+    }
+
+    assert_separately([environment], <<~RUBY, timeout: 30)
+      GC.disable
+      fibers = []
+      assert_raise(FiberError) do
+        loop do
+          Fiber.new{fibers << Fiber.current; Fiber.yield}.resume
+          raise "expected FiberError before this" if fibers.size > 128
+        end
+      end
+      assert_operator fibers.size, :>=, 128
     RUBY
   end
 end

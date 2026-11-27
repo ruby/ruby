@@ -266,6 +266,13 @@ class TestNetHTTP < Test::Unit::TestCase
     Net::HTTP.default_configuration = nil
   end
 
+  def test_require_does_not_load_resolv
+    assert_separately([], <<~'RUBY')
+      require 'net/http'
+      assert_nil defined?(Resolv)
+    RUBY
+  end
+
 end
 
 module TestNetHTTP_version_1_1_methods
@@ -636,6 +643,7 @@ module TestNetHTTP_version_1_2_methods
   def test_request
     start {|http|
       _test_request__GET http
+      _test_request__QUERY http
       _test_request__accept_encoding http
       _test_request__file http
       # _test_request__range http   # WEBrick does not support Range: header.
@@ -662,6 +670,21 @@ module TestNetHTTP_version_1_2_methods
       assert_equal $test_net_http_data, res.body
 
       assert res.decode_content, 'Bug #7831' if Net::HTTP::HAVE_ZLIB
+    }
+  end
+
+  def _test_request__QUERY(http)
+    data = 'query data'
+    req = Net::HTTP::Query.new('/')
+    req['Accept'] = $test_net_http_data_type
+    req['Content-Type'] = 'application/x-www-form-urlencoded'
+    http.request(req, data) {|res|
+      assert_kind_of Net::HTTPResponse, res
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_equal data.size, res['content-length'].to_i
+      end
+      assert_kind_of String, res.body
+      assert_equal data, res.body
     }
   end
 
@@ -791,6 +814,7 @@ module TestNetHTTP_version_1_2_methods
   def test_send_request
     start {|http|
       _test_send_request__GET http
+      _test_send_request__QUERY http
       _test_send_request__HEAD http
       _test_send_request__POST http
     }
@@ -804,6 +828,17 @@ module TestNetHTTP_version_1_2_methods
     end
     assert_kind_of String, res.body
     assert_equal $test_net_http_data, res.body
+  end
+
+  def _test_send_request__QUERY(http)
+    data = 'aaabbb cc ddddddddddd lkjoiu4j3qlkuoa'
+    res = http.send_request('QUERY', '/', data, 'content-type' => 'application/x-www-form-urlencoded')
+    assert_kind_of Net::HTTPResponse, res
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_equal data.size, res['content-length'].to_i
+    end
+    assert_kind_of String, res.body
+    assert_equal data, res.body
   end
 
   def _test_send_request__HEAD(http)
@@ -930,6 +965,24 @@ __EOM__
         # assert_equal(expected, res.body)
       }
     }
+  end
+
+  def test_set_form_multipart_crlf_injection
+    build = ->(data, opt = {}) {
+      req = Net::HTTP::Post.new('/')
+      req.set_form(data, 'multipart/form-data')
+      out = +''
+      req.send(:encode_multipart_form_data, out, req.instance_variable_get(:@body_data), opt)
+    }
+    assert_raise(ArgumentError) { build.call([["foo\r\nX-Injected: 1", 'v']]) }
+    assert_raise(ArgumentError) { build.call([['f', 'v']], boundary: "abc\r\nX-Injected: 1") }
+    assert_raise(ArgumentError) { build.call([['f', 'v', {filename: "a\r\nX-Injected: 1"}]]) }
+    assert_raise(ArgumentError) do
+      build.call([['f', 'v', {filename: 'a', content_type: "text/plain\r\nX-Injected: 1"}]])
+    end
+    assert_nothing_raised do
+      build.call([['f', 'v', {filename: 'a', content_type: :"text/plain"}]])
+    end
   end
 end
 
@@ -1089,6 +1142,146 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     assert_match(/Expect: 100-continue/, @debug.string)
     assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
   end
+
+  def test_expect_continue_after_early_hints
+    server = TCPServer.new(config('host'), 0)
+    th = Thread.new do
+      sock = server.accept
+      begin
+        while (reqline = sock.gets)
+          clen = 0
+          while (line = sock.gets) && line != "\r\n"
+            clen = line.split(':', 2)[1].to_i if line.start_with?('Content-Length')
+          end
+          if reqline.start_with?('PUT')
+            sock.write "HTTP/1.1 103 Early Hints\r\nLink: </a>\r\n\r\nHTTP/1.1 100 Continue\r\n\r\n"
+            body = sock.read(clen)
+            sock.write "HTTP/1.1 201 Created\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
+          else
+            sock.write "HTTP/1.1 200 OK\r\nContent-Length: #{reqline.bytesize}\r\n\r\n#{reqline}"
+          end
+        end
+      ensure
+        sock.close
+      end
+    end
+    http = Net::HTTP.new(config('host'), server.addr[1])
+    http.continue_timeout = 10
+    http.start {
+      t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_operator(Process.clock_gettime(Process::CLOCK_MONOTONIC) - t, :<, 5)
+      assert_equal('201', res.code)
+      assert_equal('data!', res.body)
+      res = http.get('/second')
+      assert_equal("GET /second HTTP/1.1\r\n", res.body)
+    }
+  ensure
+    th&.kill
+    th&.join
+    server&.close
+  end
+
+  def test_expect_continue_early_hints_with_final_response
+    server = TCPServer.new(config('host'), 0)
+    th = Thread.new do
+      sock = server.accept
+      begin
+        while (reqline = sock.gets)
+          while (line = sock.gets) && line != "\r\n"
+          end
+          if reqline.start_with?('PUT')
+            sock.write "HTTP/1.1 103 Early Hints\r\nLink: </a>\r\n\r\nHTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n"
+          else
+            sock.write "HTTP/1.1 200 OK\r\nContent-Length: #{reqline.bytesize}\r\n\r\n#{reqline}"
+          end
+        end
+      ensure
+        sock.close
+      end
+    end
+    http = Net::HTTP.new(config('host'), server.addr[1])
+    http.continue_timeout = 10
+    http.start {
+      t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_equal('429', res.code)
+      assert_operator(Process.clock_gettime(Process::CLOCK_MONOTONIC) - t, :<, 5)
+    }
+  ensure
+    th&.kill
+    th&.join
+    server&.close
+  end
+
+  def test_expect_continue_pending_ssl_data
+    io = Object.new
+    def io.pending
+      1
+    end
+    def io.to_io
+      raise "must not wait on the socket"
+    end
+    sock = Object.new
+    sock.define_singleton_method(:io) { io }
+    def sock.rbuf_size
+      0
+    end
+    sock.singleton_class.send(:private, :rbuf_size)
+    req = Net::HTTP::Put.new('/')
+    assert_equal(true, req.__send__(:response_available?, sock, 10))
+  end
+
+  def test_expect_continue_buffered_io_wait_readable
+    sock = Object.new
+    def sock.wait_readable(timeout)
+      @timeout = timeout
+      :ready
+    end
+    def sock.io
+      raise "must not look at the socket directly"
+    end
+    req = Net::HTTP::Put.new('/')
+    assert_equal(:ready, req.__send__(:response_available?, sock, 10))
+    assert_equal(10, sock.instance_variable_get(:@timeout))
+  end
+
+  def test_expect_continue_early_response
+    server = TCPServer.new(config('host'), 0)
+    th = Thread.new do
+      2.times do
+        sock = server.accept
+        begin
+          while (reqline = sock.gets)
+            clen = 0
+            while (line = sock.gets) && line != "\r\n"
+              clen = line.split(':', 2)[1].to_i if line.start_with?('Content-Length')
+            end
+            if reqline.start_with?('PUT')
+              sock.write "HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n"
+              sock.read(clen)
+            else
+              sock.write "HTTP/1.1 200 OK\r\nContent-Length: #{reqline.bytesize}\r\n\r\n#{reqline}"
+            end
+          end
+        ensure
+          sock.close
+        end
+      end
+    end
+    http = Net::HTTP.new(config('host'), server.addr[1])
+    http.continue_timeout = 1
+    http.start {
+      res = http.request_put('/first', 'data!', 'expect' => '100-continue')
+      assert_equal('429', res.code)
+      res = http.get('/second')
+      assert_equal("GET /second HTTP/1.1\r\n", res.body)
+    }
+  ensure
+    th&.kill
+    th&.join
+    server&.close
+  end
 end
 
 class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
@@ -1122,6 +1315,48 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
       }
     }
     assert_match(/HTTP\/1.1 101 Switching Protocols/, @debug.string)
+  end
+end
+
+class TestNetHTTPInformationalResponses < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def mount_informational(count)
+    @server.mount('/info', proc {|req, res|
+      count.times { req.continue }
+      res.body = 'BODY'
+    })
+  end
+
+  def test_informational_responses
+    mount_informational 3
+    start {|http|
+      res = http.get('/info')
+      assert_equal('BODY', res.body)
+    }
+  end
+
+  def test_max_informational_responses
+    mount_informational Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+    start {|http|
+      res = http.get('/info')
+      assert_equal('BODY', res.body)
+    }
+  end
+
+  def test_too_many_informational_responses
+    mount_informational Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES + 1
+    start {|http|
+      assert_raise(Net::HTTPBadResponse) {
+        http.get('/info')
+      }
+    }
   end
 end
 
@@ -1216,16 +1451,17 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     end
     def write(_)
     end
-    def readline
+    def readuntil(terminator, ignore_eof = false, limit: nil)
+      raise "unexpected terminator #{terminator.dump}" unless terminator == "\n"
+      # A header read ends the headers at once. Every other read is the
+      # status line of a fresh attempt, which is what count measures.
+      return "" if ignore_eof
       @count += 1
       if @success_after && @success_after <= @count
-        "HTTP/1.1 200 OK"
+        "HTTP/1.1 200 OK\n"
       else
         raise Errno::ECONNRESET
       end
-    end
-    def readuntil(*_)
-      ""
     end
     def read_all(_)
     end
@@ -1264,6 +1500,89 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
       assert_equal 1, called
     }
     @log_tester = nil
+  end
+
+  class RecordingMockSocket < MockSocket
+    def written
+      @written ||= +""
+    end
+    def continue_timeout
+    end
+    def write(*strs)
+      strs.each { |str| written << str }
+      strs.sum(&:bytesize)
+    end
+    alias << write
+  end
+
+  def with_mock_socket(success_after: nil)
+    start {|http|
+      socket = RecordingMockSocket.new(success_after: success_after)
+      http.instance_variable_get(:@socket).close
+      http.instance_variable_set(:@socket, socket)
+      http.max_retries = 10
+      yield http, socket
+    }
+  end
+
+  def test_http_retry_with_string_body
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req.body = "data"
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 11, socket.count
+    }
+  end
+
+  def test_http_retry_with_multipart_form
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req.set_form([["a", "b"]], "multipart/form-data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 11, socket.count
+    }
+  end
+
+  def test_http_retry_with_urlencoded_form
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req.set_form([["a", "b"]])
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 11, socket.count
+    }
+  end
+
+  def test_http_no_retry_with_body_stream
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req["Transfer-Encoding"] = "chunked"
+      req.body_stream = StringIO.new("data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 1, socket.count
+      assert_equal 1, socket.written.scan("PUT / HTTP/1.1\r\n").size
+    }
+  end
+
+  def test_http_no_retry_with_body_stream_when_retry_would_succeed
+    with_mock_socket(success_after: 2) {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req["Transfer-Encoding"] = "chunked"
+      req.body_stream = StringIO.new("data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 1, socket.count
+      assert_equal 1, socket.written.scan("PUT / HTTP/1.1\r\n").size
+    }
+  end
+
+  def test_http_no_retry_with_multipart_io
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req["Transfer-Encoding"] = "chunked"
+      req.set_form([["file", StringIO.new("data"), {filename: "f.txt"}]], "multipart/form-data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 1, socket.count
+      assert_equal 1, socket.written.scan("PUT / HTTP/1.1\r\n").size
+    }
   end
 
   def test_keep_alive_server_close

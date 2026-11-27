@@ -10,7 +10,7 @@ bundle(1) -- Ruby Dependency Management
 Bundler manages an `application's dependencies` through its entire life
 across many machines systematically and repeatably.
 
-See [the bundler website](https://bundler.io) for information on getting
+See [the RubyGems guides](https://guides.rubygems.org/) for information on getting
 started, and Gemfile(5) for more information on the `Gemfile` format.
 
 ## OPTIONS
@@ -64,6 +64,18 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle show(1)`](bundle-show.1.html):
   Show the source location of a particular gem in the bundle
 
+* [`bundle info(1)`](bundle-info.1.html):
+  Show information for the given gem in your bundle
+
+* [`bundle list(1)`](bundle-list.1.html):
+  List all the gems in the bundle
+
+* [`bundle licenses(1)`](bundle-licenses.1.html):
+  Print the license of all gems in the bundle
+
+* [`bundle fund(1)`](bundle-fund.1.html):
+  Lists information about gems seeking funding assistance
+
 * [`bundle outdated(1)`](bundle-outdated.1.html):
   Show all of the outdated gems in the current bundle
 
@@ -88,8 +100,17 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle clean(1)`](bundle-clean.1.html):
   Clean up unused gems in your Bundler directory
 
+* [`bundle pristine(1)`](bundle-pristine.1.html):
+  Restores installed gems to their pristine condition
+
 * [`bundle doctor(1)`](bundle-doctor.1.html):
   Display warnings about common problems
+
+* [`bundle env(1)`](bundle-env.1.html):
+  Print information about the environment Bundler is running under
+
+* [`bundle issue(1)`](bundle-issue.1.html):
+  Get help reporting Bundler issues
 
 * [`bundle remove(1)`](bundle-remove.1.html):
   Removes gems from the Gemfile

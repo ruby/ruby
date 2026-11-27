@@ -2,12 +2,17 @@
 
 require 'socket.so'
 
-unless IO.method_defined?(:wait_writable, false)
-  # It's only required on older Rubies < v3.2:
-  require 'io/wait'
-end
-
 class Addrinfo
+  # :stopdoc:
+  # Windows signals a failed connect(2) through the exceptfds of select(2)
+  # only.  Elsewhere the priority event would just take the wait off the M:N
+  # thread scheduler, which refuses any event but readable and writable.
+  # [Bug #18661]
+  CONNECT_EVENTS = IO::WRITABLE |
+    (/mswin|mingw|cygwin/.match?(RUBY_PLATFORM) ? IO::PRIORITY : 0)
+  private_constant :CONNECT_EVENTS
+  # :startdoc:
+
   # creates an Addrinfo object from the arguments.
   #
   # The arguments are interpreted as similar to self.
@@ -61,8 +66,15 @@ class Addrinfo
         when 0 # success or EISCONN, other errors raise
           break
         when :wait_writable
-          sock.wait_writable(timeout) or
+          sock.wait(CONNECT_EVENTS, timeout) or
             raise Errno::ETIMEDOUT, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
+          # Check SO_ERROR instead of relying on the connect_nonblock retry;
+          # some kernels (e.g. Darwin 27) answer the retry connect(2) with
+          # EISCONN even when the connection has failed.  [Bug #22223]
+          err = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int
+          unless err.zero?
+            raise SystemCallError.new("connect(2) for #{self.ip_address}:#{self.ip_port}", err)
+          end
         end while true
       else
         sock.connect(self)
@@ -607,8 +619,8 @@ class Socket < BasicSocket
   private_constant :CONNECTION_ATTEMPT_DELAY
 
   ADDRESS_FAMILIES = {
-    ipv6: Socket::AF_INET6,
-    ipv4: Socket::AF_INET
+    **({ipv6: AF_INET6} if const_defined?(:AF_INET6)),
+    ipv4: AF_INET,
   }.freeze
   private_constant :ADDRESS_FAMILIES
 
@@ -707,7 +719,7 @@ class Socket < BasicSocket
 
     if resolving_family_names.size == 1
       family_name = resolving_family_names.first
-      addrinfos = Addrinfo.getaddrinfo(host, port, ADDRESS_FAMILIES[:family_name], :STREAM, timeout: open_timeout || resolv_timeout)
+      addrinfos = Addrinfo.getaddrinfo(host, port, ADDRESS_FAMILIES[family_name], :STREAM, timeout: open_timeout || resolv_timeout)
       resolution_store.add_resolved(family_name, addrinfos)
       hostname_resolution_result = nil
       hostname_resolution_notifier = nil
@@ -924,15 +936,11 @@ class Socket < BasicSocket
       end
     end
   ensure
-    hostname_resolution_threads.each do |thread|
-      thread.exit
-    end
+    hostname_resolution_threads.each(&:exit).each(&:join)
 
     hostname_resolution_result&.close
 
-    connecting_sockets.each_key do |connecting_socket|
-      connecting_socket.close
-    end
+    connecting_sockets.each_key(&:close)
   end
   private_class_method :tcp_with_fast_fallback
 

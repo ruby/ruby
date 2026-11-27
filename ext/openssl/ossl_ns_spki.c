@@ -9,14 +9,6 @@
  */
 #include "ossl.h"
 
-#define NewSPKI(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, 0)
-#define SetSPKI(obj, spki) do { \
-    if (!(spki)) { \
-        ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (spki); \
-} while (0)
 #define GetSPKI(obj, spki) do { \
     TypedData_Get_Struct((obj), NETSCAPE_SPKI, &ossl_netscape_spki_type, (spki)); \
     if (!(spki)) { \
@@ -50,22 +42,13 @@ static const rb_data_type_t ossl_netscape_spki_type = {
     {
         0, ossl_netscape_spki_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
 ossl_spki_alloc(VALUE klass)
 {
-    NETSCAPE_SPKI *spki;
-    VALUE obj;
-
-    obj = NewSPKI(klass);
-    if (!(spki = NETSCAPE_SPKI_new())) {
-        ossl_raise(eSPKIError, NULL);
-    }
-    SetSPKI(obj, spki);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_netscape_spki_type, NULL);
 }
 
 /*
@@ -82,19 +65,24 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
     VALUE buffer;
     const unsigned char *p;
 
-    if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
+    rb_scan_args(argc, argv, "01", &buffer);
+    ossl_want_uninitialized(self, &ossl_netscape_spki_type);
+    if (argc == 0) {
+        spki = NETSCAPE_SPKI_new();
+        if (!spki)
+            ossl_raise(eSPKIError, "NETSCAPE_SPKI_new");
+        RTYPEDDATA_DATA(self) = spki;
         return self;
     }
     StringValue(buffer);
     if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING_PTR(buffer), RSTRING_LENINT(buffer)))) {
         ossl_clear_error();
         p = (unsigned char *)RSTRING_PTR(buffer);
-        if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING_LEN(buffer)))) {
-            ossl_raise(eSPKIError, NULL);
-        }
+        spki = d2i_NETSCAPE_SPKI(NULL, &p, rb_len2long(RSTRING_LEN(buffer)));
+        if (!spki)
+            ossl_raise(eSPKIError, "d2i_NETSCAPE_SPKI");
     }
-    NETSCAPE_SPKI_free(DATA_PTR(self));
-    SetSPKI(self, spki);
+    RTYPEDDATA_DATA(self) = spki;
 
     return self;
 }
@@ -142,7 +130,7 @@ ossl_spki_to_pem(VALUE self)
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
         ossl_raise(eSPKIError, NULL);
     }
-    str = ossl_buf2str(data, rb_long2int(strlen(data)));
+    str = ossl_buf2str(data);
 
     return str;
 }
@@ -348,7 +336,7 @@ ossl_spki_verify(VALUE self, VALUE key)
  *   key = OpenSSL::PKey::RSA.new 2048
  *   spki = OpenSSL::Netscape::SPKI.new
  *   spki.challenge = "RandomChallenge"
- *   spki.public_key = key.public_key
+ *   spki.public_key = key
  *   spki.sign(key, OpenSSL::Digest.new('SHA256'))
  *   #send a request containing this to a server generating a certificate
  * === Verifying an SPKI request

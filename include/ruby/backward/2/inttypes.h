@@ -128,4 +128,13 @@
 # define PRIXSIZE PRI_SIZE_PREFIX"X"
 #endif
 
+#ifndef PRIdLEN
+# define PRIdLEN PRI_LEN_PREFIX"d"
+# define PRIiLEN PRI_LEN_PREFIX"i"
+# define PRIoLEN PRI_LEN_PREFIX"o"
+# define PRIuLEN PRI_LEN_PREFIX"u"
+# define PRIxLEN PRI_LEN_PREFIX"x"
+# define PRIXLEN PRI_LEN_PREFIX"X"
+#endif
+
 #endif /* RUBY_BACKWARD2_INTTYPES_H */

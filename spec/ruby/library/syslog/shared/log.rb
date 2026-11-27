@@ -1,11 +1,11 @@
 describe :syslog_log, shared: true do
   platform_is_not :windows, :darwin, :aix, :android do
     before :each do
-      Syslog.opened?.should be_false
+      Syslog.opened?.should == false
     end
 
     after :each do
-      Syslog.opened?.should be_false
+      Syslog.opened?.should == false
     end
 
     it "logs a message" do

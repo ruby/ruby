@@ -1,0 +1,7 @@
+def f opt = m(k:
+value); end
+^~~~~ unexpected local variable or method; expected a `)` to close the arguments
+^ expected a delimiter to close the parameters
+     ^ unexpected ')', expecting end-of-input
+     ^ unexpected ')', ignoring it
+

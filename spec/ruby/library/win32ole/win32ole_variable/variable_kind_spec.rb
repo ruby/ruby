@@ -11,7 +11,7 @@ platform_is :windows do
     end
 
     it "returns a String" do
-      @var.variable_kind.should be_kind_of String
+      @var.variable_kind.should.is_a? String
       @var.variable_kind.should == 'CONSTANT'
     end
 

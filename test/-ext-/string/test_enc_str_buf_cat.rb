@@ -14,6 +14,11 @@ class Test_StringEncStrBufCat < Test::Unit::TestCase
     assert_equal(:valid, Bug::String.new(a8_str).enc_str_buf_cat(cr_unknown_str).coderange, Bug6509)
   end
 
+  def test_negative_length
+    assert_raise(ArgumentError) {Bug::String.new("").enc_str_buf_cat_len("a", -1)}
+    assert_raise(ArgumentError) {Bug::String.new("").enc_str_buf_cat_len("a".b, -1)}
+  end
+
   def test_str_conv_enc
     str = Bug::String.new("aaa".encode("US-ASCII"))
     assert_same(str, str.str_conv_enc_opts("UTF-8", "US-ASCII", 0, nil))

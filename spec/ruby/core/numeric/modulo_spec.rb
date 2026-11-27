@@ -1,7 +1,12 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
 
-describe :numeric_modulo_19, shared: true do
+describe "Numeric#modulo" do
+  it "is an alias of Numeric#%" do
+    Numeric.instance_method(:modulo).should == Numeric.instance_method(:%)
+  end
+end
+
+describe "Numeric#%" do
   it "returns self - other * self.div(other)" do
     s = mock_numeric('self')
     o = mock_numeric('other')
@@ -11,14 +16,6 @@ describe :numeric_modulo_19, shared: true do
     s.should_receive(:div).with(o).and_return(n3)
     o.should_receive(:*).with(n3).and_return(n4)
     s.should_receive(:-).with(n4).and_return(n5)
-    s.send(@method, o).should == n5
+    (s % o).should == n5
   end
-end
-
-describe "Numeric#modulo" do
-  it_behaves_like :numeric_modulo_19, :modulo
-end
-
-describe "Numeric#%" do
-  it_behaves_like :numeric_modulo_19, :%
 end

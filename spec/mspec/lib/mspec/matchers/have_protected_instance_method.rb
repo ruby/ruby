@@ -19,6 +19,7 @@ end
 
 module MSpecMatchers
   private def have_protected_instance_method(method, include_super = true)
+    MSpec.deprecate __method__, '.protected_instance_methods(false).should.include?'
     HaveProtectedInstanceMethodMatcher.new method, include_super
   end
 end

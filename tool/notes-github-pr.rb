@@ -20,8 +20,22 @@ GITHUB_TO_SVN = {
   'unak'        => 'usa',
 }
 
+def with_retry
+  attempts = 0
+  begin
+    yield
+  rescue Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ETIMEDOUT, Errno::EPIPE,
+         OpenSSL::SSL::SSLError, Net::OpenTimeout, Net::ReadTimeout, SocketError => e
+    attempts += 1
+    raise if attempts > 3
+    warn "#{e.class}: #{e.message}, retrying (#{attempts}/3)"
+    sleep attempts * 2
+    retry
+  end
+end
+
 EMAIL_YML_URL = 'https://raw.githubusercontent.com/ruby/git.ruby-lang.org/refs/heads/master/config/email.yml'
-SVN_TO_EMAILS = YAML.safe_load(Net::HTTP.get_response(URI(EMAIL_YML_URL)).tap(&:value).body)
+SVN_TO_EMAILS = YAML.safe_load(with_retry { Net::HTTP.get_response(URI(EMAIL_YML_URL)).tap(&:value) }.body)
 
 class GitHub
   ENDPOINT = URI.parse('https://api.github.com')
@@ -51,9 +65,11 @@ class GitHub
   private
 
   def get(path, accept: 'application/vnd.github.v3+json')
-    Net::HTTP.start(ENDPOINT.host, ENDPOINT.port, use_ssl: ENDPOINT.scheme == 'https') do |http|
-      headers = { 'Accept': accept, 'Authorization': "bearer #{@access_token}" }
-      http.get(path, headers).tap(&:value)
+    with_retry do
+      Net::HTTP.start(ENDPOINT.host, ENDPOINT.port, use_ssl: ENDPOINT.scheme == 'https') do |http|
+        headers = { 'Accept': accept, 'Authorization': "bearer #{@access_token}" }
+        http.get(path, headers).tap(&:value)
+      end
     end
   end
 end

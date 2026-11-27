@@ -94,8 +94,6 @@ module SyntaxSuggest
     end
 
     it "gem can be tested when executing on Ruby with default gem included" do
-      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
-
       out = `#{ruby} -I#{lib_dir} -rsyntax_suggest -e "puts SyntaxError.instance_method(:detailed_message).source_location" 2>&1`
 
       expect($?.success?).to be_truthy
@@ -103,8 +101,6 @@ module SyntaxSuggest
     end
 
     it "annotates a syntax error in Ruby 3.2+ when require is not used" do
-      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
-
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
@@ -187,6 +183,35 @@ module SyntaxSuggest
         expect($?.success?).to be_falsey
         expect(out.downcase).to_not include("syntax ok")
         expect(out).to include("Invalid break")
+      end
+    end
+
+    it "SYNTAX_SUGGEST_DEBUG reports a rescued internal error instead of masking it" do
+      Dir.mktmpdir do |dir|
+        tmpdir = Pathname(dir)
+
+        # Force `SyntaxSuggest.call` to raise so the rescue in `detailed_message` fires
+        monkeypatch = tmpdir.join("raise_monkeypatch.rb")
+        monkeypatch.write <<~EOM
+          require "syntax_suggest/api"
+
+          module SyntaxSuggest
+            def self.call(*args, **kwargs)
+              raise "boom from monkeypatch"
+            end
+          end
+        EOM
+
+        script = tmpdir.join("script.rb")
+        script.write <<~EOM
+          def lol
+            puts "haha"
+        EOM
+
+        out = IO.popen({"SYNTAX_SUGGEST_DEBUG" => "1"}, "#{ruby} -I#{lib_dir} -rsyntax_suggest -r#{monkeypatch} #{script} 2>&1", &:read)
+
+        expect($?.success?).to be_falsey
+        expect(out).to include("boom from monkeypatch")
       end
     end
   end

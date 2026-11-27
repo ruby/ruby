@@ -15,7 +15,7 @@ describe "Matrix::LUPDecomposition#determinant" do
       lup = m.lup
       -> {
         lup.determinant
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+      }.should.raise(Matrix::ErrDimensionMismatch)
     end
   end
 end

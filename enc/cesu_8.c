@@ -423,12 +423,13 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
 {
   const UChar *p;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 
   while (!utf8_islead(*p) && p > start) p--;
 
-  if (p > start && s - p == 2 && utf16_is_low_surrogate(utf8_decode_3byte_sequence(p))) {
+  if (p > start && end - p >= 3 && utf16_is_low_surrogate(utf8_decode_3byte_sequence(p))) {
     const UChar *p_surrogate_pair = p - 1;
     while (!utf8_islead(*p_surrogate_pair) && p_surrogate_pair > start) p_surrogate_pair--;
     if (p - p_surrogate_pair == 3 && utf16_is_high_surrogate(utf8_decode_3byte_sequence(p_surrogate_pair))) {

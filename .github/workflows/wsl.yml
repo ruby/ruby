@@ -14,16 +14,19 @@ on:
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
 
+permissions:
+  contents: read
+
 jobs:
   wsl:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:

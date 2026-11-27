@@ -1,0 +1,9 @@
+(work rescue *xs)
+             ^~~ unexpected write target
+
+(work rescue x, y)
+             ^~~~ unexpected write target
+
+(work rescue (x, y))
+             ^~~~~~ unexpected write target
+

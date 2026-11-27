@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/collect'
 
 describe "Set#collect!" do
-  it_behaves_like :set_collect_bang, :collect!
+  it "is an alias of Set#map!" do
+    Set.instance_method(:collect!).should == Set.instance_method(:map!)
+  end
 end

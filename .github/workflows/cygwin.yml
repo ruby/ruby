@@ -34,22 +34,32 @@ jobs:
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
       - run: git config --global core.autocrlf input
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Cygwin
-        uses: cygwin/cygwin-install-action@master
+        uses: cygwin/cygwin-install-action@5a1b0cd107181fa6bb6bf3f90d500f4fb3132f18 # v7.0.0
         with:
-          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems
+          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel rubygems ruby-devel
+          site: |
+            https://cygwin.osuosl.org/
+
+      - name: Install fiddle
+        run: |
+          gem install fiddle
+        shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
       - name: configure
         run: |
-          ./autogen.sh
+          # The autoreconf wrapper in autoconf-20260320-1 has a shell syntax error
+          AUTORECONF=autoreconf-2.73 ./autogen.sh
           ./configure --disable-install-doc
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 

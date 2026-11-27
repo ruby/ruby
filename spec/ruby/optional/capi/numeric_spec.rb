@@ -3,21 +3,27 @@ require_relative 'spec_helper'
 load_extension("numeric")
 
 describe "CApiNumericSpecs" do
+  uint_max = RbConfig::LIMITS["UINT_MAX"]
+  int_max = RbConfig::LIMITS["INT_MAX"]
+  int_min = RbConfig::LIMITS["INT_MIN"]
+  ulong_max = RbConfig::LIMITS["ULONG_MAX"]
+  long_max = RbConfig::LIMITS["LONG_MAX"]
+  long_min = RbConfig::LIMITS["LONG_MIN"]
+  ushrt_max = RbConfig::LIMITS["USHRT_MAX"]
+  shrt_max = RbConfig::LIMITS["SHRT_MAX"]
+  shrt_min = RbConfig::LIMITS["SHRT_MIN"]
+
   before :each do
     @s = CApiNumericSpecs.new
   end
 
   describe "NUM2INT" do
     it "raises a TypeError if passed nil" do
-      -> { @s.NUM2INT(nil) }.should raise_error(TypeError)
+      -> { @s.NUM2INT(nil) }.should.raise(TypeError)
     end
 
     it "converts a Float" do
       @s.NUM2INT(4.2).should == 4
-    end
-
-    it "converts a Bignum" do
-      @s.NUM2INT(0x7fff_ffff).should == 0x7fff_ffff
     end
 
     it "converts a Fixnum" do
@@ -28,12 +34,24 @@ describe "CApiNumericSpecs" do
       @s.NUM2INT(-1).should == -1
     end
 
-    it "converts a negative Bignum into an signed number" do
-      @s.NUM2INT(-2147442171).should == -2147442171
+    guard -> { int_max > fixnum_max } do
+      it "converts a Bignum" do
+        @s.NUM2INT(int_max).should == int_max
+      end
     end
 
-    it "raises a RangeError if the value is more than 32bits" do
-      -> { @s.NUM2INT(0xffff_ffff+1) }.should raise_error(RangeError)
+    guard -> { int_min < fixnum_min } do
+      it "converts a negative Bignum into an signed numbe r" do
+        @s.NUM2INT(fixnum_min-1).should == fixnum_min-1
+      end
+    end
+
+    it "raises a RangeError if the value is more than INT_MAX" do
+      -> { @s.NUM2INT(int_max+1) }.should.raise(RangeError)
+    end
+
+    it "raises a RangeError if the value is less than INT_MIN" do
+      -> { @s.NUM2INT(int_min-1) }.should.raise(RangeError)
     end
 
     it "calls #to_int to coerce the value" do
@@ -45,15 +63,11 @@ describe "CApiNumericSpecs" do
 
   describe "NUM2UINT" do
     it "raises a TypeError if passed nil" do
-      -> { @s.NUM2UINT(nil) }.should raise_error(TypeError)
+      -> { @s.NUM2UINT(nil) }.should.raise(TypeError)
     end
 
     it "converts a Float" do
       @s.NUM2UINT(4.2).should == 4
-    end
-
-    it "converts a Bignum" do
-      @s.NUM2UINT(0xffff_ffff).should == 0xffff_ffff
     end
 
     it "converts a Fixnum" do
@@ -61,25 +75,25 @@ describe "CApiNumericSpecs" do
     end
 
     it "converts a negative number to the complement" do
-      @s.NUM2UINT(-1).should == 4294967295
+      @s.NUM2UINT(-1).should == uint_max
     end
 
     it "converts a signed int value to the complement" do
-      @s.NUM2UINT(-0x8000_0000).should == 2147483648
+      @s.NUM2UINT(int_min).should == int_max + 1
     end
 
-    it "raises a RangeError if the value is more than 32bits" do
-      -> { @s.NUM2UINT(0xffff_ffff+1) }.should raise_error(RangeError)
+    guard -> { uint_max > fixnum_max } do
+      it "converts a Bignum" do
+        @s.NUM2UINT(uint_max).should == uint_max
+      end
     end
 
-    it "raises a RangeError if the value is less than 32bits negative" do
-      -> { @s.NUM2UINT(-0x8000_0000-1) }.should raise_error(RangeError)
+    it "raises a RangeError if the value is more than UINT_MAX" do
+      -> { @s.NUM2UINT(uint_max+1) }.should.raise(RangeError)
     end
 
-    it "raises a RangeError if the value is more than 64bits" do
-      -> do
-        @s.NUM2UINT(0xffff_ffff_ffff_ffff+1)
-      end.should raise_error(RangeError)
+    it "raises a RangeError if the value is less than INT_MIN" do
+      -> { @s.NUM2UINT(int_min-1) }.should.raise(RangeError)
     end
 
     it "calls #to_int to coerce the value" do
@@ -91,49 +105,35 @@ describe "CApiNumericSpecs" do
 
   describe "NUM2LONG" do
     it "raises a TypeError if passed nil" do
-      -> { @s.NUM2LONG(nil) }.should raise_error(TypeError)
+      -> { @s.NUM2LONG(nil) }.should.raise(TypeError)
     end
 
     it "converts a Float" do
       @s.NUM2LONG(4.2).should == 4
     end
 
-    it "converts a Bignum" do
-      @s.NUM2LONG(0x7fff_ffff).should == 0x7fff_ffff
-    end
-
     it "converts a Fixnum" do
       @s.NUM2LONG(5).should == 5
     end
 
-    platform_is c_long_size: 32 do
-      it "converts -1 to an signed number" do
-        @s.NUM2LONG(-1).should == -1
-      end
-
-      it "converts a negative Bignum into an signed number" do
-        @s.NUM2LONG(-2147442171).should == -2147442171
-      end
-
-      it "raises a RangeError if the value is more than 32bits" do
-        -> { @s.NUM2LONG(0xffff_ffff+1) }.should raise_error(RangeError)
-      end
+    it "converts -1 to an signed number" do
+      @s.NUM2LONG(-1).should == -1
     end
 
-    platform_is c_long_size: 64 do
-      it "converts -1 to an signed number" do
-        @s.NUM2LONG(-1).should == -1
-      end
+    it "converts a positive number into an signed number" do
+      @s.NUM2LONG(long_max).should == long_max
+    end
 
-      it "converts a negative Bignum into an signed number" do
-        @s.NUM2LONG(-9223372036854734331).should == -9223372036854734331
-      end
+    it "converts a negative number into an signed number" do
+      @s.NUM2LONG(long_min).should == long_min
+    end
 
-      it "raises a RangeError if the value is more than 64bits" do
-        -> do
-          @s.NUM2LONG(0xffff_ffff_ffff_ffff+1)
-        end.should raise_error(RangeError)
-      end
+    it "raises a RangeError if the value is more than LONG_MAX" do
+      -> { @s.NUM2LONG(long_max+1) }.should.raise(RangeError)
+    end
+
+    it "raises a RangeError if the value is less than LONG_MIN" do
+      -> { @s.NUM2LONG(long_min-1) }.should.raise(RangeError)
     end
 
     it "calls #to_int to coerce the value" do
@@ -145,7 +145,7 @@ describe "CApiNumericSpecs" do
 
   describe "NUM2SHORT" do
     it "raises a TypeError if passed nil" do
-      -> { @s.NUM2SHORT(nil) }.should raise_error(TypeError)
+      -> { @s.NUM2SHORT(nil) }.should.raise(TypeError)
     end
 
     it "converts a Float" do
@@ -160,8 +160,20 @@ describe "CApiNumericSpecs" do
       @s.NUM2SHORT(-1).should == -1
     end
 
-    it "raises a RangeError if the value is more than 32bits" do
-      -> { @s.NUM2SHORT(0xffff_ffff+1) }.should raise_error(RangeError)
+    it "converts a positive number into an signed number" do
+      @s.NUM2SHORT(shrt_max).should == shrt_max
+    end
+
+    it "converts a negative number into an signed number" do
+      @s.NUM2SHORT(shrt_min).should == shrt_min
+    end
+
+    it "raises a RangeError if the value is more than SHRT_MAX" do
+      -> { @s.NUM2SHORT(shrt_max+1) }.should.raise(RangeError)
+    end
+
+    it "raises a RangeError if the value is less than SHRT_MIN" do
+      -> { @s.NUM2SHORT(shrt_min-1) }.should.raise(RangeError)
     end
 
     it "calls #to_int to coerce the value" do
@@ -173,15 +185,11 @@ describe "CApiNumericSpecs" do
 
   describe "INT2NUM" do
     it "raises a TypeError if passed nil" do
-      -> { @s.INT2NUM(nil) }.should raise_error(TypeError)
+      -> { @s.INT2NUM(nil) }.should.raise(TypeError)
     end
 
     it "converts a Float" do
       @s.INT2NUM(4.2).should == 4
-    end
-
-    it "raises a RangeError when passed a Bignum" do
-      -> { @s.INT2NUM(bignum_value) }.should raise_error(RangeError)
     end
 
     it "converts a Fixnum" do
@@ -191,67 +199,60 @@ describe "CApiNumericSpecs" do
     it "converts a negative Fixnum" do
       @s.INT2NUM(-11).should == -11
     end
+
+    it "converts a positive number into an signed number" do
+      @s.NUM2INT(int_max).should == int_max
+    end
+
+    it "converts a negative number into an signed number" do
+      @s.NUM2INT(int_min).should == int_min
+    end
+
+    it "raises a RangeError if the value is more than INT_MAX" do
+      -> { @s.NUM2INT(int_max+1) }.should.raise(RangeError)
+    end
+
+    it "raises a RangeError if the value is less than INT_MIN" do
+      -> { @s.NUM2INT(int_min-1) }.should.raise(RangeError)
+    end
   end
 
   describe "NUM2ULONG" do
     it "raises a TypeError if passed nil" do
-      -> { @s.NUM2ULONG(nil) }.should raise_error(TypeError)
+      -> { @s.NUM2ULONG(nil) }.should.raise(TypeError)
     end
 
     it "converts a Float" do
       @s.NUM2ULONG(4.2).should == 4
     end
 
-    it "converts a Bignum" do
-      @s.NUM2ULONG(0xffff_ffff).should == 0xffff_ffff
+    it "raises a RangeError if passed a Float out of range" do
+      -> { @s.NUM2ULONG(Float::NAN) }.should.raise(RangeError, "float NaN out of range of integer")
+      -> { @s.NUM2ULONG(Float::INFINITY) }.should.raise(RangeError, "float Inf out of range of integer")
+      -> { @s.NUM2ULONG(-Float::INFINITY) }.should.raise(RangeError, "float -Inf out of range of integer")
+      -> { @s.NUM2ULONG(2.0**64) }.should.raise(RangeError, "float 1.844674407e+19 out of range of integer")
     end
 
     it "converts a Fixnum" do
       @s.NUM2ULONG(5).should == 5
     end
 
-    platform_is c_long_size: 32 do
-      it "converts -1 to an unsigned number" do
-        @s.NUM2ULONG(-1).should == 4294967295
-      end
 
-      it "converts a negative Bignum into an unsigned number" do
-        @s.NUM2ULONG(-2147442171).should == 2147525125
-      end
-
-      it "converts positive Bignums if the values is less than 64bits" do
-        @s.NUM2ULONG(0xffff_ffff).should == 0xffff_ffff
-        @s.NUM2ULONG(2**30).should == 2**30
-        @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
-        @s.NUM2ULONG(fixnum_max).should == fixnum_max
-      end
-
-      it "raises a RangeError if the value is more than 32bits" do
-        -> { @s.NUM2ULONG(0xffff_ffff+1) }.should raise_error(RangeError)
-      end
+    it "converts a negative number to the complement" do
+      @s.NUM2ULONG(-1).should == ulong_max
+      @s.NUM2ULONG(long_min).should == long_max + 1
     end
 
-    platform_is c_long_size: 64 do
-      it "converts -1 to an unsigned number" do
-        @s.NUM2ULONG(-1).should == 18446744073709551615
-      end
+    it "converts a ULONG_MAX" do
+      @s.NUM2ULONG(ulong_max).should == ulong_max
+    end
 
-      it "converts a negative Bignum into an unsigned number" do
-        @s.NUM2ULONG(-9223372036854734331).should == 9223372036854817285
-      end
+    it "raises a RangeError if the value is more than ULONG_MAX" do
+      -> { @s.NUM2ULONG(ulong_max+1) }.should.raise(RangeError)
+    end
 
-      it "converts positive Bignums if the values is less than 64bits" do
-        @s.NUM2ULONG(0xffff_ffff_ffff_ffff).should == 0xffff_ffff_ffff_ffff
-        @s.NUM2ULONG(2**62).should == 2**62
-        @s.NUM2ULONG(fixnum_max+1).should == fixnum_max+1
-        @s.NUM2ULONG(fixnum_max).should == fixnum_max
-      end
-
-      it "raises a RangeError if the value is more than 64bits" do
-        -> do
-          @s.NUM2ULONG(0xffff_ffff_ffff_ffff+1)
-        end.should raise_error(RangeError)
-      end
+    it "raises a RangeError if the value is less than LONG_MIN" do
+      -> { @s.NUM2ULONG(long_min-1) }.should.raise(RangeError)
     end
 
     it "calls #to_int to coerce the value" do
@@ -308,11 +309,11 @@ describe "CApiNumericSpecs" do
 
   describe "NUM2DBL" do
     it "raises a TypeError if passed nil" do
-      -> { @s.NUM2DBL(nil) }.should raise_error(TypeError)
+      -> { @s.NUM2DBL(nil) }.should.raise(TypeError)
     end
 
     it "raises a TypeError if passed a String" do
-      -> { @s.NUM2DBL("1.2") }.should raise_error(TypeError)
+      -> { @s.NUM2DBL("1.2") }.should.raise(TypeError)
     end
 
     it "converts a Float" do
@@ -348,13 +349,13 @@ describe "CApiNumericSpecs" do
     end
 
     it "raises a TypeError when passed an empty String" do
-      -> { @s.NUM2CHR("") }.should raise_error(TypeError)
+      -> { @s.NUM2CHR("") }.should.raise(TypeError)
     end
   end
 
   describe "rb_num_zerodiv" do
     it "raises a RuntimeError" do
-      -> { @s.rb_num_zerodiv() }.should raise_error(ZeroDivisionError, 'divided by 0')
+      -> { @s.rb_num_zerodiv() }.should.raise(ZeroDivisionError, 'divided by 0')
     end
   end
 
@@ -386,7 +387,7 @@ describe "CApiNumericSpecs" do
     it "raises an ArgumentError when passed nil" do
       -> {
         @s.rb_cmpint(nil, 4)
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -410,7 +411,7 @@ describe "CApiNumericSpecs" do
       obj = mock("rb_num_coerce_bin")
       obj.should_receive(:coerce).with(2).and_return(nil)
 
-      -> { @s.rb_num_coerce_bin(2, obj, :+) }.should raise_error(TypeError)
+      -> { @s.rb_num_coerce_bin(2, obj, :+) }.should.raise(TypeError)
     end
   end
 
@@ -435,14 +436,14 @@ describe "CApiNumericSpecs" do
       obj.should_receive(:coerce).with(2).and_raise(RuntimeError.new("my error"))
       -> {
         @s.rb_num_coerce_cmp(2, obj, :<=>)
-      }.should raise_error(RuntimeError, "my error")
+      }.should.raise(RuntimeError, "my error")
     end
 
     it "returns nil if #coerce does not return an Array" do
       obj = mock("rb_num_coerce_cmp")
       obj.should_receive(:coerce).with(2).and_return(nil)
 
-      @s.rb_num_coerce_cmp(2, obj, :<=>).should be_nil
+      @s.rb_num_coerce_cmp(2, obj, :<=>).should == nil
     end
   end
 
@@ -451,7 +452,7 @@ describe "CApiNumericSpecs" do
       obj = mock("rb_num_coerce_relop")
       obj.should_receive(:coerce).with(2).and_return([1, 2])
 
-      @s.rb_num_coerce_relop(2, obj, :<).should be_true
+      @s.rb_num_coerce_relop(2, obj, :<).should == true
     end
 
     it "calls the specified method on the first argument returned by #coerce" do
@@ -459,7 +460,7 @@ describe "CApiNumericSpecs" do
       obj.should_receive(:coerce).with(2).and_return([obj, 2])
       obj.should_receive(:<).with(2).and_return(false)
 
-      @s.rb_num_coerce_relop(2, obj, :<).should be_false
+      @s.rb_num_coerce_relop(2, obj, :<).should == false
     end
 
     it "raises an ArgumentError if #<op> returns nil" do
@@ -467,14 +468,14 @@ describe "CApiNumericSpecs" do
       obj.should_receive(:coerce).with(2).and_return([obj, 2])
       obj.should_receive(:<).with(2).and_return(nil)
 
-      -> { @s.rb_num_coerce_relop(2, obj, :<) }.should raise_error(ArgumentError)
+      -> { @s.rb_num_coerce_relop(2, obj, :<) }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError if #coerce does not return an Array" do
       obj = mock("rb_num_coerce_relop")
       obj.should_receive(:coerce).with(2).and_return(nil)
 
-      -> { @s.rb_num_coerce_relop(2, obj, :<) }.should raise_error(ArgumentError)
+      -> { @s.rb_num_coerce_relop(2, obj, :<) }.should.raise(ArgumentError)
     end
   end
 

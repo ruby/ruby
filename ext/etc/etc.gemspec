@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
     test/etc/test_etc.rb
   ] + changelogs
   spec.rdoc_options = ["--main", "README.md"]
-  spec.extra_rdoc_files = spec.files.grep_v(/\.{rb,[ch]}\z/)
+  spec.extra_rdoc_files = spec.files.grep_v(/\.(?:rb|[ch])\z/)
   spec.bindir        = "exe"
   spec.require_paths = ["lib"]
   spec.extensions    = %w{ext/etc/extconf.rb}

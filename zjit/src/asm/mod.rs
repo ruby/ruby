@@ -6,6 +6,7 @@ use std::ops::Range;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
+use crate::state::update_zjit_compiling;
 use crate::virtualmem::*;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
@@ -19,8 +20,32 @@ pub mod arm64;
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Label(pub usize);
 
+/// Name of a label, used for printing. It is `Copy` so that creating a label doesn't allocate.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub enum LabelName {
+    /// Label of a LIR basic block lowered from an HIR basic block
+    Block(crate::hir::BlockId, crate::backend::lir::BlockId),
+    /// Label with a fixed name
+    Static(&'static str),
+}
+
+impl From<&'static str> for LabelName {
+    fn from(name: &'static str) -> Self {
+        LabelName::Static(name)
+    }
+}
+
+impl fmt::Display for LabelName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LabelName::Block(hir_block_id, lir_block_id) => write!(f, "{hir_block_id}_{lir_block_id}"),
+            LabelName::Static(name) => write!(f, "{name}"),
+        }
+    }
+}
+
 /// The object that knows how to encode the branch instruction.
-type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64)>;
+type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64) -> Result<(), ()>>;
 
 /// Reference to an ASM label
 pub struct LabelRef {
@@ -54,7 +79,7 @@ pub struct CodeBlock {
     label_addrs: Vec<usize>,
 
     // Table of registered label names
-    label_names: Vec<String>,
+    label_names: Vec<LabelName>,
 
     // References to labels
     label_refs: Vec<LabelRef>,
@@ -91,6 +116,11 @@ impl CodeBlock {
     /// Size of the region in bytes that we have allocated physical memory for.
     pub fn mapped_region_size(&self) -> usize {
         self.mem_block.borrow().mapped_region_size()
+    }
+
+    /// Size of the region in bytes where writes could be attempted.
+    pub fn virtual_region_size(&self) -> usize {
+        self.mem_size
     }
 
     /// Add an assembly comment if the feature is on.
@@ -213,12 +243,19 @@ impl CodeBlock {
     pub fn update_dropped_bytes(&mut self) {
         if self.mem_block.borrow().can_allocate() {
             self.dropped_bytes = false;
+
+            // Memory is available again, so let the interpreter resume
+            // triggering compilation.
+            update_zjit_compiling();
         }
     }
 
     /// Allocate a new label with a given name
-    pub fn new_label(&mut self, name: String) -> Label {
-        assert!(!name.contains(' '), "use underscores in label names, not spaces");
+    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Label {
+        let name = name.into();
+        if let LabelName::Static(name) = name {
+            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        }
 
         // This label doesn't have an address yet
         self.label_addrs.push(0);
@@ -233,23 +270,25 @@ impl CodeBlock {
     }
 
     // Add a label reference at the current write position
-    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: impl Fn(&mut CodeBlock, i64, i64) + 'static) {
+    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: impl Fn(&mut CodeBlock, i64, i64) -> Result<(), ()> + 'static) {
         assert!(label.0 < self.label_addrs.len());
 
         // Keep track of the reference
         self.label_refs.push(LabelRef { pos: self.write_pos, label, num_bytes, encode: Box::new(encode) });
 
-        // Move past however many bytes the instruction takes up
-        if self.write_pos + num_bytes < self.mem_size {
-            self.write_pos += num_bytes;
-        } else {
-            self.dropped_bytes = true; // retry emitting the Insn after next_page
-        }
+        // Move past however many bytes the instruction takes up.
+        // Reserve the bytes by writing them rather than by moving the cursor
+        // over them. Pages are mapped on first write, so a cursor bump alone
+        // leaves a page that cannot be mapped.
+        const RESERVED: [u8; 16] = [0; 16];
+        assert!(num_bytes <= RESERVED.len(), "label reference wants {num_bytes} bytes");
+        self.write_bytes(&RESERVED[..num_bytes]);
     }
 
     // Link internal label references
-    pub fn link_labels(&mut self) {
+    pub fn link_labels(&mut self) -> Result<(), ()> {
         let orig_pos = self.write_pos;
+        let mut link_result = Ok(());
 
         // For each label reference
         for label_ref in mem::take(&mut self.label_refs) {
@@ -261,11 +300,14 @@ impl CodeBlock {
             assert!(label_addr < self.mem_size);
 
             self.write_pos = ref_pos;
-            (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+            let encode_result = (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+            link_result = link_result.and(encode_result);
 
-            // Assert that we've written the same number of bytes that we
-            // expected to have written.
-            assert!(self.write_pos == ref_pos + label_ref.num_bytes);
+            // Verify number of bytes written when the callback returns Ok
+            if encode_result.is_ok() {
+                assert_eq!(self.write_pos, ref_pos + label_ref.num_bytes, "label_ref \
+                    callback didn't write number of bytes it claimed to write upfront");
+            }
         }
 
         self.write_pos = orig_pos;
@@ -274,6 +316,8 @@ impl CodeBlock {
         self.label_addrs.clear();
         self.label_names.clear();
         assert!(self.label_refs.is_empty());
+
+        link_result
     }
 
     /// Convert a Label to CodePtr
@@ -288,6 +332,10 @@ impl CodeBlock {
     }
 
     /// Make all the code in the region executable. Call this at the end of a write session.
+    pub fn mark_all_writable(&mut self) {
+        self.mem_block.borrow_mut().mark_all_writable();
+    }
+
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
     }
@@ -449,5 +497,40 @@ mod tests
 
         assert_eq!(uimm_num_bits((u32::MAX as u64) + 1), 64);
         assert_eq!(uimm_num_bits(u64::MAX), 64);
+    }
+
+    #[test]
+    fn test_label_ref_at_an_unmappable_page_sets_dropped_bytes() {
+        // Two pages of address space, but a memory limit that only lets
+        // the first page be mapped.
+        let page_size = unsafe { crate::cruby::rb_jit_get_page_size() } as usize;
+        let limit = crate::stats::zjit_alloc_bytes() + page_size + page_size / 2;
+        let virt_mem = VirtualMem::alloc(2 * page_size, Some(limit));
+        let mut cb = CodeBlock::new(Rc::new(RefCell::new(virt_mem)), false);
+
+        // Fill the mappable page up to 2 bytes below its end, so that
+        // a 5-byte jump reservation straddles into the unmappable page.
+        for _ in 0..(page_size - 2) {
+            cb.write_byte(0x90);
+        }
+        assert!(!cb.has_dropped_bytes(), "the first page must map");
+
+        // label_ref() must reserve its bytes by writing them, so that the
+        // unmappable page surfaces as dropped_bytes here, where the caller
+        // still reads it and turns it into CompileError::OutOfMemory.
+        let label = cb.new_label("over_the_page_boundary");
+        cb.label_ref(label, 5, |cb, _, _| {
+            cb.write_bytes(&[0; 5]);
+            Ok(())
+        });
+        cb.write_label(label);
+
+        // Mirror what compile_with_regs does after emit. It calls link_labels()
+        // only if emit did not go OOM. This reproduces an assertion failure in
+        // link_labels() when dropped_bytes isn't updated properly.
+        if !cb.has_dropped_bytes() {
+            cb.link_labels().unwrap();
+        }
+        assert!(cb.has_dropped_bytes(), "the reservation must discover the unmappable page");
     }
 }

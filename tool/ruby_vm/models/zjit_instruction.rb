@@ -32,6 +32,14 @@ class RubyVM::ZJITInstruction
     return @orig.operands_info
   end
 
+  def operands
+    return @orig.operands
+  end
+
+  def call_attribute(x)
+    return @orig.call_attribute(x)
+  end
+
   def rets
     return ['...']
   end

@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/unlink'
 require 'tempfile'
 
 describe "Tempfile#unlink" do
-  it_behaves_like :tempfile_unlink, :unlink
+  it "is an alias of Tempfile#delete" do
+    Tempfile.instance_method(:unlink).should == Tempfile.instance_method(:delete)
+  end
 end

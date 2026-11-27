@@ -455,6 +455,36 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(last_command.stderr).to be_empty
   end
 
+  it "installs inline gems when frozen is configured globally" do
+    bundle_config_global "frozen true"
+
+    script <<-RUBY
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      puts MYRACK, Bundler.settings[:frozen]
+    RUBY
+
+    expect(out).to eq("1.0.0\ntrue")
+  end
+
+  it "installs inline gems when deployment is configured locally" do
+    bundle_config "deployment true"
+
+    script <<-RUBY
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      puts MYRACK, Bundler.settings[:deployment]
+    RUBY
+
+    expect(out).to eq("1.0.0\ntrue")
+  end
+
   it "installs inline gems when BUNDLE_GEMFILE is set to an empty string" do
     ENV["BUNDLE_GEMFILE"] = ""
 
@@ -499,7 +529,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "skips platform warnings" do
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     script <<-RUBY
       gemfile(true) do
@@ -512,7 +542,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "still installs if the application has `bundle package` no_install config set" do
-    bundle "config set --local no_install true"
+    bundle_config "no_install true"
 
     script <<-RUBY
       gemfile do
@@ -678,8 +708,86 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing psych 999")
     expect(out).to include("Installing stringio 999")
-    expect(out).to include("The psych gem was resolved to 999")
-    expect(out).to include("The stringio gem was resolved to 999")
+    if Gem.respond_to?(:use_psych?) && Gem.use_psych?
+      expect(out).to include("The psych gem was resolved to 999")
+      expect(out).to include("The stringio gem was resolved to 999")
+    end
+  end
+
+  it "installs a conflicting default gem and non-default gems together" do
+    build_repo4 do
+      build_gem "securerandom", "999"
+      build_gem "myrack", "1.0.0"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      gemfile(true) do
+        source "https://gem.repo4"
+        gem "securerandom"
+        gem "myrack"
+      end
+
+      puts MYRACK
+    RUBY
+
+    expect(out).to include("Installing securerandom 999")
+    expect(out).to include("Installing myrack 1.0.0")
+    expect(out).to include("1.0.0")
+    expect(err).to be_empty
+  end
+
+  it "sets up custom require paths for gems installed in the same process" do
+    build_repo4 do
+      build_gem "securerandom", "999"
+
+      build_gem "unusual_paths", "1.0.0", no_default: true do |s|
+        s.require_paths = ["lib/unusual_paths"]
+        s.write "lib/unusual_paths/unusual_paths.rb", "UNUSUAL_PATHS = 'loaded'"
+      end
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      # Simulate a platform where installing in a subprocess is not possible, so
+      # that the conflicting default gem forces a re-resolution in this process,
+      # after the gems have been installed.
+      class << Process
+        undef_method :fork
+      end
+
+      gemfile(true) do
+        source "https://gem.repo4"
+        gem "securerandom"
+        gem "unusual_paths"
+      end
+
+      puts UNUSUAL_PATHS
+    RUBY
+
+    expect(out).to include("Installing unusual_paths 1.0.0")
+    expect(out).to include("loaded")
+    expect(err).to be_empty
+  end
+
+  it "installs a conflicting default gem alongside git sources" do
+    build_repo4 do
+      build_gem "securerandom", "999"
+    end
+
+    build_git "foo", "1.0.0"
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      gemfile(true) do
+        source "https://gem.repo4"
+        gem "securerandom"
+        gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
+      end
+
+      puts FOO
+    RUBY
+
+    expect(out).to include("Installing securerandom 999")
+    expect(out).to include("1.0.0")
+    expect(err).to be_empty
   end
 
   it "leaves a lockfile in the same directory as the inline script alone" do
@@ -701,5 +809,52 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(lockfile).to eq(original_lockfile)
+  end
+
+  it "runs the script's at_exit hooks only once when installing gems" do
+    script <<-RUBY
+      at_exit { puts "at_exit" }
+
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      puts MYRACK
+    RUBY
+
+    expect(out).to eq("1.0.0\nat_exit")
+    expect(err).to be_empty
+  end
+
+  it "lets the script rescue an installation failure" do
+    script <<-RUBY
+      begin
+        gemfile do
+          source "https://gem.repo1"
+          gem "doesnotexist"
+        end
+      rescue Bundler::BundlerError => e
+        puts "rescued \#{e.class}"
+      end
+
+      puts "main"
+    RUBY
+
+    expect(out).to eq("rescued Bundler::GemNotFound\nmain")
+    expect(err).to be_empty
+  end
+
+  it "resolves only once when installing gems" do
+    script <<-RUBY
+      gemfile(true) do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+    RUBY
+
+    expect(out.scan("Fetching gem metadata").size).to eq(1)
+    expect(out.scan("Resolving dependencies...").size).to eq(1)
+    expect(err).to be_empty
   end
 end

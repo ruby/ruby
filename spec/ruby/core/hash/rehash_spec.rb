@@ -5,8 +5,8 @@ describe "Hash#rehash" do
   it "reorganizes the Hash by recomputing all key hash codes" do
     k1 = Object.new
     k2 = Object.new
-    def k1.hash; 0; end
-    def k2.hash; 1; end
+    def k1.hash; 5; end
+    def k2.hash; 6; end
 
     h = {}
     h[k1] = :v1
@@ -20,7 +20,7 @@ describe "Hash#rehash" do
 
     h.keys.include?(k1).should == true
 
-    h.rehash.should equal(h)
+    h.rehash.should.equal?(h)
     h.key?(k1).should == true
     h[k1].should == :v1
   end
@@ -108,7 +108,7 @@ describe "Hash#rehash" do
   end
 
   it "raises a FrozenError if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.rehash  }.should raise_error(FrozenError)
-    -> { HashSpecs.empty_frozen_hash.rehash }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.rehash  }.should.raise(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.rehash }.should.raise(FrozenError)
   end
 end

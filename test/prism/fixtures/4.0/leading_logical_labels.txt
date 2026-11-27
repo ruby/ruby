@@ -1,0 +1,13 @@
+show
+and:;
+
+show
+or: 1
+
+show
+# A comment may come before the label.
+and: 1
+
+show
+# A comment may come before the label.
+or:

@@ -128,7 +128,6 @@ class TestEnumerator < Test::Unit::TestCase
   end
 
   def test_with_index_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       assert_equal([[1, 0], [2, 1], [3, 2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
       assert_equal([[1, 5], [2, 6], [3, 7]], @obj.to_enum(:foo, 1, 2, 3).with_index(5).to_a)
@@ -327,6 +326,15 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1], e.next_values)
     assert_equal([1,2], e.peek)
     assert_equal([1,2], e.next_values)
+  end
+
+  def test_fiber_yield_in_external_iteration
+    e = Enumerator.new {|y| Fiber.yield 7; y << 1 }
+    assert_equal(7, e.peek_values)
+    assert_equal(7, e.peek)
+    assert_equal(7, e.next_values)
+    assert_equal(1, e.next)
+    assert_raise(StopIteration) { e.next }
   end
 
   def test_each_arg
@@ -648,6 +656,9 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 0,  [].cycle(5).size
     assert_equal 0,  {}.cycle.size
     assert_equal 0,  {}.cycle(5).size
+    n = RbConfig::LIMITS["FIXNUM_MAX"] + 1
+    assert_equal 2 * n, [:foo, :bar].cycle(n).size
+    assert_equal 2 * n, {foo: 1, bar: 2}.cycle(n).size
 
     assert_equal nil, @obj.cycle.size
     assert_equal nil, @obj.cycle(5).size
@@ -864,7 +875,6 @@ class TestEnumerator < Test::Unit::TestCase
   end
 
   def test_lazy_chain_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       ea = (10..).lazy.select(&:even?).take(10)
       ed = (20..).lazy.select(&:odd?)
@@ -1044,6 +1054,48 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       Enumerator.product(1..3, foo: 1, bar: 2)
     }
+  end
+
+  def test_s_product_with_saved_block
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        attr_reader :block
+
+        def each_entry(&block)
+          @block = block
+          self
+        end
+      end
+
+      yielded = []
+      assert_nil(Enumerator.product(enum, [1, 2]) { |x| yielded << x })
+      assert_equal([], yielded)
+      GC.start
+      enum.block.call(3)
+      assert_equal([[3, 1], [3, 2]], yielded)
+    };
+  end
+
+  def test_s_product_with_reentrant_block
+    enum = Object.new
+    class << enum
+      attr_reader :block
+
+      def each_entry(&block)
+        @block = block
+        yield 1
+        self
+      end
+    end
+
+    yielded = []
+    Enumerator.product(enum, [2]) do |x|
+      yielded << x
+      enum.block.call(3) if yielded.size == 1
+    end
+    assert_equal([[1, 2], [3, 2]], yielded)
   end
 
   def test_freeze

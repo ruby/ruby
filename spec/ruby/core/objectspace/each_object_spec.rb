@@ -39,7 +39,7 @@ describe "ObjectSpace.each_object" do
     new_obj = klass.new
 
     counter = ObjectSpace.each_object(klass)
-    counter.should be_an_instance_of(Enumerator)
+    counter.should.instance_of?(Enumerator)
     counter.each{}.should == 1
     # this is needed to prevent the new_obj from being GC'd too early
     new_obj.should_not == nil
@@ -47,20 +47,20 @@ describe "ObjectSpace.each_object" do
 
   it "finds an object stored in a global variable" do
     $object_space_global_variable = ObjectSpaceFixtures::ObjectToBeFound.new(:global)
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:global)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:global)
   end
 
   it "finds an object stored in a top-level constant" do
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:top_level_constant)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:top_level_constant)
   end
 
   it "finds an object stored in a second-level constant" do
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:second_level_constant)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:second_level_constant)
   end
 
   it "finds an object stored in a local variable" do
     local = ObjectSpaceFixtures::ObjectToBeFound.new(:local)
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:local)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:local)
   end
 
   it "finds an object stored in a local variable captured in a block explicitly" do
@@ -69,7 +69,7 @@ describe "ObjectSpace.each_object" do
       Proc.new { local_in_block }
     }.call
 
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:local_in_block_explicit)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:local_in_block_explicit)
   end
 
   it "finds an object stored in a local variable captured in a block implicitly" do
@@ -78,11 +78,11 @@ describe "ObjectSpace.each_object" do
       Proc.new { }
     }.call
 
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:local_in_block_implicit)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:local_in_block_implicit)
   end
 
   it "finds an object stored in a local variable captured in by a method defined with a block" do
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:captured_by_define_method)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:captured_by_define_method)
   end
 
   it "finds an object stored in a local variable captured in a Proc#binding" do
@@ -91,7 +91,7 @@ describe "ObjectSpace.each_object" do
       Proc.new { }.binding
     }.call
 
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:local_in_proc_binding)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:local_in_proc_binding)
   end
 
   it "finds an object stored in a local variable captured in a Kernel#binding" do
@@ -100,45 +100,45 @@ describe "ObjectSpace.each_object" do
       binding
     }.call
 
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:local_in_kernel_binding)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:local_in_kernel_binding)
   end
 
   it "finds an object stored in a local variable set in a binding manually" do
     b = binding
     b.eval("local = ObjectSpaceFixtures::ObjectToBeFound.new(:local_in_manual_binding)")
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:local_in_manual_binding)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:local_in_manual_binding)
   end
 
   it "finds an object stored in an array" do
     array = [ObjectSpaceFixtures::ObjectToBeFound.new(:array)]
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:array)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:array)
   end
 
   it "finds an object stored in a hash key" do
     hash = {ObjectSpaceFixtures::ObjectToBeFound.new(:hash_key) => :value}
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:hash_key)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:hash_key)
   end
 
   it "finds an object stored in a hash value" do
     hash = {a: ObjectSpaceFixtures::ObjectToBeFound.new(:hash_value)}
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:hash_value)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:hash_value)
   end
 
   it "finds an object stored in an instance variable" do
     local = ObjectSpaceFixtures::ObjectWithInstanceVariable.new
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:instance_variable)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:instance_variable)
   end
 
   it "finds an object stored in a thread local" do
     thread = Thread.new {}
     thread.thread_variable_set(:object_space_thread_local, ObjectSpaceFixtures::ObjectToBeFound.new(:thread_local))
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:thread_local)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:thread_local)
     thread.join
   end
 
   it "finds an object stored in a fiber local" do
     Thread.current[:object_space_fiber_local] = ObjectSpaceFixtures::ObjectToBeFound.new(:fiber_local)
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:fiber_local)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:fiber_local)
   end
 
   it "finds an object captured in an at_exit handler" do
@@ -150,7 +150,7 @@ describe "ObjectSpace.each_object" do
       end
     }.call
 
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:at_exit)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:at_exit)
   end
 
   it "finds an object captured in finalizer" do
@@ -164,9 +164,9 @@ describe "ObjectSpace.each_object" do
       })
     }.call
 
-    ObjectSpaceFixtures.to_be_found_symbols.should include(:finalizer)
+    ObjectSpaceFixtures.to_be_found_symbols.should.include?(:finalizer)
 
-    alive.should_not be_nil
+    alive.should_not == nil
   end
 
   describe "on singleton classes" do
@@ -185,8 +185,8 @@ describe "ObjectSpace.each_object" do
     end
 
     it "walks singleton classes" do
-      @sclass.should be_kind_of(@meta)
-      ObjectSpace.each_object(@meta).to_a.should include(@sclass)
+      @sclass.should.is_a?(@meta)
+      ObjectSpace.each_object(@meta).to_a.should.include?(@sclass)
     end
   end
 
@@ -202,7 +202,7 @@ describe "ObjectSpace.each_object" do
     expected = [ a, b, c, d ]
 
     expected << c_sclass
-    c_sclass.should be_kind_of(a.singleton_class)
+    c_sclass.should.is_a?(a.singleton_class)
 
     b.extend Enumerable # included modules should not be walked
 

@@ -1427,3 +1427,16 @@ assert_equal 'ok', <<~RUBY
 
   test
 RUBY
+
+assert_equal '[1, 2, 3]', %q{
+  def target(*args) = args
+  def x = [1]
+  def forwarder(...) = target(*x, 2, ...)
+  forwarder(3).inspect
+}, '[Bug #21832] post-splat args before forwarding'
+
+assert_equal '[nil, nil]', %q{
+  def self_reading(a = a, kw:) = a
+  def through_binding(a = binding.local_variable_get(:a), kw:) = a
+  [self_reading(kw: 1), through_binding(kw: 1)]
+}, 'nil initialization of optional parameters'

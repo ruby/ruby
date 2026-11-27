@@ -1,0 +1,11 @@
+%w
+foo bar
+
+%i
+baz qux
+
+%W
+a b
+
+%I
+c d

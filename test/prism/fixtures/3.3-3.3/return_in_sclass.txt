@@ -1,1 +1,5 @@
 class << A; return; end
+
+-> { class << self; return; end }
+
+class C; class << self; return; end; end
