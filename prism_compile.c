@@ -8691,7 +8691,8 @@ pm_compile_return_node(rb_iseq_t *iseq, const pm_return_node_t *node, const pm_n
         break;
     }
 
-    if (type == ISEQ_TYPE_METHOD) {
+    bool direct_return = can_inline_return(iseq, type);
+    if (direct_return) {
         splabel = NEW_LABEL(0);
         PUSH_LABEL(ret, splabel);
         PUSH_ADJUST(ret, *location, 0);
@@ -8704,7 +8705,7 @@ pm_compile_return_node(rb_iseq_t *iseq, const pm_return_node_t *node, const pm_n
         PUSH_INSN(ret, *location, putnil);
     }
 
-    if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
+    if (direct_return) {
         pm_add_ensure_iseq(ret, iseq, 1, scope_node);
         PUSH_TRACE(ret, RUBY_EVENT_RETURN);
         PUSH_INSN(ret, *location, leave);
