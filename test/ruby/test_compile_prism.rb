@@ -1100,6 +1100,24 @@ module Prism
       assert_prism_eval("r = []; for x, *y in [[1,2], [3,4]] do; r << [x, y]; end; r")
     end
 
+    def test_ForNode_jump_in_index
+      %w[redo next].each do |jump|
+        assert_prism_eval(<<~RUBY)
+          target = {}
+          jump_once = [true]
+          visits = []
+          1.times do
+            visits << :start
+            for target[(#{jump} if jump_once.shift)] in [1, 2]
+              visits << target[nil]
+            end
+            visits << :done
+          end
+          visits
+        RUBY
+      end
+    end
+
     ############################################################################
     #  Throws                                                                  #
     ############################################################################
