@@ -15590,6 +15590,10 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         cr = ENC_CODERANGE_VALID;
     }
+    /* rep points into repl, which may be a new string converted from the
+     * argument, and rb_str_buf_cat may trigger GC while resizing buf before
+     * copying from rep. */
+    RB_GC_GUARD(repl);
     rb_enc_associate(buf, enc);
     ENC_CODERANGE_SET(buf, cr);
     return buf;

@@ -1669,6 +1669,15 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub(e("\xA2\xAE")))
   end
 
+  def test_scrub_replace_argument_converted_under_gc_stress
+    # The replacement is converted with #to_str to a new string, which only
+    # the pointer to its contents refers to while the result grows.
+    repl = Object.new
+    def repl.to_str = "ab" * 10
+    str = u("a\xff" * 50)
+    assert_equal("a#{repl.to_str}" * 50, EnvUtil.under_gc_stress {str.scrub(repl)})
+  end
+
   def test_scrub_replace_block
     assert_equal("\u3042<e381>", u("\xE3\x81\x82\xE3\x81").scrub{|x|'<'+x.unpack('H*')[0]+'>'})
     assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub{e("\xA4\xA2")} }
