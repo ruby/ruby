@@ -13296,7 +13296,15 @@ static pm_reduction_t
 parse_starred_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     if (accept1(parser, PM_TOKEN_USTAR)) {
         pm_token_t operator = parser->previous;
-        pm_node_t *expression = parse_value_expression(parser, binding_power, (uint8_t) (flags & PM_PARSE_ACCEPTS_DO_BLOCK), PM_ERR_EXPECT_EXPRESSION_AFTER_STAR, (uint16_t) (depth + 1));
+        pm_node_t *expression = NULL;
+
+        /* In mrhs, a non-final arg_splat may forward anonymous rest arguments. */
+        if (match1(parser, PM_TOKEN_COMMA)) {
+            pm_parser_scope_forwarding_positionals_check(parser, &operator);
+        } else {
+            expression = parse_value_expression(parser, binding_power, (uint8_t) (flags & PM_PARSE_ACCEPTS_DO_BLOCK), PM_ERR_EXPECT_EXPRESSION_AFTER_STAR, (uint16_t) (depth + 1));
+        }
+
         return pm_reduction(UP(pm_splat_node_create(parser, &operator, expression)));
     }
 

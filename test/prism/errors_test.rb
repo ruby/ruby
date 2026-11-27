@@ -88,6 +88,27 @@ module Ruby::Prism
       assert_nil splat.expression
     end
 
+    def test_anonymous_splat_before_a_comma_in_a_rescue_list
+      result = Ruby::Prism.parse("def f(*)rescue*,();end")
+      assert_empty result.errors
+      splat, last = result.statement.body.rescue_clause.exceptions
+      assert_instance_of SplatNode, splat
+      assert_nil splat.expression
+      assert_instance_of ParenthesesNode, last
+
+      assert Ruby::Prism.parse_success?("def f(*); rescue TypeError, *, IOError => e; end")
+      refute Ruby::Prism.parse_success?("def f(*); rescue TypeError, *; end")
+      refute Ruby::Prism.parse_success?("def f(*); rescue * => e; end")
+      assert_equal [:argument_no_forwarding_star], Ruby::Prism.parse("begin; rescue *, IOError; end").errors.map(&:type)
+    end
+
+    def test_anonymous_splat_before_a_comma_in_assignment_values
+      assert Ruby::Prism.parse_success?("def f(*); a = *, 1; end")
+      assert Ruby::Prism.parse_success?("def f(*); a, b = 1, *, 2; end")
+      refute Ruby::Prism.parse_success?("def f(*); a = 1, *; end")
+      refute Ruby::Prism.parse_success?("def f(*); g(a = *, 1); end")
+    end
+
     def test_trailing_star_with_whitespace_requires_an_operand
       [" ", "\n"].each do |whitespace|
         result = Ruby::Prism.parse("def f(*) = g *#{whitespace}")
