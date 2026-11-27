@@ -618,6 +618,9 @@ impl Assembler
                         }
                     };
                 },
+                Insn::Lea { opnd, .. } => {
+                    split_lea_operand(asm, *opnd);
+                }
                 Insn::Mov { dest, src } => {
                     match (&dest, &src) {
                         // If we're attempting to load into a memory operand, then
@@ -1787,6 +1790,27 @@ mod tests {
                 "expected to disassemble to movk",
             )),
         }
+    }
+
+    #[test]
+    fn test_lea_with_large_displacement() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // This is a regression test for [Bug #22546].
+        // To trigger the issue, the constant needs to
+        // unencodable in a single add instruction with a
+        // a shifted immediate, which is u12 with shifts.
+        let displacement = 0x10001;
+        let addr = asm.lea(Opnd::mem(64, SP, displacement));
+        asm.mov(EC, addr);
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "2b0080d22b00a0f2ab020babf4030baa", "
+            0x0: mov x11, #1
+            0x4: movk x11, #1, lsl #16
+            0x8: adds x11, x21, x11
+            0xc: mov x20, x11
+        ");
     }
 
     #[test]
