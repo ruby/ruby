@@ -330,8 +330,10 @@ rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
     return ST_CONTINUE;
 }
 
+// Clear the inline constant caches for `id`. `klass` is the class or module where the constant
+// was defined, removed, or changed, or Qfalse if unknown.
 void
-rb_clear_constant_cache_for_id(ID id)
+rb_clear_constant_cache_for_id_in(VALUE klass, ID id)
 {
     VALUE lookup_result;
     rb_vm_t *vm = GET_VM();
@@ -343,7 +345,13 @@ rb_clear_constant_cache_for_id(ID id)
     }
 
     rb_yjit_constant_state_changed(id);
-    rb_zjit_constant_state_changed(id);
+    rb_zjit_constant_state_changed(klass, id);
+}
+
+void
+rb_clear_constant_cache_for_id(ID id)
+{
+    rb_clear_constant_cache_for_id_in(Qfalse, id);
 }
 
 static void

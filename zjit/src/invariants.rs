@@ -6,8 +6,10 @@ use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, Redefin
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
 use crate::cruby::{rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
-use crate::stats::with_time_stat;
+use crate::stats::{Counter, incr_counter, incr_counter_by, with_time_stat};
 use crate::stats::Counter::invalidation_time_ns;
+use crate::cast::IntoU64;
+use crate::cruby::{Qfalse, rb_objspace_garbage_object_p, rb_zjit_cref_may_search_class_p};
 use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
@@ -27,7 +29,12 @@ macro_rules! compile_patch_points {
                 let mut version = patch_point.version;
                 let iseq = unsafe { version.as_ref() }.iseq;
                 if !iseq.is_null() {
-                    invalidate_iseq_version($cb, iseq, &mut version);
+                    if invalidate_iseq_version($cb, iseq, &mut version) {
+                        incr_counter!(invalidation_count);
+                        if let Some(counter) = invalidation_counter!($cause) {
+                            incr_counter_by(counter, 1);
+                        }
+                    }
                     // Remember NoSingletonClass busts on the payload
                     if is_no_singleton_class!($cause) {
                         let payload = get_or_create_iseq_payload(iseq);
@@ -42,6 +49,13 @@ macro_rules! compile_patch_points {
 macro_rules! is_no_singleton_class {
     (NoSingletonClass) => { true };
     ($_:ident) => { false };
+}
+
+/// The counter for ISEQ versions invalidated by a specific cause, in addition to invalidation_count
+macro_rules! invalidation_counter {
+    (Const) => { Some(Counter::constant_invalidation_count) };
+    (CME) => { Some(Counter::method_invalidation_count) };
+    ($_:ident) => { None };
 }
 
 /// When a PatchPoint is invalidated, it generates a jump instruction from `from` to `to`.
@@ -66,6 +80,27 @@ impl PatchPoint {
     }
 }
 
+/// A patch point for a folded constant path (`Invariant::StableConstantNames`)
+#[derive(Debug, Eq, Hash, PartialEq)]
+struct ConstantPatchPoint {
+    patch_point: PatchPoint,
+    /// The lexical scope of the path if the constant is its first segment (`Foo` in `Foo::Bar`)
+    cref: Option<VALUE>,
+}
+
+impl ConstantPatchPoint {
+    /// Return true if a change to the constant in `klass` can't change what the path resolves to
+    fn survives_change_in(&self, klass: VALUE) -> bool {
+        let Some(cref) = self.cref else { return false };
+        // The cref is marked through the ISEQ, so it may be freed if the ISEQ is dead.
+        let iseq = unsafe { self.patch_point.version.as_ref() }.iseq;
+        if iseq.is_null() || unsafe { rb_objspace_garbage_object_p(iseq.into()) } != 0 {
+            return false;
+        }
+        !unsafe { rb_zjit_cref_may_search_class_p(cref.as_ptr(), klass) }
+    }
+}
+
 /// Used to track all of the various block references that contain assumptions
 /// about the state of the virtual machine.
 #[derive(Default)]
@@ -80,7 +115,7 @@ pub struct Invariants {
     cme_patch_points: HashMap<*const rb_callable_method_entry_t, HashSet<PatchPoint>>,
 
     /// Map from constant ID to patch points that assume the constant hasn't been redefined
-    constant_state_patch_points: HashMap<ID, HashSet<PatchPoint>>,
+    constant_state_patch_points: HashMap<ID, HashSet<ConstantPatchPoint>>,
 
     /// Set of patch points that assume that the TracePoint is not enabled
     no_trace_point_patch_points: HashSet<PatchPoint>,
@@ -309,6 +344,7 @@ pub fn track_cme_assumption(
 /// Track a patch point for each constant name in a constant path assumption.
 pub fn track_stable_constant_names_assumption(
     idlist: *const ID,
+    cref: Option<VALUE>,
     patch_point_ptr: CodePtr,
     side_exit_ptr: CodePtr,
     version: IseqVersionRef,
@@ -322,11 +358,10 @@ pub fn track_stable_constant_names_assumption(
             break;
         }
 
-        invariants.constant_state_patch_points.entry(id).or_default().insert(PatchPoint::new(
-            patch_point_ptr,
-            side_exit_ptr,
-            version,
-        ));
+        invariants.constant_state_patch_points.entry(id).or_default().insert(ConstantPatchPoint {
+            patch_point: PatchPoint::new(patch_point_ptr, side_exit_ptr, version),
+            cref: if idx == 0 { cref } else { None },
+        });
 
         idx += 1;
     }
@@ -370,9 +405,10 @@ pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t)
     });
 }
 
-/// Called when a constant is redefined. Invalidates all JIT code that depends on the constant.
+/// Called when a constant is defined, removed, or changed in `klass` (Qfalse if unknown).
+/// Invalidates JIT code that depends on the constant unless it can't see `klass`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
+pub extern "C" fn rb_zjit_constant_state_changed(klass: VALUE, id: ID) {
     // If ZJIT isn't enabled, do nothing
     if !zjit_enabled_p() {
         return;
@@ -381,10 +417,26 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
         if let Some(patch_points) = invariants.constant_state_patch_points.remove(&id) {
+            // Keep the patch points whose path can't be affected by `klass`, e.g. `Base` in
+            // `module ActiveRecord` when `UserAgent::Browsers::Base` is defined.
+            // Constant tables are per box, so don't try that with multiple boxes.
+            let non_root_box_created = invariants.non_root_box_created;
+            let (kept, invalidated): (HashSet<_>, HashSet<_>) = patch_points.into_iter().partition(|patch_point| {
+                klass != Qfalse && !non_root_box_created && patch_point.survives_change_in(klass)
+            });
+            incr_counter_by(Counter::constant_invalidation_kept, kept.len().as_u64());
+            if !kept.is_empty() {
+                invariants.constant_state_patch_points.insert(id, kept);
+            }
+            if invalidated.is_empty() {
+                return;
+            }
+
             let cb = ZJITState::get_code_block();
             debug!("Constant state changed: {id:?}: {}", id.contents_lossy());
 
-            // Invalidate all patch points for this constant ID
+            // Invalidate the other patch points for this constant ID
+            let patch_points = invalidated.into_iter().map(|patch_point| patch_point.patch_point);
             compile_patch_points!(cb, patch_points, Const, "Constant state changed: {id:?}: {}", id.contents_lossy());
 
             cb.mark_all_executable();

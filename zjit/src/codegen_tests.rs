@@ -7475,6 +7475,81 @@ fn test_constant_path_invalidation() {
     "#), @r#"["Foo::C", "Foo::C", "Bar::C"]"#);
 }
 
+fn last_version_invalidated(iseq: IseqPtr) -> bool {
+    let payload = get_or_create_iseq_payload(iseq);
+    unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated()
+}
+
+#[test]
+fn test_constant_definition_outside_lexical_scope_keeps_code() {
+    eval("
+        module KeepA
+          class Base; end
+          def self.test = Base
+        end
+        KeepA.test
+        KeepA.test
+        module KeepB
+          class Base; end
+        end
+    ");
+    assert!(!last_version_invalidated(get_method_iseq("KeepA", "test")));
+    assert_snapshot!(assert_compiles("KeepA.test"), @"KeepA::Base");
+}
+
+#[test]
+fn test_constant_definition_in_lexical_scope_invalidates_code() {
+    eval("
+        X = :outer
+        module ShadowA
+          def self.test = X
+        end
+        ShadowA.test
+        ShadowA.test
+        module ShadowA
+          X = :inner
+        end
+    ");
+    assert!(last_version_invalidated(get_method_iseq("ShadowA", "test")));
+    assert_snapshot!(assert_compiles("ShadowA.test"), @":inner");
+}
+
+#[test]
+fn test_constant_definition_in_ancestor_invalidates_code() {
+    eval("
+        module ShadowMixin; end
+        class ShadowB
+          include ShadowMixin
+          def test = Y
+        end
+        Y = :outer
+        ShadowB.new.test
+        ShadowB.new.test
+        module ShadowMixin
+          Y = :mixin
+        end
+    ");
+    assert!(last_version_invalidated(get_instance_method_iseq("ShadowB", "test")));
+    assert_snapshot!(assert_compiles("ShadowB.new.test"), @":mixin");
+}
+
+#[test]
+fn test_instance_eval_cref_does_not_retain_receiver() {
+    eval("
+        RetainBlock = proc { @x }
+        def make_receivers(wmap) = 20.times do
+          obj = Object.new
+          obj.instance_variable_set(:@x, 1)
+          wmap[obj] = true
+          obj.instance_eval(&RetainBlock)
+        end
+        RetainWMap = ObjectSpace::WeakMap.new
+        make_receivers(RetainWMap)
+    ");
+    assert!(get_or_create_iseq_payload(get_proc_iseq("RetainBlock")).cref.is_none());
+    assert_snapshot!(inspect("4.times { GC.start }; RetainWMap.keys.size"), @"0");
+}
+
 #[test]
 fn test_dupn() {
     eval("

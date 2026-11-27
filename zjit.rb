@@ -193,6 +193,11 @@ class << RubyVM::ZJIT
       :gc_time_ns,
       :invalidation_time_ns,
 
+      :invalidation_count,
+      :method_invalidation_count,
+      :constant_invalidation_count,
+      :constant_invalidation_kept,
+
       :vm_write_jit_frame_count,
       :vm_write_sp_count,
       :vm_write_stack_count,

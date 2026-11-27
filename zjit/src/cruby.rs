@@ -898,6 +898,12 @@ impl From<*const rb_callinfo> for VALUE {
     }
 }
 
+impl From<*const rb_cref_t> for VALUE {
+    fn from(cref: *const rb_cref_t) -> Self {
+        VALUE(cref as usize)
+    }
+}
+
 impl From<&str> for VALUE {
     fn from(value: &str) -> Self {
         rust_str_to_ruby(value)

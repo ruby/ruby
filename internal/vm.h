@@ -105,6 +105,7 @@ struct rb_iseq_struct;
 const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 
 /* vm_method.c */
+void rb_clear_constant_cache_for_id_in(VALUE klass, ID id);
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 
 /* vm_dump.c */

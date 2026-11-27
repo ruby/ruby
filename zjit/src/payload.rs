@@ -25,6 +25,10 @@ pub struct IseqPayload {
     /// `BasicObject`) when the owner is unknown.
     /// See [`crate::cruby::iseq_self_is_heap_object`].
     pub self_is_heap_object: bool,
+    /// The lexical scope (`rb_cref_t`) of this ISEQ's frames, set at the first compile trigger.
+    /// Patch points of folded constant paths hold it as a raw VALUE, so it's pinned by
+    /// [`crate::gc`] and never replaced.
+    pub cref: Option<VALUE>,
     /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
     pub num_exits_until_invalidate: NumExits,
     /// Cached result of [`crate::codegen::iseq_may_write_block_code`].
@@ -38,6 +42,7 @@ impl IseqPayload {
             versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
+            cref: None,
             num_exits_until_invalidate: get_option!(num_exits_until_invalidate),
             may_write_block_code: None,
         }
