@@ -1,9 +1,10 @@
 #include <psych.h>
 
+#ifndef PSYCH_USE_LIBFYAML
+
 VALUE cPsychParser;
 
 static ID id_read;
-static ID id_path;
 static ID id_empty;
 static ID id_start_stream;
 static ID id_end_stream;
@@ -32,27 +33,47 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
     *read = 0;
 
     if(! NIL_P(string)) {
-        void * str = (void *)StringValuePtr(string);
-        *read = (size_t)RSTRING_LEN(string);
-        memcpy(buf, str, *read);
+        char * str = StringValuePtr(string);
+        size_t len = (size_t)RSTRING_LEN(string);
+
+        /* IO#read(size) is documented to return at most `size` bytes, but a
+         * misbehaving IO-like object may return more. Clamp the copy to the
+         * buffer libyaml gave us to avoid writing past its end, rounding down
+         * to a character boundary so a multibyte character is never split. */
+        if(len > size) {
+            rb_encoding * enc = rb_enc_get(string);
+            len = (size_t)(rb_enc_left_char_head(str, str + size, str + len, enc) - str);
+        }
+
+        *read = len;
+        memcpy(buf, str, len);
     }
 
     return 1;
 }
 
+/* The parser calls back into Ruby for every event, so a handler can call
+ * Psych::Parser#parse again on the same object.  parse() reinitialises the
+ * parser it is handed, which would pull the input out from under the loop
+ * still driving it, so keep a flag to reject a reentrant call. */
+typedef struct {
+    yaml_parser_t yaml_parser;
+    int parsing;
+} psych_parser_t;
+
 static void dealloc(void * ptr)
 {
-    yaml_parser_t * parser;
+    psych_parser_t * parser;
 
-    parser = (yaml_parser_t *)ptr;
-    yaml_parser_delete(parser);
+    parser = (psych_parser_t *)ptr;
+    yaml_parser_delete(&parser->yaml_parser);
     xfree(parser);
 }
 
 #if 0
 static size_t memsize(const void *ptr)
 {
-    const yaml_parser_t *parser = ptr;
+    const psych_parser_t *parser = ptr;
     /* TODO: calculate parser's size */
     return 0;
 }
@@ -69,10 +90,10 @@ static const rb_data_type_t psych_parser_type = {
 
 static VALUE allocate(VALUE klass)
 {
-    yaml_parser_t * parser;
-    VALUE obj = TypedData_Make_Struct(klass, yaml_parser_t, &psych_parser_type, parser);
+    psych_parser_t * parser;
+    VALUE obj = TypedData_Make_Struct(klass, psych_parser_t, &psych_parser_type, parser);
 
-    yaml_parser_initialize(parser);
+    yaml_parser_initialize(&parser->yaml_parser);
 
     return obj;
 }
@@ -245,17 +266,28 @@ static VALUE protected_event_location(VALUE pointer)
     return rb_funcall3(args[0], id_event_location, 4, args + 1);
 }
 
-static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
+struct parse_args {
+    psych_parser_t * psych_parser;
+    VALUE self;
+    VALUE handler;
+    VALUE yaml;
+    VALUE path;
+};
+
+static VALUE parse_body(VALUE ptr)
 {
-    yaml_parser_t * parser;
+    struct parse_args * pargs = (struct parse_args *)ptr;
+    yaml_parser_t * parser = &pargs->psych_parser->yaml_parser;
+    VALUE self = pargs->self;
+    VALUE handler = pargs->handler;
+    VALUE yaml = pargs->yaml;
+    VALUE path = pargs->path;
     yaml_event_t event;
     int done = 0;
     int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-
-    TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
 
     yaml_parser_delete(parser);
     yaml_parser_initialize(parser);
@@ -300,6 +332,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
         event_args[3] = end_line;
         event_args[4] = end_column;
         rb_protect(protected_event_location, (VALUE)event_args, &state);
+        if (state) {
+            yaml_event_delete(&event);
+            rb_jump_tag(state);
+        }
 
         switch(event.type) {
             case YAML_STREAM_START_EVENT:
@@ -383,7 +419,7 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
                 VALUE plain_implicit, quoted_implicit, style;
                 VALUE val = rb_str_new(
                     (const char *)event.data.scalar.value,
-                    (long)event.data.scalar.length
+                    (rb_len_t)event.data.scalar.length
                     );
 
                 PSYCH_TRANSCODE(val, encoding, internal_enc);
@@ -484,7 +520,11 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
             rb_protect(protected_end_mapping, handler, &state);
             break;
           case YAML_NO_EVENT:
+            /* Once libyaml has produced the stream end, every later call
+             * succeeds with a zeroed event and YAML_STREAM_END_EVENT can no
+             * longer be reached.  Stop rather than loop forever. */
             rb_protect(protected_empty, handler, &state);
+            done = 1;
             break;
           case YAML_STREAM_END_EVENT:
             rb_protect(protected_end_stream, handler, &state);
@@ -498,6 +538,37 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
     return self;
 }
 
+static VALUE parse_ensure(VALUE ptr)
+{
+    psych_parser_t * parser = (psych_parser_t *)ptr;
+
+    parser->parsing = 0;
+
+    return Qnil;
+}
+
+static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
+{
+    psych_parser_t * parser;
+    struct parse_args pargs;
+
+    TypedData_Get_Struct(self, psych_parser_t, &psych_parser_type, parser);
+
+    if (parser->parsing) {
+        rb_raise(rb_const_get(mPsych, rb_intern("Exception")),
+                "parser is already parsing, it cannot be reused from a handler callback");
+    }
+    parser->parsing = 1;
+
+    pargs.psych_parser = parser;
+    pargs.self         = self;
+    pargs.handler      = handler;
+    pargs.yaml         = yaml;
+    pargs.path         = path;
+
+    return rb_ensure(parse_body, (VALUE)&pargs, parse_ensure, (VALUE)parser);
+}
+
 /*
  * call-seq:
  *    parser.mark # => #<Psych::Parser::Mark>
@@ -509,13 +580,13 @@ static VALUE mark(VALUE self)
 {
     VALUE mark_klass;
     VALUE args[3];
-    yaml_parser_t * parser;
+    psych_parser_t * parser;
 
-    TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
+    TypedData_Get_Struct(self, psych_parser_t, &psych_parser_type, parser);
     mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
-    args[0] = SIZET2NUM(parser->mark.index);
-    args[1] = SIZET2NUM(parser->mark.line);
-    args[2] = SIZET2NUM(parser->mark.column);
+    args[0] = SIZET2NUM(parser->yaml_parser.mark.index);
+    args[1] = SIZET2NUM(parser->yaml_parser.mark.line);
+    args[2] = SIZET2NUM(parser->yaml_parser.mark.column);
 
     return rb_class_new_instance(3, args, mark_klass);
 }
@@ -548,7 +619,6 @@ void Init_psych_parser(void)
     rb_define_method(cPsychParser, "mark", mark, 0);
 
     id_read            = rb_intern("read");
-    id_path            = rb_intern("path");
     id_empty           = rb_intern("empty");
     id_start_stream    = rb_intern("start_stream");
     id_end_stream      = rb_intern("end_stream");
@@ -562,3 +632,5 @@ void Init_psych_parser(void)
     id_end_mapping     = rb_intern("end_mapping");
     id_event_location  = rb_intern("event_location");
 }
+
+#endif /* PSYCH_USE_LIBFYAML */

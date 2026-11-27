@@ -2,8 +2,16 @@
 
 require_relative '../../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../../enumerable/shared/value_packing'
 
 describe "Enumerator::Lazy#drop_while" do
+  describe "value packing of source yields (matches Enumerable#drop_while)" do
+    before :each do
+      @take = -> e { e.lazy.drop_while { false } }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   before :each do
     @yieldsmixed = EnumeratorLazySpecs::YieldsMixed.new.to_enum.lazy
     @eventsmixed = EnumeratorLazySpecs::EventsMixed.new.to_enum.lazy
@@ -16,8 +24,8 @@ describe "Enumerator::Lazy#drop_while" do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.drop_while {}
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "sets #size to nil" do
@@ -40,7 +48,15 @@ describe "Enumerator::Lazy#drop_while" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    -> { @yieldsmixed.drop_while }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.drop_while }.should.raise(ArgumentError)
+  end
+
+  describe "when the returned lazy enumerator is evaluated by .force" do
+    it "return same value when called twice" do
+      lazy = [0, 1, 2, 3].lazy.drop_while { |v| v < 2 }
+      lazy.force.should == [2, 3]
+      lazy.force.should == [2, 3]
+    end
   end
 
   describe "on a nested Lazy" do

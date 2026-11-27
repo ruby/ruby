@@ -131,12 +131,9 @@ describe "Operators" do
 
   it "* / % are left-associative" do
     (2*1/2).should == (2*1)/2
-    # Guard against the Mathn library
     # TODO: Make these specs not rely on specific behaviour / result values
     # by using mocks.
-    guard -> { !defined?(Math.rsqrt) } do
-      (2*1/2).should_not == 2*(1/2)
-    end
+    (2*1/2).should_not == 2*(1/2)
 
     (10/7/5).should == (10/7)/5
     (10/7/5).should_not == 10/(7/5)
@@ -251,12 +248,12 @@ describe "Operators" do
   end
 
   it "<=> == === != =~ !~ are non-associative" do
-    -> { eval("1 <=> 2 <=> 3")  }.should raise_error(SyntaxError)
-    -> { eval("1 == 2 == 3")  }.should raise_error(SyntaxError)
-    -> { eval("1 === 2 === 3")  }.should raise_error(SyntaxError)
-    -> { eval("1 != 2 != 3")  }.should raise_error(SyntaxError)
-    -> { eval("1 =~ 2 =~ 3")  }.should raise_error(SyntaxError)
-    -> { eval("1 !~ 2 !~ 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 <=> 2 <=> 3")  }.should.raise(SyntaxError)
+    -> { eval("1 == 2 == 3")  }.should.raise(SyntaxError)
+    -> { eval("1 === 2 === 3")  }.should.raise(SyntaxError)
+    -> { eval("1 != 2 != 3")  }.should.raise(SyntaxError)
+    -> { eval("1 =~ 2 =~ 3")  }.should.raise(SyntaxError)
+    -> { eval("1 !~ 2 !~ 3")  }.should.raise(SyntaxError)
   end
 
   it "<=> == === != =~ !~ have higher precedence than &&" do
@@ -290,8 +287,8 @@ describe "Operators" do
   end
 
   it ".. ... are non-associative" do
-    -> { eval("1..2..3")  }.should raise_error(SyntaxError)
-    -> { eval("1...2...3")  }.should raise_error(SyntaxError)
+    -> { eval("1..2..3")  }.should.raise(SyntaxError)
+    -> { eval("1...2...3")  }.should.raise(SyntaxError)
   end
 
   it ".. ... have higher precedence than ? :" do

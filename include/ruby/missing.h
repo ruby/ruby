@@ -183,6 +183,10 @@ RUBY_EXTERN int memcmp(const void *, const void *, size_t);
 RUBY_EXTERN void *memmove(void *, const void *, size_t);
 #endif
 
+#ifndef HAVE_MEMRCHR
+RUBY_EXTERN void *memrchr(const void *, int, size_t);
+#endif
+
 /*
 #ifndef HAVE_MODF
 RUBY_EXTERN double modf(double, double *);

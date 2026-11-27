@@ -74,7 +74,7 @@ describe "Net::HTTP.get" do
       socket, client_thread = start_threads
       begin
         client_thread.raise my_exception, "my exception"
-        -> { client_thread.value }.should raise_error(my_exception)
+        -> { client_thread.value }.should.raise(my_exception)
       ensure
         socket.close
       end

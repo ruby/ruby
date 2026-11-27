@@ -15,18 +15,18 @@ describe 'Pathname#empty?' do
   end
 
   it 'returns true when file is not empty' do
-    Pathname.new(__FILE__).empty?.should be_false
+    Pathname.new(__FILE__).empty?.should == false
   end
 
   it 'returns false when the directory is not empty' do
-    Pathname.new(__dir__).empty?.should be_false
+    Pathname.new(__dir__).empty?.should == false
   end
 
   it 'return true when file is empty' do
-    Pathname.new(@file).empty?.should be_true
+    Pathname.new(@file).empty?.should == true
   end
 
   it 'returns true when directory is empty' do
-    Pathname.new(@dir).empty?.should be_true
+    Pathname.new(@dir).empty?.should == true
   end
 end

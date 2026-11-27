@@ -11,7 +11,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      -> { @get_file_version.helpcontext(1) }.should raise_error ArgumentError
+      -> { @get_file_version.helpcontext(1) }.should.raise ArgumentError
     end
 
     it "returns expected value for FileSystemObject's 'GetFileVersion' method" do

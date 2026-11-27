@@ -16,10 +16,10 @@ describe "Prime.prime_division" do
   end
 
   it "includes [[-1, 1]] in the divisors of a negative number" do
-    Prime.prime_division(-10).should include([-1, 1])
+    Prime.prime_division(-10).should.include?([-1, 1])
   end
 
   it "raises ZeroDivisionError for 0" do
-    -> { Prime.prime_division(0) }.should raise_error(ZeroDivisionError)
+    -> { Prime.prime_division(0) }.should.raise(ZeroDivisionError)
   end
 end

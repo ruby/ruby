@@ -7,18 +7,18 @@ describe "Module#extend_object" do
   end
 
   it "is a private method" do
-    Module.should have_private_instance_method(:extend_object)
+    Module.private_instance_methods(false).should.include?(:extend_object)
   end
 
   describe "on Class" do
     it "is undefined" do
-      Class.should_not have_private_instance_method(:extend_object, true)
+      Class.private_instance_methods(true).should_not.include?(:extend_object)
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
       -> {
         Module.instance_method(:extend_object).bind(Class.new).call Object.new
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 
@@ -49,8 +49,8 @@ describe "Module#extend_object" do
     end
 
     it "raises a RuntimeError before extending the object" do
-      -> { @receiver.send(:extend_object, @object) }.should raise_error(RuntimeError)
-      @object.should_not be_kind_of(@receiver)
+      -> { @receiver.send(:extend_object, @object) }.should.raise(RuntimeError)
+      @object.should_not.is_a?(@receiver)
     end
   end
 end

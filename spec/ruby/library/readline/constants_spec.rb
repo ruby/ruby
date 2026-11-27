@@ -11,8 +11,8 @@ with_feature :readline do
   describe "Readline::VERSION" do
     it "is defined and is a non-empty String" do
       Readline.const_defined?(:VERSION).should == true
-      Readline::VERSION.should be_kind_of(String)
-      Readline::VERSION.should_not be_empty
+      Readline::VERSION.should.is_a?(String)
+      Readline::VERSION.should_not.empty?
     end
   end
 end

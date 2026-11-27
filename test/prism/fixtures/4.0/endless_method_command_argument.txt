@@ -1,0 +1,23 @@
+f(def g = obj.fetch x)
+
+outer def f = super A::B() {} do end
+
+outer def f = inner mid g (x) {} do end
+
+outer def f = return inner A::B() {} do end
+
+outer def f = super A::B {} rescue fallback do end
+
+outer def f = g (x) {}
+
+outer(def f = not return v rescue 2)
+
+outer defined? (x) {}
+
+outer def f = super (x) {}
+
+outer def f = not super (x) {}
+
+outer def f = super (x) rescue y
+
+outer def f = obj.x = y

@@ -1,11 +1,11 @@
 describe :io_readlines, shared: true do
   it "raises TypeError if the first parameter is nil" do
-    -> { IO.send(@method, nil, &@object) }.should raise_error(TypeError)
+    -> { IO.send(@method, nil, &@object) }.should.raise(TypeError)
   end
 
   it "raises an Errno::ENOENT if the file does not exist" do
     name = tmp("nonexistent.txt")
-    -> { IO.send(@method, name, &@object) }.should raise_error(Errno::ENOENT)
+    -> { IO.send(@method, name, &@object) }.should.raise(Errno::ENOENT)
   end
 
   it "yields a single string with entire content when the separator is nil" do
@@ -21,6 +21,23 @@ describe :io_readlines, shared: true do
   it "yields a sequence of lines without trailing newline characters when chomp is passed" do
     result = IO.send(@method, @name, chomp: true, &@object)
     (result ? result : ScratchPad.recorded).should == IOSpecs.lines_without_newline_characters
+  end
+
+  platform_is :darwin do
+    it "reads a file when given a path string in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("io_foreach_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        File.write(utf8_path, "ok\nline2")
+        result = IO.send(@method, non_utf8_path, &@object)
+        (result ? result : ScratchPad.recorded).should == ["ok\n", "line2"]
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
   end
 end
 
@@ -80,14 +97,12 @@ describe :io_readlines_options_19, shared: true do
       end
 
       it "does not accept Integers that don't fit in a C off_t" do
-        -> { IO.send(@method, @name, 2**128, &@object) }.should raise_error(RangeError)
+        -> { IO.send(@method, @name, 2**128, &@object) }.should.raise(RangeError)
       end
 
-      ruby_bug "#18767", ""..."3.3" do
-        describe "when passed limit" do
-          it "raises ArgumentError when passed 0 as a limit" do
-            -> { IO.send(@method, @name, 0, &@object) }.should raise_error(ArgumentError)
-          end
+      describe "when passed limit" do
+        it "raises ArgumentError when passed 0 as a limit" do
+          -> { IO.send(@method, @name, 0, &@object) }.should.raise(ArgumentError)
         end
       end
     end
@@ -108,7 +123,7 @@ describe :io_readlines_options_19, shared: true do
       it "raises TypeError exception" do
         -> {
           IO.send(@method, @name, { chomp: true }, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
 
@@ -118,7 +133,7 @@ describe :io_readlines_options_19, shared: true do
 
         -> {
           IO.send(@method, @name, obj, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
   end
@@ -172,7 +187,7 @@ describe :io_readlines_options_19, shared: true do
 
         -> {
           IO.send(@method, @name, " ", obj, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
 
@@ -180,7 +195,7 @@ describe :io_readlines_options_19, shared: true do
       it "raises TypeError exception" do
         -> {
           IO.send(@method, @name, "", { chomp: true }, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
   end
@@ -190,7 +205,7 @@ describe :io_readlines_options_19, shared: true do
       it "uses the keyword arguments as options" do
         -> do
           IO.send(@method, @filename, 10, mode: "w", &@object)
-        end.should raise_error(IOError)
+        end.should.raise(IOError)
       end
     end
 
@@ -198,7 +213,7 @@ describe :io_readlines_options_19, shared: true do
       it "uses the keyword arguments as options" do
         -> do
           IO.send(@method, @filename, " ", mode: "w", &@object)
-        end.should raise_error(IOError)
+        end.should.raise(IOError)
       end
     end
 
@@ -209,7 +224,7 @@ describe :io_readlines_options_19, shared: true do
 
         -> do
           IO.send(@method, @filename, sep, mode: "w", &@object)
-        end.should raise_error(IOError)
+        end.should.raise(IOError)
       end
     end
   end
@@ -239,7 +254,7 @@ describe :io_readlines_options_19, shared: true do
     it "uses the keyword arguments as options" do
       -> do
         IO.send(@method, @filename, " ", 10, mode: "w", &@object)
-      end.should raise_error(IOError)
+      end.should.raise(IOError)
     end
 
     describe "when passed chomp, nil as a separator, and a limit" do

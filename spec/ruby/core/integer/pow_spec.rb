@@ -16,10 +16,10 @@ describe "Integer#pow" do
     end
 
     it "works well with bignums" do
-      2.pow(61, 5843009213693951).should eql 3697379018277258
-      2.pow(62, 5843009213693952).should eql 1551748822859776
-      2.pow(63, 5843009213693953).should eql 3103497645717974
-      2.pow(64, 5843009213693954).should eql 363986077738838
+      2.pow(61, 5843009213693951).should.eql? 3697379018277258
+      2.pow(62, 5843009213693952).should.eql? 1551748822859776
+      2.pow(63, 5843009213693953).should.eql? 3103497645717974
+      2.pow(64, 5843009213693954).should.eql? 363986077738838
     end
 
     it "handles sign like #divmod does" do
@@ -30,22 +30,22 @@ describe "Integer#pow" do
     end
 
     it "ensures all arguments are integers" do
-      -> { 2.pow(5, 12.0) }.should raise_error(TypeError, /2nd argument not allowed unless all arguments are integers/)
-      -> { 2.pow(5, Rational(12, 1)) }.should raise_error(TypeError, /2nd argument not allowed unless all arguments are integers/)
+      -> { 2.pow(5, 12.0) }.should.raise(TypeError, /2nd argument not allowed unless all arguments are integers/)
+      -> { 2.pow(5, Rational(12, 1)) }.should.raise(TypeError, /2nd argument not allowed unless all arguments are integers/)
     end
 
     it "raises TypeError for non-numeric value" do
-      -> { 2.pow(5, "12") }.should raise_error(TypeError)
-      -> { 2.pow(5, []) }.should raise_error(TypeError)
-      -> { 2.pow(5, nil) }.should raise_error(TypeError)
+      -> { 2.pow(5, "12") }.should.raise(TypeError)
+      -> { 2.pow(5, []) }.should.raise(TypeError)
+      -> { 2.pow(5, nil) }.should.raise(TypeError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0" do
-      -> { 2.pow(5, 0) }.should raise_error(ZeroDivisionError)
+      -> { 2.pow(5, 0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a RangeError when the first argument is negative and the second argument is present" do
-      -> { 2.pow(-5, 1) }.should raise_error(RangeError)
+      -> { 2.pow(-5, 1) }.should.raise(RangeError)
     end
   end
 end

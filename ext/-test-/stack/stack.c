@@ -2,7 +2,7 @@
 #include "internal/string.h"
 
 static VALUE
-stack_alloca_overflow(VALUE self)
+stack_overflow(VALUE self)
 {
     size_t i = 0;
 
@@ -30,6 +30,6 @@ asan_p(VALUE klass)
 void
 Init_stack(VALUE klass)
 {
-    rb_define_singleton_method(rb_cThread, "alloca_overflow", stack_alloca_overflow, 0);
+    rb_define_singleton_method(rb_cThread, "stack_overflow", stack_overflow, 0);
     rb_define_singleton_method(rb_cThread, "asan?", asan_p, 0);
 }

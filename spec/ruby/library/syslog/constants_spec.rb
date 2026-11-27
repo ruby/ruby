@@ -17,7 +17,7 @@ platform_is_not :windows do
 
       it "includes the Syslog constants" do
         @constants.each do |c|
-          Syslog::Constants.should have_constant(c)
+          Syslog::Constants.should.const_defined?(c, true)
         end
       end
     end

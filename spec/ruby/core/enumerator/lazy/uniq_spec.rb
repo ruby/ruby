@@ -1,14 +1,22 @@
 require_relative '../../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../../enumerable/shared/value_packing'
 
 describe 'Enumerator::Lazy#uniq' do
+  describe "value packing of source yields (matches Enumerable#uniq)" do
+    before :each do
+      @take = -> e { e.lazy.uniq }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   context 'without block' do
     before :each do
       @lazy = [0, 1, 0, 1].to_enum.lazy.uniq
     end
 
     it 'returns a lazy enumerator' do
-      @lazy.should be_an_instance_of(Enumerator::Lazy)
+      @lazy.should.instance_of?(Enumerator::Lazy)
       @lazy.force.should == [0, 1]
     end
 
@@ -28,7 +36,7 @@ describe 'Enumerator::Lazy#uniq' do
     end
 
     it 'returns a lazy enumerator' do
-      @lazy.should be_an_instance_of(Enumerator::Lazy)
+      @lazy.should.instance_of?(Enumerator::Lazy)
       @lazy.force.should == [0, 1]
     end
 

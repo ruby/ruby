@@ -21,6 +21,7 @@ end
 
 module MSpecMatchers
   private def be_an_instance_of(expected)
+    MSpec.deprecate __method__, '.should.instance_of?'
     BeAnInstanceOfMatcher.new(expected)
   end
 end

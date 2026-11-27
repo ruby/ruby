@@ -17,25 +17,23 @@ describe "Warning.[]=" do
     end
   end
 
-  ruby_version_is '3.3' do
-    it "enables or disables performance warnings" do
-      original = Warning[:performance]
-      begin
-        Warning[:performance] = !original
-        Warning[:performance].should == !original
-      ensure
-        Warning[:performance] = original
-      end
+  it "enables or disables performance warnings" do
+    original = Warning[:performance]
+    begin
+      Warning[:performance] = !original
+      Warning[:performance].should == !original
+    ensure
+      Warning[:performance] = original
     end
   end
 
   it "raises for unknown category" do
-    -> { Warning[:noop] = false }.should raise_error(ArgumentError, /unknown category: noop/)
+    -> { Warning[:noop] = false }.should.raise(ArgumentError, /unknown category: noop/)
   end
 
   it "raises for non-Symbol category" do
-    -> { Warning[42] = false }.should raise_error(TypeError)
-    -> { Warning[false] = false }.should raise_error(TypeError)
-    -> { Warning["noop"] = false }.should raise_error(TypeError)
+    -> { Warning[42] = false }.should.raise(TypeError)
+    -> { Warning[false] = false }.should.raise(TypeError)
+    -> { Warning["noop"] = false }.should.raise(TypeError)
   end
 end

@@ -32,6 +32,7 @@ class TestMethod < Test::Unit::TestCase
   def mk7(a, b = nil, *c, d, **o) nil && o end
   def mk8(a, b = nil, *c, d, e:, f: nil, **o) nil && o end
   def mnk(**nil) end
+  def mnb(&nil) end
   def mf(...) end
 
   class Base
@@ -109,6 +110,20 @@ class TestMethod < Test::Unit::TestCase
       remove_method :foo
       def foo() :derived; end
     end
+  end
+
+  def test_unbound_method_equality_with_extended_module
+    m = Module.new { def hello; "hello"; end }
+    base = Class.new { extend m }
+    sub = Class.new(base)
+
+    from_module = m.instance_method(:hello)
+    from_base   = base.method(:hello).unbind
+    from_sub    = sub.method(:hello).unbind
+
+    assert_equal(from_module, from_base)
+    assert_equal(from_module, from_sub)
+    assert_equal(from_base, from_sub)
   end
 
   def test_callee
@@ -199,6 +214,47 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(o.method(:foo), o.method(:foo))
     assert_equal(o.method(:foo), o.method(:bar))
     assert_not_equal(o.method(:foo), o.method(:baz))
+
+    m = Module.new { def m = [:M, *super] }
+    n = Module.new { include m }
+    c = Class.new { def m = :C }
+    sc = Class.new(c) do
+      include n
+      prepend m
+      def m = [:SC, *super]
+    end
+
+    expected = [:M, :SC, :M, :C]
+    o = sc.new
+    meth = o.method(:m)
+    umeth = o.class.instance_method(:m)
+    assert_equal(expected, o.m)
+    assert_equal(expected, meth.call)
+    assert_equal(expected, umeth.bind_call(o))
+
+    super_method = ->(m) do
+      sm = m.super_method
+      if m.is_a?(Method)
+        assert_equal(m.unbind.super_method, sm.unbind)
+        v = m.call
+        assert_equal(expected[-v.size...], Array(v))
+      else
+        assert_equal(m.bind(o).super_method, sm.bind(o))
+        v = m.bind_call(o)
+        assert_equal(expected[-v.size...], Array(v))
+      end
+      sm
+    end
+    [meth, umeth].each do |meth|
+      assert_equal(m, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(sc, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(m, meth.owner)
+      meth = super_method.(meth)
+      assert_equal(c, meth.owner)
+      assert_nil(meth.super_method)
+    end
   end
 
   def test_hash
@@ -295,6 +351,42 @@ class TestMethod < Test::Unit::TestCase
     feature4254 = '[ruby-core:34267]'
     m = M.instance_method(:meth)
     assert_equal(:meth, m.bind(Object.new).call, feature4254)
+  end
+
+  def test_bind_superclass_method_on_subclass_instance_with_same_prepend
+    m = Module.new do
+      def m = [:m, *super]
+    end
+    c = Class.new do
+      prepend m
+      def m = [:c]
+    end
+    sc = Class.new(c) do
+      prepend m
+      def m = [:sc, *super]
+    end
+
+    expected = [:m, :c]
+    o = sc.new
+    um = c.instance_method(:m)
+    assert_equal(expected, um.bind_call(o))
+    assert_equal(expected, um.bind(o).unbind.bind_call(o))
+
+    expected = [:m, :sc, :m, :c]
+    assert_equal(expected, o.m)
+
+    m = o.method(:m)
+    um = sc.instance_method(:m)
+    assert_equal(expected, m.call)
+    assert_equal(expected, um.bind_call(o))
+
+    3.times do
+      expected.shift
+      m = m.super_method
+      um = um.super_method
+      assert_equal(expected, m.call)
+      assert_equal(expected, um.bind_call(o))
+    end
   end
 
   def test_define_method
@@ -445,6 +537,67 @@ class TestMethod < Test::Unit::TestCase
     assert_throw(bug9005) {o.x(bug9005)}
   end
 
+  # Redefining :foo with a body equal to its current one reuses the existing
+  # method entry and changes its visibility in place; call sites cached
+  # while it was public must not keep calling it.
+  def assert_define_method_private_invalidates_cache(klass, obj, &method_object)
+    call = ->(x) { x.foo }
+    2.times { assert_equal(1, call.(obj)) }
+    klass.class_eval do
+      private
+      define_method(:foo, method_object.call)
+    end
+    assert_send([klass, :private_method_defined?, :foo])
+    assert_raise(NoMethodError) { call.(obj) }
+    assert_raise(NoMethodError) { obj.foo }
+  end
+
+  def test_define_method_same_entry_private_invalidates_cache
+    c = Class.new { def foo = 1 }
+    assert_define_method_private_invalidates_cache(c, c.new) { c.instance_method(:foo) }
+  end
+
+  def test_define_method_cloned_unbound_method_private_invalidates_cache
+    c = Class.new { def foo = 1 }
+    assert_define_method_private_invalidates_cache(c, c.new) { c.instance_method(:foo).clone }
+  end
+
+  def test_define_method_unbind_private_invalidates_cache
+    c = Class.new { def foo = 1 }
+    o = c.new
+    assert_define_method_private_invalidates_cache(c, o) { o.method(:foo).unbind }
+  end
+
+  def test_define_method_subclass_entry_private_invalidates_cache
+    # s already has its own :foo sharing c's definition, so the entry reused
+    # is s's, not the one the UnboundMethod refers to.
+    c = Class.new { def foo = 1 }
+    s = Class.new(c) { define_method(:foo, c.instance_method(:foo)) }
+    assert_define_method_private_invalidates_cache(s, s.new) { c.instance_method(:foo) }
+    assert_not_send([c, :private_method_defined?, :foo])
+    assert_equal(1, c.new.foo)
+  end
+
+  def test_define_method_same_entry_private_invalidates_cache_subclass
+    # s has no :foo of its own, so a new entry is created in s; c's entry and
+    # the call sites cached on it stay public and untouched.
+    c = Class.new { def foo = 1 }
+    s = Class.new(c)
+    o = c.new
+    so = s.new
+    call = ->(x) { x.foo }
+    2.times { assert_equal(1, call.(o)) }
+    2.times { assert_equal(1, call.(so)) }
+    s.class_eval do
+      private
+      define_method(:foo, instance_method(:foo))
+    end
+    assert_send([s, :private_method_defined?, :foo])
+    assert_not_send([c, :private_method_defined?, :foo])
+    2.times { assert_equal(1, call.(o)) }
+    assert_raise(NoMethodError) { so.foo }
+  end
+
   def test_singleton_define_method_in_private_scope
     bug9141 = '[ruby-core:58497] [Bug #9141]'
     o = Object.new
@@ -477,7 +630,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_clone_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       o = Object.new
       def o.foo; :foo; end
@@ -486,6 +638,20 @@ class TestMethod < Test::Unit::TestCase
       assert_equal(:foo, m.clone.call)
       assert_equal(:bar, m.clone.bar)
     end
+  end
+
+  def test_clone_preserves_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_equal(:bar, m.clone.foo)
+  end
+
+  def test_dup_does_not_preserve_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_raise(NoMethodError) { m.dup.foo }
   end
 
   def test_inspect
@@ -530,6 +696,12 @@ class TestMethod < Test::Unit::TestCase
     c5.extend(m)
     c6 = Class.new(c5)
     assert_equal("#<Method: #<Class:#{c6.inspect}>(#{m.inspect})#prep(prepend)() #{__FILE__}:#{line_no}>", c6.method(:prep).inspect, bug17428)
+
+    mod = Module.new { def foo; end }; line_no = __LINE__
+    cls = Class.new { include mod }
+    o = cls.new
+    assert_equal("#<Method: #{mod.inspect}#foo() #{__FILE__}:#{line_no}>",
+                 o.method(:foo).unbind.bind(o).inspect, "[ruby-core:126737] [Bug #22321]")
   end
 
   def test_callee_top_level
@@ -603,6 +775,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
   define_method(:pmk8) {|a, b = nil, *c, d, e:, f: nil, **o|}
   define_method(:pmnk) {|**nil|}
+  define_method(:pmnb) {|&nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -626,6 +799,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
+    assert_equal([[:noblock]], method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
@@ -652,6 +826,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
@@ -677,6 +852,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:pmk8).parameters)
     assert_equal([[:nokey]], method(:pmnk).parameters)
+    assert_equal([[:noblock]], method(:pmnb).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -701,6 +877,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:pmk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:pmnb).parameters)
   end
 
   def test_hidden_parameters
@@ -953,6 +1130,16 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:bar, m.call, feature8391)
   end
 
+  def test_singleton_method_not_interned_name
+    # [Bug #22535]
+    name = "never_interned_singleton_method_#{rand(1 << 40)}"
+    [Object.new, Object.new.tap(&:singleton_class)].each do |obj|
+      e = assert_raise(NameError) {obj.singleton_method(name)}
+      assert_equal(name, e.name.to_s)
+      assert_include(e.message, "undefined singleton method '#{name}'")
+    end
+  end
+
   def test_singleton_method_prepend
     bug14658 = '[Bug #14658]'
     c1 = Class.new
@@ -1192,6 +1379,21 @@ class TestMethod < Test::Unit::TestCase
       '[ruby-core:85231] [Bug #14421]'
   end
 
+  def test_super_method_after_bind_module_method_to_another_class
+    bug22614 = 'https://bugs.ruby-lang.org/issues/22614'
+    c1 = Class.new { def m = :c1 }
+    c2 = Class.new { def m = :c2 }
+    mod = Module.new { def m = super }
+    c3 = Class.new(c1) { include mod }
+    o = c2.new
+    [c3.instance_method(:m), c3.new.method(:m).unbind].each do |um|
+      sm = um.bind(o).super_method
+      assert_equal(c2.instance_method(:m), sm.unbind, bug22614)
+      assert_equal(:c2, sm.call, bug22614)
+      assert_nil(um.bind(Object.new).super_method, bug22614)
+    end
+  end
+
   def test_super_method_alias
     c0 = Class.new do
       def m1
@@ -1251,7 +1453,9 @@ class TestMethod < Test::Unit::TestCase
         [:C1_m1] + super
       end
       prepend m
-      alias m2 m1
+    end
+    assert_deprecated_warning(/aliasing .*#m1 defined in a prepended module .* is deprecated/) do
+      c1.class_eval { alias m2 m1 }
     end
 
     o1 = c1.new
@@ -1431,10 +1635,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_splat_long_array
-    if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
-      # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
-      omit 'do not exhaust memory on RubyCI openSUSE Leap machine'
-    end
     n = 10_000_000
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
   end
@@ -1775,11 +1975,11 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_kwarg_eval_memory_leak
-    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2, samples: 5)
       obj = Object.new
       def obj.test(**kwargs) = nil
 
-      100_000.times do
+      20_000.times do
         eval("obj.test(foo: 123)")
       end
     RUBY
@@ -1889,5 +2089,9 @@ class TestMethod < Test::Unit::TestCase
     RUBY
       assert_equal 0, err.size, err.join("\n")
     end
+  end
+
+  def test_unbound_method_ractor_shareable
+    assert Ractor.shareable?(BasicObject.instance_method(:equal?).freeze)
   end
 end

@@ -14,7 +14,7 @@ describe "Struct#deconstruct_keys" do
 
     -> {
       obj.deconstruct_keys
-    }.should raise_error(ArgumentError, /wrong number of arguments \(given 0, expected 1\)/)
+    }.should.raise(ArgumentError, /wrong number of arguments \(given 0, expected 1\)/)
   end
 
   it "returns only specified keys" do
@@ -106,7 +106,7 @@ describe "Struct#deconstruct_keys" do
 
     -> {
       s.deconstruct_keys([key])
-    }.should raise_error(TypeError, /can't convert MockObject to Integer/)
+    }.should raise_consistent_error(TypeError, /can't convert MockObject into Integer/)
   end
 
   it "raises TypeError if index is not a String, a Symbol and not convertible to Integer" do
@@ -115,16 +115,16 @@ describe "Struct#deconstruct_keys" do
 
     -> {
       s.deconstruct_keys([0, []])
-    }.should raise_error(TypeError, "no implicit conversion of Array into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Array into Integer")
   end
 
   it "raise TypeError if passed anything except nil or array" do
     struct = Struct.new(:x, :y)
     s = struct.new(1, 2)
 
-    -> { s.deconstruct_keys('x') }.should raise_error(TypeError, /expected Array or nil/)
-    -> { s.deconstruct_keys(1)   }.should raise_error(TypeError, /expected Array or nil/)
-    -> { s.deconstruct_keys(:x)  }.should raise_error(TypeError, /expected Array or nil/)
-    -> { s.deconstruct_keys({})  }.should raise_error(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys('x') }.should.raise(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys(1)   }.should.raise(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys(:x)  }.should.raise(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys({})  }.should.raise(TypeError, /expected Array or nil/)
   end
 end

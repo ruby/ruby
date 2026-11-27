@@ -30,7 +30,7 @@ describe "Rational#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    -> { Rational(1,1).rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    -> { Rational(1,1).rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { Rational(1,1).rationalize(0.1, 0.1) }.should.raise(ArgumentError)
+    -> { Rational(1,1).rationalize(0.1, 0.1, 2) }.should.raise(ArgumentError)
   end
 end

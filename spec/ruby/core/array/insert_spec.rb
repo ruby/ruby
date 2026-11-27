@@ -4,8 +4,8 @@ require_relative 'fixtures/classes'
 describe "Array#insert" do
   it "returns self" do
     ary = []
-    ary.insert(0).should equal(ary)
-    ary.insert(0, :a).should equal(ary)
+    ary.insert(0).should.equal?(ary)
+    ary.insert(0, :a).should.equal?(ary)
   end
 
   it "inserts objects before the element at index for non-negative index" do
@@ -46,8 +46,8 @@ describe "Array#insert" do
   end
 
   it "raises an IndexError if the negative index is out of bounds" do
-    -> { [].insert(-2, 1)  }.should raise_error(IndexError)
-    -> { [1].insert(-3, 2) }.should raise_error(IndexError)
+    -> { [].insert(-2, 1)  }.should.raise(IndexError)
+    -> { [1].insert(-3, 2) }.should.raise(IndexError)
   end
 
   it "does nothing of no object is passed" do
@@ -64,15 +64,15 @@ describe "Array#insert" do
   end
 
   it "raises an ArgumentError if no argument passed" do
-    -> { [].insert() }.should raise_error(ArgumentError)
+    -> { [].insert() }.should.raise(ArgumentError)
   end
 
   it "raises a FrozenError on frozen arrays when the array is modified" do
-    -> { ArraySpecs.frozen_array.insert(0, 'x') }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.insert(0, 'x') }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError on frozen arrays when the array would not be modified" do
-    -> { ArraySpecs.frozen_array.insert(0) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.insert(0) }.should.raise(FrozenError)
   end
 end

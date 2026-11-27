@@ -17,9 +17,11 @@ module Bundler
       append_formatted_table("Environment", environment, out)
       append_formatted_table("Bundler Build Metadata", BuildMetadata.to_h, out)
 
-      unless Bundler.settings.all.empty?
+      settings = Bundler.settings.all_including_stored_credentials
+
+      unless settings.empty?
         out << "\n## Bundler settings\n\n```\n"
-        Bundler.settings.all.each do |setting|
+        settings.each do |setting|
           out << setting << "\n"
           Bundler.settings.pretty_values_for(setting).each do |line|
             out << "  " << line << "\n"
@@ -78,17 +80,6 @@ module Bundler
       "not installed"
     end
 
-    def self.version_of(script)
-      return "not installed" unless Bundler.which(script)
-      `#{script} --version`.chomp
-    end
-
-    def self.chruby_version
-      return "not installed" unless Bundler.which("chruby-exec")
-      `chruby-exec -- chruby --version`.
-        sub(/.*^chruby: (#{Gem::Version::VERSION_PATTERN}).*/m, '\1')
-    end
-
     def self.environment
       out = []
 
@@ -110,16 +101,8 @@ module Bundler
         out << ["  Cert File", OpenSSL::X509::DEFAULT_CERT_FILE] if defined?(OpenSSL::X509::DEFAULT_CERT_FILE)
         out << ["  Cert Dir", OpenSSL::X509::DEFAULT_CERT_DIR] if defined?(OpenSSL::X509::DEFAULT_CERT_DIR)
       end
-      out << ["Tools"]
-      out << ["  Git", git_version]
-      out << ["  RVM", ENV.fetch("rvm_version") { version_of("rvm") }]
-      out << ["  rbenv", version_of("rbenv")]
-      out << ["  chruby", chruby_version]
+      out << ["Git", git_version]
 
-      %w[rubygems-bundler open_gem].each do |name|
-        specs = Bundler.rubygems.find_name(name)
-        out << ["  #{name}", "(#{specs.map(&:version).join(",")})"] unless specs.empty?
-      end
       if (exe = caller_locations.last.absolute_path)&.match? %r{(exe|bin)/bundler?\z}
         shebang = File.read(exe).lines.first
         shebang.sub!(/^#!\s*/, "")
@@ -143,6 +126,6 @@ module Bundler
       out << "```\n"
     end
 
-    private_class_method :read_file, :ruby_version, :git_version, :append_formatted_table, :version_of, :chruby_version
+    private_class_method :read_file, :ruby_version, :git_version, :append_formatted_table
   end
 end

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative '../../shared/queue/enque'
 
 describe "Queue#push" do
-  it_behaves_like :queue_enq, :push, -> { Queue.new }
+  it "is an alias of Queue#<<" do
+    Queue.instance_method(:push).should == Queue.instance_method(:<<)
+  end
 end

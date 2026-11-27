@@ -1,0 +1,112 @@
+/**
+ * @file constant_pool.h
+ *
+ * A data structure that stores a set of strings.
+ *
+ * Each string is assigned a unique id, which can be used to compare strings for
+ * equality. This comparison ends up being much faster than strcmp, since it
+ * only requires a single integer comparison.
+ */
+#ifndef PRISM_CONSTANT_POOL_H
+#define PRISM_CONSTANT_POOL_H
+
+#include "prism/compiler/exported.h"
+#include "prism/compiler/inline.h"
+#include "prism/compiler/nodiscard.h"
+#include "prism/compiler/nonnull.h"
+
+#include "prism/arena.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * A constant id is a unique identifier for a constant in the constant pool.
+ */
+typedef uint32_t pm_constant_id_t;
+
+/**
+ * Returns the index of the constant with the given id among the constants of
+ * the parser that produced it. The indices run from 0 to one less than
+ * pm_parser_constants_size, so they can index a cache with one entry per
+ * constant that was filled using pm_parser_constant_at.
+ *
+ * @param constant_id the id of the constant. Optional constant fields on nodes
+ *     hold 0 when they are absent, which is not a valid id, so check for it
+ *     before calling this function.
+ * @returns the index of the constant
+ */
+static PRISM_INLINE size_t
+pm_constant_id_index(pm_constant_id_t constant_id) {
+    return (size_t) constant_id - 1;
+}
+
+/**
+ * A list of constant IDs. Usually used to represent a set of locals.
+ */
+typedef struct {
+    /**
+     * The number of constant ids in the list. Source offsets are 32 bits, so
+     * the source is less than 4 GiB, and a list built from it stays far below
+     * what this can count.
+     */
+    uint32_t size;
+
+    /** The constant ids in the list. */
+    pm_constant_id_t *ids;
+} pm_constant_id_list_t;
+
+/** A constant in the pool which effectively stores a string. */
+typedef struct pm_constant_t pm_constant_t;
+
+/**
+ * The overall constant pool, which stores constants found while parsing.
+ */
+typedef struct pm_constant_pool_t pm_constant_pool_t;
+
+/**
+ * Return a raw pointer to the start of a constant.
+ *
+ * @param constant The constant to get the start of.
+ * @returns A raw pointer to the start of the constant.
+ */
+PRISM_EXPORTED_FUNCTION const uint8_t * pm_constant_start(const pm_constant_t *constant) PRISM_NONNULL(1);
+
+/**
+ * Return the length of a constant.
+ *
+ * @param constant The constant to get the length of.
+ * @returns The length of the constant.
+ */
+PRISM_EXPORTED_FUNCTION size_t pm_constant_length(const pm_constant_t *constant) PRISM_NONNULL(1);
+
+/**
+ * Initialize a list of constant ids.
+ *
+ * @param arena The arena to use for allocations.
+ * @param list The list to initialize.
+ * @param size The size of the list.
+ */
+PRISM_EXPORTED_FUNCTION void pm_constant_id_list_init(pm_arena_t *arena, pm_constant_id_list_t *list, uint32_t size) PRISM_NONNULL(1, 2);
+
+/**
+ * Append a constant id to a list of constant ids. A list's storage is always
+ * exactly its size, so it is regrown to exactly one more id by allocating from
+ * the given arena, which must live as long as the list does. For a list in a
+ * parsed tree, that is the arena that was passed to pm_parser_new.
+ *
+ * @param arena The arena to use for allocations.
+ * @param list The list to append to.
+ * @param id The constant id to append.
+ */
+PRISM_EXPORTED_FUNCTION void pm_constant_id_list_append(pm_arena_t *arena, pm_constant_id_list_t *list, pm_constant_id_t id) PRISM_NONNULL(1, 2);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

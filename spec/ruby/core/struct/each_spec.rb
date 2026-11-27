@@ -19,7 +19,7 @@ describe "Struct#each" do
 
   it "returns an Enumerator if not passed a block" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    car.each.should be_an_instance_of(Enumerator)
+    car.each.should.instance_of?(Enumerator)
   end
 
   it_behaves_like :struct_accessor, :each

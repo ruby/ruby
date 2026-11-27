@@ -41,7 +41,6 @@
 #ifdef _WIN32
 # include <winsock2.h>
 # include <windows.h>
-# include <wincrypt.h>
 # include <bcrypt.h>
 #endif
 
@@ -272,7 +271,7 @@ const rb_data_type_t rb_random_data_type = {
         random_free,
         random_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 #define random_mt_mark rb_random_mark
@@ -293,7 +292,7 @@ static const rb_data_type_t random_mt_type = {
     },
     &rb_random_data_type,
     (void *)&random_mt_if,
-    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static rb_random_t *
@@ -353,15 +352,23 @@ random_alloc(VALUE klass)
 static VALUE
 rand_init_default(const rb_random_interface_t *rng, rb_random_t *rnd)
 {
-    VALUE seed, buf0 = 0;
+    VALUE seed;
     size_t len = roomof(rng->default_seed_bits, 32);
-    uint32_t *buf = ALLOCV_N(uint32_t, buf0, len+1);
 
-    fill_random_seed(buf, len, true);
-    rng->init(rnd, buf, len);
-    seed = make_seed_value(buf, len);
-    explicit_bzero(buf, len * sizeof(*buf));
-    ALLOCV_END(buf0);
+    if (LIKELY(len)) {
+        VALUE buf0 = 0;
+        uint32_t *buf = ALLOCV_N(uint32_t, buf0, len);
+        fill_random_seed(buf, len, true);
+        rng->init(rnd, buf, len);
+        seed = make_seed_value(buf, len);
+        explicit_bzero(buf, len * sizeof(*buf));
+        ALLOCV_END(buf0);
+    }
+    else {
+        uint32_t minimul[1] = {0};
+        rng->init(rnd, minimul, 0);
+        seed = INT2FIX(0);
+    }
     return seed;
 }
 
@@ -547,87 +554,17 @@ fill_random_bytes_lib(void *buf, size_t size)
     return 0;
 }
 #elif defined(_WIN32)
-
-#ifndef DWORD_MAX
-# define DWORD_MAX (~(DWORD)0UL)
-#endif
-
-# if defined(CRYPT_VERIFYCONTEXT)
-/* Although HCRYPTPROV is not a HANDLE, it looks like
- * INVALID_HANDLE_VALUE is not a valid value */
-static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
-
-static void
-release_crypt(void *p)
-{
-    HCRYPTPROV *ptr = p;
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
-    if (prov && prov != INVALID_HCRYPTPROV) {
-        CryptReleaseContext(prov, 0);
-    }
-}
-
-static const rb_data_type_t crypt_prov_type = {
-    "HCRYPTPROV",
-    {0, release_crypt,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
-};
-
 static int
-fill_random_bytes_crypt(void *seed, size_t size)
-{
-    static HCRYPTPROV perm_prov;
-    HCRYPTPROV prov = perm_prov, old_prov;
-    if (!prov) {
-        VALUE wrapper = TypedData_Wrap_Struct(0, &crypt_prov_type, 0);
-        if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-            prov = INVALID_HCRYPTPROV;
-        }
-        old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
-        if (LIKELY(!old_prov)) { /* no other threads acquired */
-            if (prov != INVALID_HCRYPTPROV) {
-                DATA_PTR(wrapper) = (void *)prov;
-                rb_vm_register_global_object(wrapper);
-            }
-        }
-        else {			/* another thread acquired */
-            if (prov != INVALID_HCRYPTPROV) {
-                CryptReleaseContext(prov, 0);
-            }
-            prov = old_prov;
-        }
-    }
-    if (prov == INVALID_HCRYPTPROV) return -1;
-    while (size > 0) {
-        DWORD n = (size > (size_t)DWORD_MAX) ? DWORD_MAX : (DWORD)size;
-        if (!CryptGenRandom(prov, n, seed)) return -1;
-        seed = (char *)seed + n;
-        size -= n;
-    }
-    return 0;
-}
-# else
-#   define fill_random_bytes_crypt(seed, size) -1
-# endif
-
-static int
-fill_random_bytes_bcrypt(void *seed, size_t size)
+fill_random_bytes_lib(void *seed, size_t size)
 {
     while (size > 0) {
-        ULONG n = (size > (size_t)ULONG_MAX) ? LONG_MAX : (ULONG)size;
+        ULONG n = (size > (size_t)ULONG_MAX) ? ULONG_MAX/2+1 : (ULONG)size;
         if (BCryptGenRandom(NULL, seed, n, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
             return -1;
         seed = (char *)seed + n;
         size -= n;
     }
     return 0;
-}
-
-static int
-fill_random_bytes_lib(void *seed, size_t size)
-{
-    if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
-    return fill_random_bytes_crypt(seed, size);
 }
 #else
 # define fill_random_bytes_lib(seed, size) -1
@@ -789,7 +726,7 @@ random_seed(VALUE _)
 static VALUE
 random_raw_seed(VALUE self, VALUE size)
 {
-    long n = NUM2ULONG(size);
+    rb_len_t n = NUM2LEN(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
     if (fill_random_bytes(RSTRING_PTR(buf), n, TRUE))
@@ -1099,17 +1036,17 @@ rb_genrand_ulong_limited(unsigned long limit)
 }
 
 static VALUE
-obj_random_bytes(VALUE obj, void *p, long n)
+obj_random_bytes(VALUE obj, void *p, rb_len_t n)
 {
-    VALUE len = LONG2NUM(n);
+    VALUE len = LEN2NUM(n);
     VALUE v = rb_funcallv_public(obj, id_bytes, 1, &len);
-    long l;
+    rb_len_t l;
     Check_Type(v, T_STRING);
     l = RSTRING_LEN(v);
     if (l < n)
-        rb_raise(rb_eRangeError, "random data too short %ld", l);
+        rb_raise(rb_eRangeError, "random data too short %"PRIdLEN, l);
     else if (l > n)
-        rb_raise(rb_eRangeError, "random data too long %ld", l);
+        rb_raise(rb_eRangeError, "random data too long %"PRIdLEN, l);
     if (p) memcpy(p, RSTRING_PTR(v), n);
     return v;
 }
@@ -1274,7 +1211,7 @@ random_ulong_limited_big(VALUE obj, const rb_random_interface_t *rng, rb_random_
 }
 
 static VALUE
-rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
+rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, rb_len_t n)
 {
     VALUE bytes;
     char *ptr;
@@ -1298,7 +1235,7 @@ random_bytes(VALUE obj, VALUE len)
 {
     const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
-    return rand_bytes(rng, rnd, NUM2LONG(rb_to_int(len)));
+    return rand_bytes(rng, rnd, NUM2LEN(rb_to_int(len)));
 }
 
 void
@@ -1325,7 +1262,7 @@ rb_rand_bytes_int32(rb_random_get_int32_func *get_int32,
 }
 
 VALUE
-rb_random_bytes(VALUE obj, long n)
+rb_random_bytes(VALUE obj, rb_len_t n)
 {
     const rb_random_interface_t *rng;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
@@ -1345,7 +1282,7 @@ static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
     rb_random_t *rnd = default_rand_start();
-    return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
+    return rand_bytes(&random_mt_if, rnd, NUM2LEN(rb_to_int(len)));
 }
 
 /*
@@ -1780,11 +1717,13 @@ rb_hash_start(st_index_t h)
 }
 
 st_index_t
-rb_memhash(const void *ptr, long len)
+rb_memhash(const void *ptr, rb_len_t len)
 {
     sip_uint64_t h = sip_hash13(hash_salt.key.sip, ptr, len);
-#ifdef HAVE_UINT64_T
+#if SIZEOF_ST_INDEX_T >= 8
     return (st_index_t)h;
+#elif defined HAVE_UINT64_T
+    return (st_index_t)((h >> 32) ^ h);
 #else
     return (st_index_t)(h.u32[0] ^ h.u32[1]);
 #endif

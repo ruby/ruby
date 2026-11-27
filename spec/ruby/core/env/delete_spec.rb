@@ -14,6 +14,15 @@ describe "ENV.delete" do
     ENV["foo"].should == nil
   end
 
+  platform_is_not :windows do
+    it "accepts a BINARY variable name containing non-ASCII bytes" do
+      key = "ENV_DELETE_SPEC_\u00DCBER"
+      ENV[key] = "bar"
+      ENV.delete(key.b).should == "bar"
+      ENV[key].should == nil
+    end
+  end
+
   it "returns the previous value" do
     ENV["foo"] = "bar"
     ENV.delete("foo").should == "bar"
@@ -50,6 +59,6 @@ describe "ENV.delete" do
   end
 
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
-    -> { ENV.delete(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV.delete(Object.new) }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 end

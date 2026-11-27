@@ -7,7 +7,7 @@ with_feature :ancillary_data do
     end
 
     it 'returns a Socket::AncillaryData' do
-      @data.should be_an_instance_of(Socket::AncillaryData)
+      @data.should.instance_of?(Socket::AncillaryData)
     end
 
     it 'sets the family to AF_INET' do
@@ -37,7 +37,7 @@ with_feature :ancillary_data do
     it 'raises when the data is not an Integer' do
       data = Socket::AncillaryData.new(:UNIX, :SOCKET, :RIGHTS, 'ugh')
 
-      -> { data.int }.should raise_error(TypeError)
+      -> { data.int }.should.raise(TypeError)
     end
   end
 end

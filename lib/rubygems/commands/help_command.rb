@@ -59,7 +59,7 @@ multiple environments.  The RubyGems implementation is designed to be
 compatible with Bundler's Gemfile format.  You can see additional
 documentation on the format at:
 
-  https://bundler.io
+  https://guides.rubygems.org/
 
 RubyGems automatically looks for these gem dependencies files:
 
@@ -90,7 +90,9 @@ Use #gem to declare which gems you directly depend upon:
 
 To depend on a specific set of versions:
 
-  gem 'rake', '~> 10.3', '>= 10.3.2'
+  gem 'rake', '>= 10.3.2'
+  # or for multiple version restrictions
+  gem 'rake', '>= 10.3.2', "< 13"
 
 RubyGems will require the gem name when activating the gem using
 the RUBYGEMS_GEMDEPS environment variable or Gem::use_gemdeps.  Use the
@@ -172,7 +174,7 @@ and #platforms methods:
 See the bundler Gemfile manual page for a list of platforms supported in a gem
 dependencies file.:
 
-  https://bundler.io/v2.5/man/gemfile.5.html
+  https://guides.rubygems.org/gemfile/
 
 Ruby Version and Engine Dependency
 ==================================

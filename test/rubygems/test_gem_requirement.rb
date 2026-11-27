@@ -81,6 +81,14 @@ class TestGemRequirement < Gem::TestCase
     assert_nil Gem::Requirement.default.for_lockfile
   end
 
+  def test_self_default
+    default = Gem::Requirement.default
+
+    assert_equal Gem::Requirement.new(">= 0"), default
+    assert_equal [Gem::Requirement::DefaultRequirement], default.requirements
+    refute_same default, Gem::Requirement.default
+  end
+
   def test_parse
     assert_equal ["=", Gem::Version.new(1)], Gem::Requirement.parse("  1")
     assert_equal ["=", Gem::Version.new(1)], Gem::Requirement.parse("= 1")

@@ -159,6 +159,48 @@ class UserMarshalWithIvar
 end
 
 module MarshalSpec
+  class UserMarshalWithModuleCheck
+    def marshal_dump
+      :data
+    end
+
+    def marshal_load(data)
+      ScratchPad.record respond_to?(:meths_method)
+    end
+  end
+
+  class UserMarshalWithPayload
+    attr_accessor :payload
+
+    def initialize(payload)
+      @payload = payload
+    end
+
+    def marshal_dump
+      @payload
+    end
+
+    def marshal_load(payload)
+      @payload = payload
+    end
+  end
+
+  class UserDefinedWithPayload
+    attr_accessor :payload
+
+    def initialize(payload)
+      @payload = payload
+    end
+
+    def _dump(depth)
+      Marshal.dump(@payload)
+    end
+
+    def self._load(str)
+      new(Marshal.load(str))
+    end
+  end
+
   class UserMarshalDumpWithIvar
     attr_reader :data
 

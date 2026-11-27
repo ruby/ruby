@@ -72,6 +72,13 @@ class PlatformGuard < SpecGuard
     [0].pack('l!').size * 8
   end
 
+  # In bits
+  RB_LEN_T_SIZE = if defined?(RbConfig::SIZEOF[])
+    (RbConfig::SIZEOF["rb_len_t"] || RbConfig::SIZEOF["long"]) * 8
+  else
+    [0].pack('l!').size * 8
+  end
+
   def self.wordsize?(size)
     warn "#wordsize? is deprecated, use #c_long_size?"
     size == WORD_SIZE
@@ -83,6 +90,10 @@ class PlatformGuard < SpecGuard
 
   def self.c_long_size?(size)
     size == C_LONG_SIZE
+  end
+
+  def self.rb_len_t_size?(size)
+    size == RB_LEN_T_SIZE
   end
 
   def initialize(*args)
@@ -107,6 +118,8 @@ class PlatformGuard < SpecGuard
         match &&= PlatformGuard.wordsize? value
       when :c_long_size
         match &&= PlatformGuard::c_long_size? value
+      when :rb_len_t_size
+        match &&= PlatformGuard::rb_len_t_size? value
       end
     end
     match

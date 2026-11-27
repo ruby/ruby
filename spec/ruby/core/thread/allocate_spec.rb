@@ -4,6 +4,6 @@ describe "Thread.allocate" do
   it "raises a TypeError" do
     -> {
       Thread.allocate
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 end

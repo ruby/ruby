@@ -48,4 +48,38 @@ In Gemfile:
       end
     end
   end
+
+  context "when lockfile dependencies don't match the gemspec" do
+    before do
+      build_repo4 do
+        build_gem "myrack", "1.0.0" do |s|
+          s.add_dependency "myrack-test", "~> 1.0"
+        end
+
+        build_gem "myrack-test", "1.0.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "myrack"
+      G
+
+      # First install to generate lockfile
+      bundle :install
+
+      # Manually edit lockfile to have incorrect dependencies
+      lockfile_content = File.read(bundled_app_lock)
+      # Remove the myrack-test dependency from myrack
+      lockfile_content.gsub!(/^    myrack \(1\.0\.0\)\n      myrack-test \(~> 1\.0\)\n/, "    myrack (1.0.0)\n")
+      File.write(bundled_app_lock, lockfile_content)
+    end
+
+    it "reports the mismatch with detailed information" do
+      bundle :install, raise_on_error: false, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(err).to include("Bundler found incorrect dependencies in the lockfile for myrack-1.0.0")
+      expect(err).to include("myrack-test: gemspec specifies ~> 1.0, not in lockfile")
+      expect(err).to include("Please run `bundle install` to regenerate the lockfile.")
+    end
+  end
 end

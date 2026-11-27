@@ -14,15 +14,15 @@ describe "The RUBYLIB environment variable" do
     dir = tmp("rubylib/incl")
     ENV["RUBYLIB"] = @pre + dir
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
-    paths.should include(dir)
+    paths.should.include?(dir)
   end
 
   it "adds a File::PATH_SEPARATOR-separated list of directories to $LOAD_PATH" do
     dir1, dir2 = tmp("rubylib/incl1"), tmp("rubylib/incl2")
     ENV["RUBYLIB"] = @pre + "#{dir1}#{File::PATH_SEPARATOR}#{dir2}"
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
-    paths.should include(dir1)
-    paths.should include(dir2)
+    paths.should.include?(dir1)
+    paths.should.include?(dir2)
     paths.index(dir1).should < paths.index(dir2)
   end
 
@@ -46,8 +46,8 @@ describe "The RUBYLIB environment variable" do
     rubylib_dir = tmp("rubylib_include")
     ENV["RUBYLIB"] = @pre + rubylib_dir
     paths = ruby_exe("puts $LOAD_PATH", options: "-I #{dash_i_dir}").lines.map(&:chomp)
-    paths.should include(dash_i_dir)
-    paths.should include(rubylib_dir)
+    paths.should.include?(dash_i_dir)
+    paths.should.include?(rubylib_dir)
     paths.index(dash_i_dir).should < paths.index(rubylib_dir)
   end
 
@@ -56,14 +56,14 @@ describe "The RUBYLIB environment variable" do
     rubylib_dir = tmp("rubylib_include")
     ENV["RUBYLIB"] = @pre + rubylib_dir
     paths = ruby_exe("puts $LOAD_PATH", env: { "RUBYOPT" => "-I#{rubyopt_dir}" }).lines.map(&:chomp)
-    paths.should include(rubyopt_dir)
-    paths.should include(rubylib_dir)
+    paths.should.include?(rubyopt_dir)
+    paths.should.include?(rubylib_dir)
     paths.index(rubyopt_dir).should < paths.index(rubylib_dir)
   end
 
   it "keeps spaces in the value" do
     ENV["RUBYLIB"] = @pre + " rubylib/incl "
     out = ruby_exe("puts $LOAD_PATH")
-    out.should include(" rubylib/incl ")
+    out.should.include?(" rubylib/incl ")
   end
 end

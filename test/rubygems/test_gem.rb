@@ -150,6 +150,8 @@ class TestGem < Gem::TestCase
   end
 
   def assert_self_install_permissions(format_executable: false, data_mode: 0o640)
+    omit "FileUtils.install signature differs on JRuby/Windows" if Gem.win_platform? && Gem.java_platform?
+
     mask = Gem.win_platform? ? 0o700 : 0o777
     options = {
       dir_mode: 0o500,
@@ -199,7 +201,8 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/"))
+    files = Dir.glob(@gemhome + "/gems/**/")
+    File.chmod(0o755, *files) unless files.empty?
   end
 
   def test_require_missing
@@ -310,7 +313,7 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1 b-2 c-2], loaded_spec_names
   end
 
-  def test_activate_bin_path_raises_a_meaningful_error_if_a_gem_thats_finally_activated_has_orphaned_dependencies
+  def test_activate_bin_path_backtracks_when_highest_version_has_orphaned_dependencies
     a1 = util_spec "a", "1" do |s|
       s.executables = ["exec"]
       s.add_dependency "b"
@@ -328,13 +331,11 @@ class TestGem < Gem::TestCase
 
     install_specs c1, b1, b2, a1
 
-    # c2 is missing, and b2 which has it as a dependency will be activated, so we should get an error about the orphaned dependency
+    # c2 is missing, but the resolver backtracks from b2 to b1 which
+    # works with c1, finding a valid solution despite partial installation
+    load Gem.activate_bin_path("a", "exec", ">= 0")
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
-      load Gem.activate_bin_path("a", "exec", ">= 0")
-    end
-
-    assert_equal "Unable to resolve dependency: 'b (>= 0)' requires 'c (= 2)'", e.message
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
   end
 
   def test_activate_bin_path_in_debug_mode
@@ -940,6 +941,53 @@ class TestGem < Gem::TestCase
     RbConfig::CONFIG["sitelibdir"] = orig_sitelibdir
   end
 
+  def test_self_open_file_with_lock_excludes_late_arrivals_after_handover
+    omit "JRuby on Windows raises EINVAL when two threads flock the same file" if Gem.win_platform? && Gem.java_platform?
+
+    path = File.join(@tempdir, "resource")
+    events = Queue.new
+    release_waiter = Queue.new
+
+    on_warn = lambda do |message|
+      events << [Thread.current.name, :waiting] if message.include?("Waiting for another process")
+    end
+
+    next_event = lambda do
+      events.pop(timeout: 10) || flunk("Timed out waiting for a lock event")
+    end
+
+    contender = lambda do |name, &block|
+      Thread.new do
+        Thread.current.name = name
+        Thread.current.abort_on_exception = true
+        Gem.open_file_with_lock(path) do
+          events << [name, :locked]
+          block&.call
+        end
+      end
+    end
+
+    Gem.stub(:warn, on_warn) do
+      waiter = nil
+      Gem.open_file_with_lock(path) do
+        waiter = contender.call("waiter") { release_waiter.pop }
+        assert_equal ["waiter", :waiting], next_event.call
+      end
+      assert_equal ["waiter", :locked], next_event.call
+
+      late_arrival = contender.call("late_arrival")
+      assert_equal ["late_arrival", :waiting], next_event.call
+
+      release_waiter << true
+      [waiter, late_arrival].each(&:join)
+      assert_equal ["late_arrival", :locked], next_event.call
+    ensure
+      release_waiter << true
+    end
+
+    assert_path_not_exist "#{path}.lock"
+  end
+
   def test_self_read_binary
     File.open "test", "w" do |io|
       io.write "\xCF\x80"
@@ -1050,6 +1098,12 @@ class TestGem < Gem::TestCase
     assert_equal Gem::Requirement.create("1.2.3"), Gem.env_requirement("bAr")
     assert_raise(Gem::Requirement::BadRequirementError) { Gem.env_requirement("baz") }
     assert_equal Gem::Requirement.default, Gem.env_requirement("qux")
+  end
+
+  def test_self_ruby_abi
+    Gem.stub(:ruby_version, Gem::Version.new("3.4.1")) do
+      assert_equal "3.4", Gem.ruby_abi
+    end
   end
 
   def test_self_ruby_version_with_non_mri_implementations
@@ -1213,6 +1267,28 @@ class TestGem < Gem::TestCase
     assert Gem.try_activate("b"), "try_activate should still return true"
   end
 
+  def test_try_activate_does_not_raise_no_method_error_on_activation_conflict
+    a1 = util_spec "a", "1.0" do |s|
+      s.files << "lib/a/old.rb"
+    end
+
+    a2 = util_spec "a", "2.0" do |s|
+      s.files << "lib/a/old.rb"
+      s.files << "lib/a/new_file.rb"
+    end
+
+    install_specs a1, a2
+
+    # Activate the older version
+    gem "a", "= 1.0"
+
+    # try_activate a file only in the newer version should not raise
+    # NoMethodError on nil (https://bugs.ruby-lang.org/issues/21954)
+    assert_nothing_raised do
+      Gem.try_activate("a/new_file")
+    end
+  end
+
   def test_spec_order_is_consistent
     b1 = util_spec "b", "1.0"
     b2 = util_spec "b", "2.0"
@@ -1282,10 +1358,14 @@ class TestGem < Gem::TestCase
       refute Gem.try_activate "nonexistent"
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " \
-               "Try: gem pristine ext --version 1\n"
+    if RUBY_ENGINE == "jruby"
+      assert_equal "", err
+    else
+      expected = "Ignoring ext-1 because its extensions are not built. " \
+                 "Try: gem pristine ext --version 1\n"
 
-    assert_equal expected, err
+      assert_equal expected, err
+    end
   end
 
   def test_self_use_paths_with_nils
@@ -1472,6 +1552,79 @@ class TestGem < Gem::TestCase
     assert_equal %w[plugin], PLUGINS_LOADED
   end
 
+  def test_load_plugins_loads_latest_non_content_addressed_plugin_after_content_addressed_plugin
+    ruby_abi = Gem.ruby_abi
+
+    _, ca_gem = util_gem "plugin_latest", "1.0", ruby_abi: ruby_abi do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "class TestGem; PLUGINS_LOADED << 'ca-1.0'; end"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+      s.platform = "x86_64-linux"
+    end
+
+    installed_ca_spec = Gem::Installer.at(ca_gem, force: true).install
+
+    spec = quick_gem "plugin_latest", "2.0" do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "class TestGem; PLUGINS_LOADED << 'fat-2.0'; end"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installed_fat_spec = install_gem spec
+
+    PLUGINS_LOADED.clear
+    $LOADED_FEATURES.delete File.join(installed_ca_spec.gem_dir, "lib", "rubygems_plugin.rb")
+    $LOADED_FEATURES.delete File.join(installed_fat_spec.gem_dir, "lib", "rubygems_plugin.rb")
+    Gem.load_plugins
+
+    assert_equal %w[fat-2.0], PLUGINS_LOADED
+  end
+
+  def test_load_plugins_loads_current_ruby_abi_plugins
+    Gem.stub(:ruby_version, Gem::Version.new("3.4.0")) do
+      plugins_dir = Gem.plugindir
+      current_abi_plugins_dir = File.join plugins_dir, Gem.ruby_abi
+      other_abi_plugins_dir = File.join plugins_dir, "3.3"
+
+      write_file File.join(plugins_dir, "root_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'root'; end"
+      end
+
+      write_file File.join(current_abi_plugins_dir, "current_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'current'; end"
+      end
+
+      write_file File.join(other_abi_plugins_dir, "other_plugin.rb") do |fp|
+        fp.puts "class TestGem; PLUGINS_LOADED << 'other'; end"
+      end
+
+      Gem.load_plugins
+
+      assert_equal %w[root current], PLUGINS_LOADED
+    end
+  end
+
+  def test_load_plugins_prefers_abi_scoped_stub_over_root_stub_for_the_same_gem
+    plugins_dir = Gem.plugindir
+    current_abi_plugins_dir = File.join plugins_dir, Gem.ruby_abi
+
+    write_file File.join(plugins_dir, "mygem_plugin.rb") do |fp|
+      fp.puts "class TestGem; PLUGINS_LOADED << 'root'; end"
+    end
+
+    write_file File.join(current_abi_plugins_dir, "mygem_plugin.rb") do |fp|
+      fp.puts "class TestGem; PLUGINS_LOADED << 'abi'; end"
+    end
+
+    Gem.load_plugins
+
+    assert_equal %w[abi], PLUGINS_LOADED
+  end
+
   def test_load_user_installed_plugins
     @orig_gem_home = ENV["GEM_HOME"]
     ENV["GEM_HOME"] = @gemhome
@@ -1631,6 +1784,27 @@ class TestGem < Gem::TestCase
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_nil              Gem.find_unresolved_default_spec("exec")
     assert_nil              Gem.find_unresolved_default_spec("README")
+  end
+
+  def test_register_default_spec_new_style_with_native_extension
+    Gem.clear_default_specs
+
+    dlext = RbConfig::CONFIG["DLEXT"]
+
+    new_style = Gem::Specification.new do |spec|
+      spec.name = "my_ext"
+      spec.version = "1.0"
+      spec.files = ["lib/my_ext.rb", "my_ext_core.#{dlext}", "ext/my_ext/my_ext_core.c", "README.md"]
+      spec.require_paths = ["lib"]
+    end
+
+    Gem.register_default_spec new_style
+
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext.rb")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core.#{dlext}")
+    assert_nil              Gem.find_unresolved_default_spec("ext/my_ext/my_ext_core.c")
+    assert_nil              Gem.find_unresolved_default_spec("README.md")
   end
 
   def test_register_default_spec_old_style_with_folder_starting_with_lib

@@ -3,6 +3,6 @@ require 'matrix'
 
 describe "Matrix.new" do
   it "is private" do
-    Matrix.should have_private_method(:new)
+    Matrix.private_methods(false).should.include?(:new)
   end
 end

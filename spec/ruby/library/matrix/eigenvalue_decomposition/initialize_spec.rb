@@ -5,16 +5,16 @@ describe "Matrix::EigenvalueDecomposition#initialize" do
   it "raises an error if argument is not a matrix" do
     -> {
       Matrix::EigenvalueDecomposition.new([[]])
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
     -> {
       Matrix::EigenvalueDecomposition.new(42)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises an error if matrix is not square" do
     -> {
       Matrix::EigenvalueDecomposition.new(Matrix[[1, 2]])
-    }.should raise_error(Matrix::ErrDimensionMismatch)
+    }.should.raise(Matrix::ErrDimensionMismatch)
   end
 
   it "never hangs" do

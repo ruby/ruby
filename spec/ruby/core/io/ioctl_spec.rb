@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "IO#ioctl" do
   platform_is_not :windows do
     it "raises IOError on closed stream" do
-      -> { IOSpecs.closed_io.ioctl(5, 5) }.should raise_error(IOError)
+      -> { IOSpecs.closed_io.ioctl(5, 5) }.should.raise(IOError)
     end
   end
 
@@ -15,7 +15,7 @@ describe "IO#ioctl" do
           buffer = +''
           # FIONREAD in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x541B, buffer
-          buffer.unpack('I').first.should be_kind_of(Integer)
+          buffer.unpack('I').first.should.is_a?(Integer)
         end
       end
     end
@@ -25,7 +25,7 @@ describe "IO#ioctl" do
         -> {
           # TIOCGWINSZ in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x5413, nil
-        }.should raise_error(SystemCallError)
+        }.should.raise(SystemCallError)
       end
     end
   end

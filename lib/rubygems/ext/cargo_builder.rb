@@ -227,10 +227,9 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
       raise Gem::InstallError, "cargo metadata failed#{exit_reason}"
     end
 
-    # cargo metadata output is specified as json, but with the
-    # --format-version 1 option the output is compatible with YAML, so we can
-    # avoid the json dependency
-    metadata = Gem::SafeYAML.safe_load(output)
+    # cargo metadata output is specified as json
+    require "json"
+    metadata = JSON.parse(output)
     package = metadata["packages"].find {|pkg| normalize_path(pkg["manifest_path"]) == manifest_path }
     unless package
       found = metadata["packages"].map {|md| "#{md["name"]} at #{md["manifest_path"]}" }
@@ -270,21 +269,12 @@ EOF
     LinkFlagConverter.convert(arg)
   end
 
-  def msvc_target?
-    makefile_config("target_os").include?("msvc")
-  end
-
   def darwin_target?
     makefile_config("target_os").include?("darwin")
   end
 
   def mingw_target?
     makefile_config("target_os").include?("mingw")
-  end
-
-  def win_target?
-    target_platform = RbConfig::CONFIG["target_os"]
-    !!Gem::WIN_PATTERNS.find {|r| target_platform =~ r }
   end
 
   # Interpolate substitution vars in the arg (i.e. $(DEFFILE))

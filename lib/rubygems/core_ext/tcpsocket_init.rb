@@ -12,7 +12,7 @@ module CoreExtensions
       CONNECTION_TIMEOUT = 5
       IPV4_DELAY_SECONDS = 0.1
 
-      def initialize(host, serv, *rest)
+      def initialize(host, serv, ...)
         mutex = Thread::Mutex.new
         addrs = []
         threads = []
@@ -45,7 +45,7 @@ module CoreExtensions
 
         threads.each {|t| t.kill.join if t.alive? }
 
-        super(host, serv, *rest)
+        super(host, serv, ...)
       end
     end
   end

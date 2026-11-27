@@ -69,15 +69,51 @@ class TestData < Test::Unit::TestCase
     assert_equal(1, test_kw.foo)
     assert_equal(2, test_kw.bar)
     assert_equal(test_kw, klass.new(foo: 1, bar: 2))
+    assert_equal(test_kw, klass.new('foo' => 1, 'bar' => 2))
     assert_equal(test_kw, test)
 
     # Wrong protocol
     assert_raise(ArgumentError) { klass.new(1) }
     assert_raise(ArgumentError) { klass.new(1, 2, 3) }
-    assert_raise(ArgumentError) { klass.new(foo: 1) }
-    assert_raise(ArgumentError) { klass.new(foo: 1, bar: 2, baz: 3) }
-    # Could be converted to foo: 1, bar: 2, but too smart is confusing
-    assert_raise(ArgumentError) { klass.new(1, bar: 2) }
+    assert_raise(TypeError) do
+      klass.new(0 => 1, 1 => 2)
+    end
+    assert_raise(TypeError) do
+      klass.new(foo: 0, bar: 2, 0 => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new('foo' => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keyword: :bar") do
+      klass.new(foo: 1, 'foo' => 1)
+    end
+    assert_raise_with_message(ArgumentError, "missing keywords: :foo, :bar") do
+      klass.new(x: 1, y: 2)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keyword: :baz") do
+      klass.new(foo: 1, bar: 2, baz: 3)
+    end
+  end
+
+  def test_initialize_missing_keywords_with_many_members
+    # Past 10 members, member names are looked up by hash
+    names = (1..12).map { :"m#{_1}" }
+    klass = Data.define(*names)
+    given = names.each_slice(2).map(&:first).to_h { [_1, 1] }
+    assert_raise_with_message(ArgumentError, "missing keywords: #{names.each_slice(2).map { _1[1].inspect }.join(", ")}") do
+      klass.new(**given)
+    end
+
+    # Enough members to track them in a heap buffer instead of on the stack
+    names = (1..1100).map { :"m#{_1}" }
+    klass = Data.define(*names)
+    assert_equal(names.size, klass.new(**names.to_h { [_1, 1] }).to_h.size)
+    assert_raise_with_message(ArgumentError, "missing keywords: :m1, :m1100") do
+      klass.new(**names[1..-2].to_h { [_1, 1] })
+    end
   end
 
   def test_initialize_redefine
@@ -101,6 +137,28 @@ class TestData < Test::Unit::TestCase
 
     # Extra keyword arguments can be dropped in initialize
     assert_equal([[], {foo: 1, bar: 2, baz: 3}], klass.new(foo: 1, bar: 2, baz: 3).passed)
+  end
+
+  def test_new_with_all_positional_arguments_calls_initialize
+    klass = Data.define(:foo, :bar)
+    assert_equal([1, 2], klass.new(1, 2).to_h.values)
+
+    # initialize redefined after instances were already created
+    klass.class_eval { def initialize(foo:, bar:) = super(foo: bar, bar: foo) }
+    assert_equal([2, 1], klass.new(1, 2).to_h.values)
+
+    prepended = Data.define(:foo, :bar)
+    prepended.prepend(Module.new { def initialize(foo:, bar:) = super(foo: foo * 10, bar:) })
+    assert_equal([10, 2], prepended.new(1, 2).to_h.values)
+  end
+
+  def test_new_with_all_positional_arguments_without_data_initialize
+    assert_separately([], <<~'RUBY')
+      klass = Data.define(:foo, :bar)
+      $VERBOSE = nil # removing 'initialize' warns
+      Data.send(:remove_method, :initialize)
+      assert_raise(ArgumentError) { klass.new(1, 2) }
+    RUBY
   end
 
   def test_instance_behavior
@@ -259,9 +317,10 @@ class TestData < Test::Unit::TestCase
     assert_equal(klass.new, test)
     assert_not_equal(Data.define.new, test)
 
-    assert_equal('#<data >', test.inspect)
+    assert_equal('#<data>', test.inspect)
     assert_equal([], test.members)
     assert_equal({}, test.to_h)
+    assert_predicate(test, :frozen?)
   end
 
   def test_dup
@@ -269,6 +328,16 @@ class TestData < Test::Unit::TestCase
     test = klass.new(foo: 1, bar: 2)
     assert_equal(klass.new(foo: 1, bar: 2), test.dup)
     assert_predicate(test.dup, :frozen?)
+  end
+
+  def test_dup_and_clone_of_class
+    klass = Data.define(:foo, :bar)
+    [klass.dup, klass.clone, Class.new(klass).dup].each do |copy|
+      assert_equal([:foo, :bar], copy.members)
+      test = copy.new(foo: 1, bar: 2)
+      assert_equal(1, test.foo)
+      assert_equal({foo: 1, bar: 2}, test.to_h)
+    end
   end
 
   Klass = Data.define(:foo, :bar)

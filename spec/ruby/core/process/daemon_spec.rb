@@ -1,10 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
-platform_is_not :windows do
-  # macOS 15 is not working this examples
-  return if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
-
+guard -> {
+  Process.respond_to?(:fork) and
+    # macOS 15 is not working for these examples
+    !(/darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`)
+} do
   describe :process_daemon_keep_stdio_open_false, shared: true do
     it "redirects stdout to /dev/null" do
       @daemon.invoke("keep_stdio_open_false_stdout", @object).should == ""
@@ -89,6 +90,16 @@ platform_is_not :windows do
       @daemon.invoke("stay_in_dir", [true]).should == @invoke_dir
     end
 
+    it "raises ArgumentError if the first argument is not a boolean or nil" do
+      -> { Process.daemon(1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.daemon("true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    it "raises ArgumentError if the second argument is not a boolean or nil" do
+      -> { Process.daemon(true, 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.daemon(true, "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
     describe "when the second argument is not given" do
       it_behaves_like :process_daemon_keep_stdio_open_false, nil, [false]
     end
@@ -107,12 +118,16 @@ platform_is_not :windows do
   end
 end
 
-platform_is :windows do
+guard_not -> { Process.respond_to?(:fork) } do
   describe "Process.daemon" do
+    it "returns false from #respond_to?" do
+      Process.respond_to?(:daemon).should == false
+    end
+
     it "raises a NotImplementedError" do
       -> {
         Process.daemon
-      }.should raise_error(NotImplementedError)
+      }.should.raise(NotImplementedError)
     end
   end
 end

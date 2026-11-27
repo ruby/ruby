@@ -88,7 +88,7 @@ RSpec.describe "bundle check" do
   it "prints a generic error if gem git source is not checked out" do
     build_git "foo", path: lib_path("foo")
 
-    bundle "config path vendor/bundle"
+    bundle_config "path vendor/bundle"
 
     install_gemfile <<-G
       source "https://gem.repo1"
@@ -124,7 +124,7 @@ RSpec.describe "bundle check" do
   end
 
   it "uses the without setting" do
-    bundle "config set without foo"
+    bundle_config "without foo"
     install_gemfile <<-G
       source "https://gem.repo1"
       group :foo do
@@ -142,7 +142,7 @@ RSpec.describe "bundle check" do
       gem "myrack", :group => :foo
     G
 
-    bundle "config set --local without foo"
+    bundle_config "without foo"
     bundle :install
 
     gemfile <<-G
@@ -161,10 +161,10 @@ RSpec.describe "bundle check" do
       gem "myrack"
     G
 
-    bundle "config set --local path vendor/bundle"
+    bundle_config "path vendor/bundle"
     bundle :cache
 
-    gem_command "uninstall myrack", env: { "GEM_HOME" => vendored_gems.to_s }
+    uninstall_gem("myrack", env: { "GEM_HOME" => vendored_gems.to_s })
 
     bundle "check", raise_on_error: false
     expect(err).to include("* myrack (1.0.0)")
@@ -251,12 +251,64 @@ RSpec.describe "bundle check" do
       gem "foo"
     G
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle "install"
     FileUtils.rm(bundled_app_lock)
 
     bundle :check, raise_on_error: false
     expect(last_command).to be_failure
+    expect(err).to include("Frozen mode is set, but there's no lockfile")
+  end
+
+  it "fails when frozen is set and the lockfile is missing a CHECKSUMS entry" do
+    system_gems "myrack-1.0.0", path: default_bundle_path
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo1/
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      CHECKSUMS
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle :check, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+    expect(exitstatus).to eq(16)
+    expect(err).to include("Your lockfile is missing a CHECKSUMS entry for \"myrack\", but can't be updated because frozen mode is set")
+    expect(out).not_to include("The Gemfile's dependencies are satisfied")
+  end
+
+  it "fails when frozen is set and the Gemfile has changed" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+      gem "rails"
+    G
+
+    bundle :check, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+    expect(exitstatus).to eq(16)
+    expect(err).to include("frozen mode is set")
+    expect(err).to include("* rails")
+    expect(out).not_to include("The Gemfile's dependencies are satisfied")
   end
 
   describe "when locked" do
@@ -499,7 +551,7 @@ RSpec.describe "bundle check" do
         build_gem "bar"
       end
 
-      bundle "config set path.system true"
+      bundle_config "path.system true"
 
       # Add all gems to ensure all gems are installed so that a bundle check
       # would be successful
@@ -564,7 +616,7 @@ RSpec.describe "bundle check" do
     end
 
     before do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
 
       install_gemfile <<-G
         source "https://gem.repo1"

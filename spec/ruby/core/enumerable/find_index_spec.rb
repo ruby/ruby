@@ -47,7 +47,7 @@ describe "Enumerable#find_index" do
   end
 
   it "returns an Enumerator if no block given" do
-    @numerous.find_index.should be_an_instance_of(Enumerator)
+    @numerous.find_index.should.instance_of?(Enumerator)
   end
 
   it "uses #== for testing equality" do

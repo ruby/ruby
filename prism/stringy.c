@@ -1,0 +1,55 @@
+#include "prism/internal/stringy.h"
+
+#include "prism/internal/assert.h"
+
+/**
+ * Initialize a shared string that is based on initial input.
+ */
+void
+pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end) {
+    PRISM_ASSERT(start <= end);
+
+    *string = (pm_string_t) {
+        .source = start,
+        .length = (size_t) (end - start)
+    };
+}
+
+/**
+ * Initialize a string that views the given bytes.
+ */
+void
+pm_string_init(pm_string_t *string, const uint8_t *source, size_t length) {
+    *string = (pm_string_t) { .source = source, .length = length };
+}
+
+/**
+ * Returns true if every byte of the string is ASCII.
+ */
+bool
+pm_string_ascii_only_p(const pm_string_t *string) {
+    const uint8_t *source = pm_string_source(string);
+    size_t length = pm_string_length(string);
+
+    for (size_t index = 0; index < length; index++) {
+        if (source[index] >= 0x80) return false;
+    }
+
+    return true;
+}
+
+/**
+ * Returns the length associated with the string.
+ */
+size_t
+pm_string_length(const pm_string_t *string) {
+    return string->length;
+}
+
+/**
+ * Returns the start pointer associated with the string.
+ */
+const uint8_t *
+pm_string_source(const pm_string_t *string) {
+    return string->source;
+}

@@ -1,13 +1,16 @@
 use std::sync::Mutex;
 
-use mmtk::{
-    memory_manager,
-    scheduler::{GCWork, GCWorker, WorkBucketStage},
-    util::{ObjectReference, VMWorkerThread},
-    MMTK,
-};
+use mmtk::MMTK;
+use mmtk::memory_manager;
+use mmtk::scheduler::GCWork;
+use mmtk::scheduler::GCWorker;
+use mmtk::scheduler::WorkBucketStage;
+use mmtk::util::ObjectReference;
+use mmtk::util::VMWorkerThread;
 
-use crate::{abi::GCThreadTLS, upcalls, Ruby};
+use crate::Ruby;
+use crate::abi::GCThreadTLS;
+use crate::upcalls;
 
 pub struct PinningRegistry {
     pinning_objs: Mutex<Vec<ObjectReference>>,
@@ -25,6 +28,13 @@ impl PinningRegistry {
     pub fn register(&self, object: ObjectReference) {
         let mut pinning_objs = self.pinning_objs.lock().unwrap();
         pinning_objs.push(object);
+    }
+
+    pub fn register_pinned_obj(&self, object: ObjectReference) {
+        if memory_manager::pin_object(object) {
+            let mut pinned_objs = self.pinned_objs.lock().unwrap();
+            pinned_objs.push(object);
+        }
     }
 
     pub fn pin_children(&self, tls: VMWorkerThread) {
@@ -107,6 +117,11 @@ impl GCWork<Ruby> for PinPinningChildren {
                 target_object
             );
             if pin {
+                debug_assert!(
+                    target_object.get_forwarded_object().is_none(),
+                    "Trying to pin {target_object} but has been moved"
+                );
+
                 pinned_objs.push(target_object);
             }
             target_object
@@ -117,7 +132,7 @@ impl GCWork<Ruby> for PinPinningChildren {
             .set_temporarily_and_run_code(visit_object, || {
                 for obj in self.pinning_objs.iter().cloned() {
                     log::trace!("  Pinning: {}", obj);
-                    (upcalls().call_gc_mark_children)(obj);
+                    upcalls::call_gc_mark_children(obj);
                 }
             });
 
@@ -150,7 +165,7 @@ impl GCWork<Ruby> for RemoveDeadPinnings {
                 .expect("PinningRegistry should not have races during GC.");
 
             pinning_objs.retain_mut(|obj| {
-                if obj.is_live() {
+                if obj.is_reachable() {
                     let new_obj = obj.get_forwarded_object().unwrap_or(*obj);
                     *obj = new_obj;
                     true

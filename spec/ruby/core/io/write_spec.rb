@@ -21,7 +21,7 @@ describe "IO#write on a file" do
   end
 
   it "does not check if the file is writable if writing zero bytes" do
-    -> { @readonly_file.write("") }.should_not raise_error
+    -> { @readonly_file.write("") }.should_not.raise
   end
 
   before :each do
@@ -102,11 +102,18 @@ describe "IO#write on a file" do
     File.binread(@filename).should == "h\u0000\u0000\u0000i\u0000\u0000\u0000"
   end
 
+  it "ignores the 'bom|' prefix" do
+    File.open(@filename, "w", encoding: 'bom|utf-8') do |file|
+      file.write("hi")
+    end
+    File.binread(@filename).should == "hi"
+  end
+
   it "raises a invalid byte sequence error if invalid bytes are being written" do
     # pack "\xFEhi" to avoid utf-8 conflict
     xFEhi = ([254].pack('C*') + 'hi').force_encoding('utf-8')
     File.open(@filename, "w", encoding: Encoding::US_ASCII) do |file|
-      -> { file.write(xFEhi) }.should raise_error(Encoding::InvalidByteSequenceError)
+      -> { file.write(xFEhi) }.should.raise(Encoding::InvalidByteSequenceError)
     end
   end
 
@@ -133,6 +140,36 @@ describe "IO#write on a file" do
       File.binread(@filename).bytes.should == [0x61, 0x00, 0x00, 0x00, 0xC4, 0x85]
     end
   end
+
+  it "writes binary data if encoding is ASCII-8BIT" do
+    File.open(@filename, "w:ascii-8bit") do |file|
+      file.write('Hëllö'.encode('ISO-8859-1'))
+    end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}"
+    File.binread(@filename).should == res.b
+  end
+
+  it "writes binary data with newline conversion if no encoding is given" do
+    File.open(@filename, "w", newline: :crlf) do |file|
+      file.write("Hëllö\n".encode('ISO-8859-1'))
+    end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}\r\n"
+    File.binread(@filename).should == res.b
+  end
+
+  it "writes binary data with newline conversion if encoding is ASCII-8BIT" do
+    File.open(@filename, "w:ascii-8bit", newline: :crlf) do |file|
+      file.write("Hëllö\n".encode('ISO-8859-1'))
+    end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}\r\n"
+    File.binread(@filename).should == res.b
+  end
 end
 
 describe "IO.write" do
@@ -150,7 +187,7 @@ describe "IO.write" do
   it "requires mode to be specified in :open_args" do
     -> {
       IO.write(@filename, 'hi', open_args: [{encoding: Encoding::UTF_32LE, binmode: true}])
-    }.should raise_error(IOError, "not opened for writing")
+    }.should.raise(IOError, "not opened for writing")
 
     IO.write(@filename, 'hi', open_args: ["w", {encoding: Encoding::UTF_32LE, binmode: true}]).should == 8
     IO.write(@filename, 'hi', open_args: [{encoding: Encoding::UTF_32LE, binmode: true, mode: "w"}]).should == 8
@@ -159,7 +196,7 @@ describe "IO.write" do
   it "requires mode to be specified in :open_args even if flags option passed" do
     -> {
       IO.write(@filename, 'hi', open_args: [{encoding: Encoding::UTF_32LE, binmode: true, flags: File::CREAT}])
-    }.should raise_error(IOError, "not opened for writing")
+    }.should.raise(IOError, "not opened for writing")
 
     IO.write(@filename, 'hi', open_args: ["w", {encoding: Encoding::UTF_32LE, binmode: true, flags: File::CREAT}]).should == 8
     IO.write(@filename, 'hi', open_args: [{encoding: Encoding::UTF_32LE, binmode: true, flags: File::CREAT, mode: "w"}]).should == 8
@@ -172,11 +209,11 @@ describe "IO.write" do
   it "raises ArgumentError if encoding is specified in mode parameter and is given as :encoding option" do
     -> {
       IO.write(@filename, 'hi', mode: "w:UTF-16LE:UTF-16BE", encoding: Encoding::UTF_32LE)
-    }.should raise_error(ArgumentError, "encoding specified twice")
+    }.should.raise(ArgumentError, "encoding specified twice")
 
     -> {
       IO.write(@filename, 'hi', mode: "w:UTF-16BE", encoding: Encoding::UTF_32LE)
-    }.should raise_error(ArgumentError, "encoding specified twice")
+    }.should.raise(ArgumentError, "encoding specified twice")
   end
 
   it "writes the file with the permissions in the :perm parameter" do
@@ -220,7 +257,7 @@ describe "IO.write" do
       end
     end
 
-    ruby_version_is "3.3"..."4.0" do
+    ruby_version_is ""..."4.0" do
       # https://bugs.ruby-lang.org/issues/19630
       it "warns about deprecation given a path with a pipe" do
         -> {
@@ -228,6 +265,19 @@ describe "IO.write" do
             IO.write("|cat", "xxx")
           }.should output_to_fd("xxx")
         }.should complain(/IO process creation with a leading '\|'/)
+      end
+    end
+
+    ruby_version_is "4.0" do
+      it "writes to that literal file when path starts with a pipe" do
+        Dir.chdir(tmp("")) do
+          begin
+            IO.write("|cat", "xxx")
+            File.read("|cat").should == "xxx"
+          ensure
+            File.unlink("|cat")
+          end
+        end
       end
     end
   end
@@ -244,6 +294,54 @@ describe "IO#write" do
 
       r.read.should == "foobar"
     end
+  end
+end
+
+describe "IO#write with Fiber scheduler" do
+  require_relative '../fiber/fixtures/scheduler'
+  require 'io/nonblock'
+
+  before :each do
+    @r, @w = IO.pipe
+    @w.nonblock = true
+    nil until @w.write_nonblock("x" * 65536, exception: false) == :wait_writable
+    Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+    @r.close
+    @w.close
+  end
+
+  it "waits for the IO to become writable through the scheduler" do
+    writer = Fiber.schedule { @w.write("y") }
+
+    begin
+      event = Fiber.scheduler.events.last
+      event[:event].should == :io_wait
+      event[:fiber].should == writer
+      io, events, timeout = event[:args]
+      io.fileno.should == @w.fileno
+      events.should == IO::WRITABLE
+      timeout.should == nil
+    ensure
+      # let the writer finish, so closing the pipe does not wait on it
+      nil until @r.read_nonblock(65536, exception: false) == :wait_readable
+      writer.resume(IO::WRITABLE) while writer.alive?
+    end
+  end
+
+  it "lets another fiber write to the IO while one waits for it to become writable" do
+    writers = 2.times.map { Fiber.schedule { @w.write("y") } }
+
+    # the second writer waits on the IO or on the first writer, but through the scheduler
+    waits = Fiber.scheduler.events.select { |e| e[:event] == :io_wait || e[:event] == :block }
+    waits.map { |e| e[:fiber] }.should == writers
+
+    nil until @r.read_nonblock(65536, exception: false) == :wait_readable
+    writers.each { |f| f.resume(IO::WRITABLE) while f.alive? }
+    @r.read_nonblock(2).should == "yy"
   end
 end
 

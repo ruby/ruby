@@ -181,4 +181,23 @@ class Test_SPrintf < Test::Unit::TestCase
   def test_snprintf_count
     assert_equal(3, Bug::Printf.sncount("foo"))
   end
+
+  def test_ascii_incompatible_result_encoding
+    assert_raise(Encoding::CompatibilityError) {
+      Bug::Printf.enc_sprintf(Encoding::UTF_16LE)
+    }
+  end
+
+  def test_ascii_incompatible_catf_receiver
+    assert_raise(Encoding::CompatibilityError) {
+      Bug::Printf.catf("".encode(Encoding::UTF_16LE))
+    }
+  end
+
+  def test_ascii_incompatible_encoding
+    s = ("\x41\x01" * 61).force_encoding(Encoding::UTF_16LE)
+    result = Bug::Printf.value(s)
+    assert_equal(s.encode(Encoding::US_ASCII, invalid: :replace, undef: :replace), result)
+    assert_equal(Encoding::US_ASCII, result.encoding)
+  end
 end

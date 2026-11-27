@@ -213,11 +213,9 @@ class TestThreadQueue < Test::Unit::TestCase
   end
 
   def test_thr_kill
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
-      timeout = 60
+      timeout = 120
       total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, timeout: timeout, chdir: d)
@@ -379,7 +377,7 @@ class TestThreadQueue < Test::Unit::TestCase
       assert_equal false, q.closed?
       q << :something
       assert_equal q, q.close
-      assert q.closed?
+      assert_predicate q, :closed?
       assert_raise_with_message(ClosedQueueError, /closed/){q << :nothing}
       assert_equal q.pop, :something
       assert_nil q.pop
@@ -433,7 +431,7 @@ class TestThreadQueue < Test::Unit::TestCase
 
     assert_equal 1, q.size
     assert_equal :one, q.pop
-    assert q.empty?, "queue not empty"
+    assert_empty q
   end
 
   # make sure that shutdown state is handled properly by empty? for the non-blocking case
@@ -567,7 +565,7 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_equal 0, q.size
 
     assert_equal 3, ary.size
-    ary.each{|e| assert [0,1,2,3,4,5].include?(e)}
+    ary.each{|e| assert_include [0,1,2,3,4,5], e}
     assert_nil q.pop
 
     prod_threads.each{|t|
@@ -656,9 +654,6 @@ class TestThreadQueue < Test::Unit::TestCase
   end
 
   def test_queue_with_trap
-    if ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.match?(/mswin/)
-      omit 'This test fails too often on AppVeyor vs140'
-    end
     if RUBY_PLATFORM.match?(/mingw/)
       omit 'This test fails too often on MinGW'
     end

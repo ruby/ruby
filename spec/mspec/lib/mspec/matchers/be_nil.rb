@@ -15,6 +15,7 @@ end
 
 module MSpecMatchers
   private def be_nil
+    MSpec.deprecate __method__, '.should == nil'
     BeNilMatcher.new
   end
 end

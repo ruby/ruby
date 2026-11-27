@@ -1,0 +1,14 @@
+/\ca\ca(/
+        ^ end pattern with unmatched parenthesis: /\x01\x01(/
+/\C-a\C-a(?z)/
+           ^ undefined group option: /\x01\x01(?z)/
+/a\
+(?<>a)/
+   ^ group name is empty: /a(?<>a)/
+%r!\!\![]!
+        ^ empty char-class: /!![]/
+/\/\/(?z)/
+       ^ undefined group option: /\/\/(?z)/
+/\ca\u{zz}/
+^~~~~~~~~~~ invalid Unicode list: /\x01\u{zz}/
+

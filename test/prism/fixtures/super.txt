@@ -15,3 +15,7 @@ super {}
 super(1, 2, 3) {}
 
 super(1, 2, 3, &:foo)
+
+super 1 do end.baz
+
+super 1 do end.baz(2)

@@ -621,7 +621,7 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 	*s = '\0';
 	return (s - start);
     }
-    return 0;
+    goto err;
 }
 
 size_t

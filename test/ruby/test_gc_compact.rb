@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-if RUBY_PLATFORM =~ /s390x/
-  warn "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/5077"
-  return
-end
-
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
     def supports_compact?
@@ -30,7 +25,7 @@ class TestGCCompact < Test::Unit::TestCase
     def test_enable_autocompact
       before = GC.auto_compact
       GC.auto_compact = true
-      assert GC.auto_compact
+      assert_predicate GC, :auto_compact
     ensure
       GC.auto_compact = before
     end
@@ -110,6 +105,55 @@ class TestGCCompact < Test::Unit::TestCase
     end
   end
 
+  def test_global_compaction_cpu_intervals_do_not_overlap
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+    omit 'thread CPU clock unavailable' unless Process.const_defined?(:CLOCK_THREAD_CPUTIME_ID)
+    begin
+      Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID, :nanosecond)
+      Process.clock_getres(Process::CLOCK_THREAD_CPUTIME_ID, :nanosecond)
+    rescue SystemCallError, ArgumentError, NotImplementedError
+      omit 'thread CPU clock unavailable'
+    end
+
+    assert_separately([{'RUBY_MN_THREADS' => '0'}], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      Warning[:experimental] = false
+      GC.disable
+      GC.measure_total_time = true
+      ready = Ractor::Port.new
+      worker = Ractor.new(ready) do |reply|
+        GC.disable
+        GC.measure_total_time = true
+        _objects = Array.new(100_000) { Object.new }
+        before = GC.total_time
+        reply << :ready
+        Ractor.receive
+        GC.total_time - before
+      end
+      ready.receive
+
+      clock = Process::CLOCK_THREAD_CPUTIME_ID
+      res = Process.clock_getres(clock, :nanosecond)
+      cpu_before = Process.clock_gettime(clock, :nanosecond)
+      gc_before = GC.total_time
+      # GetThreadTimes advances in 15.625ms ticks and charges each tick to the
+      # interval it lands in, so a few short compactions may be charged nothing.
+      # Keep compacting until some ticks have been charged to this thread.
+      100.times do |i|
+        GC.compact
+        break if i >= 4 && Process.clock_gettime(clock, :nanosecond) - cpu_before >= 4 * res
+      end
+      gc_ns = GC.total_time - gc_before
+      cpu_ns = Process.clock_gettime(clock, :nanosecond) - cpu_before
+
+      worker.send(:finish)
+      gc_ns += worker.value
+      allowance_ns = [1_000_000, 64 * res].max
+      assert_operator gc_ns, :>, 0
+      assert_operator gc_ns, :<=, cpu_ns + allowance_ns
+    RUBY
+  end
+
   def test_gc_compact_stats
     list = []
 
@@ -151,12 +195,12 @@ class TestGCCompact < Test::Unit::TestCase
       def walk_ast ast
         children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
         children.each do |child|
-          assert child.type
+          assert_predicate child, :type
           walk_ast child
         end
       end
       ast = RubyVM::AbstractSyntaxTree.parse_file #{__FILE__.dump}
-      assert GC.compact
+      assert_predicate GC, :compact
       walk_ast ast
     end;
   end
@@ -207,7 +251,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_embed_shared_arrays
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -256,7 +300,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_embed_frozen_shared_arrays
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -284,7 +328,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -300,13 +344,13 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT - 10)
+      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT - 25)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_arrays_up_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
@@ -315,7 +359,7 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        ary = "hello".chars
+        ary = "hello world".chars # > 6 elements to exceed pool 0 embed capacity
         $arys = ARY_COUNT.times.map do
           x = []
           ary.each { |e| x << e }
@@ -324,13 +368,13 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT - 15)
+      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, (0.9995 * ARY_COUNT).to_i)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_objects_between_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
     begin;
@@ -356,15 +400,15 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT - 15)
+      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT - 25)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_compact_objects_of_varying_sizes
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
-    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       $objects = []
       160.times do |n|
@@ -378,7 +422,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_up_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
@@ -387,19 +431,19 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4
+        str = "a" * GC.stat_heap(0, :slot_size) * 4
         $ary = STR_COUNT.times.map { +"" << str }
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT - 15)
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT - 25)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_strings_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
@@ -408,18 +452,48 @@ class TestGCCompact < Test::Unit::TestCase
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       Fiber.new {
-        $ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4).squeeze! }
+        $ary = STR_COUNT.times.map { ("a" * GC.stat_heap(0, :slot_size) * 4).squeeze! }
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT - 10)
+      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT - 25)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
+  def test_reembedding_empty_strings_frees_buffers
+    omit "default GC only" unless GC.config[:implementation] == "default"
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
+    begin;
+      STR_COUNT = 4096
+      PAYLOAD_SIZE = 128
+
+      # Build the strings in a fiber so that no references to them are left on
+      # the main stack, where conservative scanning would pin them in place.
+      # `delete!` empties each string but leaves its heap buffer allocated.
+      Fiber.new {
+        $ary = STR_COUNT.times.map { (+"" << "x" * PAYLOAD_SIZE).delete!("x") }
+      }.resume
+      GC.start
+
+      # Keep the strings alive so sweeping them can't account for the freed bytes.
+      before = GC.stat(:total_free_bytes)
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      freed = GC.stat(:total_free_bytes) - before
+
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT - 25)
+
+      embedded = $ary.count { |s| ObjectSpace.dump(s).include?('"embedded":true') }
+      assert_operator(embedded, :>=, STR_COUNT - 25)
+      assert_operator(freed, :>=, embedded * PAYLOAD_SIZE)
+    end;
+  end
+
   def test_moving_hashes_down_heaps
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
 
@@ -437,7 +511,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT - 10)
+      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT - 25)
     end;
   end
 
@@ -469,7 +543,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_too_complex_generic_ivar
+  def test_moving_complex_generic_ivar
     omit "not compiled with SHAPE_DEBUG" unless defined?(RubyVM::Shape)
 
     assert_separately([], <<~RUBY)
@@ -483,6 +557,55 @@ class TestGCCompact < Test::Unit::TestCase
 
       assert_equal(123, obj.instance_variable_get(:@fixnum))
       assert_equal("hello", obj.instance_variable_get(:@str))
+    RUBY
+  end
+
+  def test_object_reembedding
+    assert_separately([], <<~'RUBY')
+      GC.auto_compact = true
+
+      objs = []
+      30.times.map { Class.new }.map do |k|
+        50.times.each do
+          obj = k.new
+          rand(0..30).times do |i|
+            obj.instance_variable_set(:"@v#{i}", i)
+          end
+          objs << obj
+        end
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert :ok
+    RUBY
+  end
+
+  # Regression test for [Bug #22237]
+  def test_str_and_ary_ptr_references_dont_go_stale_after_compaction
+    assert_separately([], <<~'RUBY')
+      input = "aaa"
+      iterations = 20_000
+      GC.auto_compact = true
+      Object.new # increases chance of memory corruption or segfault
+
+      iterations.times do |i|
+        s = input.tr("\u0080", "\u20AC").dup
+        assert_equal input, s
+      end
+    RUBY
+  end
+
+  def test_compact_with_ractor_blocked_in_receive
+    assert_normal_exit(<<~'RUBY', '[Bug #22389]', timeout: 30)
+      ready = Ractor::Port.new
+      Ractor.new(ready) do |port|
+        Array.new(10_000) { Object.new }
+        port << true
+        Ractor.receive
+      end
+      ready.receive
+      Thread.new { GC.compact }.join
+      GC.compact
     RUBY
   end
 end

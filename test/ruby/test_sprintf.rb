@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'rbconfig/sizeof'
 
 class TestSprintf < Test::Unit::TestCase
   def test_positional
@@ -288,6 +289,36 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_modify_argument_array
+    count = 1_000
+    obj = Object.new
+    ary = [obj, *Array.new(count - 1) { "x" }]
+    obj.define_singleton_method(:to_s) do
+      ary.replace([])
+      "X"
+    end
+    str = "%s" * count
+    assert_raise_with_message(RuntimeError, /array modified during formatting/) do
+      str % ary
+    end
+  end
+
+  def test_drop_bytes_from_format_string
+    prefix = "x" * 1_000
+    fmt = prefix + "%s"
+    obj = Object.new
+    obj.define_singleton_method(:to_s) do
+      fmt[0, 5] = ""
+      "y"
+    end
+
+    assert_equal(prefix + "y", fmt % [obj])
+    assert_equal(prefix[5..] + "%s", fmt)
+
+    fmt << "z" * 10
+    assert_equal(prefix[5..] + "%s" + "z" * 10, fmt)
+  end
+
   def test_float
     assert_equal("36893488147419111424",
                  sprintf("%20.0f", 36893488147419107329.0))
@@ -539,6 +570,11 @@ class TestSprintf < Test::Unit::TestCase
   def test_width_underflow
     bug = 'https://github.com/mruby/mruby/issues/3347'
     assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
+
+    int_max = RbConfig::LIMITS["INT_MAX"]
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf "%*c", int_max, 0x80
+    }
   end
 
   def test_negative_width_overflow
@@ -547,11 +583,39 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_negative_precision_int_min
+    int_min = RbConfig::LIMITS["INT_MIN"]
+    assert_equal("..f", sprintf("%.*x", int_min, -1))
+    assert_equal("..7", sprintf("%.*o", int_min, -1))
+    assert_equal("..1", sprintf("%.*b", int_min, -1))
+    assert_equal("-1", sprintf("%.*d", int_min, -1))
+    assert_equal("1.000000", sprintf("%.*f", int_min, 1))
+  end
+
+  def test_integer_float_precision_too_big
+    omit "for 32-bit platforms" unless RbConfig::SIZEOF["void*"] == 4
+    assert_raise(ArgumentError) { sprintf("%.*f", 2147483646, 1) }
+    assert_raise(ArgumentError) { sprintf("%.*f", 2147483647, 1) }
+    assert_raise(ArgumentError) { sprintf("%-.2147483646f", 1) }
+  end
+
   def test_binary_format_coderange
     1.upto(500) do |i|
       str = sprintf("%*s".b, i, "\xe2".b)
       refute_predicate str, :ascii_only?
       assert_equal i, str.bytesize
+    end
+  end
+
+  def test_dangling_pointer_after_encoding_set
+    str = "\u0141" * 61
+    wide_encodings = [
+      Encoding::UTF_16BE, Encoding::UTF_16LE,
+      Encoding::UTF_32BE, Encoding::UTF_32LE,
+    ]
+    all_assertions_foreach(nil, *wide_encodings) do |enc|
+      s = str.encode(enc)
+      assert_equal(s, ("%s" % s), enc.name)
     end
   end
 end

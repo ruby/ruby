@@ -6,9 +6,9 @@ class TestTimeTZ < Test::Unit::TestCase
   has_lisbon_tz = true
   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
   case RUBY_PLATFORM
-  when /darwin|linux/
+  when /darwin|linux|freebsd/
     force_tz_test = true
-  when /freebsd|openbsd/
+  when /openbsd/
     has_lisbon_tz = false
     force_tz_test = true
   end
@@ -786,6 +786,39 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
     t1 = Time.new(2020,11,11,12,13,14.124r, '-08:00')
     t2 = Time.new(2020,11,11,12,13,14.124r, x)
     assert_equal(t1, t2)
+  end
+
+  def test_new_with_zone_name_to_str
+    time_class = Class.new(TIME_CLASS) {def self.find_timezone(name); super(name.to_str); end}
+    {"Africa/Ndjamena" => 3600, "Asia/Tokyo" => 9*3600}.each do |tzname, utc_offset|
+      name = Object.new
+      name.define_singleton_method(:to_str) {tzname}
+      t = time_class.new(2018, 1, 1, 12, 0, 0, name)
+      assert_equal(time_class.utc(2018, 1, 1, 12) - utc_offset, t, tzname)
+      assert_equal(utc_offset, t.utc_offset, tzname)
+    end
+  end
+
+  def test_strftime_zone_abbreviation
+    zone = TestTimeTZ::TZ.new("Encoding", "\u00e9AAA", 0)
+    enc = Encoding::ISO_8859_1
+    enc = Encoding::Windows_1252 if Encoding.find("locale") == enc
+
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("A%Z".encode(enc))
+    assert_predicate(out, :valid_encoding?)
+    assert_equal(("A" + "\u00e9AAA"), out)
+
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("\u0080%Z".encode(enc))
+    assert_predicate(out, :valid_encoding?)
+    assert_equal(("\u0080\u00e9AAA").encode(enc), out)
+
+    zone = TestTimeTZ::TZ.new("Encoding", "\u{6771 4eac 6a19 6e96 6642}".encode(Encoding::SJIS), 0)
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("%Z")
+    assert_predicate(out, :valid_encoding?)
+    assert_equal(zone.abbr(0), out)
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("\u{2606}%Z")
+    assert_predicate(out, :valid_encoding?)
+    assert_equal("\u{2606 6771 4eac 6a19 6e96 6642}", out)
   end
 end
 

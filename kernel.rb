@@ -52,18 +52,8 @@ module Kernel
   #  call-seq:
   #     obj.frozen?    -> true or false
   #
-  #  Returns the freeze status of <i>obj</i>.
-  #
-  #     a = [ "a", "b", "c" ]
-  #     a.freeze    #=> ["a", "b", "c"]
-  #     a.frozen?   #=> true
-  #--
-  # Determines if the object is frozen. Equivalent to `Object#frozen?` in Ruby.
-  # @param[in] obj  the object to be determines
-  # @retval Qtrue if frozen
-  # @retval Qfalse if not frozen
-  #++
-  #
+  #  Returns whether +self+ is frozen;
+  #  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
   def frozen?
     Primitive.attr! :leaf
     Primitive.cexpr! 'rb_obj_frozen_p(self)'
@@ -87,7 +77,7 @@ module Kernel
   #++
   #
   def tap
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     yield(self)
     self
   end
@@ -119,7 +109,7 @@ module Kernel
   #     2.then.detect(&:odd?)            # => nil
   #
   def then
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
@@ -159,7 +149,7 @@ module Kernel
   #      puts enum.next
   #    } #=> :ok
   def loop
-    Primitive.attr! :inline_block
+    Primitive.attr! :inline_block, :always_inline
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size)'
     end

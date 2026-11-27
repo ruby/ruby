@@ -250,6 +250,7 @@ gb18030_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* e
   const UChar *p;
   enum state state = S_START;
 
+  if (s >= end) return (UChar* )s;
   DEBUG_GB18030(("----------------\n"));
   for (p = s; p >= start; p--) {
     DEBUG_GB18030(("state %d --(%02x)-->\n", state, *p));
@@ -597,7 +598,11 @@ OnigEncodingDefine(gb18030, GB18030) = {
   onigenc_not_support_get_ctype_code_range,
   gb18030_left_adjust_char_head,
   gb18030_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

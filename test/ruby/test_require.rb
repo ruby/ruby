@@ -54,7 +54,7 @@ class TestRequire < Test::Unit::TestCase
     end;
 
     begin
-      assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "") do |r, e|
+      assert_in_out_err(["-S", "-w", (["foo"] * 1025).join("_")], "") do |r, e|
         assert_equal([], r)
         assert_operator(2, :<=, e.size)
         assert_match(/warning: openpath: pathname too long \(ignored\)/, e.first)
@@ -537,6 +537,11 @@ class TestRequire < Test::Unit::TestCase
                       bug3756)
   end
 
+  def test_frozen_loaded_features_while_rebuilding_index
+    assert_in_out_err(['-e', '$LOADED_FEATURES << "dummy.rb"; $LOADED_FEATURES.freeze; require "erb"'], "",
+                      [], /\$LOADED_FEATURES is frozen; cannot append feature \(RuntimeError\)$/)
+  end
+
   def test_race_exception
     bug5754 = '[ruby-core:41618]'
     path = nil
@@ -842,7 +847,7 @@ class TestRequire < Test::Unit::TestCase
     }
 
     # [Bug #21567]
-    assert_separately(%w[-rtempfile], "#{<<~"begin;"}\n#{<<~"end;"}")
+    assert_ruby_status(%w[-rtempfile], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
       class MyString
         def initialize(path)
@@ -889,8 +894,6 @@ class TestRequire < Test::Unit::TestCase
   end if File.respond_to?(:mkfifo)
 
   def test_loading_fifo_threading_success
-    omit "[Bug #18613]" if /freebsd/=~ RUBY_PLATFORM
-
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
       File.unlink(f.path)
@@ -1029,7 +1032,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_public_method_missing
     # [Bug #19793]
-    assert_separately(["-W0", "-rtempfile"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+    assert_ruby_status(["-W0", "-rtempfile"], <<~RUBY, timeout: 60)
       GC.stress = true
 
       class Object

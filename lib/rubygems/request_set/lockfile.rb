@@ -231,5 +231,3 @@ class Gem::RequestSet::Lockfile
     @set.sorted_requests
   end
 end
-
-require_relative "lockfile/tokenizer"

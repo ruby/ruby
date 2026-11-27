@@ -25,6 +25,19 @@ class TestGemSourceLocal < Gem::TestCase
                  @sl.load_specs(:released).sort
   end
 
+  def test_load_specs_ignores_content_address_mismatch
+    _spec, ca_gem = util_gem("ca", "1.0.0", ruby_abi: "3.4") do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = Gem::Platform.local
+    end
+    address = Gem::Package.new(ca_gem).content_address
+    mismatched_address = address.start_with?("0") ? "1#{address[1..]}" : "0#{address[1..]}"
+    FileUtils.mv ca_gem, File.join(@tempdir, "ca-1.0.0-#{mismatched_address}.gem")
+
+    assert_equal [@a.name_tuple, @b.name_tuple].sort,
+                 @sl.load_specs(:released).sort
+  end
+
   def test_load_specs_prerelease
     assert_equal [@ap.name_tuple], @sl.load_specs(:prerelease)
   end
@@ -61,6 +74,30 @@ class TestGemSourceLocal < Gem::TestCase
   def test_find_gem_prerelease
     req = Gem::Requirement.create(">= 0")
     assert_equal "a-2.a", @sl.find_gem("a", req, true).full_name
+  end
+
+  def test_find_all_gems
+    _, a2_gem = util_gem "a", "2"
+    FileUtils.mv a2_gem, @tempdir
+
+    results = @sl.find_all_gems("a")
+    assert_equal ["a-1", "a-2"], results.map(&:full_name).sort
+  end
+
+  def test_find_all_gems_excludes_prerelease_by_default
+    results = @sl.find_all_gems("a")
+    assert_equal ["a-1"], results.map(&:full_name)
+  end
+
+  def test_find_all_gems_includes_prerelease_when_requested
+    results = @sl.find_all_gems("a", Gem::Requirement.create(">= 0"), true)
+    assert_equal ["a-1", "a-2.a"], results.map(&:full_name).sort
+  end
+
+  def test_find_all_gems_includes_prerelease_when_requirement_is_prerelease
+    req = Gem::Requirement.create("= 2.a")
+    results = @sl.find_all_gems("a", req)
+    assert_equal ["a-2.a"], results.map(&:full_name)
   end
 
   def test_fetch_spec

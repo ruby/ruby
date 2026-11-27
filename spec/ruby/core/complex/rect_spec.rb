@@ -1,10 +1,13 @@
 require_relative '../../spec_helper'
-require_relative 'shared/rect'
 
 describe "Complex#rect" do
-  it_behaves_like :complex_rect, :rect
+  it "is an alias of Complex#rectangular" do
+    Complex.instance_method(:rect).should == Complex.instance_method(:rectangular)
+  end
 end
 
 describe "Complex.rect" do
-  it_behaves_like :complex_rect_class, :rect
+  it "is an alias of Complex.rectangular" do
+    Complex.method(:rect).should == Complex.method(:rectangular)
+  end
 end

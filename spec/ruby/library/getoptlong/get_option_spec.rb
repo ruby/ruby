@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
 require 'getoptlong'
-require_relative 'shared/get'
 
 describe "GetoptLong#get_option" do
-  it_behaves_like :getoptlong_get, :get_option
+  it "is an alias of GetoptLong#get" do
+    GetoptLong.instance_method(:get_option).should == GetoptLong.instance_method(:get)
+  end
 end

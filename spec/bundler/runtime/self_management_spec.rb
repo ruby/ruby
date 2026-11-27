@@ -31,7 +31,7 @@ RSpec.describe "Self management" do
     it "installs locked version when using system path and uses it" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set --local path.system true"
+      bundle_config "path.system true"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
@@ -43,20 +43,17 @@ RSpec.describe "Self management" do
       bundle "-v", artifice: nil
       expect(out).to eq(previous_minor)
 
-      # ruby-core test setup has always "lib" in $LOAD_PATH so `require "bundler/setup"` always activate the local version rather than using RubyGems gem activation stuff
-      unless ruby_core?
-        # App now uses locked version, even when not using the CLI directly
-        file = bundled_app("bin/bundle_version.rb")
-        create_file file, <<-RUBY
-          #!#{Gem.ruby}
-          require 'bundler/setup'
-          puts '#{previous_minor}'
-        RUBY
-        file.chmod(0o777)
-        cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
-        in_bundled_app cmd
-        expect(out).to eq(previous_minor)
-      end
+      # App now uses locked version, even when not using the CLI directly
+      file = bundled_app("bin/bundle_version.rb")
+      create_file file, <<-RUBY
+        #!#{Gem.ruby}
+        require 'bundler/setup'
+        puts '#{previous_minor}'
+      RUBY
+      file.chmod(0o777)
+      cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
+      in_bundled_app cmd
+      expect(out).to eq(previous_minor)
 
       # Subsequent installs use the locked version without reinstalling
       bundle "install --verbose", artifice: nil
@@ -67,7 +64,7 @@ RSpec.describe "Self management" do
     it "installs locked version when using local path and uses it" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
@@ -84,20 +81,17 @@ RSpec.describe "Self management" do
       bundle "exec ruby -e 'puts Bundler.original_env[\"GEM_HOME\"]'"
       expect(out).to eq(ENV["GEM_HOME"])
 
-      # ruby-core test setup has always "lib" in $LOAD_PATH so `require "bundler/setup"` always activate the local version rather than using RubyGems gem activation stuff
-      unless ruby_core?
-        # App now uses locked version, even when not using the CLI directly
-        file = bundled_app("bin/bundle_version.rb")
-        create_file file, <<-RUBY
-          #!#{Gem.ruby}
-          require 'bundler/setup'
-          puts '#{previous_minor}'
-        RUBY
-        file.chmod(0o777)
-        cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
-        in_bundled_app cmd
-        expect(out).to eq(previous_minor)
-      end
+      # App now uses locked version, even when not using the CLI directly
+      file = bundled_app("bin/bundle_version.rb")
+      create_file file, <<-RUBY
+        #!#{Gem.ruby}
+        require 'bundler/setup'
+        puts '#{previous_minor}'
+      RUBY
+      file.chmod(0o777)
+      cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
+      in_bundled_app cmd
+      expect(out).to eq(previous_minor)
 
       # Subsequent installs use the locked version without reinstalling
       bundle "install --verbose"
@@ -108,7 +102,7 @@ RSpec.describe "Self management" do
     it "installs locked version when using deployment option and uses it" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set --local deployment true"
+      bundle_config "deployment true"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
@@ -163,7 +157,7 @@ RSpec.describe "Self management" do
     it "installs BUNDLE_VERSION version when using bundle config version x.y.z" do
       lockfile_bundled_with(current_version)
 
-      bundle "config set --local version #{previous_minor}"
+      bundle_config "version #{previous_minor}"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
@@ -171,10 +165,26 @@ RSpec.describe "Self management" do
       expect(out).to eq(previous_minor)
     end
 
+    # Can only run when Gem::BundlerVersionFinder.bundler_versions reads
+    # bundler configs
+    it "requires the right bundler version from the config and run bundle CLI without re-exec", rubygems: ">= 4.1.0.a" do
+      lockfile_bundled_with(current_version)
+
+      bundle_config "version #{previous_minor}"
+      bundle_config "path.system true"
+      bundle "install"
+
+      script = bundled_app("script.rb")
+      create_file(script, "p 'executed once'")
+
+      bundle "-v", env: { "RUBYOPT" => "-r#{script}" }
+      expect(out).to eq(%("executed once"\n9.3.0))
+    end
+
     it "does not try to install when using bundle config version global" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set version system"
+      bundle_config "version system"
       bundle "install"
       expect(out).not_to match(/restarting using that version/)
 
@@ -185,7 +195,7 @@ RSpec.describe "Self management" do
     it "does not try to install when using bundle config version <dev-version>" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set version #{previous_minor}.dev"
+      bundle_config "version #{previous_minor}.dev"
       bundle "install"
       expect(out).not_to match(/restarting using that version/)
 

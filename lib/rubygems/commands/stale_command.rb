@@ -25,7 +25,7 @@ longer using.
     gem_to_atime = {}
     Gem::Specification.each do |spec|
       name = spec.full_name
-      Dir["#{spec.full_gem_path}/**/*.*"].each do |file|
+      Gem::Util.glob_files_in_dir("**/*.*", spec.full_gem_path).each do |file|
         next if File.directory?(file)
         stat = File.stat(file)
         gem_to_atime[name] ||= stat.atime

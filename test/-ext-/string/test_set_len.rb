@@ -1,11 +1,11 @@
 # frozen_string_literal: false
 require 'test/unit'
 require "-test-/string"
+require "rbconfig/sizeof"
 
 class Test_StrSetLen < Test::Unit::TestCase
   def setup
-    # Make string long enough so that it is not embedded
-    @range_end = ("0".ord + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).chr
+    @range_end = ("0".ord + 40).chr
     @s0 = [*"0"..@range_end].join("").freeze
     @s1 = Bug::String.new(@s0)
   end
@@ -27,12 +27,14 @@ class Test_StrSetLen < Test::Unit::TestCase
   end
 
   def test_capacity_equals_to_new_size
+    omit "this test is very GC specific" unless GC.config[:implementation] == 'default'
+
     bug12757 = "[ruby-core:77257] [Bug #12757]"
     # fill to ensure capacity does not decrease with force_encoding
-    str = Bug::String.new("\x00" * 128, capacity: 128)
+    str = Bug::String.new("\x00" * 1024, capacity: 1024)
     str.force_encoding("UTF-32BE")
-    assert_equal 128, Bug::String.capacity(str)
-    assert_equal 127, str.set_len(127).bytesize, bug12757
+    assert_equal 1024, Bug::String.capacity(str)
+    assert_equal 1023, str.set_len(1023).bytesize, bug12757
   end
 
   def test_coderange_after_append
@@ -80,5 +82,13 @@ class Test_StrSetLen < Test::Unit::TestCase
     assert_predicate str, :valid_encoding?
     str.resize(2)
     assert_not_predicate str, :valid_encoding?
+  end
+
+  def test_resize_too_big
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+    str = Bug::String.new("a")
+    assert_raise(ArgumentError) {str.resize(max)}
+    str = Bug::String.new("\0\0\0\0".force_encoding(Encoding::UTF_32BE))
+    assert_raise(ArgumentError) {str.resize(max - 3)}
   end
 end

@@ -12,41 +12,63 @@ module GC
   # Keyword arguments:
   #
   # - +full_mark+:
-  #   its boolean value determines whether to perform a major garbage collection cycle:
+  #   a boolean value specifying whether to perform a major garbage collection cycle:
   #
   #   - +true+: initiates a major garbage collection cycle,
-  #     meaning all objects (old and new) are marked.
+  #     meaning all objects (old and new) are marked. When another Ractor's
+  #     object space exists (a live Ractor, or a terminated one not yet
+  #     absorbed), or one was absorbed since the last global collection, and
+  #     +global+ is +true+ (the default), the cycle is a global collection
+  #     instead; see +global+.
   #   - +false+: initiates a minor garbage collection cycle,
   #     meaning only young objects are marked.
   #
   # - +immediate_mark+:
-  #   its boolean value determines whether to perform incremental marking:
+  #   a boolean value specifying whether marking is performed incrementally:
   #
   #   - +true+: marking is completed before the method returns.
-  #   - +false+: marking is performed by parts,
+  #   - +false+: marking is performed in parts,
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore marking may not be completed before the return.
-  #     Note that if +full_mark+ is +false+, marking will always be immediate,
+  #     Note that if +full_mark+ is +false+, marking is always immediate,
   #     regardless of the value of +immediate_mark+.
   #
   # - +immediate_sweep+:
-  #   its boolean value determines whether to defer sweeping (using lazy sweep):
+  #   a boolean value specifying whether sweeping is deferred (lazy sweep):
   #
   #   - +true+: sweeping is completed before the method returns.
-  #   - +false+: sweeping is performed by parts,
+  #   - +false+: sweeping is performed in parts,
   #     interleaved with program execution both before the method returns and afterward;
   #     therefore sweeping may not be completed before the return.
+  #
+  # - +global+:
+  #   a boolean value specifying, when another Ractor's object space exists, whether to
+  #   collect every Ractor's heap together in a single stop-the-world mark/sweep cycle:
+  #
+  #   - +true+: with another Ractor's object space present (see +full_mark+) it runs a
+  #     stop-the-world cycle and reclaims shareable and cross-Ractor garbage. This option,
+  #     although it defaults to +true+, is ignored unless +full_mark+, +immediate_mark+ and
+  #     +immediate_sweep+ are all +true+. With a single object space it has no effect and
+  #     the other options apply as usual. This option is also ignored unless you're using
+  #     the default GC.
+  #   - +false+: collect only the calling Ractor's own objects. Shareable objects and cross-ractor
+  #     garbage are not swept.
+  #
+  #   GC.stat counts a local major collection under +:major_gc_count+ and a local
+  #   minor collection under +:minor_gc_count+. A global collection counts under
+  #   +:global_gc_count+ in every Ractor whose heap it collects, and under
+  #   +:global_gc_invocation_count+ in the calling Ractor.
   #
   # Note that these keyword arguments are implementation- and version-dependent,
   # are not guaranteed to be future-compatible,
   # and may be ignored in some implementations.
-  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  def self.start full_mark: true, immediate_mark: true, immediate_sweep: true, global: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false, global
   end
 
   # Alias of GC.start
-  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true, global: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false, global
   end
 
   # call-seq:
@@ -91,22 +113,23 @@ module GC
   # call-seq:
   #   GC.stress = value -> value
   #
-  # Enables or disables stress mode;
-  # enabling stress mode will degrade performance; it is only for debugging.
+  # Enables or disables stress mode.
+  # Stress mode causes \GC to be invoked at every \GC opportunity
+  # (all memory and object allocations);
+  # it is intended only for debugging and severely degrades performance.
   #
   # Sets the current \GC stress mode to the given value:
   #
   # - If the value is +nil+ or +false+, disables stress mode.
   # - If the value is an integer,
   #   enables stress mode with certain flags; see below.
-  # - Otherwise, enables stress mode;
-  #   \GC is invoked at every \GC opportunity: all memory and object allocations.
+  # - Otherwise, enables stress mode without any flags.
   #
   # The flags are bits in the given integer:
   #
-  # - +0x01+: No major \GC.
-  # - +0x02+: No immediate sweep.
-  # - +0x04+: Full mark after malloc/calloc/realloc.
+  # - +0x01+: no major \GC.
+  # - +0x02+: no immediate sweep.
+  # - +0x04+: full mark after malloc/calloc/realloc.
   #
   def self.stress=(flag)
     Primitive.gc_stress_set_m flag
@@ -117,6 +140,9 @@ module GC
   #
   # Returns the total number of times garbage collection has occurred:
   #
+  # With the default GC, counts the collections of the current Ractor's heap,
+  # including global collections that other Ractors started.
+  #
   #   GC.count # => 385
   #   GC.start
   #   GC.count # => 386
@@ -126,9 +152,9 @@ module GC
   end
 
   # call-seq:
-  #   GC.stat -> new_hash
-  #   GC.stat(key) -> value
-  #   GC.stat(hash) -> hash
+  #   GC.stat(process: false) -> new_hash
+  #   GC.stat(key, process: false) -> value
+  #   GC.stat(hash, process: false) -> hash
   #
   # This method is implementation-specific to CRuby.
   #
@@ -136,41 +162,50 @@ module GC
   # The particular statistics are implementation-specific
   # and may change in the future without notice.
   #
-  # With no argument given,
-  # returns information about the most recent garbage collection:
+  # With <tt>process: false</tt> (the default) or +nil+,
+  # returns statistics for the current Ractor's object space.
+  # With any other value of +process+, returns process-wide statistics;
+  # see "Process statistics" below.
+  #
+  # With no positional argument or +nil+ given,
+  # returns a hash containing the \GC statistics:
   #
   #   GC.stat
   #   # =>
-  #   {count: 28,
-  #    time: 1,
-  #    marking_time: 1,
+  #   {count: 1,
+  #    time: 0,
+  #    marking_time: 0,
   #    sweeping_time: 0,
-  #    heap_allocated_pages: 521,
+  #    total_malloc_bytes: 10432791,
+  #    total_free_bytes: 6989873,
+  #    heap_allocated_pages: 41,
   #    heap_empty_pages: 0,
-  #    heap_allocatable_slots: 0,
-  #    heap_available_slots: 539590,
-  #    heap_live_slots: 422243,
-  #    heap_free_slots: 117347,
-  #    heap_final_slots: 0,
-  #    heap_marked_slots: 264877,
-  #    heap_eden_pages: 521,
-  #    total_allocated_pages: 521,
+  #    heap_allocatable_bytes: 228656,
+  #    heap_eden_pages: 41,
+  #    total_allocated_pages: 41,
   #    total_freed_pages: 0,
-  #    total_allocated_objects: 2246376,
-  #    total_freed_objects: 1824133,
-  #    malloc_increase_bytes: 50982,
-  #    malloc_increase_bytes_limit: 18535172,
-  #    minor_gc_count: 18,
-  #    major_gc_count: 10,
+  #    malloc_increase_bytes: 0,
+  #    malloc_increase_bytes_limit: 16777216,
+  #    minor_gc_count: 0,
+  #    major_gc_count: 1,
+  #    global_gc_count: 0,
+  #    global_gc_invocation_count: 0,
   #    compact_count: 0,
   #    read_barrier_faults: 0,
   #    total_moved_objects: 0,
   #    remembered_wb_unprotected_objects: 0,
-  #    remembered_wb_unprotected_objects_limit: 2162,
-  #    old_objects: 216365,
-  #    old_objects_limit: 432540,
-  #    oldmalloc_increase_bytes: 1654232,
-  #    oldmalloc_increase_bytes_limit: 16846103}
+  #    remembered_wb_unprotected_objects_limit: 7,
+  #    old_objects: 721,
+  #    old_objects_limit: 1442,
+  #    oldmalloc_increase_bytes: 0,
+  #    oldmalloc_increase_bytes_limit: 16777216,
+  #    total_allocated_objects: 36735,
+  #    total_freed_objects: 19527,
+  #    heap_available_slots: 40591,
+  #    heap_live_slots: 17208,
+  #    heap_free_slots: 23383,
+  #    heap_final_slots: 0,
+  #    heap_marked_slots: 17175}
   #
   # With symbol argument +key+ given,
   # returns the value for that key:
@@ -188,46 +223,48 @@ module GC
   # The hash includes entries such as:
   #
   # - +:count+:
-  #   The total number of garbage collections run since application start
-  #   (count includes both minor and major garbage collections).
+  #   The total number of garbage collections of this Ractor's heap since the
+  #   object space was created. It includes minor, major, and global garbage
+  #   collections, and equals +:minor_gc_count+ plus +:major_gc_count+ plus
+  #   +:global_gc_count+.
   # - +:time+:
   #   The total time spent in garbage collections (in milliseconds).
+  # - +:marking_time+:
+  #   The total time spent marking objects (in milliseconds).
+  # - +:sweeping_time+:
+  #   The total time spent sweeping objects (in milliseconds).
+  # - +:total_malloc_bytes+:
+  #   The total number of bytes allocated by malloc since application start.
+  # - +:total_free_bytes+:
+  #   The total number of bytes freed since application start.
   # - +:heap_allocated_pages+:
   #   The total number of allocated pages.
   # - +:heap_empty_pages+:
   #   The number of pages with no live objects, and that could be released to the system.
-  # - +:heap_sorted_length+:
-  #   The number of pages that can fit into the buffer that holds references to  all pages.
-  # - +:heap_allocatable_pages+:
-  #   The total number of pages the application could allocate without additional \GC.
-  # - +:heap_available_slots+:
-  #   The total number of slots in all +:heap_allocated_pages+.
-  # - +:heap_live_slots+:
-  #   The total number of slots which contain live objects.
-  # - +:heap_free_slots+:
-  #   The total number of slots which do not contain live objects.
-  # - +:heap_final_slots+:
-  #   The total number of slots with pending finalizers to be run.
-  # - +:heap_marked_slots+:
-  #   The total number of objects marked in the last \GC.
+  # - +:heap_allocatable_bytes+:
+  #   The number of bytes that can be allocated without triggering a new
+  #   garbage collection cycle.
   # - +:heap_eden_pages+:
   #   The total number of pages which contain at least one live slot.
   # - +:total_allocated_pages+:
   #   The cumulative number of pages allocated since application start.
   # - +:total_freed_pages+:
   #   The cumulative number of pages freed since application start.
-  # - +:total_allocated_objects+:
-  #   The cumulative number of objects allocated since application start.
-  # - +:total_freed_objects+:
-  #   The cumulative number of objects freed since application start.
   # - +:malloc_increase_bytes+:
   #   Amount of memory allocated on the heap for objects. Decreased by any \GC.
   # - +:malloc_increase_bytes_limit+:
   #   When +:malloc_increase_bytes+ crosses this limit, \GC is triggered.
   # - +:minor_gc_count+:
-  #   The total number of minor garbage collections run since process start.
+  #   The total number of local minor garbage collections of this Ractor's heap.
   # - +:major_gc_count+:
-  #   The total number of major garbage collections run since process start.
+  #   The total number of local major garbage collections of this Ractor's heap.
+  #   Global garbage collections are counted separately.
+  # - +:global_gc_count+:
+  #   The number of global (stop-the-world) garbage collections that collected
+  #   this Ractor's heap. Any Ractor can start them.
+  # - +:global_gc_invocation_count+:
+  #   The number of global garbage collections that this Ractor started.
+  #   Each global garbage collection has exactly one starter.
   # - +:compact_count+:
   #   The total number of compactions run since process start.
   # - +:read_barrier_faults+:
@@ -246,9 +283,69 @@ module GC
   #   Amount of memory allocated on the heap for objects. Decreased by major \GC.
   # - +:oldmalloc_increase_bytes_limit+:
   #   When +:oldmalloc_increase_bytes+ crosses this limit, major \GC is triggered.
+  # - +:total_allocated_objects+:
+  #   The cumulative number of objects allocated since application start.
+  # - +:total_freed_objects+:
+  #   The cumulative number of objects freed since application start.
+  # - +:heap_available_slots+:
+  #   The total number of slots in all +:heap_allocated_pages+.
+  # - +:heap_live_slots+:
+  #   The total number of slots which contain live objects.
+  # - +:heap_free_slots+:
+  #   The total number of slots which do not contain live objects.
+  # - +:heap_final_slots+:
+  #   The total number of slots with pending finalizers to be run.
+  # - +:heap_marked_slots+:
+  #   The number of objects in this Ractor's heap marked in the last \GC of
+  #   that heap.
   #
-  def self.stat hash_or_key = nil
-    Primitive.gc_stat hash_or_key
+  # === Process statistics
+  #
+  # With <tt>process: true</tt>, the default collector reports cumulative
+  # collection counts and measured CPU time across all Ractors, retaining
+  # history from destroyed object spaces, and the state of the page pool
+  # that all object spaces share:
+  #
+  #   GC.stat(process: true)
+  #   # => {count: 42, time: 3, marking_time: 2, sweeping_time: 1,
+  #   #     minor_gc_count: 32, major_gc_count: 8, global_gc_count: 2,
+  #   #     page_pool_arenas: 2, page_pool_arenas_freed: 0,
+  #   #     page_pool_total_pages: 64, page_pool_discarded_pages: 0}
+  #
+  # +:count+ is the number of garbage collections in the process. Each local
+  # and each global collection counts once, so +:count+ equals
+  # +:minor_gc_count+ plus +:major_gc_count+ plus +:global_gc_count+. It is not
+  # the sum of the Ractor +:count+ values, because one global collection
+  # collects every heap.
+  #
+  # +:global_gc_count+ is the number of global collections in the process,
+  # however many Ractors each one stops.
+  #
+  # The page pool keys are:
+  #
+  # - +:page_pool_arenas+:
+  #   The number of page-pool arenas that are mapped now.
+  # - +:page_pool_arenas_freed+:
+  #   The number of arenas that the page pool has unmapped.
+  # - +:page_pool_total_pages+:
+  #   The number of page bodies in the mapped arenas.
+  # - +:page_pool_discarded_pages+:
+  #   The number of free page bodies whose memory the page pool has returned
+  #   to the operating system.
+  #
+  # +:time+ may exceed +:marking_time+ plus +:sweeping_time+ by one millisecond
+  # because raw nanoseconds are summed before conversion. Times measure collector
+  # CPU work, not wall-clock pauses.
+  #
+  # Reads combine object-space publications without requesting a stop-the-world
+  # barrier. GC.measure_total_time controls future timing accumulation. Profiler
+  # controls do not affect these totals. A forked child inherits its parent's
+  # totals. MMTk and wbcheck raise NotImplementedError for process statistics.
+  #
+  # Unavailable keys raise ArgumentError.
+  #
+  def self.stat hash_or_key = nil, process: false
+    Primitive.gc_stat hash_or_key, process
   end
 
   # call-seq:
@@ -269,7 +366,16 @@ module GC
   #   GC.stat_heap
   #   # =>
   #   {0 =>
-  #     {slot_size: 40,
+  #     {slot_size: 32,
+  #      heap_eden_pages: 24,
+  #      heap_eden_slots: 12288,
+  #      total_allocated_pages: 24,
+  #      force_major_gc_count: 0,
+  #      force_incremental_marking_finish_count: 0,
+  #      total_allocated_objects: 8450,
+  #      total_freed_objects: 3120},
+  #    1 =>
+  #     {slot_size: 64,
   #      heap_eden_pages: 246,
   #      heap_eden_slots: 402802,
   #      total_allocated_pages: 246,
@@ -277,8 +383,8 @@ module GC
   #      force_incremental_marking_finish_count: 1,
   #      total_allocated_objects: 33867152,
   #      total_freed_objects: 33520523},
-  #    1 =>
-  #     {slot_size: 80,
+  #    2 =>
+  #     {slot_size: 128,
   #      heap_eden_pages: 84,
   #      heap_eden_slots: 68746,
   #      total_allocated_pages: 84,
@@ -286,8 +392,8 @@ module GC
   #      force_incremental_marking_finish_count: 4,
   #      total_allocated_objects: 147491,
   #      total_freed_objects: 90699},
-  #    2 =>
-  #     {slot_size: 160,
+  #    3 =>
+  #     {slot_size: 256,
   #      heap_eden_pages: 157,
   #      heap_eden_slots: 64182,
   #      total_allocated_pages: 157,
@@ -295,8 +401,8 @@ module GC
   #      force_incremental_marking_finish_count: 0,
   #      total_allocated_objects: 211460,
   #      total_freed_objects: 190075},
-  #    3 =>
-  #     {slot_size: 320,
+  #    4 =>
+  #     {slot_size: 512,
   #      heap_eden_pages: 8,
   #      heap_eden_slots: 1631,
   #      total_allocated_pages: 8,
@@ -304,8 +410,8 @@ module GC
   #      force_incremental_marking_finish_count: 0,
   #      total_allocated_objects: 1422,
   #      total_freed_objects: 700},
-  #    4 =>
-  #     {slot_size: 640,
+  #    5 =>
+  #     {slot_size: 1024,
   #      heap_eden_pages: 16,
   #      heap_eden_slots: 1628,
   #      total_allocated_pages: 16,
@@ -316,7 +422,7 @@ module GC
   #
   # In the example above, the keys in the outer hash are the heap identifiers:
   #
-  #   GC.stat_heap.keys # => [0, 1, 2, 3, 4]
+  #   GC.stat_heap.keys # => [0, 1, 2, 3, 4, 5]
   #
   # On CRuby, each heap identifier is an integer;
   # on other implementations, a heap identifier may be a string.
@@ -324,9 +430,9 @@ module GC
   # With only argument +heap_id+ given,
   # returns statistics for the given heap identifier:
   #
-  #   GC.stat_heap(2)
+  #   GC.stat_heap(3)
   #   # =>
-  #   {slot_size: 160,
+  #   {slot_size: 256,
   #    heap_eden_pages: 157,
   #    heap_eden_slots: 64182,
   #    total_allocated_pages: 157,
@@ -338,7 +444,7 @@ module GC
   # With arguments +heap_id+ and +key+ given,
   # returns the value for the given key in the given heap:
   #
-  #   GC.stat_heap(2, :slot_size) # => 160
+  #   GC.stat_heap(3, :slot_size) # => 256
   #
   # With arguments +nil+ and +hash+ given,
   # merges the statistics for all heaps into the given hash:
@@ -533,6 +639,11 @@ module GC
   #   GC.measure_total_time        # => true
   #
   # Note that when enabled, total time measurement affects performance.
+  #
+  # The setting is per-Ractor: it affects only the Ractor that sets it.
+  # With the default GC, a Ractor created by Ractor.new inherits the
+  # setting of the Ractor that creates it; the main Ractor starts with
+  # measurement enabled.
   def self.measure_total_time=(flag)
     Primitive.cstmt! %{
       rb_gc_impl_set_measure_total_time(rb_gc_get_objspace(), flag);
@@ -543,8 +654,9 @@ module GC
   # call-seq:
   #   GC.measure_total_time -> true or false
   #
-  # Returns the setting for \GC total time measurement;
-  # the initial setting is +true+.
+  # Returns the setting for \GC total time measurement in the current
+  # Ractor; the main Ractor's initial setting is +true+ and, with the
+  # default GC, other Ractors inherit their creator's setting.
   # See GC.total_time.
   def self.measure_total_time
     Primitive.cexpr! %{
@@ -556,6 +668,9 @@ module GC
   #    GC.total_time -> integer
   #
   # Returns the \GC total time in nanoseconds:
+  #
+  # With the default collector, this is the current Ractor's measured GC CPU
+  # work, not wall-clock pause time.
   #
   #   GC.total_time # => 156250
   #
@@ -591,8 +706,8 @@ end
 
 module ObjectSpace
   # Alias of GC.start
-  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
-    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
+  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true, global: true
+    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false, global
   end
 
   module_function :garbage_collect

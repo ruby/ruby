@@ -153,6 +153,27 @@ class TestLazyEnumerator < Test::Unit::TestCase
   def test_flat_map_non_array
     assert_equal(["1", "2", "3"], [1, 2, 3].flat_map {|x| x.to_s})
     assert_equal(["1", "2", "3"], [1, 2, 3].lazy.flat_map {|x| x.to_s}.force)
+
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        include Enumerable
+        attr_reader :block
+
+        def force; true; end
+        def each(&block)
+          @block = block
+        end
+      end
+
+      yielded = []
+      [enum].lazy.flat_map { |x| yielded << x; x }.each { |x| }
+      GC.start
+      assert_equal 42, enum.block.call(42)
+      assert_equal 1, yielded.size
+      assert_same enum, yielded[0]
+    };
   end
 
   def test_flat_map_hash
@@ -258,6 +279,32 @@ class TestLazyEnumerator < Test::Unit::TestCase
     a = Step.new(1..5)
     assert_equal([5, nil], a.zip("a".."c").last)
     assert_equal([5, nil], a.lazy.zip("a".."c").force.last)
+  end
+
+  def test_zip_array_convertible_before_enumerable
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+
+    zip = (1..3).lazy.zip(array_like, 10..12)
+    expected = [[1, :a, 10], [2, :b, 11], [3, nil, 12]]
+    assert_equal(expected, zip.force)
+    assert_equal(expected, zip.force)
+  end
+
+  def test_zip_array_conversion_precedes_each
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+    def array_like.each
+      yield :c
+      yield :d
+    end
+
+    assert_equal([[1, :a, 10], [2, :b, 11]],
+                 (1..2).lazy.zip(array_like, 10..11).force)
   end
 
   def test_zip_without_arg
@@ -542,15 +589,20 @@ EOS
       [:drop_while, selector],
       [:uniq, nil],
       [:uniq, proc{|x| x.odd?}],
-    ].each do |args|
-      block = args.pop
+    ].each do |*args, block|
       assert_equal [1, 2, 3].to_enum.to_enum(*args).first(2).to_a, [1, 2, 3].to_enum.lazy.to_enum(*args).first(2).to_a
       assert_equal (0..50).to_enum.to_enum(*args).first(2).to_a, (0..50000).to_enum.lazy.to_enum(*args).first(2).to_a
       if block
         assert_equal [1, 2, 3, 4].to_enum.to_enum(*args).map(&block).first(2).to_a, [1, 2, 3, 4].to_enum.lazy.to_enum(*args).map(&block).first(2).to_a
-        unless args.first == :take_while || args.first == :drop_while
+        case args.first
+        when :take_while, :drop_while, "take_while", "drop_while"
+        else
           assert_equal (0..50).to_enum.to_enum(*args).map(&block).first(2).to_a, (0..50000).to_enum.lazy.to_enum(*args).map(&block).first(2).to_a
         end
+      end
+      if Symbol === args.first
+        args.unshift(args.shift.name)
+        redo
       end
     end
   end
@@ -608,7 +660,7 @@ EOS
   end
 
   def test_require_block
-    %i[select reject drop_while take_while map flat_map].each do |method|
+    %i[select reject drop_while take_while map flat_map tap_each].each do |method|
       assert_raise(ArgumentError){ [].lazy.send(method) }
     end
   end
@@ -710,9 +762,35 @@ EOS
 
     ary = (0..Float::INFINITY).lazy.with_index.take(2).to_a
     assert_equal([[0, 0], [1, 1]], ary)
+
+    ary = 100.times.lazy.take(0).each_with_index.to_a
+    assert_equal([], ary)
+
+    ary = []
+    3.times.lazy.each_with_index { |*a| ary << a }
+    assert_equal([[0, 0], [1, 1], [2, 2]], ary)
   end
 
   def test_with_index_size
     assert_equal(3, Enumerator::Lazy.new([1, 2, 3], 3){|y, v| y << v}.with_index.size)
+  end
+
+  def test_tap_each
+    out = []
+
+    e = (1..Float::INFINITY).lazy
+                            .tap_each { |x| out << x }
+                            .select(&:even?)
+                            .first(5)
+
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], out)
+    assert_equal([2, 4, 6, 8, 10], e)
+  end
+
+  def test_tap_each_is_not_intrusive
+    s = Step.new(1..3)
+
+    assert_equal(2, s.lazy.tap_each { |x| x }.map { |x| x * 2 }.first)
+    assert_equal(1, s.current)
   end
 end

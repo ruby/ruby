@@ -8,14 +8,14 @@ describe "Proc as a block pass argument" do
   it "remains the same object if re-vivified by the target method" do
     p = Proc.new {}
     p2 = revivify(&p)
-    p.should equal p2
+    p.should.equal? p2
     p.should == p2
   end
 
   it "remains the same object if reconstructed with Proc.new" do
     p = Proc.new {}
     p2 = Proc.new(&p)
-    p.should equal p2
+    p.should.equal? p2
     p.should == p2
   end
 end

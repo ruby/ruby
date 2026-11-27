@@ -21,7 +21,7 @@ describe "The next statement from within the block" do
   end
 
   it "causes block to return nil if invoked with an empty expression" do
-    -> { next (); 456 }.call.should be_nil
+    -> { next (); 456 }.call.should == nil
   end
 
   it "returns the argument passed" do
@@ -111,7 +111,7 @@ describe "The next statement" do
     it "is invalid and raises a SyntaxError" do
       -> {
         eval("def m; next; end")
-      }.should raise_error(SyntaxError)
+      }.should.raise(SyntaxError)
     end
   end
 end

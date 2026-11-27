@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/store'
 
 describe "ENV.store" do
-  it_behaves_like :env_store, :store
+  it "is an alias of ENV.[]=" do
+    ENV.method(:store).should == ENV.method(:[]=)
+  end
 end

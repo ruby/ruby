@@ -1,0 +1,88 @@
+1 in 2 in true
+       ^~ unexpected 'in', expecting end-of-input
+       ^~ unexpected 'in', ignoring it
+
+case not(1 in 2 in true); in true; end
+               ^ expected a matching `)`
+^~~~ expected a `when` or `in` clause after `case`
+^~~~ expected an `end` to close the `case` statement
+                       ^ unexpected ')', expecting end-of-input
+                       ^ unexpected ')', ignoring it
+                          ^~ unexpected 'in', ignoring it
+                                   ^~~ unexpected 'end', ignoring it
+
+1 and foo 2 in true
+            ^~ unexpected 'in', expecting end-of-input
+            ^~ unexpected 'in', ignoring it
+
+!foo 1 do end in true
+              ^~ unexpected 'in', expecting end-of-input
+              ^~ unexpected 'in', ignoring it
+
+1 and flags &= compute 3
+                       ^ unexpected integer, expecting end-of-input
+
+def f = return 1 in true
+                 ^~ unexpected 'in', expecting end-of-input
+                 ^~ unexpected 'in', ignoring it
+
+1 in 2 in 3
+       ^~ unexpected 'in', expecting end-of-input
+       ^~ unexpected 'in', ignoring it
+
+def run = not 1 in 2 in 3
+                     ^~ unexpected 'in', expecting end-of-input
+                     ^~ unexpected 'in', ignoring it
+
+case (1 in 2 in 3); in true; end
+             ^~ unexpected 'in', expecting end-of-input
+             ^~ unexpected 'in', ignoring it
+            ^ expected a matching `)`
+^~~~ expected a `when` or `in` clause after `case`
+^~~~ expected an `end` to close the `case` statement
+                 ^ unexpected ')', expecting end-of-input
+                 ^ unexpected ')', ignoring it
+                    ^~ unexpected 'in', ignoring it
+                             ^~~ unexpected 'end', ignoring it
+
+case not(1 in 2 in 3); in true; end
+               ^ expected a matching `)`
+^~~~ expected a `when` or `in` clause after `case`
+^~~~ expected an `end` to close the `case` statement
+                    ^ unexpected ')', expecting end-of-input
+                    ^ unexpected ')', ignoring it
+                       ^~ unexpected 'in', ignoring it
+                                ^~~ unexpected 'end', ignoring it
+
+defined?(1 in 2 in 3)
+               ^ expected a matching `)`
+                    ^ unexpected ')', expecting end-of-input
+                    ^ unexpected ')', ignoring it
+
+case x; in ^(1 in 2 in 3); end
+            ^ expected a `)` to close the pattern expression
+                   ^ expected a delimiter after the patterns of an `in` clause
+                        ^ expected a delimiter after the patterns of an `in` clause
+                        ^ unexpected ')', ignoring it
+
+case x or (1 in 2 in 3); in true; end
+                  ^~ unexpected 'in', expecting end-of-input
+                  ^~ unexpected 'in', ignoring it
+                 ^ expected a matching `)`
+^~~~ expected a `when` or `in` clause after `case`
+^~~~ expected an `end` to close the `case` statement
+                      ^ unexpected ')', expecting end-of-input
+                      ^ unexpected ')', ignoring it
+                         ^~ unexpected 'in', ignoring it
+                                  ^~~ unexpected 'end', ignoring it
+
+case not(a += f x => P) in Q in R; :body; end
+               ^ expected a matching `)`
+^~~~ expected a `when` or `in` clause after `case`
+^~~~ expected an `end` to close the `case` statement
+                ^ unexpected local variable or method, expecting end-of-input
+                      ^ unexpected ')', expecting end-of-input
+                      ^ unexpected ')', ignoring it
+                        ^~ unexpected 'in', ignoring it
+                                          ^~~ unexpected 'end', ignoring it
+

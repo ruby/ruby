@@ -2,6 +2,7 @@
 #include "internal/gc.h"
 #include "internal/concurrent_set.h"
 #include "ruby/atomic.h"
+#include "ruby/ractor.h"
 #include "vm_sync.h"
 
 #define CONCURRENT_SET_CONTINUATION_BIT ((VALUE)1 << (sizeof(VALUE) * CHAR_BIT - 1))
@@ -61,7 +62,7 @@ static void
 concurrent_set_free(void *ptr)
 {
     struct concurrent_set *set = ptr;
-    xfree(set->entries);
+    SIZED_FREE_N(set->entries, set->capacity);
 }
 
 static size_t
@@ -91,7 +92,7 @@ static const rb_data_type_t concurrent_set_type = {
         .dsize = concurrent_set_size,
     },
     /* Hack: NOT WB_PROTECTED on purpose (see above) */
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
@@ -102,6 +103,9 @@ rb_concurrent_set_new(const struct rb_concurrent_set_funcs *funcs, int capacity)
     set->funcs = funcs;
     set->entries = ZALLOC_N(struct concurrent_set_entry, capacity);
     set->capacity = capacity;
+    /* The set is reachable from every Ractor (e.g. via C globals such as the
+     * frozen-string and symbol tables), so mark it shareable. */
+    RB_OBJ_SET_SHAREABLE(obj);
     return obj;
 }
 
@@ -399,7 +403,12 @@ start_search:
                 if (continuation) {
                     goto probe_next;
                 }
-                rbimpl_atomic_value_cas(&entry->key, curr_key, CONCURRENT_SET_EMPTY, RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_RELAXED);
+                {
+                    VALUE prev = rbimpl_atomic_value_cas(&entry->key, curr_key, CONCURRENT_SET_EMPTY, RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_RELAXED);
+                    if (prev == curr_key) {
+                        rbimpl_atomic_sub(&set->size, 1, RBIMPL_ATOMIC_RELAXED);
+                    }
+                }
                 continue;
             }
 
@@ -459,8 +468,7 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
 
         switch (curr_key) {
           case CONCURRENT_SET_EMPTY:
-            // We didn't find our entry to delete.
-            return 0;
+            // May be an insert in progress (hash set, key not yet stored).
           case CONCURRENT_SET_DELETED:
             break;
           case CONCURRENT_SET_MOVED:
@@ -473,6 +481,11 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
                 return curr_key;
             }
             break;
+        }
+
+        // Stop once nothing was inserted past this entry.
+        if (!(entry->hash & CONCURRENT_SET_CONTINUATION_BIT)) {
+            return 0;
         }
 
         idx = concurrent_set_probe_next(&probe);

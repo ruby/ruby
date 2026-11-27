@@ -1,0 +1,3 @@
+outer(C::F x do end.tail, y)
+                        ^ invalid comma
+

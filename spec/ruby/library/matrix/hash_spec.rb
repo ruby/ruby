@@ -4,7 +4,7 @@ require 'matrix'
 describe "Matrix#hash" do
 
   it "returns an Integer" do
-    Matrix[ [1,2] ].hash.should be_an_instance_of(Integer)
+    Matrix[ [1,2] ].hash.should.instance_of?(Integer)
   end
 
   it "returns the same value for the same matrix" do

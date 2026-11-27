@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/gmtime'
 
 describe "Time#gmtime" do
-  it_behaves_like :time_gmtime, :gmtime
+  it "is an alias of Time#utc" do
+    Time.instance_method(:gmtime).should == Time.instance_method(:utc)
+  end
 end

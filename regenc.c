@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -640,18 +640,19 @@ onigenc_single_byte_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
 }
 
 extern int
-onigenc_single_byte_code_to_mbclen(OnigCodePoint code ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
+onigenc_single_byte_code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
+  if (code > 0xff)
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
   return 1;
 }
 
 extern int
 onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
-#ifdef RUBY
-  if (code > 0xff)
-    rb_raise(rb_eRangeError, "%u out of char range", code);
-#endif
+  if (code > 0xff) {
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
+  }
   *buf = (UChar )(code & 0xff);
   return 1;
 }
@@ -875,14 +876,13 @@ extern int
 onigenc_with_ascii_strncmp(OnigEncoding enc, const UChar* p, const UChar* end,
                            const UChar* sascii /* ascii */, int n)
 {
-  int x, c;
+  OnigCodePoint c;
 
   while (n-- > 0) {
     if (p >= end) return (int )(*sascii);
 
-    c = (int )ONIGENC_MBC_TO_CODE(enc, p, end);
-    x = *sascii - c;
-    if (x) return x;
+    c = ONIGENC_MBC_TO_CODE(enc, p, end);
+    if (c != *sascii) return *sascii > c ? 1 : -1;
 
     sascii++;
     p += enclen(enc, p, end);
@@ -894,16 +894,16 @@ extern int
 onigenc_with_ascii_strnicmp(OnigEncoding enc, const UChar* p, const UChar* end,
                             const UChar* sascii /* ascii */, int n)
 {
-  int x, c;
+  OnigCodePoint c, s;
 
   while (n-- > 0) {
     if (p >= end) return (int )(*sascii);
 
-    c = (int )ONIGENC_MBC_TO_CODE(enc, p, end);
+    c = ONIGENC_MBC_TO_CODE(enc, p, end);
     if (ONIGENC_IS_ASCII_CODE(c))
       c = ONIGENC_ASCII_CODE_TO_LOWER_CASE(c);
-    x = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*sascii) - c;
-    if (x) return x;
+    s = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*sascii);
+    if (c != s) return s > c ? 1 : -1;
 
     sascii++;
     p += enclen(enc, p, end);
@@ -966,6 +966,7 @@ onigenc_property_list_add_property(UChar* name, const OnigCodePoint* prop,
 }
 #endif
 
+#ifdef USE_CASE_MAP_API
 extern int
 onigenc_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end,
                             OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc)
@@ -1027,3 +1028,4 @@ onigenc_single_byte_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar
   *flagP = flags;
   return (int )(to - to_start);
 }
+#endif

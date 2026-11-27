@@ -54,7 +54,7 @@ describe 'TracePoint#enable' do
       TracePoint.new(:line) do |tp|
         next unless TracePointSpec.target_thread?
         event_name = tp.event
-      end.enable { event_name.should equal(:line) }
+      end.enable { event_name.should.equal?(:line) }
     end
 
     it 'enables the trace object only for the current thread' do
@@ -85,7 +85,7 @@ describe 'TracePoint#enable' do
         event_name = tp.event
       end
       trace.enable do |*args|
-        event_name.should equal(:line)
+        event_name.should.equal?(:line)
         args.should == []
       end
       trace.should_not.enabled?
@@ -152,6 +152,29 @@ describe 'TracePoint#enable' do
       all.uniq.should == [second]
       inspects.uniq.should == ["#<TracePoint:line#{@path_prefix}#{__FILE__}:#{line}>"]
       called.should == true
+    end
+  end
+
+  describe "with multiple enabled TracePoints for the same event" do
+    it "calls the most recently enabled TracePoint first" do
+      order = []
+      first = TracePoint.new(:class) do |tp|
+        next unless TracePointSpec.target_thread?
+        order << :first
+      end
+      second = TracePoint.new(:class) do |tp|
+        next unless TracePointSpec.target_thread?
+        order << :second
+      end
+
+      first.enable do
+        second.enable do
+          class TracePointSpec::C
+          end
+        end
+      end
+
+      order.should == [:second, :first]
     end
   end
 
@@ -301,7 +324,7 @@ describe 'TracePoint#enable' do
         end
 
         ScratchPad.recorded.should == [lineno]
-        lineno.should be_kind_of(Integer)
+        lineno.should.is_a?(Integer)
       end
     end
 
@@ -317,7 +340,7 @@ describe 'TracePoint#enable' do
         trace.enable(target: block) do
           block.call # triggers :b_call and :b_return events
         end
-      }.should raise_error(ArgumentError, /can not enable any hooks/)
+      }.should.raise(ArgumentError, /can not enable any hooks/)
     end
 
     it "raises ArgumentError if passed not Method/UnboundMethod/Proc" do
@@ -326,7 +349,7 @@ describe 'TracePoint#enable' do
       -> {
         trace.enable(target: Object.new) do
         end
-      }.should raise_error(ArgumentError, /specified target is not supported/)
+      }.should.raise(ArgumentError, /specified target is not supported/)
     end
 
     context "nested enabling and disabling" do
@@ -338,7 +361,7 @@ describe 'TracePoint#enable' do
             trace.enable(target: -> {}) do
             end
           end
-        }.should raise_error(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
+        }.should.raise(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
       end
 
       it "raises ArgumentError if trace point already enabled without target is re-enabled with target" do
@@ -349,7 +372,7 @@ describe 'TracePoint#enable' do
             trace.enable(target: -> {}) do
             end
           end
-        }.should raise_error(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
+        }.should.raise(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
       end
 
       it "raises ArgumentError if trace point already enabled with target is re-enabled without target" do
@@ -360,7 +383,7 @@ describe 'TracePoint#enable' do
             trace.enable do
             end
           end
-        }.should raise_error(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
+        }.should.raise(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
       end
 
       it "raises ArgumentError if trace point already enabled with target is disabled with block" do
@@ -371,7 +394,7 @@ describe 'TracePoint#enable' do
             trace.disable do
             end
           end
-        }.should raise_error(ArgumentError, /can't disable a targett?ing TracePoint in a block/)
+        }.should.raise(ArgumentError, /can't disable a targett?ing TracePoint in a block/)
       end
 
       it "traces events when trace point with target is enabled in another trace point enabled without target" do
@@ -474,7 +497,7 @@ describe 'TracePoint#enable' do
       -> {
         trace.enable(target_line: 67) do
         end
-      }.should raise_error(ArgumentError, /only target_line is specified/)
+      }.should.raise(ArgumentError, /only target_line is specified/)
     end
 
     it "raises ArgumentError if :line event isn't registered" do
@@ -491,7 +514,7 @@ describe 'TracePoint#enable' do
       -> {
         trace.enable(target_line: target_line, target: target) do
         end
-      }.should raise_error(ArgumentError, /target_line is specified, but line event is not specified/)
+      }.should.raise(ArgumentError, /target_line is specified, but line event is not specified/)
     end
 
     it "raises ArgumentError if :target_line value is out of target code lines range" do
@@ -500,7 +523,7 @@ describe 'TracePoint#enable' do
       -> {
         trace.enable(target_line: 1, target: -> { }) do
         end
-      }.should raise_error(ArgumentError, /can not enable any hooks/)
+      }.should.raise(ArgumentError, /can not enable any hooks/)
     end
 
     it "raises TypeError if :target_line value couldn't be coerced to Integer" do
@@ -509,7 +532,7 @@ describe 'TracePoint#enable' do
       -> {
         trace.enable(target_line: Object.new, target: -> { }) do
         end
-      }.should raise_error(TypeError, /no implicit conversion of \w+? into Integer/)
+      }.should.raise(TypeError, /no implicit conversion of \w+? into Integer/)
     end
 
     it "raises ArgumentError if :target_line value is negative" do
@@ -518,7 +541,7 @@ describe 'TracePoint#enable' do
       -> {
         trace.enable(target_line: -2, target: -> { }) do
         end
-      }.should raise_error(ArgumentError, /can not enable any hooks/)
+      }.should.raise(ArgumentError, /can not enable any hooks/)
     end
 
     it "accepts value that could be coerced to Integer" do

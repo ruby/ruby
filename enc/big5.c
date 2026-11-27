@@ -241,6 +241,7 @@ static const char BIG5_CAN_BE_TRAIL_TABLE[256] = {
 
 #define BIG5_ISMB_FIRST(byte)  ( \
 	BIG5_HKSCS_P(enc) ? EncLen_BIG5_HKSCS[byte] > 1 : \
+	BIG5_UAO_P(enc) ? EncLen_BIG5_UAO[byte] > 1 : \
 	EncLen_BIG5[byte] > 1 \
 	)
 #define BIG5_ISMB_TRAIL(byte)  BIG5_CAN_BE_TRAIL_TABLE[(byte)]
@@ -251,6 +252,7 @@ big5_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end,
   const UChar *p;
   int len;
 
+  if (s >= end) return (UChar* )s;
   if (s <= start) return (UChar* )s;
   p = s;
 
@@ -300,7 +302,11 @@ OnigEncodingDefine(big5, BIG5) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -335,7 +341,11 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -370,7 +380,11 @@ OnigEncodingDefine(big5_uao, BIG5_UAO) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_ascii_only_case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

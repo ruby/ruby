@@ -1,3 +1,13 @@
 a {|...|}
-    ^~~ unexpected ... when the parent method is not forwarding
+    ^~~ unexpected ... in block argument
+
+def foo(...)
+  a {|...|}
+      ^~~ unexpected ... in block argument
+end
+
+def foo
+  a {|...|}
+      ^~~ unexpected ... in block argument
+end
 

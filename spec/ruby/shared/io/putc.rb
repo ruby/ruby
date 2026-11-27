@@ -40,18 +40,18 @@ describe :io_putc, shared: true do
 
   it "raises IOError on a closed stream" do
     @io.close
-    -> { @io_object.send(@method, "a") }.should raise_error(IOError)
+    -> { @io_object.send(@method, "a") }.should.raise(IOError)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { @io_object.send(@method, nil) }.should raise_error(TypeError)
+    -> { @io_object.send(@method, nil) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed false" do
-    -> { @io_object.send(@method, false) }.should raise_error(TypeError)
+    -> { @io_object.send(@method, false) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed true" do
-    -> { @io_object.send(@method, true) }.should raise_error(TypeError)
+    -> { @io_object.send(@method, true) }.should.raise(TypeError)
   end
 end

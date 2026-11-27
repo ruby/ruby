@@ -13,6 +13,7 @@ describe "String#squeeze" do
   it "only squeezes chars that are in the intersection of all sets given" do
     "woot squeeze cheese".squeeze("eost", "queo").should == "wot squeze chese"
     "  now   is  the".squeeze(" ").should == " now is the"
+    "hello".squeeze("").should == "hello"
   end
 
   it "negates sets starting with ^" do
@@ -49,13 +50,13 @@ describe "String#squeeze" do
     "AABBCCaabbcc[[]]".squeeze("A-a").should == "ABCabbcc[]"
   end
 
-  it "raises an ArgumentError when the parameter is out of sequence" do
+  it "raises an ArgumentError when the sequence is invalid" do
     s = "--subbookkeeper--"
-    -> { s.squeeze("e-b") }.should raise_error(ArgumentError)
-    -> { s.squeeze("^e-b") }.should raise_error(ArgumentError)
+    -> { s.squeeze("e-b") }.should.raise(ArgumentError)
+    -> { s.squeeze("^e-b") }.should.raise(ArgumentError)
   end
 
-  it "tries to convert each set arg to a string using to_str" do
+  it "tries to convert each argument to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")
 
@@ -70,21 +71,38 @@ describe "String#squeeze" do
     "yellow moon".encode("US-ASCII").squeeze("a").encoding.should == Encoding::US_ASCII
   end
 
-  it "raises a TypeError when one set arg can't be converted to a string" do
-    -> { "hello world".squeeze([])        }.should raise_error(TypeError)
-    -> { "hello world".squeeze(Object.new)}.should raise_error(TypeError)
-    -> { "hello world".squeeze(mock('x')) }.should raise_error(TypeError)
+  it "raises a TypeError when an argument can't be converted to a string" do
+    -> { "hello world".squeeze([])        }.should.raise(TypeError)
+    -> { "hello world".squeeze(Object.new)}.should.raise(TypeError)
+    -> { "hello world".squeeze(mock('x')) }.should.raise(TypeError)
+  end
+
+  it "respects backslash for escaping" do
+    "aa--bb".squeeze("a\\-b").should == "a-b"
+    "^^".squeeze("\\^").should == "^"
+    "\\\\".squeeze("\\\\").should == "\\"
+  end
+
+  it "squeezes multibyte characters" do
+    "\u{56db}\u{56db}\u{6708}\u{6708}".squeeze("\u{6708}").should == "\u{56db}\u{56db}\u{6708}"
+    "\u{56db}\u{56db}\u{6708}\u{6708}".squeeze("\u{56db}").should == "\u{56db}\u{6708}\u{6708}"
+    "\u{56db}\u{56db}\u{6708}\u{6708}".squeeze("\u{56db}\u{6708}").should == "\u{56db}\u{6708}"
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(String)
+    StringSpecs::MyString.new("oh no!!!").squeeze("!").should.instance_of?(String)
+  end
+
+  it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+    -> { "hello".squeeze("e".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
+    -> { "hello".encode("UTF-16LE").squeeze("e") }.should.raise(Encoding::CompatibilityError)
   end
 end
 
 describe "String#squeeze!" do
   it "modifies self in place and returns self" do
     a = "yellow moon"
-    a.squeeze!.should equal(a)
+    a.squeeze!.should.equal?(a)
     a.should == "yelow mon"
   end
 
@@ -97,15 +115,15 @@ describe "String#squeeze!" do
 
   it "raises an ArgumentError when the parameter is out of sequence" do
     s = "--subbookkeeper--"
-    -> { s.squeeze!("e-b") }.should raise_error(ArgumentError)
-    -> { s.squeeze!("^e-b") }.should raise_error(ArgumentError)
+    -> { s.squeeze!("e-b") }.should.raise(ArgumentError)
+    -> { s.squeeze!("^e-b") }.should.raise(ArgumentError)
   end
 
   it "raises a FrozenError when self is frozen" do
     a = "yellow moon"
     a.freeze
 
-    -> { a.squeeze!("") }.should raise_error(FrozenError)
-    -> { a.squeeze!     }.should raise_error(FrozenError)
+    -> { a.squeeze!("") }.should.raise(FrozenError)
+    -> { a.squeeze!     }.should.raise(FrozenError)
   end
 end

@@ -4,6 +4,6 @@ describe "Proc.allocate" do
   it "raises a TypeError" do
     -> {
       Proc.allocate
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 end

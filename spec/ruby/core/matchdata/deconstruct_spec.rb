@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/captures'
 
 describe "MatchData#deconstruct" do
-  it_behaves_like :matchdata_captures, :deconstruct
+  it "is an alias of MatchData#captures" do
+    MatchData.instance_method(:deconstruct).should == MatchData.instance_method(:captures)
+  end
 end

@@ -27,6 +27,41 @@ describe "The 'case'-construct" do
     @calls.should == [:foo, :bar]
   end
 
+  it "matches an Integer literal whose value does not fit in a 32-bit int" do
+    big = 10_000_000_000
+    case big
+    when 10_000_000_000; true
+    else                 false
+    end.should == true
+
+    case -3_000_000_000
+    when -3_000_000_000; true
+    else                 false
+    end.should == true
+  end
+
+  it "matches an arbitrary-precision Integer literal" do
+    huge = 1267650600228229401496703205376
+    case huge
+    when 1267650600228229401496703205376; true
+    else                                  false
+    end.should == true
+  end
+
+  it "dispatches correctly with mixed small and large Integer literals" do
+    pick = -> x {
+      case x
+      when 1267650600228229401496703205376 then :beyond_long
+      when 10_000_000_000                  then :beyond_int
+      when 1                               then :fits_int
+      else                                      :other
+      end
+    }
+
+    [1267650600228229401496703205376, 10_000_000_000, 1, :nope].map(&pick).should ==
+      [:beyond_long, :beyond_int, :fits_int, :other]
+  end
+
   it "evaluates the body of the when clause whose range expression includes the case target expression" do
     case 5
     when 21..30; false
@@ -94,12 +129,12 @@ describe "The 'case'-construct" do
   it "tests with matching regexps and sets $~ and captures" do
     case "foo42"
     when /oo(\d+)/
-      $~.should be_kind_of(MatchData)
+      $~.should.is_a?(MatchData)
       $1.should == "42"
     else
       flunk
     end
-    $~.should be_kind_of(MatchData)
+    $~.should.is_a?(MatchData)
     $1.should == "42"
   end
 
@@ -107,12 +142,12 @@ describe "The 'case'-construct" do
     digits = '\d+'
     case "foo44"
     when /oo(#{digits})/
-      $~.should be_kind_of(MatchData)
+      $~.should.is_a?(MatchData)
       $1.should == "44"
     else
       flunk
     end
-    $~.should be_kind_of(MatchData)
+    $~.should.is_a?(MatchData)
     $1.should == "44"
   end
 
@@ -120,12 +155,12 @@ describe "The 'case'-construct" do
     digits_regexp = /\d+/
     case "foo43"
     when /oo(#{digits_regexp})/
-      $~.should be_kind_of(MatchData)
+      $~.should.is_a?(MatchData)
       $1.should == "43"
     else
       flunk
     end
-    $~.should be_kind_of(MatchData)
+    $~.should.is_a?(MatchData)
     $1.should == "43"
   end
 
@@ -268,7 +303,7 @@ describe "The 'case'-construct" do
         true
       end
       CODE
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "raises a SyntaxError when 'else' is used before a 'when' was given" do
@@ -280,7 +315,7 @@ describe "The 'case'-construct" do
       when 4; false
       end
       CODE
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "supports nested case statements" do

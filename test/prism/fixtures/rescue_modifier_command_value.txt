@@ -1,0 +1,6 @@
+a rescue b = c d
+x = foo bar rescue b, c = 1
+x = foo bar rescue b = c d
+x += foo bar rescue b, c = 1
+x, y = foo bar rescue b
+x, y = foo bar rescue b, c = 1

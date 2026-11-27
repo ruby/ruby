@@ -18,7 +18,7 @@ describe "Module#protected" do
       protected :protected_method_1
     end
 
-    -> { ModuleSpecs::Parent.protected_method_1 }.should raise_error(NoMethodError)
+    -> { ModuleSpecs::Parent.protected_method_1 }.should.raise(NoMethodError)
   end
 
   it "makes a public Object instance method protected in a new module" do
@@ -26,32 +26,32 @@ describe "Module#protected" do
       protected :module_specs_public_method_on_object
     end
 
-    m.should have_protected_instance_method(:module_specs_public_method_on_object)
+    m.protected_instance_methods(false).should.include?(:module_specs_public_method_on_object)
 
     # Ensure we did not change Object's method
-    Object.should_not have_protected_instance_method(:module_specs_public_method_on_object)
+    Object.protected_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
   end
 
   it "makes a public Object instance method protected in Kernel" do
-    Kernel.should have_protected_instance_method(
+    Kernel.protected_instance_methods(false).should.include?(
                   :module_specs_public_method_on_object_for_kernel_protected)
-    Object.should_not have_protected_instance_method(
+    Object.protected_instance_methods(true).should_not.include?(
                   :module_specs_public_method_on_object_for_kernel_protected)
   end
 
   it "returns argument or arguments if given" do
     (class << Object.new; self; end).class_eval do
       def foo; end
-      protected(:foo).should equal(:foo)
+      protected(:foo).should.equal?(:foo)
       protected([:foo, :foo]).should == [:foo, :foo]
       protected(:foo, :foo).should == [:foo, :foo]
-      protected.should equal(nil)
+      protected.should.equal?(nil)
     end
   end
 
   it "raises a NameError when given an undefined name" do
     -> do
       Module.new.send(:protected, :undefined)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 end

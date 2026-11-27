@@ -60,6 +60,31 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)'
   end
 
+  def test_ascii_8bit_case_mapping_all_bytes
+    bytes = (0..255).to_a.pack("C*")
+    upper_ascii = "A".ord.."Z".ord
+    lower_ascii = "a".ord.."z".ord
+    downcase_expected = (0..255).map {|byte| upper_ascii.cover?(byte) ? byte + 32 : byte }.pack("C*")
+    upcase_expected = (0..255).map {|byte| lower_ascii.cover?(byte) ? byte - 32 : byte }.pack("C*")
+
+    assert_equal Encoding::ASCII_8BIT, bytes.encoding
+    assert_equal downcase_expected, bytes.downcase
+    assert_equal downcase_expected, bytes.downcase(:fold)
+    assert_equal upcase_expected, bytes.upcase
+
+    downcased = bytes.dup
+    assert_same downcased, downcased.downcase!
+    assert_equal downcase_expected, downcased
+
+    folded = bytes.dup
+    assert_same folded, folded.downcase!(:fold)
+    assert_equal downcase_expected, folded
+
+    upcased = bytes.dup
+    assert_same upcased, upcased.upcase!
+    assert_equal upcase_expected, upcased
+  end
+
   def test_invalid
     assert_raise(ArgumentError, "Should not be possible to upcase invalid string.") { "\xEB".dup.force_encoding('UTF-8').upcase }
     assert_raise(ArgumentError, "Should not be possible to downcase invalid string.") { "\xEB".dup.force_encoding('UTF-8').downcase }
@@ -213,6 +238,27 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   def test_shift_jis_downcase_ascii
     s = ("A".."Z").map {|c| "\x89#{c}"}.join("").force_encoding("Shift_JIS")
     assert_equal s, s.downcase(:ascii)
+  end
+
+  SHARP_S_SINGLE_BYTE_ENCODINGS = %w[
+    ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-9 ISO-8859-10
+    ISO-8859-13 ISO-8859-14 ISO-8859-15 ISO-8859-16
+    Windows-1250 Windows-1252 Windows-1254 Windows-1257
+  ]
+
+  def test_single_byte_sharp_s_expansion
+    SHARP_S_SINGLE_BYTE_ENCODINGS.each do |name|
+      enc = Encoding.find(name)
+      (1..64).each do |n|
+        s = ("\xDF".b * n).force_encoding(enc)
+        assert_equal "SS" * n, s.upcase, "#{name} upcase #{n}"
+        assert_equal "ss" * n, s.downcase(:fold), "#{name} fold #{n}"
+        assert_equal "SS" * n, s.swapcase, "#{name} swapcase #{n}"
+        assert_equal ("Ss" + "\xDF".b * (n - 1)).force_encoding(enc), s.capitalize, "#{name} capitalize #{n}"
+        assert_equal "SS" * n, ("a".b + "\xDF".b * n).force_encoding(enc).upcase[1..], "#{name} upcase a+#{n}"
+        assert_equal true, s.casecmp?(("ss" * n).force_encoding(enc)), "#{name} casecmp? #{n}"
+      end
+    end
   end
 
   def test_shift_jis_upcase_ascii

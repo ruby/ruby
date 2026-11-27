@@ -85,7 +85,7 @@ end
 # just using it as an indicator.
 describe "String#<=>" do
   it "returns nil if its argument provides neither #to_str nor #<=>" do
-    ("abc" <=> mock('x')).should be_nil
+    ("abc" <=> mock('x')).should == nil
   end
 
   it "uses the result of calling #to_str for comparison when #to_str is defined" do
@@ -107,6 +107,6 @@ describe "String#<=>" do
     def obj.<=>(other); other <=> self; end
     obj.should_receive(:<=>).once
 
-    ("abc" <=> obj).should be_nil
+    ("abc" <=> obj).should == nil
   end
 end

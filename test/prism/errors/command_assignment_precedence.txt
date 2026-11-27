@@ -1,0 +1,42 @@
+if x = obj.fetch arg; end
+                 ^~~ expected `then` or `;` or '\n'
+
+x = obj.fetch arg and ready
+                  ^~~ unexpected 'and', expecting end-of-input
+
+not(a += f x)
+          ^ expected a matching `)`
+           ^ unexpected local variable or method, expecting end-of-input
+            ^ unexpected ')', expecting end-of-input
+            ^ unexpected ')', ignoring it
+
+x = f (v) {}, z
+            ^ invalid comma
+
+x, y = obj.f (v) {}, z
+                   ^ invalid comma
+
+x = y ||= f (v) {}, z
+                  ^ invalid comma
+
+x = y = f 1 rescue 2, z
+                    ^ invalid comma
+
+x = @y = table[:k] = f 1 rescue 2, z
+                                 ^ invalid comma
+
+x = y ||= f 1 rescue 2, z
+                      ^ invalid comma
+
+x = obj.value &&= f 1 rescue 2, z
+                              ^ invalid comma
+
+x = table[:k] += f 1 rescue 2, z
+                             ^ invalid comma
+
+x = y ||= @z <<= f 1 rescue 2, z
+                             ^ invalid comma
+
+x = y ||= f x, y and ready
+                 ^~~ unexpected 'and', expecting end-of-input
+

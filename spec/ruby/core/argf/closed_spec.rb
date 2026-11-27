@@ -11,7 +11,7 @@ describe "ARGF.closed?" do
       stream = @argf.to_io
       stream.close
 
-      @argf.closed?.should be_true
+      @argf.closed?.should == true
       stream.reopen(@argf.filename, 'r')
     end
   end

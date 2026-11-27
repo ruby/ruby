@@ -6,3 +6,6 @@ private def foo(x) = puts x
 private def obj.foo = puts "Hello"
 private def obj.foo() = puts "Hello"
 private def obj.foo(x) = puts x
+
+private def foo = bar baz
+private def foo = bar baz do expr end

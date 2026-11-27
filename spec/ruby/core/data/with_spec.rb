@@ -28,7 +28,7 @@ describe "Data#with" do
 
     -> {
       data.with(4, "m")
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 0)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 2, expected 0)")
   end
 
   it "does not depend on the Data.new method" do
@@ -44,14 +44,12 @@ describe "Data#with" do
     data_copy.unit.should == "m"
   end
 
-  ruby_version_is "3.3" do
-    it "calls #initialize" do
-      data = DataSpecs::DataWithOverriddenInitialize.new(42, "m")
-      ScratchPad.clear
+  it "calls #initialize" do
+    data = DataSpecs::DataWithOverriddenInitialize.new(42, "m")
+    ScratchPad.clear
 
-      data.with(amount: 0)
+    data.with(amount: 0)
 
-      ScratchPad.recorded.should == [:initialize, [], {amount: 0, unit: "m"}]
-    end
+    ScratchPad.recorded.should == [:initialize, [], {amount: 0, unit: "m"}]
   end
 end

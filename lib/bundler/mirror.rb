@@ -151,27 +151,29 @@ module Bundler
           socket.connect_nonblock(address)
         rescue Errno::EINPROGRESS
           wait_for_writtable_socket(socket, address, timeout)
-        rescue RuntimeError # Connection failed somehow, again
+        rescue SystemCallError # Connection failed somehow, again
           false
         end
+      rescue SocketError # The mirror host does not resolve
+        false
       end
 
       private
 
       def wait_for_writtable_socket(socket, address, timeout)
         if IO.select(nil, [socket], nil, timeout)
-          probe_writtable_socket(socket, address)
+          probe_writtable_socket(socket)
         else # TCP Handshake timed out, or there is something dropping packets
           false
         end
       end
 
-      def probe_writtable_socket(socket, address)
-        socket.connect_nonblock(address)
-      rescue Errno::EISCONN
-        true
-      rescue StandardError # Connection failed
-        false
+      def probe_writtable_socket(socket)
+        # Check the pending error on the socket rather than calling
+        # +connect_nonblock+ a second time. On BSD-based systems such as macOS a
+        # second connect returns +EISCONN+ even when the asynchronous connect
+        # failed, which would make a down mirror look reachable.
+        socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int == 0
       end
     end
   end
@@ -185,7 +187,7 @@ module Bundler
   class MirrorSockets
     def initialize(mirror)
       @timeout = mirror.fallback_timeout
-      @addresses = Socket.getaddrinfo(mirror.uri.host, mirror.uri.port).map do |address|
+      @addresses = Socket.getaddrinfo(mirror.uri.hostname, mirror.uri.port, nil, Socket::SOCK_STREAM).map do |address|
         SocketAddress.new(address[0], address[3], address[1])
       end
     end
@@ -194,9 +196,9 @@ module Bundler
       @addresses.any? do |address|
         socket = Socket.new(Socket.const_get(address.type), Socket::SOCK_STREAM, 0)
         socket.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
-        value = yield socket, address.to_socket_address, @timeout
-        socket.close unless socket.closed?
-        value
+        yield socket, address.to_socket_address, @timeout
+      ensure
+        socket&.close
       end
     end
   end

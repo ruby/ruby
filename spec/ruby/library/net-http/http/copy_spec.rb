@@ -15,7 +15,7 @@ describe "Net::HTTP#copy" do
 
   it "sends a COPY request to the passed path and returns the response" do
     response = @http.copy("/request")
-    response.should be_kind_of(Net::HTTPResponse)
+    response.should.is_a?(Net::HTTPResponse)
     response.body.should == "Request type: COPY"
   end
 end

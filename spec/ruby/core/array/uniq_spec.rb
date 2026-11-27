@@ -34,8 +34,8 @@ describe "Array#uniq" do
     y = mock('1')
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).at_least(1).and_return(0)
-    y.should_receive(:hash).at_least(1).and_return(1)
+    x.should_receive(:hash).at_least(1).and_return(8)
+    y.should_receive(:hash).at_least(1).and_return(9)
 
     [x, y].uniq.should == [x, y]
   end
@@ -86,7 +86,7 @@ describe "Array#uniq" do
   end
 
   it "returns Array instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].uniq.should.instance_of?(Array)
   end
 
   it "properly handles an identical item even when its #eql? isn't reflexive" do
@@ -138,7 +138,7 @@ describe "Array#uniq!" do
 
   it "returns self" do
     a = [ "a", "a", "b", "b", "c" ]
-    a.should equal(a.uniq!)
+    a.should.equal?(a.uniq!)
   end
 
   it "properly handles recursive arrays" do
@@ -155,9 +155,9 @@ describe "Array#uniq!" do
 
   it "compares elements first with hash" do
     x = mock('0')
-    x.should_receive(:hash).at_least(1).and_return(0)
+    x.should_receive(:hash).at_least(1).and_return(8)
     y = mock('0')
-    y.should_receive(:hash).at_least(1).and_return(0)
+    y.should_receive(:hash).at_least(1).and_return(8)
 
     a = [x, y]
     a.uniq!
@@ -170,8 +170,8 @@ describe "Array#uniq!" do
     y = mock('1')
     y.should_not_receive(:eql?)
 
-    x.should_receive(:hash).at_least(1).and_return(0)
-    y.should_receive(:hash).at_least(1).and_return(1)
+    x.should_receive(:hash).at_least(1).and_return(8)
+    y.should_receive(:hash).at_least(1).and_return(9)
 
     a = [x, y]
     a.uniq!
@@ -185,17 +185,17 @@ describe "Array#uniq!" do
   it "raises a FrozenError on a frozen array when the array is modified" do
     dup_ary = [1, 1, 2]
     dup_ary.freeze
-    -> { dup_ary.uniq! }.should raise_error(FrozenError)
+    -> { dup_ary.uniq! }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError on a frozen array when the array would not be modified" do
-    -> { ArraySpecs.frozen_array.uniq!}.should raise_error(FrozenError)
-    -> { ArraySpecs.empty_frozen_array.uniq!}.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.uniq!}.should.raise(FrozenError)
+    -> { ArraySpecs.empty_frozen_array.uniq!}.should.raise(FrozenError)
   end
 
   it "doesn't yield to the block on a frozen array" do
-    -> { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should.raise(FrozenError)
   end
 
   it "compares elements based on the value returned from the block" do

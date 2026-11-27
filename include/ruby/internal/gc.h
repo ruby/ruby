@@ -187,7 +187,8 @@ void rb_gc_mark(VALUE obj);
  * your struct  in the  first place.   But if  that is  not possible,  use this
  * function  from your  ::rb_data_type_struct::dmark  then.   This way  objects
  * marked using it are  considered movable.  If you chose this  way you have to
- * manually fix up locations of such moved pointers using rb_gc_location().
+ * manually fix up locations of such  moved pointers using rb_gc_update_moved()
+ * or rb_gc_location().
  *
  * @see  Bartlett,  Joel  F.,  "Compacting Garbage  Collection  with  Ambiguous
  *       Roots",  ACM  SIGPLAN  Lisp  Pointers  Volume  1  Issue  6  pp.  3-12,
@@ -208,6 +209,18 @@ void rb_gc_mark_movable(VALUE obj);
  * @return     An object, which holds the current contents of former `obj`.
  */
 VALUE rb_gc_location(VALUE obj);
+
+/**
+ * Updates  a reference  to a possibly moved object.  This is the same as doing
+ * `struct->field = rb_gc_location(struct->field)`, except it does not write to
+ * `struct->field`   when the   object did   not move.    Prefer this  over the
+ * assignment,  which dirties the page it writes to, and so un-shares it from a
+ * forked parent process.
+ *
+ * @param[in,out]  ptr  A place holding an object, possibly already moved.
+ * @post           `*ptr` holds the current location of the object.
+ */
+void rb_gc_update_moved(VALUE *ptr);
 
 /**
  * Triggers a GC process.  This was the only  GC entry point that we had at the
@@ -393,17 +406,40 @@ void rb_gc_adjust_memory_usage(ssize_t diff);
  * Because this  registration itself has  a possibility  to trigger a  GC, this
  * function  must be  called  before any  GC-able objects  is  assigned to  the
  * address pointed by `valptr`.
+ *
+ * Registration is scoped to the calling Ractor. The calling Ractor owns the
+ * registered address, and only that Ractor's GC marks the object stored in it.
+ * Any Ractor may call this function to register an address but the value at
+ * that address must be a special constant, a shareable object, or an
+ * unshareable object owned by the registering Ractor.
+ *
+ * The owning Ractor's GC cannot see the registration, so if the object at the
+ * registered address is unshareable, and owned by another ractor, the owning
+ * Ractor could free it while the address still refers to it, which results in a
+ * use-after-free crash, when the address is next accessed. If the address has
+ * process lifetime (a static VALUE), register it from the main Ractor or keep
+ * the stored values shareable.
+ *
+ * Calling `Ractor#value` on the registering Ractor moves its remaining
+ * registrations to the calling Ractor; otherwise they move to the main
+ * Ractor once the dead Ractor is collected.
  */
 void rb_gc_register_address(VALUE *valptr);
 
 /**
- * An alias for `rb_gc_register_address()`.
+ * An alias for `rb_gc_register_address()`.  The same Ractor-ownership
+ * rule applies to the value stored in the variable:  a special constant,
+ * a shareable object, or an unshareable object owned by the registering
+ * Ractor.
  */
 void rb_global_variable(VALUE *);
 
 /**
  * Inform the garbage collector that a pointer previously passed to
  * `rb_gc_register_address()` no longer points to a live Ruby object.
+ *
+ * Any Ractor may call this function; the address is removed from the
+ * registering Ractor's list, which need not be the calling Ractor.
  */
 void rb_gc_unregister_address(VALUE *valptr);
 
@@ -433,153 +469,6 @@ RBIMPL_SYMBOL_EXPORT_END()
  */
 #ifndef USE_RGENGC_LOGGING_WB_UNPROTECT
 # define USE_RGENGC_LOGGING_WB_UNPROTECT 0
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RArray.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_ARRAY
-# define RGENGC_WB_PROTECTED_ARRAY 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RHash.  It has  to be set at the time  ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_HASH
-# define RGENGC_WB_PROTECTED_HASH 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RStruct.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_STRUCT
-# define RGENGC_WB_PROTECTED_STRUCT 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RString.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_STRING
-# define RGENGC_WB_PROTECTED_STRING 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RObject.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_OBJECT
-# define RGENGC_WB_PROTECTED_OBJECT 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RRegexp.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_REGEXP
-# define RGENGC_WB_PROTECTED_REGEXP 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RMatch.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_MATCH
-# define RGENGC_WB_PROTECTED_MATCH 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RClass.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_CLASS
-# define RGENGC_WB_PROTECTED_CLASS 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RFloat.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_FLOAT
-# define RGENGC_WB_PROTECTED_FLOAT 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RComplex.   It has  to be  set at  the time  ruby itself  compiles.
- * Makes no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_COMPLEX
-# define RGENGC_WB_PROTECTED_COMPLEX 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RRational.  It  has to  be set  at the  time ruby  itself compiles.
- * Makes no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_RATIONAL
-# define RGENGC_WB_PROTECTED_RATIONAL 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RBignum.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_BIGNUM
-# define RGENGC_WB_PROTECTED_BIGNUM 1
-#endif
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @internal
- *
- * @shyouhei doesn't think anybody uses this right now.
- */
-#ifndef RGENGC_WB_PROTECTED_NODE_CREF
-# define RGENGC_WB_PROTECTED_NODE_CREF 1
 #endif
 
 /**
@@ -621,11 +510,11 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define OBJ_WB_UNPROTECT RB_OBJ_WB_UNPROTECT /**< @old{RB_OBJ_WB_UNPROTECT} */
 
 /**
- * Asserts that the passed object is  not fenced by write barriers.  Objects of
- * such  property do  not contribute  to  generational GCs.   They are  scanned
- * always.
+ * Marks the object as not protected by write barriers. These objects do not
+ * participate in generational GCs which means that, as long as the object is
+ * alive, they will be scanned on every GC cycle.
  *
- * @param[out]  x  An object that would not be protected by the barrier.
+ * @param[out]  x  An object that is not protected by the write barrier.
  */
 #define RB_OBJ_WB_UNPROTECT(x) rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 
@@ -640,8 +529,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  *
  * @shyouhei doesn't understand why this has to be visible from extensions.
  */
-#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
-    (RGENGC_WB_PROTECTED_##type ? OBJ_WB_UNPROTECT(obj) : obj)
+#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) OBJ_WB_UNPROTECT(obj)
 
 /**
  * @private

@@ -20,7 +20,7 @@ ossl_##name##_ary2sk0(VALUE ary)                                \
     STACK_OF(type) *sk;                                         \
     VALUE val;                                                  \
     type *x;                                                    \
-    int i;                                                      \
+    rb_len_t i;                                                 \
                                                                 \
     Check_Type(ary, T_ARRAY);                                   \
     sk = sk_##type##_new_null();                                \
@@ -34,7 +34,11 @@ ossl_##name##_ary2sk0(VALUE ary)                                \
                        " of class ##type##");                   \
         }                                                       \
         x = dup(val); /* NEED TO DUP */                         \
-        sk_##type##_push(sk, x);                                \
+        if (!sk_##type##_push(sk, x)) {                         \
+            type##_free(x);                                     \
+            sk_##type##_pop_free(sk, type##_free);              \
+            ossl_raise(eOSSLError, NULL);                       \
+        }                                                       \
     }                                                           \
     return (VALUE)sk;                                           \
 }                                                               \
@@ -86,11 +90,11 @@ OSSL_IMPL_SK2ARY(x509name, X509_NAME)
 static VALUE
 ossl_str_new_i(VALUE size)
 {
-    return rb_str_new(NULL, (long)size);
+    return rb_str_new(NULL, (rb_len_t)size);
 }
 
 VALUE
-ossl_str_new(const char *ptr, long len, int *pstate)
+ossl_str_new(const char *ptr, rb_len_t len, int *pstate)
 {
     VALUE str;
     int state;
@@ -109,12 +113,17 @@ ossl_str_new(const char *ptr, long len, int *pstate)
 }
 
 VALUE
-ossl_buf2str(char *buf, int len)
+ossl_buf2str(char *buf)
 {
+    size_t len = strlen(buf);
     VALUE str;
     int state;
 
-    str = ossl_str_new(buf, len, &state);
+    if (len > RB_LEN_MAX) {
+        OPENSSL_free(buf);
+        rb_raise(rb_eRangeError, "string too large: %zu bytes", len);
+    }
+    str = ossl_str_new(buf, (rb_len_t)len, &state);
     OPENSSL_free(buf);
     if (state)
         rb_jump_tag(state);
@@ -127,13 +136,94 @@ ossl_bin2hex(const unsigned char *in, char *out, size_t inlen)
     const char *hex = "0123456789abcdef";
     size_t i;
 
-    assert(inlen <= LONG_MAX / 2);
+    RUBY_ASSERT(inlen <= RB_LEN_MAX / 2);
     for (i = 0; i < inlen; i++) {
         unsigned char p = in[i];
 
         out[i * 2 + 0] = hex[p >> 4];
         out[i * 2 + 1] = hex[p & 0x0f];
     }
+}
+
+static ID id_cb_state;
+
+int
+ossl_cb_state_get(void)
+{
+    VALUE val = rb_thread_local_aref(rb_thread_current(), id_cb_state);
+    return FIXNUM_P(val) ? FIX2INT(val) : 0;
+}
+
+static VALUE
+cb_state_set_i(VALUE vstate)
+{
+    rb_thread_local_aset(rb_thread_current(), id_cb_state, vstate);
+    return Qnil;
+}
+
+void
+ossl_cb_state_set(int state)
+{
+    int s;
+    rb_protect(cb_state_set_i, state ? INT2FIX(state) : Qnil, &s);
+    if (s) {
+        /* Thread frozen or malloc failure? As a last resort */
+        rb_set_errinfo(Qnil);
+    }
+}
+
+void
+ossl_cb_state_begin(void)
+{
+    if (ossl_cb_state_get()) {
+        rb_raise(rb_eRuntimeError,
+                 "BUG: ossl_cb_state_begin() called while jump is pending");
+    }
+}
+
+int
+ossl_cb_state_end(void)
+{
+    int state = ossl_cb_state_get();
+    if (state)
+        ossl_cb_state_set(0);
+    return state;
+}
+
+struct suppress_args {
+    VALUE (*func)(VALUE args);
+    VALUE args;
+};
+
+static VALUE
+do_nothing(VALUE unused)
+{
+    return Qnil;
+}
+
+static VALUE
+suppress_i(VALUE args_)
+{
+    struct suppress_args *p = (struct suppress_args *)args_;
+    int state;
+    rb_set_errinfo(Qnil);
+    rb_protect(p->func, p->args, &state);
+    /* Ignoring result and exception, if any */
+    return Qnil;
+}
+
+void
+ossl_suppress(VALUE (*func)(VALUE args), VALUE args)
+{
+    struct suppress_args p = { func, args };
+    if (ossl_cb_state_get()) {
+        int state = ossl_cb_state_end();
+        rb_ensure(do_nothing, Qnil, suppress_i, (VALUE)&p);
+        ossl_cb_state_begin();
+        ossl_cb_state_set(state);
+        return;
+    }
+    rb_ensure(do_nothing, Qnil, suppress_i, (VALUE)&p);
 }
 
 /*
@@ -168,7 +258,7 @@ ossl_pem_passwd_cb0(VALUE flag)
 int
 ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 {
-    long len;
+    rb_len_t len;
     int status;
     VALUE rflag, pass = (VALUE)pwd_;
 
@@ -227,6 +317,16 @@ VALUE mOSSL;
  */
 VALUE eOSSLError;
 
+void
+ossl_want_uninitialized(VALUE self, const rb_data_type_t *type)
+{
+    if (rb_check_typeddata(self, type)) {
+        rb_raise(rb_eTypeError, "%"PRIsVALUE" already initialized",
+                 rb_obj_class(self));
+    }
+    rb_check_frozen(self);
+}
+
 /*
  * Convert to DER string
  */
@@ -256,7 +356,7 @@ ossl_to_der_if_possible(VALUE obj)
  */
 static ID id_i_errors;
 
-static void collect_errors_into(VALUE ary);
+static VALUE collect_errors_into(VALUE ary);
 
 VALUE
 ossl_make_error(VALUE exc, VALUE str)
@@ -307,46 +407,44 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(ossl_make_error(exc, err));
 }
 
-static void
+static VALUE
 collect_errors_into(VALUE ary)
 {
-    if (dOSSL == Qtrue || !NIL_P(ary)) {
-        unsigned long e;
-        const char *file, *data, *func, *lib, *reason;
-        int line, flags;
+    unsigned long e;
+    const char *file, *data, *func, *lib, *reason;
+    int line, flags;
 
 #ifdef HAVE_ERR_GET_ERROR_ALL
-        while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
+    while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
 #else
-        while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
-            func = ERR_func_error_string(e);
+    while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+        func = ERR_func_error_string(e);
 #endif
-            lib = ERR_lib_error_string(e);
-            reason = ERR_reason_error_string(e);
+        lib = ERR_lib_error_string(e);
+        reason = ERR_reason_error_string(e);
 
-            VALUE str = rb_sprintf("error:%08lX:%s:%s:%s", e, lib ? lib : "",
-                                   func ? func : "", reason ? reason : "");
-            if (flags & ERR_TXT_STRING) {
-                if (!data)
-                    data = "(null)";
-                rb_str_catf(str, " (%s)", data);
-            }
-
-            if (dOSSL == Qtrue)
-                rb_warn("error on stack: %"PRIsVALUE, str);
-            if (!NIL_P(ary))
-                rb_ary_push(ary, str);
+        VALUE str = rb_sprintf("error:%08lX:%s:%s:%s", e, lib ? lib : "",
+                               func ? func : "", reason ? reason : "");
+        if (flags & ERR_TXT_STRING) {
+            if (!data)
+                data = "(null)";
+            rb_str_catf(str, " (%s)", data);
         }
+
+        if (dOSSL == Qtrue)
+            rb_warn("error on stack: %"PRIsVALUE, str);
+        if (!NIL_P(ary))
+            rb_ary_push(ary, str);
     }
-    else {
-        ERR_clear_error();
-    }
+    return Qnil;
 }
 
 void
 ossl_clear_error(void)
 {
-    collect_errors_into(Qnil);
+    if (dOSSL == Qtrue)
+        ossl_suppress(collect_errors_into, Qnil);
+    ERR_clear_error();
 }
 
 /*
@@ -375,9 +473,9 @@ osslerror_detailed_message(int argc, VALUE *argv, VALUE self)
         return str;
 
     str = rb_str_resurrect(str);
-    rb_str_catf(str, "\nOpenSSL error queue reported %ld errors:",
+    rb_str_catf(str, "\nOpenSSL error queue reported %"PRIdLEN" errors:",
                 RARRAY_LEN(errors));
-    for (long i = 0; i < RARRAY_LEN(errors); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(errors); i++) {
         VALUE err = RARRAY_AREF(errors, i);
         rb_str_catf(str, "\n%"PRIsVALUE, err);
     }
@@ -523,10 +621,18 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 static VALUE
 ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 {
-    const unsigned char *p1 = (const unsigned char *)StringValuePtr(str1);
-    const unsigned char *p2 = (const unsigned char *)StringValuePtr(str2);
-    long len1 = RSTRING_LEN(str1);
-    long len2 = RSTRING_LEN(str2);
+    const unsigned char *p1;
+    const unsigned char *p2;
+    rb_len_t len1;
+    rb_len_t len2;
+
+    StringValue(str1);
+    StringValue(str2);
+
+    p1 = (const unsigned char *)RSTRING_PTR(str1);
+    p2 = (const unsigned char *)RSTRING_PTR(str2);
+    len1 = RSTRING_LEN(str1);
+    len2 = RSTRING_LEN(str2);
 
     if (len1 != len2) {
         ossl_raise(rb_eArgError, "inputs must be of equal length");
@@ -732,7 +838,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   cert.not_before = Time.now
  *   cert.not_after = Time.now + 3600
  *
- *   cert.public_key = key.public_key
+ *   cert.public_key = key
  *   cert.subject = name
  *
  * === Certificate Extensions
@@ -814,7 +920,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   ca_cert.not_before = Time.now
  *   ca_cert.not_after = Time.now + 86400
  *
- *   ca_cert.public_key = ca_key.public_key
+ *   ca_cert.public_key = ca_key
  *   ca_cert.subject = ca_name
  *   ca_cert.issuer = ca_name
  *
@@ -856,7 +962,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   csr = OpenSSL::X509::Request.new
  *   csr.version = 0
  *   csr.subject = name
- *   csr.public_key = key.public_key
+ *   csr.public_key = key
  *   csr.sign key, OpenSSL::Digest.new('SHA1')
  *
  * A CSR is saved to disk and sent to the CA for signing.
@@ -919,19 +1025,22 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * An \SSL server requires the certificate and private key to communicate
  * securely with its clients:
  *
- *   context.cert = cert
- *   context.key = key
+ *   context.add_certificate(cert, key)
  *
- * Then create an OpenSSL::SSL::SSLServer with a TCP server socket and the
- * context.  Use the SSLServer like an ordinary TCP server.
+ * After establishing a TCP connection, the socket is wrapped in an
+ * OpenSSL::SSL::SSLSocket with the context. OpenSSL::SSL::SSLSocket#accept
+ * is called to perform the TLS handshake.
  *
  *   require 'socket'
  *
  *   tcp_server = TCPServer.new 5000
- *   ssl_server = OpenSSL::SSL::SSLServer.new tcp_server, context
  *
  *   loop do
- *     ssl_connection = ssl_server.accept
+ *     tcp_connection = tcp_server.accept
+ *     ssl_connection = OpenSSL::SSL::SSLSocket.new tcp_connection, context
+ *     # Or you can close tcp_connection manually after ssl_connection.close
+ *     ssl_connection.sync_close = true
+ *     ssl_connection.accept
  *
  *     data = ssl_connection.gets
  *
@@ -1125,6 +1234,7 @@ Init_openssl(void)
      */
     ossl_s_to_der = rb_intern("to_der");
     id_i_errors = rb_intern("@errors");
+    id_cb_state = rb_intern("__ossl_cb_state__");
 
     /*
      * Init components
@@ -1136,6 +1246,7 @@ Init_openssl(void)
     Init_ossl_digest();
     Init_ossl_engine();
     Init_ossl_hmac();
+    Init_ossl_hpke();
     Init_ossl_kdf();
     Init_ossl_ns_spki();
     Init_ossl_ocsp();

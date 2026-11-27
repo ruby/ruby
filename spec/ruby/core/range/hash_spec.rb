@@ -15,10 +15,10 @@ describe "Range#hash" do
   end
 
   it "generates an Integer for the hash value" do
-    (0..0).hash.should be_an_instance_of(Integer)
-    (0..1).hash.should be_an_instance_of(Integer)
-    (0...10).hash.should be_an_instance_of(Integer)
-    (0..10).hash.should be_an_instance_of(Integer)
+    (0..0).hash.should.instance_of?(Integer)
+    (0..1).hash.should.instance_of?(Integer)
+    (0...10).hash.should.instance_of?(Integer)
+    (0..10).hash.should.instance_of?(Integer)
   end
 
 end

@@ -6,13 +6,13 @@ describe "SecureRandom.base64" do
   it "generates a random base64 string out of specified number of random bytes" do
     (16..128).each do |idx|
       base64 = SecureRandom.base64(idx)
-      base64.should be_kind_of(String)
+      base64.should.is_a?(String)
       base64.length.should < 2 * idx
       base64.should =~ /^[A-Za-z0-9\+\/]+={0,2}$/
     end
 
     base64 = SecureRandom.base64(16.5)
-    base64.should be_kind_of(String)
+    base64.should.is_a?(String)
     base64.length.should < 2 * 16
   end
 
@@ -32,19 +32,19 @@ describe "SecureRandom.base64" do
   end
 
   it "generates a random base64 string out of 32 random bytes" do
-    SecureRandom.base64.should be_kind_of(String)
+    SecureRandom.base64.should.is_a?(String)
     SecureRandom.base64.length.should < 32 * 2
   end
 
   it "treats nil argument as default one and generates a random base64 string" do
-    SecureRandom.base64(nil).should be_kind_of(String)
+    SecureRandom.base64(nil).should.is_a?(String)
     SecureRandom.base64(nil).length.should < 32 * 2
   end
 
   it "raises ArgumentError on negative arguments" do
     -> {
       SecureRandom.base64(-1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "tries to convert the passed argument to an Integer using #to_int" do

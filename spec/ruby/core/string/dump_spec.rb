@@ -8,7 +8,7 @@ describe "String#dump" do
   end
 
   it "returns a String instance" do
-    StringSpecs::MyString.new.dump.should be_an_instance_of(String)
+    StringSpecs::MyString.new.dump.should.instance_of?(String)
   end
 
   it "wraps string with \"" do

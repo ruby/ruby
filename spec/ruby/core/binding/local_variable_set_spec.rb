@@ -38,7 +38,7 @@ describe "Binding#local_variable_set" do
     bind = binding
     bind.local_variable_set(:number, 10)
 
-    -> { number }.should raise_error(NameError)
+    -> { number }.should.raise(NameError)
   end
 
   it 'overwrites an existing local variable defined before a Binding' do
@@ -47,6 +47,15 @@ describe "Binding#local_variable_set" do
 
     bind.local_variable_set(:number, 20)
     number.should == 20
+  end
+
+  it "overwrites a local variable from a block inside a for loop" do
+    sum = 0
+    for i in 1..3
+      -> { binding.local_variable_set(:sum, sum + i) }.call
+    end
+
+    sum.should == 6
   end
 
   it 'overwrites a local variable defined using eval()' do
@@ -59,13 +68,18 @@ describe "Binding#local_variable_set" do
 
   it "raises a NameError on global access" do
     bind = binding
-    -> { bind.local_variable_set(:$0, "") }.should raise_error(NameError)
+    -> { bind.local_variable_set(:$0, "") }.should.raise(NameError)
   end
 
   it "raises a NameError on special variable access" do
     bind = binding
-    -> { bind.local_variable_set(:$~, "") }.should raise_error(NameError)
-    -> { bind.local_variable_set(:$_, "") }.should raise_error(NameError)
+    -> { bind.local_variable_set(:$~, "") }.should.raise(NameError)
+    -> { bind.local_variable_set(:$_, "") }.should.raise(NameError)
   end
 
+  it 'raises a TypeError when given non-String/Symbol as the variable name' do
+    -> {
+      binding.local_variable_set(1, 2)
+    }.should.raise(TypeError, '1 is not a symbol nor a string')
+  end
 end

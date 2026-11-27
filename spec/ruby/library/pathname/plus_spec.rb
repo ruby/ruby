@@ -1,6 +1,9 @@
 require_relative '../../spec_helper'
-require_relative 'shared/plus'
+require 'pathname'
 
 describe "Pathname#+" do
-  it_behaves_like :pathname_plus, :+
+  it "appends a pathname to self" do
+    p = Pathname.new("/usr")
+    (p + "bin/ruby").should == Pathname.new("/usr/bin/ruby")
+  end
 end

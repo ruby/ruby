@@ -15,19 +15,19 @@ describe "Thread#priority" do
   end
 
   it "inherits the priority of the current thread while running" do
-    @thread.alive?.should be_true
+    @thread.alive?.should == true
     @thread.priority.should == @current_priority
   end
 
   it "maintain the priority of the current thread after death" do
     ThreadSpecs.state = :exit
     @thread.join
-    @thread.alive?.should be_false
+    @thread.alive?.should == false
     @thread.priority.should == @current_priority
   end
 
   it "returns an integer" do
-    @thread.priority.should be_kind_of(Integer)
+    @thread.priority.should.is_a?(Integer)
   end
 end
 
@@ -59,7 +59,7 @@ describe "Thread#priority=" do
 
   describe "when set with a non-integer" do
     it "raises a type error" do
-      ->{ @thread.priority = Object.new }.should raise_error(TypeError)
+      ->{ @thread.priority = Object.new }.should.raise(TypeError)
     end
   end
 

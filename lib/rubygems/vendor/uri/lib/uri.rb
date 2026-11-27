@@ -87,6 +87,10 @@
 #  You can redistribute it and/or modify it under the same term as Ruby.
 #
 
+# Skip reloading when an identical copy (e.g. the one shipped inside the Bundler
+# gem) was already required from a different path, to avoid redefinition warnings.
+return if defined?(Gem::URI::VERSION)
+
 module Gem::URI
 end
 

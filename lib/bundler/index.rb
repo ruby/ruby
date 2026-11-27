@@ -188,8 +188,13 @@ module Bundler
     EMPTY_SEARCH = [].freeze
 
     def search_by_spec(spec)
-      spec = find_by_spec(spec)
-      spec ? [spec] : EMPTY_SEARCH
+      specs_by_name = @specs[spec.name]
+      return EMPTY_SEARCH unless specs_by_name
+
+      full_names = [spec.full_name]
+      full_names.concat(spec.content_addressed_full_names) if spec.is_a?(LazySpecification)
+
+      full_names.filter_map {|full_name| specs_by_name[full_name] }
     end
 
     def find_by_spec(spec)

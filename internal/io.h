@@ -27,6 +27,9 @@ struct rb_io_blocking_operation {
 
     // The execution context of the blocking operation.
     struct rb_execution_context_struct *ec;
+
+    // An operation-scoped target passed to the Fiber scheduler if interrupted.
+    VALUE scheduler_interrupt_target;
 };
 
 /** Ruby's IO, metadata and buffers. */
@@ -149,6 +152,7 @@ VALUE rb_io_prep_stdout(void);
 VALUE rb_io_prep_stderr(void);
 
 int rb_io_notify_close(struct rb_io *fptr);
+bool rb_io_fptr_finalize_closed(struct rb_io *fptr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* io.c (export) */

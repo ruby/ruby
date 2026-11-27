@@ -16,11 +16,21 @@ module BundledGem
     "psych" # rdoc
   ]
 
+  def self.command(gem, cmd)
+    if stub = Gem::Specification.latest_spec_for(gem)
+      spec = stub.spec
+      File.join(spec.gem_dir, spec.bindir, cmd)
+    end
+  end
+
   module_function
 
   def unpack(file, *rest)
     pkg = Gem::Package.new(file)
     prepare_test(pkg.spec, *rest) do |dir|
+      # Remove stale files of another build of the same version (e.g. the
+      # released gem replaced with one built from a pinned revision).
+      FileUtils.rm_rf(dir)
       pkg.extract_files(dir)
       FileUtils.rm_rf(Dir.glob(".git*", base: dir).map {|n| File.join(dir, n)})
     end
@@ -37,6 +47,11 @@ module BundledGem
     outdir = File.expand_path(outdir)
     gemdir, gemfile = File.split(gemspec)
     Dir.chdir(gemdir) do
+      if gemfile == "prism.gemspec" and File.exist?("templates/template.rb")
+        # prism does not keep its templated files in git; generate them so
+        # that the gem can be built from the checkout.
+        system(RbConfig.ruby, "templates/template.rb", exception: true)
+      end
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
       output = File.join(outdir, spec.file_name)
@@ -122,5 +137,47 @@ module BundledGem
     system(command, chdir: gemdir) or raise "failed: #{command}"
     command = "#{git} checkout --detach #{rev}"
     system(command, chdir: gemdir) or raise "failed: #{command}"
+  end
+
+  class GemspecLoader
+    module NoPipe
+      refine IO.singleton_class do
+        def popen(...) ""; end
+      end
+    end
+    using NoPipe
+
+    def `(command) ""; end
+
+    def load_gemspec(file)
+      code = File.read(file, encoding: "utf-8:-")
+      eval(code, binding, file)
+    rescue
+      nil
+    end
+  end
+
+  def load_gemspec(g)
+    spec = GemspecLoader.new.load_gemspec(g)
+    spec.files.clear
+    spec.extensions.clear
+    src = spec.to_ruby
+    src.sub!(/^$$/) {
+      %[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]
+    }
+    return spec.full_name+'.gemspec', src
+  end
+
+  def update_default_gemspecs(basedirs, out, quiet: true)
+    basedirs.each do |basedir|
+      Dir.glob(basedir+'/**/*.gemspec') do |g|
+        name, src = BundledGem.load_gemspec(g)
+        unless src
+          puts "Ignoring #{g}" unless quiet
+          next
+        end
+        out.write(src, name: name, newer: File.mtime(g), quiet: quiet)
+      end
+    end
   end
 end

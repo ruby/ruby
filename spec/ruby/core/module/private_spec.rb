@@ -17,7 +17,7 @@ describe "Module#private" do
       private :foo
     end
 
-    -> { obj.foo }.should raise_error(NoMethodError)
+    -> { obj.foo }.should.raise(NoMethodError)
   end
 
   it "makes a public Object instance method private in a new module" do
@@ -25,33 +25,33 @@ describe "Module#private" do
       private :module_specs_public_method_on_object
     end
 
-    m.should have_private_instance_method(:module_specs_public_method_on_object)
+    m.private_instance_methods(false).should.include?(:module_specs_public_method_on_object)
 
     # Ensure we did not change Object's method
-    Object.should_not have_private_instance_method(:module_specs_public_method_on_object)
+    Object.private_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
   end
 
   it "makes a public Object instance method private in Kernel" do
-    Kernel.should have_private_instance_method(
+    Kernel.private_instance_methods(false).should.include?(
                   :module_specs_public_method_on_object_for_kernel_private)
-    Object.should_not have_private_instance_method(
+    Object.private_instance_methods(true).should_not.include?(
                   :module_specs_public_method_on_object_for_kernel_private)
   end
 
   it "returns argument or arguments if given" do
     (class << Object.new; self; end).class_eval do
       def foo; end
-      private(:foo).should equal(:foo)
+      private(:foo).should.equal?(:foo)
       private([:foo, :foo]).should == [:foo, :foo]
       private(:foo, :foo).should == [:foo, :foo]
-      private.should equal(nil)
+      private.should.equal?(nil)
     end
   end
 
   it "raises a NameError when given an undefined name" do
     -> do
       Module.new.send(:private, :undefined)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "only makes the method private in the class it is called on" do
@@ -71,7 +71,7 @@ describe "Module#private" do
     base.new.wrapped.should == 1
     -> do
       klass.new.wrapped
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "continues to allow a prepended module method to call super" do

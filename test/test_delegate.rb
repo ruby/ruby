@@ -170,6 +170,22 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError) { obj.__send__(:parent_private) }
   end
 
+  class ClassWithInvalidName
+    define_method(:" ") { :space }
+    define_method(:"\t") { :tab }
+    protected :"\t"
+  end
+
+  def test_delegateclass_invalid_name
+    delegate = DelegateClass(ClassWithInvalidName)
+    instance = delegate.new(ClassWithInvalidName.new)
+    assert_equal :space, instance.send(:" ")
+    assert_equal :space, instance.__send__(:" ")
+
+    assert_equal :tab, instance.send(:"\t")
+    assert_equal :tab, instance.__send__(:"\t")
+  end
+
   class IV < DelegateClass(Integer)
     attr_accessor :var
 

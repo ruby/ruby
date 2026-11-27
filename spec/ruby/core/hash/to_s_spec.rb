@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/to_s'
 
 describe "Hash#to_s" do
-  it_behaves_like :hash_to_s, :to_s
+  it "is an alias of Hash#inspect" do
+    Hash.instance_method(:to_s).should == Hash.instance_method(:inspect)
+  end
 end

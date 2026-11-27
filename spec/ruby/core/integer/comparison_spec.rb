@@ -128,17 +128,17 @@ describe "Integer#<=>" do
         @num.should_receive(:coerce).with(@big).and_raise(RuntimeError.new("my error"))
         -> {
           @big <=> @num
-        }.should raise_error(RuntimeError, "my error")
+        }.should.raise(RuntimeError, "my error")
       end
 
       it "raises an exception if #coerce raises a non-StandardError exception" do
         @num.should_receive(:coerce).with(@big).and_raise(Exception)
-        -> { @big <=> @num }.should raise_error(Exception)
+        -> { @big <=> @num }.should.raise(Exception)
       end
 
       it "returns nil if #coerce does not return an Array" do
         @num.should_receive(:coerce).with(@big).and_return(nil)
-        (@big <=> @num).should be_nil
+        (@big <=> @num).should == nil
       end
 
       it "returns -1 if the coerced value is larger" do
@@ -154,6 +154,14 @@ describe "Integer#<=>" do
       it "returns 1 if the coerced value is smaller" do
         @num.should_receive(:coerce).with(@big).and_return([@big, 22])
         (@big <=> @num).should == 1
+      end
+    end
+
+    describe "with a Float" do
+      it "does not lose precision for values that don't fit in a double" do
+        (bignum_value(1) <=> bignum_value.to_f).should == 1
+        (bignum_value <=> bignum_value.to_f).should == 0
+        ((bignum_value - 1) <=> bignum_value.to_f).should == -1
       end
     end
 

@@ -7,8 +7,8 @@ describe "OpenStruct.new when passed [Hash]" do
   end
 
   it "creates an attribute for each key of the passed Hash" do
-    @os.age.should eql(70)
-    @os.pension.should eql(300)
+    @os.age.should.eql?(70)
+    @os.pension.should.eql?(300)
     @os.name.should == "John Smith"
   end
 end

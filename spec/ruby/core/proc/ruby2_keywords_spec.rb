@@ -27,7 +27,7 @@ describe "Proc#ruby2_keywords" do
 
   it "returns self" do
     f = -> *a { }
-    f.ruby2_keywords.should equal f
+    f.ruby2_keywords.should.equal? f
   end
 
   it "prints warning when a proc does not accept argument splat" do

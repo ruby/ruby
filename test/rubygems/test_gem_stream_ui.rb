@@ -66,6 +66,24 @@ class TestGemStreamUI < Gem::TestCase
     end
   end
 
+  def test_ask_for_password_prints_prompt_with_echo_off
+    out = @out
+    output_before_noecho = nil
+    output_during_noecho = nil
+    @in.define_singleton_method(:noecho) do |&block|
+      output_before_noecho = out.string.dup
+      answer = block.call(self)
+      output_during_noecho = out.string.delete_prefix(output_before_noecho)
+      answer
+    end
+    @in.string = "Arthur, King of the Britons\n"
+
+    @sui.ask_for_password("What is your name?")
+
+    assert_empty output_before_noecho
+    assert_equal "What is your name?  ", output_during_noecho
+  end
+
   def test_ask_for_password_no_tty
     @in.tty = false
 

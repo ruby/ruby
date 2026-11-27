@@ -83,16 +83,14 @@
 #![allow(non_upper_case_globals)]
 #![allow(clippy::upper_case_acronyms)]
 
-// Some of this code may not be used yet
-#![allow(dead_code)]
-#![allow(unused_macros)]
-#![allow(unused_imports)]
-
 use std::convert::From;
 use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Display, Formatter};
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
+use std::ptr::NonNull;
+
+use crate::cast::IntoUsize;
 
 // We check that we can do this with the configure script and a couple of
 // static asserts. u64 and not usize to play nice with lowering to x86.
@@ -104,6 +102,7 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
+#[allow(non_snake_case)] // bindgen names bitfield raw accessors like `type__raw`
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
@@ -118,21 +117,25 @@ pub use autogened::*;
 // These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in zjit.c.
-#[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 unsafe extern "C" {
     pub fn rb_check_overloaded_cme(
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
 
+    pub fn rb_jit_iseq_mark_ep_escape_recorded(iseq: IseqPtr);
+    pub fn rb_jit_iseq_ep_escape_recorded_p(iseq: IseqPtr) -> bool;
+
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_ary_new_from_args(n: c_long, ...) -> VALUE;
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_jit_fix_div_fix(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_jit_fix_mod_fix(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_get_special_object(reg_ep: *const VALUE, value_type: vm_special_object_type) -> VALUE;
@@ -162,7 +165,13 @@ unsafe extern "C" {
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
     pub fn rb_obj_class(klass: VALUE) -> VALUE;
-    pub fn rb_vm_objtostring(iseq: IseqPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
+    pub fn rb_define_method(
+        klass: VALUE,
+        mid: *const c_char,
+        func: Option<unsafe extern "C" fn(args: VALUE) -> VALUE>,
+        arity: c_int,
+    );
+    pub fn rb_vm_objtostring(reg_cfp: CfpPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
 }
 
 // Renames
@@ -171,10 +180,6 @@ pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
-pub use rb_get_cfp_self as get_cfp_self;
-pub use rb_get_cfp_ep as get_cfp_ep;
-pub use rb_get_cfp_ep_level as get_cfp_ep_level;
-pub use rb_vm_base_ptr as get_cfp_bp;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -186,27 +191,41 @@ pub use rb_get_mct_argc as get_mct_argc;
 pub use rb_get_mct_func as get_mct_func;
 pub use rb_get_def_iseq_ptr as get_def_iseq_ptr;
 pub use rb_iseq_encoded_size as get_iseq_encoded_size;
-pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
 pub use rb_get_iseq_body_type as get_iseq_body_type;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
-pub use rb_get_call_data_ci as get_call_data_ci;
-pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
-pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
-pub use rb_RSTRUCT_LEN as RSTRUCT_LEN;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
-pub use rb_vm_ci_kwarg as vm_ci_kwarg;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
-pub use rb_vm_get_special_object as vm_get_special_object;
 pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
+
+/// A YARV instruction opcode (`ruby_vminsn_type`), stored as a `u16` since there are only
+/// `VM_INSTRUCTION_SIZE` (~259) instructions. Keeps enums that embed an opcode (e.g.
+/// `SendFallbackReason::Uncategorized`) small.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VmInsnType(u16);
+
+const _: () = assert!(VM_INSTRUCTION_SIZE <= u16::MAX as u32);
+
+impl From<ruby_vminsn_type> for VmInsnType {
+    fn from(opcode: ruby_vminsn_type) -> Self {
+        assert!(opcode < VM_INSTRUCTION_SIZE, "opcode {opcode} out of range for a YARV instruction");
+        Self(opcode as u16)
+    }
+}
+
+impl IntoUsize for VmInsnType {
+    fn to_usize(self) -> usize {
+        self.0.to_usize()
+    }
+}
 
 /// Helper so we can get a Rust string for insn_name()
 pub fn insn_name(opcode: usize) -> String {
@@ -245,7 +264,7 @@ pub struct rb_iseq_constant_body {
 /// that this is a handle. Sometimes the C code briefly uses VALUE as
 /// an unsigned integer type and don't necessarily store valid handles but
 /// thankfully those cases are rare and don't cross the FFI boundary.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)] // same size and alignment as simply `usize`
 pub struct VALUE(pub usize);
 
@@ -258,8 +277,19 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
+/// Index of a YARV instruction within an ISEQ's bytecode array.
+pub type YarvInsnIdx = usize;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
+
+ #[derive(PartialEq, Eq)]
+pub enum ShapeLayout {
+    RObject,
+    RClass,
+    Extended,
+    Other,
+}
 
 pub const INVALID_SHAPE_ID: ShapeId = ShapeId(rb_invalid_shape_id);
 
@@ -268,12 +298,22 @@ impl ShapeId {
         self != INVALID_SHAPE_ID
     }
 
-    pub fn is_too_complex(self) -> bool {
-        unsafe { rb_jit_shape_too_complex_p(self.0) }
+    pub fn is_complex(self) -> bool {
+        unsafe { rb_jit_shape_complex_p(self.0) }
     }
 
     pub fn is_frozen(self) -> bool {
         (self.0 & SHAPE_ID_FL_FROZEN) != 0
+    }
+
+    pub fn layout(self) -> ShapeLayout {
+        match self.0 & SHAPE_ID_LAYOUT_MASK {
+            SHAPE_ID_LAYOUT_ROBJECT => ShapeLayout::RObject,
+            SHAPE_ID_LAYOUT_RCLASS => ShapeLayout::RClass,
+            SHAPE_ID_LAYOUT_EXTENDED => ShapeLayout::Extended,
+            SHAPE_ID_LAYOUT_OTHER => ShapeLayout::Other,
+            layout => unreachable!("unknown shape layout bits: {layout:#x}"),
+        }
     }
 }
 
@@ -289,17 +329,26 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
-/// Return true if a given ISEQ is known to escape EP to the heap on entry.
+/// Return true if a given ISEQ starts with EP escaped to the heap on entry.
 ///
 /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
 /// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+pub fn iseq_ep_starts_escaped(iseq: IseqPtr) -> bool {
     match unsafe { get_iseq_body_type(iseq) } {
         // The EP of the <main> frame points to TOPLEVEL_BINDING
         ISEQ_TYPE_MAIN |
         // eval frames point to the EP of another frame or scope
         ISEQ_TYPE_EVAL => true,
         _ => false,
+    }
+}
+
+/// Return true if ZJIT may directly call this ISEQ from another JIT-compiled ISEQ.
+pub fn iseq_supports_jit_entry(iseq: IseqPtr) -> bool {
+    match unsafe { get_iseq_body_type(iseq) } {
+        // These ISEQs are only entered by the interpreter.
+        ISEQ_TYPE_MAIN | ISEQ_TYPE_EVAL => false,
+        _ => true,
     }
 }
 
@@ -313,27 +362,64 @@ pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
     }
 }
 
+/// Compute the index of a local variable from its slot index
+pub fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
+    // Layout illustration
+    // This is an array of VALUE
+    //                                           | VM_ENV_DATA_SIZE |
+    //                                           v                  v
+    // low addr <+-------+-------+-------+-------+------------------+
+    //           |local 0|local 1|  ...  |local n|       ....       |
+    //           +-------+-------+-------+-------+------------------+
+    //           ^       ^                       ^                  ^
+    //           +-------+---local_table_size----+         cfp->ep--+
+    //                   |                                          |
+    //                   +------------------ep_offset---------------+
+    //
+    // See usages of local_var_name() from iseq.c for similar calculation.
+
+    // Equivalent of iseq->body->local_table_size
+    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
+        .try_into()
+        .unwrap();
+    let op = (ep_offset - VM_ENV_DATA_SIZE) as i32;
+    let local_idx = local_table_size - op - 1;
+    assert!(local_idx >= 0 && local_idx < local_table_size);
+    local_idx.try_into().unwrap()
+}
+
+/// Inverse of ep_offset_to_local_idx(). See [`ep_offset_to_local_idx`] for details.
+pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
+    local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
+}
+
+/// Convert the number of locals and a local index to an offset from the EP
+pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
+}
+
+/// Convert the number of locals and a local index to an offset from the BP.
+/// We don't move the SP register after entry, so we often use SP as BP.
+pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size_and_idx_to_ep_offset(local_size, local_idx) + 1
+}
+
 /// Iterate over all existing ISEQs
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
         // SAFETY: points to the local below
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
-        callback(iseq);
+        let callback: *mut *mut dyn FnMut(IseqPtr) -> bool = data.cast();
+        unsafe { (**callback)(iseq) };
     }
-    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    let mut data: *mut dyn FnMut(IseqPtr) = &raw mut callback;
+    let data: *mut *mut dyn FnMut(IseqPtr) = &raw mut data;
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), data.cast()) };
 }
 
 /// Return a poison value to be set above the stack top to verify leafness.
-#[cfg(not(test))]
 pub fn vm_stack_canary() -> u64 {
     unsafe { rb_vm_stack_canary() }.as_u64()
-}
-
-/// Avoid linking the C function in `cargo test`
-#[cfg(test)]
-pub fn vm_stack_canary() -> u64 {
-    0
 }
 
 /// Opaque execution-context type from vm_core.h
@@ -366,13 +452,6 @@ pub struct rb_method_cfunc_t {
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
-/// Opaque control_frame (CFP) struct from vm_core.h
-#[repr(C)]
-pub struct rb_control_frame_struct {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
@@ -476,6 +555,24 @@ impl VALUE {
         true
     }
 
+    /// A metaclass is the singleton class of an object that is a `Module`.
+    /// This is internal terminology from `class.c`.
+    pub fn is_metaclass(self) -> bool {
+        unsafe {
+            if RB_TYPE_P(self, RUBY_T_CLASS) && rb_zjit_singleton_class_p(self) {
+                let attached = rb_class_attached_object(self);
+                RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE)
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_singleton_class(self) -> bool {
+        // TODO(alan): clean up one of double check on T_CLASS
+        unsafe { RB_TYPE_P(self, RUBY_T_CLASS) && rb_zjit_singleton_class_p(self) }
+    }
+
     /// Return true for a static (non-heap) Ruby symbol (RB_STATIC_SYM_P)
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;
@@ -566,13 +663,15 @@ impl VALUE {
     }
 
     pub fn shape_id_of(self) -> ShapeId {
-        ShapeId(unsafe { rb_obj_shape_id(self) })
+        if self.special_const_p() {
+            INVALID_SHAPE_ID
+        } else {
+            ShapeId(unsafe { rb_obj_shape_id(self) })
+        }
     }
 
-    pub fn embedded_p(self) -> bool {
-        unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
-        }
+    pub fn layout(self) ->  ShapeLayout {
+        self.shape_id_of().layout()
     }
 
     pub fn struct_embedded_p(self) -> bool {
@@ -611,7 +710,7 @@ impl VALUE {
         i.try_into().unwrap()
     }
 
-    pub fn as_usize(self) -> usize {
+    pub const fn as_usize(self) -> usize {
         let VALUE(us) = self;
         us
     }
@@ -657,6 +756,12 @@ impl VALUE {
         unsafe { rb_IMEMO_TYPE_P(self, imemo_ment) == 1 }
     }
 
+    /// Return true if `self` is an ISEQ (`imemo_iseq`)
+    pub fn iseq_p(self) -> bool {
+        if self == VALUE(0) { return false; }
+        unsafe { rb_IMEMO_TYPE_P(self, imemo_iseq) == 1 }
+    }
+
     /// Assert that `self` is a method entry in debug builds
     pub fn as_cme(self) -> *const rb_callable_method_entry_t {
         let ptr: *const rb_callable_method_entry_t = self.as_ptr();
@@ -693,16 +798,83 @@ impl VALUE {
 
 pub type IseqParameters = rb_iseq_constant_body_rb_iseq_parameters;
 
+/// How a block iseq refers to a variable in an enclosing scope, as recorded in
+/// `ISEQ_BODY(blockiseq)->outer_variables`. `compile.c` aggregates accesses from
+/// nested blocks up the chain, and the same table backs `Ractor.shareable_proc`'s
+/// isolation checks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OuterLocalAccess {
+    /// The variable is read but never assigned to.
+    ReadOnly,
+    /// The variable is assigned to and maybe also read.
+    ReadWrite,
+}
+
+/// Wrapper over an iseq's `outer_variables` table, which describes
+/// how a block iseq refers to a variable in an enclosing scope.
+#[derive(Clone, Copy)]
+pub struct OuterVariables(Option<NonNull<rb_id_table>>);
+
+impl OuterVariables {
+    /// Look up how the enclosing-scope local `id` is accessed by the iseq (or any
+    /// iseq nested within it). Returns `None` when the variable isn't referenced.
+    pub fn local_access(self, id: ID) -> Option<OuterLocalAccess> {
+        let table = self.0?;
+        let mut write = Qfalse;
+        // Non-zero return means there's a table entry, i.e. the variable is referenced.
+        if unsafe { rb_id_table_lookup(table.as_ptr(), id, &mut write) } == 0 {
+            return None;
+        }
+        // Truthy means write
+        Some(if write.test() { OuterLocalAccess::ReadWrite } else { OuterLocalAccess::ReadOnly })
+    }
+}
+
 /// Extension trait to enable method calls on [`IseqPtr`]
 pub trait IseqAccess {
     unsafe fn params<'a>(self) -> &'a IseqParameters;
+    unsafe fn outer_variables(self) -> OuterVariables;
 }
 
 impl IseqAccess for IseqPtr {
     /// Get a description of the ISEQ's signature. Analogous to `ISEQ_BODY(iseq)->param` in C.
     unsafe fn params<'a>(self) -> &'a IseqParameters {
-        use crate::cast::IntoUsize;
         unsafe { &*((*self).body.byte_add(ISEQ_BODY_OFFSET_PARAM.to_usize()) as *const IseqParameters) }
+    }
+
+    /// The iseq's `outer_variables` table. See [`OuterVariables`].
+    unsafe fn outer_variables(self) -> OuterVariables {
+        let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_id_table;
+        OuterVariables(NonNull::new(unsafe { *field }))
+    }
+}
+
+impl IseqParameters {
+    /// The `opt_table` is a mapping where `opt_table[number_of_optional_parameters_filled]`
+    /// gives the YARV entry point of ISeq as an index of the iseq_encoded array.
+    /// This method gives over the table that additionally works when `opt_num==0`,
+    /// when the table is stored as `NULL` and implicit.
+    /// The table stores the indexes as raw VALUE integers; they are not tagged as fixnum.
+    pub fn opt_table_slice(&self) -> &[VALUE] {
+        let opt_num: usize = self.opt_num.try_into().expect("ISeq opt_num should always >=0");
+        if opt_num > 0 {
+            // The table has size=opt_num+1 because opt_table[opt_num] is valid (all optionals filled)
+            unsafe { std::slice::from_raw_parts(self.opt_table, opt_num + 1) }
+        } else {
+            // The ISeq entry point is index 0 when there are no optional parameters
+            &[VALUE(0)]
+        }
+    }
+}
+
+impl Debug for VALUE {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // Only use rb_obj_info() when {:#?} since it dereferences the pointer so carries some risk.
+        if f.alternate() {
+            write!(f, "VALUE({})", self.obj_info())
+        } else {
+            write!(f, "VALUE(0x{:x})", self.0)
+        }
     }
 }
 
@@ -717,6 +889,12 @@ impl From<*const rb_callable_method_entry_t> for VALUE {
     /// For `.into()` convenience
     fn from(cme: *const rb_callable_method_entry_t) -> Self {
         VALUE(cme as usize)
+    }
+}
+
+impl From<*const rb_callinfo> for VALUE {
+    fn from(ci: *const rb_callinfo) -> Self {
+        VALUE(ci as usize)
     }
 }
 
@@ -784,6 +962,12 @@ impl ID {
     }
 }
 
+impl Display for ID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.contents_lossy())
+    }
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
@@ -814,6 +998,42 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     }
 }
 
+pub fn const_path_ids(const_path: rb_const_path_t) -> impl Iterator<Item = ID> {
+    (0..)
+        .map(move |idx| unsafe { rb_jit_const_path_aref(const_path, idx) })
+        .take_while(|id| id.0 != 0)
+}
+
+impl rb_const_path_t {
+    pub fn bits(self) -> usize {
+        unsafe { self.packed }
+    }
+
+    pub fn absolute_p(self) -> bool {
+        unsafe { rb_jit_const_path_absolute_p(self) }
+    }
+}
+
+impl PartialEq for rb_const_path_t {
+    fn eq(&self, other: &Self) -> bool {
+        self.bits() == other.bits()
+    }
+}
+
+impl Eq for rb_const_path_t {}
+
+impl std::hash::Hash for rb_const_path_t {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.bits().hash(state)
+    }
+}
+
+impl Debug for rb_const_path_t {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "rb_const_path_t({:#x})", self.bits())
+    }
+}
+
 pub fn iseq_name(iseq: IseqPtr) -> String {
     if iseq.is_null() {
         return "<NULL>".to_string();
@@ -824,6 +1044,18 @@ pub fn iseq_name(iseq: IseqPtr) -> String {
     } else {
         ruby_str_to_rust_string(iseq_label)
     }
+}
+
+// Equivalent of get_lvar_level() in compile.c
+pub fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
+    let mut level = 0;
+    while iseq != local_iseq {
+        iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
+        level += 1;
+    }
+
+    level
 }
 
 // Location is the file defining the method, colon, method name.
@@ -845,15 +1077,18 @@ pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     s
 }
 
+pub fn ruby_str_to_rust_string_result(v: VALUE) -> Result<String, std::string::FromUtf8Error> {
+    let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
+    let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
+    let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
+    String::from_utf8(str_slice.to_vec())
+}
 
 // Convert a CRuby UTF-8-encoded RSTRING into a Rust string.
 // This should work fine on ASCII strings and anything else
 // that is considered legal UTF-8, including embedded nulls.
-fn ruby_str_to_rust_string(v: VALUE) -> String {
-    let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
-    let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
-    let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
-    String::from_utf8(str_slice.to_vec()).unwrap_or_default()
+pub fn ruby_str_to_rust_string(v: VALUE) -> String {
+    ruby_str_to_rust_string_result(v).unwrap_or_default()
 }
 
 pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
@@ -862,7 +1097,7 @@ pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
 }
 
 pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
-    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    let call_info = unsafe { (*cd).ci };
     unsafe { rb_vm_ci_mid(call_info) }
 }
 
@@ -899,17 +1134,6 @@ macro_rules! src_loc {
 }
 
 pub(crate) use src_loc;
-
-/// Run GC write barrier. Required after making a new edge in the object reference
-/// graph from `old` to `young`.
-macro_rules! obj_written {
-    ($old: expr, $young: expr) => {
-        let (old, young): (VALUE, VALUE) = ($old, $young);
-        let src_loc = $crate::cruby::src_loc!();
-        unsafe { rb_yjit_obj_written(old, young, src_loc.file.as_ptr(), src_loc.line) };
-    };
-}
-pub(crate) use obj_written;
 
 /// Acquire the VM lock, make sure all other Ruby threads are asleep then run
 /// some code while holding the lock. Returns whatever `func` returns.
@@ -1043,12 +1267,6 @@ mod manual_defs {
     pub const VM_CALL_ZSUPER : u32 = 1 << VM_CALL_ZSUPER_bit;
     pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
-    // From internal/struct.h - in anonymous enum, so we can't easily import it
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3 |RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
-
-    // From iseq.h - via a different constant, which seems to confuse bindgen
-    pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER7 as usize;
-
     // We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
     // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
     pub const RUBY_OFFSET_RBASIC_FLAGS: i32 = 0; // struct RBasic, field "flags"
@@ -1057,8 +1275,9 @@ mod manual_defs {
     pub const RUBY_OFFSET_RARRAY_AS_HEAP_PTR: i32 = 32; // struct RArray, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RARRAY_AS_ARY: i32 = 16; // struct RArray, subfield "as.ary"
 
-    pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
-    pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
+    pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 32; // struct RStruct, subfield "as.heap.ptr"
+    pub const RUBY_OFFSET_RSTRUCT_FIELDS_OBJ: i32 = 16; // struct RStruct, field "fields_obj"
+    pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 24; // struct RStruct, subfield "as.ary"
 
     pub const RUBY_OFFSET_RSTRING_AS_HEAP_PTR: i32 = 24; // struct RString, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRING_AS_ARY: i32 = 24; // struct RString, subfield "as.embed.ary"
@@ -1086,7 +1305,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::{rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_entry, ZJITState}};
+    use crate::{options::{DEFAULT_CALL_THRESHOLD, rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold}, state::{ZJITState, rb_zjit_compiling_p, rb_zjit_entry}};
 
     use super::*;
 
@@ -1128,35 +1347,50 @@ pub mod test_utils {
             crate::cruby::ids::init(); // for ID! usages in tests
         }
 
+        // Call ZJIT hooks to install Ruby implementations of builtins like Array#each
+        unsafe {
+            let zjit = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
+            rb_funcallv(zjit, rust_str_to_id("call_jit_hooks"), 0, std::ptr::null());
+        }
+
         // Set up globals for convenience
         let zjit_entry = ZJITState::init();
 
         // Enable zjit_* instructions
-        unsafe { rb_zjit_entry = zjit_entry; }
+        unsafe {
+            rb_zjit_entry = zjit_entry;
+            rb_zjit_compiling_p = true;
+        }
+    }
+
+    /// Make sure the Ruby VM is booted and ZJITState is initialized. Test helpers that
+    /// touch ZJITState or ZJIT stats before running any Ruby code must call this first.
+    pub fn ensure_rubyvm() {
+        RUBY_VM_INIT.call_once(boot_rubyvm);
     }
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
-        RUBY_VM_INIT.call_once(boot_rubyvm);
-
-        // Set up a callback wrapper to store a return value
-        let mut result: Option<T> = None;
-        let mut data: &mut dyn FnMut() = &mut || {
-            // Store the result externally
-            result.replace(func());
-        };
+        ensure_rubyvm();
 
         // Invoke callback through rb_protect() so exceptions don't crash the process.
         // "Fun" double pointer dance to get a thin function pointer to pass through C
         unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
             // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: &mut &mut dyn FnMut() = unsafe { std::mem::transmute(data) };
-            callback();
+            let callback: *const *mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
+            unsafe { (**callback)() };
             Qnil
         }
 
+        // Set up a callback wrapper to store the return value
+        let mut result: Option<T> = None;
+        let mut func_wrapper = || {
+            result.replace(func());
+        };
+        let data: *mut dyn FnMut() = &raw mut func_wrapper;
+        let data: *const *mut dyn FnMut() = &raw const data;
         let mut state: c_int = 0;
-        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE(data.expose_provenance()), &mut state) };
         if state != 0 {
             unsafe { rb_zjit_print_exception(); }
             assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
@@ -1186,10 +1420,58 @@ pub mod test_utils {
         })
     }
 
+    /// Evaluate a given Ruby program with compile options
+    pub fn eval_with_options(program: &str, options_expr: &str) -> VALUE {
+        with_rubyvm(|| {
+            let options = eval(options_expr);
+            let wrapped_iseq = compile_to_wrapped_iseq_with_options(&unindent(program, false), options);
+            unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+        })
+    }
+
     /// Get the #inspect of a given Ruby program in Rust string
     pub fn inspect(program: &str) -> String {
         let inspect = format!("({program}).inspect");
         ruby_str_to_rust_string(eval(&inspect))
+    }
+
+    /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    #[track_caller]
+    pub fn assert_compiles_allowing_exits(program: &str) -> String {
+        use crate::state::ZJITState;
+        ensure_rubyvm(); // ZJITState is not available until the VM is booted
+        ZJITState::enable_assert_compiles();
+        let result = inspect(program);
+        ZJITState::disable_assert_compiles();
+        assert_side_exit_count_matches_exit_counters();
+        result
+    }
+
+    /// Assert that side_exit_count, which is counted by materialize_exit_trampoline, increased
+    /// by the same amount as the per-reason exit counters.
+    #[track_caller]
+    pub fn assert_side_exit_count_matches_exit_counters() {
+        let exits = crate::stats::total_exit_count();
+        let side_exit_count = crate::state::ZJITState::get_counters().side_exit_count;
+        assert_eq!(exits, side_exit_count, "side_exit_count should match the sum of exit counters");
+    }
+
+    /// Like inspect, but also asserts that all compilations triggered by this program succeed and
+    /// no side exits occurr during the program.
+    #[track_caller]
+    pub fn assert_compiles(program: &str) -> String {
+        use crate::state::ZJITState;
+        fn non_entry_point_side_exit_count() -> u64 {
+            let counters = ZJITState::get_counters();
+            counters.side_exit_count
+        }
+        ensure_rubyvm(); // ZJITState is not available until the VM is booted
+        let side_exit_count_before = ZJITState::get_counters().side_exit_count;
+        ZJITState::enable_assert_compiles();
+        let result = inspect(program);
+        ZJITState::disable_assert_compiles();
+        assert_eq!(side_exit_count_before, ZJITState::get_counters().side_exit_count, "Program side-exited");
+        result
     }
 
     /// Get IseqPtr for a specified method
@@ -1241,10 +1523,15 @@ pub mod test_utils {
 
     /// Compile a program into a RubyVM::InstructionSequence object
     fn compile_to_wrapped_iseq(program: &str) -> VALUE {
+        compile_to_wrapped_iseq_with_options(program, Qnil)
+    }
+
+    fn compile_to_wrapped_iseq_with_options(program: &str, options: VALUE) -> VALUE {
         let bytes = program.as_bytes().as_ptr() as *const c_char;
         unsafe {
             let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
-            rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str)
+            let args = [program_str, Qnil, Qnil, VALUE(1_usize.wrapping_shl(1) | 1), options];
+            rb_funcallv(rb_cISeq, ID!(compile), args.len() as c_int, args.as_ptr())
         }
     }
 
@@ -1305,23 +1592,107 @@ pub mod test_utils {
     fn value_from_fixnum_too_small_isize() {
         assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN-1), VALUE(1));
     }
+
+    #[test]
+    fn value_fmt_debug() {
+        assert_eq!("VALUE(0xcafe)", format!("{:?}", VALUE(0xcafe)));
+        let alternate = format!("{:#?}", eval("::Hash"));
+        assert!(alternate.contains("Hash"), "'Hash' not substring of '{alternate}'");
+    }
 }
 #[cfg(test)]
 pub use test_utils::*;
 
-/// Get class name from a class pointer.
+/// Get class name from a class pointer. For anonymous classes, includes the
+/// superclass name for context (e.g. `#<Class(String):0x00007f...>`).
 pub fn get_class_name(class: VALUE) -> String {
     // type checks for rb_class2name()
-    if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
+    let name = if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
         Some(class)
     } else {
         None
     }.and_then(|class| unsafe {
         cstr_to_rust_string(rb_class2name(class))
-    }).unwrap_or_else(|| "Unknown".to_string())
+    }).unwrap_or_else(|| "Unknown".to_string());
+
+    // For anonymous classes, include the superclass name for context.
+    // Use rb_class_real to resolve through iclasses (internal include/prepend
+    // wrappers) before checking rb_mod_name, which returns Qnil for anonymous classes.
+    // e.g. "#<Class:0x7f...>" with superclass String => "#<Class(String):0x7f...>"
+    if unsafe { RB_TYPE_P(class, RUBY_T_CLASS) && rb_mod_name(rb_class_real(class)) == Qnil } {
+        let super_class = unsafe { rb_class_get_superclass(class) };
+        if super_class != Qnil {
+            let super_name = get_class_name(super_class);
+            return format!("#<Class({super_name}):{:#x}>", class.0);
+        }
+    }
+
+    name
+}
+
+// Return the module name for a given module or class. For anonymous modules, returns None since
+// rb_mod_name returns Qnil.
+pub fn get_module_name(module: VALUE) -> Option<String> {
+    // type checks for rb_mod_name()
+    assert!(unsafe { RB_TYPE_P(module, RUBY_T_MODULE) || RB_TYPE_P(module, RUBY_T_CLASS) }, "Expected class or module");
+    let name = unsafe { rb_mod_name(module) };
+    if name == Qnil {
+        None
+    } else {
+        Some(ruby_str_to_rust_string(name))
+    }
+}
+
+
+#[cfg(test)]
+mod class_name_tests {
+    use super::*;
+    use test_utils::{eval, with_rubyvm};
+
+    #[test]
+    fn named_class() {
+        with_rubyvm(|| {
+            assert_eq!(get_class_name(eval("String")), "String");
+        });
+    }
+
+    #[test]
+    fn named_module() {
+        with_rubyvm(|| {
+            assert_eq!(get_class_name(eval("Kernel")), "Kernel");
+        });
+    }
+
+    #[test]
+    fn anonymous_class_includes_superclass() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Class.new(String)"));
+            assert!(name.starts_with("#<Class(String):0x"), "got: {name}");
+        });
+    }
+
+    #[test]
+    fn anonymous_class_nested_superclass() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Class.new(Class.new(String))"));
+            assert!(name.starts_with("#<Class(#<Class(String):0x"), "got: {name}");
+        });
+    }
+
+    #[test]
+    fn anonymous_module_unchanged() {
+        with_rubyvm(|| {
+            let name = get_class_name(eval("Module.new"));
+            assert!(name.starts_with("#<Module:0x"), "got: {name}");
+        });
+    }
+
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
+    // Reading a singleton class's allocator raises, which makes it non-leaf.
+    if unsafe { rb_zjit_singleton_class_p(class) } { return false; }
+
     // empty_hash_alloc
     if class == unsafe { rb_cHash } { return true; }
     // empty_ary_alloc
@@ -1330,8 +1701,42 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
     if class == unsafe { rb_cString } { return true; }
     // rb_reg_s_alloc
     if class == unsafe { rb_cRegexp } { return true; }
+    // struct_alloc, used by every Struct subclass, is leaf: it reads the members kept in the
+    // inline field of the class and allocates, without calling into Ruby or writing anything.
+    if unsafe { rb_zjit_class_has_struct_allocator(class) } { return true; }
     // rb_class_allocate_instance
     unsafe { rb_zjit_class_has_default_allocator(class) }
+}
+
+/// Whether a method ISEQ defined on `owner` is guaranteed to run with a `self`
+/// that is a heap (non-immediate) object.
+///
+/// True only for plain `def` methods (`ISEQ_TYPE_METHOD`) defined on a normal,
+/// initialized, non-singleton class that uses the default allocator
+/// (`rb_class_allocate_instance`). The receiver of such a method is always
+/// `kind_of?` the owner, and no user class with the default allocator can be
+/// inserted into the ancestry of an immediate, so `self` cannot be an immediate.
+///
+/// The default-allocator check alone is not sufficient: `Object`, `BasicObject`,
+/// and `Numeric` use the default allocator yet are ancestors of immediates (e.g.
+/// `Integer`). Every such class is also an ancestor of `Integer`, so a single
+/// `rb_obj_is_kind_of(<a fixnum>, owner)` check rules all of them out.
+///
+/// Returns `false` conservatively for anything that doesn't clearly qualify
+/// (modules, singleton classes, custom allocators, non-`def` ISEQs, etc.).
+pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
+    if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return false; }
+    if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return false; }
+    // Check non-singleton before reading the allocator (reading it otherwise
+    // aborts).
+    // TODO(max): Determine if we can loosen this to allow methods defined on singleton classes.
+    if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
+    if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
+    // Exclude Object/BasicObject/Numeric and friends: classes that use the default
+    // allocator but sit above an immediate class in the ancestry chain. They are
+    // all ancestors of Integer, so this single check covers every immediate type.
+    if unsafe { rb_obj_is_kind_of(VALUE::fixnum_from_usize(0), owner) }.test() { return false; }
+    true
 }
 
 /// Interned ID values for Ruby symbols and method names.
@@ -1368,11 +1773,14 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
+        name: respond_to         content: b"respond_to?"
+        name: method_missing
         name: eq                 content: b"=="
         name: string_eq          content: b"String#=="
         name: include_p          content: b"include?"
         name: to_ary
         name: to_s
+        name: to_str
         name: compile
         name: eval
         name: plus               content: b"+"
@@ -1391,12 +1799,22 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
-        name: len
-        name: _as_heap
-        name: thread_ptr
-        name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
-        name: _shape_id
+        name: rb_jit_io_buffer_readable_ptr
+        name: rb_jit_ruby2_keywords_splat_p
+        name: rb_mod_name
+        name: RUBY_FL_FREEZE
+        name: RUBY_ELTS_SHARED
+        name: U8
+        name: u16
+        name: U16
+        name: u32
+        name: U32
+        name: RubyVM
+        name: ZJIT
+        name: induce_side_exit_bang       content: b"induce_side_exit!"
+        name: induce_compile_failure_bang content: b"induce_compile_failure!"
+        name: induce_breakpoint_bang      content: b"induce_breakpoint!"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
@@ -1404,7 +1822,7 @@ pub(crate) mod ids {
         ($id_name:ident) => {{
             let id = $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed);
             debug_assert_ne!(0, id, "ids module should be initialized");
-            ID(id)
+            $crate::cruby::ID(id)
         }}
     }
     pub(crate) use ID;

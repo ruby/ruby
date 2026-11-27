@@ -6,7 +6,7 @@ ruby_version_is ""..."4.0" do
   describe "CGI::Cookie#domain" do
     it "returns self's domain" do
       cookie = CGI::Cookie.new("test-cookie")
-      cookie.domain.should be_nil
+      cookie.domain.should == nil
 
       cookie = CGI::Cookie.new("name" => "test-cookie", "domain" => "example.com")
       cookie.domain.should == "example.com"

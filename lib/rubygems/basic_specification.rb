@@ -140,16 +140,28 @@ class Gem::BasicSpecification
   end
 
   ##
-  # Returns the full name (name-version) of this Gem.  Platform information
-  # is included (name-version-platform) if it is specified and not the
+  # Returns the full name (name-version) of this Gem.
+  # Content address is included (name-version-content_address) if the gem
+  # is content-addressed (eligible and has a valid content address).
+  # Platform information is included (name-version-platform) if it is specified and not the
   # default Ruby platform.
 
   def full_name
-    if platform == Gem::Platform::RUBY || platform.nil?
+    if Gem::ContentAddress.content_addressed?(self)
+      "#{name}-#{version}-#{content_address}"
+    elsif platform == Gem::Platform::RUBY || platform.nil?
       "#{name}-#{version}"
     else
       "#{name}-#{version}-#{platform}"
     end
+  end
+
+  ##
+  # The content address of this gem, or +nil+ when it is not
+  # content-addressable.
+
+  def content_address
+    nil
   end
 
   ##
@@ -181,17 +193,6 @@ class Gem::BasicSpecification
         full_paths
       end
   end
-
-  ##
-  # The path to the data directory for this gem.
-
-  def datadir
-    # TODO: drop the extra ", gem_name" which is uselessly redundant
-    File.expand_path(File.join(gems_dir, full_name, "data", name))
-  end
-
-  extend Gem::Deprecate
-  rubygems_deprecate :datadir, :none, "4.1"
 
   ##
   # Full path of the target library file.
@@ -306,9 +307,7 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
-    glob = File.join(lib_dirs_glob, glob)
-
-    Dir[glob]
+    Gem::Util.glob_files_in_dir(File.join(lib_dirs, glob), full_gem_path)
   end
 
   ##
@@ -323,17 +322,7 @@ class Gem::BasicSpecification
   # for this spec.
 
   def lib_dirs_glob
-    dirs = if raw_require_paths
-      if raw_require_paths.size > 1
-        "{#{raw_require_paths.join(",")}}"
-      else
-        raw_require_paths.first
-      end
-    else
-      "lib" # default value for require_paths for bundler/inline
-    end
-
-    "#{full_gem_path}/#{dirs}"
+    "#{full_gem_path}/#{lib_dirs}"
   end
 
   ##
@@ -363,6 +352,22 @@ class Gem::BasicSpecification
   end
 
   private
+
+  ##
+  # Returns the require_paths of this gem as a string usable in Dir.glob,
+  # relative to full_gem_path.
+
+  def lib_dirs
+    if raw_require_paths
+      if raw_require_paths.size > 1
+        "{#{raw_require_paths.join(",")}}"
+      else
+        raw_require_paths.first
+      end
+    else
+      "lib" # default value for require_paths for bundler/inline
+    end
+  end
 
   def have_extensions?
     !extensions.empty?

@@ -23,7 +23,7 @@ class TestIOWait < Test::Unit::TestCase
     omit 'unstable on MinGW' if /mingw/ =~ RUBY_PLATFORM
     assert_nil @r.wait(0)
     @w.syswrite "."
-    sleep 0.1
+    IO.select([@r])
     assert_equal @r, @r.wait(0)
   end
 
@@ -90,6 +90,20 @@ class TestIOWait < Test::Unit::TestCase
     assert_equal @r, ret
   ensure
     th.join
+  end
+
+  # A probe skipped for a pending interrupt (another thread asks for the GVL) was reported as not ready.
+  def test_wait_readable_zero_at_eof_with_another_thread
+    @w.close
+    th = Thread.new { loop { Thread.pass } }
+    miss = 0
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1
+    while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+      miss += 1 unless @r.wait_readable(0)
+    end
+    assert_equal 0, miss
+  ensure
+    th&.kill&.join
   end
 
   def test_wait_writable

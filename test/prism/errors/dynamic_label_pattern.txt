@@ -1,3 +1,4 @@
 :a => 'a': | 1
-           ^ expected a pattern expression after the key
+           ^ unexpected '|', expecting end-of-input
+           ^ unexpected '|', ignoring it
 

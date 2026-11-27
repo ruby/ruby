@@ -57,6 +57,41 @@ RSpec.describe Bundler::Fetcher do
           fetcher.send(:connection).override_headers["X-Gemfile-Source"]
         ).to eq("http://zombo.com")
       end
+
+      it "stops sending the 'X-Gemfile-Source' header once a redirect leaves the origin" do
+        previous_client = Gem::Request::ConnectionPools.client
+        require_rack_test
+        require_relative "../support/artifice/helpers/endpoint"
+        require_relative "../support/artifice/helpers/artifice"
+
+        sent = []
+        endpoint = Class.new(Endpoint) do
+          get "/:hop" do
+            sent << [request.host, env["HTTP_X_GEMFILE_SOURCE"]]
+            case params[:hop]
+            when "first" then redirect "https://gems.example.org/second"
+            when "second" then redirect "https://cdn.example.org/third"
+            when "third" then redirect "https://cdn.example.org/last"
+            else "body"
+            end
+          end
+        end
+
+        Artifice.activate_with(endpoint)
+        Gem::Request::ConnectionPools.client = Gem::Net::HTTP
+
+        fetcher.send(:downloader).fetch(Gem::URI("https://gems.example.org/first"))
+
+        expect(sent).to eq([
+          ["gems.example.org", "http://zombo.com"],
+          ["gems.example.org", "http://zombo.com"],
+          ["cdn.example.org", nil],
+          ["cdn.example.org", nil],
+        ])
+      ensure
+        Artifice.deactivate
+        Gem::Request::ConnectionPools.client = previous_client
+      end
     end
 
     context "when there is no rubygems source mirror set" do
@@ -78,36 +113,46 @@ RSpec.describe Bundler::Fetcher do
         end
       end
       it "consider no_proxy" do
-        with_env_vars("HTTP_PROXY" => "http://proxy-example4.com", "NO_PROXY" => ".example.com,.example.net") do
-          expect(
-            fetcher.send(:connection).no_proxy
-          ).to eq([".example.com", ".example.net"])
+        with_env_vars("HTTP_PROXY" => "http://proxy-example4.com", "NO_PROXY" => "example.com,.example.net") do
+          expect(fetcher.http_proxy).to be_nil
+        end
+      end
+      it "bypass proxy for every host when no_proxy is '*'" do
+        with_env_vars("HTTP_PROXY" => "http://proxy-example5.com", "NO_PROXY" => "*") do
+          expect(fetcher.http_proxy).to be_nil
         end
       end
     end
 
+    def configured_connection
+      http = Gem::Net::HTTP.new(uri.host, uri.port)
+      fetcher.send(:connection).send(:configure_ssl, http)
+      http
+    end
+
     context "when no ssl configuration is set" do
       it "no cert" do
-        expect(fetcher.send(:connection).cert).to be_nil
-        expect(fetcher.send(:connection).key).to be_nil
+        expect(configured_connection.cert).to be_nil
+        expect(configured_connection.key).to be_nil
       end
     end
 
-    context "when bunder ssl ssl configuration is set" do
+    context "when bunder ssl configuration is set" do
       before do
         cert = File.join(Spec::Path.tmpdir, "cert")
         File.open(cert, "w") {|f| f.write "PEM" }
         allow(Bundler.settings).to receive(:[]).and_return(nil)
         allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(cert)
         expect(OpenSSL::X509::Certificate).to receive(:new).with("PEM").and_return("cert")
-        expect(OpenSSL::PKey::RSA).to receive(:new).with("PEM").and_return("key")
+        expect(OpenSSL::PKey).to receive(:read).with("PEM").and_return("key")
       end
       after do
         FileUtils.rm File.join(Spec::Path.tmpdir, "cert")
       end
       it "use bundler configuration" do
-        expect(fetcher.send(:connection).cert).to eq("cert")
-        expect(fetcher.send(:connection).key).to eq("key")
+        connection = configured_connection
+        expect(connection.cert).to eq("cert")
+        expect(connection.key).to eq("key")
       end
     end
 
@@ -120,14 +165,15 @@ RSpec.describe Bundler::Fetcher do
         )
         expect(File).to receive(:read).and_return("")
         expect(OpenSSL::X509::Certificate).to receive(:new).and_return("cert")
-        expect(OpenSSL::PKey::RSA).to receive(:new).and_return("key")
+        expect(OpenSSL::PKey).to receive(:read).and_return("key")
         store = double("ca store")
         expect(store).to receive(:add_file)
         expect(OpenSSL::X509::Store).to receive(:new).and_return(store)
       end
       it "use gem configuration" do
-        expect(fetcher.send(:connection).cert).to eq("cert")
-        expect(fetcher.send(:connection).key).to eq("key")
+        connection = configured_connection
+        expect(connection.cert).to eq("cert")
+        expect(connection.key).to eq("key")
       end
     end
   end
@@ -139,6 +185,19 @@ RSpec.describe Bundler::Fetcher do
       expect(fetcher.user_agent).to match(%r{rubygems/(\d.)})
       expect(fetcher.user_agent).to match(%r{ruby/(\d.)})
       expect(fetcher.user_agent).to match(%r{options/foo,bar})
+    end
+
+    it "strips userinfo from settings keys that embed a URI" do
+      allow(Bundler.settings).to receive(:all).and_return(
+        %w[foo mirror.http://user:token@example.org/ mirror.https://token@example.net/]
+      )
+      options = fetcher.user_agent.split(" ").find {|x| x.start_with?("options/") }
+
+      expect(options).not_to include("token")
+      expect(options).not_to include("user:")
+      expect(options).to include("mirror.http://example.org/")
+      expect(options).to include("mirror.https://example.net/")
+      expect(options).to include("foo")
     end
 
     describe "include CI information" do
@@ -178,6 +237,33 @@ RSpec.describe Bundler::Fetcher do
         expect(downloader).to receive(:fetch).once.and_return(body)
         result = fetcher.fetch_spec([name, version, platform])
         expect(result).to eq(spec)
+      end
+    end
+
+    context "when the download fails transiently" do
+      let(:spec) { Gem::Specification.new(name, version) }
+      let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(spec)) }
+
+      it "retries the download and returns the spec" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).twice do
+          @attempts = (@attempts || 0) + 1
+          raise Bundler::HTTPError, "transient network failure" if @attempts == 1
+          body
+        end
+
+        result = fetcher.fetch_spec([name, version, platform])
+        expect(result).to eq(spec)
+      end
+
+      it "does not retry an error that bypasses retries" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).once.and_raise(
+          Bundler::Fetcher::AuthenticationRequiredError.new("http://example.org")
+        )
+
+        expect { fetcher.fetch_spec([name, version, platform]) }.
+          to raise_error(Bundler::Fetcher::AuthenticationRequiredError)
       end
     end
 

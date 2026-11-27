@@ -18,7 +18,7 @@ describe "Thread.new" do
   end
 
   it "raises an exception when not given a block" do
-    -> { Thread.new }.should raise_error(ThreadError)
+    -> { Thread.new }.should.raise(ThreadError)
   end
 
   it "creates a subclass of thread calls super with a block in initialize" do
@@ -36,7 +36,7 @@ describe "Thread.new" do
 
     -> {
       c.new
-    }.should raise_error(ThreadError)
+    }.should.raise(ThreadError)
   end
 
   it "calls and respects #initialize for the block to use" do

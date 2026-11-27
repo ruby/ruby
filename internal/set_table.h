@@ -11,15 +11,18 @@ struct set_table {
     /* Cached features of the table -- see st.c for more details.  */
     unsigned char entry_power, bin_power, size_ind;
     /* How many times the table was rebuilt.  */
-    unsigned int rebuilds_num;
+    unsigned char rebuilds_num;
+
+    /* Start index of entries in array entries. */
+    unsigned int entries_start;
     const struct st_hash_type *type;
     /* Number of entries currently in the table.  */
     st_index_t num_entries;
 
-    /* Start and bound index of entries in array entries.
+    /* bound index of entries in array entries.
        entries_starts and entries_bound are in interval
        [0,allocated_entries].  */
-    st_index_t entries_start, entries_bound;
+    st_index_t entries_bound;
 
     /**
      * Array of size 2^entry_power.
@@ -42,6 +45,8 @@ set_table *rb_set_init_table_with_size(set_table *tab, const struct st_hash_type
 set_table *rb_set_init_numtable(void);
 #define set_init_numtable_with_size rb_set_init_numtable_with_size
 set_table *rb_set_init_numtable_with_size(st_index_t size);
+#define set_init_embedded_numtable_with_size rb_set_init_embedded_numtable_with_size
+set_table *rb_set_init_embedded_numtable_with_size(struct set_table *tbl, st_index_t size);
 #define set_table_delete rb_set_table_delete
 int rb_set_table_delete(set_table *, st_data_t *); /* returns 0:notfound 1:deleted */
 #define set_insert rb_set_insert
@@ -58,6 +63,8 @@ int rb_set_foreach_check(set_table *, set_foreach_check_callback_func *, st_data
 st_index_t rb_set_keys(set_table *table, st_data_t *keys, st_index_t size);
 #define set_free_table rb_set_free_table
 void rb_set_free_table(set_table *);
+#define set_free_embedded_table rb_set_free_embedded_table
+void set_free_embedded_table(set_table *tab);
 #define set_table_clear rb_set_table_clear
 void rb_set_table_clear(set_table *);
 #define set_copy rb_set_copy

@@ -13,12 +13,13 @@ describe "Module.constants" do
 
   it "returns an array of Symbol names" do
     # This in NOT an exhaustive list
-    Module.constants.should include(:Array, :Class, :Comparable, :Dir,
+    Module.constants.to_set.should >= Set[
+                                    :Array, :Class, :Comparable, :Dir,
                                     :Enumerable, :ENV, :Exception, :FalseClass,
                                     :File, :Float, :Hash, :Integer, :IO,
                                     :Kernel, :Math, :Method, :Module, :NilClass,
                                     :Numeric, :Object, :Range, :Regexp, :String,
-                                    :Symbol, :Thread, :Time, :TrueClass)
+                                    :Symbol, :Thread, :Time, :TrueClass]
   end
 
   it "returns Module's constants when given a parameter" do
@@ -92,6 +93,6 @@ describe "Module#constants" do
   end
 
   it "includes names of constants defined after a module is included" do
-    ConstantSpecs::ContainerA.constants.should include(:CS_CONST251)
+    ConstantSpecs::ContainerA.constants.should.include?(:CS_CONST251)
   end
 end

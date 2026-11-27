@@ -36,21 +36,12 @@
  */
 #define RREGEXP(obj)     RBIMPL_CAST((struct RRegexp *)(obj))
 
-/**
- * Convenient accessor macro.
- *
- * @param   obj  An object, which is in fact an ::RRegexp.
- * @return  The passed object's pattern buffer.
- */
-#define RREGEXP_PTR(obj) (RREGEXP(obj)->ptr)
 /** @cond INTERNAL_MACRO */
 #define RREGEXP_SRC      RREGEXP_SRC
 #define RREGEXP_SRC_PTR  RREGEXP_SRC_PTR
 #define RREGEXP_SRC_LEN  RREGEXP_SRC_LEN
 #define RREGEXP_SRC_END  RREGEXP_SRC_END
 /** @endcond */
-
-struct re_patter_buffer;  /* a.k.a. OnigRegexType, defined in onigmo.h */
 
 /**
  * Ruby's regular expression.   A regexp is compiled into  its own intermediate
@@ -62,33 +53,32 @@ struct RRegexp {
     /** Basic part, including flags and class. */
     struct RBasic basic;
 
-    /**
-     * The pattern buffer.   This is a quasi-opaque struct  that holds compiled
-     * intermediate representation of the regular expression.
-     *
-     * @note  Compilation of a regexp could be delayed until actual match.
-     */
-    struct re_pattern_buffer *ptr;
-
     /** Source code of this expression. */
     const VALUE src;
 
     /**
-     * Reference count.  A  regexp match can take extraordinarily  long time to
-     * run.  Ruby's  regular expression is  heavily extended and not  a regular
-     * language any  longer; runs in NP-time  in practice.  Now, Ruby  also has
-     * threads and GVL.  In order to prevent long GVL lockup, our regexp engine
-     * can release it on occasions.  This means that multiple threads can touch
-     * a regular expressions at once.  That  itself is okay.  But their cleanup
-     * phase shall wait for all  the concurrent runs, to prevent use-after-free
-     * situation.  This field is used to  count such threads that are executing
-     * this particular pattern buffer.
+     * Compiled variants for other encodings.
      *
-     * @warning  Of course, touching this field from extension libraries causes
-     *           catastrophic effects.  Just leave it.
+     * @warning  Do not access this field from extension libraries.
      */
-    unsigned long usecnt;
+    struct rb_regexp_variant *variants;
 };
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Convenient getter function.
+ *
+ * @param[in]  rexp  The regular expression in question.
+ * @return     The pattern buffer of the regular expression.
+ * @pre        `rexp` must be of ::RRegexp.
+ */
+static inline struct re_pattern_buffer *
+RREGEXP_PTR(VALUE rexp)
+{
+    RBIMPL_ASSERT_TYPE(rexp, RUBY_T_REGEXP);
+    return (struct re_pattern_buffer *)(((struct RRegexp *)rexp) + 1);
+}
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
@@ -140,7 +130,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  *
  * It seems nobody uses this function in the wild.  Subject to hide?
  */
-static inline long
+static inline rb_len_t
 RREGEXP_SRC_LEN(VALUE rexp)
 {
     return RSTRING_LEN(RREGEXP_SRC(rexp));

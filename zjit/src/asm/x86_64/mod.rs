@@ -25,7 +25,7 @@ pub struct X86UImm
     pub value: u64
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum RegType
 {
     GP,
@@ -34,7 +34,7 @@ pub enum RegType
     IP,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct X86Reg
 {
     // Size in bits
@@ -102,6 +102,10 @@ impl X86Reg {
             reg_no: self.reg_no
         }
     }
+
+    pub fn rex_needed(&self) -> bool {
+        self.reg_no > 7 || self.num_bits == 8 && self.reg_no >= 4
+    }
 }
 
 impl X86Opnd {
@@ -110,7 +114,7 @@ impl X86Opnd {
             X86Opnd::None => false,
             X86Opnd::Imm(_) => false,
             X86Opnd::UImm(_) => false,
-            X86Opnd::Reg(reg) => reg.reg_no > 7 || reg.num_bits == 8 && reg.reg_no >= 4,
+            X86Opnd::Reg(reg) => reg.rex_needed(),
             X86Opnd::Mem(mem) => mem.base_reg_no > 7 || (mem.idx_reg_no.unwrap_or(0) > 7),
             X86Opnd::IPRel(_) => false
         }
@@ -640,6 +644,23 @@ pub fn and(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
     );
 }
 
+/// bswap - Reverse the byte order of a register
+pub fn bswap(cb: &mut CodeBlock, opnd: X86Opnd) {
+    match opnd {
+        X86Opnd::Reg(reg) => {
+            assert!(reg.num_bits == 32 || reg.num_bits == 64, "bswap takes a 32-bit or 64-bit register");
+
+            if reg.num_bits == 64 || opnd.rex_needed() {
+                write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
+            }
+
+            cb.write_byte(0x0f);
+            write_opcode(cb, 0xc8, reg);
+        },
+        _ => unreachable!("bswap only takes a register")
+    }
+}
+
 /// call - Call to a pointer with a 32-bit displacement offset
 pub fn call_rel32(cb: &mut CodeBlock, rel32: i32) {
     // Write the opcode
@@ -679,6 +700,7 @@ pub fn call_label(cb: &mut CodeBlock, label: Label) {
     cb.label_ref(label, 5, |cb, src_addr, dst_addr| {
         cb.write_byte(0xE8);
         cb.write_int((dst_addr - src_addr) as u64, 32);
+        Ok(())
     });
 }
 
@@ -795,6 +817,7 @@ fn write_jcc<const OP: u8>(cb: &mut CodeBlock, label: Label) {
         cb.write_byte(0x0F);
         cb.write_byte(OP);
         cb.write_int((dst_addr - src_addr) as u64, 32);
+        Ok(())
     });
 }
 
@@ -834,6 +857,7 @@ pub fn jmp_label(cb: &mut CodeBlock, label: Label) {
     cb.label_ref(label, 5, |cb, src_addr, dst_addr| {
         cb.write_byte(0xE9);
         cb.write_int((dst_addr - src_addr) as u64, 32);
+        Ok(())
     });
 }
 
@@ -920,60 +944,43 @@ pub fn lea(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
 
 /// mov - Data move operation
 pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
+    fn emit_reg_imm(cb: &mut CodeBlock, reg: X86Reg, imm: X86Imm) {
+        // In case the source immediate could be zero extended to be 64
+        // bit, we can use the 32-bit operands version of the instruction.
+        // For example, we can turn mov(rax, 0x34) into the equivalent
+        // mov(eax, 0x34).
+        if (reg.num_bits == 64) && u32::try_from(imm.value).is_ok() {
+            if reg.rex_needed() {
+                write_rex(cb, false, 0, 0, reg.reg_no);
+            }
+            write_opcode(cb, 0xB8, reg);
+            cb.write_int(imm.value as u64, 32);
+        } else if reg.num_bits == 64 && imm.num_bits <= 32 {
+            // Use 32-to-64 bit sign-extension when possible
+            write_rm(cb, false, true /* REX.w */, X86Opnd::None, X86Opnd::Reg(reg), Some(0) /* /0 */, &[0xc7]);
+            cb.write_int(imm.value as u64, 32);
+        } else {
+            if reg.num_bits == 16 {
+                cb.write_byte(0x66);
+            }
+
+            if reg.rex_needed() || reg.num_bits == 64 {
+                write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
+            }
+
+            write_opcode(cb, if reg.num_bits == 8 { 0xb0 } else { 0xb8 }, reg);
+            cb.write_int(imm.value as u64, reg.num_bits.into());
+        }
+    }
     match (dst, src) {
         // R + Imm
-        (X86Opnd::Reg(reg), X86Opnd::Imm(imm)) => {
-            assert!(imm.num_bits <= reg.num_bits);
-
-            // In case the source immediate could be zero extended to be 64
-            // bit, we can use the 32-bit operands version of the instruction.
-            // For example, we can turn mov(rax, 0x34) into the equivalent
-            // mov(eax, 0x34).
-            if (reg.num_bits == 64) && (imm.value > 0) && (imm.num_bits <= 32) {
-                if dst.rex_needed() {
-                    write_rex(cb, false, 0, 0, reg.reg_no);
-                }
-                write_opcode(cb, 0xB8, reg);
-                cb.write_int(imm.value as u64, 32);
-            } else {
-                if reg.num_bits == 16 {
-                    cb.write_byte(0x66);
-                }
-
-                if dst.rex_needed() || reg.num_bits == 64 {
-                    write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
-                }
-
-                write_opcode(cb, if reg.num_bits == 8 { 0xb0 } else { 0xb8 }, reg);
-                cb.write_int(imm.value as u64, reg.num_bits.into());
-            }
-        },
+        (X86Opnd::Reg(reg), X86Opnd::Imm(imm)) => emit_reg_imm(cb, reg, imm),
         // R + UImm
         (X86Opnd::Reg(reg), X86Opnd::UImm(uimm)) => {
-            assert!(uimm.num_bits <= reg.num_bits);
-
-            // In case the source immediate could be zero extended to be 64
-            // bit, we can use the 32-bit operands version of the instruction.
-            // For example, we can turn mov(rax, 0x34) into the equivalent
-            // mov(eax, 0x34).
-            if (reg.num_bits == 64) && (uimm.value <= u32::MAX.into()) {
-                if dst.rex_needed() {
-                    write_rex(cb, false, 0, 0, reg.reg_no);
-                }
-                write_opcode(cb, 0xB8, reg);
-                cb.write_int(uimm.value, 32);
-            } else {
-                if reg.num_bits == 16 {
-                    cb.write_byte(0x66);
-                }
-
-                if dst.rex_needed() || reg.num_bits == 64 {
-                    write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
-                }
-
-                write_opcode(cb, if reg.num_bits == 8 { 0xb0 } else { 0xb8 }, reg);
-                cb.write_int(uimm.value, reg.num_bits.into());
-            }
+            // u64->i64 type cast is a bit pattern no-op
+            let value: u64 = uimm.value;
+            let value = value as i64;
+            emit_reg_imm(cb, reg, X86Imm { num_bits: imm_num_bits(value), value });
         },
         // M + Imm
         (X86Opnd::Mem(mem), X86Opnd::Imm(imm)) => {
@@ -1155,6 +1162,9 @@ pub fn push(cb: &mut CodeBlock, opnd: X86Opnd) {
         X86Opnd::Mem(_mem) => {
             write_rm(cb, false, false, X86Opnd::None, opnd, Some(6), &[0xff]);
         },
+        X86Opnd::Imm(X86Imm { value: 0, .. }) | X86Opnd::UImm(X86UImm { value: 0, .. }) => {
+            cb.write_bytes(&[0x6a, 0x00]);
+        }
         _ => unreachable!()
     }
 }
@@ -1201,6 +1211,19 @@ fn write_shift(cb: &mut CodeBlock, op_mem_one_pref: u8, op_mem_cl_pref: u8, op_m
             unreachable!("unsupported operands: {:?}, {:?}", opnd0, opnd1);
         }
     }
+}
+
+/// rol - Rotate left
+pub fn rol(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
+    write_shift(
+        cb,
+        0xD1, // opMemOnePref,
+        0xD3, // opMemClPref,
+        0xC1, // opMemImmPref,
+        0x00,
+        opnd0,
+        opnd1
+    );
 }
 
 // sal - Shift arithmetic left

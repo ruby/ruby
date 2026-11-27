@@ -4,7 +4,7 @@ require 'date'
 describe "DateTime#to_date" do
   it "returns an instance of Date" do
     dt = DateTime.new(2012, 12, 24, 12, 23, 00, '+05:00')
-    dt.to_date.should be_kind_of(Date)
+    dt.to_date.should.is_a?(Date)
   end
 
   it "maintains the same year" do

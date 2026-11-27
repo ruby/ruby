@@ -177,6 +177,132 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  context "when newer releases require a newer Ruby or RubyGems" do
+    before do
+      build_repo4 do
+        build_gem "foo", "0.9"
+        build_gem "foo", "1.0"
+        build_gem("foo", "2.0") {|s| s.required_rubygems_version = "> 9000" }
+        build_gem("foo", "3.0") {|s| s.required_ruby_version = "> 9000" }
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+        gem "foo", group: :test
+      G
+    end
+
+    it "locks a compatible version with the full index even for an excluded group" do
+      bundle "lock --full-index", env: { "BUNDLE_WITHOUT" => "test" }
+
+      expect(the_bundle.locked_specs).to eq(["foo-1.0"])
+    end
+
+    it "fetches missing requirements only for selected versions from the dependency API" do
+      bundle "lock --verbose", artifice: "endpoint"
+
+      expect(the_bundle.locked_specs).to eq(["foo-1.0"])
+      expect(out).not_to include("foo-0.9.gemspec.rz")
+    end
+
+    it "locks a compatible version without fetching gemspecs from the compact index" do
+      bundle "lock --verbose"
+
+      expect(the_bundle.locked_specs).to eq(["foo-1.0"])
+      expect(out).not_to include(".gemspec.rz")
+    end
+  end
+
+  it "locks a compatible build of the same version when the exact platform build requires a newer Ruby" do
+    build_repo4 do
+      build_gem("foo", "1.0") {|s| s.platform = "x86_64-linux" }
+      build_gem "foo", "1.0" do |s|
+        s.platform = "x86_64-linux-gnu"
+        s.required_ruby_version = "> 9000"
+      end
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+      gem "foo"
+    G
+
+    simulate_platform "x86_64-linux-gnu" do
+      bundle "lock", artifice: "endpoint"
+    end
+
+    expect(the_bundle.locked_specs).to eq(["foo-1.0-x86_64-linux"])
+  end
+
+  it "honors a Ruby requirement override when the dependency API omits metadata" do
+    build_repo4 do
+      build_gem("foo", "1.0") {|s| s.required_ruby_version = ">= 0" }
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+      gem "foo"
+      override "foo", required_ruby_version: "> 9000"
+    G
+
+    bundle "lock", artifice: "endpoint", raise_on_error: false
+
+    expect(err).to include("Ruby > 9000", "version solving has failed")
+    expect(bundled_app_lock).not_to exist
+  end
+
+  it "writes the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock"
+
+    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app("custom.lock")).to exist
+  end
+
+  it "writes to BUNDLE_LOCKFILE over the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock", env: { "BUNDLE_LOCKFILE" => "env.lock" }
+
+    expect(bundled_app("env.lock")).to exist
+    expect(bundled_app("custom.lock")).not_to exist
+  end
+
+  it "does not write a lockfile when the Gemfile sets lockfile false" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile false
+    G
+
+    bundle "lock"
+
+    expect(err).to include("Not writing a lockfile because the Gemfile sets `lockfile false`")
+    expect(out).not_to include("Writing lockfile")
+    expect(bundled_app_lock).not_to exist
+  end
+
   it "prints a lockfile without fetching new checksums if the existing lockfile had no checksums" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
@@ -463,6 +589,49 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  it "updates gems given through repeated --update options" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+      build_gem "foo", "2.0"
+      build_gem "bar", "1.0"
+      build_gem "bar", "2.0"
+      build_gem "baz", "1.0"
+      build_gem "baz", "2.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "foo"
+      gem "bar"
+      gem "baz"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          bar (1.0)
+          baz (1.0)
+          foo (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        bar
+        baz
+        foo
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle "lock --update foo --update bar"
+
+    expect(lockfile).to include("foo (2.0)", "bar (2.0)", "baz (1.0)")
+  end
+
   it "updates specific gems using --update, even if that requires unlocking other top level gems" do
     build_repo4 do
       build_gem "prism", "0.15.1"
@@ -677,8 +846,8 @@ RSpec.describe "bundle lock" do
       gem "thin"
       gem "myrack_middleware", :group => "test"
     G
-    bundle "config set without test"
-    bundle "config set path vendor/bundle"
+    bundle_config "without test"
+    bundle_config "path vendor/bundle"
     bundle "lock", verbose: true
     expect(bundled_app("vendor/bundle")).not_to exist
   end
@@ -704,8 +873,9 @@ RSpec.describe "bundle lock" do
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
-      # establish a lockfile set to 1.4.3
-      install_gemfile <<-G
+      # establish a lockfile set to 1.4.3 (these examples only assert on the
+      # generated lockfile, so resolve-and-lock without the install)
+      lock_gemfile <<-G
         source "https://gem.repo4"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
@@ -842,11 +1012,75 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to end_with("BUNDLED WITH\n  99\n")
   end
 
+  it "does not update the bundler version in the lockfile to a prerelease version, unless the target version allows prereleases" do
+    build_repo4 do
+      build_gem "bundler", "55"
+      build_gem "bundler", "56.0.0.beta1"
+    end
+
+    system_gems "bundler-55", gem_repo: gem_repo4
+
+    install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "https://gem.repo4"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
+
+    bundle "lock --update --bundler '> 0.a' --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  56.0.0.beta1\n")
+  end
+
   it "supports adding new platforms when there's no previous lockfile" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
     bundle "lock --add-platform java x86-mingw32 --verbose"
     expect(out).to include("Resolving dependencies because there's no lockfile")
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
+  end
+
+  it "adds a native platform from JRuby when the Gemfile has a JRuby-only dependency" do
+    gemfile <<~G
+      source "https://gem.repo1"
+
+      # simulate_platform sets the gem platform. CurrentRuby also checks the engine.
+      Bundler::CurrentRuby.const_set(:RUBY_ENGINE, "jruby")
+
+      gem "only_java", platforms: :jruby
+      gem "platform_specific", platforms: :ruby
+    G
+
+    simulate_platform "universal-java" do
+      bundle "lock --add-platform x86-darwin-100"
+      bundle "lock --add-platform x86_64-linux"
+    end
+
+    expect(the_bundle.locked_platforms).to contain_exactly("universal-java", "x86-darwin-100", "x86_64-linux")
+    expect(the_bundle.locked_specs).to include("only_java-1.1-java", "platform_specific-1.0-x86-darwin-100")
+  end
+
+  it "respects Ruby version restrictions when adding a native platform" do
+    gemfile <<~G
+      source "https://gem.repo1"
+
+      gem "myrack"
+      gem "only_java", platforms: [:ruby_19, :jruby_19]
+    G
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-platform arm64-darwin universal-java"
+    end
+
+    expect(the_bundle.locked_platforms).to include("arm64-darwin", "universal-java")
+  end
+
+  it "supports adding platforms through repeated --add-platform options" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
+    bundle "lock --add-platform java --add-platform x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
@@ -937,7 +1171,7 @@ RSpec.describe "bundle lock" do
         platform_specific
     L
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -974,6 +1208,19 @@ RSpec.describe "bundle lock" do
     expect(the_bundle.locked_platforms).to match_array(default_platform_list("x86-mingw32"))
   end
 
+  it "supports removing platforms through repeated --remove-platform options" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
+    bundle "lock --add-platform java x86-mingw32"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
+
+    bundle "lock --remove-platform java --remove-platform x86-mingw32"
+
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list)
+  end
+
   it "also cleans up redundant platform gems when removing platforms" do
     build_repo4 do
       build_gem "nokogiri", "1.12.0"
@@ -988,7 +1235,7 @@ RSpec.describe "bundle lock" do
     end
 
     simulate_platform "x86_64-darwin-22" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "nokogiri"
@@ -1083,8 +1330,10 @@ RSpec.describe "bundle lock" do
     simulate_platform("x86-mingw32") { bundle :lock }
 
     checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "ffi", "1.9.14"
       c.checksum gem_repo4, "ffi", "1.9.14", "x86-mingw32"
       c.checksum gem_repo4, "gssapi", "1.2.0"
+      c.checksum gem_repo4, "mixlib-shellout", "2.2.6"
       c.checksum gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32"
       c.checksum gem_repo4, "win32-process", "0.8.3"
     end
@@ -1093,9 +1342,11 @@ RSpec.describe "bundle lock" do
       GEM
         remote: https://gem.repo4/
         specs:
+          ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
             ffi (>= 1.0.1)
+          mixlib-shellout (2.2.6)
           mixlib-shellout (2.2.6-universal-mingw32)
             win32-process (~> 0.8.2)
           win32-process (0.8.3)
@@ -1112,7 +1363,7 @@ RSpec.describe "bundle lock" do
         #{Bundler::VERSION}
     G
 
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle :lock
 
     checksums.checksum gem_repo4, "ffi", "1.9.14"
@@ -1297,6 +1548,11 @@ RSpec.describe "bundle lock" do
         s.platform = "x64-mingw-ucrt"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
     end
 
     gemfile <<-G
@@ -1322,6 +1578,40 @@ RSpec.describe "bundle lock" do
     L
 
     bundle "lock --add-platform x86_64-linux"
+  end
+
+  it "adds platform specific gems for a new platform when another gem's variant for that platform is incompatible with the current ruby" do
+    build_repo4 do
+      build_gem "sqlite3", "2.10.1"
+      build_gem "sqlite3", "2.10.1" do |s|
+        s.platform = "x86_64-linux"
+      end
+      build_gem "sqlite3", "2.10.1" do |s|
+        s.platform = "arm64-darwin"
+      end
+
+      build_gem "bcrypt_pbkdf", "1.1.2"
+      build_gem "bcrypt_pbkdf", "1.1.2" do |s|
+        s.platform = "arm64-darwin"
+        s.required_ruby_version = "< #{Gem.ruby_version}"
+      end
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "sqlite3"
+      gem "bcrypt_pbkdf"
+    G
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-checksums --add-platform arm64-darwin"
+    end
+
+    expect(lockfile).to include("sqlite3 (2.10.1-arm64-darwin)")
+    expect(lockfile).to include("bcrypt_pbkdf (1.1.2)\n")
+    expect(lockfile).not_to include("bcrypt_pbkdf (1.1.2-arm64-darwin)")
+    expect(the_bundle.locked_platforms).to include("arm64-darwin")
   end
 
   it "adds platform specific gems as necessary, even when adding the current platform" do
@@ -1418,6 +1708,49 @@ RSpec.describe "bundle lock" do
         * sorbet-static-0.5.11989-x86_64-linux
     E
     expect(err).to include(nice_error)
+  end
+
+  it "reports the added platform when a transitive dependency is missing for it" do
+    build_repo4 do
+      build_gem("sorbet") {|s| s.add_dependency "sorbet-static" }
+      build_gem("sorbet-static") {|s| s.platform = "x86_64-linux" }
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "sorbet", platforms: :ruby
+    G
+
+    simulate_platform "universal-java" do
+      bundle "lock --add-platform x86_64-linux"
+
+      expect do
+        bundle "lock --add-platform arm64-darwin", raise_on_error: false
+      end.not_to change { lockfile }
+    end
+
+    expect(err).to include("Could not find gem 'sorbet-static (= 1.0)' with platform 'arm64-darwin'")
+  end
+
+  it "reports all target platforms when no version covers them together" do
+    build_repo4 do
+      build_gem("sorbet-static") {|s| s.platform = "x86_64-linux" }
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      Bundler::CurrentRuby.const_set(:RUBY_ENGINE, "jruby")
+      gem "sorbet-static", platforms: :ruby
+    G
+
+    simulate_platform "universal-java" do
+      bundle "lock --add-platform x86_64-linux arm64-darwin", raise_on_error: false
+    end
+
+    expect(err).to include("valid for all resolution platforms (x86_64-linux, arm64-darwin)")
+    expect(the_bundle).not_to be_locked
   end
 
   it "respects lower bound ruby requirements" do
@@ -1737,8 +2070,9 @@ RSpec.describe "bundle lock" do
 
       Because rails >= 7.0.4 depends on railties = 7.0.4
         and rails < 7.0.4 depends on railties = 7.0.3.1,
-        railties = 7.0.3.1 OR = 7.0.4 is required.
-      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository https://gem.repo4/ or installed locally,
+        every version of rails requires railties = 7.0.3.1 OR = 7.0.4.
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository https://gem.repo4/ or installed locally
+        and Gemfile depends on rails >= 7.0.3.1,
         version solving has failed.
     ERR
   end
@@ -2195,7 +2529,7 @@ RSpec.describe "bundle lock" do
       end
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile <<-G
@@ -2229,7 +2563,7 @@ RSpec.describe "bundle lock" do
       build_gem "warning", "18.0.0"
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile(<<-G, artifice: "endpoint")
@@ -2295,6 +2629,10 @@ RSpec.describe "bundle lock" do
 
     bundle("lock --add-checksums", artifice: "endpoint")
 
+    checksums = checksums_section_when_enabled do |c|
+      c.no_checksum "warning", "18.0.0"
+    end
+
     expect(lockfile).to eq <<~L
       GEM
         remote: https://gem.repo4/
@@ -2306,13 +2644,32 @@ RSpec.describe "bundle lock" do
 
       DEPENDENCIES
         warning
-
-      CHECKSUMS
-        warning (18.0.0)
-
+      #{checksums}
       BUNDLED WITH
         #{Bundler::VERSION}
     L
+  end
+
+  it "locks a transitive prerelease when the stable release has a conflicting dependency" do
+    build_repo4 do
+      build_gem "aa", "1.0.0" do |s|
+        s.add_dependency "bb", "~> 1.0.0.rc1"
+        s.add_dependency "cc", "~> 1.0"
+      end
+      build_gem "bb", "1.0.0.rc1"
+      build_gem "bb", "1.0.0" do |s|
+        s.add_dependency "cc", ">= 2.0"
+      end
+      build_gem "cc", "1.0.0"
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+      gem "aa"
+    G
+    bundle "lock"
+
+    expect(lockfile).to include("aa (1.0.0)", "bb (1.0.0.rc1)", "cc (1.0.0)")
   end
 
   context "when re-resolving to include prereleases" do
@@ -2871,6 +3228,177 @@ RSpec.describe "bundle lock" do
       end
 
       expect(lockfile).to eq(original_lockfile.gsub(/^  ruby\n/m, ""))
+    end
+  end
+
+  describe "--add-ruby-abi and --remove-ruby-abi", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "adds and removes the content-addressed gems for a Ruby ABI" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n  #{mismatched_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi, mismatched_abi))
+
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{mismatched_abi}"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
+    it "rejects a value that is not a Ruby ABI" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi foo", raise_on_error: false
+
+        expect(err).to include("Expected `--add-ruby-abi` to be a Ruby ABI like `X.Y`, got \"foo\"")
+      end
+    end
+
+    it "refuses to remove a Ruby ABI that is not locked" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(err).to include("Unable to remove the Ruby ABI `#{mismatched_abi}` since the only Ruby ABIs are #{current_abi}")
+      end
+    end
+
+    it "adds and removes Ruby ABIs with --local from the installed gems" do
+      simulate_platform "x86_64-linux" do
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi} --local", raise_on_error: false
+        expect(err).to include("Could not find content-addressed gems for Ruby ABI #{mismatched_abi} in locally installed gems")
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+
+        bundle_with_content_addressed_gems "lock --remove-ruby-abi #{current_abi} --local"
+        expect(lockfile).not_to include("RUBY ABIS")
+        expect(locked_addresses).to be_empty
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{current_abi} --local"
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
+    it "refuses to add a Ruby ABI the Gemfile's ruby directive rules out" do
+      simulate_platform "x86_64-linux" do
+        gemfile <<~G
+          source "https://gem.repo2"
+
+          ruby "#{RUBY_VERSION}"
+          gem "mygem"
+        G
+        bundle_with_content_addressed_gems "install"
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(err).to include("Unable to add the Ruby ABI `#{mismatched_abi}` since your Gemfile requires ruby")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
+    end
+
+    it "refuses to add a locked Ruby ABI that a newly added ruby directive rules out instead of silently pruning it" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi, mismatched_abi), ruby_abis: [current_abi, mismatched_abi].sort)
+        original_lockfile = lockfile
+
+        gemfile <<~G
+          source "https://gem.repo2"
+
+          ruby "#{RUBY_VERSION}"
+          gem "mygem"
+        G
+
+        bundle_with_content_addressed_gems "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Unable to add the Ruby ABI `#{mismatched_abi}` since your Gemfile requires ruby")
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+  end
+
+  describe "--add-ruby-abi and --remove-ruby-abi on older RubyGems", rubygems: "< 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "refuses to change the locked Ruby ABIs" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses(addresses(current_abi), ruby_abis: [current_abi])
+        original_lockfile = lockfile
+
+        bundle "lock --add-ruby-abi #{mismatched_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later")
+        expect(lockfile).to eq(original_lockfile)
+
+        bundle "lock --remove-ruby-abi #{current_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later")
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+
+    it "refuses to add a Ruby ABI to a lockfile without content-addressed gems" do
+      simulate_platform "x86_64-linux" do
+        bundle "install"
+        original_lockfile = lockfile
+
+        bundle "lock --add-ruby-abi #{current_abi}", raise_on_error: false
+
+        expect(last_command).to be_failure
+        expect(err).to include("Changing the Ruby ABIs in the lockfile requires RubyGems 4.1.0 or later")
+        expect(lockfile).to eq(original_lockfile)
+      end
+    end
+  end
+
+  describe "--normalize-platforms with content-addressed gems", rubygems: ">= 4.1.0.a" do
+    before do
+      skip_unless_content_addressing_available!
+      build_repo2_with_content_addressed_gems
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+    end
+
+    it "rebuilds the content addresses from the source" do
+      simulate_platform "x86_64-linux" do
+        lockfile_with_content_addresses({ "0000000000000000" => nil }.merge(addresses(current_abi)), ruby_abis: [current_abi])
+
+        bundle_with_content_addressed_gems "lock --normalize-platforms"
+
+        expect(lockfile).to include("RUBY ABIS\n  #{current_abi}\n")
+        expect(locked_addresses).to eq(addresses(current_abi))
+      end
     end
   end
 end

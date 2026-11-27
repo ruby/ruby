@@ -17,7 +17,7 @@ describe "IO#autoclose?" do
 
   it "cannot be queried on a closed IO object" do
     @io.close
-    -> { @io.autoclose? }.should raise_error(IOError, /closed stream/)
+    -> { @io.autoclose? }.should.raise(IOError, /closed stream/)
   end
 end
 
@@ -72,6 +72,6 @@ describe "IO#autoclose=" do
 
   it "cannot be set on a closed IO object" do
     @io.close
-    -> { @io.autoclose = false }.should raise_error(IOError, /closed stream/)
+    -> { @io.autoclose = false }.should.raise(IOError, /closed stream/)
   end
 end

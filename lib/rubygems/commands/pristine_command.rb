@@ -88,6 +88,10 @@ If you have made modifications to an installed gem, the pristine command
 will revert them.  All extensions are rebuilt and all bin stubs for the gem
 are regenerated after checking for modifications.
 
+Rebuilding extensions also refreshes C-extension gems against updated system
+libraries (for example after OS or package upgrades) to avoid mismatches like
+outdated library version warnings.
+
 If the cached gem cannot be found it will be downloaded.
 
 If --no-extensions is provided pristine will not attempt to restore a gem
@@ -128,6 +132,11 @@ extensions will be restored.
     specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
+      if options[:only_missing_extensions]
+        say "No gems with missing extensions to restore"
+        return
+      end
+
       raise Gem::Exception,
             "Failed to find gems #{options[:args]} #{options[:version]}"
     end

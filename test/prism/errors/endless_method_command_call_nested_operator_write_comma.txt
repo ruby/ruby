@@ -1,0 +1,3 @@
+x = y += def f = foo 1 rescue z, w
+                               ^ invalid comma
+

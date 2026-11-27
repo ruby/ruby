@@ -22,14 +22,14 @@ describe "Socket::Option.new" do
   end
 
   it "should raise error on unknown family" do
-    -> { Socket::Option.new(:INET4, :SOCKET, :KEEPALIVE, [0].pack('i')) }.should raise_error(SocketError)
+    -> { Socket::Option.new(:INET4, :SOCKET, :KEEPALIVE, [0].pack('i')) }.should.raise(SocketError)
   end
 
   it "should raise error on unknown level" do
-    -> { Socket::Option.new(:INET, :ROCKET, :KEEPALIVE, [0].pack('i')) }.should raise_error(SocketError)
+    -> { Socket::Option.new(:INET, :ROCKET, :KEEPALIVE, [0].pack('i')) }.should.raise(SocketError)
   end
 
   it "should raise error on unknown option name" do
-    -> { Socket::Option.new(:INET, :SOCKET, :ALIVE, [0].pack('i')) }.should raise_error(SocketError)
+    -> { Socket::Option.new(:INET, :SOCKET, :ALIVE, [0].pack('i')) }.should.raise(SocketError)
   end
 end

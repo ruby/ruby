@@ -1,7 +1,11 @@
 require_relative '../../../spec_helper'
 require 'digest'
-require_relative 'shared/update'
 
 describe "Digest::Instance#<<" do
-  it_behaves_like :digest_instance_update, :<<
+  it "raises a RuntimeError if called" do
+    c = Class.new do
+      include Digest::Instance
+    end
+    -> { c.new << "test" }.should.raise(RuntimeError)
+  end
 end

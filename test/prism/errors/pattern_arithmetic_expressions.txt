@@ -1,3 +1,4 @@
 case 1; in -1**2; end
-           ^~~~~ expected a pattern expression after the `in` keyword
+             ^ expected a delimiter after the patterns of an `in` clause
+             ^~ unexpected '**', ignoring it
 

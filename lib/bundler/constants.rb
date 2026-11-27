@@ -3,7 +3,7 @@
 require "rbconfig"
 
 module Bundler
-  WINDOWS = RbConfig::CONFIG["host_os"] =~ /(msdos|mswin|djgpp|mingw)/
+  WINDOWS = RbConfig::CONFIG["host_os"] =~ /(mswin|mingw)/
   deprecate_constant :WINDOWS
 
   FREEBSD = RbConfig::CONFIG["host_os"].to_s.include?("bsd")

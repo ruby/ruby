@@ -1,8 +1,8 @@
 require_relative '../../spec_helper'
 require 'ostruct'
-require_relative 'fixtures/classes'
-require_relative 'shared/inspect'
 
 describe "OpenStruct#inspect" do
-  it_behaves_like :ostruct_inspect, :inspect
+  it "is an alias of OpenStruct#to_s" do
+    OpenStruct.instance_method(:inspect).should == OpenStruct.instance_method(:to_s)
+  end
 end

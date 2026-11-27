@@ -2,6 +2,7 @@
 
 require_relative "vendored_net_http"
 require_relative "user_interaction"
+require_relative "uri_formatter"
 
 class Gem::Request
   extend Gem::UserInteraction
@@ -60,7 +61,7 @@ class Gem::Request
     if Gem.configuration.ssl_client_cert
       pem = File.read Gem.configuration.ssl_client_cert
       connection.cert = OpenSSL::X509::Certificate.new pem
-      connection.key = OpenSSL::PKey::RSA.new pem
+      connection.key = OpenSSL::PKey.read pem
     end
 
     store.set_default_paths

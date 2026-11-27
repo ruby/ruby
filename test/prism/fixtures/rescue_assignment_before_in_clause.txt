@@ -1,0 +1,7 @@
+case x; in First; work rescue u = values in Second; end
+
+case x; in 1; f rescue *xs = m 1 in 2; end
+
+case x; in First; work rescue u, v = values in Second; tail; end
+
+case x; in First; x = y = f 1 rescue a rescue u, v = values in Second; tail; end

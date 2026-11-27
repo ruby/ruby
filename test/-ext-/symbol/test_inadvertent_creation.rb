@@ -489,5 +489,48 @@ module Test_Symbol
         Bug::Symbol.iv_get(obj, name)
       end
     end
+
+    def assert_io_buffer_no_immortal_symbol_created(buffer = IO::Buffer.new(128))
+      assert_no_immortal_symbol_created("io_buffer") do |name|
+        yield buffer, name.to_sym
+      end
+    end
+
+    def test_io_buffer_size_of_inadvertent_id_creation
+      assert_io_buffer_no_immortal_symbol_created(nil) do |_, name|
+        assert_raise(ArgumentError) {IO::Buffer.size_of(name)}
+        assert_raise(ArgumentError) {IO::Buffer.size_of([name])}
+      end
+    end
+
+    def test_io_buffer_each_inadvertent_id_creation
+      assert_io_buffer_no_immortal_symbol_created do |buffer, name|
+        assert_raise(ArgumentError) {buffer.each(name, 0, 1) {}}
+      end
+    end
+
+    def test_io_buffer_get_value_inadvertent_id_creation
+      assert_io_buffer_no_immortal_symbol_created do |buffer, name|
+        assert_raise(ArgumentError) {buffer.get_value(name, 0)}
+      end
+    end
+
+    def test_io_buffer_get_values_inadvertent_id_creation
+      assert_io_buffer_no_immortal_symbol_created do |buffer, name|
+        assert_raise(ArgumentError) {buffer.get_values([name], 0)}
+      end
+    end
+
+    def test_io_buffer_set_value_inadvertent_id_creation
+      assert_io_buffer_no_immortal_symbol_created do |buffer, name|
+        assert_raise(ArgumentError) {buffer.set_value(name, 0, 0)}
+      end
+    end
+
+    def test_io_buffer_set_values_inadvertent_id_creation
+      assert_io_buffer_no_immortal_symbol_created do |buffer, name|
+        assert_raise(ArgumentError) {buffer.set_values([name], 0, [0])}
+      end
+    end
   end
 end

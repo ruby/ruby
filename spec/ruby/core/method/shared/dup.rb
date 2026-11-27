@@ -4,7 +4,7 @@ describe :method_dup, shared: true do
     b = a.send(@method)
 
     a.should == b
-    a.should_not equal(b)
+    a.should_not.equal?(b)
   end
 
   ruby_version_is "3.4" do

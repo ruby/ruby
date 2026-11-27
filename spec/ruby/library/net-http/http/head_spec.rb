@@ -16,10 +16,10 @@ describe "Net::HTTP#head" do
   it "sends a HEAD request to the passed path and returns the response" do
     response = @http.head("/request")
     # HEAD requests have no responses
-    response.body.should be_nil
+    response.body.should == nil
   end
 
   it "returns a Net::HTTPResponse" do
-    @http.head("/request").should be_kind_of(Net::HTTPResponse)
+    @http.head("/request").should.is_a?(Net::HTTPResponse)
   end
 end

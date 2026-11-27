@@ -6,7 +6,7 @@ require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
 
-  gem 'rubocop', '1.66.1'
+  gem 'rubocop', '1.86.2'
 end
 
 exec(Gem.bin_path('rubocop', 'rubocop'), *ARGV)

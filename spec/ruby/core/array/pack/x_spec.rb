@@ -32,6 +32,22 @@ describe "Array#pack with format 'x'" do
     [].pack("x*").should == ""
     [1, 2].pack("Cx*C").should == "\x01\x02"
   end
+
+  ruby_version_is "4.1" do
+    it "aligns to the given byte boundary with the '!' modifier" do
+      [1, 2].pack("C x!4 C").should == "\x01\x00\x00\x00\x02"
+    end
+
+    it "aligns from the beginning of the output with '@!'" do
+      buffer = +"z"
+      [1, 2].pack("C @!4 C", buffer: buffer)
+      buffer.should == "z\x01\x00\x00\x02"
+    end
+
+    it "aligns to a directive's alignment with the '!' modifier" do
+      [1, 2].pack("C x!i i").should == [1, 2].pack("i< i")
+    end
+  end
 end
 
 describe "Array#pack with format 'X'" do
@@ -56,10 +72,10 @@ describe "Array#pack with format 'X'" do
   end
 
   it "raises an ArgumentError if the output string is empty" do
-    -> { [1, 2, 3].pack("XC") }.should raise_error(ArgumentError)
+    -> { [1, 2, 3].pack("XC") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if the count modifier is greater than the bytes in the string" do
-    -> { [1, 2, 3].pack("C2X3") }.should raise_error(ArgumentError)
+    -> { [1, 2, 3].pack("C2X3") }.should.raise(ArgumentError)
   end
 end

@@ -3,4 +3,8 @@
         "disasm",
     ],
     "rust-analyzer.cfg.setTest": false,
+    // rust-analyzer bundled in the VSCode extension may only support Rust newer than 1.85.0.
+    // To avoid warnings, install rust-analyzer with `rustup component add rust-analyzer` and
+    // use `~/.cargo/bin/rust-analyzer` with the following config.
+    "rust-analyzer.server.path": "rust-analyzer",
 }

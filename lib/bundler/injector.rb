@@ -41,7 +41,7 @@ module Bundler
 
         # resolve to see if the new deps broke anything
         @definition = builder.to_definition(lockfile_path, {})
-        @definition.remotely!
+        @definition.resolve_remotely!
 
         # since nothing broke, we can add those gems to the gemfile
         append_to(gemfile_path, build_gem_lines(@options[:conservative_versioning])) if @deps.any?
@@ -80,20 +80,19 @@ module Bundler
     def conservative_version(spec)
       version = spec.version
       return ">= 0" if version.nil?
-      segments = version.segments
       seg_end_index = version >= Gem::Version.new("1.0") ? 1 : 2
 
       prerelease_suffix = version.to_s.delete_prefix(version.release.to_s) if version.prerelease?
-      "#{version_prefix}#{segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
+      "#{version_prefix}#{version.segments[0..seg_end_index].join(".")}#{prerelease_suffix}"
     end
 
     def version_prefix
       if @options[:strict]
         "= "
-      elsif @options[:optimistic]
-        ">= "
-      else
+      elsif @options[:pessimistic]
         "~> "
+      else
+        ">= "
       end
     end
 

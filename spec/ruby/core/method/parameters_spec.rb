@@ -22,6 +22,12 @@ describe "Method#parameters" do
       local_is_not_parameter = {}
     end
 
+    ruby_version_is "4.1" do
+      eval <<-RUBY
+        def one_noblock(&nil); end
+      RUBY
+    end
+
     def forward_parameters(...) end
 
     def underscore_parameters(_, _, _ = 1, *_, _:, _: 2, **_, &_); end
@@ -187,6 +193,13 @@ describe "Method#parameters" do
     m.parameters.should == [[:nokey]]
   end
 
+  ruby_version_is "4.1" do
+    it "returns [[:noblock]] for a method with a single &nil parameter" do
+      m = MethodSpecs::Methods.instance_method(:one_noblock)
+      m.parameters.should == [[:noblock]]
+    end
+  end
+
   it "works with ->(){} as the value of an optional argument" do
     m = MethodSpecs::Methods.instance_method(:one_opt_with_stabby)
     m.parameters.should == [[:opt,:a]]
@@ -295,7 +308,7 @@ describe "Method#parameters" do
     [
       [[:rest]],
       [[:opt]]
-    ].should include([].method(:pop).parameters)
+    ].should.include?([].method(:pop).parameters)
   end
 
   it "returns [[:req]] for each parameter for core methods with fixed-length argument lists" do

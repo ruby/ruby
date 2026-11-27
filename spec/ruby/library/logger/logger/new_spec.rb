@@ -28,13 +28,13 @@ describe "Logger#new" do
   end
 
   it "receives a frequency rotation as second argument" do
-    -> { Logger.new(@log_file, "daily") }.should_not raise_error
-    -> { Logger.new(@log_file, "weekly") }.should_not raise_error
-    -> { Logger.new(@log_file, "monthly") }.should_not raise_error
+    -> { Logger.new(@log_file, "daily") }.should_not.raise
+    -> { Logger.new(@log_file, "weekly") }.should_not.raise
+    -> { Logger.new(@log_file, "monthly") }.should_not.raise
   end
 
   it "also receives a number of log files to keep as second argument" do
-    -> { Logger.new(@log_file, 1).close }.should_not raise_error
+    -> { Logger.new(@log_file, 1).close }.should_not.raise
   end
 
   it "receives a maximum logfile size as third argument" do
@@ -94,7 +94,7 @@ describe "Logger#new" do
     logger.formatter.should == formatter
   end
 
-  it "receives shift_period_suffix " do
+  it "receives shift_period_suffix" do
     shift_period_suffix = "%Y-%m-%d"
     path                = tmp("shift_period_suffix_test.log")
     now                 = Time.now

@@ -7,7 +7,7 @@ describe "Process::Status#success?" do
     end
 
     it "returns true" do
-      $?.success?.should be_true
+      $?.success?.should == true
     end
   end
 
@@ -17,7 +17,7 @@ describe "Process::Status#success?" do
     end
 
     it "returns false" do
-      $?.success?.should be_false
+      $?.success?.should == false
     end
   end
 
@@ -28,13 +28,13 @@ describe "Process::Status#success?" do
 
     platform_is_not :windows do
       it "returns nil" do
-        $?.success?.should be_nil
+        $?.success?.should == nil
       end
     end
 
     platform_is :windows do
       it "always returns true" do
-        $?.success?.should be_true
+        $?.success?.should == true
       end
     end
   end

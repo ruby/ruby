@@ -1,14 +1,22 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/enumerable_enumeratorized'
+require_relative 'shared/value_packing'
 
 describe "Enumerable#take_while" do
+  describe "value packing of source yields" do
+    before :each do
+      @take = -> e { e.take_while { true } }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   before :each do
     @enum = EnumerableSpecs::Numerous.new(3, 2, 1, :go)
   end
 
   it "returns an Enumerator if no block given" do
-    @enum.take_while.should be_an_instance_of(Enumerator)
+    @enum.take_while.should.instance_of?(Enumerator)
   end
 
   it "returns no/all elements for {true/false} block" do
@@ -38,7 +46,7 @@ describe "Enumerable#take_while" do
 
   it "doesn't return self when it could" do
     a = [1,2,3]
-    a.take_while{true}.should_not equal(a)
+    a.take_while{true}.should_not.equal?(a)
   end
 
   it "calls the block with initial args when yielded with multiple arguments" do

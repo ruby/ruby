@@ -1,7 +1,11 @@
 require_relative '../../../spec_helper'
 require_relative 'shared/constants'
-require_relative 'shared/length'
 
 describe "Digest::SHA256#length" do
-  it_behaves_like :sha256_length, :length
+  it "returns the length of the digest" do
+    cur_digest = Digest::SHA256.new
+    cur_digest.length.should == SHA256Constants::BlankDigest.size
+    cur_digest << SHA256Constants::Contents
+    cur_digest.length.should == SHA256Constants::Digest.size
+  end
 end

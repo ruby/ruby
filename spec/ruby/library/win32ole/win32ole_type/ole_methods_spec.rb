@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns an Integer" do
-      @ole_type.ole_methods.all? { |m| m.kind_of? WIN32OLE::Method }.should be_true
+      @ole_type.ole_methods.all? { |m| m.kind_of? WIN32OLE::Method }.should == true
     end
 
   end

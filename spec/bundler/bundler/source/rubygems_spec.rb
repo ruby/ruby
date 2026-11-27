@@ -31,6 +31,17 @@ RSpec.describe Bundler::Source::Rubygems do
     end
   end
 
+  describe "#hash" do
+    it "is the same for sources that differ only in credentials" do
+      with_credentials = described_class.new("remotes" => ["https://user:pass@gems.example.com/"])
+      without_credentials = described_class.new("remotes" => ["https://gems.example.com/"])
+
+      expect(with_credentials).to eql(without_credentials)
+      expect(with_credentials.hash).to eq(without_credentials.hash)
+      expect([with_credentials, without_credentials].uniq.size).to eq(1)
+    end
+  end
+
   describe "#no_remotes?" do
     context "when no remote provided" do
       it "returns a truthy value" do
@@ -42,6 +53,54 @@ RSpec.describe Bundler::Source::Rubygems do
       it "returns a falsey value" do
         expect(described_class.new("remotes" => ["https://rubygems.org"]).no_remotes?).to be_falsey
       end
+    end
+  end
+
+  describe "#eql?" do
+    it "compares a source with itself without building its remotes" do
+      source = described_class.new("remotes" => ["https://user:pass@gems.example.com/"])
+
+      expect(source).not_to receive(:credless_remotes)
+      expect(source.eql?(source)).to be true
+    end
+  end
+
+  describe "#clear_cache" do
+    it "invalidates memoized indexes so subsequent reads rebuild them" do
+      source = described_class.new
+
+      first_specs = source.specs
+      first_installed = source.send(:installed_specs)
+      first_default = source.send(:default_specs)
+      first_cached = source.send(:cached_specs)
+
+      expect(source.specs).to equal(first_specs)
+      expect(source.send(:installed_specs)).to equal(first_installed)
+      expect(source.send(:default_specs)).to equal(first_default)
+      expect(source.send(:cached_specs)).to equal(first_cached)
+
+      source.clear_cache
+
+      expect(source.specs).not_to equal(first_specs)
+      expect(source.send(:installed_specs)).not_to equal(first_installed)
+      expect(source.send(:default_specs)).not_to equal(first_default)
+      expect(source.send(:cached_specs)).not_to equal(first_cached)
+    end
+
+    it "reflects newly-discovered installed gems after clear_cache" do
+      source = described_class.new
+      foo = Gem::Specification.new("foo", "1.0.0")
+      bar = Gem::Specification.new("bar", "1.0.0")
+
+      allow(Bundler.rubygems).to receive(:installed_specs).and_return([foo])
+      expect(source.send(:installed_specs).search("bar")).to be_empty
+
+      allow(Bundler.rubygems).to receive(:installed_specs).and_return([foo, bar])
+      expect(source.send(:installed_specs).search("bar")).to be_empty
+
+      source.clear_cache
+
+      expect(source.send(:installed_specs).search("bar")).not_to be_empty
     end
   end
 

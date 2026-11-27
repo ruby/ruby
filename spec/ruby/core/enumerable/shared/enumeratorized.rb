@@ -26,7 +26,6 @@ describe :enumeratorized_with_cycle_size, shared: true do
           @object.cycle(2).size.should == @object.size * 2
           @object.cycle(7).size.should == @object.size * 7
           @object.cycle(0).size.should == 0
-          @empty_object.cycle(2).size.should == 0
         end
 
         it "should be zero when the argument passed is 0 or less" do
@@ -35,6 +34,12 @@ describe :enumeratorized_with_cycle_size, shared: true do
 
         it "should be Float::INFINITY when no argument is passed" do
           @object.cycle.size.should == Float::INFINITY
+        end
+
+        it "should be zero for an empty object" do
+          @empty_object.cycle.size.should == 0
+          @empty_object.cycle(0).size.should == 0
+          @empty_object.cycle(2).size.should == 0
         end
       end
     end

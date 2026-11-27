@@ -12,6 +12,8 @@ NORETURN(static void raise_argument_error(rb_execution_context_t *ec, const rb_i
 NORETURN(static void argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const int miss_argc, const int min_argc, const int max_argc));
 NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
+static VALUE set_error_backtrace(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc);
+
 static VALUE method_missing(rb_execution_context_t *ec, VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
 const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
@@ -77,7 +79,7 @@ static inline void
 args_reduce(struct args_info *args, int over_argc)
 {
     if (args->rest) {
-        const long len = RARRAY_LEN(args->rest);
+        const rb_len_t len = RARRAY_LEN(args->rest);
 
         if (len > over_argc) {
             arg_rest_dup(args);
@@ -190,7 +192,7 @@ args_kw_argv_to_hash(struct args_info *args)
     const struct rb_callinfo_kwarg *kw_arg = args->kw_arg;
     const VALUE *const passed_keywords = kw_arg->keywords;
     const int kw_len = kw_arg->keyword_len;
-    VALUE h = rb_hash_new_with_size(kw_len);
+    VALUE h = rb_hash_new_capa(kw_len);
     const int kw_start = args->argc - kw_len;
     const VALUE * const kw_argv = args->argv + kw_start;
     int i;
@@ -228,7 +230,7 @@ args_setup_lead_parameters(struct args_info *args, int argc, VALUE *locals)
 static inline void
 args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
-    long len;
+    rb_len_t len;
     len = RARRAY_LEN(args->rest);
     MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);
@@ -291,7 +293,7 @@ static VALUE
 make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = rb_hash_new_with_size(passed_keyword_len);
+    VALUE obj = rb_hash_new_capa(passed_keyword_len);
 
     for (i=0; i<passed_keyword_len; i++) {
         if (!UNDEF_P(kw_argv[i])) {
@@ -318,6 +320,54 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
+static inline void
+args_setup_kw_parameters_not_found(const VALUE *default_values, VALUE *locals, int i, int di,
+                                   int *unspecified_bits, VALUE *unspecified_bits_value)
+{
+    if (UNDEF_P(default_values[di])) {
+        locals[i] = Qnil;
+
+        if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
+            *unspecified_bits |= 0x01 << di;
+        }
+        else {
+            VALUE bits_value = *unspecified_bits_value;
+            if (NIL_P(bits_value)) {
+                /* fixnum -> hash */
+                int bits = *unspecified_bits;
+                *unspecified_bits_value = bits_value = rb_ident_set_new();
+
+                for (int j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
+                    if (bits & (0x01 << j)) {
+                        rb_set_add_no_check(bits_value, INT2FIX(j));
+                    }
+                }
+            }
+            rb_set_add_no_check(bits_value, INT2FIX(di));
+        }
+    }
+    else {
+        locals[i] = default_values[di];
+    }
+}
+
+/* Extends cfp->sp over the keyword locals so the GC marks them. The fast
+ * paths in vm_insnhelper.c call args_setup_kw_parameters with the locals
+ * above cfp->sp, and more than VM_KW_SPECIFIED_BITS_MAX keywords allocate
+ * a set while passed values are only referenced from the locals. */
+static void
+args_setup_kw_extend_sp(rb_execution_context_t *const ec, VALUE *const end)
+{
+    VALUE *sp = ec->cfp->sp;
+    if (sp >= end) return;
+
+    CHECK_VM_STACK_OVERFLOW0(ec->cfp, sp, end - sp);
+    for (; sp < end; sp++) {
+        *sp = Qnil;
+    }
+    ec->cfp->sp = end;
+}
+
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -331,6 +381,12 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
     int i, di, found = 0;
     int unspecified_bits = 0;
     VALUE unspecified_bits_value = Qnil;
+    VALUE *orig_sp = NULL;
+
+    if (UNLIKELY(key_num > VM_KW_SPECIFIED_BITS_MAX)) {
+        orig_sp = ec->cfp->sp;
+        args_setup_kw_extend_sp(ec, locals + key_num + 1);
+    }
 
     for (i=0; i<req_key_num; i++) {
         ID key = acceptable_keywords[i];
@@ -350,30 +406,8 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
             found++;
         }
         else {
-            if (UNDEF_P(default_values[di])) {
-                locals[i] = Qnil;
-
-                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-                    unspecified_bits |= 0x01 << di;
-                }
-                else {
-                    if (NIL_P(unspecified_bits_value)) {
-                        /* fixnum -> hash */
-                        int j;
-                        unspecified_bits_value = rb_hash_new();
-
-                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                            if (unspecified_bits & (0x01 << j)) {
-                                rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
-                            }
-                        }
-                    }
-                    rb_hash_aset(unspecified_bits_value, INT2FIX(di), Qtrue);
-                }
-            }
-            else {
-                locals[i] = default_values[di];
-            }
+            args_setup_kw_parameters_not_found(default_values, locals, i, di,
+                                               &unspecified_bits, &unspecified_bits_value);
         }
     }
 
@@ -392,6 +426,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
         unspecified_bits_value = INT2FIX(unspecified_bits);
     }
     locals[key_num] = unspecified_bits_value;
+    if (orig_sp) ec->cfp->sp = orig_sp;
 }
 
 static void
@@ -445,30 +480,8 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
             locals[i] = value;
         }
         else {
-            if (UNDEF_P(default_values[di])) {
-                locals[i] = Qnil;
-
-                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-                    unspecified_bits |= 0x01 << di;
-                }
-                else {
-                    if (NIL_P(unspecified_bits_value)) {
-                        /* fixnum -> hash */
-                        int j;
-                        unspecified_bits_value = rb_hash_new();
-
-                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                            if (unspecified_bits & (0x01 << j)) {
-                                rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
-                            }
-                        }
-                    }
-                    rb_hash_aset(unspecified_bits_value, INT2FIX(di), Qtrue);
-                }
-            }
-            else {
-                locals[i] = default_values[di];
-            }
+            args_setup_kw_parameters_not_found(default_values, locals, i, di,
+                                               &unspecified_bits, &unspecified_bits_value);
         }
     }
 
@@ -622,6 +635,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
      * <- ISEQ_BODY(iseq)->param.size------------>
      * ^ locals                             ^ sp
      */
+    if ((unsigned int)calling->argc < ISEQ_BODY(iseq)->param.size) {
+        /* Ensure the nil-fill below and the SP extension do not run into the
+         * control frame region, clobbering frames before the stack overflow
+         * check in vm_push_frame has a chance to raise SystemStackError. */
+        CHECK_VM_STACK_OVERFLOW0(ec->cfp, locals + calling->argc,
+                                 ISEQ_BODY(iseq)->param.size - calling->argc);
+    }
     for (i=calling->argc; i<ISEQ_BODY(iseq)->param.size; i++) {
         locals[i] = Qnil;
     }
@@ -908,17 +928,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
         if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest && args->argc == 0 && !args->rest && !ISEQ_BODY(iseq)->param.flags.has_post)) {
-           *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
-           args->rest_index = 0;
+            *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
+            args->rest_index = 0;
         }
         else {
             args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
             VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
-            VALUE index = RARRAY_LEN(ary) - 1;
+            rb_len_t index = RARRAY_LEN(ary);
             if (splat_flagged_keyword_hash &&
                 !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
                 !ISEQ_BODY(iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                index-- > 0 &&
                 RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
                 ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
                 RARRAY_ASET(ary, index, rest_last);
@@ -965,7 +986,15 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         argument_kw_error(ec, iseq, cme, "unknown", rb_hash_keys(keyword_hash));
     }
 
-    if (ISEQ_BODY(iseq)->param.flags.has_block) {
+    if (ISEQ_BODY(iseq)->param.flags.accepts_no_block) {
+        VALUE given_block;
+        args_setup_block_parameter(ec, calling, &given_block);
+        if (!NIL_P(given_block)) {
+            VALUE exc = rb_exc_new_cstr(rb_eArgError, "no block accepted");
+            rb_exc_raise(set_error_backtrace(ec, iseq, cme, exc));
+        }
+    }
+    else if (ISEQ_BODY(iseq)->param.flags.has_block) {
         if (ISEQ_BODY(iseq)->local_iseq == iseq) {
             /* Do nothing */
         }
@@ -987,8 +1016,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     return opt_pc;
 }
 
-static void
-raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
+static VALUE
+set_error_backtrace(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
 {
     VALUE at;
 
@@ -1006,6 +1035,13 @@ raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb
 
     rb_ivar_set(exc, idBt_locations, at);
     rb_exc_set_backtrace(exc, at);
+    return exc;
+}
+
+static void
+raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
+{
+    set_error_backtrace(ec, iseq, cme, exc);
     rb_exc_raise(exc);
 }
 
@@ -1058,15 +1094,10 @@ vm_to_proc(VALUE proc)
 
         if (NIL_P(b) || !rb_obj_is_proc(b)) {
             if (me) {
-                VALUE cname = rb_obj_class(proc);
-                rb_raise(rb_eTypeError,
-                         "can't convert %"PRIsVALUE" to Proc (%"PRIsVALUE"#to_proc gives %"PRIsVALUE")",
-                         cname, cname, rb_obj_class(b));
+                rb_cant_convert_invalid_return(proc, "Proc", "to_proc", b);
             }
             else {
-                rb_raise(rb_eTypeError,
-                         "no implicit conversion of %s into Proc",
-                         rb_obj_classname(proc));
+                rb_no_implicit_conversion(proc, "Proc");
             }
         }
         return b;
@@ -1129,7 +1160,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
             const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
             if (cref && !NIL_P(cref->refinements)) {
                 VALUE ref = cref->refinements;
-                VALUE func = rb_hash_lookup(ref, block_code);
+                /* the table caches funcs only for the Ractor that owns it: a func
+                 * stored from another Ractor lives in that Ractor's objspace, whose
+                 * GC does not see the table's reference to it */
+                VALUE func = rb_gc_obj_foreign_p(ref) ? Qnil : rb_hash_lookup(ref, block_code);
                 if (NIL_P(func)) {
                     /* TODO: limit cached funcs */
                     VALUE callback_arg = rb_ary_hidden_new(2);
@@ -1137,7 +1171,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
                     rb_ary_push(callback_arg, ref);
                     OBJ_FREEZE(callback_arg);
                     func = rb_func_lambda_new(refine_sym_proc_call, callback_arg, 1, UNLIMITED_ARGUMENTS);
-                    rb_hash_aset(ref, block_code, func);
+                    /* the table is frozen when it belongs to a Proc#refined memo; skip the cache then */
+                    if (!OBJ_FROZEN(ref) && !rb_gc_obj_foreign_p(ref)) {
+                        rb_hash_aset(ref, block_code, func);
+                    }
                 }
                 block_code = func;
             }
@@ -1172,7 +1209,7 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
     CALL_INFO site_ci = cd->ci;
     VALUE bh = Qundef;
 
-    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
+    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(CFP_ISEQ(reg_cfp))->local_iseq)->param.flags.forwardable);
     CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
 
     unsigned int site_argc = vm_ci_argc(site_ci);
@@ -1203,8 +1240,8 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
 
     *adjusted_ci = VM_CI_ON_STACK(
             site_mid,
-            ((caller_flag & ~(VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL)) |
-             (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
+            ((caller_flag & ~(VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL | VM_CALL_SUPER)) |
+                (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING | VM_CALL_SUPER))),
             site_argc + caller_argc,
             kw
             );

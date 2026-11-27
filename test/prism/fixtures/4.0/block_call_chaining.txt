@@ -1,0 +1,17 @@
+f x do end.().g
+
+super x do end.(y)
+
+f x do end&.().g
+
+super x do end&.(y)
+
+f x do end::().g
+
+super x do end::(y)
+
+C::F x do end.()
+
+C::F x do end&.()
+
+C::F x do end::()

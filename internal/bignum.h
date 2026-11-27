@@ -89,14 +89,6 @@
     (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
 #define BIGNUM_EMBED_LEN_MAX (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)
 
-enum rb_int_parse_flags {
-    RB_INT_PARSE_SIGN       = 0x01,
-    RB_INT_PARSE_UNDERSCORE = 0x02,
-    RB_INT_PARSE_PREFIX     = 0x04,
-    RB_INT_PARSE_ALL        = 0x07,
-    RB_INT_PARSE_DEFAULT    = 0x07,
-};
-
 struct RBignum {
     struct RBasic basic;
     union {
@@ -115,6 +107,61 @@ struct RBignum {
 
 /* bignum.c */
 extern const char ruby_digitmap[];
+extern const char ruby_decimal_digit_pairs[100][2];
+
+#if UINT_MAX < 200
+# error Need unsigned int to be wider
+#endif
+#if SIZEOF_BDIGIT*2 < SIZEOF_RB_LEN_T
+# error BDIGIT can be wider, at least the half of rb_len_t
+#endif
+/* Stores the decimal string for num, backward from dest.  Returns the
+ * stored size. */
+static inline size_t
+ruby_convert_to_decimals(char *dest, BDIGIT_DBL num)
+{
+    /* Emit two digits per iteration from a precomputed table.  The
+     * compiler lowers `num % 100` and `num / 100` to a single
+     * multiply + shift, so each iteration costs roughly one multiply,
+     * one shift, and two stores.  About 2x fewer iterations than the
+     * classic per-digit loop for multi-digit inputs. */
+    char *b = dest;
+    while (num >= 100) {
+        const char (*pair)[2] = &ruby_decimal_digit_pairs[num % 100];
+        num /= 100;
+        *--b = (*pair)[1];
+        *--b = (*pair)[0];
+    }
+    if (num >= 10) {
+        const char (*pair)[2] = &ruby_decimal_digit_pairs[num];
+        *--b = (*pair)[1];
+        *--b = (*pair)[0];
+    }
+    else {
+        *--b = (char)('0' + num);
+    }
+    return (size_t)(dest - b);
+}
+
+/* Stores the string for num using base as the radix, backward from
+ * dest.  base must be 2..36.  Returns the stored size. */
+static inline size_t
+ruby_convert_to_digits(char *dest, BDIGIT_DBL num, unsigned int base)
+{
+    RBIMPL_ASSERT_OR_ASSUME(base >= 2);
+    RBIMPL_ASSERT_OR_ASSUME(base <= 36);
+    if (base == 10) {
+        return ruby_convert_to_decimals(dest, num);
+    }
+    char *b = dest;
+    do {
+        unsigned int idx = (unsigned int)(num % base);
+        num /= base;
+        *--b = ruby_digitmap[idx];
+    } while (num);
+    return (size_t)(dest - b);
+}
+
 double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
@@ -130,6 +177,7 @@ VALUE rb_big_aref2(VALUE num, VALUE beg, VALUE len);
 VALUE rb_big_abs(VALUE x);
 VALUE rb_big_size_m(VALUE big);
 VALUE rb_big_bit_length(VALUE big);
+VALUE rb_big_bit_count(VALUE big);
 VALUE rb_big_remainder(VALUE x, VALUE y);
 VALUE rb_big_gt(VALUE x, VALUE y);
 VALUE rb_big_ge(VALUE x, VALUE y);
@@ -166,7 +214,6 @@ VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
-VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 RUBY_SYMBOL_EXPORT_END
 
 #if HAVE_LONG_LONG

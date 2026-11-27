@@ -8,30 +8,32 @@ describe "Set#merge" do
 
   it "returns self" do
     set = Set[1, 2]
-    set.merge([3, 4]).should equal(set)
+    set.merge([3, 4]).should.equal?(set)
   end
 
   it "raises an ArgumentError when passed a non-Enumerable" do
-    -> { Set[1, 2].merge(1) }.should raise_error(ArgumentError)
-    -> { Set[1, 2].merge(Object.new) }.should raise_error(ArgumentError)
+    -> { Set[1, 2].merge(1) }.should.raise(ArgumentError)
+    -> { Set[1, 2].merge(Object.new) }.should.raise(ArgumentError)
   end
 
   it "raises RuntimeError when called during iteration" do
     set = Set[:a, :b]
     set.each do |_m|
-      -> { set.merge([1, 2]) }.should raise_error(RuntimeError, /iteration/)
+      -> { set.merge([1, 2]) }.should.raise(RuntimeError, /iteration/)
     end
   end
 
-  ruby_version_is ""..."3.3" do
-    it "accepts only a single argument" do
-      -> { Set[].merge([], []) }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")
-    end
+  it "accepts multiple arguments" do
+    Set[:a, :b].merge(Set[:b, :c], [:d]).should == Set[:a, :b, :c, :d]
   end
 
-  ruby_version_is "3.3" do
-    it "accepts multiple arguments" do
-      Set[:a, :b].merge(Set[:b, :c], [:d]).should == Set[:a, :b, :c, :d]
-    end
+  it "retains compare_by_identity flag" do
+    set = Set[1, 2].compare_by_identity
+    set.merge([3, 4])
+    set.compare_by_identity?.should == true
+
+    set2 = Set[1, 2].compare_by_identity
+    set2.merge(Set[3, 4])
+    set2.compare_by_identity?.should == true
   end
 end

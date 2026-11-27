@@ -25,6 +25,45 @@ Your current platform satisfies the Ruby version requirement.
 G
     end
 
+    it "reports the effective platform when force_ruby_platform is set in the environment" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        #{ruby_version_correct}
+
+        gem "foo"
+      G
+
+      bundle "platform", env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
+      expect(out).to eq(<<-G.chomp)
+Your platform is: #{Gem::Platform.local}
+However, your effective platform is: ruby (because force_ruby_platform is set via BUNDLE_FORCE_RUBY_PLATFORM: true)
+
+Your app has gems that work on these platforms:
+* #{Gem::Platform::RUBY}
+
+Your Gemfile specifies a Ruby version requirement:
+* ruby #{Gem.ruby_version}
+
+Your current platform satisfies the Ruby version requirement.
+G
+    end
+
+    it "points at the config file when force_ruby_platform is set there" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        #{ruby_version_correct}
+
+        gem "foo"
+      G
+
+      bundle "config set --local force_ruby_platform true"
+      bundle "platform"
+      expect(out).to include("However, your effective platform is: ruby " \
+                             "(because force_ruby_platform is set for your local app (#{bundled_app(".bundle/config")}): true)")
+    end
+
     it "returns all the output including the patchlevel" do
       gemfile <<-G
         source "https://gem.repo1"
@@ -302,9 +341,9 @@ G
     expect(err).to be_include("Your #{local_ruby_engine} version is #{local_engine_version}, but your Gemfile specified #{local_ruby_engine} #{not_local_engine_version}")
   end
 
-  def should_be_patchlevel_incorrect
-    expect(exitstatus).to eq(18)
-    expect(err).to be_include("Your Ruby patchlevel is #{RUBY_PATCHLEVEL}, but your Gemfile specified #{not_local_patchlevel}")
+  def should_ignore_patchlevel
+    expect(exitstatus).to eq(0)
+    expect(err).to eq("")
   end
 
   def should_be_patchlevel_fixnum
@@ -382,7 +421,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "doesn't install when patchlevel doesn't match" do
+    it "does install even when patchlevel doesn't match" do
       install_gemfile <<-G, raise_on_error: false
         source "https://gem.repo1"
         gem "myrack"
@@ -390,8 +429,8 @@ G
         #{patchlevel_incorrect}
       G
 
-      expect(bundled_app_lock).not_to exist
-      should_be_patchlevel_incorrect
+      expect(bundled_app_lock).to exist
+      should_ignore_patchlevel
     end
   end
 
@@ -481,7 +520,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "checks fine even when patchlevel doesn't match" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -494,8 +533,8 @@ G
         #{patchlevel_incorrect}
       G
 
-      bundle :check, raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle :check
+      should_ignore_patchlevel
     end
   end
 
@@ -598,10 +637,10 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "updates fine even when patchlevel doesn't match" do
       gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
+        source "https://gem.repo2"
+        gem "activesupport"
 
         #{patchlevel_incorrect}
       G
@@ -609,8 +648,9 @@ G
         build_gem "activesupport", "3.0"
       end
 
-      bundle :update, all: true, raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle :update, all: true
+      should_ignore_patchlevel
+      expect(the_bundle).to include_gems "activesupport 3.0"
     end
   end
 
@@ -682,19 +722,17 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "prints path even when patchlevel doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
-        gem "myrack"
+        gem "rails"
 
         #{patchlevel_incorrect}
       G
-      update_repo2 do
-        build_gem "activesupport", "3.0"
-      end
 
-      bundle "show rails", raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle "show rails"
+      should_ignore_patchlevel
+      expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
   end
 
@@ -766,7 +804,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "copies the .gem file to vendor/cache even when patchlevel doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -774,8 +812,9 @@ G
         #{patchlevel_incorrect}
       G
 
-      bundle :cache, raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle :cache
+      should_ignore_patchlevel
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
   end
 
@@ -847,7 +886,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "copies the .gem file to vendor/cache even when patchlevel doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -855,8 +894,9 @@ G
         #{patchlevel_incorrect}
       G
 
-      bundle :cache, raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle :cache
+      should_ignore_patchlevel
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
   end
 
@@ -926,7 +966,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "activates the correct gem even when patchlevel doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -934,8 +974,9 @@ G
         #{patchlevel_incorrect}
       G
 
-      bundle "exec myrackup", raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle "exec myrackup"
+      should_ignore_patchlevel
+      expect(out).to include("1.0.0")
     end
   end
 
@@ -995,11 +1036,15 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "starts IRB with the default group loaded even when patchlevel doesn't match", :readline do
       gemfile gemfile + "\n\n#{patchlevel_incorrect}\n"
 
-      bundle "console", raise_on_error: false
-      should_be_patchlevel_incorrect
+      bundle "console" do |input, _, _|
+        input.puts("puts MYRACK")
+        input.puts("exit")
+      end
+      should_ignore_patchlevel
+      expect(out).to include("0.9.1")
     end
   end
 
@@ -1095,7 +1140,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match" do
+    it "makes a Gemfile.lock even when patchlevel doesn't match" do
       install_gemfile <<-G, raise_on_error: false
         source "https://gem.repo1"
         gem "yard"
@@ -1106,10 +1151,10 @@ G
 
       FileUtils.rm(bundled_app_lock)
 
-      ruby "require 'bundler/setup'", env: { "BUNDLER_VERSION" => Bundler::VERSION }, raise_on_error: false
+      ruby "require 'bundler/setup'", env: { "BUNDLER_VERSION" => Bundler::VERSION }
 
-      expect(bundled_app_lock).not_to exist
-      should_be_patchlevel_incorrect
+      should_ignore_patchlevel
+      expect(bundled_app_lock).to exist
     end
   end
 
@@ -1143,7 +1188,7 @@ G
       bundle "outdated", raise_on_error: false
 
       expected_output = <<~TABLE.gsub("x", "\\\h").tr(".", "\.").strip
-        Gem            Current      Latest       Requested  Groups
+        Gem            Current      Latest       Requested  Groups   Release Date
         activesupport  2.3.5        3.0          = 2.3.5    default
         foo            1.0 xxxxxxx  1.0 xxxxxxx  >= 0       default
       TABLE
@@ -1169,7 +1214,7 @@ G
       bundle "outdated", raise_on_error: false
 
       expected_output = <<~TABLE.gsub("x", "\\\h").tr(".", "\.").strip
-        Gem            Current      Latest       Requested  Groups
+        Gem            Current      Latest       Requested  Groups   Release Date
         activesupport  2.3.5        3.0          = 2.3.5    default
         foo            1.0 xxxxxxx  1.0 xxxxxxx  >= 0       default
       TABLE
@@ -1231,7 +1276,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when the patchlevel doesn't match", :jruby_only do
+    it "reports outdated gems even when patchlevel doesn't match" do
       update_repo2 do
         build_gem "activesupport", "3.0"
         update_git "foo", path: lib_path("foo")
@@ -1246,25 +1291,9 @@ G
       G
 
       bundle "outdated", raise_on_error: false
-      should_be_patchlevel_incorrect
-    end
-
-    it "fails when the patchlevel is a fixnum", :jruby_only do
-      update_repo2 do
-        build_gem "activesupport", "3.0"
-        update_git "foo", path: lib_path("foo")
-      end
-
-      gemfile <<-G
-        source "https://gem.repo2"
-        gem "activesupport", "2.3.5"
-        gem "foo", :git => "#{lib_path("foo")}"
-
-        #{patchlevel_fixnum}
-      G
-
-      bundle "outdated", raise_on_error: false
-      should_be_patchlevel_fixnum
+      expect(err).not_to include("patchlevel")
+      expect(out).to include("activesupport")
+      expect(out).to include("foo")
     end
   end
 end

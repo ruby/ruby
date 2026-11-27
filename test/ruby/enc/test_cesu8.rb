@@ -110,4 +110,11 @@ EOT
   def test_cesu8_left_adjust_char_head
     assert_equal("", "\u{10000}".encode("cesu-8").chop)
   end
+
+  def test_cesu8_left_adjust_char_head_in_low_surrogate
+    s = "a\u{10000}b".encode("cesu-8")
+    e = "".encode("cesu-8")
+    assert_equal([0, 1, 7, 8], (0..8).select {|i| s.byteindex(e, i) rescue nil })
+    assert_equal([0, 1, 7, 8], (0..8).select {|i| s.byterindex(e, i) rescue nil })
+  end
 end

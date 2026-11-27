@@ -15,6 +15,6 @@ describe 'TracePoint#lineno' do
 
   it 'raises RuntimeError if accessed from outside' do
     tp = TracePoint.new(:line) {}
-    -> { tp.lineno }.should raise_error(RuntimeError, 'access from outside')
+    -> { tp.lineno }.should.raise(RuntimeError, 'access from outside')
   end
 end

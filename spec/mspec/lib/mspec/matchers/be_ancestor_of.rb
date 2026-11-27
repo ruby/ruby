@@ -19,6 +19,7 @@ end
 
 module MSpecMatchers
   private def be_ancestor_of(expected)
+    MSpec.deprecate __method__, '.ancestors.should.include?'
     BeAncestorOfMatcher.new(expected)
   end
 end

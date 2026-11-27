@@ -1,0 +1,3 @@
+for *obj&.attr in ary; end
+     ^~~~~~~~~ &. inside multiple assignment destination
+

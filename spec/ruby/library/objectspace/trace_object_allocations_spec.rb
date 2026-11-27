@@ -74,7 +74,7 @@ describe "ObjectSpace.trace_object_allocations" do
       o = Object.new
       ObjectSpace.allocation_class_path(o).should == obj_class_path
       ObjectSpace.trace_object_allocations_clear
-      ObjectSpace.allocation_class_path(o).should be_nil
+      ObjectSpace.allocation_class_path(o).should == nil
     end
   end
 

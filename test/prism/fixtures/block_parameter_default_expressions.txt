@@ -1,0 +1,27 @@
+m { |x = defined?(a)| x }
+
+m { |x: defined?(a)| x }
+
+m { |x = (defined? a)| x }
+
+m { |x: (defined? a)| x }
+
+m { |x = [..1]| x }
+
+m { |x: [..1]| x }
+
+m { |x = [def f = 1]| x }
+
+m { |x: [def f = 1]| x }
+
+m { |x = {k: defined? a}| x }
+
+m { |x: {k: defined? a}| x }
+
+m { |x = -2| x }
+
+m { |x: -2| x }
+
+m { |x = (-2**2)| x }
+
+m { |x: (-2**2)| x }

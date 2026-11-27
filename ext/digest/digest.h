@@ -73,13 +73,21 @@ rb_id_metadata(void)
 # define DIGEST_USE_RB_EXT_RESOLVE_SYMBOL 1
 #endif
 
+/* Declarations and definitions of the same function must carry the same
+ * attribute on MSVC, and digest.c has to export the definition so that
+ * statically linked extensions can find the symbol in libruby. */
+#ifndef RB_DIGEST_WRAP_METADATA_LINKAGE
+# define RB_DIGEST_WRAP_METADATA_LINKAGE extern
+#endif
+
 static inline VALUE
 rb_digest_make_metadata(const rb_digest_metadata_t *meta)
 {
 #if defined(EXTSTATIC) && EXTSTATIC
     /* The extension is built as a static library, so safe to refer to
      * rb_digest_wrap_metadata directly. */
-    extern VALUE rb_digest_wrap_metadata(const rb_digest_metadata_t *meta);
+    RB_DIGEST_WRAP_METADATA_LINKAGE
+    VALUE rb_digest_wrap_metadata(const rb_digest_metadata_t *meta);
     return rb_digest_wrap_metadata(meta);
 #else
     /* The extension is built as a shared library, so we can't refer

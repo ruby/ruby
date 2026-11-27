@@ -5,7 +5,7 @@ require_relative "compact_index"
 class CompactIndexExtraApi < CompactIndexAPI
   get "/extra/names" do
     etag_response do
-      CompactIndex.names(gems(gem_repo4).map(&:name))
+      VendoredCompactIndex.names(gems(gem_repo4).map(&:name))
     end
   end
 
@@ -13,7 +13,7 @@ class CompactIndexExtraApi < CompactIndexAPI
     etag_response do
       file = tmp("versions.list")
       FileUtils.rm_f(file)
-      file = CompactIndex::VersionsFile.new(file.to_s)
+      file = VendoredCompactIndex::VersionsFile.new(file.to_s)
       file.create(gems(gem_repo4))
       file.contents
     end
@@ -22,7 +22,7 @@ class CompactIndexExtraApi < CompactIndexAPI
   get "/extra/info/:name" do
     etag_response do
       gem = gems(gem_repo4).find {|g| g.name == params[:name] }
-      CompactIndex.info(gem ? gem.versions : [])
+      VendoredCompactIndex.info(gem ? gem.versions : [])
     end
   end
 

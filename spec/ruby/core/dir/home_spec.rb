@@ -74,7 +74,7 @@ describe "Dir.home" do
   end
 
   it "raises an ArgumentError if the named user doesn't exist" do
-    -> { Dir.home('geuw2n288dh2k') }.should raise_error(ArgumentError)
+    -> { Dir.home('geuw2n288dh2k') }.should.raise(ArgumentError)
   end
 
   describe "when called with a nil user name" do

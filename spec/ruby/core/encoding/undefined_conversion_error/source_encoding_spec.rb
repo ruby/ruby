@@ -8,8 +8,8 @@ describe "Encoding::UndefinedConversionError#source_encoding" do
   end
 
   it "returns an Encoding object" do
-    @exception.source_encoding.should be_an_instance_of(Encoding)
-    @exception2.source_encoding.should be_an_instance_of(Encoding)
+    @exception.source_encoding.should.instance_of?(Encoding)
+    @exception2.source_encoding.should.instance_of?(Encoding)
   end
 
   it "is equal to the source encoding of the object that raised it" do

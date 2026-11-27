@@ -62,7 +62,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
   end
 
   def test_self_build_has_makefile
-    if vc_windows? && !nmake_found?
+    if nmake? && !nmake_found?
       pend("test_self_build_has_makefile skipped - nmake not found")
     end
 

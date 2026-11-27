@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/plus'
+require 'pathname'
 
 describe "Pathname#/" do
-  it_behaves_like :pathname_plus, :/
+  it "is an alias of Pathname#+" do
+    Pathname.instance_method(:/).should == Pathname.instance_method(:+)
+  end
 end

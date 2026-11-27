@@ -701,6 +701,31 @@ end.join
     assert_equal(level, e.backtrace.size, feature6216)
   end
 
+  def test_stackoverflow_during_optional_arg_setup
+    # Filling in missing optional arguments of a block call must not
+    # clobber the caller's control frame when the VM stack is exhausted.
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      pr = proc {|a=1,b=1,c=1,d=1,e=1,f=1,g=1,h=1,i=1,j=1| pr.call }
+      40.times do |k|
+        eval((0...k).map { "v#{_1}=0;" }.join + "begin; pr.call; rescue SystemStackError => e; e.backtrace; end")
+      end
+    end;
+  end
+
+  def test_stackoverflow_by_funcall
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      a, b = [], []
+      100_000.times { a, b = [a], [b] }
+      th = Thread.new do
+        Thread.current.report_on_exception = false
+        a == b
+      end
+      assert_raise(SystemStackError) { th.join }
+    end;
+  end
+
   def test_machine_stackoverflow
     bug9109 = '[ruby-dev:47804] [Bug #9109]'
     assert_separately([], <<-SRC)
@@ -826,6 +851,43 @@ end.join
     end;
   end
 
+  def test_multiple_error_handle
+    errs = [
+      /.*END3 \(RuntimeError\).*\n/,
+      /.*END2 \(RuntimeError\).*\n/,
+      /.*END1 \(RuntimeError\).*\n/,
+      /.*EXIT \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      Signal.trap(:EXIT) {raise "EXIT"}
+      END{raise "END1"};
+      END{raise "END2"};
+      END{raise "END3"};
+    end;
+  end
+
+  def test_cause_in_exit_handler
+    errs = [
+      /.*outer \(RuntimeError\).*\n/,
+      /.*inner \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      END{begin; raise "inner"; rescue; raise "outer"; end}
+    end;
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      Signal.trap(:EXIT) {begin; raise "inner"; rescue; raise "outer"; end}
+    end;
+    errs = [
+      /.*previous \(RuntimeError\).*\n/,
+      /.*outer \(RuntimeError\).*\n/,
+      /.*middle \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      END{begin; raise "middle"; rescue => e; raise "outer", cause: e; end}
+      END{raise "previous"}
+    end;
+  end
+
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
@@ -912,6 +974,37 @@ end.join
     assert_equal("caller's cause", e.cause.message)
   end
 
+  # Thread#raise and Fiber#raise take their implicit cause from errinfo, which
+  # holds throw data while a non-local exit is in flight.  The exception queued
+  # here is delivered when Thread.handle_interrupt returns, and leaving the
+  # block with `break` makes that happen while the break is still unwinding.
+  # The VM calls #exception on the queued object at that point.
+  def assert_cause_not_throw_data(raiser)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      e = nil
+      begin
+        Thread.handle_interrupt(Object => :never) do
+          queued = StandardError.new("queued")
+          Thread.current.raise(queued)
+          queued.define_singleton_method(:exception) {|*| #{raiser}.raise("in flight")}
+          break
+        end
+      rescue => e
+      end
+      assert_equal("in flight", e.message)
+      assert_nil(e.cause)
+    end;
+  end
+
+  def test_cause_thread_raise_not_throw_data
+    assert_cause_not_throw_data("Thread.current")
+  end
+
+  def test_cause_fiber_raise_not_throw_data
+    assert_cause_not_throw_data("Fiber.current")
+  end
+
   def test_unknown_option
     bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
 
@@ -992,7 +1085,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_equal 1, outs.size
       assert_equal 0, errs.size
       err = outs.first.force_encoding('utf-8')
-      assert err.valid_encoding?, 'must be valid encoding'
+      assert_predicate err, :valid_encoding?
       assert_match %r/\u3042/, err
     end
   end
@@ -1441,7 +1534,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_detailed_message_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    # The first error display lazily requires did_you_mean and friends; inside the
+    # block that library load costs one full mark+compact per allocation, enough to
+    # trip the parallel runner's no-response timeout.  Load it here instead.
+    RuntimeError.new("").detailed_message
+
     EnvUtil.under_gc_compact_stress do
       e = RuntimeError.new("foo\nbar\nbaz")
       assert_equal("foo (RuntimeError)\nbar\nbaz", e.detailed_message)
@@ -1542,13 +1639,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     def a.to_a = 1
     def a.to_hash = 1
     def a.to_proc = 1
-    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Array (TestException::Ex#to_a gives Integer)") do
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Array (TestException::Ex#to_a gives Integer)") do
       x(*a)
     end
-    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Hash (TestException::Ex#to_hash gives Integer)") do
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Hash (TestException::Ex#to_hash gives Integer)") do
       x(**a)
     end
-    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Proc (TestException::Ex#to_proc gives Integer)") do
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Proc (TestException::Ex#to_proc gives Integer)") do
       x(&a)
     end
   end

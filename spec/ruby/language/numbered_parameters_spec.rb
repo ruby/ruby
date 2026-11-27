@@ -22,13 +22,13 @@ describe "Numbered parameters" do
   it "does not support more than 9 parameters" do
     -> {
       proc { [_10] }.call(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    }.should raise_error(NameError, /undefined local variable or method [`']_10'/)
+    }.should.raise(NameError, /undefined local variable or method [`']_10'/)
   end
 
   it "can not be used in both outer and nested blocks at the same time" do
     -> {
       eval("-> { _1; -> { _2 } }")
-    }.should raise_error(SyntaxError, /numbered parameter is already used in/m)
+    }.should.raise(SyntaxError, /numbered parameter is already used in/m)
   end
 
   it "cannot be overwritten with local variable" do
@@ -37,32 +37,32 @@ describe "Numbered parameters" do
         _1 = 0
         proc { _1 }.call("a").should == 0
       CODE
-    }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
+    }.should.raise(SyntaxError, /_1 is reserved for numbered parameter/)
   end
 
   it "errors when numbered parameter is overwritten with local variable" do
     -> {
       eval("_1 = 0")
-    }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
+    }.should.raise(SyntaxError, /_1 is reserved for numbered parameter/)
   end
 
   it "raises SyntaxError when block parameters are specified explicitly" do
-    -> { eval("-> () { _1 }")         }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-    -> { eval("-> (x) { _1 }")        }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("-> () { _1 }")         }.should.raise(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("-> (x) { _1 }")        }.should.raise(SyntaxError, /ordinary parameter is defined/)
 
-    -> { eval("proc { || _1 }")       }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-    -> { eval("proc { |x| _1 }")      }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("proc { || _1 }")       }.should.raise(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("proc { |x| _1 }")      }.should.raise(SyntaxError, /ordinary parameter is defined/)
 
-    -> { eval("lambda { || _1 }")     }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-    -> { eval("lambda { |x| _1 }")    }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("lambda { || _1 }")     }.should.raise(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("lambda { |x| _1 }")    }.should.raise(SyntaxError, /ordinary parameter is defined/)
 
-    -> { eval("['a'].map { || _1 }")  }.should raise_error(SyntaxError, /ordinary parameter is defined/)
-    -> { eval("['a'].map { |x| _1 }") }.should raise_error(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("['a'].map { || _1 }")  }.should.raise(SyntaxError, /ordinary parameter is defined/)
+    -> { eval("['a'].map { |x| _1 }") }.should.raise(SyntaxError, /ordinary parameter is defined/)
   end
 
   describe "assigning to a numbered parameter" do
     it "raises SyntaxError" do
-      -> { eval("proc { _1 = 0 }") }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
+      -> { eval("proc { _1 = 0 }") }.should.raise(SyntaxError, /_1 is reserved for numbered parameter/)
     end
   end
 
@@ -95,6 +95,18 @@ describe "Numbered parameters" do
       -> { _1; binding.local_variables }.call("a").should == [:_1]
       -> { _2; binding.local_variables }.call("a", "b").should == [:_1, :_2]
     end
+
+    it "affects binding local variables getting" do
+      -> { _1; binding.local_variable_get(:_1) }.call("a").should == "a"
+    end
+
+    it "affects binding local variables setting" do
+      -> { _1; binding.local_variable_set(:_1, "b"); _1 }.call("a").should == "b"
+    end
+
+    it "affects binding local variables definition check" do
+      -> { _1; binding.local_variable_defined?(:_1) }.call("a").should == true
+    end
   end
 
   ruby_version_is "4.0" do
@@ -102,12 +114,34 @@ describe "Numbered parameters" do
       -> { _1; binding.local_variables }.call("a").should == []
       -> { _2; binding.local_variables }.call("a", "b").should == []
     end
+
+    it "does not affect binding local variables getting" do
+      proc {
+        _1; binding.local_variable_get(:_1)
+      }.should.raise(NameError, "numbered parameter '_1' is not a local variable")
+    end
+
+    it "does not affect binding local variables setting" do
+      proc {
+        _1; binding.local_variable_set(:_1, "b")
+      }.should.raise(NameError, "numbered parameter '_1' is not a local variable")
+    end
+
+    it "does not affect binding local variables definition check" do
+      proc {
+        _1; binding.local_variable_defined?(:_1)
+      }.should.raise(NameError, "numbered parameter '_1' is not a local variable")
+    end
   end
 
   it "does not work in methods" do
     obj = Object.new
     def obj.foo; _1 end
 
-    -> { obj.foo("a") }.should raise_error(ArgumentError, /wrong number of arguments/)
+    -> { obj.foo("a") }.should.raise(ArgumentError, /wrong number of arguments/)
+  end
+
+  it "cannot be accessed using eval()" do
+    -> { proc { binding.eval('_1') }.call(1) }.should.raise(NameError, /undefined local variable or method ._1'/)
   end
 end

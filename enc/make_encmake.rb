@@ -1,9 +1,12 @@
 #! ./miniruby
 
 dir = File.expand_path("../..", __FILE__)
-$:.unshift(dir)
-$:.unshift(".")
-if $".grep(/mkmf/).empty?
+# The source lib directory provides the standard library for miniruby.
+# Don't add it when running with baseruby to avoid loading both
+# baseruby's cgi/escape.so and source cgi/escape.rb via erb.
+$:.unshift("#{dir}/lib") unless defined?(CROSS_COMPILING)
+$:.unshift(Dir.pwd, "#{dir}/tool/lib")
+unless $".any? {|feat| File.basename(feat) == "mkmf.rb"}
   $" << "mkmf.rb"
   load File.expand_path("lib/mkmf.rb", dir)
 end
@@ -120,7 +123,9 @@ MODULE_TYPE = module_type
 ENCS, ENC_DEPS = target_encodings
 ATRANS, TRANS = target_transcoders
 
-if File.exist?(depend = File.join($srcdir, "depend"))
+depend = File.join(Dir.pwd, ".deps/enc/depend")
+depend = File.join($srcdir, "depend") unless File.file?(depend)
+if File.exist?(depend)
   erb = ERB.new(File.read(depend), trim_mode: '%')
   erb.filename = depend
   tmp = erb.result(binding)
@@ -147,6 +152,6 @@ if MODULE_TYPE == :static
     Dir.mkdir 'enc'
   rescue Errno::EEXIST
   end
-  require 'tool/lib/output'
+  require 'output'
   Output.new(path: "enc/encinit.c", ifchange: true).write(tmp)
 end

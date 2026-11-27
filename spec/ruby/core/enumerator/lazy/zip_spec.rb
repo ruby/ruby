@@ -16,8 +16,8 @@ describe "Enumerator::Lazy#zip" do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.zip []
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "keeps size" do
@@ -40,11 +40,19 @@ describe "Enumerator::Lazy#zip" do
   end
 
   it "returns a Lazy when no arguments given" do
-    @yieldsmixed.zip.should be_an_instance_of(Enumerator::Lazy)
+    @yieldsmixed.zip.should.instance_of?(Enumerator::Lazy)
   end
 
   it "raises a TypeError if arguments contain non-list object" do
-    -> { @yieldsmixed.zip [], Object.new, [] }.should raise_error(TypeError)
+    -> { @yieldsmixed.zip [], Object.new, [] }.should.raise(TypeError)
+  end
+
+  describe "when the returned lazy enumerator is evaluated by .force" do
+    it "return same value when called twice" do
+      lazy = [0, 1].lazy.zip([2, 3])
+      lazy.force.should == [[0, 2], [1, 3]]
+      lazy.force.should == [[0, 2], [1, 3]]
+    end
   end
 
   describe "on a nested Lazy" do

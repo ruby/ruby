@@ -111,7 +111,9 @@ class TestGemExtCargoBuilder < Gem::TestCase
         Open3.capture2e(*gem, "build", "rust_ruby_example.gemspec", "--output", built_gem)
         Open3.capture2e(*gem, "install", "--verbose", "--local", built_gem, *ARGV)
 
-        stdout_and_stderr_str, status = Open3.capture2e(env_for_subprocess, *ruby_with_rubygems_in_load_path, "-rrust_ruby_example", "-e", "puts 'Result: ' + RustRubyExample.reverse('hello world')")
+        # Require inside -e because -r bypasses gem activation under RUBY_BOX=1
+        # (https://bugs.ruby-lang.org/issues/22295)
+        stdout_and_stderr_str, status = Open3.capture2e(env_for_subprocess, *ruby_with_rubygems_in_load_path, "-e", "require 'rust_ruby_example'; puts 'Result: ' + RustRubyExample.reverse('hello world')")
         assert status.success?, stdout_and_stderr_str
         assert_match "Result: #{"hello world".reverse}", stdout_and_stderr_str
       end
@@ -134,7 +136,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
         Open3.capture2e(*gem, "install", "--verbose", "--local", built_gem, *ARGV)
       end
 
-      stdout_and_stderr_str, status = Open3.capture2e(env_for_subprocess, *ruby_with_rubygems_in_load_path, "-rcustom_name", "-e", "puts 'Result: ' + CustomName.say_hello")
+      stdout_and_stderr_str, status = Open3.capture2e(env_for_subprocess, *ruby_with_rubygems_in_load_path, "-e", "require 'custom_name'; puts 'Result: ' + CustomName.say_hello")
 
       assert status.success?, stdout_and_stderr_str
       assert_match "Result: Hello world!", stdout_and_stderr_str
@@ -199,7 +201,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     pend "jruby not supported" if Gem.java_platform?
     pend "truffleruby not supported (yet)" if RUBY_ENGINE == "truffleruby"
     system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
-    pend "cargo not present" unless $?.success?
+    pend "cargo not present" unless Process.last_status.success?
     pend "ruby.h is not provided by ruby repo" if ruby_repo?
     pend "rust toolchain of mingw is broken" if mingw_windows?
   end

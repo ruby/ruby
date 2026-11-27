@@ -150,16 +150,22 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(false, store.verify(ee1_cert, [ca2_cert]))
     assert_equal(OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION, store.error)
 
-    # Exception raised by verify_callback is currently suppressed, and is
-    # treated as a non-truthy return (with warning)
+    # Exceptions raised in verify_callback are re-raised
     store = OpenSSL::X509::Store.new
     store.verify_callback = -> (preverify_ok, sctx) {
-      raise "suppressed"
+      raise "in verify_callback"
     }
     store.add_cert(ca1_cert)
-    assert_warning(/exception in verify_callback/) {
-      assert_equal(false, store.verify(ee1_cert, [ca2_cert]))
+    assert_raise_with_message(RuntimeError, "in verify_callback") {
+      store.verify(ee1_cert, [ca2_cert])
     }
+
+    # verify_callback is nested
+    ret = store.verify(ca1_cert) do |preverify_ok, sctx|
+      assert_raise(RuntimeError) { store.verify(ca1_cert) }
+      preverify_ok
+    end
+    assert_true(ret)
 
     # The block given to X509::Store#verify replaces it
     called = nil
@@ -169,6 +175,37 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     blk = proc { |preverify_ok, sctx| called = :block; preverify_ok }
     assert_equal(true, store.verify(ee1_cert, [ca2_cert], &blk))
     assert_equal(:block, called)
+  end
+
+  def test_verify_callback_warning_raises
+    # StoreContext must be detached even if the warning raises
+    assert_separately(["-ropenssl"], <<~"end;")
+      module Warning
+        def self.warn(message, *)
+          raise "warn raised" if message.include?("verify_callback")
+        end
+      end
+
+      key = OpenSSL::PKey::EC.generate("prime256v1")
+      cert = OpenSSL::X509::Certificate.new
+      cert.version = 2
+      cert.serial = 1
+      cert.subject = cert.issuer = OpenSSL::X509::Name.parse("/CN=x")
+      cert.public_key = key
+      cert.not_before = Time.now - 10
+      cert.not_after = Time.now + 1000
+      cert.sign(key, "sha256")
+
+      saved = nil
+      store = OpenSSL::X509::Store.new
+      store.verify_callback = proc { |_, sctx| saved = sctx; raise "callback raised" }
+      ctx = OpenSSL::X509::StoreContext.new(store, cert)
+      begin
+        ctx.verify
+      rescue RuntimeError
+      end
+      assert_raise_with_message(RuntimeError, /out of scope/) { saved.error }
+    end;
   end
 
   def test_verify_purpose
@@ -368,6 +405,24 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_raise(NoMethodError) { store.dup }
     ctx = OpenSSL::X509::StoreContext.new(store)
     assert_raise(NoMethodError) { ctx.dup }
+  end
+
+  def test_flags_clear
+    store = OpenSSL::X509::Store.new
+    assert_equal(0, store.flags)
+    store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK
+    assert_equal(OpenSSL::X509::V_FLAG_CRL_CHECK, store.flags)
+    assert_warning(/clear_flags/) {
+      store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+    }
+    assert_equal(
+      OpenSSL::X509::V_FLAG_CRL_CHECK|OpenSSL::X509::V_FLAG_CRL_CHECK_ALL,
+      store.flags
+    )
+    store.clear_flags(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
+    assert_equal(OpenSSL::X509::V_FLAG_CRL_CHECK, store.flags)
+    store.clear_flags
+    assert_equal(0, store.flags)
   end
 
   def test_ctx_cleanup

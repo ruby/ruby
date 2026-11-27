@@ -14,8 +14,17 @@ describe "StringScanner#rest_size" do
     @s.rest_size.should == 0
   end
 
-  it "is equivalent to rest.size" do
+  it "is equivalent to rest.bytesize" do
     @s.scan(/This/)
-    @s.rest_size.should == @s.rest.size
+    @s.rest_size.should == @s.rest.bytesize
+
+    s = StringScanner.new('été')
+    s.rest_size.should == 5
+    s.scan(/./)
+    s.rest_size.should == 3
+    s.scan(/./)
+    s.rest_size.should == 2
+    s.scan(/./)
+    s.rest_size.should == 0
   end
 end

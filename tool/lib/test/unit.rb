@@ -263,7 +263,8 @@ module Test
 
       def non_options(files, options)
         @jobserver = nil
-        if !options[:parallel] and @jobserver = Test::JobServer.connect(ENV.delete("MAKEFLAGS"))
+        makeflags = ENV.delete("MAKEFLAGS")
+        if !options[:parallel] and @jobserver = Test::JobServer.connect(makeflags)
           options[:parallel] ||= 256 # number of tokens to acquire first
         end
         @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 1200)
@@ -403,11 +404,16 @@ module Test
         end
 
         def kill
-          EnvUtil::Debugger.search&.dump(@pid)
+          EnvUtil::Debugger.search&.dump(target_pid)
           signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
-          Process.kill(signal, @pid)
+          Process.kill(signal, target_pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
+        end
+
+        # exec in runruby.rb runs the worker as another process on Windows
+        def target_pid
+          RUBY_PLATFORM =~ /mswin|mingw/ && @real_pid || @pid
         end
 
         def died(*additional)
@@ -430,7 +436,7 @@ module Test
         end
 
         attr_reader :io, :pid
-        attr_accessor :status, :file, :real_file, :loadpath
+        attr_accessor :status, :file, :real_file, :real_pid, :loadpath
 
         private
 
@@ -460,10 +466,15 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "A test worker crashed. It might be an interpreter bug or"
-        warn "a bug in test/unit/parallel.rb. Try again without the -j"
-        warn "option."
+        warn "A test worker crashed. It might be a bug in the"
+        warn "Ruby runtime or a bug in  test/unit/parallel.rb."
+        warn "You may want to try again without the -j option."
         warn ""
+        if ENV["RUBY_CRASH_REPORT"]
+          warn "hint: RUBY_CRASH_REPORT is set and may have produced additional information."
+          warn "      Crash logs might be collapsed under a different fold on CI." if "true" == ENV["GITHUB_ACTIONS"]
+          warn ""
+        end
         if File.exist?('core')
           require 'fileutils'
           require 'time'
@@ -490,6 +501,7 @@ module Test
         worker.close
         if @jobserver and (token = @job_tokens.slice!(0))
           @jobserver[1] << token
+          @jobserver[1].flush
         end
         @workers.delete(worker)
         @dead_workers << worker
@@ -550,6 +562,12 @@ module Test
           end
         rescue Timeout::Error
           if pids
+            if RUBY_PLATFORM =~ /mswin|mingw/
+              # The test processes are not children on Windows and their pids
+              # may be reused once they exit, so kill only the running ones.
+              running = closed.select {|w| Process.waitpid(w.pid, Process::WNOHANG).nil? rescue false}
+              pids = running.map(&:target_pid)
+            end
             Process.kill(:KILL, *pids) rescue nil
             pids = nil
             retry
@@ -574,8 +592,9 @@ module Test
           # just only dots, ignore
         when /^okay$/
           worker.status = :running
-        when /^ready(!)?$/
+        when /^ready(!)?(?: (\d+))?$/
           bang = $1
+          worker.real_pid = $2.to_i if $2
           worker.status = :ready
 
           unless task = @tasks.shift
@@ -641,6 +660,13 @@ module Test
         return false
       end
 
+      def _run_anything(type)
+        @job_tokens = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
+        super
+      ensure
+        flush_job_tokens
+      end
+
       def _run_parallel suites, type, result
         @records = {}
 
@@ -662,7 +688,6 @@ module Test
         @workers      = [] # Array of workers.
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
-        @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
           while true
             newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
@@ -714,7 +739,6 @@ module Test
           end
 
           quit_workers
-          flush_job_tokens
 
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
@@ -803,10 +827,10 @@ module Test
         _prepare_run(suites, type)
         @interrupt = nil
         result = []
-        GC.start
         if @options[:parallel]
           _run_parallel suites, type, result
         else
+          GC.start
           suites.each {|suite|
             begin
               result << _run_suite(suite, type)
@@ -1103,7 +1127,7 @@ module Test
         super
         parser.separator "load path options:"
         parser.on '-Idirectory', 'Add library load path' do |dirs|
-          dirs.split(':').each { |d| $LOAD_PATH.unshift d }
+          dirs.split(File::PATH_SEPARATOR).each { |d| $LOAD_PATH.unshift d }
         end
       end
     end
@@ -1290,6 +1314,10 @@ module Test
       def _run_anything(type)
         @repeat_count = @options[:repeat_count]
         @keep_repeating = @options[:keep_repeating]
+        if @repeat_count and @options[:parallel]
+          warn "--repeat-count is not supported in parallel tests; ignored"
+          @repeat_count = @keep_repeating = nil
+        end
         super
       end
     end
@@ -1368,9 +1396,7 @@ module Test
       end
 
       def non_options(files, options)
-        if scale = options[:timeout_scale] or
-          (scale = ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and
-           (scale = scale.to_f) > 0)
+        if scale = options[:timeout_scale]
           EnvUtil.timeout_scale = scale
         end
         super
@@ -1672,6 +1698,19 @@ module Test
 
           leakchecker.check("#{inst.class}\##{inst.__name__}")
 
+          # Optionally verify GC internal consistency after each test. An
+          # integer >= 2 samples once every N tests (use a prime so a
+          # randomized test order samples a different set each run); any other
+          # non-empty value verifies every test (O(heap) per test, so only
+          # practical for small runs).
+          if (interval = ENV["RUBY_TEST_GC_VERIFY"])
+            n = interval.to_i
+            @__gc_verify_tick = (@__gc_verify_tick || 0) + 1
+            if n <= 1 || (@__gc_verify_tick % n).zero?
+              GC.verify_internal_consistency
+            end
+          end
+
           _end_method(inst)
 
           inst._assertions
@@ -1807,8 +1846,6 @@ module Test
         @@installed_at_exit = true
       end
 
-      alias orig_run_suite _run_suite
-
       # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
         n = report.size
@@ -1822,7 +1859,12 @@ module Test
               "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
             when Timeout::Error
               @errors += 1
-              "Timeout:\n#{klass}##{meth}\n"
+              # A worker that stopped responding is reported with a bare
+              # Timeout::Error and has nothing to say.  One raised inside the
+              # test says what expired and carries the output of the
+              # subprocess that hung, which is all there is to go on.
+              detail = e.message == e.class.name ? "" : "#{e.message}\n"
+              "Timeout:\n#{klass}##{meth}\n#{detail}"
             else
               @errors += 1
               bt = Test::filter_backtrace(e.backtrace).join "\n    "

@@ -8,22 +8,22 @@ describe "UnboundMethod#source_location" do
 
   it "sets the first value to the path of the file in which the method was defined" do
     file = @method.source_location.first
-    file.should be_an_instance_of(String)
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/classes.rb', __dir__)
   end
 
   it "sets the last value to an Integer representing the line on which the method was defined" do
     line = @method.source_location.last
-    line.should be_an_instance_of(Integer)
-    line.should == 5
+    line.should.instance_of?(Integer)
+    line.should == UnboundMethodSpecs::SourceLocation::LOCATION_LINE
   end
 
   it "returns the last place the method was defined" do
-    UnboundMethodSpecs::SourceLocation.method(:redefined).unbind.source_location.last.should == 13
+    UnboundMethodSpecs::SourceLocation.method(:redefined).unbind.source_location.last.should == UnboundMethodSpecs::SourceLocation::REDEFINED_LINE
   end
 
   it "returns the location of the original method even if it was aliased" do
-    UnboundMethodSpecs::SourceLocation.instance_method(:aka).source_location.last.should == 17
+    UnboundMethodSpecs::SourceLocation.instance_method(:aka).source_location.last.should == UnboundMethodSpecs::SourceLocation::ORIGINAL_LINE
   end
 
   it "works for define_method methods" do

@@ -19,6 +19,13 @@ describe "IO#readbyte" do
     @io.seek(999999)
     -> do
       @io.readbyte
-    end.should raise_error EOFError
+    end.should.raise EOFError
+  end
+
+  it "reads after ungetc without character conversion" do
+    @io.set_encoding("utf-8")
+    c = @io.getc
+    @io.ungetc(c)
+    @io.readbyte.should == ?r.getbyte(0)
   end
 end

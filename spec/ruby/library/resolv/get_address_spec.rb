@@ -14,6 +14,6 @@ describe "Resolv#getaddress" do
     res = Resolv.new([])
     -> {
       res.getaddress("should.raise.error.")
-    }.should raise_error(Resolv::ResolvError)
+    }.should.raise(Resolv::ResolvError)
   end
 end

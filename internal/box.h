@@ -25,25 +25,42 @@ struct rb_box_struct {
     VALUE load_path_snapshot;
     VALUE load_path_check_cache;
     VALUE expanded_load_path;
+    rb_len_t expanded_load_path_maxlen;
     VALUE loaded_features;
     VALUE loaded_features_snapshot;
     VALUE loaded_features_realpaths;
     VALUE loaded_features_realpath_map;
     struct st_table *loaded_features_index;
     struct st_table *loading_table;
+    /* Non-zero while the main Ractor is rebuilding loaded_features_index or
+     * expanded_load_path.  Maintained under the VM lock so that
+     * rb_feature_provided_ractor_safe(), which holds that lock, is excluded from
+     * the rebuild and sees its writes once it completes. */
+    unsigned long load_unstable_depth;
     VALUE ruby_dln_libmap;
 
     VALUE gvar_tbl;
     struct st_table *classext_cow_classes;
 
+    bool is_root;
     bool is_user;
     bool is_optional;
 };
 typedef struct rb_box_struct rb_box_t;
 
+struct rb_box_gem_flags {
+    bool gem;
+    bool error_highlight;
+    bool did_you_mean;
+    bool syntax_suggest;
+};
+typedef struct rb_box_gem_flags rb_box_gem_flags_t;
+
 #define BOX_OBJ_P(obj) (rb_obj_class(obj) == rb_cBox)
 
-#define BOX_ROOT_P(box) (box && !box->is_user)
+#define BOX_MASTER_P(box) (box && !box->is_root && !box->is_user)
+#define BOX_MUTABLE_P(box) (box && (box->is_root || box->is_user))
+#define BOX_ROOT_P(box) (box && box->is_root)
 #define BOX_USER_P(box) (box && box->is_user)
 #define BOX_OPTIONAL_P(box) (box && box->is_optional)
 #define BOX_MAIN_P(box) (box && box->is_user && !box->is_optional)
@@ -63,6 +80,7 @@ rb_box_available(void)
     return ruby_box_enabled;
 }
 
+const rb_box_t * rb_master_box(void);
 const rb_box_t * rb_root_box(void);
 const rb_box_t * rb_main_box(void);
 const rb_box_t * rb_current_box(void);
@@ -75,9 +93,16 @@ void rb_box_gc_update_references(void *ptr);
 rb_box_t * rb_get_box_t(VALUE ns);
 VALUE rb_get_box_object(rb_box_t *ns);
 
-VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path, VALUE *cleanup);
+VALUE rb_box_local_extension(VALUE box, VALUE path, VALUE *cleanup);
 void rb_box_cleanup_local_extension(VALUE cleanup);
+void rb_box_defer_unload_local_extension(void *handle);
+void rb_box_unload_local_extensions(void);
 
-void rb_initialize_main_box(void);
+void rb_initialize_mandatory_boxes(void);
 void rb_box_init_done(void);
+void rb_box_set_gem_flags(rb_box_gem_flags_t *);
+
+/* variable.c */
+void rb_autoload_copy_table_for_box(st_table *, const rb_box_t *);
+
 #endif /* INTERNAL_BOX_H */

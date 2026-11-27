@@ -51,7 +51,7 @@ eom
   #   SHA1:   21f62c369661a2ab1b521fd2fa8191a4273e12a1
   #   SHA256: 97cea8aa63dfa250ba6902b658a7aa066daf817b22f82b7ee28f44aec7c2e394
   #   SHA512: 1e2042324821bb4e110af7067f52891606dcfc71e640c194ab1c117f0b941550e0b3ac36ad3511214ac80c536b9e5cfaf8789eec74cf56971a832ea8fc4e6d94
-  def self.parse(wwwdir, version, rubydir)
+  def self.parse(wwwdir, version, rubydir, source_ref_or_sha = nil)
     unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
       raise "unexpected version string '#{version}'"
     end
@@ -75,9 +75,12 @@ eom
 
     if teeny == 0
       # show diff shortstat
-      tag = RubyVersion.tag(version)
+      tag = source_ref_or_sha || RubyVersion.tag(version)
       prev_tag = RubyVersion.tag(RubyVersion.previous(version))
-      stat = `git -C #{rubydir} diff -l0 --shortstat #{prev_tag}..#{tag}`
+      stat = IO.popen(["git", "-C", rubydir, "diff", "-l0", "--shortstat", "#{prev_tag}..#{tag}"], &:read)
+      unless $?.success?
+        raise "failed to diff #{prev_tag}..#{tag}"
+      end
       files_changed, insertions, deletions = stat.scan(/\d+/)
     end
 
@@ -235,11 +238,12 @@ def main
   wwwdir = ARGV.shift
   version = ARGV.shift
   rubydir = ARGV.shift
+  source_ref_or_sha = ARGV.shift
   unless rubydir
-    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <version> <ruby-dir>"
+    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <version> <ruby-dir> [source-ref-or-sha]"
     exit
   end
-  Tarball.parse(wwwdir, version, rubydir)
+  Tarball.parse(wwwdir, version, rubydir, source_ref_or_sha)
 end
 
 main

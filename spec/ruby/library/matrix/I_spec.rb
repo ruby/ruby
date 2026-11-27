@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/identity'
+require 'matrix'
 
 describe "Matrix.I" do
-  it_behaves_like :matrix_identity, :I
+  it "is an alias of Matrix.identity" do
+    Matrix.method(:I).should == Matrix.method(:identity)
+  end
 end

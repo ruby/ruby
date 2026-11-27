@@ -8,7 +8,9 @@ module Bundler
       def initialize(*)
         super
 
-        @pool_size = 5
+        @pool_size = Bundler.settings.installation_parallelization
+        ssl_ca_cert = Bundler.settings[:ssl_ca_cert]
+        @cert_files << ssl_ca_cert if ssl_ca_cert
       end
 
       def request(*args)

@@ -4,11 +4,11 @@ platform_is :windows do
 
   describe "WIN32OLE::Type.progids" do
     it "raises ArgumentError if an argument is given" do
-      -> { WIN32OLE::Type.progids(1) }.should raise_error ArgumentError
+      -> { WIN32OLE::Type.progids(1) }.should.raise ArgumentError
     end
 
     it "returns an array containing 'Shell.Explorer'" do
-      WIN32OLE::Type.progids().include?('Shell.Explorer').should be_true
+      WIN32OLE::Type.progids().include?('Shell.Explorer').should == true
     end
 
   end

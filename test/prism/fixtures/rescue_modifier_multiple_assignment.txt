@@ -1,0 +1,9 @@
+a rescue b, c = 1
+a rescue b, c, d = 1
+a rescue *b, c = 1
+a rescue b, *c = 1
+a rescue b, *c, d = 1
+a rescue *b = 1
+a rescue (b, c), d = 1
+a rescue b.c, d = 1
+a rescue b[0], c = 1

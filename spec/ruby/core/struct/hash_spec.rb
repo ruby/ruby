@@ -8,14 +8,14 @@ describe "Struct#hash" do
     [StructClasses::Ruby.new("1.8.6", "PPC"),
      StructClasses::Car.new("Hugo", "Foo", "1972")].each do |stc|
       stc.hash.should == stc.dup.hash
-      stc.hash.should be_kind_of(Integer)
+      stc.hash.should.is_a?(Integer)
     end
   end
 
   it "returns the same value if structs are #eql?" do
     car = StructClasses::Car.new("Honda", "Accord", "1998")
     similar_car = StructClasses::Car.new("Honda", "Accord", "1998")
-    car.should eql(similar_car)
+    car.should.eql?(similar_car)
     car.hash.should == similar_car.hash
   end
 

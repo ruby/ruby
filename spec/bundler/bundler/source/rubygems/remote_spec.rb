@@ -169,4 +169,55 @@ RSpec.describe Bundler::Source::Rubygems::Remote do
       end
     end
   end
+
+  describe "#cooldown" do
+    it "is nil by default" do
+      expect(remote(uri_no_auth).cooldown).to be_nil
+    end
+
+    it "returns the value passed to the constructor" do
+      r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
+      expect(r.cooldown).to eq(7)
+    end
+  end
+
+  describe "#effective_cooldown" do
+    it "returns the per-remote value when no override is set" do
+      r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
+      expect(r.effective_cooldown).to eq(7)
+    end
+
+    it "returns nil when neither override nor per-remote value is set" do
+      expect(remote(uri_no_auth).effective_cooldown).to be_nil
+    end
+
+    it "settings override per-remote value" do
+      r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
+      Bundler.settings.temporary(cooldown: 14) do
+        expect(r.effective_cooldown).to eq(14)
+      end
+    end
+
+    it "settings override even when per-remote value is absent" do
+      Bundler.settings.temporary(cooldown: 14) do
+        expect(remote(uri_no_auth).effective_cooldown).to eq(14)
+      end
+    end
+
+    it "reads the settings only once, however many candidates ask" do
+      r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
+      expect(Bundler.settings).to receive(:cooldown_for).with(7).once.and_return(14)
+
+      expect(r.effective_cooldown).to eq(14)
+      expect(r.effective_cooldown).to eq(14)
+    end
+
+    it "memoizes an absent cooldown without re-reading the settings" do
+      r = Bundler::Source::Rubygems::Remote.new(uri_no_auth, cooldown: 7)
+      expect(Bundler.settings).to receive(:cooldown_for).with(7).once.and_return(nil)
+
+      expect(r.effective_cooldown).to be_nil
+      expect(r.effective_cooldown).to be_nil
+    end
+  end
 end

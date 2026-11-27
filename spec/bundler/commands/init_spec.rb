@@ -116,10 +116,20 @@ RSpec.describe "bundle init" do
         expect(err).to include("There was an error while loading `test.gemspec`")
       end
     end
+
+    context "when gemspec file does not define a specification" do
+      it "notifies the user that no specification was produced" do
+        FileUtils.touch(spec_file)
+
+        bundle :init, gemspec: spec_file, raise_on_error: false
+        expect(err).to include("Gem specification #{spec_file} did not produce a specification")
+        expect(bundled_app_gemfile).not_to exist
+      end
+    end
   end
 
   context "when init_gems_rb setting is enabled" do
-    before { bundle "config set init_gems_rb true" }
+    before { bundle_config "init_gems_rb true" }
 
     it "generates a gems.rb" do
       bundle :init

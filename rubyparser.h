@@ -25,7 +25,7 @@
 #ifndef FLEX_ARY_LEN
 /* From internal/compilers.h */
 /* A macro for defining a flexible array, like: VALUE ary[FLEX_ARY_LEN]; */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(_MSC_VER)
 # define FLEX_ARY_LEN   /* VALUE ary[]; */
 #elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
 # define FLEX_ARY_LEN 0 /* VALUE ary[0]; */
@@ -61,7 +61,7 @@ typedef struct rb_parser_string {
     enum rb_parser_string_coderange_type coderange;
     rb_encoding *enc;
     /* Length of the string, not including terminating NUL character. */
-    long len;
+    rb_len_t len;
     /* Pointer to the contents of the string. */
     char *ptr;
 } rb_parser_string_t;
@@ -289,25 +289,7 @@ typedef struct RNode_CASE {
     struct RNode *nd_body;
     rb_code_location_t case_keyword_loc;
     rb_code_location_t end_keyword_loc;
-} rb_node_case_t;
-
-typedef struct RNode_CASE2 {
-    NODE node;
-
-    struct RNode *nd_head;
-    struct RNode *nd_body;
-    rb_code_location_t case_keyword_loc;
-    rb_code_location_t end_keyword_loc;
-} rb_node_case2_t;
-
-typedef struct RNode_CASE3 {
-    NODE node;
-
-    struct RNode *nd_head;
-    struct RNode *nd_body;
-    rb_code_location_t case_keyword_loc;
-    rb_code_location_t end_keyword_loc;
-} rb_node_case3_t;
+} rb_node_case_t, rb_node_case2_t, rb_node_case3_t;
 
 typedef struct RNode_WHEN {
     NODE node;
@@ -782,6 +764,7 @@ struct rb_args_info {
 
     struct RNode_OPT_ARG *opt_args;
     unsigned int no_kwarg: 1;
+    unsigned int no_blockarg: 1;
     unsigned int forwarding: 1;
 };
 
@@ -1192,12 +1175,20 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_parser_config_struct rb_parser_config_t;
 #endif
 
+/* Streaming state of a source hash. The layout and the hash algorithm are
+ * implementation details; use rb_source_hash_init/update/finalize. */
+typedef struct rb_source_hash_state {
+    uint64_t hash;
+} rb_source_hash_state_t;
+
 typedef struct rb_ast_body_struct {
     const NODE *root;
     rb_parser_ary_t *script_lines;
     int line_count;
     signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
     signed int coverage_enabled:2; /* -1: not specified, 0: false, 1: true */
+    unsigned int has_source_hash:1;
+    uint64_t source_hash;
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     node_buffer_t *node_buffer;
@@ -1244,7 +1235,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*attr_get)(VALUE obj, ID id);
 
     /* Array */
-    VALUE (*ary_new_from_args)(long n, ...);
+    VALUE (*ary_new_from_args)(rb_len_t n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
 
     /* Symbol */
@@ -1255,11 +1246,11 @@ typedef struct rb_parser_config_struct {
     int (*id_type)(ID id);
     ID (*id_attrset)(ID);
     ID (*intern)(const char *name);
-    ID (*intern2)(const char *name, long len);
-    ID (*intern3)(const char *name, long len, rb_encoding *enc);
+    ID (*intern2)(const char *name, rb_len_t len);
+    ID (*intern3)(const char *name, rb_len_t len, rb_encoding *enc);
     ID (*intern_str)(VALUE str);
     int (*is_notop_id)(ID);
-    int (*enc_symname_type)(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
+    int (*enc_symname_type)(const char *name, rb_len_t len, rb_encoding *enc, unsigned int allowed_attrset);
     const char *(*id2name)(ID id);
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
@@ -1268,17 +1259,17 @@ typedef struct rb_parser_config_struct {
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
-    VALUE (*str_resize)(VALUE str, long len);
-    VALUE (*str_new)(const char *ptr, long len);
+    VALUE (*str_resize)(VALUE str, rb_len_t len);
+    VALUE (*str_new)(const char *ptr, rb_len_t len);
     VALUE (*str_new_cstr)(const char *ptr);
     VALUE (*str_to_interned_str)(VALUE);
-    VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
+    VALUE (*enc_str_new)(const char *ptr, rb_len_t len, rb_encoding *enc);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
     VALUE (*str_vcatf)(VALUE str, const char *fmt, va_list ap);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
-    long (*rstring_len)(VALUE str);
+    rb_len_t (*rstring_len)(VALUE str);
 
     /* Numeric */
     VALUE (*int2num)(int v);
@@ -1342,7 +1333,7 @@ typedef struct rb_parser_config_struct {
     /* Re */
     VALUE (*reg_compile)(VALUE str, int options, const char *sourcefile, int sourceline);
     VALUE (*reg_check_preprocess)(VALUE str);
-    int (*memcicmp)(const void *x, const void *y, long len);
+    int (*memcicmp)(const void *x, const void *y, rb_len_t len);
 
     /* Error */
     void (*compile_warn)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
@@ -1356,8 +1347,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*make_backtrace)(void);
 
     /* Util */
-    unsigned long (*scan_hex)(const char *start, size_t len, size_t *retlen);
-    unsigned long (*scan_oct)(const char *start, size_t len, size_t *retlen);
     unsigned long (*scan_digits)(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
     double (*strtod)(const char *s00, char **se);
 
@@ -1367,13 +1356,18 @@ typedef struct rb_parser_config_struct {
     VALUE qnil;
     VALUE qfalse;
     VALUE (*eArgError)(void);
-    int (*long2int)(long);
+    int (*long2int)(rb_len_t);
 
     /* For Ripper */
     int enc_coderange_7bit;
     int enc_coderange_unknown;
     VALUE (*static_id2sym)(ID id);
-    long (*str_coderange_scan_restartable)(const char *s, const char *e, rb_encoding *enc, int *cr);
+    rb_len_t (*str_coderange_scan_restartable)(const char *s, const char *e, rb_encoding *enc, int *cr);
+
+    /* Source hash */
+    void (*source_hash_init)(rb_source_hash_state_t *state);
+    void (*source_hash_update)(rb_source_hash_state_t *state, const uint8_t *ptr, size_t len);
+    uint64_t (*source_hash_finalize)(const rb_source_hash_state_t *state);
 } rb_parser_config_t;
 
 #undef rb_encoding

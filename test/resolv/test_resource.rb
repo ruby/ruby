@@ -20,8 +20,65 @@ class TestResolvResource < Test::Unit::TestCase
     assert_equal(@name1.hash, @name2.hash, bug10857)
   end
 
-  def test_coord
-    Resolv::LOC::Coord.create('1 2 1.1 N')
+  # Decoding an unknown (type, class) pair builds a fresh class every time, so
+  # equality must not rest on the class identity.
+  def test_generic_equality
+    wire = generic_answer(40000, "\x01\x02\x03")
+    rr1 = decode_generic(wire)
+    rr2 = decode_generic(wire)
+
+    assert_not_same rr1.class, rr2.class
+    assert_equal rr1, rr2
+    assert rr1.eql?(rr2)
+    assert_equal rr1.hash, rr2.hash
+    assert_equal Resolv::DNS::Message.decode(wire), Resolv::DNS::Message.decode(wire)
+  end
+
+  # Any descendant counts, not just a class create returned.
+  def test_generic_equality_between_descendants
+    generic = Resolv::DNS::Resource::Generic
+    direct = generic.create(40000, 60000)
+    descendant = Class.new(generic.create(40000, 60000))
+
+    assert_equal direct.new("\x01\x02\x03"), descendant.new("\x01\x02\x03")
+    assert_equal descendant.new("\x01\x02\x03"), direct.new("\x01\x02\x03")
+    assert_equal generic.new("\x01\x02\x03"), generic.new("\x01\x02\x03")
+    assert_not_equal direct.new("\x01\x02\x03"),
+      Class.new(generic.create(40001, 60000)).new("\x01\x02\x03")
+  end
+
+  def test_generic_inequality
+    rr = decode_generic(generic_answer(40000, "\x01\x02\x03"))
+
+    assert_not_equal rr, decode_generic(generic_answer(40001, "\x01\x02\x03"))
+    assert_not_equal rr, decode_generic(generic_answer(40000, "\x09\x09\x09"))
+    assert_not_equal rr, Resolv::DNS::Resource::IN::A.new("192.168.0.1")
+  end
+
+  # A question holds the resource class itself, so it needs the same treatment.
+  def test_generic_question_equality
+    wire = generic_question(40000)
+
+    assert_equal Resolv::DNS::Message.decode(wire), Resolv::DNS::Message.decode(wire)
+    assert_not_equal Resolv::DNS::Message.decode(wire),
+      Resolv::DNS::Message.decode(generic_question(40001))
+  end
+
+  private def header(qdcount, ancount)
+    "\x00\x00\x00\x00".b + [qdcount, ancount, 0, 0].pack('nnnn')
+  end
+
+  private def generic_answer(type, rdata)
+    rdata = rdata.b
+    (header(0, 1) + "\x00".b + [type, 60000, 0, rdata.bytesize].pack('nnNn') + rdata).b
+  end
+
+  private def generic_question(type)
+    (header(1, 0) + "\x07example\x03com\x00".b + [type, 60000].pack('nn')).b
+  end
+
+  private def decode_generic(wire)
+    Resolv::DNS::Message.decode(wire).answer.first[2]
   end
 
   def test_srv_no_compress
@@ -30,6 +87,76 @@ class TestResolvResource < Test::Unit::TestCase
     m = Resolv::DNS::Message.new(0)
     m.add_answer('example.com', 0, Resolv::DNS::Resource::IN::SRV.new(0, 0, 0, 'www.example.com'))
     assert_equal "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x07example\x03com\x00\x00\x21\x00\x01\x00\x00\x00\x00\x00\x17\x00\x00\x00\x00\x00\x00\x03www\x07example\x03com\x00", m.encode, issue29
+  end
+end
+
+class TestResolvResourceLOC < Test::Unit::TestCase
+  def test_size_create
+    assert_size("0.0m", 0, 0)
+    assert_size("0.01m", 1, 0)
+    assert_size("0.09m", 9, 0)
+    assert_size("0.11m", 1, 1)
+    assert_size("1.0m", 1, 2)
+    assert_size("1234.56m", 1, 5)
+    assert_size("12345678.90m", 1, 9)
+    assert_size("98765432.10m", 9, 9)
+    assert_raise(ArgumentError) {Resolv::LOC::Size.create("100000000.00m")}
+  end
+
+  private def assert_size(input, base, power)
+    size = Resolv::LOC::Size.create(input)
+    assert_equal([(base << 4) + power], size.scalar.unpack("C"))
+    assert_equal(size, Resolv::LOC::Size.create(size.to_s))
+  end
+
+  def test_coord
+    assert_coord('1 2 1.1 N', 'lat', 0x8038c78c)
+    assert_coord('42 21 43.952 N', 'lat', 0x89170690)
+    assert_coord('71 5 6.344 W', 'lon', 0x70bf2dd8)
+    assert_coord('52 14 05.000 N', 'lat', 0x8b3556c8)
+    assert_coord('90 0 0.000 N', 'lat', 0x934fd900)
+    assert_coord('90 0 0.000 S', 'lat', 0x6cb02700)
+    assert_coord('00 8 50.000 E', 'lon', 0x80081650)
+    assert_coord('0 8 50.001 E', 'lon', 0x80081651)
+    assert_coord('32 07 19.000 S', 'lat', 0x791b7d28)
+    assert_coord('116 02 25.000 E', 'lon', 0x98e64868)
+    assert_coord('116 02 25.000 W', 'lon', 0x6719b798)
+    assert_coord('180 00 00.000 E', 'lon', 0xa69fb200)
+    assert_coord('180 00 00.000 W', 'lon', 0x59604e00)
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('90 0 0.001 N')}
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('90 0 0.001 S')}
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('180 0 0.001 E')}
+    assert_raise(ArgumentError) {Resolv::LOC::Coord.create('180 0 0.001 W')}
+  end
+
+  private def assert_coord(input, orientation, coordinate)
+    coord = Resolv::LOC::Coord.create(input)
+
+    assert_equal(orientation, coord.orientation)
+    assert_equal([coordinate].pack("N"), coord.coordinates)
+    assert_equal(coord, Resolv::LOC::Coord.create(coord.to_s))
+  end
+
+  def test_alt
+    assert_alt("0.0m", 0)
+    assert_alt("+0.0m", 0)
+    assert_alt("-0.0m", 0)
+    assert_alt("+0.01m", 1)
+    assert_alt("1.0m", 100)
+    assert_alt("+1.0m", 100)
+    assert_alt("100000.0m", +10000000)
+    assert_alt("+100000.0m", +10000000)
+    assert_alt("-100000.0m", -10000000)
+    assert_alt("+42849672.95m", 0xffff_ffff-100_000_00)
+    assert_raise(ArgumentError) {Resolv::LOC::Alt.create("-100000.01m")}
+    assert_raise(ArgumentError) {Resolv::LOC::Alt.create("+42849672.96m")}
+  end
+
+  private def assert_alt(input, altitude)
+    alt = Resolv::LOC::Alt.create(input)
+
+    assert_equal([altitude + 1e7].pack("N"), alt.altitude)
+    assert_equal(alt, Resolv::LOC::Alt.create(alt.to_s))
   end
 end
 

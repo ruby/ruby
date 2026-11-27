@@ -28,9 +28,9 @@ platform_is_not :windows do
         st.size.should == 8
         st.size?.should == 8
         st.blksize.should >= 0
-        st.atime.should be_kind_of(Time)
-        st.ctime.should be_kind_of(Time)
-        st.mtime.should be_kind_of(Time)
+        st.atime.should.is_a?(Time)
+        st.ctime.should.is_a?(Time)
+        st.mtime.should.is_a?(Time)
       end
     end
 
@@ -46,9 +46,9 @@ platform_is_not :windows do
       missing_path = "/missingfilepath\xE3E4".b
       -> {
         File.stat(missing_path)
-      }.should raise_error(SystemCallError) { |e|
-        [Errno::ENOENT, Errno::EILSEQ].should include(e.class)
-        e.message.should include(missing_path)
+      }.should.raise(SystemCallError) { |e|
+        [Errno::ENOENT, Errno::EILSEQ].should.include?(e.class)
+        e.message.should.include?(missing_path)
       }
     end
   end

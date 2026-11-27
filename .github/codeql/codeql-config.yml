@@ -1,0 +1,22 @@
+paths-ignore:
+  - benchmark
+  - sample
+  - spec/ruby/command_line/fixtures
+  - spec/ruby/core/enumerable/shared/inject.rb
+  - spec/ruby/core/exception/fixtures
+  - spec/ruby/core/proc/parameters_spec.rb
+  - spec/ruby/core/proc/ruby2_keywords_spec.rb
+  - spec/ruby/core/range/reverse_each_spec.rb
+  - spec/ruby/language/fixtures
+  - spec/ruby/language/lambda_spec.rb
+  - spec/ruby/language/method_spec.rb
+  - spec/ruby/language/string_spec.rb
+  - test/error_highlight/test_error_highlight.rb
+  - test/prism/result/named_capture_test.rb
+  - test/ruby/test_call.rb
+  - test/ruby/test_signal.rb
+  - test/ruby/test_super.rb
+  - test/ruby/test_syntax.rb
+  - test/ruby/test_unicode_escape.rb
+  - test/rubygems/specifications/foo-0.0.1-x86-mswin32.gemspec
+  - trace_point.rb

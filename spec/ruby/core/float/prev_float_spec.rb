@@ -9,7 +9,7 @@ describe "Float#prev_float" do
     barely_negative.should > barely_negative.prev_float
 
     midpoint = barely_negative / 2
-    [0.0, barely_negative].should include midpoint
+    [0.0, barely_negative].should.include? midpoint
   end
 
   it "returns -Float::INFINITY for -Float::INFINITY" do

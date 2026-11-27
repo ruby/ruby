@@ -23,7 +23,7 @@ describe "Zlib::Inflate#finish" do
   end
 
   it "each chunk should have the same prefix" do
-    @chunks.all? { |chunk| chunk =~ /\A0+\z/ }.should be_true
+    @chunks.all? { |chunk| chunk =~ /\A0+\z/ }.should == true
   end
 
 end

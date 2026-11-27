@@ -13,7 +13,7 @@ describe "ERB#filename" do
         @ex = e
         raise e
       end
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
     expected = filename
 
     @ex.message =~ /^(.*?):(\d+): /
@@ -30,7 +30,7 @@ describe "ERB#filename" do
         @ex = e
         raise e
       end
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
     expected = '(erb)'
 
     @ex.message =~ /^(.*?):(\d+): /

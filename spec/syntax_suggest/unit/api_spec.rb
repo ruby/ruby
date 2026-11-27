@@ -8,12 +8,6 @@ end
 
 module SyntaxSuggest
   RSpec.describe "Top level SyntaxSuggest api" do
-    it "doesn't load prism if env var is set" do
-      skip("SYNTAX_SUGGEST_DISABLE_PRISM not set") unless ENV["SYNTAX_SUGGEST_DISABLE_PRISM"]
-
-      expect(SyntaxSuggest.use_prism_parser?).to be_falsey
-    end
-
     it "has a `handle_error` interface" do
       fake_error = Object.new
       def fake_error.message
@@ -69,8 +63,6 @@ module SyntaxSuggest
     end
 
     it "respects highlight API" do
-      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
-
       core_ext_file = lib_dir.join("syntax_suggest").join("core_ext.rb")
       require_relative core_ext_file
 
@@ -91,8 +83,6 @@ module SyntaxSuggest
     end
 
     it "can be disabled via falsey kwarg" do
-      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
-
       core_ext_file = lib_dir.join("syntax_suggest").join("core_ext.rb")
       require_relative core_ext_file
 

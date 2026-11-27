@@ -21,7 +21,7 @@ describe "IO#print" do
   end
 
   it "returns nil" do
-    touch(@name) { |f| f.print.should be_nil }
+    touch(@name) { |f| f.print.should == nil }
   end
 
   it "writes $_.to_s followed by $\\ (if any) to the stream if no arguments given" do
@@ -61,6 +61,6 @@ describe "IO#print" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.print("stuff") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.print("stuff") }.should.raise(IOError)
   end
 end

@@ -25,7 +25,8 @@ module Bundler
           when Source::Rubygems
             cached_gem = spec.cache_file
             unless File.exist?(cached_gem)
-              Bundler.ui.error("Failed to pristine #{gem_name}. Cached gem #{cached_gem} does not exist.")
+              Bundler.ui.error("Failed to pristine #{gem_name}. Cached gem #{cached_gem} does not exist. " \
+                                "Run `bundle install --redownload` to download it again.")
               next
             end
 
@@ -53,7 +54,7 @@ module Bundler
           true
         end.map(&:name)
 
-        jobs = installer.send(:installation_parallelization)
+        jobs = Bundler.settings.installation_parallelization
         pristine_count = definition.specs.count - installed_specs.count
         # allow a pristining a single gem to skip the parallel worker
         jobs = [jobs, pristine_count].min

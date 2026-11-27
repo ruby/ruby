@@ -14,24 +14,24 @@ describe "Integer#divmod" do
     end
 
     it "raises a ZeroDivisionError when the given argument is 0" do
-      -> { 13.divmod(0)  }.should raise_error(ZeroDivisionError)
-      -> { 0.divmod(0)   }.should raise_error(ZeroDivisionError)
-      -> { -10.divmod(0) }.should raise_error(ZeroDivisionError)
+      -> { 13.divmod(0)  }.should.raise(ZeroDivisionError)
+      -> { 0.divmod(0)   }.should.raise(ZeroDivisionError)
+      -> { -10.divmod(0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and a Float" do
-      -> { 0.divmod(0.0)   }.should raise_error(ZeroDivisionError)
-      -> { 10.divmod(0.0)  }.should raise_error(ZeroDivisionError)
-      -> { -10.divmod(0.0) }.should raise_error(ZeroDivisionError)
+      -> { 0.divmod(0.0)   }.should.raise(ZeroDivisionError)
+      -> { 10.divmod(0.0)  }.should.raise(ZeroDivisionError)
+      -> { -10.divmod(0.0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-Integer" do
       -> {
         (obj = mock('10')).should_receive(:to_int).any_number_of_times.and_return(10)
         13.divmod(obj)
-      }.should raise_error(TypeError)
-      -> { 13.divmod("10")    }.should raise_error(TypeError)
-      -> { 13.divmod(:symbol) }.should raise_error(TypeError)
+      }.should.raise(TypeError)
+      -> { 13.divmod("10")    }.should.raise(TypeError)
+      -> { 13.divmod(:symbol) }.should.raise(TypeError)
     end
   end
 
@@ -94,24 +94,24 @@ describe "Integer#divmod" do
     end
 
     it "raises a ZeroDivisionError when the given argument is 0" do
-      -> { @bignum.divmod(0) }.should raise_error(ZeroDivisionError)
-      -> { (-@bignum).divmod(0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.divmod(0) }.should.raise(ZeroDivisionError)
+      -> { (-@bignum).divmod(0) }.should.raise(ZeroDivisionError)
     end
 
     # Behaviour established as correct in r23953
     it "raises a FloatDomainError if other is NaN" do
-      -> { @bignum.divmod(nan_value) }.should raise_error(FloatDomainError)
+      -> { @bignum.divmod(nan_value) }.should.raise(FloatDomainError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and a Float" do
-      -> { @bignum.divmod(0.0) }.should raise_error(ZeroDivisionError)
-      -> { (-@bignum).divmod(0.0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.divmod(0.0) }.should.raise(ZeroDivisionError)
+      -> { (-@bignum).divmod(0.0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a TypeError when the given argument is not an Integer" do
-      -> { @bignum.divmod(mock('10')) }.should raise_error(TypeError)
-      -> { @bignum.divmod("10") }.should raise_error(TypeError)
-      -> { @bignum.divmod(:symbol) }.should raise_error(TypeError)
+      -> { @bignum.divmod(mock('10')) }.should.raise(TypeError)
+      -> { @bignum.divmod("10") }.should.raise(TypeError)
+      -> { @bignum.divmod(:symbol) }.should.raise(TypeError)
     end
   end
 end

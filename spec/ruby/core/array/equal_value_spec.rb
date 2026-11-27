@@ -10,17 +10,17 @@ describe "Array#==" do
     obj.should_receive(:respond_to?).at_least(1).with(:to_ary).and_return(true)
     obj.should_receive(:==).with([1]).at_least(1).and_return(true)
 
-    ([1] == obj).should be_true
-    ([[1]] == [obj]).should be_true
-    ([[[1], 3], 2] == [[obj, 3], 2]).should be_true
+    ([1] == obj).should == true
+    ([[1]] == [obj]).should == true
+    ([[[1], 3], 2] == [[obj, 3], 2]).should == true
 
     # recursive arrays
     arr1 = [[1]]
     arr1 << arr1
     arr2 = [obj]
     arr2 << arr2
-    (arr1 == arr2).should be_true
-    (arr2 == arr1).should be_true
+    (arr1 == arr2).should == true
+    (arr2 == arr1).should == true
   end
 
   it "returns false if any corresponding elements are not #==" do

@@ -179,6 +179,22 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     end
   end
 
+  def test_sendmsg_drop_bytes_from_data
+    omit "not supported on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    data = "x" * 1_000
+    flags = Object.new
+    flags.define_singleton_method(:to_int) { data[0, 5] = ""; 0 }
+
+    UNIXSocket.pair {|s1, s2|
+      assert_equal(1_000, s1.sendmsg(data, flags))
+      assert_equal("x" * 1_000, s2.read(1_000))
+    }
+
+    data << "z" * 10
+    assert_equal("x" * 995 + "z" * 10, data)
+  end
+
   def test_sendmsg
     return if !defined?(Socket::SCM_RIGHTS)
     IO.pipe {|r1, w|
@@ -839,6 +855,24 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       }
     }
     assert(s0.closed?)
+  end
+
+  def test_recv_negative_length
+    msg = "negative length -1 given"
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
+      UNIXSocket.pair(:DGRAM) do |s1, s2|
+        s1.send("A" * 16, 0)
+        IO.select([s2], nil, nil, 10) or flunk "socket did not become readable"
+        assert_raise_with_message(ArgumentError, msg) { s2.recvfrom(-1, 0, +"x") }
+        assert_equal("A" * 16, s2.recv(16))
+      end
+    end
+    UNIXSocket.pair do |s1, s2|
+      s1.write("A" * 16)
+      IO.select([s2], nil, nil, 10) or flunk "socket did not become readable"
+      assert_raise_with_message(ArgumentError, msg) { s2.read_nonblock(-1, +"x") }
+      assert_equal("A" * 16, s2.read_nonblock(16))
+    end
   end
 
   def test_accept_nonblock

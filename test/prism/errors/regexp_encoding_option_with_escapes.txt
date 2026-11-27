@@ -1,0 +1,9 @@
+/garçon\xC3\xA7/n
+^~~~~~~~~~~~~~~~~ regexp encoding option 'n' differs from source encoding 'UTF-8'
+^~~~~~~~~~~~~~~~~ /.../n has a non escaped non ASCII character in non ASCII-8BIT script: /garçon\xC3\xA7/
+/garçon\xC3\xA7/e
+^~~~~~~~~~~~~~~~~ regexp encoding option 'e' differs from source encoding 'UTF-8'
+/é(/n
+^~~~~ regexp encoding option 'n' differs from source encoding 'UTF-8'
+^~~~~ /.../n has a non escaped non ASCII character in non ASCII-8BIT script: /é(/
+

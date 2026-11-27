@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns an Integer" do
-      @var.varkind.should be_kind_of Integer
+      @var.varkind.should.is_a? Integer
     end
 
   end

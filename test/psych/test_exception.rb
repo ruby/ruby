@@ -156,7 +156,8 @@ module Psych
       # assert_equal 5, e.offset
 
       assert e.problem
-      assert e.context
+      # libfyaml's diagnostics do not carry libyaml's separate "context" text.
+      assert e.context unless libfyaml?
     end
 
     def test_convert

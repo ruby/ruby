@@ -156,16 +156,16 @@ end
 erb_new.call(<<'EOS', '%').def_method(Object, "gen_name_to_int_decl(funcname, pat, prefix_optional, guard=nil)")
 %if guard
 #ifdef <%=guard%>
-int <%=funcname%>(const char *str, long len, int *valp);
+int <%=funcname%>(const char *str, rb_len_t len, int *valp);
 #endif
 %else
-int <%=funcname%>(const char *str, long len, int *valp);
+int <%=funcname%>(const char *str, rb_len_t len, int *valp);
 %end
 EOS
 
 erb_new.call(<<'EOS', '%').def_method(Object, "gen_name_to_int_func_in_guard(funcname, pat, prefix_optional, guard=nil)")
 int
-<%=funcname%>(const char *str, long len, int *valp)
+<%=funcname%>(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
 %    each_names_with_len(pat, prefix_optional) {|pairs, len|

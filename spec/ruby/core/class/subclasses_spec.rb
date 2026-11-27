@@ -50,7 +50,7 @@ describe "Class#subclasses" do
       42
     end
 
-    a.subclasses.should_not include(a_obj.singleton_class)
+    a.subclasses.should_not.include?(a_obj.singleton_class)
   end
 
   it "has 1 entry per module or class" do
@@ -76,7 +76,7 @@ describe "Class#subclasses" do
     classes = threads.map(&:value)
 
     superclass.subclasses.size.should == t * n
-    superclass.subclasses.each { |c| c.should be_kind_of(Class) }
+    superclass.subclasses.each { |c| c.should.is_a?(Class) }
   end
 
   def assert_subclasses(mod,subclasses)

@@ -41,7 +41,8 @@ class Gem::Source::Local < Gem::Source
       Dir["*.gem"].each do |file|
         pkg = Gem::Package.new(file)
         spec = pkg.spec
-      rescue SystemCallError, Gem::Package::FormatError
+        spec.content_address = pkg.content_address
+      rescue SystemCallError, Gem::Package::FormatError, Gem::InstallError
         # ignore
       else
         tup = spec.name_tuple
@@ -76,6 +77,10 @@ class Gem::Source::Local < Gem::Source
   end
 
   def find_gem(gem_name, version = Gem::Requirement.default, prerelease = false) # :nodoc:
+    find_all_gems(gem_name, version, prerelease).max_by(&:version)
+  end
+
+  def find_all_gems(gem_name, version = Gem::Requirement.default, prerelease = false) # :nodoc:
     load_specs :complete
 
     found = []
@@ -93,7 +98,7 @@ class Gem::Source::Local < Gem::Source
       end
     end
 
-    found.max_by(&:version)
+    found
   end
 
   def fetch_spec(name) # :nodoc:

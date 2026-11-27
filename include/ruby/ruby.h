@@ -393,7 +393,7 @@ rb_orig_errno_ptr(void)
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
-#elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
+#elif defined(__GNUC__) && defined(__OPTIMIZE__)
 # define rb_yield_values(argc, ...) \
 __extension__({ \
         const int rb_yield_values_argc = (argc); \

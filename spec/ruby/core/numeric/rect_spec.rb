@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/rect'
 
 describe "Numeric#rect" do
-  it_behaves_like :numeric_rect, :rect
+  it "is an alias of Numeric#rectangular" do
+    Numeric.instance_method(:rect).should == Numeric.instance_method(:rectangular)
+  end
 end

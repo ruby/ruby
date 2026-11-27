@@ -61,18 +61,18 @@ module Bundler
 
       current_cmd = args.last[:current_command].name
 
-      custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
-      if custom_gemfile && !custom_gemfile.empty?
-        Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", File.expand_path(custom_gemfile)
-        reset_settings = true
-      end
+      # `bundle config` manages stored settings, so avoid promoting settings
+      # like `gemfile` or `lockfile` to environment variables before it runs.
+      unless current_cmd == "config"
+        Bundler.configure_custom_gemfile(options[:gemfile])
 
-      # lock --lockfile works differently than install --lockfile
-      unless current_cmd == "lock"
-        custom_lockfile = options[:lockfile] || ENV["BUNDLE_LOCKFILE"] || Bundler.settings[:lockfile]
-        if custom_lockfile && !custom_lockfile.empty?
-          Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
-          reset_settings = true
+        # lock --lockfile works differently than install --lockfile
+        unless current_cmd == "lock"
+          custom_lockfile = options[:lockfile] || ENV["BUNDLE_LOCKFILE"] || Bundler.settings[:lockfile]
+          if custom_lockfile && !custom_lockfile.empty?
+            Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
+            reset_settings = true
+          end
         end
       end
 
@@ -155,6 +155,10 @@ module Bundler
     def help(cli = nil)
       cli = self.class.all_aliases[cli] if self.class.all_aliases[cli]
 
+      if Bundler.settings[:plugins] && Bundler::Plugin.command?(cli) && !self.class.all_commands.key?(cli)
+        return Bundler::Plugin.exec_command(cli, ["--help"])
+      end
+
       case cli
       when "gemfile" then command = "gemfile"
       when nil       then command = "bundle"
@@ -173,7 +177,7 @@ module Bundler
         else
           puts File.read("#{man_path}/#{File.basename(man_page)}.ronn")
         end
-      elsif command_path = Bundler.which("bundler-#{cli}")
+      elsif command_path = self.class.bundler_command_path(cli)
         Kernel.exec(command_path, "--help")
       else
         super
@@ -185,9 +189,21 @@ module Bundler
         return Bundler::Plugin.exec_command(command, ARGV[1..-1])
       end
 
-      return super unless command_path = Bundler.which("bundler-#{command}")
+      return super unless command_path = bundler_command_path(command)
 
       Kernel.exec(command_path, *ARGV[1..-1])
+    end
+
+    # Only PATH is searched, unlike Bundler.which, which also finds a file in
+    # the current directory and returns a bare name that Kernel.exec cannot run.
+    def self.bundler_command_path(command)
+      ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).each do |path|
+        path = path[1..-2] if path.start_with?('"') && path.end_with?('"')
+        command_path = Bundler.find_executable(File.expand_path("bundler-#{command}", path))
+        return command_path if command_path
+      end
+
+      nil
     end
 
     desc "init [OPTIONS]", "Generates a Gemfile into the current working directory"
@@ -270,10 +286,13 @@ module Bundler
     method_option "target-rbconfig", type: :string, banner: "Path to rbconfig.rb for the deployment target platform"
     method_option "without", type: :array, banner: "Exclude gems that are part of the specified named group (removed)."
     method_option "with", type: :array, banner: "Include gems that are part of the specified named group (removed)."
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def install
-      %w[clean deployment frozen no-prune path shebang without with].each do |option|
+      %w[clean deployment frozen path shebang without with].each do |option|
         remembered_flag_deprecation(option)
       end
+
+      remembered_flag_deprecation("no-prune", option_name: "keep_outdated_cache")
 
       print_remembered_flag_deprecation("--system", "path.system", "true") if ARGV.include?("--system")
 
@@ -312,14 +331,15 @@ module Bundler
     method_option "source", type: :array, banner: "Update a specific source (and all gems associated with it)"
     method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "ruby", type: :boolean, banner: "Update ruby specified in Gemfile.lock"
-    method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
+    method_option "bundler", type: :string, lazy_default: ">= #{Bundler::VERSION}", banner: "Update the locked version of bundler"
     method_option "patch", type: :boolean, banner: "Prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "Prefer updating only to next minor version"
-    method_option "major", type: :boolean, banner: "Prefer updating to next major version (default)"
+    method_option "major", type: :boolean, banner: "Prefer updating to latest major version (default)"
     method_option "pre", type: :boolean, banner: "Always choose the highest allowed version when updating gems, regardless of prerelease status"
     method_option "strict", type: :boolean, banner: "Do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", type: :boolean, banner: "Use bundle install conservative update behavior and do not allow shared dependencies to be updated."
     method_option "all", type: :boolean, banner: "Update everything."
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def update(*gems)
       require_relative "cli/update"
       Bundler.settings.temporary(no_install: false) do
@@ -334,6 +354,7 @@ module Bundler
     D
     method_option "paths", type: :boolean, banner: "List the paths of all gems that are required by your Gemfile."
     method_option "outdated", type: :boolean, banner: "Show verbose output including whether gems are outdated (removed)."
+    method_option "exact-match", type: :boolean, banner: "Only match gems whose names exactly match the given name"
     def show(gem_name = nil)
       if ARGV.include?("--outdated")
         removed_message = "the `--outdated` flag to `bundle show` has been removed in favor of `bundle show --verbose`"
@@ -359,6 +380,7 @@ module Bundler
     desc "info GEM [OPTIONS]", "Show information for the given gem"
     method_option "path", type: :boolean, banner: "Print full path to gem"
     method_option "version", type: :boolean, banner: "Print gem version"
+    method_option "exact-match", type: :boolean, banner: "Only match gems whose names exactly match the given name"
     def info(gem_name)
       require_relative "cli/info"
       Info.new(options, gem_name).run
@@ -399,8 +421,10 @@ module Bundler
     method_option "glob", type: :string, banner: "The location of a dependency's .gemspec, expanded within Ruby (single quotes recommended)"
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "skip-install", type: :boolean, banner: "Adds gem to the Gemfile but does not install it"
-    method_option "optimistic", type: :boolean, banner: "Adds optimistic declaration of version to gem"
+    method_option "optimistic", type: :boolean, banner: "Ignored (now default behavior)"
+    method_option "pessimistic", type: :boolean, banner: "Adds pessimistic declaration of version to gem"
     method_option "strict", type: :boolean, banner: "Adds strict declaration of version to gem"
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def add(*gems)
       require_relative "cli/add"
       Add.new(options.dup, gems).run
@@ -424,13 +448,14 @@ module Bundler
     method_option "filter-strict", type: :boolean, aliases: "--strict", banner: "Only list newer versions allowed by your Gemfile requirements"
     method_option "update-strict", type: :boolean, banner: "Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "minor", type: :boolean, banner: "Prefer updating only to next minor version"
-    method_option "major", type: :boolean, banner: "Prefer updating to next major version (default)"
+    method_option "major", type: :boolean, banner: "Prefer updating to latest major version (default)"
     method_option "patch", type: :boolean, banner: "Prefer updating only to next patch version"
     method_option "filter-major", type: :boolean, banner: "Only list major newer versions"
     method_option "filter-minor", type: :boolean, banner: "Only list minor newer versions"
     method_option "filter-patch", type: :boolean, banner: "Only list patch newer versions"
     method_option "parseable", aliases: "--porcelain", type: :boolean, banner: "Use minimal formatting for more parseable output"
     method_option "only-explicit", type: :boolean, banner: "Only list gems specified in your Gemfile, not their dependencies"
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def outdated(*gems)
       require_relative "cli/outdated"
       Outdated.new(options, gems).run
@@ -453,6 +478,7 @@ module Bundler
     method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this bundle cache operation's install (removed)"
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     long_desc <<-D
       The cache command will copy the .gem files for every gem in the bundle into the
       directory ./vendor/cache. If you then check that directory into your source
@@ -463,9 +489,8 @@ module Bundler
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
       print_remembered_flag_deprecation("--no-all", "cache_all", "false") if ARGV.include?("--no-all")
 
-      %w[frozen no-prune].each do |option|
-        remembered_flag_deprecation(option)
-      end
+      remembered_flag_deprecation("frozen")
+      remembered_flag_deprecation("no-prune", option_name: "keep_outdated_cache")
 
       if flag_passed?("--path")
         removed_message =
@@ -519,6 +544,7 @@ module Bundler
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
     method_option "path", type: :string, lazy_default: "", banner: "Open relative path of the gem source."
+    method_option "exact-match", type: :boolean, banner: "Only match gems whose names exactly match the given name"
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run
@@ -617,23 +643,26 @@ module Bundler
     end
 
     desc "lock", "Creates a lockfile without installing"
-    method_option "update", type: :array, lazy_default: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
+    method_option "update", type: :array, lazy_default: true, repeatable: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
     method_option "local", type: :boolean, default: false, banner: "do not attempt to fetch remote gemspecs and use the local gem cache only"
     method_option "print", type: :boolean, default: false, banner: "print the lockfile to STDOUT instead of writing to the file system"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
     method_option "add-checksums", type: :boolean, default: false, banner: "Adds checksums to the lockfile"
-    method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
-    method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
+    method_option "add-platform", type: :array, default: [], repeatable: true, banner: "Add a new platform to the lockfile"
+    method_option "remove-platform", type: :array, default: [], repeatable: true, banner: "Remove a platform from the lockfile"
     method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
+    method_option "add-ruby-abi", type: :array, default: [], repeatable: true, banner: "Lock the content-addressed gems for a Ruby ABI (X.Y)"
+    method_option "remove-ruby-abi", type: :array, default: [], repeatable: true, banner: "Drop the content-addressed gems for a Ruby ABI (X.Y) from the lockfile"
     method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"
-    method_option "major", type: :boolean, banner: "If updating, prefer updating to next major version (default)"
+    method_option "major", type: :boolean, banner: "If updating, prefer updating to latest major version (default)"
     method_option "pre", type: :boolean, banner: "If updating, always choose the highest allowed version, regardless of prerelease status"
     method_option "strict", type: :boolean, banner: "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", type: :boolean, banner: "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"
-    method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
+    method_option "bundler", type: :string, lazy_default: ">= #{Bundler::VERSION}", banner: "Update the locked version of bundler"
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def lock
       require_relative "cli/lock"
       Lock.new(options).run
@@ -749,9 +778,6 @@ module Bundler
       config[:current_command] = original_command
     end
 
-    def current_command=(command)
-    end
-
     def print_command
       return unless Bundler.ui.debug?
       cmd = current_command
@@ -777,9 +803,13 @@ module Bundler
       return unless SharedHelpers.md5_available?
 
       require_relative "vendored_uri"
+      require "rubygems/compact_index_client"
+      if Gem::CompactIndexClient.respond_to?(:filesystem_access=)
+        Gem::CompactIndexClient.filesystem_access = SharedHelpers.method(:filesystem_access)
+      end
       remote = Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org"))
       cache_path = Bundler.user_cache.join("compact_index", remote.cache_slug)
-      latest = Bundler::CompactIndexClient.new(cache_path).latest_version("bundler")
+      latest = Gem::CompactIndexClient.new(cache_path).latest_version("bundler")
       return unless latest
 
       current = Gem::Version.new(VERSION)

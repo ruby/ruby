@@ -113,6 +113,81 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(the_bundle).to include_gems "bar-dev 1.0.0", groups: :dev
   end
 
+  it "should respect the enclosing group" do
+    build_lib("foo", path: tmp("foo"))
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      group :foo do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).not_to include_gems "foo 1.0", groups: :default
+    expect(the_bundle).to include_gems "foo 1.0", groups: :foo
+  end
+
+  it "should keep development dependencies out of the enclosing group" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.add_development_dependency "myrack", "=1.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      group :foo do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).to include_gems "myrack 1.0.0", groups: :development
+    expect(the_bundle).not_to include_gems "myrack 1.0.0", groups: :foo
+  end
+
+  it "should respect the enclosing platforms" do
+    build_lib("foo", path: tmp("foo"))
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      platforms :#{not_local_tag} do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).not_to include_gems "foo 1.0"
+  end
+
+  it "should respect the enclosing platforms for development dependencies" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.add_development_dependency "myrack", "=1.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      platforms :#{not_local_tag} do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).not_to include_gems "foo 1.0"
+    expect(the_bundle).not_to include_gems "myrack 1.0.0", groups: :development
+  end
+
+  it "should respect the enclosing install_if for development dependencies" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.add_development_dependency "myrack", "=1.0.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      install_if(lambda { false }) do
+        gemspec :path => '#{tmp("foo")}'
+      end
+    G
+
+    expect(the_bundle).not_to include_gems "foo 1.0"
+    expect(the_bundle).not_to include_gems "myrack 1.0.0", groups: :development
+  end
+
   it "should match a lockfile even if the gemspec defines development dependencies" do
     build_lib("foo", path: tmp("foo")) do |s|
       s.write("Gemfile", "source 'https://gem.repo1'\ngemspec")
@@ -126,7 +201,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     # ghost pass in future, and will only catch a regression if the message
     # doesn't change. Exit codes should be used correctly (they can be more
     # than just 0 and 1).
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     output = bundle("install", dir: tmp("foo"), artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s })
     expect(output).not_to match(/You have added to the Gemfile/)
     expect(output).not_to match(/You have deleted from the Gemfile/)
@@ -312,7 +387,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           s.add_dependency "activesupport", ">= 1.0.1"
         end
 
-        bundle "config set --local deployment true"
+        bundle_config "deployment true"
         bundle :install, raise_on_error: false
 
         expect(err).to include("changed")
@@ -435,7 +510,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           gemspec
         G
 
-        bundle "config set --local force_ruby_platform true"
+        bundle_config "force_ruby_platform true"
         bundle "install"
 
         simulate_new_machine
@@ -446,7 +521,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
       context "on ruby" do
         before do
-          bundle "config set --local force_ruby_platform true"
+          bundle_config "force_ruby_platform true"
           bundle :install
         end
 
@@ -588,7 +663,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "installs the ruby platform gemspec" do
-      bundle "config set --local force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -599,9 +674,9 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     it "installs the ruby platform gemspec and skips dev deps with `without development` configured" do
-      bundle "config set --local force_ruby_platform true"
+      bundle_config "force_ruby_platform true"
 
-      bundle "config set --local without development"
+      bundle_config "without development"
       install_gemfile <<-G
         source "https://gem.repo1"
         gemspec :path => '#{tmp("foo")}', :name => 'foo'

@@ -1,0 +1,7 @@
+/(?#a/
+  ^~~ end pattern in group: /(?#a/
+/(?#a\nb/
+  ^~~~~~ end pattern in group: /(?#a\nb/
+/(?#a\)/
+  ^~~~~ end pattern in group: /(?#a\)/
+

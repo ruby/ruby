@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # sine : (-Inf, Inf) --> (-1.0, 1.0)
 describe "Math.sin" do
   it "returns a float" do
-    Math.sin(Math::PI).should be_kind_of(Float)
+    Math.sin(Math::PI).should.is_a?(Float)
   end
 
   it "returns the sine of the argument expressed in radians" do
@@ -16,15 +16,15 @@ describe "Math.sin" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.sin("test") }.should raise_error(TypeError)
+    -> { Math.sin("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.sin(nan_value).nan?.should be_true
+    Math.sin(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.sin(nil) }.should raise_error(TypeError)
+    -> { Math.sin(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

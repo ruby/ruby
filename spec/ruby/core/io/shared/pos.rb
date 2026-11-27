@@ -1,37 +1,3 @@
-describe :io_pos, shared: true do
-  before :each do
-    @fname = tmp('test.txt')
-    File.open(@fname, 'w') { |f| f.write "123" }
-  end
-
-  after :each do
-    rm_r @fname
-  end
-
-  it "gets the offset" do
-    File.open @fname do |f|
-      f.send(@method).should == 0
-      f.read 1
-      f.send(@method).should == 1
-      f.read 2
-      f.send(@method).should == 3
-    end
-  end
-
-  it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send(@method) }.should raise_error(IOError)
-  end
-
-  it "resets #eof?" do
-    open @fname do |io|
-      io.read 1
-      io.read 1
-      io.send(@method)
-      io.should_not.eof?
-    end
-  end
-end
-
 describe :io_set_pos, shared: true do
   before :each do
     @fname = tmp('test.txt')
@@ -62,17 +28,17 @@ describe :io_set_pos, shared: true do
 
   it "raises TypeError when cannot convert implicitly argument to Integer" do
     File.open @fname do |io|
-      -> { io.send @method, Object.new }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      -> { io.send @method, Object.new }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
   end
 
   it "does not accept Integers that don't fit in a C off_t" do
     File.open @fname do |io|
-      -> { io.send @method, 2**128 }.should raise_error(RangeError)
+      -> { io.send @method, 2**128 }.should.raise(RangeError)
     end
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send @method, 0 }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send @method, 0 }.should.raise(IOError)
   end
 end

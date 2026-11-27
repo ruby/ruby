@@ -3,11 +3,11 @@ require_relative '../../spec_helper'
 describe "String#chr" do
   it "returns a copy of self" do
     s = 'e'
-    s.should_not equal s.chr
+    s.should_not.equal? s.chr
   end
 
   it "returns a String" do
-    'glark'.chr.should be_an_instance_of(String)
+    'glark'.chr.should.instance_of?(String)
   end
 
   it "returns an empty String if self is an empty String" do

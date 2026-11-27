@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # load CompactIndexClient upfront to prevent thread safety issues during parallel specs
-require "bundler/compact_index_client"
+require "rubygems/compact_index_client"
 
 RSpec.describe Bundler::Fetcher::CompactIndex do
   let(:response) { double(:response) }

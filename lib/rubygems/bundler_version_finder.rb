@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "bundler_settings"
+
 module Gem::BundlerVersionFinder
   def self.bundler_version
-    return if bundle_config_version == "system"
+    bcv = bundle_config_version
+    return if bcv == "system"
 
     v = ENV["BUNDLER_VERSION"]
     v = nil if v&.empty?
@@ -10,8 +13,16 @@ module Gem::BundlerVersionFinder
     v ||= bundle_update_bundler_version
     return if v == true
 
+    v ||= bcv unless bcv == "lockfile"
+
     v ||= lockfile_version
     return unless v
+
+    # A config file is arbitrary YAML, so BUNDLE_VERSION can be a date, a
+    # mapping, or anything else the parser makes of an unquoted scalar. None
+    # of those name a version, and refusing to prioritize is better than
+    # raising out of every command that resolves bundler by name.
+    return unless Gem::Version.correct?(v)
 
     Gem::Version.new(v)
   end
@@ -49,21 +60,7 @@ module Gem::BundlerVersionFinder
   private_class_method :lockfile_version
 
   def self.lockfile_contents
-    gemfile = ENV["BUNDLE_GEMFILE"]
-    gemfile = nil if gemfile&.empty?
-
-    unless gemfile
-      begin
-        Gem::Util.traverse_parents(Dir.pwd) do |directory|
-          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f) }
-
-          gemfile = File.join directory, gemfile
-          break
-        end
-      rescue Errno::ENOENT
-        return
-      end
-    end
+    gemfile = gemfile_path
 
     return unless gemfile
 
@@ -81,32 +78,16 @@ module Gem::BundlerVersionFinder
   end
   private_class_method :lockfile_contents
 
+  # BUNDLE_VERSION is read before the config files here, unlike everywhere
+  # else in Bundler, so the env var alone is enough to pick the version that
+  # runs without editing a config file first.
   def self.bundle_config_version
-    config_file = bundler_config_file
-    return unless config_file && File.file?(config_file)
-
-    contents = File.read(config_file)
-    contents =~ /^BUNDLE_VERSION:\s*["']?([^"'\s]+)["']?\s*$/
-
-    $1
+    Gem::BundlerSettings.env("version") || Gem::BundlerSettings.from_config_files("version")
   end
   private_class_method :bundle_config_version
 
-  def self.bundler_config_file
-    # see Bundler::Settings#global_config_file and local_config_file
-    # global
-    if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
-      ENV["BUNDLE_CONFIG"]
-    elsif ENV["BUNDLE_USER_CONFIG"] && !ENV["BUNDLE_USER_CONFIG"].empty?
-      ENV["BUNDLE_USER_CONFIG"]
-    elsif ENV["BUNDLE_USER_HOME"] && !ENV["BUNDLE_USER_HOME"].empty?
-      ENV["BUNDLE_USER_HOME"] + "config"
-    elsif Gem.user_home && !Gem.user_home.empty?
-      Gem.user_home + ".bundle/config"
-    else
-      # local
-      "config"
-    end
+  def self.gemfile_path
+    Gem::BundlerSettings.gemfile_path
   end
-  private_class_method :bundler_config_file
+  private_class_method :gemfile_path
 end

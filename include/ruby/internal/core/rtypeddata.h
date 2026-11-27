@@ -26,6 +26,7 @@
 # include <stddef.h>
 #endif
 
+#include "ruby/assert.h"
 #include "ruby/internal/assume.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/flag_enum.h"
@@ -94,13 +95,15 @@
  */
 #define RTYPEDDATA(obj)              RBIMPL_CAST((struct RTypedData *)(obj))
 
+static inline VALUE rbimpl_check_external_typeddata(VALUE obj);
+
 /**
  * Convenient getter macro.
  *
  * @param   v  An object, which is in fact an ::RTypedData.
  * @return  The passed object's ::RTypedData::data field.
  */
-#define RTYPEDDATA_DATA(v)           (RTYPEDDATA(v)->data)
+#define RTYPEDDATA_DATA(v)           (RTYPEDDATA(rbimpl_check_external_typeddata(v))->data)
 
 /** @old{rb_check_typeddata} */
 #define Check_TypedStruct(v, t)      \
@@ -109,14 +112,19 @@
 /** @cond INTERNAL_MACRO */
 #define RTYPEDDATA_P                 RTYPEDDATA_P
 #define RTYPEDDATA_TYPE              RTYPEDDATA_TYPE
-#define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
-#define RUBY_TYPED_FROZEN_SHAREABLE  RUBY_TYPED_FROZEN_SHAREABLE
-#define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
-#define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
+#define TYPED_DATA_EMBEDDED          ((VALUE)1)
+#define TYPED_DATA_PTR_MASK          (~(TYPED_DATA_EMBEDDED))
 /** @endcond */
 
-#define TYPED_DATA_EMBEDDED ((VALUE)1)
-#define TYPED_DATA_PTR_MASK (~(TYPED_DATA_EMBEDDED))
+/**
+ * Macros to see if each corresponding flag is defined.
+ */
+#define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
+#define RUBY_TYPED_THREAD_SAFE_FREE  RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_FROZEN_SHAREABLE  RUBY_TYPED_FROZEN_SHAREABLE
+#define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
+#define RUBY_TYPED_EMBEDDABLE        RUBY_TYPED_EMBEDDABLE
+#define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
 
 /**
  * @private
@@ -141,6 +149,37 @@ rbimpl_typeddata_flags {
      */
     RUBY_TYPED_FREE_IMMEDIATELY = 1,
 
+    /**
+     * This flag declares that the dfree function is thread-safe.  With it set,
+     * the garbage collector MAY invoke dfree on any thread (Ruby or native), in
+     * parallel with calls to the same or other dfree functions, and
+     * concurrently with other Ruby code.  Do not set it on dfree functions that
+     * touch shared state in a thread-unsafe way; a dfree that only calls xfree
+     * on the struct and memory it exclusively owns is thread-safe.
+     *
+     * This implies RUBY_TYPED_FREE_IMMEDIATELY, since a thread-safe dfree is
+     * also safe to invoke immediately.
+     */
+    RUBY_TYPED_THREAD_SAFE_FREE = 4,
+
+    /**
+     * This flag indicate to Ruby that the associated C struct may be embedded
+     * inside the object slot, instead of being externally allocated
+     * with +malloc+.
+     *
+     * Embeddable types MUST NOT be accessed using the +DATA_PTR+ macro, only
+     * with +TypedData_Get_Struct+ or +RTYPEDDATA_GET_DATA+.
+     *
+     * Embeddable types MUST NOT free the associated C struct.
+     *
+     * Pointers into the associated C struct MUST NOT be used after the ruby
+     * object is not longer on the stack, as they become invalid when GC
+     * compaction occurs.
+     *
+     * This flag has no effect unless:
+     *   * dfree is NULL or RUBY_TYPED_DEFAULT_FREE.
+     *   * The RUBY_TYPED_THREAD_SAFE_FREE is set.
+     */
     RUBY_TYPED_EMBEDDABLE = 2,
 
     /**
@@ -183,11 +222,6 @@ rbimpl_typeddata_flags {
      * level of source code.  You would better leave it unspecified.
      */
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
-
-    /**
-     * This flag is used to distinguish RTypedData from deprecated RData objects.
-     */
-    RUBY_TYPED_FL_IS_TYPED_DATA = RUBY_FL_USERPRIV0,
 
     /**
      * This flag determines whether marking and compaction should be carried out
@@ -252,17 +286,22 @@ struct rb_data_type_struct {
          * ::rb_data_type_struct::dmark, you need to  update references to Ruby
          * objects inside of your structs.
          *
-         * @see      rb_gc_location()
+         * @see      rb_gc_update_moved(), rb_gc_location()
          * @warning  This  is called  during GC  runs.  Object  allocations are
          *           impossible at that moment (that is why GC runs).
          */
         RUBY_DATA_FUNC dcompact;
 
         /**
-         * This field  is reserved for future  extension.  For now, it  must be
-         * filled with zeros.
+         * @internal
          */
-        void *reserved[1]; /* For future extension.
+        void (*handle_weak_references)(void *, void *objspace);
+
+         /**
+          * This field  is reserved for future  extension.  For now, it  must be
+          * filled with zeros.
+          */
+        void *reserved[7]; /* For future extension.
                               This array *must* be filled with ZERO. */
     } function;
 
@@ -379,8 +418,25 @@ struct RTypedData {
 };
 
 #if !defined(__cplusplus) || __cplusplus >= 201103L
+RBIMPL_STATIC_ASSERT(fields_obj_in_rdata, offsetof(struct RData, fields_obj) == offsetof(struct RTypedData, fields_obj));
 RBIMPL_STATIC_ASSERT(data_in_rtypeddata, offsetof(struct RData, data) == offsetof(struct RTypedData, data));
 #endif
+
+/**
+ * Convenient casting macro for backward compatibility.
+ *
+ * @param   obj  An object, which is in fact an ::RData.
+ * @return  The passed object casted to ::RData.
+ */
+#define RDATA(obj)                RTYPEDDATA(obj)
+
+/**
+ * Convenient casting macro for backward compatibility.
+ *
+ * @param   obj  An object, which is in fact an ::RData.
+ * @return  The passed object's ::RTypedData::data field.
+ */
+#define DATA_PTR(obj)             RTYPEDDATA_DATA(obj)
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((3))
@@ -400,8 +456,7 @@ RBIMPL_ATTR_NONNULL((3))
 /**
  * Identical  to rb_data_typed_object_wrap(),  except it  allocates a  new data
  * region internally instead of taking an existing one.  The allocation is done
- * using ruby_calloc().  Hence it makes  no sense for `type->function.dfree` to
- * be anything other than ::RUBY_TYPED_DEFAULT_FREE.
+ * using ruby_calloc().
  *
  * @param[in]  klass          Ruby level class of the returning object.
  * @param[in]  size           Requested size of memory to allocate.
@@ -420,10 +475,6 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]  parent  A data type supposed to be a parent of `child`.
  * @retval     true    `child` is a descendent of `parent`.
  * @retval     false   Otherwise.
- *
- * @internal
- *
- * You can path NULL to both arguments, don't know what that means though.
  */
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 
@@ -482,6 +533,17 @@ RBIMPL_ATTR_NONNULL(())
 void rb_unexpected_typeddata(const rb_data_type_t *actual, const rb_data_type_t *expected);
 RBIMPL_SYMBOL_EXPORT_END()
 
+#if RUBY_DEBUG
+# define RBIMPL_TYPEDDATA_PRECONDITION(obj, unreachable) \
+    while (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) { \
+        rb_unexpected_object_type(obj, "Data"); \
+        unreachable; \
+    }
+#else
+# define RBIMPL_TYPEDDATA_PRECONDITION(obj, unreachable) \
+    RBIMPL_ASSERT_NOTHING
+#endif
+
 /**
  * Converts sval, a pointer to your struct, into a Ruby object.
  *
@@ -510,7 +572,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  */
 #define TypedData_Make_Struct0(result, klass, type, size, data_type, sval) \
     VALUE result = rb_data_typed_object_zalloc(klass, size, data_type);    \
-    (sval) = RBIMPL_CAST((type *)RTYPEDDATA_GET_DATA(result)); \
+    (sval) = RBIMPL_CAST((type *)rbimpl_typeddata_get_data(result)); \
     RBIMPL_CAST(/*suppress unused variable warnings*/(void)(sval))
 
 /**
@@ -548,32 +610,35 @@ RBIMPL_SYMBOL_EXPORT_END()
 #endif
 
 static inline bool
+rbimpl_typeddata_embedded_p(VALUE obj)
+{
+    return (RTYPEDDATA(obj)->type) & TYPED_DATA_EMBEDDED;
+}
+
+RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY()
+static inline bool
 RTYPEDDATA_EMBEDDED_P(VALUE obj)
 {
-#if RUBY_DEBUG
-    if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
-        Check_Type(obj, RUBY_T_DATA);
-        RBIMPL_UNREACHABLE_RETURN(false);
-    }
-#endif
+    RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(false));
 
-    return (RTYPEDDATA(obj)->type) & TYPED_DATA_EMBEDDED;
+    return rbimpl_typeddata_embedded_p(obj);
+}
+
+static inline void *
+rbimpl_typeddata_get_data(VALUE obj)
+{
+    /* We reuse the data pointer in embedded TypedData. */
+    return rbimpl_typeddata_embedded_p(obj) ?
+        RBIMPL_CAST((void *)&RTYPEDDATA(obj)->data) :
+        RTYPEDDATA_DATA(obj);
 }
 
 static inline void *
 RTYPEDDATA_GET_DATA(VALUE obj)
 {
-#if RUBY_DEBUG
-    if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
-        Check_Type(obj, RUBY_T_DATA);
-        RBIMPL_UNREACHABLE_RETURN(NULL);
-    }
-#endif
+    RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(NULL));
 
-    /* We reuse the data pointer in embedded TypedData. */
-    return RTYPEDDATA_EMBEDDED_P(obj) ?
-        RBIMPL_CAST((void *)&(RTYPEDDATA(obj)->data)) :
-        RTYPEDDATA(obj)->data;
+    return rbimpl_typeddata_get_data(obj);
 }
 
 RBIMPL_ATTR_PURE()
@@ -581,27 +646,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 /**
  * @private
  *
- * This  is an  implementation detail  of  Check_Type().  People  don't use  it
- * directly.
- *
- * @param[in]  obj    Object in question
- * @retval     true   `obj` is an instance of ::RTypedData.
- * @retval     false  `obj` is an instance of ::RData.
- * @pre        `obj` must be a Ruby object of ::RUBY_T_DATA.
- */
-static inline bool
-rbimpl_rtypeddata_p(VALUE obj)
-{
-    return FL_TEST_RAW(obj, RUBY_TYPED_FL_IS_TYPED_DATA);
-}
-
-RBIMPL_ATTR_PURE()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * @private
- *
- * Identical to rbimpl_rtypeddata_p(), except it is allowed to call on non-data
- * objects.
+ * Checks whether the passed object is ::RTypedData.
  *
  * This is an  implementation detail of inline functions defined  in this file.
  * People don't use it directly.
@@ -613,30 +658,24 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 rbimpl_obj_typeddata_p(VALUE obj)
 {
-    return RB_TYPE_P(obj, RUBY_T_DATA) && rbimpl_rtypeddata_p(obj);
+    return RB_TYPE_P(obj, RUBY_T_DATA);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * Checks whether the passed object is ::RTypedData or ::RData.
+ * Checks whether the passed object is ::RTypedData.
  *
  * @param[in]  obj    Object in question
- * @retval     true   `obj` is an instance of ::RTypedData.
- * @retval     false  `obj` is an instance of ::RData.
+ * @retval     true
  * @pre        `obj` must be a Ruby object of ::RUBY_T_DATA.
  */
 static inline bool
 RTYPEDDATA_P(VALUE obj)
 {
-#if RUBY_DEBUG
-    if (RB_UNLIKELY(! RB_TYPE_P(obj, RUBY_T_DATA))) {
-        Check_Type(obj, RUBY_T_DATA);
-        RBIMPL_UNREACHABLE_RETURN(false);
-    }
-#endif
+    RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(false));
 
-    return rbimpl_rtypeddata_p(obj);
+    return true;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -652,12 +691,7 @@ RBIMPL_ATTR_RETURNS_NONNULL()
 static inline const rb_data_type_t *
 RTYPEDDATA_TYPE(VALUE obj)
 {
-#if RUBY_DEBUG
-    if (RB_UNLIKELY(! RTYPEDDATA_P(obj))) {
-        rb_unexpected_type(obj, RUBY_T_DATA);
-        RBIMPL_UNREACHABLE_RETURN(NULL);
-    }
-#endif
+    RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(NULL));
 
     VALUE type = RTYPEDDATA(obj)->type & TYPED_DATA_PTR_MASK;
     const rb_data_type_t *ptr = RBIMPL_CAST((const rb_data_type_t *)type);
@@ -668,24 +702,24 @@ RTYPEDDATA_TYPE(VALUE obj)
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NONNULL(())
 static inline bool
-rb_typeddata_inherited_p_inline(const rb_data_type_t *child, const rb_data_type_t *parent)
+rbimpl_typeddata_inherited_p_inline(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
     do {
         if (RB_LIKELY(child == parent)) return true;
     } while ((child = child->parent) != NULL);
     return false;
 }
-#define rb_typeddata_inherited_p rb_typeddata_inherited_p_inline
+#define rb_typeddata_inherited_p rbimpl_typeddata_inherited_p_inline
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NONNULL((2))
 static inline bool
-rb_typeddata_is_kind_of_inline(VALUE obj, const rb_data_type_t *data_type)
+rbimpl_typeddata_is_kind_of_inline(VALUE obj, const rb_data_type_t *data_type)
 {
     if (RB_UNLIKELY(!rbimpl_obj_typeddata_p(obj))) return false;
     return rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type);
 }
-#define rb_typeddata_is_kind_of rb_typeddata_is_kind_of_inline
+#define rb_typeddata_is_kind_of rbimpl_typeddata_is_kind_of_inline
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NONNULL((2))
@@ -710,6 +744,21 @@ rbimpl_check_typeddata(VALUE obj, const rb_data_type_t *expected_type)
     return RTYPEDDATA_GET_DATA(obj);
 }
 
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * @private
+ *
+ * This  is an  implementation detail  of  RTYPEDDATA_DATA().  Don't use  it
+ * directly.
+ */
+static inline VALUE
+rbimpl_check_external_typeddata(VALUE obj)
+{
+    RBIMPL_TYPEDDATA_PRECONDITION(obj, RBIMPL_UNREACHABLE_RETURN(false));
+    RUBY_ASSERT(!rbimpl_typeddata_embedded_p(obj));
+    return obj;
+}
 
 /**
  * Obtains a C struct from inside of a wrapper Ruby object.

@@ -16,6 +16,6 @@ describe :float_abs, shared: true do
   end
 
   it "returns NaN if NaN" do
-    nan_value.send(@method).nan?.should be_true
+    nan_value.send(@method).nan?.should == true
   end
 end

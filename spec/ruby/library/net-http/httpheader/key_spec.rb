@@ -8,14 +8,14 @@ describe "Net::HTTPHeader#key? when passed key" do
   end
 
   it "returns true if the header entry with the passed key exists" do
-    @headers.key?("My-Header").should be_false
+    @headers.key?("My-Header").should == false
     @headers["My-Header"] = "test"
-    @headers.key?("My-Header").should be_true
+    @headers.key?("My-Header").should == true
   end
 
   it "is case-insensitive" do
     @headers["My-Header"] = "test"
-    @headers.key?("my-header").should be_true
-    @headers.key?("MY-HEADER").should be_true
+    @headers.key?("my-header").should == true
+    @headers.key?("MY-HEADER").should == true
   end
 end

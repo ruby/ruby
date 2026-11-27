@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 
 describe "Symbol#downcase" do
   it "returns a Symbol" do
-    :glark.downcase.should be_an_instance_of(Symbol)
+    :glark.downcase.should.instance_of?(Symbol)
   end
 
   it "converts uppercase ASCII characters to their lowercase equivalents" do

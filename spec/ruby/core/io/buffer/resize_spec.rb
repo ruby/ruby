@@ -11,8 +11,8 @@ describe "IO::Buffer#resize" do
       @buffer = IO::Buffer.new(4)
       @buffer.resize(IO::Buffer::PAGE_SIZE)
       @buffer.size.should == IO::Buffer::PAGE_SIZE
-      @buffer.internal?.should be_true
-      @buffer.mapped?.should be_false
+      @buffer.internal?.should == true
+      @buffer.mapped?.should == false
     end
 
     platform_is :linux do
@@ -20,8 +20,8 @@ describe "IO::Buffer#resize" do
         @buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED)
         @buffer.resize(4)
         @buffer.size.should == 4
-        @buffer.internal?.should be_false
-        @buffer.mapped?.should be_true
+        @buffer.internal?.should == false
+        @buffer.mapped?.should == true
       end
     end
 
@@ -30,8 +30,8 @@ describe "IO::Buffer#resize" do
         @buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED)
         @buffer.resize(4)
         @buffer.size.should == 4
-        @buffer.internal?.should be_true
-        @buffer.mapped?.should be_false
+        @buffer.internal?.should == true
+        @buffer.mapped?.should == false
       end
     end
   end
@@ -40,21 +40,19 @@ describe "IO::Buffer#resize" do
     it "disallows resizing shared buffer, raising IO::Buffer::AccessError" do
       File.open(__FILE__, "r+") do |file|
         @buffer = IO::Buffer.map(file)
-        -> { @buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+        -> { @buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
 
-    ruby_version_is "3.3" do
-      it "resizes private buffer, discarding excess contents" do
-        File.open(__FILE__, "r") do |file|
-          @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
-          @buffer.resize(10)
-          @buffer.size.should == 10
-          @buffer.get_string.should == "require_re"
-          @buffer.resize(12)
-          @buffer.size.should == 12
-          @buffer.get_string.should == "require_re\0\0"
-        end
+    it "resizes private buffer, discarding excess contents" do
+      File.open(__FILE__, "r") do |file|
+        @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
+        @buffer.resize(10)
+        @buffer.size.should == 10
+        @buffer.get_string.should == "require_re"
+        @buffer.resize(12)
+        @buffer.size.should == 12
+        @buffer.get_string.should == "require_re\0\0"
       end
     end
   end
@@ -63,25 +61,23 @@ describe "IO::Buffer#resize" do
     context "without a block" do
       it "disallows resizing, raising IO::Buffer::AccessError" do
         @buffer = IO::Buffer.for(+"test")
-        -> { @buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+        -> { @buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
 
     context "with a block" do
       it "disallows resizing, raising IO::Buffer::AccessError" do
         IO::Buffer.for(+'test') do |buffer|
-          -> { buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+          -> { buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
         end
       end
     end
   end
 
-  ruby_version_is "3.3" do
-    context "with a String-backed buffer created with .string" do
-      it "disallows resizing, raising IO::Buffer::AccessError" do
-        IO::Buffer.string(4) do |buffer|
-          -> { buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
-        end
+  context "with a String-backed buffer created with .string" do
+    it "disallows resizing, raising IO::Buffer::AccessError" do
+      IO::Buffer.string(4) do |buffer|
+        -> { buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
   end
@@ -91,8 +87,8 @@ describe "IO::Buffer#resize" do
       @buffer = IO::Buffer.new(0)
       @buffer.resize(IO::Buffer::PAGE_SIZE)
       @buffer.size.should == IO::Buffer::PAGE_SIZE
-      @buffer.internal?.should be_false
-      @buffer.mapped?.should be_true
+      @buffer.internal?.should == false
+      @buffer.mapped?.should == true
     end
 
     it "allows resizing after a free, creating a regular buffer according to new size" do
@@ -100,15 +96,15 @@ describe "IO::Buffer#resize" do
       @buffer.free
       @buffer.resize(10)
       @buffer.size.should == 10
-      @buffer.internal?.should be_true
-      @buffer.mapped?.should be_false
+      @buffer.internal?.should == true
+      @buffer.mapped?.should == false
     end
   end
 
   it "allows resizing to 0, freeing memory" do
     @buffer = IO::Buffer.new(4)
     @buffer.resize(0)
-    @buffer.null?.should be_true
+    @buffer.null?.should == true
   end
 
   it "can be called repeatedly" do
@@ -117,6 +113,26 @@ describe "IO::Buffer#resize" do
     @buffer.resize(27)
     @buffer.resize(1)
     @buffer.size.should == 1
+  end
+
+  ruby_version_is "4.1" do
+    it "preserves read-only access when the allocation is replaced" do
+      @buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED | IO::Buffer::READONLY)
+      @buffer.resize(16)
+
+      @buffer.should.readonly?
+      -> { @buffer.set_string("test") }.should.raise(IO::Buffer::AccessError, "Buffer is not writable!")
+    end
+
+    it "raises FrozenError without resizing a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.resize(8) }.should.raise(FrozenError)
+      buffer.size.should == 4
+      buffer.get_string.should == "test"
+    end
   end
 
   it "always clears extra memory" do
@@ -132,24 +148,134 @@ describe "IO::Buffer#resize" do
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     @buffer = IO::Buffer.new(4)
     @buffer.locked do
-      -> { @buffer.resize(10) }.should raise_error(IO::Buffer::LockedError, "Cannot resize locked buffer!")
+      -> { @buffer.resize(10) }.should.raise(IO::Buffer::LockedError, "Cannot resize locked buffer!")
     end
   end
 
   it "raises ArgumentError if size is negative" do
     @buffer = IO::Buffer.new(4)
-    -> { @buffer.resize(-1) }.should raise_error(ArgumentError, "Size can't be negative!")
+    -> { @buffer.resize(-1) }.should.raise(ArgumentError, "Size can't be negative!")
   end
 
   it "raises TypeError if size is not an Integer" do
     @buffer = IO::Buffer.new(4)
-    -> { @buffer.resize(nil) }.should raise_error(TypeError, "not an Integer")
-    -> { @buffer.resize(10.0) }.should raise_error(TypeError, "not an Integer")
+    -> { @buffer.resize(nil) }.should.raise(TypeError, "not an Integer")
+    -> { @buffer.resize(10.0) }.should.raise(TypeError, "not an Integer")
   end
 
-  context "with a slice of a buffer" do
-    # Current behavior of slice resizing seems unintended (it's undocumented, too).
-    # It either creates a completely new buffer, or breaks the slice on size 0.
-    it "needs to be reviewed for spec completeness"
+  ruby_version_is "4.1" do
+    context "with a slice of a buffer" do
+      it "keeps an empty view valid when its source is null" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.resize(0)
+        slice.should.valid?
+        slice.should.null?
+        slice.should.empty?
+
+        @buffer.resize(4)
+        slice.resize(4)
+        slice.get_string.should == "\0" * 4
+      end
+
+      it "restores validity by resizing an offset-zero slice to zero" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(0, 4)
+        @buffer.free
+
+        slice.should_not.valid?
+        -> { slice.resize(1) }.should.raise(ArgumentError)
+        slice.resize(0).should.equal?(slice)
+        slice.should.valid?
+        slice.should.null?
+
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+        slice.resize(4)
+        slice.get_string.should == "abcd"
+      end
+
+      it "rejects resizing a slice whose offset is beyond a null source" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(2, 4)
+        @buffer.free
+
+        -> { slice.resize(0) }.should.raise(IO::Buffer::InvalidatedError)
+        slice.should_not.valid?
+
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+        slice.get_string.should == "cdef"
+      end
+
+      it "changes the size of the view without modifying the source" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        slice.resize(4).should.equal?(slice)
+        slice.get_string.should == "cdef"
+        @buffer.get_string.should == "abcdef"
+
+        slice.resize(1)
+        slice.get_string.should == "c"
+      end
+
+      it "does not allocate when resized to zero" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        slice.resize(0)
+        slice.should_not.null?
+        slice.should.empty?
+        slice.should.valid?
+
+        slice.resize(4)
+        slice.get_string.should == "cdef"
+      end
+
+      it "raises ArgumentError when the resized view exceeds the source" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        -> { slice.resize(5) }.should.raise(
+          ArgumentError,
+          "Resized slice exceeds its source buffer!"
+        )
+
+        slice.get_string.should == "cd"
+      end
+
+      it "can be resized while the source allocation is locked" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        slice = @buffer.slice(2, 2)
+
+        slice.locked do
+          slice.resize(4)
+          slice.get_string.should == "cdef"
+        end
+      end
+
+      it "preserves read-only access" do
+        @buffer = IO::Buffer.for("abcdef")
+        slice = @buffer.slice(2, 2)
+
+        slice.resize(4)
+        slice.should.readonly?
+        slice.get_string.should == "cdef"
+      end
+
+      it "uses the immediate parent as the boundary for nested slices" do
+        @buffer = IO::Buffer.for("abcdef").dup
+        parent = @buffer.slice(1, 2)
+        slice = parent.slice(1, 1)
+
+        -> { slice.resize(4) }.should.raise(ArgumentError, "Resized slice exceeds its source buffer!")
+
+        parent.resize(5)
+        slice.resize(4)
+        slice.get_string.should == "cdef"
+      end
+    end
   end
 end

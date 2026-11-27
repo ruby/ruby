@@ -53,13 +53,13 @@ describe "Socket#connect_nonblock" do
     it "raises Errno::EINPROGRESS when the connect would block" do
       -> do
         @socket.connect_nonblock(@addr)
-      end.should raise_error(Errno::EINPROGRESS)
+      end.should.raise(Errno::EINPROGRESS)
     end
 
     it "raises Errno::EINPROGRESS with IO::WaitWritable mixed in when the connect would block" do
       -> do
         @socket.connect_nonblock(@addr)
-      end.should raise_error(IO::WaitWritable)
+      end.should.raise(IO::WaitWritable)
     end
 
     it "returns :wait_writable in exceptionless mode when the connect would block" do
@@ -93,7 +93,7 @@ describe 'Socket#connect_nonblock' do
       end
 
       it 'raises TypeError when passed an Integer' do
-        -> { @client.connect_nonblock(666) }.should raise_error(TypeError)
+        -> { @client.connect_nonblock(666) }.should.raise(TypeError)
       end
     end
 
@@ -122,7 +122,7 @@ describe 'Socket#connect_nonblock' do
             # as it's too implementation-dependent and checking for connect()
             # errors is futile anyways because of TOCTOU
             @client.connect_nonblock(@server.connect_address)
-          }.should raise_error(Errno::EISCONN)
+          }.should.raise(Errno::EISCONN)
         end
 
         it 'returns 0 when already connected in exceptionless mode' do
@@ -139,7 +139,7 @@ describe 'Socket#connect_nonblock' do
 
           -> {
             @client.connect_nonblock(@server.connect_address)
-          }.should raise_error(IO::EINPROGRESSWaitWritable)
+          }.should.raise(IO::EINPROGRESSWaitWritable)
         end
       end
     end

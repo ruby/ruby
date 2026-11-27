@@ -38,6 +38,7 @@ keys:
   :verbose: Verbosity of the gem command. false, true, and :really are the
             levels
   :update_sources: Enable/disable automatic updating of repository metadata
+  :concurrent_downloads: The number of gem downloads to perform concurrently
   :backtrace: Print backtrace when RubyGems encounters an error
   :gempath: The paths in which to look for gems
   :disable_default_gem_server: Force specification of gem server host on push

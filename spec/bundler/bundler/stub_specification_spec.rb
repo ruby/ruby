@@ -49,10 +49,14 @@ RSpec.describe Bundler::StubSpecification do
       expect(stub.missing_extensions?).to be false
     end
 
-    it "returns true if not manually_installed?" do
+    it "returns #{RUBY_ENGINE == "jruby" ? "false" : "true"} if not manually_installed?" do
       stub = described_class.from_stub(with_bundler_stub_spec)
       stub.installed_by_version = Gem::Version.new(1)
-      expect(stub.missing_extensions?).to be true
+      if RUBY_ENGINE == "jruby"
+        expect(stub.missing_extensions?).to be false
+      else
+        expect(stub.missing_extensions?).to be true
+      end
     end
   end
 
@@ -73,6 +77,32 @@ RSpec.describe Bundler::StubSpecification do
       expect(stub.activated?).to be_falsey
       stub.activated = true
       expect(stub.activated?).to be true
+    end
+  end
+
+  describe "#contains_requirable_file?" do
+    let(:base_dir) { Dir.mktmpdir }
+    let(:stub) do
+      spec_path = File.join(base_dir, "specifications", "bar-1.0.0.gemspec")
+      FileUtils.mkdir_p File.dirname(spec_path)
+      File.write spec_path, Gem::Specification.new {|s|
+        s.name = "bar"
+        s.version = "1.0.0"
+        s.require_paths = ["lib"]
+      }.to_ruby
+      FileUtils.mkdir_p File.join(base_dir, "gems", "bar-1.0.0", "lib")
+      File.write File.join(base_dir, "gems", "bar-1.0.0", "lib", "bar.rb"), ""
+
+      described_class.from_stub(Gem::StubSpecification.gemspec_stub(spec_path, base_dir, File.join(base_dir, "gems")))
+    end
+
+    after { FileUtils.rm_rf base_dir }
+
+    it "answers from the stub without loading the full gemspec" do
+      expect(stub).not_to receive(:_remote_specification)
+
+      expect(stub.contains_requirable_file?("bar")).to be true
+      expect(stub.contains_requirable_file?("missing")).to be false
     end
   end
 end

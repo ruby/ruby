@@ -30,7 +30,7 @@ module SyntaxSuggest
   #        puts "wow"
   #      end
   #
-  class BlockExpand
+  class BlockExpand # :nodoc:
     def initialize(code_lines:)
       @code_lines = code_lines
     end

@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#sync" do
   it "returns true" do
-    StringIO.new('').sync.should be_true
+    StringIO.new('').sync.should == true
   end
 end
 
@@ -14,6 +14,6 @@ describe "StringIO#sync=" do
 
   it "does not change 'sync' status" do
     @io.sync = false
-    @io.sync.should be_true
+    @io.sync.should == true
   end
 end

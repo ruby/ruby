@@ -1,0 +1,6 @@
+prelude: |
+  # frozen_string_literal: true
+benchmark:
+  long: File.extname("/Users/george/src/github.com/ruby/ruby/benchmark/file_dirname.yml")
+  long_name: File.extname("Users_george_src_github.com_ruby_ruby_benchmark_file_dirname.yml")
+  short: File.extname("foo/bar")

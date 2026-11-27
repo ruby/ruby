@@ -13,9 +13,9 @@ describe "Net::HTTPGenericRequest#set_body_internal when passed string" do
 
   it "raises an ArgumentError when the body or body_stream of self have already been set" do
     @request.body = "Some Content"
-    -> { @request.set_body_internal("Some other Content") }.should raise_error(ArgumentError)
+    -> { @request.set_body_internal("Some other Content") }.should.raise(ArgumentError)
 
     @request.body_stream = "Some Content"
-    -> { @request.set_body_internal("Some other Content") }.should raise_error(ArgumentError)
+    -> { @request.set_body_internal("Some other Content") }.should.raise(ArgumentError)
   end
 end

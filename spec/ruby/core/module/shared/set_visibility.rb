@@ -2,7 +2,7 @@
 
 describe :set_visibility, shared: true do
   it "is a private method" do
-    Module.should have_private_instance_method(@method, false)
+    Module.private_instance_methods(false).should.include?(@method)
   end
 
   describe "with argument" do
@@ -17,8 +17,8 @@ describe :set_visibility, shared: true do
           def test2() end
           send visibility, :test1, :test2
         }
-        mod.should send(:"have_#{visibility}_instance_method", :test1, false)
-        mod.should send(:"have_#{visibility}_instance_method", :test2, false)
+        mod.send(:"#{visibility}_instance_methods", false).should.include?(:test1)
+        mod.send(:"#{visibility}_instance_methods", false).should.include?(:test2)
       end
     end
 
@@ -33,8 +33,8 @@ describe :set_visibility, shared: true do
           def test2() end
           send visibility, [:test1, :test2]
         }
-        mod.should send(:"have_#{visibility}_instance_method", :test1, false)
-        mod.should send(:"have_#{visibility}_instance_method", :test2, false)
+        mod.send(:"#{visibility}_instance_methods", false).should.include?(:test1)
+        mod.send(:"#{visibility}_instance_methods", false).should.include?(:test2)
       end
     end
 
@@ -50,7 +50,7 @@ describe :set_visibility, shared: true do
         send(visibility, :test_method)
       }
 
-      child.should_not send(:"have_#{visibility}_instance_method", :test_method, false)
+      child.send(:"#{visibility}_instance_methods", false).should_not.include?(:test_method)
     end
   end
 
@@ -64,8 +64,8 @@ describe :set_visibility, shared: true do
         def test2() end
       }
 
-      mod.should send(:"have_#{@method}_instance_method", :test1, false)
-      mod.should send(:"have_#{@method}_instance_method", :test2, false)
+      mod.send(:"#{@method}_instance_methods", false).should.include?(:test1)
+      mod.send(:"#{@method}_instance_methods", false).should.include?(:test2)
     end
 
     it "stops setting visibility if the body encounters other visibility setters without arguments" do
@@ -78,7 +78,7 @@ describe :set_visibility, shared: true do
         def test1() end
       }
 
-      mod.should send(:"have_#{new_visibility}_instance_method", :test1, false)
+      mod.send(:"#{new_visibility}_instance_methods", false).should.include?(:test1)
     end
 
     it "continues setting visibility if the body encounters other visibility setters with arguments" do
@@ -90,7 +90,7 @@ describe :set_visibility, shared: true do
         def test2() end
       }
 
-      mod.should send(:"have_#{@method}_instance_method", :test2, false)
+      mod.send(:"#{@method}_instance_methods", false).should.include?(:test2)
     end
 
     it "does not affect module_evaled method definitions when itself is outside the eval" do
@@ -102,8 +102,8 @@ describe :set_visibility, shared: true do
         module_eval " def test2() end "
       }
 
-      mod.should have_public_instance_method(:test1, false)
-      mod.should have_public_instance_method(:test2, false)
+      mod.public_instance_methods(false).should.include?(:test1)
+      mod.public_instance_methods(false).should.include?(:test2)
     end
 
     it "does not affect outside method definitions when itself is inside a module_eval" do
@@ -114,7 +114,7 @@ describe :set_visibility, shared: true do
         def test1() end
       }
 
-      mod.should have_public_instance_method(:test1, false)
+      mod.public_instance_methods(false).should.include?(:test1)
     end
 
     it "affects normally if itself and method definitions are inside a module_eval" do
@@ -127,7 +127,7 @@ describe :set_visibility, shared: true do
         }
       }
 
-      mod.should send(:"have_#{@method}_instance_method", :test1, false)
+      mod.send(:"#{@method}_instance_methods", false).should.include?(:test1)
     end
 
     it "does not affect method definitions when itself is inside an eval and method definitions are outside" do
@@ -140,7 +140,7 @@ describe :set_visibility, shared: true do
         def test1() end
       }
 
-      mod.should send(:"have_#{initialized_visibility}_instance_method", :test1, false)
+      mod.send(:"#{initialized_visibility}_instance_methods", false).should.include?(:test1)
     end
 
     it "affects evaled method definitions when itself is outside the eval" do
@@ -151,7 +151,7 @@ describe :set_visibility, shared: true do
         eval "def test1() end"
       }
 
-      mod.should send(:"have_#{@method}_instance_method", :test1, false)
+      mod.send(:"#{@method}_instance_methods", false).should.include?(:test1)
     end
 
     it "affects normally if itself and following method definitions are inside a eval" do
@@ -164,7 +164,7 @@ describe :set_visibility, shared: true do
         CODE
       }
 
-      mod.should send(:"have_#{@method}_instance_method", :test1, false)
+      mod.send(:"#{@method}_instance_methods", false).should.include?(:test1)
     end
 
     describe "within a closure" do
@@ -177,7 +177,7 @@ describe :set_visibility, shared: true do
           def test1() end
         }
 
-        mod.should send(:"have_#{@method}_instance_method", :test1, false)
+        mod.send(:"#{@method}_instance_methods", false).should.include?(:test1)
       end
     end
   end

@@ -7,29 +7,29 @@ platform_is_not :windows do
     platform_is_not :windows do
 
       before :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       after :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       it "closes the log" do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
         Syslog.open
-        Syslog.opened?.should be_true
+        Syslog.opened?.should == true
         Syslog.close
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       it "raises a RuntimeError if the log's already closed" do
-        -> { Syslog.close }.should raise_error(RuntimeError)
+        -> { Syslog.close }.should.raise(RuntimeError)
       end
 
       it "it does not work inside blocks" do
         -> {
           Syslog.open { |s| s.close }
-        }.should raise_error(RuntimeError)
+        }.should.raise(RuntimeError)
         Syslog.should_not.opened?
       end
 
@@ -37,7 +37,7 @@ platform_is_not :windows do
         Syslog.open("rubyspec")
         Syslog.ident.should == "rubyspec"
         Syslog.close
-        Syslog.ident.should be_nil
+        Syslog.ident.should == nil
       end
 
       it "sets the options to nil" do

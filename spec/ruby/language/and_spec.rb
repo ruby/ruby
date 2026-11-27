@@ -5,7 +5,7 @@ describe "The '&&' statement" do
   it "short-circuits evaluation at the first condition to be false" do
     x = nil
     true && false && x = 1
-    x.should be_nil
+    x.should == nil
   end
 
   it "evaluates to the first condition not to be true" do
@@ -33,9 +33,9 @@ describe "The '&&' statement" do
   end
 
   it "treats empty expressions as nil" do
-    (() && true).should be_nil
-    (true && ()).should be_nil
-    (() && ()).should be_nil
+    (() && true).should == nil
+    (true && ()).should == nil
+    (() && ()).should == nil
   end
 
 end
@@ -44,7 +44,7 @@ describe "The 'and' statement" do
   it "short-circuits evaluation at the first condition to be false" do
     x = nil
     true and false and x = 1
-    x.should be_nil
+    x.should == nil
   end
 
   it "evaluates to the first condition not to be true" do
@@ -72,9 +72,9 @@ describe "The 'and' statement" do
   end
 
   it "treats empty expressions as nil" do
-    (() and true).should be_nil
-    (true and ()).should be_nil
-    (() and ()).should be_nil
+    (() and true).should == nil
+    (true and ()).should == nil
+    (() and ()).should == nil
   end
 
 end

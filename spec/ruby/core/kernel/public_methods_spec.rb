@@ -5,31 +5,30 @@ require_relative '../../fixtures/reflection'
 # TODO: rewrite
 describe "Kernel#public_methods" do
   it "returns a list of the names of publicly accessible methods in the object" do
-    KernelSpecs::Methods.public_methods(false).sort.should include(:hachi,
-      :ichi, :juu, :juu_ni, :roku, :san, :shi)
-    KernelSpecs::Methods.new.public_methods(false).sort.should include(:juu_san, :ni)
+    KernelSpecs::Methods.public_methods(false).to_set.should >= Set[:hachi, :ichi, :juu, :juu_ni, :roku, :san, :shi]
+    KernelSpecs::Methods.new.public_methods(false).to_set.should >= Set[:juu_san, :ni]
   end
 
   it "returns a list of names without protected accessible methods in the object" do
-    KernelSpecs::Methods.public_methods(false).sort.should_not include(:juu_ichi)
-    KernelSpecs::Methods.new.public_methods(false).sort.should_not include(:ku)
+    KernelSpecs::Methods.public_methods(false).sort.should_not.include?(:juu_ichi)
+    KernelSpecs::Methods.new.public_methods(false).sort.should_not.include?(:ku)
   end
 
   it "returns a list of the names of publicly accessible methods in the object and its ancestors and mixed-in modules" do
-    (KernelSpecs::Methods.public_methods(false) & KernelSpecs::Methods.public_methods).sort.should include(
-      :hachi, :ichi, :juu, :juu_ni, :roku, :san, :shi)
+    (KernelSpecs::Methods.public_methods(false) & KernelSpecs::Methods.public_methods).to_set.should >= Set[
+      :hachi, :ichi, :juu, :juu_ni, :roku, :san, :shi]
     m = KernelSpecs::Methods.new.public_methods
-    m.should include(:ni, :juu_san)
+    m.to_set.should >= Set[:ni, :juu_san]
   end
 
   it "returns methods mixed in to the metaclass" do
     m = KernelSpecs::Methods.new
     m.extend(KernelSpecs::Methods::MetaclassMethods)
-    m.public_methods.should include(:peekaboo)
+    m.public_methods.should.include?(:peekaboo)
   end
 
   it "returns public methods for immediates" do
-    10.public_methods.should include(:divmod)
+    10.public_methods.should.include?(:divmod)
   end
 end
 

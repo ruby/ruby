@@ -1,6 +1,6 @@
 %#  -*- c -*-
 % limits = %w[
-%   FIXNUM
+%   FIXNUM RB_LEN  RB_ULEN
 %   CHAR   SCHAR   UCHAR  WCHAR
 %          SHRT    USHRT
 %          INT     UINT
@@ -83,13 +83,15 @@ Init_limits(void)
 #define MIN2NUM(name)  LONG2NUM(name ## _MIN)
 #endif
 #define DEFINE(k, v) rb_hash_aset(h, rb_usascii_str_new_lit(#k), v)
+#define DEFINE_MAX(k) DEFINE(k ## _MAX, MAX2NUM(k))
+#define DEFINE_MIN(k) DEFINE(k ## _MIN, MIN2NUM(k))
 
 % limits.each do |type|
 #ifdef <%= type %>_MAX
-    DEFINE(<%= type %>_MAX, MAX2NUM(<%= type %>));
+    DEFINE_MAX(<%= type %>);
 #endif
 #ifdef <%= type %>_MIN
-    DEFINE(<%= type %>_MIN, MIN2NUM(<%= type %>));
+    DEFINE_MIN(<%= type %>);
 #endif
 % end
 
@@ -105,6 +107,8 @@ Init_limits(void)
 #endif
 % end
 
+#undef DEFINE_MIN
+#undef DEFINE_MAX
 #undef DEFINE
 #undef MIN2NUM
 #undef MAX2NUM

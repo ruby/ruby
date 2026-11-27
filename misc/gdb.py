@@ -70,17 +70,19 @@ class CFP(gdb.Command):
         gdb.execute(f'p *({cfp})')
         print()
 
-        if self.get_int(f'{cfp}->iseq'):
-            local_size = self.get_int(f'{cfp}->iseq->body->local_table_size - {cfp}->iseq->body->param.size')
-            param_size = self.get_int(f'{cfp}->iseq->body->param.size')
+        iseq = self.iseq(cfp)
+        if iseq:
+            body = f'((rb_iseq_t *){iseq})->body'
+            local_size = self.get_int(f'{body}->local_table_size - {body}->param.size')
+            param_size = self.get_int(f'{body}->param.size')
 
-            if local_size:
+            if param_size:
                 print(f'Params (size={param_size}):')
                 for i in range(-3 - local_size - param_size, -3 - local_size):
                     self.print_stack(cfp, i, self.rp(cfp, i))
                 print()
 
-            if param_size:
+            if local_size:
                 print(f'Locals (size={local_size}):')
                 for i in range(-3 - local_size, -3):
                     self.print_stack(cfp, i, self.rp(cfp, i))
@@ -94,11 +96,11 @@ class CFP(gdb.Command):
 
         # We can't calculate BP for the first frame.
         # vm_base_ptr doesn't work for C frames either.
-        if cfp_index > 0 and self.get_int(f'{cfp}->iseq'):
+        if cfp_index > 0 and iseq:
             if args.stack_size is not None:
                 stack_size = args.stack_size
             else:
-                stack_size = int((self.get_int(f'{cfp}->sp') - self.get_int(f'vm_base_ptr({cfp})')) / 8)
+                stack_size = int((self.get_int(f'{cfp}->sp') - self.base_ptr(cfp)) / 8)
             print(f'Stack (size={stack_size}):')
             for i in range(0, stack_size):
                 self.print_stack(cfp, i, self.rp(cfp, i))
@@ -115,7 +117,7 @@ class CFP(gdb.Command):
         print('{:2} 0x{:x} [{}] {}(0x{:x})'.format(regs, address, bp_index, content, value))
 
     def print_stack(self, cfp, bp_index, content):
-        address = self.get_int(f'vm_base_ptr({cfp}) + {bp_index}')
+        address = self.get_int(f'(VALUE *){self.base_ptr(cfp)} + {bp_index}')
         value = self.get_value(cfp, bp_index)
         regs = self.regs(cfp, bp_index)
         if content:
@@ -124,7 +126,7 @@ class CFP(gdb.Command):
         print('{:2} 0x{:x} [{}] {}(0x{:x})'.format(regs, address, bp_index, content, value))
 
     def regs(self, cfp, bp_index):
-        address = self.get_int(f'vm_base_ptr({cfp}) + {bp_index}')
+        address = self.get_int(f'(VALUE *){self.base_ptr(cfp)} + {bp_index}')
         regs = []
         for reg, field in { 'EP': 'ep', 'SP': 'sp' }.items():
             if address == self.get_int(f'{cfp}->{field}'):
@@ -165,12 +167,39 @@ class CFP(gdb.Command):
 
         return ' | '.join(types)
 
+    # CFP_ISEQ() through cfp_iseq_pc in .gdbinit
+    def iseq(self, cfp):
+        gdb.execute(f'cfp_iseq_pc ((rb_control_frame_t*){self.get_int(cfp)})')
+        return self.get_int('$iseq')
+
+    # vm_base_ptr() in vm_insnhelper.c, without calling a function so that it
+    # works on a core file too
+    def base_ptr(self, cfp):
+        iseq = self.iseq(cfp)
+        flags = self.get_env(cfp, -1)
+        if not iseq or flags & self.get_int('VM_FRAME_FLAG_CFRAME'):
+            return 0
+        body = f'((rb_iseq_t *){iseq})->body'
+        local_table_size = self.get_int(f'{body}->local_table_size')
+        offset = local_table_size + 3 # VM_ENV_DATA_SIZE
+        if self.get_int(f'{body}->param.flags.forwardable') and flags & self.get_int('VM_ENV_FLAG_LOCAL'):
+            param_size = self.get_int(f'{body}->param.size')
+            ci = self.get_int(f'((rb_control_frame_t *){cfp})->ep[{-(3 + local_table_size - param_size)}]')
+            if ci & 1: # packed, see vm_ci_argc()
+                argc_bits = 15 if self.get_int('sizeof(VALUE)') == 8 else 3 # CI_EMBED_ARGC_bits
+                offset += (ci >> 1) & ((1 << argc_bits) - 1)
+            else:
+                offset += self.get_int(f'((struct rb_callinfo *){ci})->argc')
+        if self.get_int(f'{body}->type == ISEQ_TYPE_METHOD') or flags & self.get_int('VM_FRAME_FLAG_BMETHOD'):
+            offset += 1 # self
+        return self.get_int(f'({cfp} + 1)->sp + {offset}')
+
     def get_env(self, cfp, bp_index):
         ep_index = bp_index + 1
         return self.get_int(f'((rb_control_frame_t *){cfp})->ep[{ep_index}]')
 
     def get_value(self, cfp, bp_index):
-        return self.get_int(f'vm_base_ptr({cfp})[{bp_index}]')
+        return self.get_int(f'((VALUE *){self.base_ptr(cfp)})[{bp_index}]')
 
     def get_int(self, expr):
         return int(self.get_string(f'printf "%ld", ({expr})'))

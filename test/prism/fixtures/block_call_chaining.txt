@@ -1,0 +1,21 @@
+(f x do end).() {}
+
+f(x) do end.() {}
+
+(f x do end)&.() {}
+
+f(x) do end&.() {}
+
+(f x do end)::() {}
+
+f(x) do end::() {}
+
+(!f x do end.tail) + y
+
+(not f x do end.tail) + y
+
+(a and f x do end.tail) + y
+
+(a or f x do end.tail) + y
+
+m case f 1 do end::C in 2; end

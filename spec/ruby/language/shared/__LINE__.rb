@@ -9,7 +9,7 @@ describe :language___LINE__, shared: true do
   end
 
   it "equals the line number of the text in a loaded file" do
-    @object.send(@method, @path).should be_true
+    @object.send(@method, @path).should == true
     ScratchPad.recorded.should == [1, 5]
   end
 end

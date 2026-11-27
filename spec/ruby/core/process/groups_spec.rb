@@ -50,7 +50,7 @@ describe "Process.groups=" do
           Process.groups.should == [ Process.gid ]
           supplementary = groups - [ Process.gid ]
           if supplementary.length > 0
-            -> { Process.groups = supplementary }.should raise_error(Errno::EPERM)
+            -> { Process.groups = supplementary }.should.raise(Errno::EPERM)
           end
         end
       end
@@ -59,7 +59,7 @@ describe "Process.groups=" do
         it "raises Errno::EPERM" do
           -> {
             Process.groups = [0]
-          }.should raise_error(Errno::EPERM)
+          }.should.raise(Errno::EPERM)
         end
       end
     end

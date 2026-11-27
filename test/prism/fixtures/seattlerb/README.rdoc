@@ -4,6 +4,18 @@ home :: https://github.com/seattlerb/ruby_parser
 bugs :: https://github.com/seattlerb/ruby_parser/issues
 rdoc :: http://docs.seattlerb.org/ruby_parser
 
+== NOTICE:
+
+With the advent of prism, and it's ruby_parser compatibility mode,
+this project is EOL. I've switched all my projects that use
+ruby_parser over to prism with only a minimum of fixes sent upstream.
+Use prism ~> 1.7 for best results.
+
+I'm doing one more release to get my standing changes out into the
+world and might follow up with another if anything adverse is
+reported... but other than that, I'm very happy to put this out to
+pasture.
+
 == DESCRIPTION:
 
 ruby_parser (RP) is a ruby parser written in pure ruby (utilizing

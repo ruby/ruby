@@ -10,6 +10,9 @@
  */
 #include "internal/struct.h"    /* for RSTRUCT */
 
+#define RANGE_FL_INIT FL_USER18
+#define RANGE_FL_EXCL FL_USER19
+
 /* range.c */
 static inline VALUE RANGE_BEG(VALUE r);
 static inline VALUE RANGE_END(VALUE r);
@@ -18,23 +21,26 @@ static inline VALUE RANGE_EXCL(VALUE r);
 static inline VALUE
 RANGE_BEG(VALUE r)
 {
-    return RSTRUCT(r)->as.ary[0];
+    return RSTRUCT_GET_RAW(r, 0);
 }
 
 static inline VALUE
 RANGE_END(VALUE r)
 {
-    return RSTRUCT_GET(r, 1);
+    return RSTRUCT_GET_RAW(r, 1);
 }
 
 static inline VALUE
 RANGE_EXCL(VALUE r)
 {
-    return RSTRUCT_GET(r, 2);
+    if (FL_TEST_RAW(r, RANGE_FL_INIT)) {
+        return RBOOL(FL_TEST_RAW(r, RANGE_FL_EXCL));
+    }
+    return Qnil;
 }
 
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
-                           long *begp, long *lenp, long len, int err);
+                           rb_len_t *begp, rb_len_t *lenp, rb_len_t len, int err);
 
 #endif /* INTERNAL_RANGE_H */

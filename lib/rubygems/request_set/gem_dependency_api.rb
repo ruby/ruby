@@ -13,7 +13,7 @@
 #   source 'https://rubygems.org'
 #
 #   gem 'rails', '3.2.14a
-#   gem 'devise', '~> 2.1', '>= 2.1.3'
+#   gem 'devise', '>= 2.1.3', '< 3'
 #   gem 'cancan'
 #   gem 'airbrake'
 #   gem 'pg'

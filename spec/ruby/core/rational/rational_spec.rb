@@ -6,6 +6,6 @@ describe "Rational" do
   end
 
   it "does not respond to new" do
-    -> { Rational.new(1) }.should raise_error(NoMethodError)
+    -> { Rational.new(1) }.should.raise(NoMethodError)
   end
 end

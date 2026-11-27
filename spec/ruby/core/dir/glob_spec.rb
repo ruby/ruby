@@ -10,6 +10,12 @@ describe "Dir.glob" do
   it_behaves_like :dir_glob_recursive, :glob
 end
 
+ruby_version_is "4.1" do
+  describe "Dir.glob" do
+    it_behaves_like :dir_glob_recursive_symlinks, :glob
+  end
+end
+
 describe "Dir.glob" do
   before :each do
     DirSpecs.create_mock_dirs
@@ -65,6 +71,14 @@ describe "Dir.glob" do
 
   it "matches any files in the current directory with '**' and option File::FNM_DOTMATCH" do
     Dir.glob('**', File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
+  end
+
+  it "accepts the flags keyword argument as an alternative to the positional argument" do
+    Dir.glob('**', flags: File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
+  end
+
+  it "prefers the keyword argument over the positional flag argument" do
+    Dir.glob('**', :ignored, flags: File::FNM_DOTMATCH).sort.should == DirSpecs.expected_glob_paths
   end
 
   it "recursively matches any subdirectories except './' or '../' with '**/' from the current directory and option File::FNM_DOTMATCH" do
@@ -149,7 +163,7 @@ describe "Dir.glob" do
   it "accepts a block and yields it with each elements" do
     ary = []
     ret = Dir.glob(["file_o*", "file_t*"]) { |t| ary << t }
-    ret.should be_nil
+    ret.should == nil
     ary.should == %w!file_one.ext file_two.ext!
   end
 
@@ -358,5 +372,10 @@ describe "Dir.glob" do
       ]
       Dir.glob('**/*/nondotfile').sort.should == expected
     end
+  end
+
+  it "preserves the encoding of the path" do
+    pattern = "file_one.ext".encode(Encoding::EUC_JP)
+    Dir.glob(pattern).first.encoding.should == Encoding::EUC_JP
   end
 end

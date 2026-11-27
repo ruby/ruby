@@ -1,8 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/join'
-require_relative 'shared/inspect'
 
 describe "Array#to_s" do
-  it_behaves_like :array_inspect, :to_s
+  it "is an alias of Array#inspect" do
+    Array.instance_method(:to_s).should == Array.instance_method(:inspect)
+  end
 end

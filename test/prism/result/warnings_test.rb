@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.1"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class WarningsTest < TestCase
     def test_ambiguous_uminus
       assert_warning("a -b", "ambiguous first argument")
@@ -19,7 +19,8 @@ module Prism
     end
 
     def test_ambiguous_regexp
-      assert_warning("a /b/", "wrap regexp in parentheses")
+      assert_warning("a /b/", "wrap regexp in parentheses", compare: false, version: "4.0")
+      refute_warning("a /b/", compare: false, version: "4.1")
     end
 
     def test_ambiguous_ampersand
@@ -45,6 +46,10 @@ module Prism
         assert_warning("puts 1 #{operator}0", warning)
         assert_warning("puts :a #{operator}0", warning)
         assert_warning("m = 1; puts m #{operator}0", warning)
+
+        diagnostic = Ruby::Prism.parse("puts :é\t#{operator}0").warnings.fetch(0)
+        assert_equal operator.to_s, diagnostic.location.slice
+        assert_equal "'#{operator}' after local variable or literal is interpreted as binary operator even though it seems like #{warning}", diagnostic.message
       end
     end
 
@@ -72,12 +77,129 @@ module Prism
       assert_warning("{ a: 1, **{ a: 2 } }", "duplicated and overwritten")
     end
 
+    def test_duplicated_hash_key_splatted_literal_position
+      assert_warning("{ **{ a: 1 }, a: 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("{ **{}, a: 1, **{ a: 2 } }", "duplicated and overwritten", compare: false)
+      assert_warning("{ **z, a: 1, **{ a: 1 } }", "duplicated and overwritten", compare: false)
+      assert_warning("foo(**{ a: 1 }, a: 2)", "duplicated and overwritten", compare: false)
+    end
+
+    def test_duplicated_hash_key_splatted_literal_nested
+      assert_warning("{ a: 1, **{ **{ a: 2 } } }", "duplicated and overwritten", compare: false)
+      assert_warning("{ a: 1,\n**{ a: 2,\n**{ a: 3 } } }", "on line 3", "on line 2", compare: false)
+    end
+
+    def test_duplicated_hash_key_splatted_expression
+      refute_warning("{ a: 1, **{ a: 2 }.dup }", compare: false)
+      refute_warning("{ a: 1, **({ a: 2 }) }", compare: false)
+      refute_warning("foo(a: 1, **{ a: 2 }.dup)", compare: false)
+    end
+
     def test_duplicated_when_clause
       assert_warning("case 1; when 1, 1; end", "when' clause")
     end
 
+    def test_line_number_overflow
+      result = Ruby::Prism.parse("{\n__LINE__ => 1, -2147483648 => 2\n}", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+      assert_not_nil warning
+      assert_equal "key -2147483648 is duplicated and overwritten on line -2147483648", warning.message
+
+      result = Ruby::Prism.parse("\nif true\n end", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :indentation_mismatch }
+      assert_not_nil warning
+      assert_equal "mismatched indentations at 'end' with 'if' at -2147483648", warning.message
+    end
+
+    def test_line_number_at_maximum_without_overflow
+      result = Ruby::Prism.parse("{__LINE__ => 1, 2147483647 => 2}", line: 2**31 - 1)
+      warning = result.warnings.find { |item| item.type == :duplicated_hash_key }
+      assert_not_nil warning
+      assert_equal "key 2147483647 is duplicated and overwritten on line 2147483647", warning.message
+    end
+
+    # Negative zero and positive zero are the same key: Float#eql? treats them
+    # as equal and Float#hash gives them the same hash, so the second one
+    # overwrites the first.
+    def test_duplicated_float_zero
+      assert_warning("{ 0.0 => 1, -0.0 => 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("case foo; when 0.0; when -0.0; end", "when' clause", compare: false)
+      refute_warning("{ 0.0 => 1, 1.0 => 2 }")
+    end
+
+    # The once flag only controls how many times an interpolated regular
+    # expression is compiled, so it does not change the value of a regular
+    # expression and both of these are the same key.
+    def test_duplicated_regular_expression_once
+      assert_warning("{ /a/ => 1, /a/o => 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("case foo; when /a/; when /a/o; end", "when' clause", compare: false)
+      refute_warning("{ /a/ => 1, /a/i => 2 }")
+    end
+
+    # Two literals with the same bytes are the same key only when they also end
+    # up in the same encoding. An escape that locks the encoding to UTF-8 sets
+    # FORCED_UTF8 whether or not the file is already UTF-8, so the flag has to
+    # be resolved against the source encoding before literals are compared.
+    #
+    # In a binary file the raw bytes stay BINARY while the escape resolves to
+    # UTF-8, so these are genuinely different keys and must not warn.
+    def test_duplicated_literals_distinct_encodings
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+
+      refute_warning("#{binary}{\"\xC3\xA9\" => 1, \"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}{:\"\xC3\xA9\" => 1, :\"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}case foo\nwhen \"\xC3\xA9\"\nwhen \"\\u00E9\"\nend".b)
+
+      # Written as two escapes rather than raw bytes, the pair still resolves to
+      # BINARY and UTF-8 respectively, and the hash really does hold two keys.
+      refute_warning("#{binary}{\"\\xC3\\xA9\" => 1, \"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}{:\"\\xC3\\xA9\" => 1, :\"\\u00E9\" => 2}".b)
+
+      # A US-ASCII source is the only one that emits FORCED_BINARY, and BINARY
+      # is not the source encoding there, so the pair stays distinct.
+      us_ascii = "# -*- encoding: us-ascii -*-\n"
+
+      refute_warning("#{us_ascii}{\"\\xC3\\xA9\" => 1, \"\\u00E9\" => 2}")
+      refute_warning("#{us_ascii}{:\"\\xC3\\xA9\" => 1, :\"\\u00E9\" => 2}")
+    end
+
+    # The mirror image: in a UTF-8 file the escape resolves to the very same
+    # string, so the pair is a duplicate and still has to be reported.
+    def test_duplicated_literals_matching_encodings
+      assert_warning("{\"\xC3\xA9\" => 1, \"\\u00E9\" => 2}", "duplicated and overwritten")
+      assert_warning("{:\"\xC3\xA9\" => 1, :\"\\u00E9\" => 2}", "duplicated and overwritten")
+      assert_warning("case foo\nwhen \"\xC3\xA9\"\nwhen \"\\u00E9\"\nend", "when' clause")
+
+      # Same bytes and same encoding are duplicates in a binary file too.
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+
+      assert_warning("#{binary}{\"\xC3\xA9\" => 1, \"\xC3\xA9\" => 2}".b, "duplicated and overwritten")
+      assert_warning("#{binary}{\"\\u00E9\" => 1, \"\\u00E9\" => 2}".b, "duplicated and overwritten")
+    end
+
+    # Hash patterns raise rather than warn, and resolve encodings the same way.
+    def test_duplicated_pattern_keys_resolve_encoding
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+      distinct = "#{binary}case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend".b
+      duplicate = "case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend"
+
+      assert_empty Ruby::Prism.parse(distinct).errors.map(&:message)
+      assert_equal ["duplicated key name"], Ruby::Prism.parse(duplicate).errors.map(&:message)
+    end
+
     def test_float_out_of_range
       assert_warning("_ = 1.0e100000", "out of range")
+      assert_warning("_ = 1.7976931348623159e308", "out of range")
+      assert_warning("_ = 1e-400", "out of range")
+      assert_warning("_ = 2.4703282292062327e-324", "out of range")
+
+      literal = "1.23456789012345e999"
+      assert_warning("_ = #{literal}", "Float #{literal} out of range")
+      assert_warning("_ = #{literal}9", "Float #{literal}... out of range", compare: false)
+
+      refute_warning("_ = 1e-310")
+      refute_warning("_ = 2.4703282292062328e-324")
+      refute_warning("_ = 0e99999")
     end
 
     def test_indentation_mismatch
@@ -145,6 +267,20 @@ module Prism
       assert_warning("1 if 2..foo", "integer")
     end
 
+    def test_literal_predicate_warnings
+      assert_warning('if "s"; end', "string literal in condition")
+      assert_warning("if /r/; end", "regex literal in condition")
+      assert_warning("if :s..1.5; end", "symbol literal in flip-flop", "literal in flip-flop")
+      refute_warning("if !:s; end")
+    end
+
+    def test_grouped_predicate_warnings
+      assert_warning('if (setup; "s"); end', "string literal in condition", compare: RUBY_VERSION >= "3.3")
+      warnings = Ruby::Prism.parse("if (setup; /r/)..(setup; 1); end").warnings
+      assert_equal ["regex literal in flip-flop", "literal in flip-flop"], warnings.map(&:message)
+      refute_warning("if (; 1..2); end")
+    end
+
     def test_literal_in_conditionals
       sources = [
         "if (a = 2); a; end",
@@ -199,6 +335,18 @@ module Prism
       refute_warning("\t\t# shareable_constant_value: none")
     end
 
+    def test_magic_comment_invalid_value
+      assert_warning("# frozen_string_literal: maybe\n", "invalid value for frozen_string_literal: maybe")
+      assert_warning("# Frozen-String-Literal: maybe\n", "invalid value for frozen_string_literal: maybe")
+      assert_warning("# Warn-Indent: maybe\n", "invalid value for warn_indent: maybe")
+      assert_warning("# Shareable-Constant-Value: maybe\n", "invalid value for shareable_constant_value: maybe")
+    end
+
+    def test_magic_comment_invalid_values_with_embedded_nul
+      source = "# -*- Warn-Indent: \"bad\0value\"; Frozen-String-Literal: other -*-"
+      assert_equal ["invalid value for warn_indent: bad", "invalid value for frozen_string_literal: other"], Ruby::Prism.parse(source).warnings.map(&:message)
+    end
+
     def test_string_in_predicate
       assert_warning("if 'foo'; end", "string")
       assert_warning("if \"\#{foo}\"; end", "string")
@@ -229,6 +377,8 @@ module Prism
 
       refute_warning("foo = 1", compare: false, command_line: "e")
       refute_warning("foo = 1", compare: false, scopes: [[]])
+
+      refute_warning("foo(bar = 1)")
 
       assert_warning("def foo; bar = 1; end", "unused")
       assert_warning("def foo; bar, = 1; end", "unused")
@@ -263,6 +413,43 @@ module Prism
       refute_warning("def foo; bar = 1; end", line: -2, compare: false)
     end
 
+    def test_unused_local_variables_in_declaration_order
+      names = %w[bufx bufy curx cury wattr maxx maxy]
+      source = "def foo\n#{names.map { |name| "  #{name} = 1\n" }.join}end\n"
+
+      assert_warning(source, *names.map { |name| "assigned but unused variable - #{name}" })
+    end
+
+    def test_unused_local_variables_in_rescue_modifier_values
+      ["def f = not (a = 1) rescue (b = 2)", "def f = not return rescue (a = 1) rescue (b = 2)"].each do |source|
+        warnings = Ruby::Prism.parse(source, version: "3.4").warnings
+        assert_equal [:unused_local_variable], warnings.map(&:type)
+        assert_equal "b", warnings.first.location.slice
+      end
+    end
+
+    def test_discarded_assignment_in_a_statement_list
+      source = "def f; consume(((discarded = 1); used = 2)); end"
+      assert_warning(source, "assigned but unused variable - discarded", compare: false, version: "4.1")
+    end
+
+    def test_unused_local_variable_or_assign_with_begin_node
+      assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
+        var ||= begin
+          foo = bar
+          baz
+        end
+      RUBY
+
+      assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
+        foo = false
+        var ||= begin
+          foo = true
+          bar
+        end
+      RUBY
+    end
+
     def test_void_statements
       assert_warning("foo = 1; foo", "a variable in void")
       assert_warning("@foo", "a variable in void")
@@ -270,6 +457,21 @@ module Prism
       assert_warning("$foo", "a variable in void")
       assert_warning("$+", "a variable in void")
       assert_warning("$1", "a variable in void")
+      assert_warning("foo { _1; 1 }", "a variable in void")
+      assert_warning("foo { it; 1 }", "a variable in void", compare: RUBY_VERSION >= "3.4", version: "3.4")
+      refute_warning("foo { it; 1 }", compare: false, version: "3.3")
+
+      assert_warning("foo = 1; (foo); bar", "a variable in void")
+      assert_warning("foo = 1; begin; foo; end; bar", "a variable in void")
+      assert_warning("foo = 1; begin; (foo); end; bar", "a variable in void")
+      assert_warning("foo = 1; begin; begin; foo; end; end; bar", "a variable in void")
+      assert_warning("foo = 1; (foo)", "a variable in void")
+      assert_warning("foo = 1; begin; foo; end", "a variable in void")
+      # parse.y before 3.4 flattened parentheses fully, so it warns about these.
+      refute_warning("foo = 1; ((foo)); bar", compare: RUBY_VERSION >= "3.4")
+      refute_warning("foo = 1; (bar; foo); bar", compare: RUBY_VERSION >= "3.4")
+      refute_warning("foo = 1; begin; foo; rescue; end; bar")
+      refute_warning("foo = 1; begin; foo; ensure; end; bar")
 
       assert_warning("self", "self in void")
       assert_warning("nil", "nil in void")
@@ -385,19 +587,42 @@ module Prism
     end
 
     def test_warnings_verbosity
-      warning = Prism.parse("def foo; END { }; end").warnings.first
+      warning = Ruby::Prism.parse("def foo; END { }; end").warnings.first
       assert_equal "END in method; use at_exit", warning.message
       assert_equal :default, warning.level
 
-      warning = Prism.parse("foo /regexp/").warnings.first
-      assert_equal "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", warning.message
+      warning = Ruby::Prism.parse("foo +1").warnings.first
+      assert_equal "ambiguous first argument; put parentheses or a space even after `+` operator", warning.message
       assert_equal :verbose, warning.level
+    end
+
+    def test_invalid_character_syntax
+      { "\n" => "\\n", "\r\n" => "\\n", "\t" => "\\t", "\v" => "\\v", "\f" => "\\f", "\r" => "\\r" }.each do |whitespace, name|
+        assert_warning("foo(\"\\C-#{whitespace}\")", "invalid character syntax; use #{name}")
+        assert_warning("foo(\"\\c#{whitespace}\")", "invalid character syntax; use #{name}")
+        assert_warning("foo(\"\\M-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(\"\\M-\\C-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(\"\\C-\\M-#{whitespace}\")", "invalid character syntax; use \\M-#{name}")
+        assert_warning("foo(/\\C-#{whitespace}/)", "invalid character syntax; use #{name}")
+        assert_warning("foo(?\\C-#{whitespace})", "invalid character syntax; use #{name}")
+      end
+    end
+
+    def test_invalid_character_syntax_space
+      assert_warning("foo(\"\\C- \")", "invalid character syntax; use \\C-\\s")
+      assert_warning("foo(\"\\M- \")", "invalid character syntax; use \\M-\\s")
+      assert_warning("foo(\"\\M-\\C- \")", "invalid character syntax; use \\M-\\C-\\s")
+      assert_warning("foo(\"\\C-\\M- \")", "invalid character syntax; use \\C-\\M-\\s")
+    end
+
+    def test_invalid_character_syntax_with_pending_heredoc
+      assert_warning("foo(\"\#{<<A}\\C-\nA\n\")", "invalid character syntax; use \\n")
     end
 
     private
 
     def assert_warning(source, *messages, compare: true, **options)
-      warnings = Prism.parse(source, **options).warnings
+      warnings = Ruby::Prism.parse(source, **options).warnings
       assert_equal messages.length, warnings.length, "Expected #{messages.length} warning(s) in #{source.inspect}, got #{warnings.map(&:message).inspect}"
 
       warnings.zip(messages).each do |warning, message|
@@ -411,7 +636,7 @@ module Prism
     end
 
     def refute_warning(source, compare: true, **options)
-      assert_empty Prism.parse(source, **options).warnings
+      assert_empty Ruby::Prism.parse(source, **options).warnings
 
       if compare && defined?(RubyVM::AbstractSyntaxTree)
         assert_empty capture_stderr { RubyVM::AbstractSyntaxTree.parse(source) }

@@ -1,0 +1,3 @@
+case !f x do end in P in Q; :body; end
+                     ^ expected a delimiter after the patterns of an `in` clause
+

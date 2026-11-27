@@ -2,11 +2,12 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class SnippetsTest < TestCase
     except = [
       "encoding_binary.txt",
       "newline_terminated.txt",
+      "percent_array_newline_delimiter.txt",
       "seattlerb/begin_rescue_else_ensure_no_bodies.txt",
       "seattlerb/case_in.txt",
       "seattlerb/parse_line_defn_no_parens.txt",
@@ -30,12 +31,12 @@ module Prism
       fixture.read.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
         snippet = snippet.rstrip
 
-        result = Prism.parse(snippet, filepath: fixture.path, version: version)
+        result = Ruby::Prism.parse(snippet, filepath: fixture.path, version: version)
         assert result.success?
 
         if !ENV["PRISM_BUILD_MINIMAL"]
-          dumped = Prism.dump(snippet, filepath: fixture.path, version: version)
-          assert_equal_nodes(result.value, Prism.load(snippet, dumped, version: version).value)
+          dumped = Ruby::Prism.dump(snippet, filepath: fixture.path, version: version)
+          assert_equal_nodes(result.value, Ruby::Prism.load(snippet, dumped, version: version).value)
         end
       end
     end

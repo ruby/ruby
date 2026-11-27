@@ -86,6 +86,68 @@ class TestGemUninstaller < Gem::InstallerTestCase
     refute File.exist? executable
   end
 
+  def test_remove_executables_force_remove_missing_bin_dir
+    uninstaller = Gem::Uninstaller.new nil, executables: true
+
+    bin_dir = Gem.bindir(@user_spec.base_dir)
+    FileUtils.rm_rf bin_dir
+    refute File.exist?(bin_dir), "bin dir not removed"
+
+    use_ui @ui do
+      uninstaller.remove_executables @user_spec
+    end
+  end
+
+  def test_remove_executables_missing_bin_dir_does_not_ask
+    uninstaller = Gem::Uninstaller.new nil
+
+    FileUtils.rm_rf Gem.bindir(@user_spec.base_dir)
+
+    ui = Gem::MockGemUi.new "y\n"
+    use_ui ui do
+      uninstaller.remove_executables @user_spec
+    end
+
+    refute_match(/Remove executables/, ui.output)
+  end
+
+  def test_remove_executables_unsearchable_bin_dir
+    pend "chmod not supported" if Gem.win_platform?
+    pend "running as root bypasses the permission check" if Process.uid.zero?
+
+    locked = File.join @tempdir, "locked"
+    FileUtils.mkdir_p File.join(locked, "bin")
+    FileUtils.chmod 0o600, locked
+
+    uninstaller = Gem::Uninstaller.new nil, executables: true, bin_dir: File.join(locked, "bin")
+
+    assert_raise Gem::FilePermissionError do
+      use_ui @ui do
+        uninstaller.remove_executables @user_spec
+      end
+    end
+  ensure
+    FileUtils.chmod 0o755, locked if locked
+  end
+
+  def test_uninstall_user_install_with_missing_bin_dir
+    Gem::Specification.dirs = [Gem.user_dir]
+
+    bin_dir = Gem.bindir(@user_spec.base_dir)
+    FileUtils.rm_rf bin_dir
+    refute File.exist?(bin_dir), "bin dir not removed"
+
+    uninstaller = Gem::Uninstaller.new(@user_spec.name,
+                                       executables: true,
+                                       user_install: true)
+
+    gem_dir = @user_spec.gem_dir
+
+    uninstaller.uninstall
+
+    assert_path_not_exist gem_dir
+  end
+
   def test_remove_executables_user
     uninstaller = Gem::Uninstaller.new nil, executables: true
 
@@ -326,6 +388,34 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_same uninstaller, @post_uninstall_hook_arg
   end
 
+  def test_uninstall_content_addressed_gem_removes_abi_scoped_gemspec
+    _, a_gem = util_gem("ca_gone", 2) do |spec|
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    filename = File.join(File.dirname(a_gem), "ca_gone-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    Gem::Installer.at(filename, force: true).install
+    Gem::Specification.reset
+
+    gemspec = File.join(@gemhome, "specifications", Gem.ruby_abi, "ca_gone-2-#{address}.gemspec")
+    gem_dir = File.join(@gemhome, "gems", "ca_gone-2-#{address}")
+    cache_file = File.join(@gemhome, "cache", "ca_gone-2-#{address}.gem")
+    assert_path_exist gemspec
+    assert_path_exist gem_dir
+    assert_path_exist cache_file
+
+    Gem::Uninstaller.new("ca_gone", executables: true, force: true).uninstall
+
+    assert_path_not_exist gemspec
+    assert_path_not_exist gem_dir
+    assert_path_not_exist cache_file
+  end
+
   def test_uninstall_default_gem
     spec = new_default_spec "default", "2"
 
@@ -391,6 +481,55 @@ create_makefile '#{@spec.name}'
     assert_path_not_exist @spec.extension_dir
   end
 
+  def test_uninstall_removes_build_info_logs
+    @spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+require 'mkmf'
+create_makefile '#{@spec.name}'
+      RUBY
+    end
+
+    @spec.files += %w[extconf.rb]
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      installer = Gem::Installer.at path, force: true
+      installer.install
+    end
+
+    # Build logs left behind in build_info by a previous failed build.
+    FileUtils.mkdir_p @spec.build_info_dir
+    mkmf_log = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+    FileUtils.touch mkmf_log
+    FileUtils.touch gem_make_out
+
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
+    uninstaller.uninstall
+
+    assert_path_not_exist @spec.extension_dir
+    assert_path_not_exist mkmf_log
+    assert_path_not_exist gem_make_out
+  end
+
+  def test_uninstall_removes_build_info_file
+    installer = setup_base_installer
+    installer.build_args = %w[--with-foo-dir /opt/foo]
+
+    use_ui ui do
+      installer.install
+    end
+
+    assert_path_exist @spec.build_info_file, "sanity check"
+
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
+    uninstaller.uninstall
+
+    assert_path_not_exist @spec.build_info_file
+  end
+
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new "bogus", executables: true
 
@@ -449,6 +588,24 @@ create_makefile '#{@spec.name}'
 
     assert_same uninstaller, @pre_uninstall_hook_arg
     assert_same uninstaller, @post_uninstall_hook_arg
+  end
+
+  def test_uninstall_user_install_with_missing_gem_home
+    FileUtils.rm_rf Gem.dir
+
+    Gem::Specification.dirs = [Gem.user_dir]
+
+    uninstaller = Gem::Uninstaller.new(@user_spec.name,
+                                       executables: true,
+                                       user_install: true)
+
+    gem_dir = @user_spec.gem_dir
+
+    assert_path_exist gem_dir
+
+    uninstaller.uninstall
+
+    assert_path_not_exist gem_dir
   end
 
   def test_uninstall_user_install_with_symlinked_home

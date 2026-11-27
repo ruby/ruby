@@ -1,0 +1,125 @@
+name: Upload crash dumps
+description: >-
+  Uploads the core files in the `crashdumps` directory of the workspace,
+  with the executables and shared libraries they mapped under `sysroot`,
+  so that a debugger elsewhere can read them.  A core holds the whole
+  memory of the process, including its environment, so the step that
+  lets processes dump core must not pass secrets such as
+  LAUNCHABLE_TOKEN down to them.  On macOS the kernel writes no core
+  for the ad-hoc signed ruby on arm64, and a core would carry the whole
+  dyld shared cache of about 7GB, so RUBY_ON_BUG has lldb save only the
+  memory the process has modified, up to 50 dumps, and the dSYMs are
+  collected with the binaries.
+
+inputs:
+  name:
+    required: true
+    description: Name of the artifact.
+
+runs:
+  using: composite
+
+  steps:
+    - name: Collect mapped files
+      shell: ruby {0}
+      working-directory: ${{ github.workspace }}/crashdumps
+      run: |
+        require "fileutils"
+
+        # readelf of binutils 2.42 cannot decode NT_FILE, so read it here.
+        def mapped_files(core)
+          File.open(core, "rb") do |f|
+            elf = f.read(64)
+            e = elf.getbyte(5) == 1 ? "<" : ">"
+            size = elf.getbyte(4) == 2 ? 8 : 4
+            word = size == 8 ? "Q#{e}" : "L#{e}"
+            phoff, = elf.unpack("@#{size == 8 ? 32 : 28}#{word}")
+            phentsize, phnum = elf.unpack("@#{size == 8 ? 54 : 42}S#{e}2")
+            phnum.times.flat_map do |i|
+              ph = f.pread(phentsize, phoff + phentsize * i)
+              next [] unless ph.unpack1("L#{e}") == 4 # PT_NOTE
+              offset, len = ph.unpack(size == 8 ? "@8#{word}@32#{word}" : "@4#{word}@16#{word}")
+              notes = f.pread(len, offset)
+              files = []
+              pos = 0
+              while pos < notes.bytesize
+                namesz, descsz, type = notes.unpack("@#{pos}L#{e}3")
+                desc = notes.byteslice(pos + 12 + ((namesz + 3) & ~3), descsz)
+                pos += 12 + ((namesz + 3) & ~3) + ((descsz + 3) & ~3)
+                next unless type == 0x46494c45 # NT_FILE
+                count, = desc.unpack(word)
+                files.concat(desc.byteslice(size * (2 + 3 * count)..).split("\0"))
+              end
+              files
+            end
+          end
+        end
+
+        # lldb records the images it saw loaded in an "all image infos" note.
+        def loaded_images(core)
+          File.open(core, "rb") do |f|
+            ncmds, = f.pread(32, 0).unpack("@16L<")
+            pos = 32
+            ncmds.times.flat_map do
+              cmd, cmdsize, owner, offset = f.pread(32, pos).unpack("L<2Z16Q<")
+              pos += cmdsize
+              next [] unless cmd == 0x31 && owner == "all image infos" # LC_NOTE
+              _, count, entries, entsize = f.pread(20, offset).unpack("L<2Q<L<")
+              count.times.filter_map do |i|
+                name, uuid = f.pread(24, entries + entsize * i).unpack("Q<H32")
+                [f.pread(1024, name)[/[^\0]*/], uuid] unless name == 2**64 - 1
+              end
+            end
+          end
+        end
+
+        cores = Dir.glob("core.*")
+        system("file", *cores)
+        elf, macho = cores.partition {|core| File.binread(core, 4) == "\x7fELF".b}
+        elf.flat_map {|core| mapped_files(core)}.uniq.each do |path|
+          next unless File.file?(path) && File.binread(path, 4) == "\x7fELF".b
+          dir = File.dirname(path)
+          # Debuggers look libraries up by the names the loader opened,
+          # which are the soname links such as libz.so.1.
+          links = Dir.children(dir).select do |name|
+            link = File.join(dir, name)
+            !name.end_with?(".so") && File.symlink?(link) && File.exist?(link) && File.realpath(link) == path
+          end
+          FileUtils.mkdir_p(File.join("sysroot", dir))
+          [File.basename(path), *links].each do |name|
+            FileUtils.cp(path, File.join("sysroot", dir, name))
+          end
+        end
+        # lldb cannot read a core against a sysroot, so write the commands
+        # that load the copies before the core.  `lldb -s core.PID.lldb`
+        # then opens it.  The system libraries are left out, as lldb places
+        # their copies on disk apart from the dyld shared cache.  Homebrew
+        # libraries are copied but not loaded, as lldb crashes in LoadCore
+        # when the reader has another build of one at the same path.
+        macho.each do |core|
+          images = loaded_images(core).select do |path, _|
+            !path.start_with?("/usr/lib/", "/System/") && File.file?(path)
+          end
+          images.each do |path, _|
+            dir = File.join("sysroot", File.dirname(path))
+            next if File.exist?(File.join(dir, File.basename(path)))
+            FileUtils.mkdir_p(dir)
+            FileUtils.cp(path, dir)
+            FileUtils.cp_r("#{path}.dSYM", dir) if File.directory?("#{path}.dSYM")
+          end
+          (exe, _), *libs = images
+          libs.reject! {|path, _| path.start_with?("/opt/homebrew/", "/usr/local/")}
+          File.write("#{core}.lldb", [
+            %(target create --no-dependents "sysroot#{exe}"),
+            *libs.map {|path, uuid| %(target modules add -u #{uuid} "sysroot#{path}")},
+            "script lldb.target.LoadCore(#{core.dump})",
+          ].join("\n") + "\n")
+        end
+
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ github.workspace }}/crashdumps
+        include-hidden-files: true
+        retention-days: 7
+        overwrite: true

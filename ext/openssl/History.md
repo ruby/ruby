@@ -1,3 +1,29 @@
+Version 4.0.2
+=============
+
+Merged changes in 3.2.4 and 3.3.3.
+
+
+Version 4.0.1
+=============
+
+Notable changes
+---------------
+
+* Add `sync_close` keyword argument to `OpenSSL::SSL::SSLSocket.new` as a
+  short-hand for setting `sync_close` attribute on the created `SSLSocket`
+  instance.
+  [[GitHub #955]](https://github.com/ruby/openssl/issues/955)
+  [[GitHub #996]](https://github.com/ruby/openssl/pull/996)
+
+
+Bug fixes
+---------
+
+* Fix uninitialized variables in `OpenSSL::OCSP::BasicResponse#status`.
+  [[GitHub #1004]](https://github.com/ruby/openssl/pull/1004)
+
+
 Version 4.0.0
 =============
 
@@ -81,6 +107,12 @@ Notable changes
 * `OpenSSL::PKCS7.new` raises `OpenSSL::PKCS7::PKCS7Error` instead of
   `ArgumentError` on error to be consistent with other constructors.
   [[GitHub #983]](https://github.com/ruby/openssl/pull/983)
+
+
+Version 3.3.3
+=============
+
+Merged changes in 3.2.4.
 
 
 Version 3.3.2
@@ -169,6 +201,16 @@ Notable changes
 
 And various non-user-visible changes and bug fixes. Please see the commit
 history for more details.
+
+
+Version 3.2.4
+=============
+
+Notable changes
+---------------
+
+* Add support for OpenSSL 4.0.
+  [[GitHub #1051]](https://github.com/ruby/openssl/pull/1051)
 
 
 Version 3.2.3

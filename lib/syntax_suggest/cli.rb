@@ -11,7 +11,7 @@ module SyntaxSuggest
   #   Cli.new(argv: ["<path/to/file>.rb", "--record=tmp"]).call
   #   Cli.new(argv: ["<path/to/file>.rb", "--terminal"]).call
   #
-  class Cli
+  class Cli # :nodoc:
     attr_accessor :options
 
     # ARGV is Everything passed to the executable, does not include executable name

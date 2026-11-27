@@ -1,11 +1,13 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/succ'
 
 describe "String#next" do
-  it_behaves_like :string_succ, :next
+  it "is an alias of String#succ" do
+    String.instance_method(:next).should == String.instance_method(:succ)
+  end
 end
 
 describe "String#next!" do
-  it_behaves_like :string_succ_bang, :"next!"
+  it "is an alias of String#succ!" do
+    String.instance_method(:next!).should == String.instance_method(:succ!)
+  end
 end

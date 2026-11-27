@@ -7,16 +7,16 @@ describe "Array#hash" do
 
     [[], [1, 2, 3]].each do |ary|
       ary.hash.should == ary.dup.hash
-      ary.hash.should be_an_instance_of(Integer)
+      ary.hash.should.instance_of?(Integer)
     end
   end
 
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
-    -> { empty.hash }.should_not raise_error
+    -> { empty.hash }.should_not.raise
 
     array = ArraySpecs.recursive_array
-    -> { array.hash }.should_not raise_error
+    -> { array.hash }.should_not.raise
   end
 
   it "returns the same hash for equal recursive arrays" do
@@ -74,7 +74,7 @@ describe "Array#hash" do
     a.fill 'a', 0..3
     b = %w|a a a a|
     a.hash.should == b.hash
-    a.should eql(b)
+    a.should.eql?(b)
   end
 
   it "produces different hashes for nested arrays with different values and empty terminator" do

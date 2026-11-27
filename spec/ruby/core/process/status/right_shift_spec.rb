@@ -16,13 +16,13 @@ ruby_version_is ""..."4.0" do
       end
     end
 
-    ruby_version_is "3.3"..."4.0" do
+    ruby_version_is ""..."4.0" do
       it "raises an ArgumentError if shift value is negative" do
         suppress_warning do
           ruby_exe("exit(0)")
           -> {
             $? >> -1
-          }.should raise_error(ArgumentError, 'negative shift value: -1')
+          }.should.raise(ArgumentError, 'negative shift value: -1')
         end
       end
 

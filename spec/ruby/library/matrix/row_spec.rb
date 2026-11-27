@@ -21,7 +21,7 @@ describe "Matrix#row" do
   end
 
   it "returns self when called with a block" do
-    @m.row(0) { |x| x }.should equal(@m)
+    @m.row(0) { |x| x }.should.equal?(@m)
   end
 
   it "returns nil when out of bounds" do
@@ -30,7 +30,7 @@ describe "Matrix#row" do
   end
 
   it "never yields when out of bounds" do
-    -> { @m.row(3){ raise } }.should_not raise_error
-    -> { @m.row(-4){ raise } }.should_not raise_error
+    -> { @m.row(3){ raise } }.should_not.raise
+    -> { @m.row(-4){ raise } }.should_not.raise
   end
 end

@@ -27,17 +27,14 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       cmd << "--target-rbconfig=#{target_rbconfig.path}" if target_rbconfig.path
       cmd.push(*args)
 
-      run(cmd, results, class_name, extension_dir) do |s, r|
-        mkmf_log = File.join(extension_dir, "mkmf.log")
-        if File.exist? mkmf_log
-          unless s.success?
-            r << "To see why this extension failed to compile, please check" \
-              " the mkmf.log which can be found here:\n"
-            r << "  " + File.join(dest_path, "mkmf.log") + "\n"
-          end
-          FileUtils.mv mkmf_log, dest_path
-        end
-      end
+      run(cmd, results, class_name, extension_dir)
+
+      # "clean" is the first make target, and mkmf puts mkmf.log in CLEANFILES,
+      # so park the log next to the built extension before make can delete it.
+      # Whether it is then dropped or kept for inspection is decided by
+      # Gem::Ext::Builder#build_extension.
+      mkmf_log = File.join(extension_dir, "mkmf.log")
+      FileUtils.mv mkmf_log, dest_path if File.exist?(mkmf_log)
 
       ENV["DESTDIR"] = nil
 
@@ -66,10 +63,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     end
 
     results
-  rescue Gem::Ext::Builder::NoMakefileError => error
-    results << error.message
-    results << "Skipping make for #{extension} as no Makefile was found."
-    # We are good, do not re-raise the error.
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end

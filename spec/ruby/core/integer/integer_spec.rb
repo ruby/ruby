@@ -6,8 +6,8 @@ describe "Integer" do
   end
 
   it "is the class of both small and large integers" do
-    42.class.should equal(Integer)
-    bignum_value.class.should equal(Integer)
+    42.class.should.equal?(Integer)
+    bignum_value.class.should.equal?(Integer)
   end
 end
 

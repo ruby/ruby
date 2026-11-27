@@ -1,0 +1,201 @@
+name: Update Docker Official Images
+
+# Files (or updates) the docker-library/official-images pull request that points library/ruby
+# at a new Ruby release, once that release has landed on docker-library/ruby's master branch.
+#
+# publish.yml dispatches this right after it dispatches docker-library/ruby's update.yml, which
+# runs update.sh, builds and tests the result, and pushes it to docker-library/ruby's master.
+# This workflow waits for that push, then regenerates library/ruby with docker-library/ruby's own
+# generate-stackbrew-library.sh and proposes it as matzbot.
+#
+# It follows https://github.com/docker-library/faq#can-i-use-a-bot-to-make-my-image-update-prs:
+# one PR at a time, always from the same branch (matzbot:ruby), always based on upstream master,
+# and @-mentioning the humans who look after it. Merging is left to the official-images maintainers.
+#
+# Ruby often releases several versions on the same day, so it waits until no update.yml run is
+# still going; the first run to get there files a PR covering all of them and the rest find
+# nothing left to do. Dispatch it by hand (with any of the released versions) to retry.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Released Ruby version to wait for on docker-library/ruby (e.g. "4.0.9")'
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: 'bash -Eeuo pipefail {0}'
+
+permissions:
+  contents: read
+
+env:
+  DOCKER_RUBY: docker-library/ruby
+  OFFICIAL_IMAGES: docker-library/official-images
+  # matzbot's fork of docker-library/official-images, and the one branch every PR comes from
+  FORK: matzbot/official-images
+  BRANCH: ruby
+  # humans who watch these PRs, so they see review comments and CI failures (FAQ guideline 2)
+  CC: '@k0kubun'
+
+jobs:
+  wait:
+    name: Wait for ${{ inputs.version }} on docker-library/ruby
+    runs-on: ubuntu-latest
+    # update.yml can wait up to 2 hours for www.ruby-lang.org's releases.yml, then builds and tests
+    timeout-minutes: 300
+    outputs:
+      ready: ${{ steps.wait.outputs.ready }}
+    steps:
+      - name: Wait for ${{ inputs.version }} on docker-library/ruby master
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUBY_VERSION: ${{ inputs.version }}
+        run: |
+          # same version-to-key mapping as docker-library/ruby's update.yml
+          if [[ ! "$RUBY_VERSION" =~ ^([1-9][0-9]*)\.([0-9]+)\.([0-9]+)(-(preview|rc)[1-9][0-9]*)?$ ]]; then
+            echo "::error::Invalid Ruby version: $RUBY_VERSION"
+            exit 1
+          fi
+          majorMinor="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          if [ -n "${BASH_REMATCH[4]}" ]; then
+            key="$majorMinor-rc"
+          else
+            key="$majorMinor"
+          fi
+
+          # update.yml runs dispatched for this release (by publish.yml just before this one)
+          since="$(date -u -d '-1 hour' +%Y-%m-%dT%H:%M:%SZ)"
+
+          for (( i = 0; i < 270; i++ )); do
+            # (transient API errors shouldn't end the wait early)
+            versions="$(gh api "repos/$DOCKER_RUBY/contents/versions.json?ref=master" -H 'Accept: application/vnd.github.raw' || echo '{}')"
+            runs="$(gh api -X GET "repos/$DOCKER_RUBY/actions/workflows/update.yml/runs" -f created=">=$since" -F per_page=100 || echo '{}')"
+
+            if [ "$i" = 0 ] && [ "$versions" != '{}' ] && ! jq -e --arg key "$key" 'has($key)' <<<"$versions" > /dev/null; then
+              # update.yml refuses these too: a new release series (X.Y.0-preview1, X.Y.0) is added by hand,
+              # and whoever adds it files the official-images PR
+              echo "::notice::'$key' is not in docker-library/ruby's versions.json yet; new release series are added by hand"
+              echo 'ready=false' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            found="$(jq -r --arg key "$key" '.[$key].version // empty' <<<"$versions")"
+            unfinished="$(jq '[.workflow_runs // [] | .[] | select(.status != "completed")] | length' <<<"$runs")"
+            failed="$(jq -r --arg title "Update $RUBY_VERSION" '[.workflow_runs // [] | .[] | select(.display_title == $title and .status == "completed" and .conclusion != "success") | .html_url] | join(" ")' <<<"$runs")"
+
+            if [ "$found" = "$RUBY_VERSION" ] && [ "$unfinished" = 0 ]; then
+              echo "docker-library/ruby master has $RUBY_VERSION, and no update.yml run is still going"
+              echo 'ready=true' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$found" != "$RUBY_VERSION" ] && [ "$unfinished" = 0 ] && [ -n "$failed" ]; then
+              echo "::error::docker-library/ruby's update.yml did not land $RUBY_VERSION: $failed"
+              exit 1
+            fi
+
+            echo "waiting: master has ${found:-no} $key, $unfinished update.yml run(s) still going"
+            sleep 60
+          done
+          echo "::error::$RUBY_VERSION did not land on docker-library/ruby master (latest $key: ${found:-none})"
+          exit 1
+
+  pull-request:
+    name: File docker-library/official-images PR
+    needs: wait
+    if: needs.wait.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # one at a time; a run that finds a newer one queued behind it is superseded by it
+    concurrency:
+      group: docker-official-images
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: docker-library/ruby
+          ref: master
+          # generate-stackbrew-library.sh looks up the last commit that touched each directory
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: docker-library/bashbrew@24417a4db10736c4f5dbd488097be73e397e7679 # HEAD as of 2026-11-18
+
+      - name: Generate library/ruby
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./generate-stackbrew-library.sh > "$RUNNER_TEMP/ruby"
+          gh api "repos/$OFFICIAL_IMAGES/contents/library/ruby?ref=master" -H 'Accept: application/vnd.github.raw' > "$RUNNER_TEMP/ruby.master"
+          git diff --no-index "$RUNNER_TEMP/ruby.master" "$RUNNER_TEMP/ruby" || :
+
+      - name: File or update the PR
+        env:
+          GH_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
+          RUBY_VERSION: ${{ inputs.version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          generated="$RUNNER_TEMP/ruby"
+          if cmp -s "$RUNNER_TEMP/ruby.master" "$generated"; then
+            echo "docker-library/official-images master is already up to date"
+            exit 0
+          fi
+
+          # someone (matzbot's own earlier run, a docker-library maintainer, a Ruby committer) may already have this open
+          for number in $(gh api -X GET search/issues -f q="repo:$OFFICIAL_IMAGES is:pr is:open in:title \"Update ruby\"" --jq '.items[].number'); do
+            head="$(gh api "repos/$OFFICIAL_IMAGES/pulls/$number" --jq '"\(.head.repo.full_name // "") \(.head.sha)"')"
+            read -r repo sha <<<"$head"
+            [ -n "$repo" ] || continue
+            if gh api "repos/$repo/contents/library/ruby?ref=$sha" -H 'Accept: application/vnd.github.raw' | cmp -s - "$generated"; then
+              echo "https://github.com/$OFFICIAL_IMAGES/pull/$number already proposes exactly this; nothing to do"
+              exit 0
+            fi
+          done
+
+          # "Changes:" list in the same shape docker-library maintainers use: docker-library/ruby commits
+          # since the newest one library/ruby points at, limited to what the manifest builds from
+          oldCommits="$(awk '$1 == "GitCommit:" { print $2 }' "$RUNNER_TEMP/ruby.master" | sort -u)"
+          dirs="$(awk '$1 == "Directory:" { print $2 }' "$RUNNER_TEMP/ruby.master" "$generated" | sort -u)"
+          changes="$(
+            # shellcheck disable=SC2086 # one argument per commit and per directory
+            git log --first-parent --format="- https://github.com/$DOCKER_RUBY/commit/%h: %s" HEAD --not $oldCommits -- generate-stackbrew-library.sh $dirs \
+              | sed -E "s!\(#([0-9]+)\)!(https://github.com/$DOCKER_RUBY/pull/\1)!g"
+          )"
+          body="$(printf 'Changes:\n\n%s\n\nFiled by [ruby/ruby'\''s release workflow](%s) after the Ruby %s release. cc %s\n' "${changes:-"- (no docker-library/ruby commits found; see the diff)"}" "$RUN_URL" "$RUBY_VERSION" "$CC")"
+          echo "$body"
+
+          # one commit on top of upstream master, built through the API so that the PR branch never
+          # points at a commit already in master (GitHub would mark an open PR as merged if it did)
+          gh api -X POST "repos/$FORK/merge-upstream" -f branch=master
+          base="$(gh api "repos/$FORK/git/ref/heads/master" --jq .object.sha)"
+          baseTree="$(gh api "repos/$FORK/git/commits/$base" --jq .tree.sha)"
+          tree="$(
+            jq -n --arg base "$baseTree" --rawfile content "$generated" \
+              '{ base_tree: $base, tree: [ { path: "library/ruby", mode: "100644", type: "blob", content: $content } ] }' \
+              | gh api -X POST "repos/$FORK/git/trees" --input - --jq .sha
+          )"
+          commit="$(
+            jq -n --arg tree "$tree" --arg parent "$base" \
+              '{ message: "Update ruby", tree: $tree, parents: [ $parent ] }' \
+              | gh api -X POST "repos/$FORK/git/commits" --input - --jq .sha
+          )"
+          if gh api "repos/$FORK/git/ref/heads/$BRANCH" > /dev/null 2>&1; then
+            gh api -X PATCH "repos/$FORK/git/refs/heads/$BRANCH" -f sha="$commit" -F force=true > /dev/null
+          else
+            gh api -X POST "repos/$FORK/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$commit" > /dev/null
+          fi
+          echo "pushed $commit to $FORK:$BRANCH"
+
+          number="$(gh api -X GET "repos/$OFFICIAL_IMAGES/pulls" -f head="${FORK%%/*}:$BRANCH" -f state=open --jq '.[0].number // empty')"
+          if [ -n "$number" ]; then
+            gh api -X PATCH "repos/$OFFICIAL_IMAGES/pulls/$number" -f body="$body" > /dev/null
+            echo "updated https://github.com/$OFFICIAL_IMAGES/pull/$number"
+          else
+            url="$(gh api -X POST "repos/$OFFICIAL_IMAGES/pulls" \
+              -f title='Update ruby' -f head="${FORK%%/*}:$BRANCH" -f base=master -f body="$body" -F maintainer_can_modify=true \
+              --jq .html_url)"
+            echo "opened $url"
+          fi

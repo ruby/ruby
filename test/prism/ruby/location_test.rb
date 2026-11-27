@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class LocationTest < TestCase
     def test_join
-      call = Prism.parse_statement("1234 + 567")
+      call = Ruby::Prism.parse_statement("1234 + 567")
       receiver = call.receiver
       argument = call.arguments.arguments.first
 
@@ -18,7 +18,7 @@ module Prism
       end
       assert_equal "Incompatible locations", e.message
 
-      other_argument = Prism.parse_statement("1234 + 567").arguments.arguments.first
+      other_argument = Ruby::Prism.parse_statement("1234 + 567").arguments.arguments.first
 
       e = assert_raise(RuntimeError) do
         other_argument.location.join(receiver.location)
@@ -32,7 +32,7 @@ module Prism
     end
 
     def test_character_offsets
-      program = Prism.parse("😀 + 😀\n😍 ||= 😍").value
+      program = Ruby::Prism.parse("😀 + 😀\n😍 ||= 😍").value
 
       # first 😀
       location = program.statements.body.first.receiver.location
@@ -64,7 +64,7 @@ module Prism
     end
 
     def test_code_units
-      program = Prism.parse("😀 + 😀\n😍 ||= 😍").value
+      program = Ruby::Prism.parse("😀 + 😀\n😍 ||= 😍").value
 
       # first 😀
       location = program.statements.body.first.receiver.location
@@ -73,7 +73,7 @@ module Prism
       assert_equal 0, location.start_code_units_offset(Encoding::UTF_16LE)
       assert_equal 0, location.start_code_units_offset(Encoding::UTF_32LE)
 
-      assert_equal 1, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 4, location.end_code_units_offset(Encoding::UTF_8)
       assert_equal 2, location.end_code_units_offset(Encoding::UTF_16LE)
       assert_equal 1, location.end_code_units_offset(Encoding::UTF_32LE)
 
@@ -81,37 +81,37 @@ module Prism
       assert_equal 0, location.start_code_units_column(Encoding::UTF_16LE)
       assert_equal 0, location.start_code_units_column(Encoding::UTF_32LE)
 
-      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 4, location.end_code_units_column(Encoding::UTF_8)
       assert_equal 2, location.end_code_units_column(Encoding::UTF_16LE)
       assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
 
       # second 😀
       location = program.statements.body.first.arguments.arguments.first.location
 
-      assert_equal 4, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 7, location.start_code_units_offset(Encoding::UTF_8)
       assert_equal 5, location.start_code_units_offset(Encoding::UTF_16LE)
       assert_equal 4, location.start_code_units_offset(Encoding::UTF_32LE)
 
-      assert_equal 5, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 11, location.end_code_units_offset(Encoding::UTF_8)
       assert_equal 7, location.end_code_units_offset(Encoding::UTF_16LE)
       assert_equal 5, location.end_code_units_offset(Encoding::UTF_32LE)
 
-      assert_equal 4, location.start_code_units_column(Encoding::UTF_8)
+      assert_equal 7, location.start_code_units_column(Encoding::UTF_8)
       assert_equal 5, location.start_code_units_column(Encoding::UTF_16LE)
       assert_equal 4, location.start_code_units_column(Encoding::UTF_32LE)
 
-      assert_equal 5, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 11, location.end_code_units_column(Encoding::UTF_8)
       assert_equal 7, location.end_code_units_column(Encoding::UTF_16LE)
       assert_equal 5, location.end_code_units_column(Encoding::UTF_32LE)
 
       # first 😍
       location = program.statements.body.last.name_loc
 
-      assert_equal 6, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 12, location.start_code_units_offset(Encoding::UTF_8)
       assert_equal 8, location.start_code_units_offset(Encoding::UTF_16LE)
       assert_equal 6, location.start_code_units_offset(Encoding::UTF_32LE)
 
-      assert_equal 7, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 16, location.end_code_units_offset(Encoding::UTF_8)
       assert_equal 10, location.end_code_units_offset(Encoding::UTF_16LE)
       assert_equal 7, location.end_code_units_offset(Encoding::UTF_32LE)
 
@@ -119,32 +119,32 @@ module Prism
       assert_equal 0, location.start_code_units_column(Encoding::UTF_16LE)
       assert_equal 0, location.start_code_units_column(Encoding::UTF_32LE)
 
-      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 4, location.end_code_units_column(Encoding::UTF_8)
       assert_equal 2, location.end_code_units_column(Encoding::UTF_16LE)
       assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
 
       # second 😍
       location = program.statements.body.last.value.location
 
-      assert_equal 12, location.start_code_units_offset(Encoding::UTF_8)
+      assert_equal 21, location.start_code_units_offset(Encoding::UTF_8)
       assert_equal 15, location.start_code_units_offset(Encoding::UTF_16LE)
       assert_equal 12, location.start_code_units_offset(Encoding::UTF_32LE)
 
-      assert_equal 13, location.end_code_units_offset(Encoding::UTF_8)
+      assert_equal 25, location.end_code_units_offset(Encoding::UTF_8)
       assert_equal 17, location.end_code_units_offset(Encoding::UTF_16LE)
       assert_equal 13, location.end_code_units_offset(Encoding::UTF_32LE)
 
-      assert_equal 6, location.start_code_units_column(Encoding::UTF_8)
+      assert_equal 9, location.start_code_units_column(Encoding::UTF_8)
       assert_equal 7, location.start_code_units_column(Encoding::UTF_16LE)
       assert_equal 6, location.start_code_units_column(Encoding::UTF_32LE)
 
-      assert_equal 7, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 13, location.end_code_units_column(Encoding::UTF_8)
       assert_equal 9, location.end_code_units_column(Encoding::UTF_16LE)
       assert_equal 7, location.end_code_units_column(Encoding::UTF_32LE)
     end
 
     def test_cached_code_units
-      result = Prism.parse("😀 + 😀\n😍 ||= 😍")
+      result = Ruby::Prism.parse("😀 + 😀\n😍 ||= 😍")
 
       utf8_cache = result.code_units_cache(Encoding::UTF_8)
       utf16_cache = result.code_units_cache(Encoding::UTF_16LE)
@@ -157,7 +157,7 @@ module Prism
       assert_equal 0, location.cached_start_code_units_offset(utf16_cache)
       assert_equal 0, location.cached_start_code_units_offset(utf32_cache)
 
-      assert_equal 1, location.cached_end_code_units_offset(utf8_cache)
+      assert_equal 4, location.cached_end_code_units_offset(utf8_cache)
       assert_equal 2, location.cached_end_code_units_offset(utf16_cache)
       assert_equal 1, location.cached_end_code_units_offset(utf32_cache)
 
@@ -165,32 +165,32 @@ module Prism
       assert_equal 0, location.cached_start_code_units_column(utf16_cache)
       assert_equal 0, location.cached_start_code_units_column(utf32_cache)
 
-      assert_equal 1, location.cached_end_code_units_column(utf8_cache)
+      assert_equal 4, location.cached_end_code_units_column(utf8_cache)
       assert_equal 2, location.cached_end_code_units_column(utf16_cache)
       assert_equal 1, location.cached_end_code_units_column(utf32_cache)
 
       # second 😀
       location = result.value.statements.body.first.arguments.arguments.first.location
 
-      assert_equal 4, location.cached_start_code_units_offset(utf8_cache)
+      assert_equal 7, location.cached_start_code_units_offset(utf8_cache)
       assert_equal 5, location.cached_start_code_units_offset(utf16_cache)
       assert_equal 4, location.cached_start_code_units_offset(utf32_cache)
 
-      assert_equal 5, location.cached_end_code_units_offset(utf8_cache)
+      assert_equal 11, location.cached_end_code_units_offset(utf8_cache)
       assert_equal 7, location.cached_end_code_units_offset(utf16_cache)
       assert_equal 5, location.cached_end_code_units_offset(utf32_cache)
 
-      assert_equal 4, location.cached_start_code_units_column(utf8_cache)
+      assert_equal 7, location.cached_start_code_units_column(utf8_cache)
       assert_equal 5, location.cached_start_code_units_column(utf16_cache)
       assert_equal 4, location.cached_start_code_units_column(utf32_cache)
 
-      assert_equal 5, location.cached_end_code_units_column(utf8_cache)
+      assert_equal 11, location.cached_end_code_units_column(utf8_cache)
       assert_equal 7, location.cached_end_code_units_column(utf16_cache)
       assert_equal 5, location.cached_end_code_units_column(utf32_cache)
     end
 
     def test_code_units_binary_valid_utf8
-      program = Prism.parse(<<~RUBY).value
+      program = Ruby::Prism.parse(<<~RUBY).value
         # -*- encoding: binary -*-
 
         😀 + 😀
@@ -200,13 +200,13 @@ module Prism
       assert_equal "😀".b.to_sym, receiver.name
 
       location = receiver.location
-      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 4, location.end_code_units_column(Encoding::UTF_8)
       assert_equal 2, location.end_code_units_column(Encoding::UTF_16LE)
       assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
     end
 
     def test_code_units_binary_invalid_utf8
-      program = Prism.parse(<<~RUBY).value
+      program = Ruby::Prism.parse(<<~RUBY).value
         # -*- encoding: binary -*-
 
         \x90 + \x90
@@ -222,7 +222,7 @@ module Prism
     end
 
     def test_chop
-      location = Prism.parse("foo").value.location
+      location = Ruby::Prism.parse("foo").value.location
 
       assert_equal "fo", location.chop.slice
       assert_equal "", location.chop.chop.chop.slice
@@ -233,13 +233,13 @@ module Prism
     end
 
     def test_slice_lines
-      method = Prism.parse_statement("\nprivate def foo\nend\n").arguments.arguments.first
+      method = Ruby::Prism.parse_statement("\nprivate def foo\nend\n").arguments.arguments.first
 
       assert_equal "private def foo\nend\n", method.slice_lines
     end
 
     def test_adjoin
-      program = Prism.parse("foo.bar = 1").value
+      program = Ruby::Prism.parse("foo.bar = 1").value
 
       location = program.statements.body.first.message_loc
       adjoined = location.adjoin("=")

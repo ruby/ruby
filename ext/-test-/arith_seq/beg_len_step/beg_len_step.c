@@ -4,11 +4,11 @@ static VALUE
 arith_seq_s_beg_len_step(VALUE mod, VALUE obj, VALUE len, VALUE err)
 {
   VALUE r;
-  long beg, len2, step;
+  rb_len_t beg, len2, step;
 
-  r = rb_arithmetic_sequence_beg_len_step(obj, &beg, &len2, &step, NUM2LONG(len), NUM2INT(err));
+  r = rb_arithmetic_sequence_beg_len_step(obj, &beg, &len2, &step, NUM2LEN(len), NUM2INT(err));
 
-  return rb_ary_new_from_args(4, r, LONG2NUM(beg), LONG2NUM(len2), LONG2NUM(step));
+  return rb_ary_new_from_args(4, r, LEN2NUM(beg), LEN2NUM(len2), LEN2NUM(step));
 }
 
 void

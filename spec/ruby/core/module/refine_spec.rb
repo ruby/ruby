@@ -11,7 +11,7 @@ describe "Module#refine" do
     end
 
     mod.should_not == inner_self
-    inner_self.should be_kind_of(Module)
+    inner_self.should.is_a?(Module)
     inner_self.name.should == nil
   end
 
@@ -43,7 +43,7 @@ describe "Module#refine" do
       end
     end
 
-    inner_self.public_instance_methods.should include(:blah)
+    inner_self.public_instance_methods.should.include?(:blah)
   end
 
   it "returns created anonymous module" do
@@ -63,7 +63,7 @@ describe "Module#refine" do
       Module.new do
         refine {}
       end
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises TypeError if not passed a class" do
@@ -71,7 +71,7 @@ describe "Module#refine" do
       Module.new do
         refine("foo") {}
       end
-    end.should raise_error(TypeError, "wrong argument type String (expected Class or Module)")
+    end.should.raise(TypeError, "wrong argument type String (expected Class or Module)")
   end
 
   it "accepts a module as argument" do
@@ -84,7 +84,7 @@ describe "Module#refine" do
       end
     end
 
-    inner_self.public_instance_methods.should include(:blah)
+    inner_self.public_instance_methods.should.include?(:blah)
   end
 
   it "applies refinements to the module" do
@@ -117,7 +117,7 @@ describe "Module#refine" do
       Module.new do
         refine String
       end
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "applies refinements to calls in the refine block" do
@@ -136,7 +136,7 @@ describe "Module#refine" do
       refine(String) {def foo; "foo"; end}
       -> {
         "hello".foo
-      }.should raise_error(NoMethodError)
+      }.should.raise(NoMethodError)
     end
   end
 
@@ -145,7 +145,7 @@ describe "Module#refine" do
       refine(String) {def foo; 'foo'; end}
     end
 
-    -> {"hello".foo}.should raise_error(NoMethodError)
+    -> {"hello".foo}.should.raise(NoMethodError)
   end
 
   # When defining multiple refinements in the same module,
@@ -209,7 +209,7 @@ describe "Module#refine" do
 
         [1, 2].to_json_format
       end
-    }.should raise_error(NoMethodError)
+    }.should.raise(NoMethodError)
   end
 
   # method lookup:
@@ -518,6 +518,142 @@ describe "Module#refine" do
     end
   end
 
+  context "for #initialize" do
+    ruby_bug "#22501", "4.0"..."4.1" do
+      it "is not honored by Class#new" do
+        klass = Class.new do
+          attr_reader :args
+          def initialize(*args)
+            @args = args
+          end
+        end
+
+        refinement = Module.new do
+          refine klass do
+            def initialize(*args)
+              @args = [:refined]
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new(1, 2)
+        end
+
+        result.args.should == [1, 2]
+      end
+
+      it "is not honored by Class#new when the refined class does not define #initialize" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def initialize
+              raise "refined #initialize should not be called"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new
+        end
+
+        result.should.instance_of?(klass)
+      end
+
+      it "is not honored by Hash.new" do
+        refinement = Module.new do
+          refine Hash do
+            def initialize(*)
+              raise "refined #initialize should not be called"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = Hash.new(42)
+        end
+
+        result.default.should == 42
+      end
+    end
+
+    it "is not honored by Class#new called indirectly" do
+      klass = Class.new do
+        attr_reader :args
+        def initialize(*args)
+          @args = args
+        end
+      end
+
+      refinement = Module.new do
+        refine klass do
+          def initialize(*args)
+            @args = [:refined]
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = klass.send(:new, 1, 2)
+      end
+
+      result.args.should == [1, 2]
+    end
+
+    it "is not honored by String.new" do
+      refinement = Module.new do
+        refine String do
+          def initialize(*)
+            raise "refined #initialize should not be called"
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = String.new("foo", capacity: 10)
+      end
+
+      result.should == "foo"
+    end
+
+    it "is honored when #initialize is called directly" do
+      klass = Class.new do
+        attr_reader :args
+        def initialize(*args)
+          @args = args
+        end
+      end
+
+      refinement = Module.new do
+        refine klass do
+          def initialize(*args)
+            @args = [:refined]
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        obj = klass.allocate
+        obj.send(:initialize, 1, 2)
+        result = obj
+      end
+
+      result.args.should == [:refined]
+    end
+  end
+
   context "when super is called in a refinement" do
     it "looks in the refined class" do
       refined_class = ModuleSpecs.build_refined_class
@@ -596,7 +732,7 @@ describe "Module#refine" do
         using refinement_with_super
         -> {
           refined_class.new.bar
-        }.should raise_error(NoMethodError)
+        }.should.raise(NoMethodError)
       end
     end
   end
@@ -610,7 +746,7 @@ describe "Module#refine" do
       }
       [1,2].orig_count.should == 2
     end
-    -> { [1,2].orig_count }.should raise_error(NoMethodError)
+    -> { [1,2].orig_count }.should.raise(NoMethodError)
   end
 
   it 'and alias_method aliases a method within a refinement module, but not outside it' do
@@ -622,7 +758,7 @@ describe "Module#refine" do
       }
       [1,2].orig_count.should == 2
     end
-    -> { [1,2].orig_count }.should raise_error(NoMethodError)
+    -> { [1,2].orig_count }.should.raise(NoMethodError)
   end
 
   it "and instance_methods returns a list of methods including those of the refined module" do
@@ -704,11 +840,10 @@ describe "Module#refine" do
         end
       end
     end
-    spec = self
-    klass = Class.new { instance_methods.should_not spec.send(:include, :refinement_only_method) }
+    klass = Class.new { instance_methods.should_not.include?(:refinement_only_method) }
     instance = klass.new
-    instance.methods.should_not include :refinement_only_method
+    instance.methods.should_not.include? :refinement_only_method
     instance.respond_to?(:refinement_only_method).should == false
-    -> { instance.method :refinement_only_method }.should raise_error(NameError)
+    -> { instance.method :refinement_only_method }.should.raise(NameError)
   end
 end

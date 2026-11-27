@@ -20,10 +20,10 @@ describe 'BasicSocket#sendmsg_nonblock' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
           -> {
             @client.sendmsg_nonblock('hello')
-          }.should raise_error(SocketSpecs.dest_addr_req_error)
+          }.should.raise(SocketSpecs.dest_addr_req_error)
           -> {
             @client.sendmsg_nonblock('hello', exception: false)
-          }.should raise_error(SocketSpecs.dest_addr_req_error)
+          }.should.raise(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -101,7 +101,7 @@ describe 'BasicSocket#sendmsg_nonblock' do
         it 'raises IO::WaitWritable when the underlying buffer is full' do
           -> {
             10.times { @client.sendmsg_nonblock('hello' * 1_000_000) }
-          }.should raise_error(IO::WaitWritable)
+          }.should.raise(IO::WaitWritable)
         end
 
         it 'returns :wait_writable when the underlying buffer is full with exception: false' do

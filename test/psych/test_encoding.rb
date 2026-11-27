@@ -119,6 +119,7 @@ module Psych
     end
 
     def test_emit_alias
+      omit 'libfyaml rejects non-ASCII aliases with a different error' if libfyaml?
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
       @emitter.start_stream Psych::Parser::UTF8
@@ -141,6 +142,7 @@ module Psych
     end
 
     def test_start_mapping
+      omit 'libfyaml rejects the non-ASCII tag as an invalid tag' if libfyaml?
       foo = 'foo'
       bar = 'バー'
 
@@ -161,6 +163,7 @@ module Psych
     end
 
     def test_start_sequence
+      omit 'libfyaml rejects the non-ASCII tag as an invalid tag' if libfyaml?
       foo = 'foo'
       bar = 'バー'
 
@@ -181,6 +184,7 @@ module Psych
     end
 
     def test_doc_tag_encoding
+      omit 'libfyaml rejects the non-ASCII tag directive prefix' if libfyaml?
       key = '鍵'
       @emitter.start_stream Psych::Parser::UTF8
       @emitter.start_document(

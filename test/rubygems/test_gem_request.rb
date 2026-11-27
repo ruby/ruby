@@ -8,13 +8,6 @@ unless Gem::HAVE_OPENSSL
 end
 
 class TestGemRequest < Gem::TestCase
-  CA_CERT_FILE     = cert_path "ca"
-  CHILD_CERT       = load_cert "child"
-  EXPIRED_CERT     = load_cert "expired"
-  PUBLIC_CERT      = load_cert "public"
-  PUBLIC_CERT_FILE = cert_path "public"
-  SSL_CERT         = load_cert "ssl"
-
   def make_request(uri, request_class, last_modified, proxy)
     Gem::Request.create_with_proxy uri, request_class, last_modified, proxy
   end

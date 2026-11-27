@@ -16,7 +16,7 @@ describe "ARGF.readpartial" do
 
   it "raises an ArgumentError if called without a maximum read length" do
     argf [@file1_name] do
-      -> { @argf.readpartial }.should raise_error(ArgumentError)
+      -> { @argf.readpartial }.should.raise(ArgumentError)
     end
   end
 
@@ -59,8 +59,8 @@ describe "ARGF.readpartial" do
       @argf.readpartial(@file1.size)
       @argf.readpartial(1)
       @argf.readpartial(@file2.size)
-      -> { @argf.readpartial(1) }.should raise_error(EOFError)
-      -> { @argf.readpartial(1) }.should raise_error(EOFError)
+      -> { @argf.readpartial(1) }.should.raise(EOFError)
+      -> { @argf.readpartial(1) }.should.raise(EOFError)
     end
   end
 

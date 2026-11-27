@@ -11,7 +11,7 @@ ruby_version_is "3.4" do
 
       it "returns nil when the nth match isn't found" do
         match_data = /something is( not)? (right)/.match("something is right")
-        match_data.bytebegin(1).should be_nil
+        match_data.bytebegin(1).should == nil
       end
 
       it "returns the byte-based offset for multi-byte strings" do
@@ -41,11 +41,11 @@ ruby_version_is "3.4" do
 
         -> {
           match_data.bytebegin(-1)
-        }.should raise_error(IndexError, "index -1 out of matches")
+        }.should.raise(IndexError, "index -1 out of matches")
 
         -> {
           match_data.bytebegin(3)
-        }.should raise_error(IndexError, "index 3 out of matches")
+        }.should.raise(IndexError, "index 3 out of matches")
       end
     end
 
@@ -85,7 +85,7 @@ ruby_version_is "3.4" do
 
         -> {
           match_data.bytebegin("y")
-        }.should raise_error(IndexError, "undefined group name reference: y")
+        }.should.raise(IndexError, "undefined group name reference: y")
       end
     end
 
@@ -125,7 +125,7 @@ ruby_version_is "3.4" do
 
         -> {
           match_data.bytebegin(:y)
-        }.should raise_error(IndexError, "undefined group name reference: y")
+        }.should.raise(IndexError, "undefined group name reference: y")
       end
     end
   end

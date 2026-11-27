@@ -15,35 +15,35 @@ describe "Enumerable#none?" do
   end
 
   it "raises an ArgumentError when more than 1 argument is provided" do
-    -> { @enum.none?(1, 2, 3) }.should raise_error(ArgumentError)
-    -> { [].none?(1, 2, 3) }.should raise_error(ArgumentError)
-    -> { {}.none?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { @enum.none?(1, 2, 3) }.should.raise(ArgumentError)
+    -> { [].none?(1, 2, 3) }.should.raise(ArgumentError)
+    -> { {}.none?(1, 2, 3) }.should.raise(ArgumentError)
   end
 
   it "does not hide exceptions out of #each" do
     -> {
       EnumerableSpecs::ThrowingEach.new.none?
-    }.should raise_error(RuntimeError)
+    }.should.raise(RuntimeError)
 
     -> {
       EnumerableSpecs::ThrowingEach.new.none? { false }
-    }.should raise_error(RuntimeError)
+    }.should.raise(RuntimeError)
   end
 
   describe "with no block" do
     it "returns true if none of the elements in self are true" do
       e = EnumerableSpecs::Numerous.new(false, nil, false)
-      e.none?.should be_true
+      e.none?.should == true
     end
 
     it "returns false if at least one of the elements in self are true" do
       e = EnumerableSpecs::Numerous.new(false, nil, true, false)
-      e.none?.should be_false
+      e.none?.should == false
     end
 
     it "gathers whole arrays as elements when each yields multiple" do
       multi = EnumerableSpecs::YieldsMultiWithFalse.new
-      multi.none?.should be_false
+      multi.none?.should == false
     end
   end
 
@@ -65,17 +65,17 @@ describe "Enumerable#none?" do
     end
 
     it "returns true if the block never returns true" do
-      @e.none? {|e| false }.should be_true
+      @e.none? {|e| false }.should == true
     end
 
     it "returns false if the block ever returns true" do
-      @e.none? {|e| e == 3 ? true : false }.should be_false
+      @e.none? {|e| e == 3 ? true : false }.should == false
     end
 
     it "does not hide exceptions out of the block" do
       -> {
         @enum.none? { raise "from block" }
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
 
     it "gathers initial args as elements when each yields multiple" do
@@ -94,7 +94,7 @@ describe "Enumerable#none?" do
   end
 
   describe 'when given a pattern argument' do
-    it "calls `===` on the pattern the return value " do
+    it "calls `===` on the pattern the return value" do
       pattern = EnumerableSpecs::Pattern.new { |x| x == 3 }
       @enum1.none?(pattern).should == true
       pattern.yielded.should == [[0], [1], [2], [-1]]
@@ -109,7 +109,7 @@ describe "Enumerable#none?" do
     it "does not hide exceptions out of #each" do
       -> {
         EnumerableSpecs::ThrowingEach.new.none?(Integer)
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
 
     it "returns true if the pattern never returns a truthy value" do
@@ -134,7 +134,7 @@ describe "Enumerable#none?" do
       pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
       -> {
         @enum.none?(pattern)
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
 
     it "calls the pattern with gathered array when yielded with multiple arguments" do

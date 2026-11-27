@@ -20,6 +20,7 @@
 #include "internal/array.h"
 #include "internal/class.h"
 #include "internal/complex.h"
+#include "internal/error.h"
 #include "internal/math.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
@@ -39,7 +40,6 @@ static VALUE RFLOAT_0;
 VALUE rb_cComplex;
 
 static ID id_abs, id_arg,
-    id_denominator, id_numerator,
     id_real_p, id_i_real, id_i_imag,
     id_finite_p, id_infinite_p, id_rationalize,
     id_PI;
@@ -50,20 +50,6 @@ static ID id_abs, id_arg,
 #define id_to_f idTo_f
 #define id_quo idQuo
 #define id_fdiv idFdiv
-
-#define fun1(n) \
-inline static VALUE \
-f_##n(VALUE x)\
-{\
-    return rb_funcall(x, id_##n, 0);\
-}
-
-#define fun2(n) \
-inline static VALUE \
-f_##n(VALUE x, VALUE y)\
-{\
-    return rb_funcall(x, id_##n, 1, y);\
-}
 
 #define PRESERVE_SIGNEDZERO
 
@@ -275,8 +261,6 @@ f_to_f(VALUE x)
     return rb_funcall(x, id_to_f, 0);
 }
 
-fun1(to_r)
-
 inline static int
 f_eqeq_p(VALUE x, VALUE y)
 {
@@ -287,8 +271,18 @@ f_eqeq_p(VALUE x, VALUE y)
     return (int)rb_equal(x, y);
 }
 
-fun2(expt)
-fun2(fdiv)
+static VALUE
+f_fdiv(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_fdiv(x, y);
+    if (RB_FLOAT_TYPE_P(x))
+        return rb_float_div(x, y);
+    if (RB_TYPE_P(x, T_RATIONAL))
+        return rb_rational_fdiv(x, y);
+
+    return rb_funcallv(x, id_fdiv, 1, &y);
+}
 
 static VALUE
 f_quo(VALUE x, VALUE y)
@@ -316,24 +310,6 @@ f_negative_p(VALUE x)
 }
 
 #define f_positive_p(x) (!f_negative_p(x))
-
-inline static bool
-f_zero_p(VALUE x)
-{
-    if (RB_FLOAT_TYPE_P(x)) {
-        return FLOAT_ZERO_P(x);
-    }
-    else if (RB_INTEGER_TYPE_P(x)) {
-        return FIXNUM_ZERO_P(x);
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-        const VALUE num = RRATIONAL(x)->num;
-        return FIXNUM_ZERO_P(num);
-    }
-    return rb_equal(x, ZERO) != 0;
-}
-
-#define f_nonzero_p(x) (!f_zero_p(x))
 
 static inline bool
 always_finite_type_p(VALUE x)
@@ -392,8 +368,7 @@ k_numeric_p(VALUE x)
 inline static VALUE
 nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 {
-    NEWOBJ_OF(obj, struct RComplex, klass,
-            T_COMPLEX | (RGENGC_WB_PROTECTED_COMPLEX ? FL_WB_PROTECTED : 0), sizeof(struct RComplex), 0);
+    NEWOBJ_OF(obj, struct RComplex, klass, T_COMPLEX, sizeof(struct RComplex));
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
@@ -787,7 +762,7 @@ rb_complex_real(VALUE self)
  * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
  * is computed, and may be inexact:
  *
- *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865476 # Square root of 2.
+ *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865475
  *
  */
 VALUE
@@ -1215,21 +1190,20 @@ rb_complex_pow(VALUE self, VALUE other)
         if (RB_BIGNUM_TYPE_P(other))
             rb_warn("in a**b, b may be too big");
 
-        r = f_abs(self);
-        theta = f_arg(self);
+        r = rb_num_pow(f_abs(self), other);
+        theta = f_mul(f_arg(self), other);
 
-        return f_complex_polar(CLASS_OF(self), f_expt(r, other),
-                               f_mul(theta, other));
+        return f_complex_polar(CLASS_OF(self), r, theta);
     }
     return rb_num_coerce_bin(self, other, id_expt);
 }
 
 /*
  * call-seq:
- *   complex == object -> true or false
+ *   self == other -> true or false
  *
- * Returns +true+ if <tt>self.real == object.real</tt>
- * and <tt>self.imag == object.imag</tt>:
+ * Returns whether both <tt>self.real == other.real</tt>
+ * and <tt>self.imag == other.imag</tt>:
  *
  *   Complex.rect(2, 3)  == Complex.rect(2.0, 3.0) # => true
  *
@@ -1754,7 +1728,7 @@ nucomp_marshal_load(VALUE self, VALUE a)
 {
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
-        rb_raise(rb_eArgError, "marshaled complex must have an array whose length is 2 but %ld", RARRAY_LEN(a));
+        rb_raise(rb_eArgError, "marshaled complex must have an array whose length is 2 but %"PRIdLEN, RARRAY_LEN(a));
     rb_ivar_set(self, id_i_real, RARRAY_AREF(a, 0));
     rb_ivar_set(self, id_i_imag, RARRAY_AREF(a, 1));
     return self;
@@ -1803,7 +1777,7 @@ rb_dbl_complex_new(double real, double imag)
  *   Complex.rect(1, Rational(0, 1)).to_i # => 1
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, n)</tt>).
  */
 static VALUE
 nucomp_to_i(VALUE self)
@@ -1827,7 +1801,7 @@ nucomp_to_i(VALUE self)
  *   Complex.rect(1, Rational(0, 1)).to_f # => 1.0
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, n)</tt>).
  */
 static VALUE
 nucomp_to_f(VALUE self)
@@ -1852,7 +1826,7 @@ nucomp_to_f(VALUE self)
  *   Complex.rect(1, 0.0).to_r            # => (1/1)
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>)
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, n)</tt>)
  * and <tt>self.imag.to_r</tt> is not exactly zero.
  *
  * Related: Complex#rationalize.
@@ -1872,7 +1846,7 @@ nucomp_to_r(VALUE self)
                      self);
         }
     }
-    return f_to_r(dat->real);
+    return rb_funcallv(dat->real, id_to_r, 0, 0);
 }
 
 /*
@@ -2411,7 +2385,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 {
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
-        rb_raise(rb_eTypeError, "can't convert nil into Complex");
+        rb_cant_convert(Qnil, "Complex");
     }
 
     if (RB_TYPE_P(a1, T_STRING)) {
@@ -2645,9 +2619,9 @@ float_arg(VALUE self)
  * First, what's elsewhere:
  *
  * - Class \Complex inherits (directly or indirectly)
- *   from classes {Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *   and {Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ *   from classes {Numeric}[rdoc-ref:Numeric@Whats-Here]
+ *   and {Object}[rdoc-ref:Object@Whats-Here].
+ * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@Whats-Here].
  *
  * Here, class \Complex has methods for:
  *
@@ -2721,8 +2695,6 @@ Init_Complex(void)
     VALUE compat;
     id_abs = rb_intern_const("abs");
     id_arg = rb_intern_const("arg");
-    id_denominator = rb_intern_const("denominator");
-    id_numerator = rb_intern_const("numerator");
     id_real_p = rb_intern_const("real?");
     id_i_real = rb_intern_const("@real");
     id_i_imag = rb_intern_const("@image"); /* @image, not @imag */

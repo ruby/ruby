@@ -15,30 +15,30 @@ describe "Array#compact" do
 
   it "does not return self" do
     a = [1, 2, 3]
-    a.compact.should_not equal(a)
+    a.compact.should_not.equal?(a)
   end
 
   it "does not return subclass instance for Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3, nil].compact.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3, nil].compact.should.instance_of?(Array)
   end
 end
 
 describe "Array#compact!" do
   it "removes all nil elements" do
     a = ['a', nil, 'b', false, 'c']
-    a.compact!.should equal(a)
+    a.compact!.should.equal?(a)
     a.should == ["a", "b", false, "c"]
     a = [nil, 'a', 'b', false, 'c']
-    a.compact!.should equal(a)
+    a.compact!.should.equal?(a)
     a.should == ["a", "b", false, "c"]
     a = ['a', 'b', false, 'c', nil]
-    a.compact!.should equal(a)
+    a.compact!.should.equal?(a)
     a.should == ["a", "b", false, "c"]
   end
 
   it "returns self if some nil elements are removed" do
     a = ['a', nil, 'b', false, 'c']
-    a.compact!.should equal a
+    a.compact!.should.equal? a
   end
 
   it "returns nil if there are no nil elements to remove" do
@@ -46,6 +46,6 @@ describe "Array#compact!" do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array.compact! }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.compact! }.should.raise(FrozenError)
   end
 end

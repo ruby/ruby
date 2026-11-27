@@ -5,6 +5,6 @@ describe :weakmap_each, shared: true do
     ref = "x"
     map.send(@method).should == map
     map[key] = ref
-    -> { map.send(@method) }.should raise_error(LocalJumpError)
+    -> { map.send(@method) }.should.raise(LocalJumpError)
   end
 end

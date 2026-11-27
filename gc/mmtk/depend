@@ -1,11 +1,24 @@
 $(TARGET_SO): $(MMTK_BUILD)/$(LIBMMTK_RUBY)
 
-# Add the `libmmtk_ruby.a` target to run `cargo build`
+$(OBJS): Makefile
 
-release/$(LIBMMTK_RUBY) debug/$(LIBMMTK_RUBY): $(RUSTSRCS) $(srcdir)/Cargo.toml $(srcdir)/Cargo.toml
+# A raised LLVM inline threshold for the Rust GC code: this is what fuses the
+# per-object marking pipeline (work packet loop, closure trampoline, type fast
+# paths, mark enqueue) into straight-line code.  Without it the fast paths in
+# scanning.rs stay behind real calls and the win evaporates.
+#
+# The flag must reach rustc either via the target-scoped RUSTFLAGS in
+# MMTK_CARGO_ENV (LTO builds, see extconf.rb) or via plain RUSTFLAGS.  Never
+# set both: plain RUSTFLAGS has higher precedence in Cargo and would clobber
+# the target-scoped flags.
+MMTK_INLINE_THRESHOLD = 5000
+MMTK_THRESHOLD_RUSTFLAGS = -Cllvm-args=-inline-threshold=$(MMTK_INLINE_THRESHOLD)
+
+release/$(LIBMMTK_RUBY) debug/$(LIBMMTK_RUBY): $(RUSTSRCS) $(srcdir)/Cargo.toml $(srcdir)/Cargo.lock Makefile
 
 release/$(LIBMMTK_RUBY):
-	CARGO_TARGET_DIR="." cargo build --manifest-path=$(srcdir)/Cargo.toml --release
+	CARGO_TARGET_DIR="." $(if $(MMTK_CARGO_ENV),,RUSTFLAGS="$(RUSTFLAGS) $(MMTK_THRESHOLD_RUSTFLAGS)") $(MMTK_CARGO_ENV) cargo build --manifest-path=$(srcdir)/Cargo.toml --release $(MMTK_CARGO_FLAGS)
+	$(MMTK_CARGO_FIXUP)
 
 debug/$(LIBMMTK_RUBY):
 	CARGO_TARGET_DIR="." cargo build --manifest-path=$(srcdir)/Cargo.toml
@@ -14,5 +27,5 @@ clean: clean-mmtk
 
 .PHONY: clean-mmtk
 clean-mmtk:
-	-$(Q)$(RM_RF) debug release
+	-$(Q)$(RM_RF) debug release $(MMTK_CLEAN_DIRS)
 	-$(Q)$(RM) .rustc_info.json

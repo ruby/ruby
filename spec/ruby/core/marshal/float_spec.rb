@@ -40,7 +40,7 @@ end
 
 describe "Marshal.load with Float" do
   it "loads NaN" do
-    Marshal.load("\004\bf\bnan").should be_nan
+    Marshal.load("\004\bf\bnan").should.nan?
   end
 
   it "loads +Infinity" do

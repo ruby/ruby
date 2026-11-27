@@ -1,0 +1,25 @@
+for *x in ary; work; end
+
+for * in ary; work; end
+
+for *x[k] in ary; work; end
+
+for *obj&.attr[k] in ary; work; end
+
+for obj::x in ary; work; end
+
+for obj::x, y in ary; work; end
+
+for r::if in xs; work; end
+
+for obj[(break if done)] in ary; work; end
+
+loop { for obj in (break if done); work; end }
+
+for obj[(next if done)] in ary; work; end
+
+loop { for obj in (next if done); work; end }
+
+for obj[(redo if done)] in ary; work; end
+
+loop { for obj in (redo if done); work; end }

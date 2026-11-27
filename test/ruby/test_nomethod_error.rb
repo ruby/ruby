@@ -78,7 +78,7 @@ class TestNoMethodError < Test::Unit::TestCase
     assert_equal :foo, error.name
     assert_equal [1, 2], error.args
     assert_equal receiver, error.receiver
-    assert error.private_call?, "private_call? was false."
+    assert_predicate error, :private_call?
   end
 
   def test_message_encoding

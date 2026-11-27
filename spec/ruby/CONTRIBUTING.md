@@ -55,6 +55,11 @@ which indicates the file was generated but the method unspecified.
 Here is a list of frequently-used matchers, which should be enough for most specs.
 There are a few extra specific matchers used in the couple specs that need it.
 
+The general idea is: add `.should` just before the predicate you expect to be truthy, and done!
+This works for most needs and provides a great error when it fails.
+It's immediately clear which method is used and there no need to remember a mapping like in RSpec between e.g. `eq` and `==`.
+See [this blog post](https://eregon.me/blog/2019/10/07/a-new-should-syntax.html) for the motivation behind that syntax.
+
 #### Comparison matchers
 
 ```ruby
@@ -83,43 +88,37 @@ File.should.equal?(File) # Calls #equal? (tests identity)
 
 (0.1 + 0.2).should be_close(0.3, TOLERANCE) # (0.2-0.1).abs < TOLERANCE
 (0.0/0.0).should.nan?
-(1.0/0.0).should be_positive_infinity
-(-1.0/0.0).should be_negative_infinity
 
-3.14.should be_an_instance_of(Float) # Calls #instance_of?
-3.14.should be_kind_of(Numeric) # Calls #is_a?
-Numeric.should be_ancestor_of(Float) # Float.ancestors.include?(Numeric)
+3.14.should.instance_of?(Float) # Calls #instance_of?
+3.14.should.is_a?(Numeric) # Calls #is_a?
 
 3.14.should.respond_to?(:to_i)
-Integer.should have_instance_method(:+)
-Array.should have_method(:new)
+Integer.should.method_defined?(:+, false)
 ```
-
-Also `have_constant`, `have_private_instance_method`, `have_singleton_method`, etc.
 
 #### Exception matchers
 
 ```ruby
 -> {
   raise "oops"
-}.should raise_error(RuntimeError, /oops/)
+}.should.raise(RuntimeError, /oops/)
 
 -> {
   raise "oops"
-}.should raise_error(RuntimeError) { |e|
+}.should.raise(RuntimeError) { |e|
   # Custom checks on the Exception object
   e.message.should.include?("oops")
   e.cause.should == nil
 }
 ```
 
-##### `should_not raise_error`
+##### `should_not.raise`
 
 **Avoid this!** Instead, use an expectation testing what the code in the lambda does.
 If an exception is raised, it will fail the example anyway.
 
 ```ruby
--> { ... }.should_not raise_error
+-> { ... }.should_not.raise
 ```
 
 #### Warning matcher
@@ -230,7 +229,7 @@ to avoid duplication of specs, we have shared specs that are re-used in other sp
 bit tricky however, so let's go over it.
 
 Commonly, if a shared spec is only reused within its own module, the shared spec will live within a
-shared directory inside that module's directory. For example, the `core/hash/shared/key.rb` spec is
+shared directory inside that module's directory. For example, the `core/hash/shared/iteration.rb` spec is
 only used by `Hash` specs, and so it lives inside `core/hash/shared/`.
 
 When a shared spec is used across multiple modules or classes, it lives within the `shared/` directory.
@@ -244,25 +243,25 @@ variables from the implementor spec: `@method` and `@object`, which the implemen
 Here's an example of a snippet of a shared spec and two specs which integrates it:
 
 ```ruby
-# core/hash/shared/key.rb
-describe :hash_key_p, shared: true do
-  it "returns true if the key's matching value was false" do
-    { xyz: false }.send(@method, :xyz).should == true
+# core/hash/shared/iteration.rb
+describe :hash_iteration_no_block, shared: true do
+  it "returns an Enumerator if called on a non-empty hash without a block" do
+    { 1 => 2 }.send(@method).should.instance_of?(Enumerator)
   end
 end
 
-# core/hash/key_spec.rb
-describe "Hash#key?" do
-  it_behaves_like :hash_key_p, :key?
+# core/hash/select_spec.rb
+describe "Hash#select" do
+  it_behaves_like :hash_iteration_no_block, :select
 end
 
-# core/hash/include_spec.rb
-describe "Hash#include?" do
-  it_behaves_like :hash_key_p, :include?
+# core/hash/reject_spec.rb
+describe "Hash#reject" do
+  it_behaves_like :hash_iteration_no_block, :reject
 end
 ```
 
-In the example, the first `describe` defines the shared spec `:hash_key_p`, which defines a spec that
+In the example, the first `describe` defines the shared spec `:hash_iteration_no_block`, which defines a spec that
 calls the `@method` method with an expectation. In the implementor spec, we use `it_behaves_like` to
 integrate the shared spec. `it_behaves_like` takes 3 parameters: the key of the shared spec, a method,
 and an object. These last two parameters are accessible via `@method` and `@object` in the shared spec.
@@ -274,7 +273,7 @@ how this is used currently:
 ```ruby
 describe :kernel_sprintf, shared: true do
   it "raises TypeError exception if cannot convert to Integer" do
-    -> { @method.call("%b", Object.new) }.should raise_error(TypeError)
+    -> { @method.call("%b", Object.new) }.should.raise(TypeError)
   end
 end
 

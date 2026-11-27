@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
 
-ruby_version_is "4.0" do
+ruby_version_is "4.0"..."4.1" do
   describe "ObjectSpace._id2ref" do
     it "is deprecated" do
       id = nil.object_id
@@ -59,7 +59,7 @@ ruby_version_is ""..."4.0" do
     end
 
     it 'raises RangeError when an object could not be found' do
-      proc { ObjectSpace._id2ref(1 << 60) }.should raise_error(RangeError)
+      proc { ObjectSpace._id2ref(1 << 60) }.should.raise(RangeError)
     end
   end
 end

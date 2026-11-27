@@ -1,8 +1,9 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.euid" do
   it "returns the effective user ID for this process" do
-    Process.euid.should be_kind_of(Integer)
+    Process.euid.should.is_a?(Integer)
   end
 
   it "also goes by Process::UID.eid" do
@@ -18,7 +19,7 @@ describe "Process.euid=" do
 
   platform_is_not :windows do
     it "raises TypeError if not passed an Integer" do
-      -> { Process.euid = Object.new }.should raise_error(TypeError)
+      -> { Process.euid = Object.new }.should.raise(TypeError)
     end
 
     it "sets the effective user id to its own uid if given the username corresponding to its own uid" do
@@ -33,11 +34,13 @@ describe "Process.euid=" do
 
     as_user do
       it "raises Errno::ERPERM if run by a non superuser trying to set the superuser id" do
-        -> { Process.euid = 0 }.should raise_error(Errno::EPERM)
+        skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
+        -> { Process.euid = 0 }.should.raise(Errno::EPERM)
       end
 
       it "raises Errno::ERPERM if run by a non superuser trying to set the superuser id from username" do
-        -> { Process.euid = "root" }.should raise_error(Errno::EPERM)
+        skip "Codex sandbox returns EINVAL instead of EPERM for uid/gid permission changes" if ProcessSpecs.codex_sandbox?
+        -> { Process.euid = "root" }.should.raise(Errno::EPERM)
       end
     end
 

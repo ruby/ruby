@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Mutex#lock" do
   it "returns self" do
@@ -20,11 +21,141 @@ describe "Mutex#lock" do
 
   # Unable to find a specific ticket but behavior change may be
   # related to this ML thread.
-  it "raises a ThreadError when used recursively" do
+  it "raises a deadlock ThreadError when used recursively" do
     m = Mutex.new
     m.lock
     -> {
       m.lock
-    }.should raise_error(ThreadError)
+    }.should.raise(ThreadError, /deadlock/)
+  end
+
+  it "raises a deadlock ThreadError when multiple fibers from the same thread try to lock" do
+    m = Mutex.new
+
+    m.lock
+    f0 = Fiber.new do
+      m.lock
+    end
+    -> { f0.resume }.should.raise(ThreadError, /deadlock/)
+
+    m.unlock
+    f1 = Fiber.new do
+      m.lock
+      Fiber.yield
+    end
+    f2 = Fiber.new do
+      m.lock
+    end
+    f1.resume
+    -> { f2.resume }.should.raise(ThreadError, /deadlock/)
+  end
+
+  it "does not raise deadlock if a fiber's attempt to lock was interrupted" do
+    lock = Mutex.new
+    main = Thread.current
+
+    t2 = nil
+    t1 = Thread.new do
+      loop do
+        # interrupt fiber below looping on synchronize
+        sleep 0.01
+        t2.raise if t2
+      end
+    end
+
+    # loop ten times to try to handle the interrupt during synchronize
+    t2 = Thread.new do
+      10.times do
+        Fiber.new do
+          begin
+            loop { lock.synchronize {} }
+          rescue RuntimeError
+          end
+        end.resume
+
+        Fiber.new do
+          -> do
+            lock.synchronize {}
+          end.should_not.raise(ThreadError)
+        end.resume
+      rescue RuntimeError
+        retry
+      end
+    end
+    t2.join
+  ensure
+    t1.kill rescue nil
+    t2.kill rescue nil
+
+    t1.join
+    t2.join
+  end
+end
+
+describe "Mutex#lock with a Fiber scheduler" do
+  before :each do
+    @scheduler = MutexSpecs::UnblockScheduler.new
+  end
+
+  after :each do
+    Fiber.set_scheduler(nil)
+  end
+
+  it "unblocks a waiting fiber when the thread holding the lock dies" do
+    m = Mutex.new
+    locked = Thread::Queue.new
+    finish = Thread::Queue.new
+    holder = Thread.new do
+      m.lock
+      locked << true
+      finish.pop
+    end
+    locked.pop
+
+    Fiber.set_scheduler(@scheduler)
+    waiter = Fiber.new(blocking: false) do
+      m.lock
+      :locked
+    end
+    waiter.resume
+
+    finish << true
+    holder.join
+
+    @scheduler.unblocked.pop.should.equal?(waiter)
+    waiter.resume.should == :locked
+  end
+
+  it "releases every lock of a dying thread when the scheduler locks a mutex in unblock" do
+    scheduler_lock = Mutex.new
+    @scheduler.define_singleton_method(:unblock) do |blocker, fiber|
+      scheduler_lock.synchronize { super(blocker, fiber) }
+    end
+
+    m1 = Mutex.new
+    m2 = Mutex.new
+    locked = Thread::Queue.new
+    finish = Thread::Queue.new
+    holder = Thread.new do
+      m1.lock
+      m2.lock
+      locked << true
+      finish.pop
+    end
+    locked.pop
+
+    Fiber.set_scheduler(@scheduler)
+    waiter = Fiber.new(blocking: false) do
+      m1.lock
+      :locked
+    end
+    waiter.resume
+
+    finish << true
+    holder.join
+
+    m2.locked?.should == false
+    @scheduler.unblocked.pop.should.equal?(waiter)
+    waiter.resume.should == :locked
   end
 end

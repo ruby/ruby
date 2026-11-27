@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-require "prism"
+require "ruby/prism"
 require "pp"
-require "ripper"
 require "stringio"
 require "test/unit"
 require "tempfile"
 
-puts "Using prism backend: #{Prism::BACKEND}" if ENV["PRISM_FFI_BACKEND"]
+puts "Using prism backend: #{Ruby::Prism::BACKEND}" if ENV["PRISM_FFI_BACKEND"]
 
 # It is useful to have a diff even if the strings to compare are big
 # However, ruby/ruby does not have a version of Test::Unit with access to
@@ -16,9 +15,9 @@ if defined?(Test::Unit::Assertions::AssertionMessage)
   Test::Unit::Assertions::AssertionMessage.max_diff_target_string_size = 5000
 end
 
-module Prism
+module Ruby::Prism
   # A convenience method for retrieving the first statement in the source string
-  # parsed by Prism.
+  # parsed by Ruby::Prism.
   def self.parse_statement(source, **options)
     parse(source, **options).value.statements.body.first
   end
@@ -96,148 +95,170 @@ module Prism
       end
     end
 
-    # Yield each encoding that we want to test, along with a range of the
-    # codepoints that should be tested.
-    def self.each_encoding
-      codepoints_1byte = 0...0x100
+    # Each encoding that prism supports, with the kind of characters that it has,
+    # which decides the codepoints that are tested in it.
+    ENCODINGS = {
+      ASCII_8BIT: :single_byte,
+      US_ASCII: :single_byte,
+      Windows_1253: :single_byte,
+      CP850: :single_byte,
+      CP852: :single_byte,
+      CP855: :single_byte,
+      GB1988: :single_byte,
+      IBM437: :single_byte,
+      IBM720: :single_byte,
+      IBM737: :single_byte,
+      IBM775: :single_byte,
+      IBM852: :single_byte,
+      IBM855: :single_byte,
+      IBM857: :single_byte,
+      IBM860: :single_byte,
+      IBM861: :single_byte,
+      IBM862: :single_byte,
+      IBM863: :single_byte,
+      IBM864: :single_byte,
+      IBM865: :single_byte,
+      IBM866: :single_byte,
+      IBM869: :single_byte,
+      ISO_8859_1: :single_byte,
+      ISO_8859_2: :single_byte,
+      ISO_8859_3: :single_byte,
+      ISO_8859_4: :single_byte,
+      ISO_8859_5: :single_byte,
+      ISO_8859_6: :single_byte,
+      ISO_8859_7: :single_byte,
+      ISO_8859_8: :single_byte,
+      ISO_8859_9: :single_byte,
+      ISO_8859_10: :single_byte,
+      ISO_8859_11: :single_byte,
+      ISO_8859_13: :single_byte,
+      ISO_8859_14: :single_byte,
+      ISO_8859_15: :single_byte,
+      ISO_8859_16: :single_byte,
+      KOI8_R: :single_byte,
+      KOI8_U: :single_byte,
+      MACCENTEURO: :single_byte,
+      MACCROATIAN: :single_byte,
+      MACCYRILLIC: :single_byte,
+      MACGREEK: :single_byte,
+      MACICELAND: :single_byte,
+      MACROMAN: :single_byte,
+      MACROMANIA: :single_byte,
+      MACTHAI: :single_byte,
+      MACTURKISH: :single_byte,
+      MACUKRAINE: :single_byte,
+      TIS_620: :single_byte,
+      Windows_1250: :single_byte,
+      Windows_1251: :single_byte,
+      Windows_1252: :single_byte,
+      Windows_1254: :single_byte,
+      Windows_1255: :single_byte,
+      Windows_1256: :single_byte,
+      Windows_1257: :single_byte,
+      Windows_1258: :single_byte,
+      Windows_874: :single_byte,
+      Big5: :double_byte,
+      Big5_HKSCS: :double_byte,
+      Big5_UAO: :double_byte,
+      CP949: :double_byte,
+      CP950: :double_byte,
+      CP951: :double_byte,
+      EUC_KR: :double_byte,
+      GBK: :double_byte,
+      GB12345: :double_byte,
+      GB2312: :double_byte,
+      MACJAPANESE: :double_byte,
+      Shift_JIS: :double_byte,
+      SJIS_DoCoMo: :double_byte,
+      SJIS_KDDI: :double_byte,
+      SJIS_SoftBank: :double_byte,
+      Windows_31J: :double_byte,
+      UTF_8: :unicode,
+      UTF8_MAC: :unicode,
+      UTF8_DoCoMo: :unicode,
+      UTF8_KDDI: :unicode,
+      UTF8_SoftBank: :unicode,
+      CESU_8: :unicode,
+      CP51932: :euc_jp,
+      EUC_JP: :euc_jp,
+      EUCJP_MS: :euc_jp,
+      EUC_JIS_2004: :euc_jp,
+      EMACS_MULE: :emacs_mule,
+      STATELESS_ISO_2022_JP: :emacs_mule,
+      STATELESS_ISO_2022_JP_KDDI: :emacs_mule,
+      GB18030: :gb18030,
+      EUC_TW: :euc_tw
+    }.each_with_object({}) do |(name, kind), encodings|
+      encodings[Encoding.const_get(name, false)] = kind if Encoding.const_defined?(name, false)
+    end.freeze
 
-      yield Encoding::ASCII_8BIT, codepoints_1byte
-      yield Encoding::US_ASCII, codepoints_1byte
+    # The encodings that a minimal build supports, which excludes the full set of
+    # encodings.
+    MINIMAL_ENCODINGS = [
+      Encoding::UTF_8, Encoding::US_ASCII, Encoding::ASCII_8BIT, Encoding::EUC_JP, Encoding::Windows_31J
+    ].freeze
 
-      if !ENV["PRISM_BUILD_MINIMAL"]
-        yield Encoding::Windows_1253, codepoints_1byte
+    # The encodings that are tested by default. Testing every codepoint in an
+    # encoding takes a long time, so only a few are tested unless
+    # PRISM_TEST_ALL_ENCODINGS is set.
+    DEFAULT_ENCODINGS = [Encoding::ASCII_8BIT, Encoding::US_ASCII, Encoding::Windows_1253].freeze
+
+    # Yield each encoding that we want to test, which is each of the given
+    # encodings, or every encoding that prism supports if
+    # PRISM_TEST_ALL_ENCODINGS is set. A minimal build is only tested in the
+    # encodings that it supports.
+    def self.each_encoding(defaults = DEFAULT_ENCODINGS, &block)
+      return enum_for(__method__, defaults) unless block
+
+      encodings = all_encodings? ? ENCODINGS.keys : defaults
+      encodings &= MINIMAL_ENCODINGS if ENV["PRISM_BUILD_MINIMAL"]
+      encodings.each(&block)
+    end
+
+    # True if every encoding that the build supports is tested.
+    def self.all_encodings?
+      !!ENV["PRISM_TEST_ALL_ENCODINGS"]
+    end
+
+    # Return the codepoints that are tested in the given encoding.
+    def self.encoding_codepoints(encoding)
+      case ENCODINGS.fetch(encoding)
+      when :single_byte
+        0...0x100
+      when :double_byte
+        0...0x10000
+      when :unicode
+        0...0x110000
+      when :euc_jp
+        [
+          *(0...0x10000),
+          *(0...0x10000).map { |bytes| bytes | 0x8F0000 }
+        ]
+      when :emacs_mule
+        [
+          *(0...0x80),
+          *((0x81...0x90).flat_map { |byte1| (0x90...0x100).map { |byte2| byte1 << 8 | byte2 } }),
+          *((0x90...0x9C).flat_map { |byte1| (0xA0...0x100).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| byte1 << 16 | byte2 << 8 | byte3 } } }),
+          *((0xF0...0xF5).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| (0xA0...0x100).flat_map { |byte4| 0x9C << 24 | byte2 << 16 | byte3 << 8 | byte4 } } }),
+        ]
+      when :gb18030
+        [
+          *(0...0x80),
+          *((0x81..0xFE).flat_map { |byte1| (0x40...0x100).map { |byte2| byte1 << 8 | byte2 } }),
+          *((0x81..0xFE).flat_map { |byte1| (0x30...0x40).flat_map { |byte2| (0x81..0xFE).flat_map { |byte3| (0x2F...0x41).map { |byte4| byte1 << 24 | byte2 << 16 | byte3 << 8 | byte4 } } } }),
+        ]
+      when :euc_tw
+        [
+          *(0..0x7F),
+          *(0xA1..0xFF).flat_map { |byte1| (0xA1..0xFF).map { |byte2| (byte1 << 8) | byte2 } },
+          *(0xA1..0xB0).flat_map { |byte2| (0xA1..0xFF).flat_map { |byte3| (0xA1..0xFF).flat_map { |byte4| 0x8E << 24 | byte2 << 16 | byte3 << 8 | byte4 } } }
+        ]
       end
-
-      # By default we don't test every codepoint in these encodings because it
-      # takes a very long time.
-      return unless ENV["PRISM_TEST_ALL_ENCODINGS"]
-
-      yield Encoding::CP850, codepoints_1byte
-      yield Encoding::CP852, codepoints_1byte
-      yield Encoding::CP855, codepoints_1byte
-      yield Encoding::GB1988, codepoints_1byte
-      yield Encoding::IBM437, codepoints_1byte
-      yield Encoding::IBM720, codepoints_1byte
-      yield Encoding::IBM737, codepoints_1byte
-      yield Encoding::IBM775, codepoints_1byte
-      yield Encoding::IBM852, codepoints_1byte
-      yield Encoding::IBM855, codepoints_1byte
-      yield Encoding::IBM857, codepoints_1byte
-      yield Encoding::IBM860, codepoints_1byte
-      yield Encoding::IBM861, codepoints_1byte
-      yield Encoding::IBM862, codepoints_1byte
-      yield Encoding::IBM863, codepoints_1byte
-      yield Encoding::IBM864, codepoints_1byte
-      yield Encoding::IBM865, codepoints_1byte
-      yield Encoding::IBM866, codepoints_1byte
-      yield Encoding::IBM869, codepoints_1byte
-      yield Encoding::ISO_8859_1, codepoints_1byte
-      yield Encoding::ISO_8859_2, codepoints_1byte
-      yield Encoding::ISO_8859_3, codepoints_1byte
-      yield Encoding::ISO_8859_4, codepoints_1byte
-      yield Encoding::ISO_8859_5, codepoints_1byte
-      yield Encoding::ISO_8859_6, codepoints_1byte
-      yield Encoding::ISO_8859_7, codepoints_1byte
-      yield Encoding::ISO_8859_8, codepoints_1byte
-      yield Encoding::ISO_8859_9, codepoints_1byte
-      yield Encoding::ISO_8859_10, codepoints_1byte
-      yield Encoding::ISO_8859_11, codepoints_1byte
-      yield Encoding::ISO_8859_13, codepoints_1byte
-      yield Encoding::ISO_8859_14, codepoints_1byte
-      yield Encoding::ISO_8859_15, codepoints_1byte
-      yield Encoding::ISO_8859_16, codepoints_1byte
-      yield Encoding::KOI8_R, codepoints_1byte
-      yield Encoding::KOI8_U, codepoints_1byte
-      yield Encoding::MACCENTEURO, codepoints_1byte
-      yield Encoding::MACCROATIAN, codepoints_1byte
-      yield Encoding::MACCYRILLIC, codepoints_1byte
-      yield Encoding::MACGREEK, codepoints_1byte
-      yield Encoding::MACICELAND, codepoints_1byte
-      yield Encoding::MACROMAN, codepoints_1byte
-      yield Encoding::MACROMANIA, codepoints_1byte
-      yield Encoding::MACTHAI, codepoints_1byte
-      yield Encoding::MACTURKISH, codepoints_1byte
-      yield Encoding::MACUKRAINE, codepoints_1byte
-      yield Encoding::TIS_620, codepoints_1byte
-      yield Encoding::Windows_1250, codepoints_1byte
-      yield Encoding::Windows_1251, codepoints_1byte
-      yield Encoding::Windows_1252, codepoints_1byte
-      yield Encoding::Windows_1254, codepoints_1byte
-      yield Encoding::Windows_1255, codepoints_1byte
-      yield Encoding::Windows_1256, codepoints_1byte
-      yield Encoding::Windows_1257, codepoints_1byte
-      yield Encoding::Windows_1258, codepoints_1byte
-      yield Encoding::Windows_874, codepoints_1byte
-
-      codepoints_2bytes = 0...0x10000
-
-      yield Encoding::Big5, codepoints_2bytes
-      yield Encoding::Big5_HKSCS, codepoints_2bytes
-      yield Encoding::Big5_UAO, codepoints_2bytes
-      yield Encoding::CP949, codepoints_2bytes
-      yield Encoding::CP950, codepoints_2bytes
-      yield Encoding::CP951, codepoints_2bytes
-      yield Encoding::EUC_KR, codepoints_2bytes
-      yield Encoding::GBK, codepoints_2bytes
-      yield Encoding::GB12345, codepoints_2bytes
-      yield Encoding::GB2312, codepoints_2bytes
-      yield Encoding::MACJAPANESE, codepoints_2bytes
-      yield Encoding::Shift_JIS, codepoints_2bytes
-      yield Encoding::SJIS_DoCoMo, codepoints_2bytes
-      yield Encoding::SJIS_KDDI, codepoints_2bytes
-      yield Encoding::SJIS_SoftBank, codepoints_2bytes
-      yield Encoding::Windows_31J, codepoints_2bytes
-
-      codepoints_unicode = (0...0x110000)
-
-      yield Encoding::UTF_8, codepoints_unicode
-      yield Encoding::UTF8_MAC, codepoints_unicode
-      yield Encoding::UTF8_DoCoMo, codepoints_unicode
-      yield Encoding::UTF8_KDDI, codepoints_unicode
-      yield Encoding::UTF8_SoftBank, codepoints_unicode
-      yield Encoding::CESU_8, codepoints_unicode
-
-      codepoints_eucjp = [
-        *(0...0x10000),
-        *(0...0x10000).map { |bytes| bytes | 0x8F0000 }
-      ]
-
-      yield Encoding::CP51932, codepoints_eucjp
-      yield Encoding::EUC_JP, codepoints_eucjp
-      yield Encoding::EUCJP_MS, codepoints_eucjp
-      yield Encoding::EUC_JIS_2004, codepoints_eucjp
-
-      codepoints_emacs_mule = [
-        *(0...0x80),
-        *((0x81...0x90).flat_map { |byte1| (0x90...0x100).map { |byte2| byte1 << 8 | byte2 } }),
-        *((0x90...0x9C).flat_map { |byte1| (0xA0...0x100).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| byte1 << 16 | byte2 << 8 | byte3 } } }),
-        *((0xF0...0xF5).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| (0xA0...0x100).flat_map { |byte4| 0x9C << 24 | byte3 << 16 | byte3 << 8 | byte4 } } }),
-      ]
-
-      yield Encoding::EMACS_MULE, codepoints_emacs_mule
-      yield Encoding::STATELESS_ISO_2022_JP, codepoints_emacs_mule
-      yield Encoding::STATELESS_ISO_2022_JP_KDDI, codepoints_emacs_mule
-
-      codepoints_gb18030 = [
-        *(0...0x80),
-        *((0x81..0xFE).flat_map { |byte1| (0x40...0x100).map { |byte2| byte1 << 8 | byte2 } }),
-        *((0x81..0xFE).flat_map { |byte1| (0x30...0x40).flat_map { |byte2| (0x81..0xFE).flat_map { |byte3| (0x2F...0x41).map { |byte4| byte1 << 24 | byte2 << 16 | byte3 << 8 | byte4 } } } }),
-      ]
-
-      yield Encoding::GB18030, codepoints_gb18030
-
-      codepoints_euc_tw = [
-        *(0..0x7F),
-        *(0xA1..0xFF).flat_map { |byte1| (0xA1..0xFF).map { |byte2| (byte1 << 8) | byte2 } },
-        *(0xA1..0xB0).flat_map { |byte2| (0xA1..0xFF).flat_map { |byte3| (0xA1..0xFF).flat_map { |byte4| 0x8E << 24 | byte2 << 16 | byte3 << 8 | byte4 } } }
-      ]
-
-      yield Encoding::EUC_TW, codepoints_euc_tw
     end
 
     # True if the current platform is Windows.
     def self.windows?
-      RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince/i)
+      RbConfig::CONFIG["host_os"].match?(/cygwin|mingw|mswin/i)
     end
 
     # All versions that prism can parse

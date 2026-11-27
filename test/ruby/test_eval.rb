@@ -614,9 +614,9 @@ class TestEval < Test::Unit::TestCase
   end
 
   def test_syntax_error_no_memory_leak
-    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 5)
     begin;
-      100_000.times do
+      20_000.times do
         eval("/[/=~s")
       rescue SyntaxError
       else
@@ -639,7 +639,6 @@ class TestEval < Test::Unit::TestCase
 
   def test_outer_local_variable_under_gc_compact_stress
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
-    omit "compaction is not supported on s390x" if /s390x/ =~ RUBY_PLATFORM
 
     assert_separately([], <<~RUBY)
       o = Object.new

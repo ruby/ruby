@@ -16,6 +16,39 @@ class TestBundlerGem < Gem::TestCase
     assert_nil Gem::BUNDLED_GEMS.warning?("csv", specs: {})
   end
 
+  def test_find_gem_plain_name
+    assert_equal ["csv", "csv", false], Gem::BUNDLED_GEMS.find_gem("csv")
+  end
+
+  def test_find_gem_returns_nil_for_non_bundled_gem
+    assert_nil Gem::BUNDLED_GEMS.find_gem("some_gem")
+    assert_nil Gem::BUNDLED_GEMS.find_gem("some/nested/gem")
+  end
+
+  def test_find_gem_exact_mapping
+    # kconv is provided by the nkf gem; the feature keeps its original name
+    assert_equal ["kconv", "nkf", false], Gem::BUNDLED_GEMS.find_gem("kconv")
+  end
+
+  def test_find_gem_dashed_name
+    # resolv/replace is provided by the resolv-replace gem
+    assert_equal ["resolv/replace", "resolv-replace", false], Gem::BUNDLED_GEMS.find_gem("resolv/replace")
+  end
+
+  def test_find_gem_subfeature
+    assert_equal ["benchmark/ips", "benchmark", true], Gem::BUNDLED_GEMS.find_gem("benchmark/ips")
+  end
+
+  def test_find_gem_strips_libdir_prefix
+    path = File.join(::RbConfig::CONFIG.fetch("rubylibdir"), "csv.rb")
+    assert_equal ["csv", "csv", false], Gem::BUNDLED_GEMS.find_gem(path)
+  end
+
+  def test_find_gem_strips_archdir_prefix
+    path = File.join(::RbConfig::CONFIG.fetch("rubyarchdir"), "syslog.so")
+    assert_equal ["syslog", "syslog", false], Gem::BUNDLED_GEMS.find_gem(path)
+  end
+
   def test_no_warning_warning
     assert_nil Gem::BUNDLED_GEMS.warning?("some_gem", specs: {})
     assert_nil Gem::BUNDLED_GEMS.warning?("/path/to/some_gem.rb", specs: {})
@@ -31,5 +64,43 @@ class TestBundlerGem < Gem::TestCase
     path = File.join(::RbConfig::CONFIG.fetch("rubyarchdir"), "syslog.so")
     assert Gem::BUNDLED_GEMS.warning?(path, specs: {})
     assert_nil Gem::BUNDLED_GEMS.warning?(path, specs: {})
+  end
+
+  def test_no_warning_for_hyphenated_gem
+    # When benchmark-ips gem is in specs, requiring "benchmark/ips" should not warn
+    # about the benchmark gem (Bug #21828)
+    assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {"benchmark-ips" => true})
+  end
+
+  def test_no_warning_for_subfeatures_of_hyphenated_gem
+    # When benchmark-ips gem is in specs, requiring any "benchmark/*" subfeature
+    # should not warn, since hyphenated gems may provide multiple files
+    # (e.g., benchmark-ips provides benchmark/ips, benchmark/timing, benchmark/compare)
+    assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/timing", specs: {"benchmark-ips" => true})
+    assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/compare", specs: {"benchmark-ips" => true})
+  end
+
+  def test_warning_without_hyphenated_gem
+    # When benchmark-ips is NOT in specs, requiring "benchmark/ips" should warn
+    warning = Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {})
+    assert warning
+    assert_match(/benchmark/, warning)
+  end
+
+  def test_no_warning_for_subfeature_found_outside_stdlib
+    # When a subfeature like "benchmark/ips" is found on $LOAD_PATH
+    # from a non-standard-library location (e.g., benchmark-ips gem's lib dir),
+    # don't warn even if the gem is not in specs (Bug #21828)
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "benchmark"))
+      File.write(File.join(dir, "benchmark", "ips.rb"), "")
+      original_load_path = $LOAD_PATH.dup
+      $LOAD_PATH.unshift(dir)
+      begin
+        assert_nil Gem::BUNDLED_GEMS.warning?("benchmark/ips", specs: {})
+      ensure
+        $LOAD_PATH.replace(original_load_path)
+      end
+    end
   end
 end

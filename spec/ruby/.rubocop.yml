@@ -37,6 +37,10 @@ Lint/AssignmentInCondition:
 Lint/BooleanSymbol:
   Enabled: false
 
+Lint/BigDecimalNew:
+  Exclude:
+    - 'library/bigdecimal/new_spec.rb'
+
 Lint/DeprecatedOpenSSLConstant:
   Exclude:
     - library/openssl/digest/**/*.rb
@@ -53,10 +57,6 @@ Lint/RedundantRequireStatement:
     - core/fiber/**/*.rb
     - library/fiber/**/*.rb
     - optional/capi/fiber_spec.rb
-
-Lint/RedundantSafeNavigation:
-  Exclude:
-    - language/safe_navigator_spec.rb
 
 Lint/RedundantSplatExpansion:
   Enabled: false
@@ -197,6 +197,7 @@ Style/Lambda:
     - 'language/lambda_spec.rb'
     - 'language/proc_spec.rb'
     - 'language/numbered_parameters_spec.rb'
+    - 'language/it_parameter_spec.rb'
     - 'core/kernel/lambda_spec.rb'
 
 Style/EmptyLambdaParameter:

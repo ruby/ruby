@@ -331,6 +331,11 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     oid = (0...100).to_a.join(".").b
     obj = OpenSSL::ASN1::ObjectId.new(oid)
     assert_equal oid, obj.oid
+    oid = "1.3.6.1" + ".1" * 60
+    assert_equal 127, oid.length
+    decoded = OpenSSL::ASN1.decode(OpenSSL::ASN1::ObjectId.new(oid).to_der)
+    assert_equal oid, decoded.value
+    assert_equal oid, decoded.oid
   end
 
   def test_object_identifier_equality
@@ -694,6 +699,20 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     }
     assert_equal 1, ret.size
     assert_equal 17, ret[0][6]
+  end
+
+  def test_decode_constructed_deeply_nested
+    bool = OpenSSL::ASN1::Boolean.new(true)
+    nested_100 = B(%w{ 30 80 }) * 100 + bool.to_der + B(%w{ 00 00 }) * 100
+    decoded = OpenSSL::ASN1.decode(nested_100)
+    assert_equal(nested_100, decoded.to_der)
+    content = 100.times.inject(decoded) { |a,| a.value[0] }
+    assert_kind_of(OpenSSL::ASN1::Boolean, content)
+
+    nested_500 = B(%w{ 30 80 }) * 500 + bool.to_der + B(%w{ 00 00 }) * 500
+    assert_raise_with_message(OpenSSL::ASN1::ASN1Error, /nesting depth/) {
+      OpenSSL::ASN1.decode(nested_500)
+    }
   end
 
   def test_constructive_each

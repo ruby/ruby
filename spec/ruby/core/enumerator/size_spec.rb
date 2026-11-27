@@ -5,8 +5,12 @@ describe "Enumerator#size" do
     Enumerator.new(100) {}.size.should == 100
   end
 
+  it "returns 0 if set size is 0" do
+    Enumerator.new(0) {}.size.should == 0
+  end
+
   it "returns nil if set size is nil" do
-    Enumerator.new(nil) {}.size.should be_nil
+    Enumerator.new(nil) {}.size.should == nil
   end
 
   it "returns returning value from size.call if set size is a Proc" do

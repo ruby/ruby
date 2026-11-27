@@ -2,9 +2,9 @@
 #define INTERNAL_RACTOR_H
 
 void rb_ractor_ensure_main_ractor(const char *msg);
+bool rb_class_field_shareable_p(VALUE klass, VALUE val);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-void rb_ractor_setup_belonging(VALUE obj);
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_RACTOR_H */

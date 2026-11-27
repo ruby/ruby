@@ -38,8 +38,6 @@ class TestGemCommandsWhichCommand < Gem::TestCase
   end
 
   def test_execute_one_missing
-    # TODO: this test fails in isolation
-
     util_foo_bar
 
     @cmd.handle_options %w[foo_bar missinglib]

@@ -16,7 +16,7 @@ class TestFile < Test::Unit::TestCase
       w.close
       r = File.open(filename, "r")
       begin
-        if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+        if /(mswin|mingw)/ =~ RUBY_PLATFORM
           assert_raise(Errno::EACCES) {File.unlink(filename)}
         else
           assert_nothing_raised {File.unlink(filename)}
@@ -145,6 +145,19 @@ class TestFile < Test::Unit::TestCase
       th.join
     end
   end
+
+  def test_size_over_2gb
+    Tempfile.create("test-size") do |f|
+      size = 0x8000_0000
+      begin
+        f.truncate(size)
+      rescue Errno::ENOSPC
+        omit "no space for #{size} bytes"
+      end
+      assert_equal(size, f.size)
+      assert_equal(size, f.stat.size)
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_read_all_extended_file
     [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
@@ -313,6 +326,24 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
+  def test_realdirpath_relative_symlink_under_gc_stress
+    Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      # A long link with several names, so GC can free the link string
+      # while its later names are still being read.
+      target = "store/#{"t" * 100}/node_modules/pkg"
+      FileUtils.mkdir_p(File.join(realdir, target, "sub"))
+      Dir.mkdir(File.join(realdir, "app"))
+      begin
+        File.symlink(File.join("..", target), File.join(realdir, "app", "link"))
+      rescue Errno::EACCES, Errno::EPERM
+        omit "need privilege"
+      end
+      result = EnvUtil.under_gc_stress {File.realdirpath(File.join(realdir, "app", "link", "sub"))}
+      assert_equal(File.join(realdir, target, "sub"), result)
+    }
+  end
+
   def test_realdirpath_junction
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       Dir.chdir(tmpdir) do
@@ -357,6 +388,22 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, file_mtime, bug6385)
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
+
+  def test_utime_out_of_filetime_range
+    # A Windows FILETIME is a 64 bit count of 100ns ticks since 1601-01-01,
+    # and SetFileTime() accepts [0, INT64_MAX], i.e. up to 910692730085 s
+    # after the Unix epoch.  Out-of-range values must fail, not wrap around.
+    t = Time.at(946684800)
+    Tempfile.create("utime") do |file|
+      File.utime(t, t, file.path)
+      [-11644473601, 910692730086, 1833029933771, 2**62, -2**62].each do |sec|
+        assert_raise(Errno::EINVAL, "File.utime with #{sec}") do
+          File.utime(sec, sec, file.path)
+        end
+      end
+      assert_equal(t, File.mtime(file.path))
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def measure_time
     log = []

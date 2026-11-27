@@ -1,25 +1,23 @@
 #option platform cygwin|mingw|mswin
 #option nodynamic
 
-bigdecimal
 cgi/escape
-digest
-digest/md5
-digest/rmd160
-digest/sha1
-digest/sha2
+continuation
+coverage
+date
+digest/*
+erb/escape
 etc
 fcntl
-#io/wait
-nkf
+io/*
+json
+json/*
+objspace
 #openssl
-#pty
-#racc/cparse
-#readline
+rbconfig/sizeof
 #ripper
 socket
 stringio
 strscan
 #syslog
-win32ole
 #zlib

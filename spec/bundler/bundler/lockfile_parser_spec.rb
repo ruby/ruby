@@ -55,6 +55,15 @@ RSpec.describe Bundler::LockfileParser do
     end
   end
 
+  describe "OVERRIDES" do
+    it "is a known section that no Bundler version ignores" do
+      expect(described_class::KNOWN_SECTIONS).to include(described_class::OVERRIDES)
+      expect(described_class.unknown_sections_in_lockfile("OVERRIDES\n  :all, required_ruby_version: nil\n")).to be_empty
+      expect(described_class.sections_to_ignore(Gem::Version.create("4.0.0"))).not_to include(described_class::OVERRIDES)
+      expect(described_class.sections_to_ignore(nil)).not_to include(described_class::OVERRIDES)
+    end
+  end
+
   describe ".sections_to_ignore" do
     subject { described_class.sections_to_ignore(base_version) }
 
@@ -63,7 +72,7 @@ RSpec.describe Bundler::LockfileParser do
 
       it "returns the same as > 1.0" do
         expect(subject).to contain_exactly(
-          described_class::BUNDLED, described_class::CHECKSUMS, described_class::RUBY, described_class::PLUGIN
+          described_class::BUNDLED, described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY_ABIS, described_class::RUBY, described_class::PLUGIN
         )
       end
     end
@@ -73,7 +82,7 @@ RSpec.describe Bundler::LockfileParser do
 
       it "returns the same as for the release version" do
         expect(subject).to contain_exactly(
-          described_class::CHECKSUMS, described_class::RUBY, described_class::PLUGIN
+          described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY_ABIS, described_class::RUBY, described_class::PLUGIN
         )
       end
     end
@@ -118,7 +127,7 @@ RSpec.describe Bundler::LockfileParser do
     let(:platforms) { [Gem::Platform::RUBY] }
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
-    let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
+    let(:lockfile_path) { Bundler::SharedHelpers.relative_lockfile_path }
     let(:rake_sha256_checksum) do
       Bundler::Checksum.from_lock(
         "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
@@ -129,6 +138,7 @@ RSpec.describe Bundler::LockfileParser do
 
     shared_examples_for "parsing" do
       it "parses correctly" do
+        expect(subject.valid?).to be(true)
         expect(subject.sources).to eq sources
         expect(subject.dependencies).to eq dependencies
         expect(subject.specs).to eq specs
@@ -143,6 +153,232 @@ RSpec.describe Bundler::LockfileParser do
     end
 
     include_examples "parsing"
+
+    it "records each source's spec names as its dependency names" do
+      expect(subject.sources.map(&:dependency_names)).to eq([["peiji-san"], ["rake"]])
+    end
+
+    context "when a spec has a content address" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CONTENT ADDRESSES
+            mygem (1.0-x86_64-linux) abcdef1234 abi=3.4 sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
+
+          CHECKSUMS
+            mygem (1.0-x86_64-linux) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
+
+          BUNDLED WITH
+             4.1.0
+        L
+      end
+
+      it "parses the platform, content address and Ruby ABI, keeping the platform full name" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.platform).to eq(Gem::Platform.new("x86_64-linux"))
+        expect(spec.full_name).to eq("mygem-1.0-x86_64-linux")
+        expect(spec.content_addresses).to eq("abcdef1234" => "3.4")
+        expect(spec.content_addressed_full_names).to eq(["mygem-1.0-abcdef1234"])
+      end
+
+      it "keeps the platform gem's checksum under the lock name and the content-addressed gem's checksum under its own full name" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+        store = subject.sources.first.checksum_store
+
+        expect(store.to_lock(spec)).to eq("mygem (1.0-x86_64-linux) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8")
+        expect(store.checksums_to_lock("mygem-1.0-abcdef1234")).to eq("sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e")
+      end
+
+      context "and a second row for the same content address carries a different checksum" do
+        let(:bad_checksum) { "sha256=c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11" }
+        let(:lockfile_contents) { super().sub("\nCHECKSUMS", "  mygem (1.0-x86_64-linux) abcdef1234 abi=3.4 #{bad_checksum}\n\nCHECKSUMS") }
+
+        # Column 47 is where `sha256=` starts, after the Ruby ABI tag. (The message
+        # says CHECKSUMS for every lockfile checksum, including these rows.)
+        it "raises a security error pointing at both checksums" do
+          expect { subject }.to raise_error(Bundler::SecurityError) do |e|
+            expect(e.message).to include(<<~MESSAGE)
+              Bundler found mismatched checksums. This is a potential security risk.
+                mygem (1.0-x86_64-linux) sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
+                  from the lockfile CHECKSUMS at #{lockfile_path}:13:47
+                mygem (1.0-x86_64-linux) #{bad_checksum}
+                  from the lockfile CHECKSUMS at #{lockfile_path}:14:47
+            MESSAGE
+          end
+        end
+      end
+    end
+
+    context "when a content address row has a checksum but no Ruby ABI, as Bundler 4.1.0.beta wrote them" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CONTENT ADDRESSES
+            mygem (1.0-x86_64-linux) abcdef1234 sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
+
+          BUNDLED WITH
+             4.1.0.beta3
+        L
+      end
+
+      it "parses the address without a Ruby ABI and keeps its checksum under its own full name" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.content_addresses).to eq("abcdef1234" => nil)
+        expect(subject.sources.first.checksum_store.checksums_to_lock("mygem-1.0-abcdef1234")).to eq("sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e")
+        expect(subject.ruby_abis).to be_empty
+      end
+    end
+
+    context "with an ill-formed checksum on a content address row" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CONTENT ADDRESSES
+            mygem (1.0-x86_64-linux) abcdef1234 abi=3.4 sha256=garbage
+
+          BUNDLED WITH
+             4.1.0
+        L
+      end
+
+      it "raises a LockfileError pointing at the line" do
+        expect { subject }.to raise_error(Bundler::LockfileError, /error occurred while evaluating #{Regexp.escape(lockfile_path)}:\d+:\d+/)
+      end
+    end
+
+    context "when a platform row lists several content addresses" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CONTENT ADDRESSES
+            mygem (1.0-x86_64-linux) abcdef1234 abi=4.0
+            mygem (1.0-x86_64-linux) 0123456789
+            othergem (2.0-x86_64-linux) 9876543210 abi=4.0
+
+          RUBY ABIS
+            3.4
+            4.0
+
+          BUNDLED WITH
+             4.1.0
+        L
+      end
+
+      it "keeps every content address on the single platform row, with a Ruby ABI only where the row carries one" do
+        specs = subject.specs.select {|s| s.name == "mygem" }
+
+        expect(specs.size).to eq(1)
+        expect(specs.first.content_addresses).to eq("0123456789" => nil, "abcdef1234" => "4.0")
+      end
+
+      it "ignores a row for a gem that is not in the specs" do
+        expect(subject.specs.map(&:name)).to eq(["mygem"])
+      end
+
+      it "parses the Ruby ABIs" do
+        expect(subject.ruby_abis).to eq(["3.4", "4.0"])
+      end
+    end
+
+    context "when a Ruby-platform suffix resembles a content address but no platform is present" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-abcdef1234)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            mygem
+
+          BUNDLED WITH
+             1.12.0.rc.2
+        L
+      end
+
+      it "does not parse the suffix as a content address" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.content_addresses).to be_empty
+      end
+    end
+
+    context "without an OVERRIDES section" do
+      it "reports no overrides section" do
+        expect(subject.overrides).to be_nil
+      end
+    end
+
+    context "with an OVERRIDES section" do
+      let(:lockfile_contents) { super().sub("\nBUNDLED WITH", "\nOVERRIDES\n  \"rake\", version: \">= 10\"\n  :all, required_ruby_version: :ignore_upper\n\nBUNDLED WITH") }
+
+      include_examples "parsing"
+
+      it "parses the overrides" do
+        expect(subject.overrides.map(&:to_lock)).to eq([%("rake", version: ">= 10"), %(:all, required_ruby_version: :ignore_upper)])
+      end
+    end
+
+    context "with a malformed OVERRIDES line" do
+      let(:lockfile_contents) { super().sub("\nBUNDLED WITH", "\nOVERRIDES\n  rake, version: >= 10\n\nBUNDLED WITH") }
+
+      it "raises a LockfileError pointing at the line" do
+        expect { subject }.to raise_error(Bundler::LockfileError, /error occurred while evaluating #{Regexp.escape(lockfile_path)}:\d+:\d+/)
+      end
+    end
+
+    context "with an ill-formed requirement in an OVERRIDES line" do
+      let(:lockfile_contents) { super().sub("\nBUNDLED WITH", "\nOVERRIDES\n  \"rake\", version: \"garbage\"\n\nBUNDLED WITH") }
+
+      it "raises a LockfileError pointing at the line" do
+        expect { subject }.to raise_error(Bundler::LockfileError, /error occurred while evaluating #{Regexp.escape(lockfile_path)}:\d+:\d+/)
+      end
+    end
 
     context "when an extra section is at the end" do
       let(:lockfile_contents) { super() + "\n\nFOO BAR\n  baz\n   baa\n    qux\n" }
@@ -189,6 +425,106 @@ RSpec.describe Bundler::LockfileParser do
       end
       let(:rake_checksums) { [rake_sha256_checksum, rake_sha512_checksum] }
       include_examples "parsing"
+    end
+
+    context "when the content does not contain any recognized lockfile sections" do
+      let(:lockfile_contents) { "hello world\nlorem ipsum\n" }
+
+      it "does not raise, is not valid, and deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+
+      it "does not raise when strict: true, and still deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents, strict: true)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+    end
+
+    context "when the content looks like a Gemfile DSL" do
+      let(:lockfile_contents) { <<~G }
+        source "https://rubygems.org"
+        gem "rake"
+      G
+
+      it "does not raise, is not valid, and deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+
+      it "does not raise when strict: true, and still deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents, strict: true)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+    end
+
+    context "when the content is empty" do
+      let(:lockfile_contents) { "" }
+
+      it "does not raise and is valid" do
+        expect { subject }.not_to raise_error
+        expect(subject.valid?).to be(true)
+      end
+    end
+
+    context "when a plugin source's plugin is not installed" do
+      let(:lockfile_contents) { <<~L + super().sub("DEPENDENCIES\n", "DEPENDENCIES\n  private_gem!\n") }
+        PLUGIN SOURCE
+          remote: https://example.com/private
+          type: not_installed_plugin_type
+          specs:
+            private_gem (1.2.3)
+
+      L
+
+      it "parses dependencies and specs using a placeholder source" do
+        expect(subject.valid?).to be(true)
+        expect(subject.dependencies.keys).to include("private_gem", "peiji-san", "rake")
+        private_spec = subject.specs.find {|s| s.name == "private_gem" }
+        expect(private_spec.version).to eq(v("1.2.3"))
+        expect(private_spec.source).to be_a(Bundler::Plugin::UnloadedSource)
+      end
+    end
+
+    context "when lockfile_path is given" do
+      it "uses the provided path in error messages instead of looking up Bundler.default_lockfile" do
+        expect(Bundler::SharedHelpers).not_to receive(:relative_lockfile_path)
+        parser = described_class.new(lockfile_contents, lockfile_path: "custom/path.lock")
+        expect(parser.valid?).to be(true)
+        rake_spec = parser.specs.last
+        checksums = parser.sources.last.checksum_store.to_lock(rake_spec)
+        expected_checksum = Bundler::Checksum.from_lock(
+          "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
+          "custom/path.lock:20:17"
+        )
+        expect(checksums).to eq("#{rake_spec.lock_name} #{expected_checksum.to_lock}")
+      end
+
+      it "raises with the provided path when the lockfile contains merge conflicts" do
+        expect do
+          described_class.new("<<<<<<<\n", lockfile_path: "custom/path.lock")
+        end.to raise_error(Bundler::LockfileError, %r{custom/path\.lock contains merge conflicts})
+      end
     end
 
     context "when CHECKSUMS has duplicate checksums in the lockfile that don't match" do

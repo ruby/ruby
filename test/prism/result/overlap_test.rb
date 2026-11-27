@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class OverlapTest < TestCase
     Fixture.each do |fixture|
       define_method(fixture.test_name) { assert_overlap(fixture) }
@@ -13,7 +13,7 @@ module Prism
     # Check that the location ranges of each node in the tree are a superset of
     # their respective child nodes.
     def assert_overlap(fixture)
-      queue = [Prism.parse_file(fixture.full_path).value]
+      queue = [Ruby::Prism.parse_file(fixture.full_path).value]
 
       while (current = queue.shift)
         # We only want to compare parent/child location overlap in the case that
@@ -33,8 +33,13 @@ module Prism
           queue << child
 
           if compare
-            assert_operator current.location.start_offset, :<=, child.location.start_offset
-            assert_operator current.location.end_offset, :>=, child.location.end_offset
+            assert_operator current.location.start_offset, :<=, child.location.start_offset, -> {
+              "[#{fixture.full_path}] Parent node #{current.class} at #{current.location} does not start before child node #{child.class} at #{child.location}"
+            }
+
+            assert_operator current.location.end_offset, :>=, child.location.end_offset, -> {
+              "[#{fixture.full_path}] Parent node #{current.class} at #{current.location} does not end after child node #{child.class} at #{child.location}"
+            }
           end
         end
       end

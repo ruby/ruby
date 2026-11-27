@@ -32,6 +32,30 @@ describe "Array#rindex" do
     [1, 1, 3, 2, 1, 3].rindex(4).should == nil
   end
 
+  ruby_version_is "4.1" do
+    it "does not search before a non-negative offset" do
+      [1, 2, 1, 2].rindex(1, offset: 1).should == 2
+      [1, 2, 1, 2].rindex(1, offset: 3).should == nil
+    end
+
+    it "starts searching at a negative offset relative to the end" do
+      [1, 2, 1, 2].rindex(2, offset: -2).should == 1
+    end
+
+    it "returns nil when the offset is outside the array" do
+      array = [1, 2, 1, 2]
+
+      array.rindex(1, offset: array.size).should == nil
+      array.rindex(1, offset: -array.size - 1).should == nil
+    end
+
+    it "ignores the block if there is an argument and an offset" do
+      -> {
+        [4, 2, 1, 5, 1, 3].rindex(1, offset: 2) { |x| x < 2 }.should == 4
+      }.should complain(/given block not used/)
+    end
+  end
+
   it "returns correct index even after delete_at" do
     array = ["fish", "bird", "lion", "cat"]
     array.delete_at(0)
@@ -41,7 +65,7 @@ describe "Array#rindex" do
   it "properly handles empty recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
     empty.rindex(empty).should == 0
-    empty.rindex(1).should be_nil
+    empty.rindex(1).should == nil
   end
 
   it "properly handles recursive arrays" do
@@ -86,7 +110,7 @@ describe "Array#rindex" do
   describe "given no argument and no block" do
     it "produces an Enumerator" do
       enum = [4, 2, 1, 5, 1, 3].rindex
-      enum.should be_an_instance_of(Enumerator)
+      enum.should.instance_of?(Enumerator)
       enum.each { |x| x < 2 }.should == 4
     end
   end

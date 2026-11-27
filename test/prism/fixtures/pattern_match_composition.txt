@@ -1,0 +1,5 @@
+1 in Integer and 2 in Numeric
+
+1 in Integer or 2 in Numeric
+
+1 in Integer if ready

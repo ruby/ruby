@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/clone'
+require 'bigdecimal'
 
-describe "BigDecimal#dup" do
-  it_behaves_like :bigdecimal_clone, :clone
+describe "BigDecimal#clone" do
+  it "is an alias of BigDecimal#dup" do
+    BigDecimal.instance_method(:clone).should == BigDecimal.instance_method(:dup)
+  end
 end

@@ -1090,6 +1090,20 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
+  def test_byterindex_match_inside_char
+    # "\x95\\" is a single character whose trail byte is "\\"
+    assert_equal(2, s("C:\\\x95\\").byterindex("\\"))
+    assert_nil(s("\x95\\").byterindex("\\"))
+  end
+
+  def test_rindex_first_byte_repeated_in_char
+    # "\x81\x81" is a single character whose bytes are both "\x81"
+    assert_equal(0, s("\x81\x81A").rindex(s("\x81\x81")))
+    assert_equal(0, s("\x81\x81A").byterindex(s("\x81\x81")))
+    assert_equal(1, s("\x81\x81\x81\x81A").rindex(s("\x81\x81A")))
+    assert_equal(2, s("\x81\x81\x81\x81A").byterindex(s("\x81\x81A")))
+  end
+
   def test_next
     s1 = e("\xa1\xa1")
     s2 = s1.dup
@@ -1234,6 +1248,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, "".force_encoding("US-ASCII").concat(0xA2).encoding)
     assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
                  "A".force_encoding("GB18030") << 0x8431A439)
+
+    s = "\x81\x30".force_encoding("GB18030")
+    assert_not_predicate(s, :valid_encoding?)
+    s << s
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_regexp_match
@@ -1252,6 +1271,9 @@ class TestM17N < Test::Unit::TestCase
     each_encoding("abc\0def", "\0", "abc", "def") do |str, sep, *expected|
       assert_equal(expected, str.split(sep, -1))
     end
+
+    str = s("\u{30bd 30d5 30c8}")
+    assert_equal [str], str.split("@")
   end
 
   def test_nonascii_method_name
@@ -1311,7 +1333,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_env
-    if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+    if RUBY_PLATFORM =~ /mswin|mingw/
       env_encoding = Encoding::UTF_8
     else
       env_encoding = Encoding.find("locale")
@@ -1457,6 +1479,14 @@ class TestM17N < Test::Unit::TestCase
 
   def test_euc_tw
     assert_equal("a", "a\x8e\xa2\xa1\xa1".force_encoding("euc-tw").chop)
+  end
+
+  def test_chop_invalid_byte_in_japanese_encodings
+    %w[EUC-JP Shift_JIS Windows-31J CP51932 eucJP-ms].each do |enc|
+      s = "a\x80".force_encoding(enc)
+      assert_equal("a", s.chop, enc)
+      assert_equal(1, s.byterindex("", 1), enc)
+    end
   end
 
   def test_valid_encoding
@@ -1639,6 +1669,15 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub(e("\xA2\xAE")))
   end
 
+  def test_scrub_replace_argument_converted_under_gc_stress
+    # The replacement is converted with #to_str to a new string, which only
+    # the pointer to its contents refers to while the result grows.
+    repl = Object.new
+    def repl.to_str = "ab" * 10
+    str = u("a\xff" * 50)
+    assert_equal("a#{repl.to_str}" * 50, EnvUtil.under_gc_stress {str.scrub(repl)})
+  end
+
   def test_scrub_replace_block
     assert_equal("\u3042<e381>", u("\xE3\x81\x82\xE3\x81").scrub{|x|'<'+x.unpack('H*')[0]+'>'})
     assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub{e("\xA4\xA2")} }
@@ -1729,5 +1768,20 @@ class TestM17N < Test::Unit::TestCase
   def test_greek_capital_gap
     bug12204 = '[ruby-core:74478] [Bug #12204] GREEK CAPITAL RHO and SIGMA'
     assert_equal("\u03A3", "\u03A1".succ, bug12204)
+  end
+
+  def test_emacs_mule_codepoint_with_low_byte
+    # [Bug #22516]
+    %w[Emacs-Mule stateless-ISO-2022-JP].each do |name|
+      enc = Encoding.find(name)
+      [0x01018000, 0x018000, 0x0180a0, 0x8f00b6, 0x9000a0, 0x8141].each do |code|
+        assert_raise(RangeError) { "".force_encoding(enc) << code }
+        assert_raise(RangeError) { code.chr(enc) }
+        assert_raise(ArgumentError) { format(("a" * 100 + "%c").force_encoding(enc), code) }
+      end
+      # too big for format
+      assert_raise(RangeError) { "".force_encoding(enc) << 0x9c00a0a0 }
+      assert_raise(RangeError) { 0x9c00a0a0.chr(enc) }
+    end
   end
 end

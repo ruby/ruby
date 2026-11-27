@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Hash#initialize" do
   it "is private" do
-    Hash.should have_private_instance_method("initialize")
+    Hash.private_instance_methods(false).should.include?(:initialize)
   end
 
   it "can be used to reset default_proc" do
@@ -42,20 +42,20 @@ describe "Hash#initialize" do
 
   it "returns self" do
     h = Hash.new
-    h.send(:initialize).should equal(h)
+    h.send(:initialize).should.equal?(h)
   end
 
   it "raises a FrozenError if called on a frozen instance" do
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize() }}
-    block.should raise_error(FrozenError)
+    block.should.raise(FrozenError)
 
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize(nil) }  }
-    block.should raise_error(FrozenError)
+    block.should.raise(FrozenError)
 
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize(5) }    }
-    block.should raise_error(FrozenError)
+    block.should.raise(FrozenError)
 
     block = -> { HashSpecs.frozen_hash.instance_eval { initialize { 5 } } }
-    block.should raise_error(FrozenError)
+    block.should.raise(FrozenError)
   end
 end

@@ -6,7 +6,7 @@ const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
 
 // TODO(max): Make a `SmallBitSet` and `LargeBitSet` and switch between them if `num_bits` fits in
 // `Entry`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BitSet<T: Into<usize> + Copy> {
     entries: Vec<Entry>,
     num_bits: usize,
@@ -37,11 +37,28 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         }
     }
 
-    pub fn get(&self, idx: T) -> bool {
+    /// Clear a bit. Returns whether the bit was previously set.
+    pub fn remove(&mut self, idx: T) -> bool {
         debug_assert!(idx.into() < self.num_bits);
         let entry_idx = idx.into() / ENTRY_NUM_BITS;
         let bit_idx = idx.into() % ENTRY_NUM_BITS;
-        (self.entries[entry_idx] & (1 << bit_idx)) != 0
+        let was_set = (self.entries[entry_idx] & (1 << bit_idx)) != 0;
+        self.entries[entry_idx] &= !(1 << bit_idx);
+        was_set
+    }
+
+    pub fn get(&self, idx: T) -> bool {
+        let entry_idx = idx.into() / ENTRY_NUM_BITS;
+        let bit_idx = idx.into() % ENTRY_NUM_BITS;
+        let Some(entry) = self.entries.get(entry_idx) else {
+            return false;
+        };
+        (entry & (1 << bit_idx)) != 0
+    }
+
+    /// Whether all bits are clear.
+    pub fn is_empty(&self) -> bool {
+        self.iter_set_bits().next().is_none()
     }
 
     /// Modify `self` to only have bits set if they are also set in `other`. Returns true if `self`
@@ -57,6 +74,57 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         }
         changed
     }
+
+    /// Modify `self` to have bits set if they are set in either `self` or `other`. Returns true if `self`
+    /// was modified, and false otherwise.
+    /// `self` and `other` must have the same number of bits.
+    pub fn union_with(&mut self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        let mut changed = false;
+        for i in 0..self.entries.len() {
+            let before = self.entries[i];
+            self.entries[i] |= other.entries[i];
+            changed |= self.entries[i] != before;
+        }
+        changed
+    }
+
+    /// Modify `self` to remove bits that are set in `other`. Returns true if `self`
+    /// was modified, and false otherwise.
+    /// `self` and `other` must have the same number of bits.
+    pub fn difference_with(&mut self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        let mut changed = false;
+        for i in 0..self.entries.len() {
+            let before = self.entries[i];
+            self.entries[i] &= !other.entries[i];
+            changed |= self.entries[i] != before;
+        }
+        changed
+    }
+
+    /// Check if two BitSets are equal.
+    /// `self` and `other` must have the same number of bits.
+    pub fn equals(&self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        self.entries == other.entries
+    }
+
+    /// Returns an iterator over the indices of set bits.
+    /// Only iterates over bits that are set, not all possible indices.
+    pub fn iter_set_bits(&self) -> impl Iterator<Item = usize> + '_ {
+        self.entries.iter().enumerate().flat_map(move |(entry_idx, &entry)| {
+            let mut bits = entry;
+            std::iter::from_fn(move || {
+                if bits == 0 {
+                    return None;
+                }
+                let bit_pos = bits.trailing_zeros() as usize;
+                bits &= bits - 1; // Clear the lowest set bit
+                Some(entry_idx * ENTRY_NUM_BITS + bit_pos)
+            })
+        }).filter(move |&idx| idx < self.num_bits)
+    }
 }
 
 #[cfg(test)]
@@ -65,9 +133,16 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn get_over_capacity_panics() {
-        let set = BitSet::with_capacity(0);
-        assert!(!set.get(0usize));
+    fn insert_over_capacity_panics() {
+        let mut set = BitSet::with_capacity(0);
+        set.insert(0usize);
+    }
+
+    #[test]
+    fn get_over_capacity_returns_false() {
+        let set = BitSet::<usize>::with_capacity(0);
+        assert!(!set.get(0));
+        assert!(!set.get(5000));
     }
 
     #[test]
@@ -122,5 +197,57 @@ mod tests {
         assert!(!left.get(0usize));
         assert!(left.get(1usize));
         assert!(!left.get(2usize));
+    }
+
+    #[test]
+    fn test_iter_set_bits() {
+        let mut set: BitSet<usize> = BitSet::with_capacity(10);
+        set.insert(1usize);
+        set.insert(5usize);
+        set.insert(9usize);
+
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![1, 5, 9]);
+    }
+
+    #[test]
+    fn test_iter_set_bits_empty() {
+        let set: BitSet<usize> = BitSet::with_capacity(10);
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![]);
+    }
+
+    #[test]
+    fn test_iter_set_bits_all() {
+        let mut set: BitSet<usize> = BitSet::with_capacity(5);
+        set.insert_all();
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![0, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_is_empty_while_progressively_removing_from_a_set() {
+        let num_bits = super::ENTRY_NUM_BITS + 1;
+        let mut set: BitSet<usize> = BitSet::with_capacity(num_bits);
+        set.insert_all();
+        assert!( !set.is_empty());
+        for i in 1..num_bits {
+            set.remove(i);
+            assert!( !set.is_empty());
+        }
+        set.remove(0);
+        assert!(set.is_empty());
+    }
+
+    #[test]
+    fn test_iter_set_bits_large() {
+        let mut set: BitSet<usize> = BitSet::with_capacity(200);
+        set.insert(0usize);
+        set.insert(127usize);
+        set.insert(128usize);
+        set.insert(199usize);
+
+        let set_bits: Vec<usize> = set.iter_set_bits().collect();
+        assert_eq!(set_bits, vec![0, 127, 128, 199]);
     }
 }

@@ -6,7 +6,7 @@ use crate::codegen::{gen_counted_exit, gen_outlined_exit};
 use crate::cruby::{vm_stack_canary, SIZEOF_VALUE_I32, VALUE, VM_ENV_DATA_SIZE};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, OutlinedCb};
-use crate::core::{Context, RegMapping, RegOpnd, MAX_CTX_TEMPS};
+use crate::core::{Context, RegMapping, RegOpnd, MAX_CTX_LOCALS, MAX_CTX_TEMPS};
 use crate::options::*;
 use crate::stats::*;
 
@@ -242,7 +242,9 @@ impl Opnd
                     let last_idx = stack_size as i32 + VM_ENV_DATA_SIZE as i32 - 1;
                     assert!(last_idx <= idx, "Local index {} must be >= last local index {}", idx, last_idx);
                     assert!(idx <= last_idx + num_locals as i32, "Local index {} must be < last local index {} + local size {}", idx, last_idx, num_locals);
-                    RegOpnd::Local((last_idx + num_locals as i32 - idx) as u8)
+                    // Indices that don't fit in u8 are capped to MAX_CTX_LOCALS, which is untrackable.
+                    let local_idx = last_idx + num_locals as i32 - idx;
+                    RegOpnd::Local(local_idx.try_into().unwrap_or(MAX_CTX_LOCALS as u8))
                 } else {
                     assert!(idx < stack_size as i32);
                     RegOpnd::Stack((stack_size as i32 - idx - 1) as u8)
@@ -1349,10 +1351,15 @@ impl Assembler
     // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
     // so that they will not rewrite each other before they are used.
     pub fn reorder_reg_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
-        // Return the index of a move whose destination is not used as a source if any.
+        // Return the index of a move whose destination is not used as a source or a memory base if any.
         fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
-            moves.iter().enumerate().find(|(_, &(dest_reg, _))| {
-                moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
+            moves.iter().enumerate().find(|&(index, &(dest_reg, _))| {
+                moves.iter().enumerate().all(|(src_index, &(_, src_opnd))| match src_opnd {
+                    // A move reads its source or base before overwriting its own destination.
+                    // Compare reg_no so that a narrower view of the destination also counts.
+                    Opnd::Reg(Reg { reg_no, .. }) | Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => src_index == index || reg_no != dest_reg.reg_no,
+                    _ => true,
+                })
             }).map(|(index, _)| index)
         }
 
@@ -1824,12 +1831,12 @@ impl Assembler {
         out
     }
 
-    pub fn cpop_all(&mut self) {
+    pub fn cpop_all(&mut self, reg_mapping: RegMapping) {
         self.push_insn(Insn::CPopAll);
 
         // Re-enable ccall's RegMappings assertion disabled by cpush_all.
         // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
-        self.set_reg_mapping(self.ctx.get_reg_mapping());
+        self.set_reg_mapping(reg_mapping);
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
@@ -1840,14 +1847,16 @@ impl Assembler {
         self.push_insn(Insn::CPush(opnd));
     }
 
-    pub fn cpush_all(&mut self) {
+    pub fn cpush_all(&mut self) -> RegMapping {
         self.push_insn(Insn::CPushAll);
 
         // Mark all temps as not being in registers.
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
         // that don't require spill_regs for GC.
+        let mapping = self.ctx.get_reg_mapping();
         self.set_reg_mapping(RegMapping::default());
+        mapping
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
@@ -2013,7 +2022,8 @@ impl Assembler {
 
     #[must_use]
     pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        // alloc_regs sizes the out register by the operand, so the backends widen it when emitting.
+        let out = self.next_opnd_out(64);
         self.push_insn(Insn::LoadSExt { opnd, out });
         out
     }

@@ -163,6 +163,6 @@ class TestMetaclass < Test::Unit::TestCase
     assert_nothing_raised{ metametaclass_of_bar.metaclass_method_c }
     assert_nothing_raised{ metametaclass_of_bar.metametaclass_method_o }
     assert_nothing_raised{ metametaclass_of_bar.metametaclass_method_f }
-    assert_raise(NoMethodError){ metametaclass_of_bar.metaclass_method_b }
+    assert_raise(NoMethodError){ metametaclass_of_bar.metametaclass_method_b }
   end
 end

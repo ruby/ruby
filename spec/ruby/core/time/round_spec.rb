@@ -20,8 +20,8 @@ describe "Time#round" do
   it "returns an instance of Time, even if #round is called on a subclass" do
     subclass = Class.new(Time)
     instance = subclass.at(0)
-    instance.class.should equal subclass
-    instance.round.should be_an_instance_of(Time)
+    instance.class.should.equal? subclass
+    instance.round.should.instance_of?(Time)
   end
 
   it "copies own timezone to the returning value" do

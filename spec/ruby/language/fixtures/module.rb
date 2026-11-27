@@ -1,8 +1,5 @@
 module ModuleSpecs
   module Modules
-    class Klass
-    end
-
     A = "Module"
     B = 1
     C = nil
@@ -12,13 +9,4 @@ module ModuleSpecs
 
   module Anonymous
   end
-
-  module IncludedInObject
-    module IncludedModuleSpecs
-    end
-  end
-end
-
-class Object
-  include ModuleSpecs::IncludedInObject
 end
