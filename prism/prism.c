@@ -9878,33 +9878,6 @@ parser_end_of_line_p(const pm_parser_t *parser) {
 }
 
 /**
- * Return the width of the character at the end of the current token.
- */
-static PRISM_INLINE size_t
-parser_char_width(const pm_parser_t *parser) {
-    size_t width;
-    if (parser->encoding_changed) {
-        width = pm_encoding_char_width(parser->encoding, parser->current.end, parser->end - parser->current.end);
-    } else {
-        width = pm_encoding_utf_8_char_width(parser->current.end, parser->end - parser->current.end);
-    }
-
-    // TODO: If the character is invalid in the given encoding, then we'll just
-    // push one byte into the buffer. This should actually be an error.
-    return (width == 0 ? 1 : width);
-}
-
-/**
- * Push an escaped character into the token buffer.
- */
-static void
-pm_token_buffer_push_escaped(pm_parser_t *parser) {
-    size_t width = parser_char_width(parser);
-    pm_buffer_append_bytes(&parser->lex_buffer, parser->current.end, width);
-    parser->current.end += width;
-}
-
-/**
  * When we're about to return from lexing the current token, we need to flush
  * all of the content that we have pushed into the buffer into the current
  * string. If we haven't pushed anything into the buffer, this means that we
@@ -11799,8 +11772,8 @@ parser_lex(pm_parser_t *parser) {
                                     LEX(PM_TOKEN_STRING_CONTENT);
                                 }
                             } else {
+                                /* The next scan validates the character after the literal backslash. */
                                 pm_buffer_append_byte(&parser->lex_buffer, '\\');
-                                pm_token_buffer_push_escaped(parser);
                             }
 
                             break;
@@ -12331,8 +12304,8 @@ parser_lex(pm_parser_t *parser) {
                                         LEX(PM_TOKEN_STRING_CONTENT);
                                     }
                                 } else {
+                                    /* The next scan validates the character after the literal backslash. */
                                     pm_buffer_append_byte(&parser->lex_buffer, '\\');
-                                    pm_token_buffer_push_escaped(parser);
                                 }
 
                                 break;
@@ -12612,7 +12585,6 @@ parser_lex(pm_parser_t *parser) {
                                     continue;
                                 default:
                                     pm_buffer_append_byte(&parser->lex_buffer, '\\');
-                                    pm_token_buffer_push_escaped(parser);
                                     break;
                             }
                         } else {

@@ -219,10 +219,12 @@ module Ruby::Prism
           ["\"", "\""],
           ["`", "`"],
           ["/", "/"],
+          ["%w[", "]"],
+          ["%i[", "]"],
           ["<<'HERE'\n", "\nHERE"],
           ["<<-HERE\n", "\nHERE"]
         ].each do |opening, closing|
-          assert Ruby::Prism.parse_success?("# encoding: shift_jis\n'\\\x82\xA0'\n")
+          assert Ruby::Prism.parse_success?("# encoding: shift_jis\n#{opening}\\\x82\xA0#{closing}\n")
         end
       end
     end
@@ -276,6 +278,19 @@ module Ruby::Prism
           assert_predicate result, :success?
           assert_equal "\x81\n".b.force_encoding(encoding), result.statement.unescaped
           refute_predicate result.statement.unescaped, :valid_encoding?
+        end
+      end
+    end
+
+    def test_invalid_bytes_after_a_backslash_in_noninterpolating_literals
+      cases = { "UTF-8" => "\x80" }
+      cases.merge!("CESU-8" => "\x8D", "Windows-31J" => "\xFF") unless ENV["PRISM_BUILD_MINIMAL"]
+
+      cases.each do |encoding, byte|
+        ["'\\#{byte}'", "%q[\\#{byte}]", "%w[\\#{byte}]", "%i[\\#{byte}]", "%s[\\#{byte}]"].each do |literal|
+          errors = Ruby::Prism.parse("# encoding: #{encoding}\n#{literal}").errors
+          assert_equal [:invalid_multibyte_character], errors.map(&:type), literal.dump
+          assert_equal byte.b, errors.first.location.slice.b
         end
       end
     end
