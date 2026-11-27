@@ -66,9 +66,6 @@ VALUE rb_cArray_empty_frozen;
  *                they cannot be modified. Not updating the reference count
  *                improves copy-on-write performance. Their reference count is
  *                assumed to be infinity.
- * 14:  RARRAY_PTR_IN_USE_FLAG
- *          The buffer of the array is in use. This is only used during
- *          debugging.
  * 19:  RARRAY_FAKEARY
  *            The array is not allocated or managed by the garbage collector.
  *            Typically, the array object header (struct RString) is temporarily
@@ -298,23 +295,6 @@ ary_verify_(VALUE ary, const char *file, int line)
 #else
 #define ary_verify(ary) ((void)0)
 #endif
-
-VALUE *
-rb_ary_ptr_use_start(VALUE ary)
-{
-#if ARRAY_DEBUG
-    FL_SET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
-#endif
-    return (VALUE *)RARRAY_CONST_PTR(ary);
-}
-
-void
-rb_ary_ptr_use_end(VALUE ary)
-{
-#if ARRAY_DEBUG
-    FL_UNSET_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
-#endif
-}
 
 void
 rb_mem_clear(VALUE *mem, rb_len_t size)
