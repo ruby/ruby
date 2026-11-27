@@ -315,7 +315,11 @@ ractor_mark_unshareable_parts(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 }
 
 struct class_field_shareable_p;
+#if defined(HAVE_WORKING_FORK)
 static void shareable_p_requests_atfork(rb_ractor_t *r);
+#else
+# define shareable_p_requests_atfork(r) ((void)(r))
+#endif
 
 static void
 ractor_mark(void *ptr)
@@ -4443,6 +4447,7 @@ shareable_p_here(VALUE val)
     return rb_ractor_shareable_p(val) ? val : Qundef;
 }
 
+#if defined(HAVE_WORKING_FORK)
 // the requests were the parent's threads': free them all, the lock may have had a holder
 static void
 shareable_p_requests_atfork(rb_ractor_t *r)
@@ -4455,6 +4460,7 @@ shareable_p_requests_atfork(rb_ractor_t *r)
     }
     r->shareable_p_requests = NULL;
 }
+#endif
 
 // the owner holds its GVL, so it is the only taker: no ABA
 static struct class_field_shareable_p *

@@ -1737,6 +1737,7 @@ ractor_reply_port_release(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE por
     }
 }
 
+#if defined(HAVE_WORKING_FORK)
 // its holder was a thread the child does not have
 static void
 ractor_reply_port_atfork(rb_ractor_t *r)
@@ -1744,6 +1745,7 @@ ractor_reply_port_atfork(rb_ractor_t *r)
     r->sync.reply_port = Qfalse;
     r->sync.reply_port_busy = false;
 }
+#endif
 
 struct ractor_join_wait {
     VALUE port;
