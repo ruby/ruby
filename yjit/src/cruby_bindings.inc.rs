@@ -343,7 +343,6 @@ pub const RSTRING_CHILLED: ruby_rstring_private_flags = 16384;
 pub type ruby_rstring_private_flags = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 pub type rb_atomic_t = ::std::os::raw::c_uint;
-pub type rb_id_serial_t = u32;
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -438,18 +437,7 @@ pub const OPTIMIZED_METHOD_TYPE_STRUCT_AREF: method_optimized_type = 3;
 pub const OPTIMIZED_METHOD_TYPE_STRUCT_ASET: method_optimized_type = 4;
 pub const OPTIMIZED_METHOD_TYPE__MAX: method_optimized_type = 5;
 pub type method_optimized_type = u32;
-#[repr(C)]
-#[derive(Debug)]
-pub struct rb_const_path_heap {
-    pub size: u32,
-    pub segments: __IncompleteArrayField<rb_id_serial_t>,
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union rb_const_path_t {
-    pub heap: *const rb_const_path_heap,
-    pub packed: usize,
-}
+pub type rb_const_path_t = usize;
 pub type rb_num_t = ::std::os::raw::c_ulong;
 pub const RUBY_TAG_NONE: ruby_tag_type = 0;
 pub const RUBY_TAG_RETURN: ruby_tag_type = 1;
@@ -473,7 +461,7 @@ pub struct iseq_inline_constant_cache_entry {
     pub ractor_id: rb_serial_t,
 }
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_constant_cache {
     pub entry: *mut iseq_inline_constant_cache_entry,
     pub const_path: rb_const_path_t,

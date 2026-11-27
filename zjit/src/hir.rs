@@ -353,9 +353,9 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 )
             }
             Invariant::StableConstantNames { const_path } => {
-                let word = ptr::without_provenance::<u64>(const_path.bits());
+                let word = ptr::without_provenance::<u64>(const_path);
                 write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(word))?;
-                let mut sep = if const_path.absolute_p() { "::" } else { "" };
+                let mut sep = if const_path_absolute_p(const_path) { "::" } else { "" };
                 for id in const_path_ids(const_path) {
                     write!(f, "{sep}{}", id.contents_lossy())?;
                     sep = "::";
@@ -10183,7 +10183,7 @@ fn add_iseq_to_hir(
                         for (segment, id) in segments.iter_mut().zip(const_path_ids(const_path)) {
                             *segment = id;
                         }
-                        if const_path.absolute_p() && [ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
+                        if const_path_absolute_p(const_path) && [ID!(RubyVM), ID!(ZJIT), ID(0)] == segments {
                             let ruby_vm_mod = rb_const_lookup(rb_cObject, ID!(RubyVM));
                             if !ruby_vm_mod.is_null() && (*ruby_vm_mod).value == rb_cRubyVM {
                                 let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));

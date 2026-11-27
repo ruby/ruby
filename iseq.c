@@ -153,7 +153,7 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
 
         // It's possible that segments is NULL if we overallocated an IC but
         // optimizations removed the instruction using it
-        if (const_path.packed == 0)
+        if (!const_path)
             continue;
 
         size_t i = 0;
@@ -162,10 +162,8 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
             remove_from_constant_cache(segment, ic);
             i++;
         }
-        const_path_free(const_path);
     }
 }
-
 
 rb_hook_list_t *
 rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
@@ -615,14 +613,6 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
-
-        if (ISEQ_BODY(iseq)->is_entries) {
-            /* IC entries constant segments */
-            for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
-                IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-                size += const_path_memsize(ic->const_path);
-            }
-        }
 
         /* body->call_data */
         size += body->ci_size * sizeof(struct rb_call_data);
