@@ -15590,9 +15590,10 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         cr = ENC_CODERANGE_VALID;
     }
-    /* rep points into repl, which may be a new string converted from the
-     * argument, and rb_str_buf_cat may trigger GC while resizing buf before
-     * copying from rep. */
+    /* repl may be a new string, converted from the argument (rep points into
+     * it) or returned by the block, and rb_str_buf_cat may trigger GC while
+     * resizing buf before copying from it. Guarding the variable keeps each
+     * value assigned to it on the stack until the next assignment. */
     RB_GC_GUARD(repl);
     rb_enc_associate(buf, enc);
     ENC_CODERANGE_SET(buf, cr);
