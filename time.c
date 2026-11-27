@@ -2926,6 +2926,9 @@ time_timespec(VALUE num, int interval)
     else if (RB_FLOAT_TYPE_P(num)) {
         double x = RFLOAT_VALUE(num);
         arg_range_check(x);
+        if (isnan(x)) {
+            rb_raise(rb_eRangeError, "%f out of Time range", x);
+        }
         {
             double f, d;
 
@@ -2941,10 +2944,10 @@ time_timespec(VALUE num, int interval)
                 t.tv_nsec = 1000000000 - t.tv_nsec;
                 f -= 1;
             }
-            t.tv_sec = (time_t)f;
-            if (f != t.tv_sec) {
+            if (!(f >= (double)TIMET_MIN && f < (double)TIMET_MAX + 1.0)) {
                 rb_raise(rb_eRangeError, "%f out of Time range", x);
             }
+            t.tv_sec = (time_t)f;
         }
     }
     else if (RB_BIGNUM_TYPE_P(num)) {
