@@ -2005,7 +2005,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   [:and!, :or!, :xor!].each do |operation|
-    define_method("test_#{operation.to_s.delete('!')}_empty_range_does_not_overlap") do
+    define_method("test_#{operation.to_s.delete('!')}_empty_range_does_not_overlap", &Ractor.make_shareable(proc do
       buffer = IO::Buffer.new(8)
       buffer.set_string("abcdefgh")
       [0, 4, 8].each do |offset|
@@ -2019,7 +2019,7 @@ class TestIOBuffer < Test::Unit::TestCase
       end
     ensure
       buffer&.free
-    end
+    end))
   end
 
   def test_inplace_operators_reject_nonempty_overlap

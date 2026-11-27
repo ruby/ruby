@@ -152,7 +152,7 @@ module Test
 
       if defined?(RubyVM::InstructionSequence)
         COMPILE_METHODS = RubyVM::InstructionSequence.methods(false).
-                            grep(/\Acompile_(?!option|file)(\w+)\z/) {$1}
+                            grep(/\Acompile_(?!option|file)(\w+)\z/) {$1.freeze}.freeze
         def syntax_check(code, fname, line, compile: nil)
           code = code.dup.force_encoding(Encoding::UTF_8)
           RubyVM::InstructionSequence.__send__(compile || :compile, code, fname, fname, line)

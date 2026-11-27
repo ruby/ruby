@@ -1745,8 +1745,9 @@ module Test
                 self.skips = 0
                 self.assertion_count = 0
                 self.test_count = 0
+                ractor_runner = _runner_for_ractor
                 rs = run_tests_inside_ractors_num.times.map do
-                  Ractor.new(inst, self) do |instance, runner|
+                  Ractor.new(inst, ractor_runner) do |instance, runner|
                     res = instance.run runner
                     testcase_copyable_ivars = TESTCASE_COPYABLE_IVARS
                     runner_copyable_ivars = RUNNER_COPYABLE_IVARS
@@ -1819,6 +1820,22 @@ module Test
       end
 
       def __init_runner(runner)
+      end
+
+      # IOs can't be copied into a Ractor: @output wraps one and @failed_output is one.
+      RUNNER_UNCOPYABLE_IVARS = %i[@output @failed_output].freeze
+
+      def _runner_for_ractor
+        runner = dup
+        RUNNER_UNCOPYABLE_IVARS.each do |ivar|
+          runner.remove_instance_variable(ivar) if runner.instance_variable_defined?(ivar)
+        end
+        if (opts = runner.instance_variable_get(:@options))
+          opts = opts.dup
+          opts.delete(:failed_output)
+          runner.instance_variable_set(:@options, opts)
+        end
+        runner
       end
 
       def _merge_results_from_ractor(inst, runner_cpy)

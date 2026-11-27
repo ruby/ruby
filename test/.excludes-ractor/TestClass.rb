@@ -5,3 +5,4 @@ exclude(:test_check_inheritable_break_with_object, "global side effects")
 exclude(/^test_subclass_gc/, "Takes long time")
 # 'block in TestClass#test_subclasses'
 exclude(:test_subclasses, "RuntimeError: defined with an un-shareable Proc in a different Ractor")
+exclude(:test_redefine_private_class, "modifies a class/module created by another ractor")
