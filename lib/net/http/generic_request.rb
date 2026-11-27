@@ -205,6 +205,15 @@ class Net::HTTPGenericRequest
     input
   end
 
+  # False when the body comes from an IO: an earlier attempt may have read from
+  # it, so sending the request again would send only what is left.
+  def body_replayable? # :nodoc: internal use only
+    return false if @body_stream
+    return true unless @body_data
+    @body_data.each { |_key, value| return false if value.respond_to?(:read) }
+    true
+  end
+
   def set_body_internal(str)   #:nodoc: internal use only
     raise ArgumentError, "both of body argument and HTTPRequest#body set" if str and (@body or @body_stream)
     self.body = str if str

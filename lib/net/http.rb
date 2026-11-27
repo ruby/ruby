@@ -1389,6 +1389,11 @@ module Net   #:nodoc:
     # Timeout::Error.
     # The initial value is 1.
     #
+    # A request whose body comes from an IO, set through
+    # Net::HTTPGenericRequest#body_stream= or as a value given to
+    # Net::HTTPHeader#set_form, is not retried: the first attempt may have read
+    # from the IO, so a retry would send only what is left.
+    #
     # Argument +retries+ must be a non-negative numeric value:
     #
     #   http = Net::HTTP.new(hostname)
@@ -2557,7 +2562,7 @@ module Net   #:nodoc:
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception
-        if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
+        if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method) && req.body_replayable?
           count += 1
           @socket.close if @socket
           debug "Conn close because of error #{exception}, and retry"
