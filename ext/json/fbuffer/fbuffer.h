@@ -103,7 +103,7 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
             fbuffer_flush(fb);
         }
 
-        if (RB_LIKELY(requested < fb->capa)) {
+        if (RB_LIKELY(requested <= (fb->capa - fb->len))) {
             return;
         }
     }
