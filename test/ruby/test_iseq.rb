@@ -993,6 +993,46 @@ class TestISeq < Test::Unit::TestCase
     RUBY
   end
 
+  def test_return_in_argument_with_rescue_and_ensure
+    source = <<~RUBY
+      runner = Class.new do
+        def run(events)
+          events.push(begin
+            return :returned
+          rescue StandardError
+            events << :rescued
+          ensure
+            events << :ensured
+          end)
+          :unreachable
+        end
+      end.new
+
+      events = []
+      [runner.run(events), events]
+    RUBY
+
+    each_compiler(source) do |iseq|
+      assert_equal([:returned, [:ensured]], iseq.eval)
+    end
+  end
+
+  def test_break_in_ensure_overrides_return_in_loop
+    source = <<~RUBY
+      Array.[](:before, (while true
+        begin
+          return
+        ensure
+          break :after
+        end
+      end))
+    RUBY
+
+    each_compiler(source) do |iseq|
+      assert_equal([:before, :after], iseq.eval)
+    end
+  end
+
   def test_unreachable_syntax_error
     mesg = /Invalid break/
     assert_syntax_error("false and break", mesg)

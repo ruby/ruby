@@ -6762,16 +6762,26 @@ add_ensure_range(rb_iseq_t *iseq, struct ensure_range *erange,
 }
 
 static bool
+has_ensure_iseq(const rb_iseq_t *iseq)
+{
+    const struct iseq_compile_data_ensure_node_stack *e;
+    for (e = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack; e; e = e->prev) {
+        if (e->ensure_node) return true;
+    }
+    return false;
+}
+
+static bool
 can_add_ensure_iseq(const rb_iseq_t *iseq)
 {
-    struct iseq_compile_data_ensure_node_stack *e;
-    if (ISEQ_COMPILE_DATA(iseq)->in_rescue && (e = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack) != NULL) {
-        while (e) {
-            if (e->ensure_node) return false;
-            e = e->prev;
-        }
-    }
-    return true;
+    return !ISEQ_COMPILE_DATA(iseq)->in_rescue || !has_ensure_iseq(iseq);
+}
+
+static bool
+can_inline_return(const rb_iseq_t *iseq, enum rb_iseq_type type)
+{
+    return type == ISEQ_TYPE_METHOD &&
+        ((!ISEQ_COMPILE_DATA(iseq)->in_rescue && !ISEQ_COMPILE_DATA(iseq)->redo_label) || !has_ensure_iseq(iseq));
 }
 
 static void
@@ -9220,7 +9230,8 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
             break;
         }
 
-        if (type == ISEQ_TYPE_METHOD) {
+        bool direct_return = can_inline_return(iseq, type);
+        if (direct_return) {
             splabel = NEW_LABEL(0);
             ADD_LABEL(ret, splabel);
             ADD_ADJUST(ret, line_node, 0);
@@ -9228,7 +9239,7 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
         CHECK(COMPILE(ret, "return nd_stts (return val)", retval));
 
-        if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
+        if (direct_return) {
             add_ensure_iseq(ret, iseq, 1);
             ADD_TRACE(ret, RUBY_EVENT_RETURN);
             ADD_INSN(ret, line_node, leave);
