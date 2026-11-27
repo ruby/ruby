@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
+require_relative '../lib/parser_support'
 
 module Bug22197
   class Parent
@@ -534,6 +535,12 @@ class TestBacktrace < Test::Unit::TestCase
     backtrace = tap { break caller_locations(0) }
     assert_equal(__FILE__, backtrace[1].path) # not "<internal:kernel>"
     assert_equal("Kernel#tap", backtrace[1].label)
+  end
+
+  def test_backtrace_with_nul_in_path
+    omit "parse.y rejects a NUL in the file name" unless ParserSupport.prism_enabled?
+    assert_equal("a\0b.rb:1:in 'TestBacktrace#test_backtrace_with_nul_in_path'",
+                 eval("caller(0, 1)[0]", nil, "a\0b.rb"))
   end
 
   def test_backtrace_on_argument_error

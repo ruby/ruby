@@ -716,10 +716,26 @@ location_absolute_path_m(VALUE self)
     return location_realpath(location_ptr(self));
 }
 
+static void
+location_cat_str(VALUE s, VALUE str)
+{
+    rb_encoding *enc = rb_enc_compatible(s, str);
+    if (enc && rb_enc_asciicompat(enc)) {
+        rb_enc_associate(s, enc);
+    }
+    else {
+        str = rb_str_conv_enc_opts(str, rb_enc_get(str), rb_enc_get(s),
+                                   ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
+    }
+    rb_str_cat(s, RSTRING_PTR(str), RSTRING_LEN(str));
+    RB_GC_GUARD(str);
+}
+
 static VALUE
 location_format(VALUE file, int lineno, VALUE name)
 {
-    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "%"PRIsVALUE, file);
+    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "");
+    location_cat_str(s, file);
     if (lineno != 0) {
         rb_str_catf(s, ":%d", lineno);
     }
@@ -728,7 +744,9 @@ location_format(VALUE file, int lineno, VALUE name)
         rb_str_cat_cstr(s, "unknown method");
     }
     else {
-        rb_str_catf(s, "'%"PRIsVALUE"'", name);
+        rb_str_cat_cstr(s, "'");
+        location_cat_str(s, name);
+        rb_str_cat_cstr(s, "'");
     }
     RB_GC_GUARD(name);
     return s;
