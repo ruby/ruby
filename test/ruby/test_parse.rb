@@ -1719,7 +1719,7 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_copy_with_braceless_hash
-    assert_valid_syntax(<<~RUBY, parser: :parsey)
+    assert_valid_syntax(<<~RUBY, parser: :*)
       # shareable_constant_value: experimental_copy
       while pending?
         OPTIONS = [:default, labels: []]
