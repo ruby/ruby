@@ -10186,13 +10186,13 @@ parser_lex(pm_parser_t *parser) {
                     case '\\': {
                         size_t eol_length = match_eol_offset(parser, 1);
                         if (eol_length) {
+                            space_seen = true;
                             if (parser->heredoc_end) {
                                 parser->current.end = parser->heredoc_end;
                                 parser->heredoc_end = NULL;
                             } else {
                                 parser->current.end += eol_length + 1;
                                 pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
-                                space_seen = true;
                             }
                         } else if (pm_char_is_inline_whitespace(*parser->current.end)) {
                             parser->current.end += 2;

@@ -38,6 +38,25 @@ module Ruby::Prism
       end
     end
 
+    def test_continuation_separates_percent_literal_argument
+      ["\n", "\r\n"].each do |newline|
+        result = Ruby::Prism.parse(["a[<<A] |= b\\", "A", "%()"].join(newline))
+        assert_empty result.errors
+        call = result.statement.value
+        assert_equal :b, call.name
+        assert_equal "%()", call.arguments.arguments.first.location.slice
+      end
+    end
+
+    def test_continuation_separates_heredoc_argument_in_rescue
+      ["\n", "\r\n"].each do |newline|
+        result = Ruby::Prism.parse(["<<A rescue b\\", "A", "<<B"].join(newline))
+        assert_include result.errors.map(&:type), :heredoc_term
+        argument = result.statement.rescue_expression.arguments.arguments.first
+        assert_equal "<<B", argument.opening_loc.slice
+      end
+    end
+
     def test_heredoc_continued_line_is_not_terminator
       ESCAPES.each do |escape, value|
         assert_content("body\n#{value}B\nrest\n".b, "<<B\n\#{<<A}#{escape}body\nA\nB\nrest\nB\n")
