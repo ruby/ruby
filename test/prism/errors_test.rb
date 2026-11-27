@@ -597,6 +597,18 @@ module Ruby::Prism
       assert_equal ["unterminated heredoc; can't find string \"BEFORE\" anywhere before EOF"], result.errors.map(&:message)
     end
 
+    def test_unterminated_quoted_heredoc_identifier_at_eof
+      ["'", '"', "`"].each do |quote|
+        ["<<", "<<-", "<<~"].each do |opener|
+          source = "alias#{opener}#{quote}"
+          error = Ruby::Prism.parse(source).errors.find { |diagnostic| diagnostic.type == :heredoc_identifier }
+          assert_not_nil error, source
+          assert_equal source.bytesize, error.location.start_offset
+          assert_equal 0, error.location.length
+        end
+      end
+    end
+
     def test_unexpected_statement_as_argument
       result = Ruby::Prism.parse("f(alias a b, 1); tail")
       assert_equal [:statement_alias], result.errors.map(&:type)

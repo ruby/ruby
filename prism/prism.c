@@ -10795,9 +10795,7 @@ parser_lex(pm_parser_t *parser) {
                             const uint8_t *ident_start = parser->current.end;
                             size_t width = 0;
 
-                            if (parser->current.end >= parser->end) {
-                                parser->current.end = end;
-                            } else if (quote == PM_HEREDOC_QUOTE_NONE && (width = char_is_identifier(parser, parser->current.end, parser->end - parser->current.end)) == 0) {
+                            if (quote == PM_HEREDOC_QUOTE_NONE && (width = char_is_identifier(parser, parser->current.end, parser->end - parser->current.end)) == 0) {
                                 parser->current.end = end;
                             } else {
                                 if (quote == PM_HEREDOC_QUOTE_NONE) {
