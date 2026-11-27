@@ -3991,8 +3991,16 @@ rb_get_values_at(VALUE obj, rb_len_t olen, int argc, const VALUE *argv, VALUE (*
             for (j = beg; j < end; j++) {
                 rb_ary_push(result, (*func)(obj, j));
             }
-            if (beg + len > j)
-                rb_ary_resize(result, RARRAY_LEN(result) + (beg + len) - j);
+            if (beg + len > j) {
+                /* beg + len does not exceed RB_LEN_MAX, but adding it
+                 * to the length of the result can overflow. */
+                const rb_len_t rest = beg + len - j;
+                if (rest > ARY_MAX_SIZE - RARRAY_LEN(result)) {
+                    rb_raise(rb_eIndexError, "index %"PRIdLEN" too big",
+                             beg + len - 1);
+                }
+                rb_ary_resize(result, RARRAY_LEN(result) + rest);
+            }
             continue;
         }
         rb_ary_push(result, (*func)(obj, NUM2LEN(argv[i])));

@@ -285,6 +285,19 @@ module TestStruct
     assert_equal([2, 3, 4, 3, 4, 5], o.values_at(1..3, 2...5))
   end
 
+  def test_values_at_range_with_len_max_end
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+    o = @Struct.new(:a, :b).new(1, 2)
+
+    assert_raise(IndexError) { o.values_at(0..max) }
+    # The length of the result must not overflow when the range is not
+    # the first argument.
+    assert_raise(IndexError) { o.values_at(0, 0..max) }
+    assert_raise(IndexError) { o.values_at(0, 0...max) }
+    # Same with a result that is not embedded.
+    assert_raise(IndexError) { o.values_at(*([0] * 1000), 0..max) }
+  end
+
   def test_select
     klass = @Struct.new(:a, :b, :c, :d, :e, :f)
     o = klass.new(1, 2, 3, 4, 5, 6)
