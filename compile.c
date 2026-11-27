@@ -8623,6 +8623,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 {
     const int line = (int)nd_line(node);
     const NODE *line_node = node;
+    int result = COMPILE_OK;
 
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
@@ -8671,17 +8672,26 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         "body",
         branches);
 
-    CHECK(COMPILE_POPPED(ret, "while body", RNODE_WHILE(node)->nd_body));
+    if (!COMPILE_POPPED(ret, "while body", RNODE_WHILE(node)->nd_body)) {
+        result = COMPILE_NG;
+        goto cleanup;
+    }
     ADD_LABEL(ret, next_label);	/* next */
 
     if (type == NODE_WHILE) {
-        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                       redo_label, end_label));
+        if (!compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                      redo_label, end_label)) {
+            result = COMPILE_NG;
+            goto cleanup;
+        }
     }
     else {
         /* until */
-        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                       end_label, redo_label));
+        if (!compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                      end_label, redo_label)) {
+            result = COMPILE_NG;
+            goto cleanup;
+        }
     }
 
     ADD_LABEL(ret, end_label);
@@ -8690,7 +8700,8 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     if (UNDEF_P(RNODE_WHILE(node)->nd_state)) {
         /* ADD_INSN(ret, line_node, putundef); */
         COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
-        return COMPILE_NG;
+        result = COMPILE_NG;
+        goto cleanup;
     }
     else {
         ADD_INSN(ret, line_node, putnil);
@@ -8709,12 +8720,13 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL,
                     ISEQ_COMPILE_DATA(iseq)->redo_label);
 
+  cleanup:
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
-    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
-    return COMPILE_OK;
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+    return result;
 }
 
 static int
@@ -9157,6 +9169,7 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     struct ensure_range er;
     struct iseq_compile_data_ensure_node_stack enl;
     struct ensure_range *erange;
+    int result = COMPILE_OK;
 
     INIT_ANCHOR(ensr);
     CHECK(COMPILE_POPPED(ensr, "ensure ensr", RNODE_ENSURE(node)->nd_ensr));
@@ -9169,7 +9182,10 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     push_ensure_entry(iseq, &enl, &er, RNODE_ENSURE(node)->nd_ensr);
 
     ADD_LABEL(ret, lstart);
-    CHECK(COMPILE_(ret, "ensure head", RNODE_ENSURE(node)->nd_head, (popped | last_leave)));
+    if (!COMPILE_(ret, "ensure head", RNODE_ENSURE(node)->nd_head, (popped | last_leave))) {
+        result = COMPILE_NG;
+        goto cleanup;
+    }
     ADD_LABEL(ret, lend);
     ADD_SEQ(ret, ensr);
     if (!popped && last_leave) ADD_INSN(ret, line_node, putnil);
@@ -9185,8 +9201,9 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         }
     }
 
+  cleanup:
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
-    return COMPILE_OK;
+    return result;
 }
 
 static int

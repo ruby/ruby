@@ -1153,6 +1153,28 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_compile_invalid_yield_in_defined_until
+    assert_syntax_error("#{<<-"{#"}\n#{<<-'};'}", /Invalid yield/)
+    {#
+      a
+      return defined? -(1until yield)
+    };
+  end
+
+  def test_compile_invalid_yield_in_ensure_head
+    assert_syntax_error("#{<<-"{#"}\n#{<<-'};'}", /Invalid yield/)
+    {#
+      while true
+        foo(begin
+          1 until yield
+        ensure
+          nil
+        end)
+        break
+      end
+    };
+  end
+
   def each_compiler(src)
     COMPILE_METHODS.each do |compile|
       yield ISeq.__send__("compile_#{compile}", src)
