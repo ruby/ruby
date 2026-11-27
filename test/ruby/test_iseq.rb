@@ -1033,6 +1033,21 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_redo_in_for_index
+    # [Bug #22647]
+    source = <<~RUBY
+      obj = {}
+      done = true
+      for obj[(redo unless done; :key)] in [1, 2]
+      end
+      obj
+    RUBY
+
+    each_compiler(source) do |iseq|
+      assert_equal({key: 2}, iseq.eval)
+    end
+  end
+
   def test_unreachable_syntax_error
     mesg = /Invalid break/
     assert_syntax_error("false and break", mesg)
