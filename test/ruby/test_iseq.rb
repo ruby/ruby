@@ -1131,14 +1131,10 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_compile_splat_keyword_hash
-    source = "#{<<-"{#"}\n#{<<-'};'}"
+    assert_valid_syntax(source = "#{<<-"{#"}\n#{<<-'};'}", parser: :*)
     {#
       m c, *[s:], *[*y]
     };
-
-    each_compiler(source) do |iseq|
-      assert_kind_of ISeq, iseq
-    end
 
     source = %[#{<<-"{#"}\n#{<<-"};"}]
     {#
@@ -1157,11 +1153,9 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
-  COMPILERS = ISeq.methods(false).grep(/\Acompile_(?!file|option)\w+\z/)
-
   def each_compiler(src)
-    COMPILERS.each do |compile|
-      yield ISeq.__send__(compile, src)
+    COMPILE_METHODS.each do |compile|
+      yield ISeq.__send__("compile_#{compile}", src)
     end
   end
 end
