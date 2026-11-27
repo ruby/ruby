@@ -83,6 +83,7 @@ ruby_setup(void)
 #endif
     Init_BareVM();
     Init_default_shapes();
+    Init_default_const_path();
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();
     Init_vm_objects();

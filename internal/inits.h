@@ -32,6 +32,9 @@ void Init_newline(void);
 /* shape.c */
 void Init_default_shapes(void);
 
+/* const_path.c */
+void Init_default_const_path(void);
+
 /* vm.c */
 void Init_BareVM(void);
 void Init_vm_objects(void);

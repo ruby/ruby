@@ -93,6 +93,7 @@
 #include "gc/gc.h"
 #include "id_table.h"
 #include "internal.h"
+#include "const_path.h"
 #include "internal/class.h"
 #include "internal/compile.h"
 #include "internal/complex.h"
@@ -413,6 +414,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         if (rb_ractor_p(obj)) return false;
         if (rb_obj_is_fstring_table(obj)) return false;
         if (rb_obj_is_symbol_table(obj)) return false;
+        if (rb_obj_is_const_path_tree(obj)) return false;
 
         return true;
 

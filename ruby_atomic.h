@@ -2,6 +2,7 @@
 #define INTERNAL_ATOMIC_H
 
 #include "ruby/atomic.h"
+#include "ruby/internal/stdalign.h"
 #ifdef HAVE_STDATOMIC_H
 # include <stdatomic.h>
 #endif
