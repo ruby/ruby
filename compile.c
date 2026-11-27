@@ -2041,13 +2041,16 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     struct rb_iseq_param_keyword *keyword;
     const VALUE default_values = rb_ary_hidden_new(1);
     const VALUE complex_mark = rb_str_tmp_new(0);
-    int kw = 0, rkw = 0, di = 0, i;
+    int kw = 0, rkw = 0, i;
 
     body->param.flags.has_kw = TRUE;
     body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
 
     while (node) {
         kw++;
+        if (get_nd_value(node->nd_body) == NODE_SPECIAL_REQUIRED_KEYWORD) {
+            rkw++;
+        }
         node = node->nd_next;
     }
     if (kw > VM_CALL_KW_LEN_MAX) {
@@ -2056,16 +2059,24 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     }
     arg_size += kw;
     keyword->bits_start = arg_size++;
+    keyword->num = kw;
+    keyword->required_num = rkw;
+    keyword->table = &body->local_table[keyword->bits_start - keyword->num];
+
+    if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
+        ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
+        keyword->rest_start = arg_size++;
+        body->param.flags.has_kwrest = TRUE;
+
+        if (kw_id == idPow) body->param.flags.anon_kwrest = TRUE;
+    }
 
     node = args->kw_args;
     while (node) {
         const NODE *val_node = get_nd_value(node->nd_body);
         VALUE dv;
 
-        if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
-            ++rkw;
-        }
-        else {
+        if (val_node != NODE_SPECIAL_REQUIRED_KEYWORD) {
             switch (nd_type(val_node)) {
               case NODE_SYM:
                 dv = rb_node_sym_string_val(val_node);
@@ -2105,24 +2116,11 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 dv = complex_mark;
             }
 
-            keyword->num = ++di;
             rb_ary_push(default_values, dv);
         }
 
         node = node->nd_next;
     }
-
-    keyword->num = kw;
-
-    if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
-        ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
-        keyword->rest_start = arg_size++;
-        body->param.flags.has_kwrest = TRUE;
-
-        if (kw_id == idPow) body->param.flags.anon_kwrest = TRUE;
-    }
-    keyword->required_num = rkw;
-    keyword->table = &body->local_table[keyword->bits_start - keyword->num];
 
     if (RARRAY_LEN(default_values)) {
         VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
@@ -10692,7 +10690,12 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
          * end
          */
         int kw_bits_idx = body->local_table_size - body->param.keyword->bits_start;
-        int keyword_idx = body->param.keyword->num;
+        int keyword_idx = body->param.keyword->num - body->param.keyword->required_num;
+        for (const rb_node_kw_arg_t *kwarg = RNODE_KW_ARG(node); kwarg; kwarg = kwarg->nd_next) {
+            if (get_nd_value(kwarg->nd_body) != NODE_SPECIAL_REQUIRED_KEYWORD) {
+                keyword_idx--;
+            }
+        }
 
         ADD_INSN2(ret, node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
         ADD_INSNL(ret, node, branchif, end_label);
