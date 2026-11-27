@@ -2931,7 +2931,8 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
         return copy_compare_by_id(rb_hash_new_capa(0), hash);
     }
     /* Only keys of +hash+ can be found. */
-    long capa = argc < (long)RHASH_SIZE(hash) ? argc : (long)RHASH_SIZE(hash);
+    rb_len_t size = (rb_len_t)RHASH_SIZE(hash);
+    rb_len_t capa = argc < size ? argc : size;
     result = copy_compare_by_id(rb_hash_new_capa(capa), hash);
 
     for (i = 0; i < argc; i++) {
