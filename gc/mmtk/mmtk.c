@@ -1005,6 +1005,28 @@ obj_can_parallel_free_p(VALUE obj)
       case T_STRING:
       case T_STRUCT:
         return true;
+      case T_IMEMO: {
+        switch (imemo_type(obj)) {
+          case imemo_callinfo:
+          case imemo_cdhash:
+          case imemo_env:
+          case imemo_fields:
+          case imemo_subclasses:
+          case imemo_tmpbuf:
+            return true;
+          case imemo_constcache:
+          case imemo_cref:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_svar:
+          case imemo_callcache:
+          case imemo_throw_data:
+          case imemo_cvar_entry:
+            rb_bug("obj_can_parallel_free_p: imemo does not need obj_free");
+          default:
+            return false;
+        }
+      }
       case T_FLOAT:
       case T_RATIONAL:
       case T_COMPLEX:
