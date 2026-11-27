@@ -378,7 +378,6 @@ void
 pm_source_line_scan(pm_source_line_t *line, const uint8_t *start, size_t length, bool first_line) {
     *line = (pm_source_line_t) { .shebang = PM_OPTIONS_SHEBANG_NONE };
     bool newline = length > 0 && start[length - 1] == '\n';
-    if (newline) length--;
 
     /* A BOM can precede __END__, but a shebang must start at the first byte. */
     if (first_line && length >= 3 && pm_memequal(start, "\xef\xbb\xbf", 3)) {
@@ -387,15 +386,13 @@ pm_source_line_scan(pm_source_line_t *line, const uint8_t *start, size_t length,
         length -= 3;
     }
 
-    if (line->bom || length < 2 || !pm_memequal(start, "#!", 2)) {
+    /* A shebang needs a byte after #!, which can be the newline itself. */
+    bool shebang = !line->bom && length > 2 && pm_memequal(start, "#!", 2);
+    if (newline) length--;
+
+    if (!shebang) {
         if (newline && length > 0 && start[length - 1] == '\r') length--;
         line->__end__ = length == 7 && pm_memequal(start, "__END__", 7);
-        return;
-    }
-
-    /* If we have just #!, the encoding comment can start on the next line. */
-    if (length == 2) {
-        line->shebang = PM_OPTIONS_SHEBANG_COMMENT;
         return;
     }
 

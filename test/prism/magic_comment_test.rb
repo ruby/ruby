@@ -196,16 +196,39 @@ module Ruby::Prism
     end
 
     def test_empty_shebang_in_main_script
-      ["#!", "#!\n", "#!\n# encoding: US-ASCII\n__ENCODING__"].each do |source|
-        result = Ruby::Prism.parse(source, main_script: true)
-        assert_predicate result, :success?, source
-      end
+      assert_predicate Ruby::Prism.parse("#!", main_script: true), :success?
 
-      result = Ruby::Prism.parse("#!\n# encoding: US-ASCII\n__ENCODING__", main_script: true)
-      assert_equal Encoding::US_ASCII, result.encoding
+      ["#!\n", "#!\r\n", "#!\n!#coding:ASCII-8BIT\n__ENCODING__"].each do |source|
+        assert_equal [:script_not_found], Ruby::Prism.parse(source, main_script: true).errors.map(&:type)
+      end
 
       result = Ruby::Prism.parse("#!", main_script: true, command_line: "x")
       assert_equal [:script_not_found], result.errors.map(&:type)
+    end
+
+    def test_encoding_comment_after_a_token_following_a_shebang
+      ["#coding:ASCII-8BIT", "# vim: set fileencoding=ASCII-8BIT"].each do |comment|
+        ["#!\n", "#!ruby\r\n"].each do |shebang|
+          source = "#{shebang}!#{comment}\n__ENCODING__"
+          result = Ruby::Prism.parse(source)
+          assert_predicate result, :success?
+          assert_equal Encoding::BINARY, result.encoding
+          assert_equal Encoding::UTF_8, Ruby::Prism.parse(source, version: "3.3").encoding
+          assert_equal Encoding::BINARY, Ruby::Prism.parse("#{shebang}%q{#}#{comment}\n__ENCODING__").encoding
+
+          assert_equal Encoding::UTF_8, Ruby::Prism.parse("#{shebang}!!#{comment}\n__ENCODING__").encoding
+          assert_equal Encoding::UTF_8, Ruby::Prism.parse("#{shebang}\n!#{comment}\n__ENCODING__").encoding
+        end
+
+        assert_equal Encoding::UTF_8, Ruby::Prism.parse("!#{comment}\n__ENCODING__").encoding
+      end
+    end
+
+    def test_empty_shebang_in_command_line_source
+      source = "#!\n!#coding:ASCII-8BIT\n__ENCODING__"
+      result = Ruby::Prism.parse(source, main_script: true, command_line: "e")
+      assert_predicate result, :success?
+      assert_equal Encoding::BINARY, result.encoding
     end
 
     def test_shebang_is_not_an_encoding_comment

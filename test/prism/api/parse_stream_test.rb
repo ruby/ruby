@@ -97,7 +97,11 @@ module Ruby::Prism
     end
 
     def test___END___before_ruby_shebang
-      [["preamble", { command_line: "x" }], ["#!/bin/sh", { main_script: true }]].each do |first_line, options|
+      [
+        ["preamble", { command_line: "x" }],
+        ["#!/bin/sh", { main_script: true }],
+        ["#!", { main_script: true }]
+      ].each do |first_line, options|
         io = StringIO.new("#{first_line}\n__END__\n__END__\n#!/usr/bin/env ruby\n42\n__END__\ndata\n")
         result = Ruby::Prism.parse_stream(io, **options)
 
@@ -129,7 +133,7 @@ module Ruby::Prism
     def test_shebang_in_data_remains_unread
       [
         ["#!ruby", { command_line: "x" }],
-        ["#!", { main_script: true }],
+        ["#!", { main_script: true, scopes: [[]] }],
         ["\uFEFF#!ruby", { main_script: true }],
         ["\uFEFF#!/bin/sh", { main_script: true }],
         ["#!/bin/sh", { main_script: true, scopes: [[]] }]

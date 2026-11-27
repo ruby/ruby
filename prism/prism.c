@@ -7627,7 +7627,7 @@ pm_parser_warn_invalid_magic_comment_value(pm_parser_t *parser, const char *key,
  * false.
  */
 static PRISM_INLINE bool
-parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
+parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen, bool accepts_encoding) {
     const uint8_t *start = parser->current.start + 1;
     const uint8_t *end = parser->current.end;
 
@@ -7656,8 +7656,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         /* The encoding-comment line needs the full scan because its result
          * controls the fallback encoding scan. Other comments without a colon
          * cannot contain a magic directive, so reject them early. */
-        if ((parser->current.start != parser->encoding_comment_start || parser->encoding_locked) &&
-            pm_memchr(start, ':', (size_t) (end - start)) == NULL) {
+        if (!accepts_encoding && pm_memchr(start, ':', (size_t) (end - start)) == NULL) {
             return false;
         }
 
@@ -7720,10 +7719,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         switch (key_length) {
             case 6:
             case 8:
-                /* We only want to attempt to compare against encoding comments
-                 * if it is the first line in the file (or the second in the
-                 * case of a shebang). */
-                if (parser->current.start == parser->encoding_comment_start && !parser->encoding_locked) {
+                if (accepts_encoding) {
                     if (parser_magic_comment_key_p(key_start, key_length, key_length == 6 ? "coding" : "encoding")) {
                         if (!parser_lex_magic_comment_encoding_value(parser, value_start, value_end)) {
                             pm_parser_err(parser, U32(value_start - parser->start), value_length, PM_ERR_INVALID_ENCODING_MAGIC_COMMENT);
@@ -10124,7 +10120,6 @@ parser_lex(pm_parser_t *parser) {
     // Here we cache the current value of the semantic token seen flag. This is
     // used to reset it in case we find a token that shouldn't flip this flag.
     unsigned int semantic_token_seen = parser->semantic_token_seen;
-    parser->semantic_token_seen = true;
 
     // We'll jump to this label when we are about to encounter an EOF.
     // If we still have lex_modes on the stack, we pop them so that cleanup
@@ -10136,6 +10131,9 @@ parser_lex(pm_parser_t *parser) {
         case PM_LEX_DEFAULT:
         case PM_LEX_EMBEXPR:
         case PM_LEX_EMBVAR:
+            /* Scanning the contents of a literal does not mark a semantic
+             * token. */
+            parser->semantic_token_seen = true;
 
         // We have a specific named label here because we are going to jump back to
         // this location in the event that we have lexed a token that should not be
@@ -10258,18 +10256,20 @@ parser_lex(pm_parser_t *parser) {
                     parser->current.type = PM_TOKEN_COMMENT;
                     parser_lex_callback(parser);
 
-                    // Here, parse the comment to see if it's a magic comment
-                    // and potentially change state on the parser.
-                    if (!parser_lex_magic_comment(parser, semantic_token_seen) && (parser->current.start == parser->encoding_comment_start)) {
-                        ptrdiff_t length = parser->current.end - parser->current.start;
+                    /* A directive can set the encoding on the first line after
+                     * a shebang, or on the first source line without a shebang.
+                     */
+                    bool accepts_encoding = (
+                        !semantic_token_seen &&
+                        !parser->encoding_locked &&
+                        parser->start + parser->line_offsets.offsets[parser->line_offsets.size - 1] == parser->encoding_comment_start
+                    );
 
-                        // If we didn't find a magic comment within the first
-                        // pass and we're at the start of the file, then we need
-                        // to do another pass to potentially find other patterns
-                        // for encoding comments.
-                        if (length >= 10 && !parser->encoding_locked) {
-                            parser_lex_magic_comment_encoding(parser);
-                        }
+                    if (
+                        !parser_lex_magic_comment(parser, semantic_token_seen, accepts_encoding) &&
+                        accepts_encoding && parser->current.end - parser->current.start >= 10
+                    ) {
+                        parser_lex_magic_comment_encoding(parser);
                     }
 
                     /* The comment does not include its terminating newline,
@@ -23204,7 +23204,6 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
     if (line.bom) {
         parser->current.end += 3;
-        parser->encoding_comment_start += 3;
 
         if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
             parser->encoding = PM_ENCODING_UTF_8_ENTRY;
@@ -23242,13 +23241,12 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         }
     }
 
-    /*
-     * The encoding comment can start after any amount of inline whitespace, so
-     * here we'll advance it to the first non-inline-whitespace character so
-     * that it is ready for future comparisons.
-     */
-    if (parser->encoding_comment_start) {
-        parser->encoding_comment_start += pm_strspn_inline_whitespace(parser->encoding_comment_start, parser->end - parser->encoding_comment_start);
+    /* Ruby 3.3 requires the comment to be the first non-whitespace on the line. */
+    if (parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 && parser->encoding_comment_start) {
+        const uint8_t *cursor = parser->encoding_comment_start;
+        if (line.bom) cursor += 3;
+        cursor += pm_strspn_inline_whitespace(cursor, parser->end - cursor);
+        if (cursor == parser->end || *cursor != '#') parser->encoding_comment_start = NULL;
     }
 }
 

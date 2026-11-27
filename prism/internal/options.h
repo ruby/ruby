@@ -175,7 +175,6 @@ struct pm_options_t {
 /* The kind of shebang found on a source line. */
 typedef enum {
     PM_OPTIONS_SHEBANG_NONE,
-    PM_OPTIONS_SHEBANG_COMMENT, /* Only permits an encoding comment on the next line. */
     PM_OPTIONS_SHEBANG_OTHER,
     PM_OPTIONS_SHEBANG_RUBY
 } pm_options_shebang_type_t;
@@ -185,6 +184,7 @@ static inline bool
 pm_options_shebang_search_p(const pm_options_t *options, pm_options_shebang_type_t shebang) {
     return (
         (options != NULL) &&
+        !(options->command_line & PM_OPTIONS_COMMAND_LINE_E) &&
         (shebang != PM_OPTIONS_SHEBANG_RUBY) &&
         (
             (options->command_line & PM_OPTIONS_COMMAND_LINE_X) ||

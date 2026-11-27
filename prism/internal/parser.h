@@ -854,8 +854,8 @@ struct pm_parser_t {
     pm_encoding_changed_callback_t encoding_changed_callback;
 
     /*
-     * This pointer indicates where a comment must start if it is to be
-     * considered an encoding comment. NULL if the shebang has no terminating newline.
+     * Start of the source line that can contain an encoding comment, or NULL
+     * if there is no eligible line.
      */
     const uint8_t *encoding_comment_start;
 
