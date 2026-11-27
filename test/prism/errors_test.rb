@@ -448,6 +448,16 @@ module Ruby::Prism
       end
     end
 
+    def test_backslash_n_in_braced_unicode_escape
+      self.class.each_encoding([Encoding::UTF_8, Encoding::Windows_1257]) do |encoding|
+        ['f"\u{\n}"', '"\u{ \n41}"'].each do |source|
+          errors = Ruby::Prism.parse(source, encoding: encoding.name).errors
+          assert_equal [:escape_invalid_unicode, :escape_invalid_unicode_term], errors.map(&:type), source
+          assert_equal source.index('\n'), errors.first.location.start_offset
+        end
+      end
+    end
+
     def test_newline_preceding_eof
       err = Ruby::Prism.parse("foo(").errors.first
       assert_equal 1, err.location.start_line

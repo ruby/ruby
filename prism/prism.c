@@ -9314,21 +9314,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             } else if (peek(parser) == '{') {
                 const uint8_t *unicode_codepoints_start = parser->current.end - 2;
                 parser->current.end++;
-
-                size_t whitespace;
-                while (true) {
-                    if ((whitespace = pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end)) > 0) {
-                        parser->current.end += whitespace;
-                    } else if (peek(parser) == '\\' && peek_offset(parser, 1) == 'n') {
-                        // This is super hacky, but it gets us nicer error
-                        // messages because we can still pass it off to the
-                        // regular expression engine even if we hit an
-                        // unterminated regular expression.
-                        parser->current.end += 2;
-                    } else {
-                        break;
-                    }
-                }
+                parser->current.end += pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
 
                 const uint8_t *extra_codepoints_start = NULL;
                 int codepoints_count = 0;
