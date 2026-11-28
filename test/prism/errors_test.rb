@@ -409,6 +409,15 @@ module Ruby::Prism
       assert_equal "Integer", result.statement.conditions.first.pattern.slice
     end
 
+    def test_unwritable_assignment_uses_the_visible_local
+      result = Ruby::Prism.parse("def f(self:); -> { self = 1 }; end")
+      assert_equal [:expression_not_writable_self], result.errors.map(&:type)
+
+      lambda_node = result.statement.body.body.first
+      assert_empty lambda_node.locals
+      assert_equal 1, lambda_node.body.body.first.depth
+    end
+
     def test_keyword_not_is_not_a_write_target
       [
         "not() = :value",
