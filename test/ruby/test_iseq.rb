@@ -965,6 +965,16 @@ class TestISeq < Test::Unit::TestCase
     assert_not_match(/^\d+ putnil\s*\n\d+ jump\s+\d+/m, disasm)
   end
 
+  def test_nested_next_in_loop_condition
+    assert_in_out_err([], <<~'RUBY', ["2"], [], "[Bug #22645]", success: true)
+      iterations = 0
+      until (iterations += 1) >= 2 || /#{next "#{next}"}/ =~ ""
+        raise "unexpected loop body"
+      end
+      puts iterations
+    RUBY
+  end
+
   def test_short_circuited_break_in_ensure
     assert_in_out_err(["--parser=parse.y"], <<~'RUBY', %w[OK], success: true)
       while false
