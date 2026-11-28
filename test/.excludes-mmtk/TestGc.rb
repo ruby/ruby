@@ -6,6 +6,8 @@ exclude(:test_gc_config_invalid_args, "testing behaviour specific to default GC"
 exclude(:test_gc_config_setting_returns_updated_config_hash, "testing behaviour specific to default GC")
 exclude(:test_gc_internals, "testing behaviour specific to default GC")
 exclude(:test_gc_parameter, "testing behaviour specific to default GC")
+exclude(:test_gc_parameter_init_bytes_after_full_gc, "testing behaviour specific to default GC")
+exclude(:test_gc_returns_empty_pages_after_burst, "testing behaviour specific to default GC")
 exclude(:test_heaps_grow_independently, "testing behaviour specific to default GC")
 exclude(:test_latest_gc_info, "testing behaviour specific to default GC")
 exclude(:test_latest_gc_info_argument, "testing behaviour specific to default GC")
