@@ -1694,6 +1694,28 @@ mod tests {
     }
 
     #[test]
+    fn test_emit_test_mem8_with_imm() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::mem(8, Opnd::Reg(RAX_REG), 6), Opnd::Imm(1));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: test byte ptr [rax + 6], 1");
+        assert_snapshot!(cb.hexdump(), @"f6400601");
+    }
+
+    #[test]
+    fn test_emit_test_mem16_with_narrower_uimm() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::mem(16, Opnd::Reg(RAX_REG), 6), Opnd::UImm(0));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: test word ptr [rax + 6], 0");
+        assert_snapshot!(cb.hexdump(), @"66f740060000");
+    }
+
+    #[test]
     fn test_emit_cmp_mem_32_bits_with_imm_32() {
         let (mut asm, mut cb) = setup_asm();
 
