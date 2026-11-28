@@ -765,6 +765,20 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(IndexError){ m.values_at(:foo) }
   end
 
+  def test_match_values_at_range_with_len_max_end
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['rb_len_t'] * 8 - 1) - 1
+    m = /(.)(.)/.match("ab")
+
+    assert_raise(IndexError) { m.values_at(0..max) }
+    # The length of the result must not overflow when the range is not
+    # the first argument.
+    assert_raise(IndexError) { m.values_at(0, 0..max) }
+    assert_raise(IndexError) { m.values_at(0, 0...max) }
+    # Same with a result that is not embedded.
+    assert_raise(IndexError) { m.values_at(*([0] * 1000), 0..max) }
+  end
+
   def test_match_string
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal("foobarbaz", m.string)
