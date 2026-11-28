@@ -138,6 +138,19 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\"&lt;&gt;\u6E7F\"", "<>\u6E7F".encode("ISO-2022-JP").encode("ISO-2022-JP", :xml=>:attr).encode("UTF-8"))
   end
 
+  def test_encode_decorator_only_broken
+    [{xml: :text}, {xml: :attr}, {universal_newline: true}, {crlf_newline: true}].each do |opts|
+      %w[UTF-8 EUC-JP Windows-31J].each do |enc|
+        s = "a\xE3".force_encoding(enc)
+        assert_not_predicate(s.encode(**opts), :valid_encoding?, "#{enc} #{opts}")
+        assert_not_predicate(s.dup.encode!(**opts), :valid_encoding?, "#{enc} #{opts}")
+        assert_not_predicate(s.b.encode(enc, enc, **opts), :valid_encoding?, "#{enc} #{opts}")
+        s = "a\xE3\x81\x82".force_encoding("UTF-8").encode(enc)
+        assert_predicate(s.encode(**opts), :valid_encoding?, "#{enc} #{opts}")
+      end
+    end
+  end
+
   def test_ascii_range
     encodings = [
       'US-ASCII', 'ASCII-8BIT',

@@ -2832,7 +2832,7 @@ str_transcode_enc_args(VALUE str, VALUE *arg1, VALUE *arg2,
 }
 
 static int
-str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
+str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts, int *transcoded)
 {
     VALUE dest;
     VALUE str = *self;
@@ -2845,6 +2845,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     int dencidx;
     int explicitly_invalid_replace = TRUE;
 
+    *transcoded = TRUE;
     rb_check_arity(argc, 0, 2);
 
     if (argc == 0) {
@@ -2902,6 +2903,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
         if (encoding_equal(sname, dname)) {
             sname = "";
             dname = "";
+            *transcoded = FALSE;
         }
     }
 
@@ -2931,7 +2933,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 }
 
 static int
-str_transcode(int argc, VALUE *argv, VALUE *self)
+str_transcode(int argc, VALUE *argv, VALUE *self, int *transcoded)
 {
     VALUE opt;
     int ecflags = 0;
@@ -2941,15 +2943,20 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     if (!NIL_P(opt)) {
         ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
-    return str_transcode0(argc, argv, self, ecflags, ecopts);
+    return str_transcode0(argc, argv, self, ecflags, ecopts, transcoded);
 }
 
 static inline VALUE
-str_encode_associate(VALUE str, int encidx)
+str_encode_associate(VALUE str, int encidx, int transcoded)
 {
     int cr = 0;
 
     rb_enc_associate_index(str, encidx);
+
+    if (!transcoded) {
+        ENC_CODERANGE_CLEAR(str);
+        return str;
+    }
 
     /* transcoded string never be broken. */
     if (rb_enc_asciicompat(rb_enc_from_index(encidx))) {
@@ -2977,11 +2984,12 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr;
     int encidx;
+    int transcoded;
 
     rb_check_frozen(str);
 
     newstr = str;
-    encidx = str_transcode(argc, argv, &newstr);
+    encidx = str_transcode(argc, argv, &newstr, &transcoded);
 
     if (encidx < 0) return str;
     if (newstr == str) {
@@ -2989,10 +2997,10 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
         return str;
     }
     rb_str_shared_replace(str, newstr);
-    return str_encode_associate(str, encidx);
+    return str_encode_associate(str, encidx, transcoded);
 }
 
-static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
+static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx, int transcoded);
 
 /*
  *  call-seq:
@@ -3056,8 +3064,9 @@ static VALUE
 str_encode(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr = str;
-    int encidx = str_transcode(argc, argv, &newstr);
-    return encoded_dup(newstr, str, encidx);
+    int transcoded;
+    int encidx = str_transcode(argc, argv, &newstr, &transcoded);
+    return encoded_dup(newstr, str, encidx, transcoded);
 }
 
 VALUE
@@ -3066,12 +3075,13 @@ rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
     int argc = 1;
     VALUE *argv = &to;
     VALUE newstr = str;
-    int encidx = str_transcode0(argc, argv, &newstr, ecflags, ecopts);
-    return encoded_dup(newstr, str, encidx);
+    int transcoded;
+    int encidx = str_transcode0(argc, argv, &newstr, ecflags, ecopts, &transcoded);
+    return encoded_dup(newstr, str, encidx, transcoded);
 }
 
 static VALUE
-encoded_dup(VALUE newstr, VALUE str, int encidx)
+encoded_dup(VALUE newstr, VALUE str, int encidx, int transcoded)
 {
     if (encidx < 0) return rb_str_dup(str);
     if (newstr == str) {
@@ -3082,7 +3092,7 @@ encoded_dup(VALUE newstr, VALUE str, int encidx)
     else {
         RBASIC_SET_CLASS(newstr, rb_obj_class(str));
     }
-    return str_encode_associate(newstr, encidx);
+    return str_encode_associate(newstr, encidx, transcoded);
 }
 
 /*
