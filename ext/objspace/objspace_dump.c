@@ -43,6 +43,8 @@ struct dump_config {
     size_t cur_obj_references;
     unsigned int roots: 1;
     unsigned int full_heap: 1;
+    unsigned int shapes: 1;
+    unsigned int buffer_full: 1;
     unsigned int partial_dump;
     size_t since;
     size_t shapes_since;
@@ -53,7 +55,11 @@ struct dump_config {
 static void
 dump_flush(struct dump_config *dc)
 {
-    if (dc->buffer_len) {
+    if (dc->buffer_full) {
+        /* Output is already truncated; drop the rest. dump_result() raises. */
+        dc->buffer_len = 0;
+    }
+    else if (dc->buffer_len) {
         if (dc->stream) {
             size_t written = fwrite(dc->buffer, sizeof(dc->buffer[0]), dc->buffer_len, dc->stream);
             if (written < dc->buffer_len) {
@@ -76,7 +82,11 @@ buffer_ensure_capa(struct dump_config *dc, unsigned long requested)
     if (requested + dc->buffer_len >= BUFFER_CAPACITY) {
         dump_flush(dc);
         if (requested + dc->buffer_len >= BUFFER_CAPACITY) {
-            rb_raise(rb_eIOError, "full buffer");
+            /* The VM lock is held here, so raising is not allowed. Record the
+             * failure, discard further output, and raise from dump_result()
+             * after the lock is released. */
+            dc->buffer_full = 1;
+            dc->buffer_len = 0;
         }
     }
 }
@@ -737,12 +747,31 @@ root_obj_i(const char *category, VALUE obj, void *data)
     dc->roots = 1;
 }
 
+/* Called before taking the VM lock: type conversion and rb_io_flush() can
+ * raise, block, or run arbitrary Ruby code. */
 static void
 dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
     dc->given_output = output;
     dc->full_heap = 0;
     dc->buffer_len = 0;
+
+    // Convert since/shapes first: to_int can run arbitrary Ruby code, which
+    // could close the output and free the FILE* fetched below.
+    if (RTEST(since)) {
+        dc->partial_dump = 1;
+        dc->since = NUM2SIZET(since);
+    }
+    else {
+        dc->partial_dump = 0;
+    }
+
+    dc->shapes = RTEST(shapes);
+    dc->shapes_since = dc->shapes ? NUM2SIZET(shapes) : 0;
+
+    if (full == Qtrue) {
+        dc->full_heap = 1;
+    }
 
     if (TYPE(output) == T_STRING) {
         dc->stream = NULL;
@@ -770,22 +799,9 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since, VALUE
         dc->stream = rb_io_stdio_file(fptr);
         dc->string = Qfalse;
     }
-
-    if (full == Qtrue) {
-        dc->full_heap = 1;
-    }
-
-    if (RTEST(since)) {
-        dc->partial_dump = 1;
-        dc->since = NUM2SIZET(since);
-    }
-    else {
-        dc->partial_dump = 0;
-    }
-
-    dc->shapes_since = RTEST(shapes) ? NUM2SIZET(shapes) : 0;
 }
 
+/* Called after releasing the VM lock, so it may raise. */
 static VALUE
 dump_result(struct dump_config *dc)
 {
@@ -793,6 +809,9 @@ dump_result(struct dump_config *dc)
 
     if (dc->stream) {
         fflush(dc->stream);
+    }
+    if (dc->buffer_full) {
+        rb_raise(rb_eIOError, "full buffer");
     }
     if (dc->string) {
         return dc->string;
@@ -803,28 +822,30 @@ dump_result(struct dump_config *dc)
 static VALUE
 dump_locked(void *args_p)
 {
-    struct dump_config dc = {0,};
     VALUE obj = ((VALUE*)args_p)[0];
-    VALUE output = ((VALUE*)args_p)[1];
+    struct dump_config *dc = (struct dump_config *)((VALUE*)args_p)[1];
 
     if (!RB_SPECIAL_CONST_P(obj)) {
-        dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
+        dc->cur_page_slot_size = rb_gc_obj_slot_size(obj);
     }
-    dump_output(&dc, output, Qnil, Qnil, Qnil);
 
-    dump_object(obj, &dc);
+    dump_object(obj, dc);
 
-    return dump_result(&dc);
+    return Qnil;
 }
 
 /* :nodoc: */
 static VALUE
 objspace_dump(VALUE os, VALUE obj, VALUE output)
 {
+    struct dump_config dc = {0,};
     VALUE args[2];
+
+    dump_output(&dc, output, Qnil, Qnil, Qnil);
     args[0] = obj;
-    args[1] = output;
-    return rb_vm_lock_with_barrier(dump_locked, (void*)args);
+    args[1] = (VALUE)&dc;
+    rb_vm_lock_with_barrier(dump_locked, (void*)args);
+    return dump_result(&dc);
 }
 
 static void
@@ -878,65 +899,55 @@ shape_id_i(shape_id_t shape_id, void *data)
 static VALUE
 dump_all_locked(void *args_p)
 {
-    struct dump_config dc = {0,};
-    VALUE output = ((VALUE*)args_p)[0];
-    VALUE full = ((VALUE*)args_p)[1];
-    VALUE since = ((VALUE*)args_p)[2];
-    VALUE shapes = ((VALUE*)args_p)[3];
+    struct dump_config *dc = (struct dump_config *)args_p;
 
-    dump_output(&dc, output, full, since, shapes);
-
-    if (!dc.partial_dump || dc.since == 0) {
+    if (!dc->partial_dump || dc->since == 0) {
         /* dump roots */
-        rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
-        if (dc.roots) dump_append(&dc, "]}\n");
+        rb_objspace_reachable_objects_from_root(root_obj_i, dc);
+        if (dc->roots) dump_append(dc, "]}\n");
     }
 
-    if (RTEST(shapes)) {
-        rb_shape_each_shape_id(shape_id_i, &dc);
+    if (dc->shapes) {
+        rb_shape_each_shape_id(shape_id_i, dc);
     }
 
     /* dump all objects */
-    rb_objspace_each_objects(heap_i, &dc);
+    rb_objspace_each_objects(heap_i, dc);
 
-    return dump_result(&dc);
+    return Qnil;
 }
 
 /* :nodoc: */
 static VALUE
 objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
-    VALUE args[4];
-    args[0] = output;
-    args[1] = full;
-    args[2] = since;
-    args[3] = shapes;
-    return rb_vm_lock_with_barrier(dump_all_locked, (void*)args);
+    struct dump_config dc = {0,};
+
+    dump_output(&dc, output, full, since, shapes);
+    rb_vm_lock_with_barrier(dump_all_locked, (void*)&dc);
+    return dump_result(&dc);
 }
 
 static VALUE
 dump_shapes_locked(void *args_p)
 {
-    struct dump_config dc = {0,};
-    VALUE output = ((VALUE*)args_p)[0];
-    VALUE shapes = ((VALUE*)args_p)[1];
+    struct dump_config *dc = (struct dump_config *)args_p;
 
-    dump_output(&dc, output, Qfalse, Qnil, shapes);
-
-    if (RTEST(shapes)) {
-        rb_shape_each_shape_id(shape_id_i, &dc);
+    if (dc->shapes) {
+        rb_shape_each_shape_id(shape_id_i, dc);
     }
-    return dump_result(&dc);
+    return Qnil;
 }
 
 /* :nodoc: */
 static VALUE
 objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
 {
-    VALUE args[2];
-    args[0] = output;
-    args[1] = shapes;
-    return rb_vm_lock_with_barrier(dump_shapes_locked, (void*)args);
+    struct dump_config dc = {0,};
+
+    dump_output(&dc, output, Qfalse, Qnil, shapes);
+    rb_vm_lock_with_barrier(dump_shapes_locked, (void*)&dc);
+    return dump_result(&dc);
 }
 
 void
