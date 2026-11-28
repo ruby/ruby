@@ -458,7 +458,7 @@ rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool referen
 
         rb_gc_mark_and_move_ptr_ctx(ctx, &cref->next);
 
-        // TODO: Ractor and refeinements are not resolved yet
+        // TODO: Ractor and refinements are not resolved yet
         if (!rb_gc_checking_shareable_ctx(ctx)) {
             rb_gc_mark_and_move_ctx(ctx, &cref->refinements);
         }
