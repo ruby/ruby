@@ -53,6 +53,8 @@
 #include "zjit.h"
 
 VALUE rb_cISeq;
+int rb_vm_insn_decode(const VALUE encoded);
+static void iseq_mark_and_move_code_parts(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, bool reference_updating);
 static VALUE iseqw_new(const rb_iseq_t *iseq);
 static const rb_iseq_t *iseqw_check(VALUE iseqw);
 
@@ -187,6 +189,13 @@ rb_iseq_free(const rb_iseq_t *iseq)
 {
     RUBY_FREE_ENTER("iseq");
 
+    if (iseq && rb_iseq_code_obj(iseq)) {
+        /* The code object dies in the same GC (it marks the iseq) but may be
+         * swept later; it must not touch this iseq then. */
+        ((struct rb_iseq_code *)rb_iseq_code_obj(iseq))->iseq = NULL;
+        ((rb_iseq_t *)iseq)->aux.exec.code = 0;
+    }
+
     if (iseq && ISEQ_BODY(iseq)) {
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
@@ -247,6 +256,158 @@ rb_iseq_free(const rb_iseq_t *iseq)
     RUBY_FREE_LEAVE("iseq");
 }
 
+/*
+ * Executable parts and the code object (see struct rb_iseq_code).
+ */
+
+/* Free everything only needed to run or decode the instructions, leaving
+ * a code-less iseq that keeps its metadata (type, location, local table,
+ * params, parent/local iseq, coverage, ...). */
+static void
+iseq_release_code(rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    if (!body) return;
+
+#if USE_YJIT
+    if (rb_yjit_enabled_p) rb_yjit_iseq_free(iseq);
+#endif
+#if USE_ZJIT
+    if (rb_zjit_enabled_p) rb_zjit_iseq_free(iseq);
+#endif
+#if USE_YJIT || USE_ZJIT
+    body->jit_entry = NULL;
+    body->jit_exception = NULL;
+    body->jit_payload = NULL;
+#endif
+
+    iseq_clear_ic_references(iseq);
+    SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
+    body->is_entries = NULL;
+    body->ivc_size = body->icvarc_size = body->ise_size = body->ic_size = 0;
+
+    SIZED_FREE_N(body->call_data, body->ci_size);
+    body->call_data = NULL;
+    body->ci_size = 0;
+
+    if (body->catch_table) {
+        ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+        body->catch_table = NULL;
+    }
+
+    SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
+    body->insns_info.body = NULL;
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
+    body->insns_info.positions_or_succ_index_table.succ_index_table = NULL;
+#else
+    SIZED_FREE_N(body->insns_info.positions_or_succ_index_table.positions, body->insns_info.size);
+    body->insns_info.positions_or_succ_index_table.positions = NULL;
+#endif
+    body->insns_info.size = 0;
+#ifdef USE_ISEQ_NODE_ID
+    SIZED_FREE_N(body->insns_info.node_ids, body->insns_info.node_ids_size);
+    body->insns_info.node_ids = NULL;
+    body->insns_info.node_ids_size = 0;
+#endif
+
+    if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
+        SIZED_FREE_N(body->mark_bits.list, ISEQ_MBITS_BUFLEN(body->iseq_size));
+    }
+    body->mark_bits.list = NULL;
+    ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
+
+    VALUE *encoded = body->iseq_encoded;
+    unsigned int size = body->iseq_size;
+    body->iseq_size = 0;
+    body->iseq_encoded = NULL;
+    SIZED_FREE_N(encoded, size);
+}
+
+static bool
+iseq_has_child_iseqs(const rb_iseq_t *iseq, bool unroot)
+{
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    const VALUE *code = body->iseq_encoded;
+    bool found = false;
+
+    for (unsigned int i = 0; i < body->iseq_size;) {
+        int insn = rb_vm_insn_decode(code[i]);
+        const char *types = insn_op_types(insn);
+        for (int j = 0; types[j]; j++) {
+            if (types[j] == TS_ISEQ && code[i + j + 1]) {
+                if (!unroot) return true;
+                rb_iseq_code_unroot((const rb_iseq_t *)code[i + j + 1]);
+                found = true;
+            }
+        }
+        i += insn_len(insn);
+    }
+    if (body->catch_table) {
+        for (unsigned int i = 0; i < body->catch_table->size; i++) {
+            const struct iseq_catch_table_entry *entry = UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
+            if (entry->iseq) {
+                if (!unroot) return true;
+                rb_iseq_code_unroot(entry->iseq);
+                found = true;
+            }
+        }
+    }
+    if (body->mandatory_only_iseq) {
+        if (!unroot) return true;
+        rb_iseq_code_unroot(body->mandatory_only_iseq);
+        found = true;
+    }
+    return found;
+}
+
+/* Called once the instructions are in their executable form. Leaf iseqs
+ * (no child iseqs) keep owning their code: keeping it alive pins nothing
+ * else, so a separate object would only cost memory. */
+void
+rb_iseq_attach_code(rb_iseq_t *iseq)
+{
+    VM_ASSERT(!FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET));
+    if (rb_iseq_code_obj(iseq) || !iseq_has_child_iseqs(iseq, false)) return;
+
+    struct rb_iseq_code *code = SHAREABLE_IMEMO_NEW(struct rb_iseq_code, imemo_iseq_code, 0);
+    RB_OBJ_WRITE((VALUE)code, &code->iseq, iseq);
+
+    /* No allocation below: the children's code is now owned by ours. */
+    iseq_has_child_iseqs(iseq, true);
+
+    FL_SET_RAW((VALUE)iseq, ISEQ_CODE_ROOTED);
+    iseq->aux.exec.code = (VALUE)code;
+    RB_OBJ_WRITTEN((VALUE)iseq, Qundef, (VALUE)code);
+    /* lets a moving GC that only updates traced references (MMTk) fix up
+     * the reference through rb_gc_update_object_references */
+    rb_gc_declare_weak_references((VALUE)iseq);
+}
+
+void
+rb_iseq_code_mark_and_move(const struct rb_gc_mark_ctx *ctx, struct rb_iseq_code *code, bool reference_updating)
+{
+    if (!code->iseq) return;
+    rb_gc_mark_and_move_ptr_ctx(ctx, &code->iseq);
+    if (ISEQ_BODY(code->iseq)) {
+        iseq_mark_and_move_code_parts(ctx, code->iseq, reference_updating);
+    }
+}
+
+/* The code object died: nothing can run this iseq any more. If the iseq
+ * is still alive it becomes code-less; if it dies in the same GC this
+ * releases its parts first or, when the iseq was swept first, does nothing
+ * (rb_iseq_free cleared code->iseq). */
+void
+rb_iseq_code_free(struct rb_iseq_code *code)
+{
+    rb_iseq_t *iseq = (rb_iseq_t *)code->iseq;
+    if (!iseq) return;
+    code->iseq = NULL;
+    iseq->aux.exec.code = 0;
+    iseq_release_code(iseq);
+}
+
 /* CAS-publish the out-of-lined variable struct: concurrent callers (e.g. two
  * dumpers hitting rb_iseq_original_iseq on a shared iseq) can each build a
  * copy, mirroring the original_iseq CAS in compile.c. */
@@ -297,7 +458,7 @@ rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq)
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
 
 static inline void
-iseq_scan_bits(const struct rb_gc_mark_ctx *ctx, unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original_iseq)
+iseq_scan_bits_code(const struct rb_gc_mark_ctx *ctx, unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original_iseq, bool mark_child_code)
 {
     unsigned int offset;
     unsigned int page_offset = (page * ISEQ_MBITS_BITLENGTH);
@@ -315,8 +476,18 @@ iseq_scan_bits(const struct rb_gc_mark_ctx *ctx, unsigned int page, iseq_bits_t 
         else {
             rb_gc_mark_and_move_ctx(ctx, &code[page_offset + offset]);
         }
+        if (mark_child_code) {
+            /* the parent's code can run its child iseqs */
+            rb_iseq_mark_code_maybe_ctx(ctx, code[page_offset + offset]);
+        }
         bits &= bits - 1; // Reset Lowest Set Bit (BLSR)
     }
+}
+
+static inline void
+iseq_scan_bits(const struct rb_gc_mark_ctx *ctx, unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original_iseq)
+{
+    iseq_scan_bits_code(ctx, page, bits, code, original_iseq, false);
 }
 
 static void
@@ -342,15 +513,12 @@ rb_iseq_mark_and_move_each_compile_data_value(const struct rb_gc_mark_ctx *ctx, 
         }
     }
 }
+/* Inline caches stay with the iseq (they are written with the iseq as the
+ * write barrier parent); they only exist while the code does. */
 static void
-rb_iseq_mark_and_move_each_body_value(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, VALUE *original_iseq)
+rb_iseq_mark_and_move_each_cache(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq)
 {
-    unsigned int size;
-    VALUE *code;
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-
-    size = body->iseq_size;
-    code = body->iseq_encoded;
 
     union iseq_inline_storage_entry *is_entries = body->is_entries;
 
@@ -382,18 +550,47 @@ rb_iseq_mark_and_move_each_body_value(const struct rb_gc_mark_ctx *ctx, const rb
             }
         }
     }
+}
+
+/* Operands embedded in the instruction sequence and the catch table. Marked
+ * by the code object when there is one, by the iseq itself otherwise. */
+static void
+iseq_mark_and_move_code_parts(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, bool reference_updating)
+{
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    unsigned int size = body->iseq_size;
+    VALUE *code = body->iseq_encoded;
+    VALUE *original_iseq = reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL;
+    bool mark_child_code = !reference_updating && rb_iseq_code_obj(iseq);
 
     // Embedded VALUEs
     if (body->mark_bits.list) {
         if (ISEQ_MBITS_BUFLEN(size) == 1) {
-            iseq_scan_bits(ctx, 0, body->mark_bits.single, code, original_iseq);
+            iseq_scan_bits_code(ctx, 0, body->mark_bits.single, code, original_iseq, mark_child_code);
         }
         else {
             for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
                 iseq_bits_t bits = body->mark_bits.list[i];
-                iseq_scan_bits(ctx, i, bits, code, original_iseq);
+                iseq_scan_bits_code(ctx, i, bits, code, original_iseq, mark_child_code);
             }
         }
+    }
+
+    if (body->catch_table) {
+        struct iseq_catch_table *table = body->catch_table;
+
+        for (unsigned int i = 0; i < table->size; i++) {
+            struct iseq_catch_table_entry *entry;
+            entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
+            if (entry->iseq) {
+                rb_gc_mark_and_move_ptr_ctx(ctx, &entry->iseq);
+                if (mark_child_code) rb_iseq_mark_code_ctx(ctx, entry->iseq);
+            }
+        }
+    }
+
+    if (mark_child_code && body->mandatory_only_iseq) {
+        rb_iseq_mark_code_ctx(ctx, body->mandatory_only_iseq);
     }
 }
 
@@ -414,7 +611,27 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
     if (ISEQ_BODY(iseq)) {
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        rb_iseq_mark_and_move_each_body_value(ctx, iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+        rb_iseq_mark_and_move_each_cache(ctx, iseq);
+
+        VALUE code = rb_iseq_code_obj(iseq);
+        if (!code) {
+            iseq_mark_and_move_code_parts(ctx, iseq, reference_updating);
+        }
+        else if (reference_updating) {
+            rb_gc_mark_and_move_ctx(ctx, &iseq->aux.exec.code);
+            /* A code object that is dead (not yet swept) is not updated by
+             * the GC, but its free function needs this iseq's new address. */
+            ((struct rb_iseq_code *)iseq->aux.exec.code)->iseq = iseq;
+        }
+        else if (FL_TEST_RAW((VALUE)iseq, ISEQ_CODE_ROOTED) || !RB_OBJ_PROMOTED_RAW(code)) {
+            /* Until something that runs the code holds it, and while the
+             * code object is young (so that a holder older than the code,
+             * e.g. after lazy loading, need not be remembered), the iseq
+             * keeps its code alive. Otherwise the reference is weak: when
+             * the code object is collected it releases the executable parts
+             * (rb_iseq_code_free). */
+            rb_gc_mark_movable_ctx(ctx, code);
+        }
 
         struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
         if (v) rb_gc_mark_and_move_ctx(ctx, &v->script_lines);
@@ -460,18 +677,6 @@ rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool re
             if (keyword->default_values != NULL) {
                 for (int j = 0, i = keyword->required_num; i < keyword->num; i++, j++) {
                     rb_gc_mark_and_move_ctx(ctx, &keyword->default_values[j]);
-                }
-            }
-        }
-
-        if (body->catch_table) {
-            struct iseq_catch_table *table = body->catch_table;
-
-            for (unsigned int i = 0; i < table->size; i++) {
-                struct iseq_catch_table_entry *entry;
-                entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
-                if (entry->iseq) {
-                    rb_gc_mark_and_move_ptr_ctx(ctx, &entry->iseq);
                 }
             }
         }
@@ -1698,6 +1903,8 @@ static void
 iseqw_mark_and_move(void *ptr)
 {
     rb_gc_mark_and_move((VALUE *)ptr);
+    /* a wrapper can eval or disassemble the iseq */
+    rb_iseq_mark_and_move_code(*(const rb_iseq_t **)ptr);
 }
 
 static size_t

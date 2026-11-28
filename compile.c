@@ -1768,6 +1768,10 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
         printf("%s\n", StringValueCStr(str));
     }
     verify_call_cache(iseq);
+
+    debugs("[compile step 8 (rb_iseq_attach_code)] \n");
+    rb_iseq_attach_code(iseq);
+
     debugs("[compile step: finish]\n");
 
     return COMPILE_OK;
@@ -15242,6 +15246,9 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
     ibf_load_iseq_each(load, iseq, offset);
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
+    /* aux.exec.code shares a word with aux.loader.index */
+    iseq->aux.exec.code = 0;
+    rb_iseq_attach_code(iseq);
     rb_iseq_init_trace(iseq);
     load->iseq = prev_src_iseq;
 }

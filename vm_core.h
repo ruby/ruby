@@ -612,6 +612,11 @@ struct rb_iseq_struct {
         struct {
             unsigned int local_hooks_cnt;
             rb_event_flag_t global_trace_events;
+            /* imemo_iseq_code owning the executable parts, or 0 (see
+             * iseq.h). Shares the words of loader, so it is only valid once
+             * ISEQ_NOT_LOADED_YET is cleared; it does not overlap
+             * compile_data. Read it with rb_iseq_code_obj(). */
+            VALUE code;
         } exec;
     } aux;
 };

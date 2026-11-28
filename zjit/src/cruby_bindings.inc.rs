@@ -475,6 +475,7 @@ pub const imemo_constcache: imemo_type = 12;
 pub const imemo_fields: imemo_type = 13;
 pub const imemo_subclasses: imemo_type = 14;
 pub const imemo_cdhash: imemo_type = 15;
+pub const imemo_iseq_code: imemo_type = 16;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1324,10 +1325,10 @@ pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_1 {
     pub index: ::std::os::raw::c_int,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_struct__bindgen_ty_1__bindgen_ty_2 {
     pub local_hooks_cnt: ::std::os::raw::c_uint,
     pub global_trace_events: rb_event_flag_t,
+    pub code: VALUE,
 }
 #[repr(C)]
 pub struct rb_captured_block {

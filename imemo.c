@@ -5,11 +5,15 @@
 #include "internal/imemo.h"
 #include "internal/object.h"
 #include "internal/st.h"
+#include "iseq.h"
 #include "vm_callinfo.h"
 
 size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool reference_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
+struct rb_iseq_code;
+void rb_iseq_code_mark_and_move(const struct rb_gc_mark_ctx *ctx, struct rb_iseq_code *code, bool reference_updating);
+void rb_iseq_code_free(struct rb_iseq_code *code);
 
 ID
 rb_imemo_callinfo_mid(VALUE obj)
@@ -54,6 +58,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(fields);
         IMEMO_NAME(subclasses);
         IMEMO_NAME(cdhash);
+        IMEMO_NAME(iseq_code);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -295,6 +300,9 @@ rb_imemo_memsize(VALUE obj)
         size += rb_iseq_memsize((rb_iseq_t *)obj);
 
         break;
+      case imemo_iseq_code:
+        /* the executable parts are reported by the iseq */
+        break;
       case imemo_memo:
         break;
       case imemo_ment:
@@ -355,6 +363,8 @@ mark_and_move_method_entry(const struct rb_gc_mark_ctx *ctx, rb_method_entry_t *
           case VM_METHOD_TYPE_ISEQ:
             if (def->body.iseq.iseqptr) {
                 rb_gc_mark_and_move_ptr_ctx(ctx, &def->body.iseq.iseqptr);
+                /* the method can be called */
+                if (!reference_updating) rb_iseq_mark_code_ctx(ctx, def->body.iseq.iseqptr);
             }
             rb_gc_mark_and_move_ptr_ctx(ctx, &def->body.iseq.cref);
 
@@ -510,6 +520,9 @@ rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool referen
       }
       case imemo_iseq:
         rb_iseq_mark_and_move(ctx, (rb_iseq_t *)obj, reference_updating);
+        break;
+      case imemo_iseq_code:
+        rb_iseq_code_mark_and_move(ctx, (struct rb_iseq_code *)obj, reference_updating);
         break;
       case imemo_memo: {
         struct MEMO *memo = (struct MEMO *)obj;
@@ -674,6 +687,10 @@ rb_imemo_free(VALUE obj)
       case imemo_iseq:
         rb_iseq_free((rb_iseq_t *)obj);
         RB_DEBUG_COUNTER_INC(obj_imemo_iseq);
+
+        break;
+      case imemo_iseq_code:
+        rb_iseq_code_free((struct rb_iseq_code *)obj);
 
         break;
       case imemo_memo:
