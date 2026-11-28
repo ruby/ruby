@@ -16,6 +16,16 @@
 #![allow(static_mut_refs)]
 #![warn(unknown_lints)]
 
+// Release builds of only YJIT compile the shared code into this crate;
+// Cargo and combo builds link it as a crate.
+// Not named `jit`: a crate-root `jit` item makes rustc load the `jit` crate from Cargo's
+// extern prelude, bringing in a second #[global_allocator].
+#[cfg(feature = "stats_allocator")]
+#[path = "../../jit/src/lib.rs"]
+mod shared_jit;
+#[cfg(not(feature = "stats_allocator"))]
+use ::jit as shared_jit;
+
 pub mod asm;
 mod backend;
 mod codegen;

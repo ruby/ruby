@@ -15,6 +15,14 @@
 #[doc(inline)]
 pub use std;
 
+// Release builds of only ZJIT compile the shared code into this crate;
+// Cargo, combo builds, and test binaries link it as a crate.
+#[cfg(all(feature = "stats_allocator", not(test)))]
+#[path = "../../jit/src/lib.rs"]
+mod jit;
+#[cfg(not(all(feature = "stats_allocator", not(test))))]
+extern crate jit;
+
 mod state;
 mod distribution;
 mod cruby;

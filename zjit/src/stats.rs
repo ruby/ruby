@@ -4,11 +4,6 @@ use std::time::Instant;
 use std::sync::atomic::Ordering;
 use crate::options::OPTIONS;
 
-// test binaries always bring it in as a cargo dependency
-#[cfg(all(feature = "stats_allocator", not(test)))]
-#[path = "../../jit/src/lib.rs"]
-mod jit;
-
 use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{increment_compile_time_ns, zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
@@ -993,7 +988,7 @@ pub fn with_compile_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnO
 
 /// The number of bytes ZJIT has allocated on the Rust heap.
 pub fn zjit_alloc_bytes() -> usize {
-    jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
+    crate::jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
 /// Record a Perfetto duration event spanning the execution of `func`.

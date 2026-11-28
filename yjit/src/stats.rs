@@ -11,10 +11,6 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::{yjit_enabled_p, rb_yjit_compiling_p, out_of_memory_p, YJIT_INIT_TIME};
 
-#[cfg(feature = "stats_allocator")]
-#[path = "../../jit/src/lib.rs"]
-mod jit;
-
 /// Running total of how many ISeqs are in the system.
 #[no_mangle]
 pub static mut rb_yjit_live_iseq_count: u64 = 0;
@@ -33,7 +29,7 @@ pub static mut rb_yjit_max_compile_time_ns: u64 = 0;
 
 /// The number of bytes YJIT has allocated on the Rust heap.
 pub fn yjit_alloc_size() -> usize {
-    jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
+    crate::shared_jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
 /// Mapping of C function / ISEQ name to integer indices
