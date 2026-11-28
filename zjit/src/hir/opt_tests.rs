@@ -15469,6 +15469,30 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_kernel_hash_returns_fixnum() {
+        eval(r#"
+            def test = nil.hash
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1000, hash@0x1008, cme:0x1010)
+          v20:Fixnum = CCallWithFrame v10, :Kernel#hash@0x1038
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
     fn test_string_to_s_returns_string() {
         eval(r#"
             def test = "".to_s
