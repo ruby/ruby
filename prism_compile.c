@@ -444,6 +444,18 @@ pm_optimizable_range_item_p(const pm_node_t *node)
     return (!node || PM_NODE_TYPE_P(node, PM_INTEGER_NODE) || PM_NODE_TYPE_P(node, PM_NIL_NODE));
 }
 
+/** Raise a SyntaxError for an error found while compiling. */
+NORETURN(static void pm_raise_syntax_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...));
+static void
+pm_raise_syntax_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    VALUE error = rb_syntax_error_append(Qnil, rb_iseq_path(iseq), line_number, -1, NULL, fmt, args);
+    va_end(args);
+    rb_exc_raise(error);
+}
+
 /** Raise an error corresponding to the invalid regular expression. */
 static VALUE
 parse_regexp_error(rb_iseq_t *iseq, int32_t line_number, const char *fmt, ...)
@@ -1006,7 +1018,7 @@ pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_labe
 
     int again = !(flip_flop_node->base.flags & PM_RANGE_FLAGS_EXCLUDE_END);
 
-    rb_num_t count = ISEQ_FLIP_CNT_INCREMENT(ISEQ_BODY(iseq)->local_iseq) + VM_SVAR_FLIPFLOP_START;
+    rb_num_t count = ISEQ_FLIP_CNT_INCREMENT(ISEQ_LOCAL_ISEQ(iseq)) + VM_SVAR_FLIPFLOP_START;
     VALUE key = INT2FIX(count);
 
     PUSH_INSN2(ret, location, getspecial, key, INT2FIX(0));
@@ -1887,9 +1899,9 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 break;
               }
               case PM_FORWARDING_ARGUMENTS_NODE: { // not counted in argc return value
-                iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+                iseq_set_use_block(ISEQ_LOCAL_ISEQ(iseq));
 
-                if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+                if (ISEQ_BODY(ISEQ_LOCAL_ISEQ(iseq))->param.flags.forwardable) {
                     *flags |= VM_CALL_FORWARDING;
 
                     pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
@@ -3575,7 +3587,7 @@ pm_compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_scope_n
 
     if (!popped) {
         ID name = parse_string_symbol(scope_node, ((const pm_symbol_node_t *) argument));
-        int index = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->local_table_size - get_local_var_idx(iseq, name);
+        int index = ISEQ_BODY(ISEQ_LOCAL_ISEQ(iseq))->local_table_size - get_local_var_idx(iseq, name);
 
         debugs("id: %s idx: %d\n", rb_id2name(name), index);
         PUSH_GETLOCAL(ret, *node_location, index, get_lvar_level(iseq));
@@ -3643,7 +3655,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         ISEQ_TYPE_METHOD,
         ISEQ_COMPILE_DATA(iseq)->option
     );
-    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
+    RB_OBJ_WRITE(iseq, &rb_iseq_variable_ensure(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     pm_scope_node_destroy(&next_scope_node);
     return COMPILE_OK;
@@ -3927,7 +3939,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
     }
 
-    if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
+    if (block_iseq && ISEQ_CATCH_TABLE(block_iseq)) {
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
         PUSH_CATCH_ENTRY(CATCH_TYPE_BREAK, start, retry_end_l, block_iseq, retry_end_l);
     }
@@ -4047,7 +4059,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_YIELD_NODE:
         // defined?(yield)
         //          ^^^^^
-        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        iseq_set_use_block(ISEQ_LOCAL_ISEQ(iseq));
 
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
@@ -6301,6 +6313,16 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.opt_num = 0;
     }
 
+    // Positional parameter counts and indexes are 16-bit in
+    // rb_iseq_constant_body. Raise before any of them is set.
+    if (parameters_node) {
+        long count = (long) requireds_list->size + optionals_list->size + posts_list->size;
+        if (count > ISEQ_PARAM_POSITIONAL_MAX) {
+            pm_raise_syntax_error(iseq, location.line, "too many positional parameters (%ld, maximum is %d)",
+                                  count, ISEQ_PARAM_POSITIONAL_MAX);
+        }
+    }
+
     //********STEP 1**********
     // Goal: calculate the table size for the locals, accounting for
     // hidden variables and multi target nodes
@@ -6455,6 +6477,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // This index helps us know which item we're dealing with and also give
     // those anonymous items temporary names (as below)
     int local_index = 0;
+    int block_index = -1;
 
     // Here we figure out local table indices and insert them in to the
     // index lookup table and local tables.
@@ -6757,7 +6780,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     pm_insert_local_special(PM_CONSTANT_POW, idPow, local_index++, &index_lookup_table, local_table_for_iseq);
 
                     // Add the anonymous &
-                    body->param.block_start = local_index;
+                    block_index = local_index;
                     body->param.flags.has_block = true;
                     pm_insert_local_special(PM_CONSTANT_AND, idAnd, local_index++, &index_lookup_table, local_table_for_iseq);
                 }
@@ -6776,7 +6799,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         if (parameters_node->block) {
             switch (PM_NODE_TYPE(parameters_node->block)) {
               case PM_BLOCK_PARAMETER_NODE: {
-                body->param.block_start = local_index;
+                block_index = local_index;
                 body->param.flags.has_block = true;
 
                 iseq_set_use_block(iseq);
@@ -6920,6 +6943,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // refer to the parameters correctly.
     scope_node->index_lookup_table = index_lookup_table;
     iseq_calc_param_size(iseq);
+    // The block parameter comes last; see rb_iseq_param_block_start().
+    RUBY_ASSERT(!body->param.flags.has_block || block_index == (int)body->param.size - 1);
+    (void)block_index;
 
     if (ISEQ_BODY(iseq)->param.flags.forwardable) {
         // We're treating `...` as a parameter so that frame
@@ -8121,7 +8147,7 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
         PUSH_LABEL(ret, retry_label);
     }
     else {
-        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        iseq_set_use_block(ISEQ_LOCAL_ISEQ(iseq));
     }
 
     PUSH_INSN(ret, *location, putself);
@@ -8138,14 +8164,13 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
 
     DECL_ANCHOR(args);
 
-    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    const rb_iseq_t *local_iseq = body->local_iseq;
+    const rb_iseq_t *local_iseq = ISEQ_LOCAL_ISEQ(iseq);
     const struct rb_iseq_constant_body *const local_body = ISEQ_BODY(local_iseq);
 
     int argc = 0;
     int depth = get_lvar_level(iseq);
 
-    if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+    if (ISEQ_BODY(ISEQ_LOCAL_ISEQ(iseq))->param.flags.forwardable) {
         flag |= VM_CALL_FORWARDING;
         pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
         PUSH_GETLOCAL(ret, *location, mult_local.index, mult_local.level);
@@ -8748,7 +8773,7 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
     }
 
     if (!node->block) {
-        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        iseq_set_use_block(ISEQ_LOCAL_ISEQ(iseq));
     }
 
     if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
@@ -8756,7 +8781,7 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
     }
 
     PUSH_SEQ(ret, args);
-    if (is_forwardable && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+    if (is_forwardable && ISEQ_BODY(ISEQ_LOCAL_ISEQ(iseq))->param.flags.forwardable) {
         flags |= VM_CALL_FORWARDING;
 
         {
@@ -8782,7 +8807,7 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
 static inline void
 pm_compile_yield_node(rb_iseq_t *iseq, const pm_yield_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    switch (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->type) {
+    switch (ISEQ_BODY(ISEQ_LOCAL_ISEQ(iseq))->type) {
       case ISEQ_TYPE_TOP:
       case ISEQ_TYPE_MAIN:
       case ISEQ_TYPE_CLASS:
@@ -8802,11 +8827,11 @@ pm_compile_yield_node(rb_iseq_t *iseq, const pm_yield_node_t *node, const pm_nod
     const struct rb_callinfo *callinfo = new_callinfo(iseq, 0, argc, flags, keywords, FALSE);
     PUSH_INSN1(ret, *location, invokeblock, callinfo);
 
-    iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+    iseq_set_use_block(ISEQ_LOCAL_ISEQ(iseq));
     if (popped) PUSH_INSN(ret, *location, pop);
 
     int level = 0;
-    for (const rb_iseq_t *tmp_iseq = iseq; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++) {
+    for (const rb_iseq_t *tmp_iseq = iseq; tmp_iseq != ISEQ_LOCAL_ISEQ(iseq); level++) {
         tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
     }
 

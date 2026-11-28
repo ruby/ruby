@@ -995,11 +995,11 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
     }
     else if (ISEQ_BODY(iseq)->param.flags.has_block) {
-        if (ISEQ_BODY(iseq)->local_iseq == iseq) {
+        if (ISEQ_LOCAL_ISEQ(iseq) == iseq) {
             /* Do nothing */
         }
         else {
-            args_setup_block_parameter(ec, calling, locals + ISEQ_BODY(iseq)->param.block_start);
+            args_setup_block_parameter(ec, calling, locals + rb_iseq_param_block_start(&ISEQ_BODY(iseq)->param));
         }
     }
 
@@ -1209,7 +1209,7 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
     CALL_INFO site_ci = cd->ci;
     VALUE bh = Qundef;
 
-    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(CFP_ISEQ(reg_cfp))->local_iseq)->param.flags.forwardable);
+    RUBY_ASSERT(ISEQ_BODY(ISEQ_LOCAL_ISEQ(CFP_ISEQ(reg_cfp)))->param.flags.forwardable);
     CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
 
     unsigned int site_argc = vm_ci_argc(site_ci);

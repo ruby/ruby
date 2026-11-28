@@ -390,6 +390,7 @@ enum rb_iseq_type {
 };
 
 // Attributes specified by Primitive.attr!
+// Must fit in rb_iseq_constant_body::builtin_attrs (8 bits).
 enum rb_builtin_attr {
     // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
@@ -418,16 +419,60 @@ enum lvar_state {
 
 /* Lazily-allocated per-iseq variable data. NULL when unused (the common case:
  * no coverage, no script_lines, no flip-flops, no disassembly). */
+#if USE_YJIT || USE_ZJIT
+/* JIT state of an ISeq that the interpreter does not touch on its call path.
+ * Allocated by rb_iseq_jit_data_ensure() when a JIT first needs it, and
+ * reached through ISEQ_JIT_DATA(). jit_entry and jit_entry_calls stay in
+ * rb_iseq_constant_body since jit_exec() reads them on every call. */
+struct rb_iseq_jit_data {
+    // Function pointer for JIT code on jit_exec_exception()
+    rb_jit_func_t jit_exception;
+    void *jit_payload;
+    // Number of calls on jit_exec_exception()
+    unsigned int jit_exception_calls;
+    // Set once an EP escape of this iseq has been reported to the enabled JIT.
+    rb_atomic_t jit_ep_escape_recorded;
+    // Used by YJIT to estimate how frequently this ISEQ gets called
+    unsigned int yjit_calls_at_interv;
+};
+#endif
+
+/* Rarely-set ISeq state, kept out of rb_iseq_constant_body and allocated on
+ * first use by rb_iseq_variable_ensure(). Read through the NULL-safe
+ * ISEQ_BODY_VARIABLE_* accessors in iseq.h. */
 struct rb_iseq_variable {
     rb_snum_t flip_count;
     VALUE script_lines;
     VALUE coverage;
     VALUE pc2branchindex;
     VALUE *original_iseq;
+
+    /* Set at compile/load time for few ISeqs: */
+    struct iseq_catch_table *catch_table;
+    struct rb_id_table *outer_variables;
+    const rb_iseq_t *mandatory_only_iseq;
+    // Source hash of an ISeq that is not a local root and does not share
+    // its parent's; see rb_iseq_source_hash().
+    uint64_t source_hash;
+
+#if USE_YJIT || USE_ZJIT
+    struct rb_iseq_jit_data *jit;
+#endif
 };
 
+/* Upper bound of the number of leading, optional and post parameters of an
+ * ISeq, so that lead_num, opt_num, rest_start, post_start and post_num fit
+ * in 16 bits (post_start can be one more than lead_num + opt_num). */
+#define ISEQ_PARAM_POSITIONAL_MAX (UINT16_MAX - 1)
+
 struct rb_iseq_constant_body {
-    enum rb_iseq_type type;
+    BITFIELD(enum rb_iseq_type, type, 8);
+    unsigned int builtin_attrs : 8; // Union of rb_builtin_attr
+    unsigned int prism : 1; // ISEQ was generated from prism compiler
+    unsigned int no_realpath : 1; // location.pathobj names no real file (ex: during eval)
+    // The source hash equals the parent ISeq's, see rb_iseq_source_hash().
+    // Not used by local root ISeqs.
+    unsigned int source_hash_inherited : 1;
 
     unsigned int iseq_size;
     VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
@@ -450,39 +495,45 @@ struct rb_iseq_constant_body {
      *  post_start   = M+N+(*1)
      *  post_num     = O
      *  keyword_num  = K
-     *  block_start  = M+N+(*1)+O+K
-     *  keyword_bits = M+N+(*1)+O+K+(&1)
-     *  size         = M+N+O+(*1)+K+(&1)+(**1) // parameter size.
+     *  keyword_bits = M+N+(*1)+O+K               // when K > 0
+     *  size         = M+N+O+(*1)+K+(K>0)+(**1)+(&1) // parameter size.
+     *  block_start  = size-1 (the block parameter comes last)
      */
 
     struct rb_iseq_parameters {
         struct {
-            unsigned int has_lead   : 1;
-            unsigned int has_opt    : 1;
-            unsigned int has_rest   : 1;
-            unsigned int has_post   : 1;
-            unsigned int has_kw     : 1;
-            unsigned int has_kwrest : 1;
-            unsigned int has_block  : 1;
+            /* 16 bits are available. */
+            uint16_t has_lead   : 1;
+            uint16_t has_opt    : 1;
+            uint16_t has_rest   : 1;
+            uint16_t has_post   : 1;
+            uint16_t has_kw     : 1;
+            uint16_t has_kwrest : 1;
+            uint16_t has_block  : 1;
 
-            unsigned int ambiguous_param0 : 1; /* {|a|} */
-            unsigned int accepts_no_kwarg : 1;
-            unsigned int ruby2_keywords: 1;
-            unsigned int anon_rest: 1;
-            unsigned int anon_kwrest: 1;
-            unsigned int use_block: 1;
-            unsigned int forwardable: 1;
-            unsigned int accepts_no_block: 1;
+            uint16_t ambiguous_param0 : 1; /* {|a|} */
+            uint16_t accepts_no_kwarg : 1;
+            uint16_t ruby2_keywords: 1;
+            uint16_t anon_rest: 1;
+            uint16_t anon_kwrest: 1;
+            uint16_t use_block: 1;
+            uint16_t forwardable: 1;
+            uint16_t accepts_no_block: 1;
         } flags;
+
+        uint16_t lead_num;
 
         unsigned int size;
 
-        int lead_num;
-        int opt_num;
-        int rest_start;
-        int post_start;
-        int post_num;
-        int block_start;
+        /* The positional parameter counts and indexes are 16-bit to keep the
+         * body small: compilers and loaders reject more than
+         * ISEQ_PARAM_POSITIONAL_MAX positional parameters. */
+        uint16_t opt_num;
+        uint16_t rest_start;
+        uint16_t post_start;
+        uint16_t post_num;
+        /* The block parameter, if any, is the last one, so its index
+         * (block_start) is size - 1. See rb_iseq_param_block_start(). */
 
         const VALUE *opt_table; /* (opt_num + 1) entries. */
         /* opt_num and opt_table:
@@ -509,6 +560,50 @@ struct rb_iseq_constant_body {
         } *keyword;
     } param;
 
+    /* Read on every call: keep close to param and iseq_encoded. */
+    unsigned int local_table_size;
+    unsigned int stack_max; /* for stack overflow check */
+
+#if USE_YJIT || USE_ZJIT
+    // Function pointer for JIT code on jit_exec()
+    rb_jit_func_t jit_entry;
+    // Number of calls on jit_exec()
+    unsigned int jit_entry_calls;
+#endif
+
+    unsigned int ic_size;     // Number of IC caches
+    unsigned int ise_size;    // Number of ISE caches
+    unsigned int ivc_size;    // Number of IVC caches
+    unsigned int icvarc_size; // Number of ICVARC caches
+    unsigned int ci_size;
+
+    const ID *local_table;		/* must free */
+
+    union {
+        uint8_t *list;
+        uint8_t single[sizeof(uint8_t *)];
+    } lvar_states;
+
+    /* for child iseq */
+    const struct rb_iseq_struct *parent_iseq;
+    /* TOP, METHOD, CLASS and MAIN ISeqs are their own local ISeq (see
+     * rb_iseq_local_root_type_p()) and keep their source hash here instead.
+     * Read it with ISEQ_LOCAL_ISEQ() and rb_iseq_source_hash(). */
+    union {
+        struct rb_iseq_struct *iseq; /* local_iseq->flip_cnt can be modified */
+        uint64_t source_hash;
+    } local_root;
+
+    union iseq_inline_storage_entry *is_entries; /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
+    struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
+
+    union {
+        iseq_bits_t * list; /* Find references for GC */
+        iseq_bits_t single;
+    } mark_bits;
+
+    struct rb_iseq_variable *variable;
+
     rb_iseq_location_t location;
 
     /* insn info, must be freed */
@@ -520,78 +615,14 @@ struct rb_iseq_constant_body {
             struct succ_index_table *succ_index_table;
 #endif
         } positions_or_succ_index_table;
-        unsigned int size;
 #ifdef USE_ISEQ_NODE_ID
         const uint8_t *node_ids;
+#endif
+        unsigned int size;
+#ifdef USE_ISEQ_NODE_ID
         unsigned int node_ids_size;
 #endif
     } insns_info;
-
-    const ID *local_table;		/* must free */
-
-    union {
-        uint8_t *list;
-        uint8_t single[sizeof(uint8_t *)];
-    } lvar_states;
-
-    /* catch table */
-    struct iseq_catch_table *catch_table;
-
-    /* for child iseq */
-    const struct rb_iseq_struct *parent_iseq;
-    struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
-
-    union iseq_inline_storage_entry *is_entries; /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
-    struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
-
-    struct rb_iseq_variable *variable;
-
-    unsigned int local_table_size;
-    unsigned int ic_size;     // Number of IC caches
-    unsigned int ise_size;    // Number of ISE caches
-    unsigned int ivc_size;    // Number of IVC caches
-    unsigned int icvarc_size; // Number of ICVARC caches
-    unsigned int ci_size;
-    unsigned int stack_max; /* for stack overflow check */
-
-    unsigned int builtin_attrs; // Union of rb_builtin_attr
-
-    bool prism; // ISEQ was generated from prism compiler
-    bool no_realpath; // location.pathobj names no real file (ex: during eval)
-
-    // Set once an EP escape of this iseq has been reported to the enabled JIT.
-    rb_atomic_t jit_ep_escape_recorded;
-
-    union {
-        iseq_bits_t * list; /* Find references for GC */
-        iseq_bits_t single;
-    } mark_bits;
-
-    struct rb_id_table *outer_variables;
-
-    const rb_iseq_t *mandatory_only_iseq;
-
-#if USE_YJIT || USE_ZJIT
-    // Number of calls on jit_exec()
-    unsigned int jit_entry_calls;
-    // Number of calls on jit_exec_exception()
-    unsigned int jit_exception_calls;
-    // Function pointer for JIT code on jit_exec()
-    rb_jit_func_t jit_entry;
-    // Function pointer for JIT code on jit_exec_exception()
-    rb_jit_func_t jit_exception;
-    void *jit_payload;
-#endif
-
-#if USE_YJIT
-    // Used to estimate how frequently this ISEQ gets called
-    unsigned int yjit_calls_at_interv;
-#endif
-
-    // Hash of the source this iseq was compiled from, or 0 if it is
-    // unavailable. A computed hash of 0 is remapped to another value, so
-    // 0 never denotes a real hash.
-    uint64_t source_hash;
 };
 
 /* T_IMEMO/iseq */
@@ -618,6 +649,24 @@ struct rb_iseq_struct {
 
 #define ISEQ_BODY(iseq) ((iseq)->body)
 
+/* Whether ISeqs of this type are their own local ISeq. */
+static inline bool
+rb_iseq_local_root_type_p(enum rb_iseq_type type)
+{
+    return type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_METHOD ||
+        type == ISEQ_TYPE_CLASS || type == ISEQ_TYPE_MAIN;
+}
+
+/* The ISeq that owns the local variable table for this one (for a block,
+ * the method or top-level ISeq around it). */
+static inline rb_iseq_t *
+ISEQ_LOCAL_ISEQ(const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (rb_iseq_local_root_type_p((enum rb_iseq_type)body->type)) return (rb_iseq_t *)iseq;
+    return body->local_root.iseq;
+}
+
 #if !defined(USE_LAZY_LOAD) || !(USE_LAZY_LOAD+0)
 #define USE_LAZY_LOAD 0
 #endif
@@ -626,6 +675,14 @@ struct rb_iseq_struct {
 static inline const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq) {return 0;}
 #endif
 const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
+
+/* Index of the block parameter. Only meaningful when param->flags.has_block. */
+static inline unsigned int
+rb_iseq_param_block_start(const struct rb_iseq_parameters *param)
+{
+    RUBY_ASSERT(param->flags.has_block);
+    return param->size - 1;
+}
 
 static inline const rb_iseq_t *
 rb_iseq_check(const rb_iseq_t *iseq)

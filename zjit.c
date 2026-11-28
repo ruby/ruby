@@ -37,7 +37,6 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
 enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
-    ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
     RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
 };
 
@@ -162,7 +161,7 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
+            rb_iseq_jit_data_ensure(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
         }
         else {
             ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
@@ -195,6 +194,13 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
         }
         insn_idx += insn_len(insn);
     }
+}
+
+// The iseq's outer_variables table, or NULL when it has none.
+struct rb_id_table *
+rb_zjit_iseq_outer_variables(const rb_iseq_t *iseq)
+{
+    return ISEQ_OUTER_VARIABLES(iseq);
 }
 
 // Return false if a function stub has not collected enough profiles yet, enabling

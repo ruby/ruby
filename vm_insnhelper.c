@@ -1726,7 +1726,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
                 if (escape_cfp->ep == ep) {
                     const rb_iseq_t *const iseq = CFP_ISEQ(escape_cfp);
                     const VALUE epc = CFP_PC(escape_cfp) - ISEQ_BODY(iseq)->iseq_encoded;
-                    const struct iseq_catch_table *const ct = ISEQ_BODY(iseq)->catch_table;
+                    const struct iseq_catch_table *const ct = ISEQ_CATCH_TABLE(iseq);
                     unsigned int i;
 
                     if (!ct) break;
@@ -4696,7 +4696,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
     rb_control_frame_t *top_cfp = cfp;
 
     if (CFP_ISEQ(cfp) && !VM_FRAME_BMETHOD_P(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
-        const rb_iseq_t *local_iseq = ISEQ_BODY(CFP_ISEQ(cfp))->local_iseq;
+        const rb_iseq_t *local_iseq = ISEQ_LOCAL_ISEQ(CFP_ISEQ(cfp));
 
         do {
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
