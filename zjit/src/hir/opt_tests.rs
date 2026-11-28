@@ -16639,6 +16639,102 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_embedded_and_heap_strings_are_monomorphic() {
+        set_call_threshold(3);
+        eval(r#"
+            def test(s) = s.bytesize
+            test("a")
+            test("a" * 100)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
+          v26:StringExact = GuardType v10, StringExact recompile
+          v27:CInt64 = LoadField v26, :len@0x1040
+          v28:Fixnum = BoxFixnum v27
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_embedded_and_heap_arrays_are_monomorphic() {
+        set_call_threshold(3);
+        eval(r#"
+            def test(a) = a.size
+            test([1])
+            test([1] * 100)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, size@0x1010, cme:0x1018)
+          v25:ArrayExact = GuardType v10, ArrayExact recompile
+          v26:CInt64 = ArrayLength v25
+          v27:Fixnum = BoxFixnum v26
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_embedded_and_heap_hashes_are_monomorphic() {
+        set_call_threshold(3);
+        eval(r#"
+            def test(h) = h.size
+            test({ a: 1 })
+            test({ a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 })
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :h@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :h@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, size@0x1010, cme:0x1018)
+          v25:HashExact = GuardType v10, HashExact recompile
+          v26:Fixnum = CCall v25, :Hash#size@0x1040
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
     fn test_optimize_string_getbyte_fixnum() {
         eval(r#"
             def test(s, i) = s.getbyte(i)
