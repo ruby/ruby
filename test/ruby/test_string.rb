@@ -4572,6 +4572,24 @@ class TestString < Test::Unit::TestCase
     assert_same str1, -str2
   end
 
+  def test_fstring_of_frozen_string_right_sized
+    return unless @cls == String
+    require 'objspace'
+    slot_size = ->(s) { ObjectSpace.dump(s)[/"slot_size":(\d+)/, 1].to_i }
+
+    # The label is built in a large buffer and frozen before it is interned.
+    label = nil
+    RubyVM::InstructionSequence.compile("class TestFstringRightSized; end").each_child { label = _1.label }
+    assert_equal("<class:TestFstringRightSized>", label)
+    assert_include(ObjectSpace.dump(label), '"fstring":true')
+    assert_operator(slot_size[label], :<=, slot_size[label.dup])
+
+    # String#-@ still interns a frozen string in place.
+    str = "x" * 300
+    str.replace("frozen in a large slot #{rand}").freeze
+    assert_same(str, -str)
+  end
+
   def test_uminus_no_freeze_not_bare
     str = S("foo")
     assert_instance_of(@cls, -str)
