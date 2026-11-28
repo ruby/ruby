@@ -282,6 +282,19 @@ typedef struct _Node {
 
 #define NULL_NODE  ((Node* )0)
 
+/* The nodes of a parse tree, and the code range buffers (BBuf) of character
+   classes, are taken from an arena while one is active (between
+   onig_node_arena_begin() and onig_node_arena_end()).  Then onig_node_free()
+   and freeing a BBuf do nothing, and onig_node_arena_end() releases them all
+   at once, so error paths cannot free one twice. */
+typedef struct NodeArenaChunk NodeArenaChunk;
+typedef struct ArenaBBuf ArenaBBuf;
+typedef struct OnigNodeArena {
+  NodeArenaChunk* chunks;
+  ArenaBBuf* bbufs;
+  struct OnigNodeArena* prev;
+} OnigNodeArena;
+
 #define SCANENV_MEMNODES_SIZE               8
 #define SCANENV_MEM_NODES(senv)   \
  (IS_NOT_NULL((senv)->mem_nodes_dynamic) ? \
@@ -349,6 +362,8 @@ extern void   onig_node_conv_to_str_node(Node* node, int raw);
 extern int    onig_node_str_cat(Node* node, const UChar* s, const UChar* end);
 extern int    onig_node_str_set(Node* node, const UChar* s, const UChar* end);
 extern void   onig_node_free(Node* node);
+extern void   onig_node_arena_begin(OnigNodeArena* arena);
+extern void   onig_node_arena_end(OnigNodeArena* arena);
 extern Node*  onig_node_new_enclose(int type);
 extern Node*  onig_node_new_anchor(int type);
 extern Node*  onig_node_new_str(const UChar* s, const UChar* end);

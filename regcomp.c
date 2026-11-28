@@ -5842,6 +5842,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   OnigDistance init_size;
   Node*  root;
   ScanEnv  scan_env = {0};
+  OnigNodeArena  node_arena;
 #ifdef USE_SUBEXP_CALL
   UnsetAddrList  uslist;
 #endif
@@ -5879,6 +5880,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   reg->num_comb_exp_check = 0;
 #endif
 
+  onig_node_arena_begin(&node_arena);
   r = onig_parse_make_tree(&root, pattern, pattern_end, reg, &scan_env);
   if (r != 0) goto err;
 
@@ -6003,6 +6005,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   }
 #endif
   onig_node_free(root);
+  onig_node_arena_end(&node_arena);
 
 #ifdef ONIG_DEBUG_COMPILE
 # ifdef USE_NAMED_GROUP
@@ -6031,6 +6034,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   }
 
   onig_node_free(root);
+  onig_node_arena_end(&node_arena);
   xfree(scan_env.mem_nodes_dynamic);
 
   return r;
