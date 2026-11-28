@@ -520,6 +520,98 @@ rb_warning_string(const char *fmt, ...)
     return mesg;
 }
 
+/*
+ * For C code that must not be left by a non-local exit (Warning.warn may
+ * raise): between begin and end, rb_ec_warn_deferrable() keeps the warnings
+ * on the ec until rb_ec_emit_deferred_warnings() or discard.
+ */
+void
+rb_ec_defer_warnings_begin(rb_execution_context_t *ec)
+{
+    ec->deferred_warnings.depth++;
+}
+
+void
+rb_ec_defer_warnings_end(rb_execution_context_t *ec)
+{
+    RUBY_ASSERT(ec->deferred_warnings.depth > 0);
+    ec->deferred_warnings.depth--;
+}
+
+static void
+warn_cstr(const char *file, int line, const char *msg)
+{
+    if (file == NULL)
+        rb_warn("%s", msg);
+    else
+        rb_compile_warn(file, line, "%s", msg);
+}
+
+/* Doesn't raise while the warnings are deferred. */
+void
+rb_ec_warn_deferrable(rb_execution_context_t *ec, const char *file, int line, const char *msg)
+{
+    if (ec->deferred_warnings.depth == 0) {
+        warn_cstr(file, line, msg);
+        return;
+    }
+
+    size_t msg_size = strlen(msg) + 1;
+    size_t file_size = file ? strlen(file) + 1 : 0;
+    /* not xmalloc(), which raises */
+    char *buf = malloc(msg_size + file_size);
+    if (!buf) return;
+    memcpy(buf, msg, msg_size);
+    if (file) memcpy(buf + msg_size, file, file_size);
+
+    struct rb_deferred_warning warning = {buf, file ? buf + msg_size : NULL, line};
+    rb_darray_append_without_gc(&ec->deferred_warnings.list, warning);
+}
+
+static void
+deferred_warnings_free(rb_deferred_warnings_t list)
+{
+    struct rb_deferred_warning *warning;
+    rb_darray_foreach(list, i, warning) {
+        free(warning->msg);
+    }
+    rb_darray_free_without_gc(list);
+}
+
+void
+rb_ec_emit_deferred_warnings(rb_execution_context_t *ec)
+{
+    rb_deferred_warnings_t list = ec->deferred_warnings.list;
+    if (!list) return;
+
+    /* copied first, as Warning.warn may raise or defer more warnings */
+    VALUE warnings = rb_ary_new_capa(rb_darray_size(list) * 3);
+    struct rb_deferred_warning *warning;
+    rb_darray_foreach(list, i, warning) {
+        rb_ary_push(warnings, rb_str_new_cstr(warning->msg));
+        rb_ary_push(warnings, warning->file ? rb_str_new_cstr(warning->file) : Qnil);
+        rb_ary_push(warnings, INT2NUM(warning->line));
+    }
+    ec->deferred_warnings.list = NULL;
+    deferred_warnings_free(list);
+
+    for (long i = 0; i < RARRAY_LEN(warnings); i += 3) {
+        VALUE file = RARRAY_AREF(warnings, i + 1);
+        warn_cstr(NIL_P(file) ? NULL : RSTRING_PTR(file),
+                  NUM2INT(RARRAY_AREF(warnings, i + 2)),
+                  RSTRING_PTR(RARRAY_AREF(warnings, i)));
+    }
+    RB_GC_GUARD(warnings);
+}
+
+void
+rb_ec_discard_deferred_warnings(rb_execution_context_t *ec)
+{
+    rb_deferred_warnings_t list = ec->deferred_warnings.list;
+    ec->deferred_warnings.list = NULL;
+    deferred_warnings_free(list);
+}
+
 #if 0
 void
 rb_enc_warning(rb_encoding *enc, const char *fmt, ...)

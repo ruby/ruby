@@ -1159,6 +1159,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise_with_message(RuntimeError, /string modified/) { th.join }
   end
 
+  # Threads of non-main Ractors are M:N: after a thread switch in the match,
+  # the thread may resume on another native thread, possibly after the first
+  # one exited.  The state of the match must not be in its thread-locals.
+  def test_match_thread_switch_in_ractors
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", args: [{"RUBY_THREAD_TIMESLICE" => "1"}], timeout: 60)
+    begin;
+      Warning[:experimental] = false
+      s = ("a" * 2000 + "-" * 1000).freeze
+      5.times do
+        rs = Array.new(4) do
+          Ractor.new(s) do |s|
+            Array.new(4) {
+              Thread.new { Array.new(5) { /(\w)\1*\d/.match?(s) } }
+            }.flat_map(&:value)
+          end
+        end
+        rs.each { |r| assert_equal([false] * 20, r.value) }
+      end
+    end;
+  end
+
   def test_eqq
     assert_equal(false, /../ === nil)
   end

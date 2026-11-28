@@ -113,6 +113,7 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 
 #include "ruby/internal/stdbool.h"
 #include "ccan/list/list.h"
+#include "darray.h"
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
@@ -1076,6 +1077,14 @@ struct rb_waiting_list {
 };
 
 
+struct rb_deferred_warning {
+    char *msg; /* the file name follows in the same allocation */
+    const char *file;
+    int line;
+};
+
+typedef rb_darray(struct rb_deferred_warning) rb_deferred_warnings_t;
+
 struct rb_execution_context_struct {
     /* execution information */
     VALUE *vm_stack;		/* must free, must mark */
@@ -1126,6 +1135,15 @@ struct rb_execution_context_struct {
         VALUE obj;
         VALUE fields_obj;
     } gen_fields_cache;
+
+    /* see rb_ec_defer_warnings_begin() */
+    struct {
+        int depth;
+        rb_deferred_warnings_t list;
+    } deferred_warnings;
+
+    /* the innermost match running on this ec (re.c) */
+    struct rb_reg_onig_ctx *reg_onig_ctx;
 
     /* for GC */
     struct {
