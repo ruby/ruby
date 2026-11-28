@@ -105,6 +105,7 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     rb_iseq_eval(iseq, rb_root_box());
 }
 
+#ifndef BUILTIN_LOAD_GEM_PRELUDE
 VALUE
 rb_define_gem_modules(VALUE _a, VALUE _b)
 {
@@ -117,3 +118,4 @@ rb_load_gem_prelude(VALUE _)
 {
     // do nothing - miniruby doesn't support loading RubyGems.
 }
+#endif
