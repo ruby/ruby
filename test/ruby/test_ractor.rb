@@ -1895,6 +1895,27 @@ class TestRactor < Test::Unit::TestCase
     GC.start
   end
 
+  # A child's #freeze may transition the shape of the parent whose ivars are being
+  # iterated (e.g. via object_id); the iteration must tolerate that.
+  def test_make_shareable_shape_change_during_traversal
+    parent = nil
+    klass = Class.new do
+      define_method(:freeze) do
+        parent.object_id
+        super()
+      end
+    end
+
+    [1, 4, 8].each do |n| # vary the parent's free capacity
+      parent = Object.new
+      n.times { |i| parent.instance_variable_set(:"@iv#{i}", i) }
+      parent.instance_variable_set(:@a, klass.new)
+      Ractor.make_shareable(parent)
+      assert_predicate(parent.instance_variable_get(:@a), :frozen?)
+      assert Ractor.shareable?(parent)
+    end
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
