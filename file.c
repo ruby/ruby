@@ -84,6 +84,19 @@ int flock(int, int);
 # include <fcntl.h>
 #endif
 
+#ifndef USE_UNLINKAT_TREE
+#if !defined(_WIN32) && defined(HAVE_DIRENT_H) && \
+    defined(HAVE_OPENAT) && defined(HAVE_UNLINKAT) && \
+    defined(HAVE_FSTATAT) && defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD) && \
+    defined(O_DIRECTORY) && defined(O_NOFOLLOW) && defined(O_CLOEXEC) && \
+    defined(AT_SYMLINK_NOFOLLOW) && defined(AT_REMOVEDIR)
+# define USE_UNLINKAT_TREE 1
+#else
+# define USE_UNLINKAT_TREE 0
+#endif
+#endif
+
+
 #if defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
 #endif
@@ -134,6 +147,14 @@ typedef struct timespec stat_timestamp;
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
 # define UTIME_EINVAL
+# define DOSISH_UNC
+# define DOSISH_DRIVE_LETTER
+# define FILE_ALT_SEPARATOR '\\'
+#endif
+#ifdef FILE_ALT_SEPARATOR
+# define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
+#else
+# define isdirsep(x) ((x) == '/')
 #endif
 
 /* Solaris 10 realpath(3) doesn't support File.realpath */
@@ -466,9 +487,10 @@ no_gvl_apply2files(void *ptr)
     struct apply_arg *aa = ptr;
 
     for (aa->i = 0; aa->i < aa->argc; aa->i++) {
-        if (aa->func(aa->fn[aa->i].ptr, aa->arg) < 0) {
-            aa->errnum = errno;
-            break;
+        int result = aa->func(aa->fn[aa->i].ptr, aa->arg);
+        if (result < 0) {
+            if (result == -1) aa->errnum = errno;
+            return (void *)(VALUE)result;
         }
     }
     return 0;
@@ -479,6 +501,9 @@ NORETURN(static void utime_failed(struct apply_arg *));
 static int utime_internal(const char *, void *);
 #endif
 
+/* Return the path on which FUNC stopped with a result below -1.
+ * Ordinary failures (-1) raise a system error; success returns the path count.
+ */
 static VALUE
 apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 {
@@ -500,8 +525,8 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
         aa->fn[aa->i].path = path;
     }
 
-    IO_WITHOUT_GVL(no_gvl_apply2files, aa);
-    if (aa->errnum) {
+    int result = IO_WITHOUT_GVL_INT(no_gvl_apply2files, aa);
+    if (result == -1) {
 #ifdef UTIME_EINVAL
         if (func == utime_internal) {
             utime_failed(aa);
@@ -509,10 +534,11 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 #endif
         rb_syserr_fail_path(aa->errnum, aa->fn[aa->i].path);
     }
+    VALUE value = result < 0 ? aa->fn[aa->i].path : LONG2FIX(argc);
     if (v) {
         ALLOCV_END(v);
     }
-    return LONG2FIX(argc);
+    return value;
 }
 
 static stat_timestamp stat_atimespec(const struct stat *st);
@@ -4413,12 +4439,520 @@ unlink_internal(const char *path, void *arg)
     return unlink(path);
 }
 
+#ifdef _WIN32
+static int
+unlink_recursive_internal(const char *path, void *arg)
+{
+    int ret = rb_w32_uunlink_recursive(path);
+    if (ret == -2) *(bool *)arg = true;
+    return ret;
+}
+#else
+#if USE_UNLINKAT_TREE
+struct unlink_tree_name {
+    struct unlink_tree_name *next;
+    char name[];
+};
+#else
+struct unlink_tree_name {
+    struct unlink_tree_name *next;
+    char path[];
+};
+#endif
+
+struct unlink_tree {
+#if USE_UNLINKAT_TREE
+    DIR *stream;
+#endif
+    struct unlink_tree_name *children;
+    bool eof;
+    DIR *dir;
+    struct unlink_tree *parent;
+    dev_t dev;
+    ino_t ino;
+    char name[];
+};
+
+#define UNLINK_TREE_BATCH_BYTES (8u << 20)
+
+static bool
+unlink_tree_identical(dev_t dev, ino_t ino, const struct stat *st)
+{
+    return dev == st->st_dev && ino == st->st_ino;
+}
+
+static void
+unlink_tree_free(struct unlink_tree *entry)
+{
+    if (entry->dir) closedir(entry->dir);
+#if USE_UNLINKAT_TREE
+    if (entry->stream) closedir(entry->stream);
+#endif
+    while (entry->children) {
+        struct unlink_tree_name *item = entry->children;
+        entry->children = item->next;
+        free(item);
+    }
+    free(entry);
+}
+
+#if USE_UNLINKAT_TREE
+/* Retain this many ancestors in addition to the current directory and base. */
+#define UNLINK_TREE_KEEP_PARENTS 8
+
+static int
+unlink_tree_fd(struct unlink_tree *entry)
+{
+    return dirfd(entry->stream ? entry->stream : entry->dir);
+}
+
+/* Read one batch, removing non-directories and empty directories as we go. */
+static int
+unlink_tree_read(struct unlink_tree *entry)
+{
+    struct unlink_tree_name **tail = &entry->children;
+    size_t bytes = 0;
+
+    if (!entry->stream) {
+        int fd = openat(dirfd(entry->dir), ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+        if (fd < 0) return -1;
+        entry->stream = fdopendir(fd);
+        if (!entry->stream) {
+            int e = errno;
+            close(fd);
+            errno = e;
+            return -1;
+        }
+    }
+
+    for (;;) {
+        errno = 0;
+        struct dirent *child = readdir(entry->stream);
+        if (!child) {
+            int e = errno;
+            if (closedir(entry->stream) < 0 && !e) e = errno;
+            entry->stream = NULL;
+            entry->eof = true;
+            if (e) {
+                errno = e;
+                return -1;
+            }
+            return 0;
+        }
+        const char *name = child->d_name;
+        size_t len = NAMLEN(child);
+        if (dirent_dot_p(child)) continue;
+
+        int base = unlink_tree_fd(entry);
+        if (unlinkat(base, name, 0) == 0) continue;
+
+        int e = errno;
+        struct stat st;
+        if (fstatat(base, name, &st, AT_SYMLINK_NOFOLLOW) < 0) return -1;
+        if (!S_ISDIR(st.st_mode)) {
+            errno = e;
+            return -1;
+        }
+        if (unlinkat(base, name, AT_REMOVEDIR) == 0) continue;
+
+        struct unlink_tree_name *item = malloc(sizeof(*item) + len + 1);
+        if (!item) {
+            errno = ENOMEM;
+            return -1;
+        }
+        item->next = NULL;
+        memcpy(item->name, name, len + 1);
+        *tail = item;
+        tail = &item->next;
+        bytes += len + 1 + 2 * sizeof(char *) + 24;
+        if (bytes >= UNLINK_TREE_BATCH_BYTES) return 0;
+    }
+}
+
+/* Reopen the original parent, refusing to ascend into a different directory. */
+static int
+unlink_tree_parent(struct unlink_tree *entry)
+{
+    struct unlink_tree *parent = entry->parent;
+    if (parent->dir || parent->stream) return 0;
+    int fd = openat(dirfd(entry->dir), "..",
+                    O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (fd < 0) return -1;
+    struct stat st;
+    int e;
+    if (fstat(fd, &st) < 0) {
+        e = errno;
+    }
+    else if (!unlink_tree_identical(parent->dev, parent->ino, &st)) {
+        close(fd);
+        return -2;
+    }
+    else {
+        parent->dir = fdopendir(fd);
+        if (parent->dir) return 0;
+        e = errno;
+    }
+    close(fd);
+    errno = e;
+    return -1;
+}
+
+/* Remove a non-directory, or open a directory without following links.
+ * NAME is always a single component relative to an already opened parent.
+ */
+static int
+unlink_tree_enter(int base, const char *name, const struct stat *root,
+                  struct unlink_tree **stack)
+{
+    if (unlinkat(base, name, 0) == 0) return 0;
+    int e = errno;
+    if (e != EISDIR && e != EPERM) return -1;
+
+    struct stat before, after;
+    if (fstatat(base, name, &before, AT_SYMLINK_NOFOLLOW) < 0) return -1;
+    if (!S_ISDIR(before.st_mode)) {
+        errno = e;
+        return -1;
+    }
+    int fd = openat(base, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (fd < 0) return -1;
+    if (fstat(fd, &after) < 0) {
+        e = errno;
+        goto close_fd;
+    }
+    if (!unlink_tree_identical(before.st_dev, before.st_ino, &after)) {
+        close(fd);
+        return -2;
+    }
+    if (unlink_tree_identical(root->st_dev, root->st_ino, &after)) {
+        e = EBUSY;
+        goto close_fd;
+    }
+
+    size_t size = strlen(name) + 1;
+    struct unlink_tree *entry = malloc(sizeof(*entry) + size);
+    if (!entry) {
+        e = ENOMEM;
+        goto close_fd;
+    }
+    memcpy(entry->name, name, size);
+    entry->dir = fdopendir(fd);
+    if (!entry->dir) {
+        e = errno;
+        free(entry);
+        goto close_fd;
+    }
+    entry->children = NULL;
+    entry->stream = NULL;
+    entry->eof = false;
+    entry->dev = after.st_dev;
+    entry->ino = after.st_ino;
+    entry->parent = *stack;
+    struct unlink_tree *ancestor = entry->parent;
+    for (int i = 0; ancestor && i < UNLINK_TREE_KEEP_PARENTS; i++) {
+        ancestor = ancestor->parent;
+    }
+    if (ancestor && ancestor->dir) {
+        int ret = closedir(ancestor->dir);
+        ancestor->dir = NULL;
+        if (ret < 0) {
+            e = errno;
+            unlink_tree_free(entry);
+            errno = e;
+            return -1;
+        }
+    }
+    *stack = entry;
+    return 0;
+
+  close_fd:
+    close(fd);
+    errno = e;
+    return -1;
+}
+
+/* Return 1 for a child, 0 at the end, -1 for an OS error, or -2 for a mismatch. */
+static int
+unlink_tree_next(struct unlink_tree **stack, const struct stat *root)
+{
+    while (!(*stack)->children) {
+        if ((*stack)->eof) return 0;
+        if (unlink_tree_read(*stack) < 0) return -1;
+    }
+    struct unlink_tree_name *child = (*stack)->children;
+    (*stack)->children = child->next;
+    int ret = unlink_tree_enter(unlink_tree_fd(*stack), child->name, root, stack);
+    int e = ret == -1 ? errno : 0;
+    free(child);
+    if (ret == -1) errno = e;
+    return ret < 0 ? ret : 1;
+}
+
+static int
+unlink_tree_leave(struct unlink_tree *entry, int base)
+{
+    if (entry->parent) {
+        int ret = unlink_tree_parent(entry);
+        if (ret < 0) return ret;
+    }
+    int parentfd = entry->parent ? unlink_tree_fd(entry->parent) : base;
+    struct stat st;
+    if (fstatat(parentfd, entry->name, &st, AT_SYMLINK_NOFOLLOW) < 0) return -1;
+    if (!unlink_tree_identical(entry->dev, entry->ino, &st)) {
+        return -2;
+    }
+    if (unlinkat(parentfd, entry->name, AT_REMOVEDIR) < 0) return -1;
+    int ret = closedir(entry->dir);
+    entry->dir = NULL;
+    return ret;
+}
+#else
+/* The fallback retains paths rather than directory descriptors. */
+static int
+unlink_tree_enter(const char *path, const struct stat *root, struct unlink_tree **stack)
+{
+    struct stat st;
+    if (lstat(path, &st) < 0) return -1;
+    if (!S_ISDIR(st.st_mode)) return unlink(path);
+    if (unlink_tree_identical(root->st_dev, root->st_ino, &st)) {
+        errno = EBUSY;
+        return -1;
+    }
+
+    DIR *dir = opendir(path);
+    if (!dir) return -1;
+    int e;
+    struct stat after;
+    if (lstat(path, &after) < 0) {
+        e = errno;
+        goto close_dir;
+    }
+    if (!S_ISDIR(after.st_mode) || !unlink_tree_identical(st.st_dev, st.st_ino, &after)) {
+        closedir(dir);
+        return -2;
+    }
+# if defined(HAVE_DIRFD) && !defined(_WIN32)
+    if (fstat(dirfd(dir), &after) < 0) {
+        e = errno;
+        goto close_dir;
+    }
+    if (!unlink_tree_identical(st.st_dev, st.st_ino, &after)) {
+        closedir(dir);
+        return -2;
+    }
+# endif
+    size_t size = strlen(path) + 1;
+    struct unlink_tree *entry = malloc(sizeof(*entry) + size);
+    if (!entry) {
+        e = ENOMEM;
+        goto close_dir;
+    }
+    memcpy(entry->name, path, size);
+    entry->dir = dir;
+    entry->children = NULL;
+    entry->eof = false;
+    entry->dev = st.st_dev;
+    entry->ino = st.st_ino;
+    entry->parent = *stack;
+    *stack = entry;
+    return 0;
+
+  close_dir:
+    closedir(dir);
+    errno = e;
+    return -1;
+}
+
+static int
+unlink_tree_next(struct unlink_tree **stack, const struct stat *root)
+{
+    struct unlink_tree *entry = *stack;
+    struct stat st;
+    if (lstat(entry->name, &st) < 0) return -1;
+    if (!S_ISDIR(st.st_mode) || !unlink_tree_identical(entry->dev, entry->ino, &st)) {
+        return -2;
+    }
+    while (!entry->children && !entry->eof) {
+        size_t bytes = 0;
+        struct unlink_tree_name **tail = &entry->children;
+        struct dirent *child;
+        while (1) {
+            errno = 0;
+            child = readdir(entry->dir);
+            if (!child) {
+                if (errno) return -1;
+                entry->eof = true;
+                break;
+            }
+            if (dirent_dot_p(child)) continue;
+            size_t namlen = NAMLEN(child);
+            size_t plen = strlen(entry->name);
+            char *path = malloc(plen + namlen + 2);
+            if (!path) {
+                errno = ENOMEM;
+                return -1;
+            }
+            memcpy(path, entry->name, plen);
+            path[plen] = '/';
+            memcpy(path + plen + 1, child->d_name, namlen + 1);
+
+            struct stat st;
+            if (lstat(path, &st) < 0) {
+                int e = errno;
+                free(path);
+                errno = e;
+                return -1;
+            }
+            if (!S_ISDIR(st.st_mode)) {
+                int ret = unlink(path);
+                int e = errno;
+                free(path);
+                if (ret < 0) {
+                    errno = e;
+                    return -1;
+                }
+                continue;
+            }
+            if (rmdir(path) == 0) {
+                free(path);
+                continue;
+            }
+            struct unlink_tree_name *item = malloc(sizeof(*item) + strlen(path) + 1);
+            if (!item) {
+                free(path);
+                errno = ENOMEM;
+                return -1;
+            }
+            item->next = NULL;
+            strcpy(item->path, path);
+            free(path);
+            *tail = item;
+            tail = &item->next;
+            bytes += strlen(item->path) + 1 + 2 * sizeof(char *) + 24;
+            if (bytes >= UNLINK_TREE_BATCH_BYTES) break;
+        }
+    }
+    if (!entry->children) return 0;
+    struct unlink_tree_name *child = entry->children;
+    entry->children = child->next;
+    int ret = unlink_tree_enter(child->path, root, stack);
+    int e = ret == -1 ? errno : 0;
+    free(child);
+    if (ret == -1) errno = e;
+    return ret < 0 ? ret : 1;
+}
+
+static int
+unlink_tree_leave(struct unlink_tree *entry, int base)
+{
+    (void)base;
+    int ret = closedir(entry->dir);
+    entry->dir = NULL;
+    if (ret < 0) return -1;
+    return rmdir(entry->name);
+}
+#endif
+
+static int
+unlink_recursive_internal(const char *path, void *arg)
+{
+    size_t len = strlen(path);
+    char *copy = (strdup)(path);
+    if (!copy) return -1;
+    char *end = copy + len;
+    char *prefix = rb_enc_path_skip_prefix_root(copy, end, rb_utf8_encoding());
+    while (end > prefix && isdirsep(end[-1])) --end;
+    *end = '\0';
+    int e = 0, base = -1, ret = 0;
+    struct unlink_tree *stack = NULL;
+    if (end == prefix) {
+        e = *path ? EBUSY : ENOENT;
+        goto done;
+    }
+    char *name = end;
+    while (name > prefix && !isdirsep(name[-1])) --name;
+    if (!strcmp(name, ".") || !strcmp(name, "..")) {
+        e = EINVAL;
+        goto done;
+    }
+#if USE_UNLINKAT_TREE
+    const char *parent = ".";
+    if (name > copy) {
+        char *slash = name - 1;
+        *slash = '\0';
+        parent = slash == copy ? "/" : copy;
+    }
+    /* Resolve the caller's parent path once, then retain its directory FD. */
+    base = open(parent, O_CLOEXEC | O_DIRECTORY |
+# ifdef O_SEARCH
+                O_SEARCH
+# elif defined(O_PATH)
+                O_PATH
+# else
+                O_RDONLY
+# endif
+                );
+    if (base < 0) {
+        e = errno;
+        goto done;
+    }
+#endif
+    struct stat root;
+    if (stat("/", &root) < 0) {
+        e = errno;
+        goto done;
+    }
+#if USE_UNLINKAT_TREE
+    ret = unlink_tree_enter(base, name, &root, &stack);
+#else
+    ret = unlink_tree_enter(copy, &root, &stack);
+#endif
+    if (ret < 0) {
+        if (ret == -1) e = errno;
+        goto done;
+    }
+    while (stack) {
+        ret = unlink_tree_next(&stack, &root);
+        if (ret < 0) {
+            if (ret == -1) e = errno;
+            goto done;
+        }
+        if (ret > 0) continue;
+        ret = unlink_tree_leave(stack, base);
+        if (ret < 0) {
+            if (ret == -1) e = errno;
+            goto done;
+        }
+        struct unlink_tree *entry = stack;
+        stack = entry->parent;
+        unlink_tree_free(entry);
+    }
+
+  done:
+    while (stack) {
+        struct unlink_tree *entry = stack;
+        stack = entry->parent;
+        unlink_tree_free(entry);
+    }
+    if (base >= 0) close(base);
+    free(copy);
+    if (e) {
+        errno = e;
+        return -1;
+    }
+    if (ret == -2) *(bool *)arg = true;
+    return ret;
+}
+
+
+#endif
+
 /*
  *  :markup: markdown
  *
  *  call-seq:
- *    File.delete(*paths) -> integer
- *    File.unlink(*paths) -> integer
+ *    File.delete(*paths, recursive: false) -> integer
+ *    File.unlink(*paths, recursive: false) -> integer
  *
  *  Removes the entry ([hard link](rdoc-ref:file/hard_links.md)) at each path in `paths`;
  *  returns the count of removed entries:
@@ -4450,12 +4984,64 @@ unlink_internal(const char *path, void *arg)
  *
  *  Raises an exception on any error;
  *  some entries may have been deleted before the error occurs.
+ *
+ *  With `recursive: true`, also removes directories and their contents.
+ *  Returns the number of given paths, not the number of entries within them.
+ *  Symbolic links within a tree, or at a given path (even with trailing
+ *  slashes), are removed without following their targets.
+ *
+ *  ```ruby
+ *  Dir.mkdir('tree/subdir', parents: true)
+ *  File.write('tree/subdir/file', 'content')
+ *  File.unlink('tree', recursive: true) # => 1
+ *  ```
+ *
+ *  Where supported, recursive removal resolves the parent of each given path
+ *  once and uses directory descriptors to traverse its contents. A directory
+ *  that is moved during traversal may still have its contents removed through
+ *  its descriptor. A bounded number of ancestor descriptors are retained;
+ *  older ancestors are closed while their identities and pending entry names
+ *  remain in memory. Reopening a parent verifies its device and inode against
+ *  the saved identity and raises RuntimeError if they differ. Descriptor usage
+ *  is bounded independently of depth.
+ *  Concurrent changes can cause an exception after partial removal.
+ *  The root directory and paths ending in `.` or `..` are rejected.
+ *  On non-Windows platforms, mounted filesystems within a tree are traversed.
+ *
+ *  On Windows, directories are opened with sharing disabled and are removed
+ *  through their handles. Ancestor directories are also kept open; reparse
+ *  points in the ancestor path are rejected. A reparse point at or within
+ *  the removal target is removed without traversing it. Existing handles
+ *  that conflict with exclusive access cause a sharing violation.
+ *
+ *  Other platforms use path-based traversal, similar to FileUtils.remove_entry.
+ *  This fallback cannot prevent following a symbolic link substituted for a
+ *  directory during traversal. Avoid using it on trees that another process
+ *  can modify concurrently.
  */
 
 static VALUE
 rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
 {
-    return apply2files(unlink_internal, argc, argv, 0);
+    int (*func)(const char *, void *) = unlink_internal;
+    if (rb_keyword_given_p()) {
+        VALUE options = argv[--argc];
+        ID key = rb_intern("recursive");
+        VALUE recursive = rb_hash_lookup2(options, ID2SYM(key), Qundef);
+        if (rb_hash_size_num(options) > (UNDEF_P(recursive) ? 0 : 1)) {
+            rb_get_kwargs(options, &key, 0, 1, NULL);
+        }
+        if (!UNDEF_P(recursive) && rb_bool_expected(recursive, "recursive", TRUE)) {
+            func = unlink_recursive_internal;
+        }
+    }
+    bool changed = false;
+    VALUE result = apply2files(func, argc, argv, &changed);
+    if (changed) {
+        rb_raise(rb_eRuntimeError, "directory changed during recursive removal: %"PRIsVALUE,
+                 result);
+    }
+    return result;
 }
 
 struct rename_args {
@@ -4606,18 +5192,8 @@ rb_file_s_umask(int argc, VALUE *argv, VALUE _)
 #ifdef __CYGWIN__
 #undef DOSISH
 #endif
-#if defined __CYGWIN__ || defined DOSISH
-#define DOSISH_UNC
-#define DOSISH_DRIVE_LETTER
-#define FILE_ALT_SEPARATOR '\\'
-#endif
-#ifdef FILE_ALT_SEPARATOR
-#define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
-# ifdef DOSISH
+#ifdef DOSISH
 static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
-# endif
-#else
-#define isdirsep(x) ((x) == '/')
 #endif
 
 #ifndef USE_NTFS

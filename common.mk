@@ -1155,6 +1155,7 @@ miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 compile.$(OBJEXT): {$(VPATH)}optunifs.inc
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
+  {$(VPATH)}internal/file.h \
   {$(VPATH)}dln.h {$(VPATH)}dln_find.c {$(VPATH)}encindex.h \
   {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) \
   {$(VPATH)}vm.h $(PLATFORM_D)

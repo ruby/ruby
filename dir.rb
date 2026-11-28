@@ -240,6 +240,91 @@ class Dir
     Primitive.attr! :use_block
     Primitive.dir_s_glob(pattern, flags, base, sort)
   end
+
+  # call-seq:
+  #   Dir.mkdir(dirpath, permissions = 0777, perm: permissions, parents: false) -> 0
+  #
+  # Creates a directory in the underlying file system
+  # at +dirpath+ with the given +permissions+ or +perm+;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
+  #
+  #   Dir.mkdir('foo')
+  #   File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  #   Dir.mkdir('bar', 0644)
+  #   File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+  #   Dir.mkdir('baz', perm: 0700)
+  #   File.stat(Dir.new('baz')).mode.to_s(8) # => "40700"
+  #   Dir.rmdir('foo')
+  #   Dir.rmdir('bar')
+  #   Dir.rmdir('baz')
+  #
+  # If +parents+ is +true+, creates missing parent directories and returns 0
+  # if +dirpath+ is already a directory. An existing file raises an error.
+  # The +permissions+ argument applies only to the final directory;
+  # parent directories are created with permissions 0777, modified by
+  # the process umask. Existing directories keep their permissions.
+  #
+  #   Dir.mkdir('zot')
+  #   Dir.mkdir('zot')                          # Raises Errno::EEXIST
+  #   Dir.mkdir('zot', parents: true)            # => 0
+  #   Dir.mkdir('zot/foo/bar')                  # Raises Errno::ENOENT
+  #   Dir.mkdir('zot/foo/bar', parents: true)    # => 0
+  #   Dir.exist?('zot/foo/bar')                 # => true
+  #
+  # See {File Permissions}[rdoc-ref:File@File+Permissions].
+  # Argument +permissions+ is ignored on Windows.
+  def self.mkdir(dirpath, permissions = 0o777, perm: permissions, parents: false)
+    Primitive.dir_s_mkdir(dirpath, perm, parents)
+  end
+
+  # :markup: markdown
+  #
+  # call-seq:
+  #   Dir.delete(dirpath, parents: false, ignore_non_empty: false) -> 0
+  #   Dir.rmdir(dirpath, parents: false, ignore_non_empty: false) -> 0
+  #   Dir.unlink(dirpath, parents: false, ignore_non_empty: false) -> 0
+  #
+  # Removes the directory entry ([hard link](rdoc-ref:file/hard_links.md)) at `dirpath`,
+  # along with its associated inode:
+  #
+  # ```ruby
+  # dirpath = '/tmp/tmpdir'
+  # Dir.mkdir(dirpath)
+  # Dir.rmdir(dirpath) # => 0
+  # ```
+  #
+  # Raises an exception if the directory is not empty.
+  #
+  # If +parents+ is +true+, also removes successive empty parent directories:
+  #
+  #   Dir.mkdir('foo/bar/baz', parents: true)
+  #   Dir.rmdir('foo/bar/baz', parents: true) # => 0
+  #   Dir.exist?('foo')                      # => false
+  #
+  # Raises an exception if a parent directory cannot be removed.
+  # A filesystem root and the relative parent path <tt>.</tt> are not removed.
+  # Directories already removed stay removed if an exception is raised.
+  #
+  # If +ignore_non_empty+ is +true+, returns 0 and stops when +dirpath+
+  # or a parent directory is not empty. Other errors still raise exceptions:
+  #
+  #   Dir.mkdir('foo/bar', parents: true)
+  #   Dir.rmdir('foo', ignore_non_empty: true) # => 0
+  #   Dir.exist?('foo/bar')                    # => true
+  #
+  # If +ignore_non_empty+ is +:parents+, +dirpath+ must be removed successfully,
+  # but parent directories that are not empty or no longer exist are ignored,
+  # as with FileUtils.rmdir. This value has no effect unless +parents+ is +true+:
+  #
+  #   Dir.rmdir('foo/bar', parents: true, ignore_non_empty: :parents) # => 0
+  def self.rmdir(dirpath, parents: false, ignore_non_empty: false)
+    Primitive.dir_s_rmdir(dirpath, parents, ignore_non_empty)
+  end
+
+  class << self
+    alias delete rmdir
+    alias unlink rmdir
+  end
 end
 
 class << File

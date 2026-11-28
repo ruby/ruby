@@ -248,6 +248,299 @@ class TestDir < Test::Unit::TestCase
     assert_raise(IOError) { d.scan { |*| d.close } }
   end
 
+  def test_mkdir_parents
+    Dir.mktmpdir do |dirname|
+      assert_raise(Errno::EEXIST) {Dir.mkdir(dirname)}
+      assert_raise(Errno::EEXIST) {Dir.mkdir(dirname, parents: false)}
+      assert_nothing_raised(Errno::EEXIST) {Dir.mkdir(dirname, parents: true)}
+      assert_raise(ArgumentError) {Dir.mkdir(dirname, parents: 1)}
+
+      path = dirname + "/a/b/c"
+      assert_raise(Errno::ENOENT) {Dir.mkdir(path)}
+      assert_raise(Errno::ENOENT) {Dir.mkdir(path, parents: false)}
+      assert_nothing_raised(Errno::ENOENT) {Dir.mkdir(path, parents: true)}
+      assert_file.directory?(path)
+    end
+  end
+
+  def test_mkdir_parents_paths
+    Dir.chdir(@root) do
+      ["new", "deep/a/b/c", "repeated//a///b/", "./relative/a/../b"].each do |path|
+        assert_equal(0, Dir.mkdir(path, parents: true), path)
+        assert_file.directory?(path)
+        assert_equal(0, Dir.mkdir(path, parents: true), path)
+      end
+      assert_equal(0, Dir.mkdir(".", parents: true))
+      assert_raise(Errno::ENOENT) {Dir.mkdir("", parents: true)}
+    end
+  end
+
+  def test_mkdir_parents_nonascii_path
+    path = File.join(@root, "日本語/親/子")
+    assert_equal(0, Dir.mkdir(path, parents: true))
+    assert_file.directory?(path)
+    assert_equal(0, Dir.mkdir(path, parents: true))
+  rescue EncodingError => e
+    omit e.message
+  end
+
+  def test_mkdir_parents_file
+    path = File.join(@root, "file")
+    File.write(path, "content")
+    assert_raise(Errno::EEXIST) {Dir.mkdir(path, parents: true)}
+    errors = [Errno::ENOTDIR]
+    errors << Errno::EEXIST if windows?
+    assert_raise(*errors) {Dir.mkdir("#{path}/child", parents: true)}
+    assert_equal("content", File.read(path))
+  end
+
+  def test_mkdir_parents_permissions
+    return if windows?
+    mask = File.umask
+    path = File.join(@root, "parent/child")
+    assert_equal(0, Dir.mkdir(path, 0o700, parents: true))
+    assert_equal(0o777 & ~mask, File.stat(File.dirname(path)).mode & 0o777)
+    assert_equal(0o700 & ~mask, File.stat(path).mode & 0o777)
+    assert_equal(0, Dir.mkdir(path, 0o777, parents: true))
+    assert_equal(0o700 & ~mask, File.stat(path).mode & 0o777)
+  end
+
+  def test_mkdir_perm
+    path = File.join(@root, "keyword")
+    assert_equal(0, Dir.mkdir(path, perm: 0o700))
+    assert_file.directory?(path)
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+
+    path = File.join(@root, "override")
+    assert_equal(0, Dir.mkdir(path, 0o777, perm: 0o700))
+    assert_file.directory?(path)
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+  end
+
+  def test_mkdir_perm_conversion
+    path = File.join(@root, "keyword")
+    perm = Object.new
+    def perm.to_int; 0o700; end
+    assert_equal(0, Dir.mkdir(path, perm: perm))
+    assert_file.directory?(path)
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+    assert_raise(TypeError) {Dir.mkdir(File.join(@root, "invalid"), perm: Object.new)}
+  end
+
+  def test_mkdir_parents_perm
+    path = File.join(@root, "parent/child")
+    assert_equal(0, Dir.mkdir(path, perm: 0o700, parents: true))
+    assert_file.directory?(path)
+    unless windows?
+      mask = File.umask
+      assert_equal(0o777 & ~mask, File.stat(File.dirname(path)).mode & 0o777)
+      assert_equal(0o700 & ~mask, File.stat(path).mode & 0o777)
+    end
+    assert_equal(0, Dir.mkdir(path, perm: 0o777, parents: true))
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+  end
+
+  def test_mkdir_parents_symlink
+    target = File.join(@root, "target")
+    link = File.join(@root, "link")
+    Dir.mkdir(target)
+    begin
+      File.symlink(target, link)
+    rescue NotImplementedError, Errno::EACCES
+      omit "symlink is not supported"
+    end
+    assert_equal(0, Dir.mkdir(link, parents: true))
+    assert_equal(0, Dir.mkdir("#{link}/a/b", parents: true))
+    assert_file.directory?("#{target}/a/b")
+    File.symlink(File.join(@root, "missing"), "#{link}-dangling")
+    assert_raise(Errno::EEXIST) {Dir.mkdir("#{link}-dangling", parents: true)}
+  end
+
+  def test_mkdir_parents_concurrent
+    path = File.join(@root, "concurrent/a/b/c").freeze
+    threads = 8.times.map do
+      Thread.new {Dir.mkdir(path, parents: true)}
+    end
+    assert_equal([0] * threads.size, threads.map(&:value))
+    assert_file.directory?(path)
+  ensure
+    threads&.each(&:join)
+  end
+
+  def test_rmdir_parents_false
+    path = File.join(@root, "remove/child")
+    Dir.mkdir(path, parents: true)
+    assert_equal(0, Dir.rmdir(path, parents: false))
+    assert_file.not_exist?(path)
+    assert_file.directory?(File.dirname(path))
+  end
+
+  def test_rmdir_parents_argument
+    path = File.join(@root, "remove")
+    Dir.mkdir(path)
+    assert_raise(ArgumentError) {Dir.rmdir(path, parents: 1)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, parents: nil)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: 1)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: nil)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: :invalid)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: "parents")}
+    assert_file.directory?(path)
+  end
+
+  def test_rmdir_parents_relative
+    Dir.chdir(@root) do
+      ["remove/a/b", "./remove/a/b", "remove//a///b/"].each do |path|
+        Dir.mkdir(path, parents: true)
+        assert_equal(0, Dir.rmdir(path, parents: true), path)
+        assert_file.not_exist?("remove")
+        assert_file.directory?(".")
+      end
+    end
+  end
+
+  def test_rmdir_parents_leaf_errors
+    path = File.join(@root, "remove")
+    assert_raise(Errno::ENOENT) {Dir.rmdir(path, parents: true)}
+    Dir.mkdir(path)
+    File.write("#{path}/file", "content")
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) {Dir.rmdir(path, parents: true)}
+    assert_raise(Errno::ENOTDIR) {Dir.rmdir("#{path}/file", parents: true)}
+    assert_equal("content", File.read("#{path}/file"))
+  end
+
+  def test_rmdir_parents_nonempty_parent
+    path = File.join(@root, "remove/a/b")
+    [{}, {ignore_non_empty: false}, {ignore_non_empty: true}, {ignore_non_empty: :parents}].each do |options|
+      Dir.mkdir(path, parents: true)
+      File.write(File.join(@root, "remove/keep"), "content")
+      if options[:ignore_non_empty]
+        assert_equal(0, Dir.rmdir(path, parents: true, **options))
+      else
+        assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) {Dir.rmdir(path, parents: true, **options)}
+      end
+      assert_file.not_exist?(File.dirname(path))
+      assert_equal("content", File.read(File.join(@root, "remove/keep")))
+    end
+  end
+
+  def test_rmdir_ignore_non_empty
+    path = File.join(@root, "remove")
+    Dir.mkdir("#{path}/child", parents: true)
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: false)
+      end
+      assert_equal(0, Dir.rmdir(path, parents: parents, ignore_non_empty: true))
+      assert_file.directory?("#{path}/child")
+    end
+    assert_equal(0, Dir.rmdir("#{path}/child", ignore_non_empty: true))
+    assert_file.not_exist?("#{path}/child")
+    assert_file.directory?(path)
+  end
+
+  def test_rmdir_ignore_non_empty_other_errors
+    path = File.join(@root, "remove")
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOENT) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: true)
+      end
+      File.write(path, "content")
+      assert_raise(Errno::ENOTDIR) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: true)
+      end
+      assert_equal("content", File.read(path))
+      File.unlink(path)
+    end
+  end
+
+  def test_rmdir_ignore_non_empty_parents_target
+    path = File.join(@root, "remove")
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOENT) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: :parents)
+      end
+      File.write(path, "content")
+      assert_raise(Errno::ENOTDIR) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: :parents)
+      end
+      File.unlink(path)
+    end
+    Dir.mkdir("#{path}/child", parents: true)
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: :parents)
+      end
+      assert_file.directory?("#{path}/child")
+    end
+    assert_equal(0, Dir.rmdir("#{path}/child", ignore_non_empty: :parents))
+    assert_file.directory?(path)
+  end
+
+  def test_rmdir_ignore_non_empty_missing_parent
+    omit "requires POSIX path resolution" if windows?
+    Dir.chdir(@root) do
+      [false, true, :parents].each do |ignore|
+        Dir.mkdir("remove")
+        # Removing the target makes the parent path "remove/.." disappear.
+        path = "remove/../remove"
+        if ignore == :parents
+          assert_equal(0, Dir.rmdir(path, parents: true, ignore_non_empty: ignore))
+        else
+          assert_raise(Errno::ENOENT) {Dir.rmdir(path, parents: true, ignore_non_empty: ignore)}
+        end
+        assert_file.not_exist?("remove")
+        assert_file.directory?(".")
+      end
+    end
+  end
+
+  def test_rmdir_parents_frozen_path
+    path = File.join(@root, "remove/a/b").freeze
+    original = path.dup
+    Dir.mkdir(path, parents: true)
+    arg = Object.new
+    arg.define_singleton_method(:to_path) {path}
+    assert_equal(0, Dir.rmdir(arg, parents: true, ignore_non_empty: true))
+    assert_equal(original, path)
+    assert_file.not_exist?(File.join(@root, "remove"))
+  end
+
+  def test_rmdir_parents_nonascii_path
+    path = File.join(@root, "日本語/親/子")
+    Dir.mkdir(path, parents: true)
+    assert_equal(0, Dir.rmdir(path, parents: true, ignore_non_empty: true))
+    assert_file.not_exist?(File.join(@root, "日本語"))
+  rescue EncodingError => e
+    omit e.message
+  end
+
+  def test_rmdir_parents_aliases
+    assert_equal(Dir.method(:rmdir), Dir.method(:delete))
+    assert_equal(Dir.method(:rmdir), Dir.method(:unlink))
+    [:delete, :unlink].each do |method|
+      path = File.join(@root, "remove/a/b")
+      Dir.mkdir(path, parents: true)
+      assert_equal(0, Dir.public_send(method, path, parents: true, ignore_non_empty: true))
+      assert_file.not_exist?(File.join(@root, "remove"))
+    end
+  end
+
+  def test_rmdir_parents_permission_error
+    omit "directory permissions are not supported" if windows? || Process.euid == 0
+    parent = File.join(@root, "protected")
+    path = File.join(parent, "a/b")
+    [true, :parents].each do |ignore|
+      Dir.mkdir(path, parents: true)
+      File.chmod(0o500, parent)
+      assert_raise(Errno::EACCES) {Dir.rmdir(path, parents: true, ignore_non_empty: ignore)}
+      assert_file.not_exist?(path)
+      assert_file.directory?(File.dirname(path))
+      File.chmod(0o700, parent)
+    end
+  ensure
+    File.chmod(0o700, parent) if parent && File.directory?(parent)
+  end
+
   def test_glob
     assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))

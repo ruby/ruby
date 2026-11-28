@@ -95,6 +95,40 @@ describe "Dir.mkdir" do
       end
     end
   end
+
+  ruby_version_is "4.1" do
+    it "creates parent directories" do
+      DirSpecs.clear_dirs
+      subdir = "#{DirSpecs.nonexistent}/subdir"
+      Dir.mkdir(subdir, parents: true).should == 0
+      File.should.exist?(subdir)
+    ensure
+      DirSpecs.clear_dirs
+    end
+
+    it "accepts permissions with the perm keyword" do
+      DirSpecs.clear_dirs
+      path = DirSpecs.nonexistent
+      Dir.mkdir(path, perm: 0o700).should == 0
+      File.should.directory?(path)
+      platform_is_not :windows do
+        (File.stat(path).mode & 0o777).should == (0o700 & ~File.umask)
+      end
+    ensure
+      DirSpecs.clear_dirs
+    end
+
+    platform_is_not :windows do
+      it "uses perm in preference to positional permissions" do
+        DirSpecs.clear_dirs
+        path = DirSpecs.nonexistent
+        Dir.mkdir(path, 0o777, perm: 0o700).should == 0
+        (File.stat(path).mode & 0o777).should == (0o700 & ~File.umask)
+      ensure
+        DirSpecs.clear_dirs
+      end
+    end
+  end
 end
 
 # The permissions flag are not supported on Windows as stated in documentation:
