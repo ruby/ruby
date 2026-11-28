@@ -463,6 +463,23 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 }
 
 void
+rb_threadptr_join_list_handle_weak_references(rb_thread_t *th, void *objspace)
+{
+    struct rb_waiting_list **p = &th->join_list;
+
+    while (*p) {
+        struct rb_waiting_list *waiter = *p;
+
+        if (waiter_abandoned_p(objspace, waiter->thread, waiter->fiber)) {
+            *p = waiter->next;
+        }
+        else {
+            p = &waiter->next;
+        }
+    }
+}
+
+void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
     while (th->keeping_mutexes) {
@@ -1232,6 +1249,21 @@ struct join_arg {
     rb_hrtime_t *limit;
 };
 
+static void
+join_list_remove(rb_thread_t *target_thread, struct rb_waiting_list *waiter)
+{
+    struct rb_waiting_list **join_list = &target_thread->join_list;
+
+    while (*join_list) {
+        if (*join_list == waiter) {
+            *join_list = waiter->next;
+            break;
+        }
+
+        join_list = &(*join_list)->next;
+    }
+}
+
 static VALUE
 remove_from_join_list(VALUE arg)
 {
@@ -1239,16 +1271,7 @@ remove_from_join_list(VALUE arg)
     rb_thread_t *target_thread = p->target;
 
     if (target_thread->status != THREAD_KILLED) {
-        struct rb_waiting_list **join_list = &target_thread->join_list;
-
-        while (*join_list) {
-            if (*join_list == p->waiter) {
-                *join_list = (*join_list)->next;
-                break;
-            }
-
-            join_list = &(*join_list)->next;
-        }
+        join_list_remove(target_thread, p->waiter);
     }
 
     return Qnil;
@@ -1971,7 +1994,39 @@ rb_io_blocking_operations(struct rb_io *io)
 static void
 rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
 {
+    blocking_operation->owner = blocking_operation->ec;
+    blocking_operation->blocking = rb_fiberptr_blocking(blocking_operation->ec->fiber_ptr);
     ccan_list_add(rb_io_blocking_operations(io), &blocking_operation->list);
+
+    if (!blocking_operation->blocking) {
+        rb_gc_declare_weak_references(io->self);
+    }
+}
+
+void
+rb_io_blocking_operations_handle_weak_references(struct rb_io *io, void *objspace)
+{
+    struct rb_io_blocking_operation *blocking_operation, *next;
+
+    ccan_list_for_each_safe(rb_io_blocking_operations(io), blocking_operation, next, list) {
+        if (blocking_operation->blocking) continue;
+
+        VALUE fiber = rb_fiberptr_self(blocking_operation->owner->fiber_ptr);
+
+        if (!rb_gc_handle_weak_references_alive_p(objspace, fiber)) {
+            ccan_list_del_init(&blocking_operation->list);
+        }
+    }
+
+    // An abandoned closer never finishes the close, so nothing must wake or wait for it:
+    if (io->closing_ec && !rb_fiberptr_blocking(io->closing_ec->fiber_ptr)) {
+        VALUE closer = rb_fiberptr_self(io->closing_ec->fiber_ptr);
+
+        if (!rb_gc_handle_weak_references_alive_p(objspace, closer)) {
+            io->closing_ec = NULL;
+            io->wakeup_mutex = Qnil;
+        }
+    }
 }
 
 static void
@@ -1994,8 +2049,14 @@ io_blocking_operation_exit(VALUE _arguments)
     rb_io_blocking_operation_pop(arguments->io, blocking_operation);
 
     rb_io_t *io = arguments->io;
+
+    // Waiting for the mutex may have let a GC drop an abandoned closer:
+    if (!io->closing_ec) return Qnil;
+
     rb_thread_t *thread = io->closing_ec->thread_ptr;
     rb_fiber_t *fiber = io->closing_ec->fiber_ptr;
+
+    if (thread_finished(thread)) return Qnil;
 
     if (thread->scheduler != Qnil) {
         // This can cause spurious wakeups...
@@ -3128,8 +3189,11 @@ thread_io_close_notify_all(VALUE _io)
     VALUE error = vm->special_exceptions[ruby_error_stream_closed];
 
     struct rb_io_blocking_operation *blocking_operation;
+
+    // A GC below may unlink other operations, so keep this one linked by pinning its fiber:
     ccan_list_for_each(rb_io_blocking_operations(io), blocking_operation, list) {
         rb_execution_context_t *ec = blocking_operation->ec;
+        VALUE owner_fiber = rb_fiberptr_self(blocking_operation->owner->fiber_ptr);
 
         // If the operation is in progress, we need to interrupt it:
         if (ec) {
@@ -3139,8 +3203,7 @@ thread_io_close_notify_all(VALUE _io)
                 VALUE target = blocking_operation->scheduler_interrupt_target;
 
                 if (NIL_P(target)) {
-                    VALUE fiber = rb_fiberptr_self(ec->fiber_ptr);
-                    target = rb_fiber_scheduler_interrupt_target_new(fiber, error);
+                    target = rb_fiber_scheduler_interrupt_target_new(owner_fiber, error);
                     blocking_operation->scheduler_interrupt_target = target;
                 }
 
@@ -3155,9 +3218,23 @@ thread_io_close_notify_all(VALUE _io)
         }
 
         count += 1;
+        RB_GC_GUARD(owner_fiber);
     }
 
     return (VALUE)count;
+}
+
+// A fiber that outlived its thread never resumes to unlink its operation:
+static void
+io_blocking_operations_drop_abandoned(struct rb_io *io)
+{
+    struct rb_io_blocking_operation *blocking_operation, *next;
+
+    ccan_list_for_each_safe(rb_io_blocking_operations(io), blocking_operation, next, list) {
+        if (thread_finished(blocking_operation->owner->thread_ptr)) {
+            ccan_list_del_init(&blocking_operation->list);
+        }
+    }
 }
 
 size_t
@@ -3168,6 +3245,8 @@ rb_thread_io_close_interrupt(struct rb_io *io)
         return 0;
     }
 
+    io_blocking_operations_drop_abandoned(io);
+
     // If there are no blocking operations, we are done:
     if (ccan_list_empty(rb_io_blocking_operations(io))) {
         return 0;
@@ -3177,6 +3256,10 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     rb_execution_context_t *ec = GET_EC();
     io->closing_ec = ec;
 
+    if (!rb_fiberptr_blocking(ec->fiber_ptr)) {
+        rb_gc_declare_weak_references(io->self);
+    }
+
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();
     rb_mutex_allow_trap(io->wakeup_mutex, 1);
@@ -3184,7 +3267,103 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     // We need to use a mutex here as entering the fiber scheduler may cause a context switch:
     VALUE result = rb_mutex_synchronize(io->wakeup_mutex, thread_io_close_notify_all, (VALUE)io);
 
+    // A GC dropped every abandoned operation, so there is nothing to wait for:
+    if (!result) {
+        io->wakeup_mutex = Qnil;
+        io->closing_ec = NULL;
+    }
+
     return (size_t)result;
+}
+
+struct io_close_watch {
+    struct rb_waiting_list waiter;
+    rb_thread_t *target;
+};
+
+struct io_close_wait_arguments {
+    struct rb_io *io;
+    struct io_close_watch *watches;
+    long count;
+};
+
+static VALUE
+io_close_wait_sleep_body(VALUE _arguments)
+{
+    struct io_close_wait_arguments *arguments = (void *)_arguments;
+
+    return rb_mutex_sleep(arguments->io->wakeup_mutex, Qnil);
+}
+
+static VALUE
+io_close_wait_unwatch(VALUE _arguments)
+{
+    struct io_close_wait_arguments *arguments = (void *)_arguments;
+
+    for (long i = 0; i < arguments->count; i++) {
+        join_list_remove(arguments->watches[i].target, &arguments->watches[i].waiter);
+    }
+
+    return Qnil;
+}
+
+// An operation whose owner can never run again does not exit, so nothing would wake us when
+// it goes away. Pin the owner fibers so a GC cannot unlink an operation while we sleep, and
+// join the owner threads so their exit wakes us to drop their operations.
+static void
+io_close_wait_sleep(struct rb_io *io)
+{
+    rb_execution_context_t *ec = GET_EC();
+    struct ccan_list_head *blocking_operations = rb_io_blocking_operations(io);
+    struct rb_io_blocking_operation *blocking_operation;
+    long count = 0;
+
+    ccan_list_for_each(blocking_operations, blocking_operation, list) {
+        count++;
+    }
+
+    VALUE owners = rb_ary_hidden_new(count);
+    VALUE watches_buffer;
+    struct io_close_watch *watches = ALLOCV_N(struct io_close_watch, watches_buffer, count);
+
+    struct io_close_wait_arguments arguments = {
+        .io = io,
+        .watches = watches,
+        .count = 0,
+    };
+
+    ccan_list_for_each(blocking_operations, blocking_operation, list) {
+        if (blocking_operation->blocking) continue;
+
+        rb_ary_push(owners, rb_fiberptr_self(blocking_operation->owner->fiber_ptr));
+
+        rb_thread_t *target = blocking_operation->owner->thread_ptr;
+        if (target == ec->thread_ptr) continue;
+
+        long i;
+        for (i = 0; i < arguments.count; i++) {
+            if (watches[i].target == target) break;
+        }
+        if (i < arguments.count) continue;
+
+        watches[i].target = target;
+        watches[i].waiter.next = target->join_list;
+        watches[i].waiter.thread = ec->thread_ptr;
+        watches[i].waiter.fiber = rb_fiberptr_blocking(ec->fiber_ptr) ? NULL : ec->fiber_ptr;
+        target->join_list = &watches[i].waiter;
+        arguments.count++;
+    }
+
+    // The allocations above may have run a GC that unlinked the last operation:
+    if (!ccan_list_empty(blocking_operations)) {
+        rb_ensure(io_close_wait_sleep_body, (VALUE)&arguments, io_close_wait_unwatch, (VALUE)&arguments);
+    }
+    else {
+        io_close_wait_unwatch((VALUE)&arguments);
+    }
+
+    ALLOCV_END(watches_buffer);
+    RB_GC_GUARD(owners);
 }
 
 void
@@ -3198,8 +3377,8 @@ rb_thread_io_close_wait(struct rb_io* io)
     }
 
     rb_mutex_lock(wakeup_mutex);
-    while (!ccan_list_empty(rb_io_blocking_operations(io))) {
-        rb_mutex_sleep(wakeup_mutex, Qnil);
+    while (io_blocking_operations_drop_abandoned(io), !ccan_list_empty(rb_io_blocking_operations(io))) {
+        io_close_wait_sleep(io);
     }
     rb_mutex_unlock(wakeup_mutex);
 

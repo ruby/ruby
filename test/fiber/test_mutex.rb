@@ -3,6 +3,8 @@ require 'test/unit'
 require_relative 'scheduler'
 
 class TestFiberMutex < Test::Unit::TestCase
+  include ParkedWaiterAssertions
+
   def test_mutex_synchronize
     mutex = Thread::Mutex.new
 
@@ -239,5 +241,49 @@ class TestFiberMutex < Test::Unit::TestCase
     end
   ensure
     thr&.kill&.join
+  end
+
+  MUTEX_LOCKED = "Mutex.new.tap(&:lock)"
+  MUTEX_LOCK = "->(m) { m.lock }"
+  MUTEX_UNLOCK = "->(m) { m.unlock }"
+
+  # A scheduler fiber parked forever in Mutex#lock was collected while its
+  # on-stack waiter stayed in the mutex's waitq; unlock then read it.
+  def test_mutex_lock_from_collected_fiber
+    assert_parked_waiter_released(MUTEX_LOCKED, MUTEX_LOCK, MUTEX_UNLOCK)
+  end
+
+  # Same, but the mutex is old and the fiber dies in a minor GC, so the mutex
+  # must be remembered for its waiter to be dropped.
+  def test_mutex_lock_from_collected_fiber_old_mutex
+    assert_parked_waiter_released(MUTEX_LOCKED, MUTEX_LOCK, MUTEX_UNLOCK, old_holder: true)
+  end
+
+  # The parked fiber outlives its thread; unlock used to rb_bug on the
+  # waiter's THREAD_KILLED status.
+  def test_mutex_lock_from_fiber_of_dead_thread
+    assert_parked_waiter_released(MUTEX_LOCKED, MUTEX_LOCK, MUTEX_UNLOCK, keep_fiber: true)
+  end
+
+  # The mutex is marked by an incremental GC before its first scheduler wait
+  # flags it, so declaring the flag must queue it for that cycle's weak pass.
+  def test_mutex_lock_from_collected_fiber_during_incremental_mark
+    assert_parked_waiter_released(MUTEX_LOCKED, MUTEX_LOCK, MUTEX_UNLOCK, incremental: true)
+  end
+
+  CONDVAR = "Thread::ConditionVariable.new"
+  CONDVAR_WAIT = "->(cv) { m = Mutex.new; m.synchronize { cv.wait(m) } }"
+  CONDVAR_SIGNAL = "->(cv) { cv.signal }"
+
+  def test_condition_variable_wait_from_collected_fiber
+    assert_parked_waiter_released(CONDVAR, CONDVAR_WAIT, CONDVAR_SIGNAL)
+  end
+
+  def test_condition_variable_wait_from_collected_fiber_old_condvar
+    assert_parked_waiter_released(CONDVAR, CONDVAR_WAIT, CONDVAR_SIGNAL, old_holder: true)
+  end
+
+  def test_condition_variable_wait_from_collected_fiber_during_incremental_mark
+    assert_parked_waiter_released(CONDVAR, CONDVAR_WAIT, CONDVAR_SIGNAL, incremental: true)
   end
 end

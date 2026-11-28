@@ -4321,6 +4321,12 @@ thread_memsize(const void *ptr)
     return size;
 }
 
+static void
+thread_handle_weak_references(void *ptr, void *objspace)
+{
+    rb_threadptr_join_list_handle_weak_references(ptr, objspace);
+}
+
 #define thread_data_type ruby_threadptr_data_type
 const rb_data_type_t ruby_threadptr_data_type = {
     "VM/thread",
@@ -4329,6 +4335,7 @@ const rb_data_type_t ruby_threadptr_data_type = {
         thread_free,
         thread_memsize,
         thread_compact,
+        thread_handle_weak_references,
     },
     0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
@@ -4342,7 +4349,9 @@ rb_obj_is_thread(VALUE obj)
 static VALUE
 thread_alloc(VALUE klass, void *objspace)
 {
-    return rb_data_typed_object_zalloc_in_objspace(objspace, klass, sizeof(rb_thread_t), &thread_data_type);
+    VALUE obj = rb_data_typed_object_zalloc_in_objspace(objspace, klass, sizeof(rb_thread_t), &thread_data_type);
+    rb_gc_declare_weak_references(obj);
+    return obj;
 }
 
 void
@@ -5097,6 +5106,7 @@ Init_VM(void)
 
         /* create main thread */
         th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
+        rb_gc_declare_weak_references(th->self);
         vm->ractor.main_thread = th;
         vm->ractor.main_ractor = th->ractor;
         th->vm = vm;
