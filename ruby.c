@@ -2826,6 +2826,10 @@ load_file_internal(VALUE argp_v)
                     opt->warning = 0;
                     moreswitches(p + 1, opt, 0);
                 }
+                /* str and p point into line, which is referred to only from
+                 * this frame, and warn_cr_in_shebang and moreswitches may
+                 * trigger GC while they are used. */
+                RB_GC_GUARD(line);
 
                 /* push back shebang for pragma may exist in next line */
                 rb_io_ungetbyte(f, rb_str_new2("!\n"));
