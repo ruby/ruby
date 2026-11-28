@@ -4231,6 +4231,8 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
 
     const struct rb_captured_block *captured = &block->as.captured;
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
+    /* Read before argument setup, which can compact and move the Proc's embedded data. */
+    const VALUE *captured_ep = captured->ep;
     VALUE * const argv = cfp->sp - calling->argc;
     const int arg_size = ISEQ_BODY(iseq)->param.size;
 
@@ -4247,7 +4249,7 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     vm_push_frame(ec, iseq,
                   VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA,
                   calling->recv,
-                  VM_GUARDED_PREV_EP(captured->ep),
+                  VM_GUARDED_PREV_EP(captured_ep),
                   (VALUE)cme,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
                   argv + arg_size,
@@ -5748,6 +5750,9 @@ vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *r
                                bool is_lambda, VALUE block_handler, VALUE refined_procval)
 {
     const rb_cref_t *cref = rb_proc_refinements_cref_for_call(refined_procval);
+    /* That swaps in the refined iseq and can move the Proc: re-read its block onto the stack. */
+    struct rb_block block = *vm_proc_block(refined_procval);
+    block_handler = vm_block_to_block_handler(&block);
     return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, cref);
 }
 
@@ -5757,9 +5762,10 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      bool is_lambda, VALUE block_handler)
 {
     VALUE refined_procval = 0;
+    VALUE procval = Qfalse;
 
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
-        VALUE procval = VM_BH_TO_PROC(block_handler);
+        procval = VM_BH_TO_PROC(block_handler);
         rb_proc_t *po;
         GetProcPtr(procval, po);
         if (po->header.is_refined) refined_procval = procval;
@@ -5773,7 +5779,10 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                                               refined_procval);
     }
 
-    return vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
+    VALUE val = vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
+    /* block_handler points into procval: keeping it on the stack pins it across argument setup. */
+    RB_GC_GUARD(procval);
+    return val;
 }
 
 static inline VALUE
