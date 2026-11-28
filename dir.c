@@ -336,7 +336,7 @@ bracket(
             }
             if (!nocase) continue;
             c1 = rb_enc_toupper(rb_enc_codepoint(s, send, enc), enc);
-            c2 = rb_enc_toupper(rb_enc_codepoint(p, pend, enc), enc);
+            c2 = rb_enc_toupper(rb_enc_codepoint(t1, pend, enc), enc);
             if (c1 != c2) continue;
         }
         ok = 1;
