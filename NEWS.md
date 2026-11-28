@@ -206,6 +206,8 @@ Note: We're only listing outstanding class updates.
       (with their `!` variants) handle whole strings. [[Feature #22118]]
     * `String#bit_get` also reads a bit region as an Integer with
       `offset, length` or a Range. [[Feature #22483]]
+    * `String#bit_put` is added. It writes an Integer into a bit region
+      and is the writer for `String#bit_get`. [[Feature #22549]]
     * `String#tr` now accept a Hash for multi-character replacement.
       [[Feature #22238]]
 
@@ -797,6 +799,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22444]: https://bugs.ruby-lang.org/issues/22444
 [Feature #22483]: https://bugs.ruby-lang.org/issues/22483
 [Feature #22503]: https://bugs.ruby-lang.org/issues/22503
+[Feature #22549]: https://bugs.ruby-lang.org/issues/22549
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [PR #19333]: https://github.com/ruby/ruby/pull/19333
 [GH-psych #805]: https://github.com/ruby/psych/pull/805

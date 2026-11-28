@@ -1616,6 +1616,268 @@ class TestString < Test::Unit::TestCase
     s = S("\xFF") * 8
     assert_nil(s.bit_get(0, shrink.new(s, 64)))
     assert_equal("\xFF".b, s.b)
+
+    # bit_put coerces the offset, the length and the value before it reads
+    # the length of the receiver.
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_put(8, 8, shrink.new(s, 1)) }
+    assert_equal("\xFF".b, s.b)
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_put(0, shrink.new(s, 64), 1) }
+    assert_equal("\xFF".b, s.b)
+    s = S("\x00") * 8
+    assert_raise(IndexError) { s.bit_put(..shrink.new(s, 63), 1) }
+    assert_equal("\xFF".b, s.b)
+  end
+
+  def test_bit_put
+    s = S("\x00")
+    assert_same(s, s.bit_put(1, 1))
+    assert_equal(S("\x02"), s)
+    s.bit_put(1, 0)
+    assert_equal(S("\x00"), s)
+    s.bit_put(1, 1, lsb_first: false)
+    assert_equal(S("\x40"), s)
+    s = S("\x00\x00")
+    s.bit_put(8, 1, lsb_first: false)
+    assert_equal(S("\x00\x80"), s)
+
+    # The one-bit form accepts only 0 and 1, and does not change self otherwise.
+    s = S("\x00")
+    assert_raise(RangeError) { s.bit_put(0, 2) }
+    assert_raise(RangeError) { s.bit_put(0, -1) }
+    assert_raise(RangeError) { s.bit_put(0, 0x80) }
+    assert_raise(RangeError) { s.bit_put(0, 2**100) }
+    assert_raise(TypeError) { s.bit_put(0, true) }
+    assert_raise(TypeError) { s.bit_put(0, nil) }
+    assert_equal(S("\x00"), s)
+
+    assert_raise(IndexError) { S("\x00").bit_put(8, 1) }
+    assert_raise(IndexError) { S("\x00").bit_put(-1, 1) }
+    assert_raise(IndexError) { S("").bit_put(0, 0) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(2**100, 1) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(0) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(0, 1, 1, 1) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(0, 1, lsb_first: nil) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_put(0, 1) }
+
+    shared = S("fooXbar").split(S("X")).last
+    shared.bit_put(0, 1)
+    assert_equal(S("car").b, shared.b)
+  end
+
+  def test_bit_put_region
+    data = S("\x00\x00")
+    assert_same(data, data.bit_put(4, 8, 0xAF))
+    assert_equal(S("\xF0\x0A"), data)
+    assert_equal(0xAF, data.bit_get(4, 8))
+    data = S("\x00\x00")
+    data.bit_put(4..11, 0xAF)
+    assert_equal(S("\xF0\x0A"), data)
+    data = S("\x00\x00")
+    data.bit_put(8.., 0xAA)
+    assert_equal(S("\x00\xAA"), data)
+    data.bit_put(...4, 0xF)
+    assert_equal(S("\x0F\xAA"), data)
+    data.bit_put(nil..nil, 0x1234)
+    assert_equal(S("\x34\x12"), data)
+
+    # The bits outside the region do not change.
+    data = S("\xFF\xFF")
+    data.bit_put(4, 8, 0)
+    assert_equal(S("\x0F\xF0"), data)
+    data = S("\xFF")
+    data.bit_put(3, 2, 0b01)
+    assert_equal(S("\xEF"), data)
+    data = S("\xFF")
+    data.bit_put(3, 2, 0b01, lsb_first: false)
+    assert_equal(S("\xEF"), data)
+
+    # MSB-first numbering: the first bit of the region takes the MSB of the value.
+    hdr = S("\x00\x00\x00\x00")
+    hdr.bit_put(0, 16, 0x1234, lsb_first: false)
+    assert_equal(S("\x12\x34\x00\x00"), hdr)
+    hdr.bit_put(16, 16, 0x8180, lsb_first: false)
+    assert_equal(S("\x12\x34\x81\x80"), hdr)
+    hdr.bit_put(4, 12, 0xABC, lsb_first: false)
+    assert_equal(S("\x1A\xBC\x81\x80"), hdr)
+    hdr.bit_put(0, 16, 0x3412)
+    assert_equal(S("\x12\x34\x81\x80"), hdr)
+
+    # Wider than 64 bits.
+    wide = S("\x00" * 11)
+    wide.bit_put(0, 88, 1 | (1 << 87))
+    assert_equal(S("\x01" + "\x00" * 9 + "\x80"), wide)
+    wide = S("\x00" * 11)
+    wide.bit_put(0, 88, (1 << 80) | (1 << 7), lsb_first: false)
+    assert_equal(S("\x01" + "\x00" * 9 + "\x80"), wide)
+    zeros = S("\x00" * 16)
+    zeros.bit_put(5, 64, (1 << 64) - 1)
+    assert_equal((1 << 64) - 1, zeros.bit_get(5, 64))
+    assert_equal(64, zeros.bit_count)
+    zeros = S("\x00" * 16)
+    zeros.bit_put(5, 65, (1 << 65) - 1)
+    assert_equal((1 << 65) - 1, zeros.bit_get(5, 65))
+    assert_equal(65, zeros.bit_count)
+
+    # The value must fit in the region: no truncation, and self is unchanged.
+    data = S("\x00\x00")
+    assert_raise(RangeError) { data.bit_put(0, 4, 0x10) }
+    assert_raise(RangeError) { data.bit_put(0, 4, 0x1F) }
+    assert_raise(RangeError) { data.bit_put(0, 8, 0x100) }
+    assert_raise(RangeError) { data.bit_put(4, 8, 0x100) }
+    assert_raise(RangeError) { data.bit_put(0, 16, 0x10000) }
+    assert_raise(RangeError) { data.bit_put(0.., 0x10000) }
+    assert_raise(RangeError) { data.bit_put(0, 16, 2**100) }
+    assert_raise(RangeError) { data.bit_put(0, 4, 0x10, lsb_first: false) }
+    assert_raise(RangeError) { data.bit_put(0, 4, -1) }
+    assert_raise(RangeError) { data.bit_put(0, 16, -1) }
+    assert_raise(RangeError) { data.bit_put(0, 16, -(2**100)) }
+    assert_equal(S("\x00\x00"), data)
+    assert_raise_with_message(RangeError, "31 out of 4-bit range") { data.bit_put(0, 4, 0x1F) }
+    assert_raise_with_message(RangeError, "-1 out of 4-bit range") { data.bit_put(0, 4, -1) }
+    # The message does not expand a Bignum, as that of Integer#chr.
+    assert_raise_with_message(RangeError, "bignum out of 16-bit range") { data.bit_put(0, 16, 2**100) }
+    assert_raise_with_message(RangeError, "bignum out of 16-bit range") { data.bit_put(0, 16, -(2**100)) }
+    wide = S("\x00" * 16)
+    assert_raise(RangeError) { wide.bit_put(5, 65, 1 << 65) }
+    assert_raise(RangeError) { wide.bit_put(0, 65, 1 << 72) }
+    assert_raise(RangeError) { wide.bit_put(0, 65, -1) }
+    assert_equal(S("\x00" * 16), wide)
+    data.bit_put(0, 4, 0xF)
+    data.bit_put(0, 16, 0xFFFF)
+    assert_equal(S("\xFF\xFF"), data)
+
+    # A masked value writes the low bits, or a negative value as two's complement.
+    data = S("\x00")
+    data.bit_put(0, 4, 0x1F & 0xF)
+    data.bit_put(4, 4, -2 & 0xF)
+    assert_equal(S("\xEF"), data)
+
+    # A Float value is converted with to_int, as the offset and the length
+    # are.  The fit check applies to the converted Integer.
+    data = S("\x00")
+    data.bit_put(0, 4, 3.7)
+    assert_equal(S("\x03"), data)
+    data.bit_put(0, 4, 15.9)
+    assert_equal(S("\x0F"), data)
+    assert_raise(RangeError) { data.bit_put(0, 4, 16.5) }
+    assert_raise(RangeError) { data.bit_put(0, 4, -1.5) }
+    assert_equal(S("\x0F"), data)
+
+    # An empty region accepts only 0 and writes nothing.
+    data = S("\xA5")
+    assert_same(data, data.bit_put(0, 0, 0))
+    data.bit_put(8, 0, 0)
+    data.bit_put(5..2, 0)
+    data.bit_put(8.., 0)
+    assert_equal(S("\xA5"), data)
+    assert_raise(RangeError) { data.bit_put(0, 0, 1) }
+    assert_raise(RangeError) { data.bit_put(0, 0, -1) }
+
+    # Regions do not clamp, and self is never extended.
+    assert_raise(IndexError) { S("\x00").bit_put(0, 9, 0) }
+    assert_raise(IndexError) { S("\x00").bit_put(8, 1, 0) }
+    assert_raise(IndexError) { S("\x00").bit_put(0..8, 0) }
+    assert_raise(IndexError) { S("\x00").bit_put(9, 0, 0) }
+    assert_raise(IndexError) { S("\x00").bit_put(9.., 0) }
+    assert_raise(IndexError) { S("").bit_put(0..7, 0) }
+    assert_raise(IndexError) { S("\x00").bit_put(-1, 4, 0) }
+    assert_raise(IndexError) { S("\x00").bit_put(-1..2, 0) }
+    # A position error is reported before a value error.
+    assert_raise(IndexError) { S("\x00").bit_put(4, 8, 0x1FF) }
+
+    assert_raise(ArgumentError) { S("\x00").bit_put(0, -1, 0) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(0, 2**100, 0) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(0..3, 4, 0) }
+    assert_raise(TypeError) { S("\x00").bit_put(0, nil, 0) }
+    assert_raise(TypeError) { S("\x00").bit_put(0, 4, nil) }
+    assert_raise(TypeError) { S("\x00").bit_put(0..3, nil) }
+    assert_raise(ArgumentError) { S("\x00").bit_put(0, 4, 0, lsb_first: nil) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_put(0..3, 0) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_put(0, 0, 0) }
+
+    # Copy-on-write: mutating must not affect a shared sibling.
+    shared = S("fooXbar").split(S("X")).last
+    shared.bit_put(0..7, 0xFF)
+    assert_equal(S("\xFFar").b, shared.b)
+
+    # Round trip with bit_get at every offset and length, and no change
+    # outside the region.
+    [true, false].each do |order|
+      [S("\x00\x00\x00"), S("\xFF\xFF\xFF"), S("\x5A\xC3\x3C")].each do |base|
+        (0..23).each do |off|
+          (0..(24 - off)).each do |len|
+            [0, (1 << len) - 1, 0xA5C33C & ((1 << len) - 1)].each do |value|
+              s = base.dup
+              s.bit_put(off, len, value, lsb_first: order)
+              msg = "base=#{base.b.inspect} value=#{value} off=#{off} len=#{len} lsb_first=#{order}"
+              assert_equal(value, s.bit_get(off, len, lsb_first: order), msg)
+              assert_equal(base.bit_get(0, off, lsb_first: order), s.bit_get(0, off, lsb_first: order), msg)
+              assert_equal(base.bit_get(off + len.., lsb_first: order), s.bit_get(off + len.., lsb_first: order), msg)
+            end
+          end
+        end
+      end
+    end
+
+    # The same round trip on a string longer than 64 bits, so that regions
+    # wider than 64 bits are not byte-aligned.
+    base = S("\x5A\xC3\x3C\x01\x80\xFE\x7F\x96\x69\x0F\xF0\xA5")
+    pattern = 0xA5C33C5A0FF096697F01FE80
+    [true, false].each do |order|
+      (0..96).each do |off|
+        (0..(96 - off)).each do |len|
+          [(1 << len) - 1, pattern & ((1 << len) - 1)].each do |value|
+            s = base.dup
+            s.bit_put(off, len, value, lsb_first: order)
+            msg = "value=#{value} off=#{off} len=#{len} lsb_first=#{order}"
+            assert_equal(value, s.bit_get(off, len, lsb_first: order), msg)
+            assert_equal(base.bit_get(0, off, lsb_first: order), s.bit_get(0, off, lsb_first: order), msg)
+            assert_equal(base.bit_get(off + len.., lsb_first: order), s.bit_get(off + len.., lsb_first: order), msg)
+          end
+        end
+      end
+    end
+
+    # A region wider than 1024 bytes takes the buffer of the value from the heap.
+    value = (3**5678) & ((1 << 9000) - 1)
+    [true, false].each do |order|
+      big = S("\x00" * 1200)
+      big.bit_put(3, 9000, value, lsb_first: order)
+      assert_equal(value, big.bit_get(3, 9000, lsb_first: order), "lsb_first=#{order}")
+      assert_equal(0, big.bit_get(0, 3, lsb_first: order), "lsb_first=#{order}")
+      assert_equal(0, big.bit_get(9003.., lsb_first: order), "lsb_first=#{order}")
+      assert_raise(RangeError) { big.bit_put(3, 9000, 1 << 9000, lsb_first: order) }
+      assert_equal(value, big.bit_get(3, 9000, lsb_first: order), "lsb_first=#{order}")
+    end
+  end
+
+  def test_bit_put_encoding
+    # The encoding has no effect, and a write clears the cached code range.
+    s = S("a").force_encoding(Encoding::UTF_8)
+    assert_predicate(s, :ascii_only?)
+    s.bit_put(7, 1)
+    assert_equal("\xE1".b, s.b)
+    assert_equal(Encoding::UTF_8, s.encoding)
+    assert_not_predicate(s, :ascii_only?)
+    assert_not_predicate(s, :valid_encoding?)
+    s.bit_put(0, 8, 0x62)
+    assert_equal("b".b, s.b)
+    assert_predicate(s, :ascii_only?)
+    assert_predicate(s, :valid_encoding?)
+
+    s = S("\x00\x00").force_encoding(Encoding::UTF_16LE)
+    s.bit_put(4, 8, 0xAF)
+    assert_equal("\xF0\x0A".b, s.b)
+    assert_equal(Encoding::UTF_16LE, s.encoding)
+  end
+
+  def test_bit_put_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_put, 7000 * 8, 1)
+    assert_bit_op_chilled_string_warning(:bit_put, 7000 * 8, 2, 1)
+    assert_bit_op_chilled_string_warning(:bit_put, (7000 * 8)..(7100 * 8), 1)
   end
 
   def test_bitwise

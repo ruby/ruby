@@ -8274,6 +8274,208 @@ rb_str_bit_flip(int argc, VALUE *argv, VALUE str)
     return str_mutate_bit(argc, argv, str, STR_BIT_FLIP);
 }
 
+/*
+ * Write the low len bits of the little-endian byte buffer buf into the
+ * logical bits [beg, beg+len) of ptr.  This is the inverse of
+ * str_bit_region_read: with lsb_first, the least significant bit of the
+ * value goes to the first bit of the region; with MSB-first numbering, the
+ * most significant of the len bits goes there.
+ *
+ * The caller has bounds-checked [beg, beg+len) and called rb_str_modify.
+ */
+static void
+str_bit_region_write(unsigned char *ptr, uint64_t beg, uint64_t len, bool lsb_first, const unsigned char *buf)
+{
+    uint64_t end = beg + len;
+    uint64_t pos = beg;
+
+    while (pos < end) {
+        rb_len_t byte_index = (rb_len_t)(pos / CHAR_BIT);
+        unsigned int lo = (unsigned int)(pos % CHAR_BIT);
+        unsigned int hi = ((end - 1) / CHAR_BIT == (uint64_t)byte_index) ? (unsigned int)((end - 1) % CHAR_BIT) : 7;
+        unsigned int n = hi - lo + 1;
+        unsigned int field = (1u << n) - 1;
+        /* The position in the value of the n bits for this byte, as in str_bit_region_read. */
+        uint64_t shift = lsb_first ? pos - beg : (end - 1) - (pos + n - 1);
+        size_t i = (size_t)(shift / CHAR_BIT);
+        unsigned int off = (unsigned int)(shift % CHAR_BIT);
+        unsigned int chunk = (unsigned int)buf[i] >> off;
+        /* The physical position of the least significant bit of the chunk. */
+        unsigned int phys = lsb_first ? lo : 7 - hi;
+
+        if (off + n > CHAR_BIT) chunk |= (unsigned int)buf[i + 1] << (CHAR_BIT - off);
+        chunk &= field;
+        ptr[byte_index] = (unsigned char)((ptr[byte_index] & ~(field << phys)) | (chunk << phys));
+        pos += n;
+    }
+}
+
+NORETURN(static void str_bit_value_out_of_range(VALUE value, uint64_t len));
+
+static void
+str_bit_value_out_of_range(VALUE value, uint64_t len)
+{
+    /* As Integer#chr does, do not expand a Bignum into the message. */
+    if (FIXNUM_P(value)) {
+        rb_raise(rb_eRangeError, "%ld out of %"PRIu64"-bit range", FIX2LONG(value), len);
+    }
+    else {
+        rb_raise(rb_eRangeError, "bignum out of %"PRIu64"-bit range", len);
+    }
+}
+
+/*
+ *  call-seq:
+ *    bit_put(offset, value, lsb_first: true) -> self
+ *    bit_put(offset, length, value, lsb_first: true) -> self
+ *    bit_put(range, value, lsb_first: true) -> self
+ *
+ *  Writes +value+, which must be +0+ or +1+, to the bit at zero-based bit
+ *  +offset+; returns +self+:
+ *
+ *    s = "\x00"
+ *    s.bit_put(1, 1) # => "\x02"
+ *    s.bit_put(1, 0) # => "\x00"
+ *
+ *  With +offset+ and +length+, writes the non-negative Integer +value+ into
+ *  the +length+ bits beginning at +offset+; with a Range, writes it into the
+ *  bits covered by +range+. The arguments before +value+ are those of
+ *  String#bit_get, which reads the same value back:
+ *
+ *    data = "\x00\x00"
+ *    data.bit_put(4, 8, 0xAF) # => "\xF0\x0A"
+ *    data.bit_get(4, 8)       # => 175
+ *    data = "\x00\x00"
+ *    data.bit_put(8.., 0xAA)  # => "\x00\xAA"
+ *
+ *  A negative Range endpoint does not count from the end of +self+. Use an
+ *  endless Range to write to the end:
+ *
+ *    data.bit_put(8..-1, 0xAA) # Raises IndexError
+ *
+ *  The bits outside the region do not change:
+ *
+ *    data = "\xFF\xFF"
+ *    data.bit_put(4, 8, 0) # => "\x0F\xF0"
+ *
+ *  The value must fit in the region. A value that needs more than +length+
+ *  bits raises +RangeError+ rather than being truncated, and so does a
+ *  negative value; +self+ does not change. Mask the value to write only its
+ *  low bits, or to write a negative value as two's complement:
+ *
+ *    data = "\x00"
+ *    data.bit_put(0, 4, 0x1F)       # Raises RangeError
+ *    data.bit_put(0, 4, 0x1F & 0xF) # => "\x0F"
+ *    data.bit_put(4, 4, -1 & 0xF)   # => "\xFF"
+ *
+ *  The entire region must lie within +self+; a region that extends beyond the
+ *  end raises +IndexError+ rather than being clamped, and +self+ is never
+ *  extended. An empty region accepts only the value +0+ and writes nothing,
+ *  but even an empty region raises +IndexError+ when it begins beyond the end
+ *  of +self+.
+ *
+ *  The value has no width limit; a region wider than 64 bits takes a Bignum.
+ *
+ *  By default, bits within each byte are numbered from least-significant to
+ *  most-significant, and the least significant bit of +value+ goes to the
+ *  first bit of the region. If +lsb_first+ is +false+, byte order is unchanged
+ *  but bits within each byte are numbered from most-significant to
+ *  least-significant, and the first bit of the region takes the most
+ *  significant of the +length+ bits of +value+. This is the order of RFC bit
+ *  diagrams and of other MSB-first packed formats:
+ *
+ *    s = "\x00"
+ *    s.bit_put(1, 1, lsb_first: false)             # => "\x40"
+ *    hdr = "\x00\x00\x00\x00"                      # a DNS header
+ *    hdr.bit_put(0, 16, 0x1234, lsb_first: false)  # => "\x12\x34\x00\x00"
+ *    hdr.bit_put(16, 16, 0x8180, lsb_first: false) # => "\x12\x34\x81\x80"
+ *
+ *  The value is written to the bytes of +self+ and is independent of string
+ *  encoding.
+ *  Raises +RangeError+ if +value+ is negative or does not fit in the region.
+ *  Raises +IndexError+ if +offset+ is out of range, or if any part of the
+ *  region lies outside +self+.
+ *  Raises +ArgumentError+ if +length+ is negative.
+ *  Raises +ArgumentError+ if a bit position is too large to be represented.
+ *  Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
+ *  Raises +FrozenError+ if +self+ is frozen, even when writing zero bits.
+ *
+ */
+static VALUE
+rb_str_bit_put(int argc, VALUE *argv, VALUE str)
+{
+    VALUE target, arg1, arg2, opts;
+    uint64_t beg = 0, len = 1;
+
+    /*
+     * The value is the last positional argument, after the region arguments
+     * of bit_get.  Count the arguments so that an explicit nil is not
+     * mistaken for an omitted one.
+     */
+    int nargs = rb_scan_args(argc, argv, "21:", &target, &arg1, &arg2, &opts);
+    bool lsb_first = str_lsb_first_from_opts(opts);
+    VALUE value = (nargs == 3) ? arg2 : arg1;
+
+    /* Coerce everything before the length is read: to_int may resize self. */
+    bool is_range = rb_obj_is_kind_of(target, rb_cRange);
+    bool is_single = (nargs == 2 && !is_range);
+    struct str_bit_range range = {0};
+    if (is_range) {
+        if (nargs == 3) {
+            rb_raise(rb_eArgError, "bit length not allowed with a Range");
+        }
+        str_bit_range_to_offsets(target, &range);
+    }
+    else {
+        beg = str_bit_offset_from_index(target).value;
+        /* The one-bit form is the region of length 1. */
+        if (nargs == 3) len = str_bit_length_from_index(arg1);
+    }
+    value = rb_to_int(value);
+
+    /* Even a zero-length write requires a mutable receiver. */
+    rb_check_frozen(str);
+
+    /* The region rules of bit_set: no clamping, and never extend self. */
+    uint64_t total_bits = str_bit_size(RSTRING_LEN(str));
+    if (is_range) {
+        if (!str_bit_range_resolve(&range, total_bits, &beg, &len) || len > total_bits - beg) {
+            rb_raise(rb_eIndexError, "bit range out of range");
+        }
+    }
+    else if (beg > total_bits || len > total_bits - beg) {
+        rb_raise(rb_eIndexError, is_single ? "bit index out of range" : "bit range out of range");
+    }
+
+    if (len == 0) {
+        if (value != INT2FIX(0)) str_bit_value_out_of_range(value, len);
+        return str;
+    }
+
+    /*
+     * Unpack the value into a little-endian byte buffer of the region width
+     * rounded up to bytes: on the stack for regions up to 64 bits, on the
+     * heap for larger ones.  A truncated value would be silently wrong, so a
+     * value that does not fit is rejected before anything is written.
+     */
+    /* Not "small": the Windows SDK defines it as a macro for char. */
+    unsigned char word_buf[sizeof(uint64_t)];
+    VALUE tmp = 0;
+    size_t buf_len = (size_t)((len + CHAR_BIT - 1) / CHAR_BIT);
+    unsigned char *buf = buf_len <= sizeof(word_buf) ? word_buf : ALLOCV_N(unsigned char, tmp, buf_len);
+    int sign = rb_integer_pack(value, buf, buf_len, 1, 0, INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_NATIVE_BYTE_ORDER);
+    unsigned int top_bits = (unsigned int)(len % CHAR_BIT);
+    /* rb_integer_pack returns a negative sign for a negative value and +2 on overflow. */
+    if (sign < 0 || sign > 1 || (top_bits && (buf[buf_len - 1] >> top_bits))) {
+        str_bit_value_out_of_range(value, len);
+    }
+
+    rb_str_modify(str);
+    str_bit_region_write((unsigned char *)RSTRING_PTR(str), beg, len, lsb_first, buf);
+    ALLOCV_END(tmp);
+    return str;
+}
+
 static uint64_t
 str_count_bits(const unsigned char *ptr, rb_len_t len)
 {
@@ -16696,6 +16898,7 @@ Init_String(void)
     rb_define_method(rb_cString, "bit_set", rb_str_bit_set, -1);
     rb_define_method(rb_cString, "bit_clear", rb_str_bit_clear, -1);
     rb_define_method(rb_cString, "bit_flip", rb_str_bit_flip, -1);
+    rb_define_method(rb_cString, "bit_put", rb_str_bit_put, -1);
     rb_define_method(rb_cString, "bit_count", rb_str_bit_count, -1);
     rb_define_method(rb_cString, "bitwise_not", rb_str_bitwise_not, 0);
     rb_define_method(rb_cString, "bitwise_not!", rb_str_bitwise_not_bang, 0);
