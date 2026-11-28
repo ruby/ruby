@@ -6,8 +6,6 @@
 #include <ruby/ruby.h>
 #include <ruby/io/buffer.h>
 
-extern VALUE rb_cIOBuffer;
-
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /**
