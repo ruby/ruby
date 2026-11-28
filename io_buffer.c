@@ -822,10 +822,102 @@ rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
     }
 }
 
+struct io_buffer_for_memory_view_arguments {
+    VALUE klass;
+    VALUE instance;
+    rb_memory_view_t *view;
+};
+
+static VALUE
+io_buffer_for_memory_view_yield(VALUE _arguments)
+{
+    struct io_buffer_for_memory_view_arguments *arguments = (struct io_buffer_for_memory_view_arguments *)_arguments;
+    rb_memory_view_t *view = arguments->view;
+
+    // IO::Buffer is a flat byte range, so the exported memory must be contiguous.
+    if (!rb_memory_view_is_contiguous(view)) {
+        rb_raise(rb_eArgError, "Cannot create a buffer from a non-contiguous MemoryView!");
+    }
+
+    // byte_size is signed, so reject a malformed view before converting it to size_t.
+    if (view->byte_size < 0) {
+        rb_raise(rb_eArgError, "Cannot create a buffer from a MemoryView with a negative size!");
+    }
+
+    // The memory is borrowed from the exporting object (EXTERNAL, not owned),
+    // and read-only when the view does not permit writing.
+    enum rb_io_buffer_flags flags = RB_IO_BUFFER_EXTERNAL;
+    if (view->readonly) flags |= RB_IO_BUFFER_READONLY;
+
+    VALUE instance = rb_io_buffer_type_allocate(arguments->klass);
+    struct rb_io_buffer_storage *buffer = get_io_buffer_storage(instance);
+    io_buffer_storage_initialize(instance, buffer, view->data, (size_t)view->byte_size, flags, Qnil);
+
+    // Lock the wrapper so it cannot be freed or resized while the block runs,
+    // and so io_buffer_for_memory_view_ensure can invalidate it afterwards.
+    rb_io_buffer_lock(instance);
+    arguments->instance = instance;
+
+    return rb_yield(instance);
+}
+
+static VALUE
+io_buffer_for_memory_view_ensure(VALUE _arguments)
+{
+    struct io_buffer_for_memory_view_arguments *arguments = (struct io_buffer_for_memory_view_arguments *)_arguments;
+
+    // Invalidate the wrapper before releasing the view, so the buffer never
+    // references released memory even if the block retained a reference to it.
+    if (arguments->instance != Qnil) {
+        rb_io_buffer_free_locked(arguments->instance);
+    }
+
+    // The exported object is referenced here (view->obj), which is why the
+    // view must be released from this execution context rather than from the
+    // GC free callback.
+    rb_memory_view_release(arguments->view);
+
+    return Qnil;
+}
+
+static VALUE
+io_buffer_for_memory_view(VALUE klass, VALUE object)
+{
+    // A MemoryView cannot be held past the block: it must be released while its
+    // exporting object is still alive (see io_buffer_for_memory_view_ensure),
+    // and that cannot happen safely during GC, so the zero-copy wrapper only
+    // exists for the duration of the block.
+    if (!rb_block_given_p()) {
+        rb_raise(rb_eArgError, "Creating a buffer from a MemoryView requires a block!");
+    }
+
+    rb_memory_view_t view;
+
+    // Prefer a writable view, but fall back to a read-only one, just as a
+    // frozen String yields a read-only buffer.
+    if (!rb_memory_view_get(object, &view, RUBY_MEMORY_VIEW_WRITABLE)) {
+        if (!rb_memory_view_get(object, &view, RUBY_MEMORY_VIEW_SIMPLE)) {
+            rb_raise(rb_eArgError, "Unable to get a MemoryView from %"PRIsVALUE"!", rb_obj_class(object));
+        }
+    }
+
+    struct io_buffer_for_memory_view_arguments arguments = {
+        .klass = klass,
+        .instance = Qnil,
+        .view = &view,
+    };
+
+    // Everything that can raise after this point runs inside the ensure, so the
+    // view is always released.
+    return rb_ensure(io_buffer_for_memory_view_yield, (VALUE)&arguments,
+                     io_buffer_for_memory_view_ensure, (VALUE)&arguments);
+}
+
 /*
  *  call-seq:
  *    IO::Buffer.for(string) -> readonly io_buffer
  *    IO::Buffer.for(string) {|io_buffer| ... read/write io_buffer ...}
+ *    IO::Buffer.for(memory_view) {|io_buffer| ... read/write io_buffer ...}
  *
  *  Creates a zero-copy IO::Buffer from the given string's memory. Without a
  *  block, a frozen snapshot of the string is used as the buffer source, so
@@ -857,11 +949,29 @@ rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
  *      string
  *      # => "Test"
  *    end
+ *
+ *  If +object+ is not a String but exports a C-level MemoryView, a block is
+ *  required and a zero-copy buffer over the exported memory is yielded to it.
+ *  The buffer is read-only unless the MemoryView is writable, and it is
+ *  invalidated when the block returns, because the MemoryView cannot outlive
+ *  the block:
+ *
+ *    IO::Buffer.for(memory_view_exporter) do |buffer|
+ *      buffer.get_string
+ *    end
  */
 VALUE
-rb_io_buffer_type_for(VALUE klass, VALUE string)
+rb_io_buffer_type_for(VALUE klass, VALUE object)
 {
     klass = io_buffer_storage_class(klass);
+
+    // A non-String object that exports a MemoryView is wrapped zero-copy for
+    // the duration of a block.
+    if (!RB_TYPE_P(object, T_STRING) && rb_memory_view_available_p(object)) {
+        return io_buffer_for_memory_view(klass, object);
+    }
+
+    VALUE string = object;
     StringValue(string);
 
     // If the string is frozen, both code paths are okay.
