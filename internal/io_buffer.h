@@ -1,3 +1,6 @@
+#ifndef INTERNAL_IO_BUFFER_H                             /*-*-C-*-vi:se ft=c:*/
+#define INTERNAL_IO_BUFFER_H
+
 #pragma once
 
 #include <ruby/ruby.h>
@@ -36,3 +39,5 @@ VALUE rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE b
 VALUE rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE buffer, VALUE argument), VALUE argument);
 
 RUBY_SYMBOL_EXPORT_END
+
+#endif /* INTERNAL_IO_BUFFER_H */
