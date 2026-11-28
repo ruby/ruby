@@ -6695,7 +6695,8 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
 
     PRISM_ASSERT((label.end - label.start) >= 0);
     pm_string_shared_init(&node->unescaped, label.start, label.end);
-    pm_node_flag_set(UP(node), parse_symbol_encoding(parser, parser->explicit_encoding, &label, &node->unescaped, false));
+    /* A bare label has no escapes that can change its encoding. */
+    pm_node_flag_set(UP(node), parse_symbol_encoding(parser, NULL, &label, &node->unescaped, false));
 
     return node;
 }
@@ -17098,6 +17099,9 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
         pm_token_t opening = parser->current;
         parser_lex(parser);
 
+        /* Lexing the value after a quoted label can set a new explicit encoding. */
+        const pm_encoding_t *explicit_encoding = parser->explicit_encoding;
+
         if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
             expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_EOF);
             // If we get here, then we have an end immediately after a
@@ -17157,7 +17161,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_EOF);
                 node = UP(pm_interpolated_string_node_create(parser, &opening, &parts, &parser->previous));
             } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
-                node = UP(pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, parser->explicit_encoding, &content, &unescaped, true)));
+                node = UP(pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped, parse_symbol_encoding(parser, explicit_encoding, &content, &unescaped, true)));
                 if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
             } else if (match1(parser, PM_TOKEN_EOF)) {
                 pm_parser_err_token(parser, &opening, PM_ERR_STRING_LITERAL_EOF);
@@ -17177,7 +17181,6 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             // plain string) or if it's not then it has interpolation.
             pm_token_t content = parser->current;
             pm_string_t unescaped = parser->current_string;
-            const pm_encoding_t *explicit_encoding = parser->explicit_encoding;
             bool joined_at_eof = lex_mode->as.string.joined_at_eof;
             parser_lex(parser);
 

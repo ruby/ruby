@@ -16,6 +16,22 @@ module Ruby::Prism
       end
     end
 
+    def test_label_encoding_before_unicode_character_literal
+      self.class.each_encoding([Encoding::IBM850, Encoding::ASCII_8BIT]) do |encoding|
+        byte = "\x8A".b.force_encoding(encoding)
+        next unless byte.valid_encoding?
+
+        result = Ruby::Prism.parse("{'#{byte}':?\\u3042, ascii:?\\u3042}", encoding: encoding)
+        assert_predicate result, :success?, encoding.name
+
+        quoted, bare = result.statement.elements
+        assert_equal byte, quoted.key.unescaped
+        refute_predicate quoted.key, :forced_utf8_encoding?
+        assert_predicate bare.key, :forced_us_ascii_encoding?
+        assert_predicate quoted.value, :forced_utf8_encoding?
+      end
+    end
+
     def test_invalid_static_symbol_array_elements
       ["%I[\\xC0]", "%I[valid \\xC0]", "%I[\\xC0 valid]", "%I[\\xC0\\xAF]"].each do |expression|
         source = "# encoding: UTF-8\nif false\n#{expression}\nend"
