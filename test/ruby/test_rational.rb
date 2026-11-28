@@ -689,6 +689,51 @@ class Rational_Test < Test::Unit::TestCase
     end
   end
 
+  def test_to_f_nearest
+    assert_equal(7425156.096483932, Rational(742515609648393158335, 10**14).to_f)
+    assert_equal(7425156.096483932, 742515609648393158335.fdiv(10**14))
+
+    # halfway between two floats
+    assert_equal(9007199254740992.0, Rational(2**53 + 1, 1).to_f)
+    assert_equal(9007199254740996.0, Rational(2**53 + 3, 1).to_f)
+    assert_equal(9007199254740992.0, Rational(2**54 + 2, 2).to_f)
+    assert_equal(9007199254740994.0, Rational(2**54 + 3, 2).to_f)
+
+    assert_equal(5.0e-324, Rational(1, 2**1074).to_f)
+    assert_equal(1.0e-323, Rational(3, 2**1075).to_f)
+    assert_equal(0.0, Rational(1, 2**1075).to_f)
+    assert_equal(5.0e-324, Rational(2**1075 + 1, 2**2150).to_f)
+    assert_equal(-Float::INFINITY, 1 / Rational(-1, 3**800).to_f)
+
+    assert_equal(Float::MAX, Rational(2**1024 - 2**971, 1).to_f)
+    assert_equal(Float::MAX, Rational(2**1024 - 2**970 - 1, 1).to_f)
+    assert_equal(Float::INFINITY, Rational(2**1024 - 2**970, 1).to_f)
+    assert_equal(-Float::INFINITY, Rational(-7**900, 3).to_f)
+
+    nearest = lambda do |r|
+      f = r.to_f
+      lo, hi = [f.prev_float, f, f.next_float].min_by(2) {|c| (r - c.to_r).abs}.sort
+      case r - lo.to_r <=> hi.to_r - r
+      when -1 then lo
+      when 1 then hi
+      else (lo / (hi - lo)).to_i.even? ? lo : hi
+      end
+    end
+    rng = Random.new(42)
+    rationals = [
+      ->{Rational(rng.rand(10**25), 10**rng.rand(1..25))},
+      ->{Rational(rng.rand(1 << 62) + 1, rng.rand(1 << 62) + 1)},
+      ->{Rational(rng.rand(10**rng.rand(1..60)) + 1, rng.rand(10**rng.rand(1..60)) + 1)},
+      ->{Rational((rng.rand(1 << 53) | 1 << 53) * 2 + 1, 2**rng.rand(0..80))},
+      ->{Rational(-(rng.rand(1 << 70) + 1), rng.rand(1 << 30) + 1)},
+    ]
+    2000.times do |i|
+      r = rationals[i % rationals.size].call
+      assert_equal(nearest[r], r.to_f, r.inspect)
+      assert_equal(nearest[r], r.numerator.fdiv(r.denominator), r.inspect)
+    end
+  end
+
   def test_to_s
     c = Rational(1,2)
 
