@@ -1,0 +1,34 @@
+prelude: |
+  # frozen_string_literal: true
+
+  lower_7b = "a" * 7
+  upper_7b = "A" * 7
+
+  lower_100b = "a" * 100
+  upper_100b = "A" * 100
+
+  lower_4k = "a" * 4096
+  upper_4k = "A" * 4096
+
+  lower_256k = "a" * 262144
+  upper_256k = "A" * 262144
+benchmark:
+  upcase_nonbang_nochange_7b_pathological: upper_7b.upcase
+  upcase_bang_nochange_7b_pathological: upper_7b.upcase!
+  downcase_nonbang_nochange_7b_pathological: lower_7b.downcase
+  downcase_bang_nochange_7b_pathological: lower_7b.downcase!
+
+  upcase_nonbang_lower_100b: lower_100b.upcase
+  upcase_bang_lower_100b: lower_100b.dup.upcase!
+  downcase_nonbang_upper_100b: upper_100b.downcase
+  downcase_bang_upper_100b: upper_100b.dup.downcase!
+
+  upcase_nonbang_lower_4k: lower_4k.upcase
+  upcase_bang_lower_4k: lower_4k.dup.upcase!
+  downcase_nonbang_upper_4k: upper_4k.downcase
+  downcase_bang_upper_4k: upper_4k.dup.downcase!
+
+  upcase_nonbang_lower_256k: lower_256k.upcase
+  upcase_bang_lower_256k: lower_256k.dup.upcase!
+  downcase_nonbang_upper_256k: upper_256k.downcase
+  downcase_bang_upper_256k: upper_256k.dup.downcase!
