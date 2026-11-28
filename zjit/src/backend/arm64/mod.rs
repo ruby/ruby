@@ -304,7 +304,7 @@ impl Assembler {
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
-                        Opnd::Reg(XZR_REG)
+                        Opnd::Reg(if dest_num_bits < 64 { WZR_REG } else { XZR_REG })
                     } else if (dest_num_bits == 64 &&
                                 BitmaskImmediate::try_from(imm as u64).is_ok()) ||
                             (dest_num_bits == 32 &&
@@ -2851,6 +2851,31 @@ mod tests {
         // Assert that only one instruction was written.
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: tst x0, x1");
         assert_snapshot!(cb.hexdump(), @"1f0001ea");
+    }
+
+    #[test]
+    fn test_test_mem32_with_imm_zero() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::mem(32, Opnd::Reg(X20_REG), 0), 0_i64.into());
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur w0, [x20]
+        0x4: tst w0, wzr
+        ");
+        assert_snapshot!(cb.hexdump(), @"800240b81f001f6a");
+    }
+
+    #[test]
+    fn test_store_zero_to_mem32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.mov(Opnd::mem(32, Opnd::Reg(X21_REG), 0), 0_i64.into());
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: stur wzr, [x21]");
+        assert_snapshot!(cb.hexdump(), @"bf0200b8");
     }
 
     #[test]
