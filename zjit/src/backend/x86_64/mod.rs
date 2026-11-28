@@ -766,10 +766,11 @@ impl Assembler {
             gc_offsets.push(ptr_offset);
         }
 
-        /// Fill nops until a jump written at `last_patch_pos` can no longer reach
-        /// past the current write position.
-        fn emit_pad_after_patch_point(cb: &mut CodeBlock, last_patch_pos: Option<usize>) {
-            let Some(last_patch_pos) = last_patch_pos else { return };
+        /// Fill nops until a jump written at the last patch point can no longer
+        /// reach past the current write position. Without a last patch point,
+        /// nothing can be patched yet, so there is nothing to pad.
+        fn emit_pad_after_patch_point(cb: &mut CodeBlock, last_patch_point: Option<PatchPointSite>) {
+            let Some(PatchPointSite { pos: last_patch_pos, .. }) = last_patch_point else { return };
             let code_size = cb.get_write_pos().saturating_sub(last_patch_pos);
             if code_size < cb.jmp_ptr_bytes() {
                 nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
@@ -782,8 +783,8 @@ impl Assembler {
         // Buffered list of PosMarker callbacks to fire if codegen is successful
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
 
-        // The write_pos for the last Insn::PatchPoint, if any
-        let mut last_patch_pos: Option<usize> = None;
+        // The write_pos and the side exit of the last Insn::PatchPoint, if any
+        let mut last_patch_point: Option<PatchPointSite> = None;
 
         // For each instruction
         let mut insn_idx: usize = 0;
@@ -1106,16 +1107,18 @@ impl Assembler {
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
 
                 Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in x86_scratch_split"),
-                Insn::PatchPointPad => {
-                    emit_pad_after_patch_point(cb, last_patch_pos);
+                Insn::PatchPointPad(side_exit) => {
+                    if !patch_point_shares_address(last_patch_point, cb.get_write_pos(), *side_exit) {
+                        emit_pad_after_patch_point(cb, last_patch_point);
+                    }
                     // This position is itself where a jump gets written on invalidation, so it
                     // becomes what following code has to keep its distance from.
-                    last_patch_pos = Some(cb.get_write_pos());
+                    last_patch_point = Some(PatchPointSite { pos: cb.get_write_pos(), side_exit: *side_exit });
                 },
                 Insn::BoundaryPad => {
                     // A boundary is never patched, so it doesn't become a position to keep away
                     // from. The last patch point stays that, and the pad just gave it its room.
-                    emit_pad_after_patch_point(cb, last_patch_pos);
+                    emit_pad_after_patch_point(cb, last_patch_point);
                 },
 
                 // Atomically increment a counter at a given memory location
@@ -1471,6 +1474,75 @@ mod tests {
         0x9: nop
         ");
         assert_snapshot!(cb.hexdump(), @"bf010000004889f8c390");
+    }
+
+    #[test]
+    fn test_adjacent_patch_points_share_an_address_when_they_share_a_side_exit() {
+        use crate::cruby::test_utils::{compile_to_iseq, with_rubyvm};
+        use crate::hir::Invariant;
+        use crate::payload::IseqVersion;
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let version = IseqVersion::new(compile_to_iseq("nil"));
+
+        // The offset each patch point ends up at. The disassembly can't tell patch points that
+        // share an address from ones that got padded apart somewhere else, so record where each
+        // one is the same way split_patch_point does: with a PosMarker right at the patch point.
+        let patch_point_offsets = Rc::new(RefCell::new(Vec::new()));
+        let record_patch_point_offset = |asm: &mut Assembler| {
+            let patch_point_offsets = patch_point_offsets.clone();
+            asm.pos_marker(move |code_ptr, _| patch_point_offsets.borrow_mut().push(code_ptr.as_offset()));
+        };
+
+        let (cb, jmp_ptr_bytes) = with_rubyvm(|| {
+            crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
+            let mut asm = Assembler::new();
+            let mut cb = CodeBlock::new_dummy();
+
+            let bb0 = asm.new_block(crate::hir::BlockId(0), true, 0);
+            asm.set_current_block(bb0);
+
+            // The patch points' targets only have to resolve to some address for the
+            // PosMarkers that record them, so the start of bb0 stands in for both side exits.
+            let side_exit_a = asm.new_label("side_exit_a");
+            let side_exit_b = asm.new_label("side_exit_b");
+            asm.write_label(side_exit_a.clone());
+            asm.write_label(side_exit_b.clone());
+            asm.mov(C_ARG_OPNDS[0], Opnd::UImm(1));
+
+            // The first two patch points have the same side exit, so they share an address.
+            // The third one has a different side exit, so it needs its own address, with
+            // enough room in front of it for the jump the first two would get patched with.
+            asm.patch_point(side_exit_a.clone(), Invariant::SingleRactorMode, version);
+            record_patch_point_offset(&mut asm);
+            asm.patch_point(side_exit_a.clone(), Invariant::NoTracePoint, version);
+            record_patch_point_offset(&mut asm);
+            asm.patch_point(side_exit_b.clone(), Invariant::RootBoxOnly, version);
+            record_patch_point_offset(&mut asm);
+            asm.cret(C_ARG_OPNDS[0]);
+
+            asm.compile_with_num_regs(&mut cb, 0);
+            let jmp_ptr_bytes = i64::try_from(cb.jmp_ptr_bytes()).unwrap();
+            (cb, jmp_ptr_bytes)
+        });
+
+        let [first, second, third] = patch_point_offsets.borrow()[..] else {
+            panic!("expected a recorded offset for each of the three patch points: {patch_point_offsets:?}");
+        };
+        assert_eq!(first, second, "patch points with the same side exit should share an address");
+        assert!(
+            third - second >= jmp_ptr_bytes,
+            "a patch point with a different side exit should leave room for the jump written at {second:#x}, but it is at {third:#x}",
+        );
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: nop dword ptr [rax + rax]
+        0xa: mov rax, rdi
+        0xd: ret
+        0xe: nop
+        ");
     }
 
     #[test]
