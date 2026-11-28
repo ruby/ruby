@@ -413,6 +413,28 @@ module Ruby::Prism
       assert_equal ["end pattern with unmatched parenthesis: /abc(/"], errors.map(&:message)
     end
 
+    def test_invalid_interpolated_regexp_in_unevaluated_code
+      assert_equal [:regexp_parse_error], Ruby::Prism.parse('if false; /#{"["}/; end').errors.map(&:type)
+      assert_equal [:invalid_multibyte_escape], Ruby::Prism.parse('defined? /\M- #@f/').errors.map(&:type)
+      assert_empty Ruby::Prism.parse('defined? /#{"["}#{value}/').errors
+    end
+
+    def test_encoding_option_on_interpolated_bytes
+      ['/#{"\xcd"} /n', '/#{"\xcd"}/n', 'defined? /#{"\xcd"}#{value}/n'].each do |source|
+        errors = Ruby::Prism.parse(source).errors
+        assert_equal ["regexp encoding option 'n' differs from source encoding 'UTF-8'"], errors.map(&:message), source
+        assert_equal '"\xcd"', errors.first.location.slice
+      end
+
+      assert_empty Ruby::Prism.parse('/#{"\x41"} /n').errors
+      assert_empty Ruby::Prism.parse('/#{"\xcd"} /n', encoding: Encoding::ASCII_8BIT).errors
+      assert_empty Ruby::Prism.parse('/\xcd#{value}/n').errors
+
+      errors = Ruby::Prism.parse('/#{"\xff"}#{value}#{"\xcd"}/n').errors
+      assert_equal [:regexp_encoding_option_mismatch] * 2, errors.map(&:type)
+      assert_equal ['"\xff"', '"\xcd"'], errors.map { |error| error.location.slice }
+    end
+
     def test_leading_semicolon_in_regexp_interpolation
       assert_empty Ruby::Prism.parse('/#{; "["}/').errors
       assert_empty Ruby::Prism.parse(%q{/#{; '\x'}/}).errors

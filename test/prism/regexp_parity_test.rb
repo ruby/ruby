@@ -63,6 +63,7 @@ module Ruby::Prism
       "/\\xE9[a/", "/\\xC3\\d[a/", "/\\xE9(/", "/\\xFF[a/n", "/\\p{Hiragana}[a/", "/)\\p{Hiragana}/",
 
       # Literal fragments of a regular expression with interpolation.
+      '/#{"\xcd"} /n', '/#{"\xcd"}#{value}/n', '/#{"\xcd"} /e', '/#{"\xcd"} /s', '/#{"\xcd"} /u',
       "/\\xFF\#{1}/", "/a\#{1}\\xE3\\x81/", "/\\u{3042}\#{1}\\xE3\\x81\\x82/", "/é\#{1}/n", "/é\#{1}/e",
       "/\\xE3\#{1}\\x81\\x82/", "/\\M-a\#{1}/", "/\\xE3\#{\"\\x81\\x82\"}/", "/a # \\xFF\n\#{1}/x", "/a(?#\\xFF)\#{1}/",
 
