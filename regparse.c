@@ -2572,6 +2572,7 @@ fetch_escaped_value(UChar** src, UChar* end, ScanEnv* env, OnigCodePoint* val)
   UChar* p = *src;
 
   if (PEND) return ONIGERR_END_PATTERN_AT_ESCAPE;
+  CHECK_STACK_RETURN(ONIGERR_PARSE_DEPTH_LIMIT_OVER);
 
   PFETCH_S(c);
   switch (c) {
@@ -4738,6 +4739,7 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
   env->parse_depth++;
   if (env->parse_depth > ParseDepthLimit)
     return ONIGERR_PARSE_DEPTH_LIMIT_OVER;
+  CHECK_STACK_RETURN(ONIGERR_PARSE_DEPTH_LIMIT_OVER);
   prev_cc = asc_prev_cc = (CClassNode* )NULL;
   r = fetch_token_in_cc(tok, src, end, env);
   if (r == TK_CHAR && tok->u.c == '^' && tok->escaped == 0) {
@@ -6817,6 +6819,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
   env->parse_depth++;
   if (env->parse_depth > ParseDepthLimit)
     return ONIGERR_PARSE_DEPTH_LIMIT_OVER;
+  CHECK_STACK_RETURN(ONIGERR_PARSE_DEPTH_LIMIT_OVER);
   r = parse_branch(&node, tok, term, src, end, env);
   if (r < 0) {
     onig_node_free(node);

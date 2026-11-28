@@ -67,6 +67,17 @@ RUBY_SYMBOL_EXPORT_BEGIN
                        BIT_NT_CANY | BIT_NT_BREF)) != 0)
 
 #define NTYPE(node)             ((node)->u.base.type)
+
+/* CHECK_STACK_RETURN() for a function recursing over the tree.  Leaves are
+   not checked: no recursion goes on from them, and they are the most of the
+   nodes.  (A back reference is not a leaf for the match length functions,
+   which follow it to the group.) */
+#define CHECK_STACK_NODE_RETURN(node, err) do {\
+  if ((NTYPE2BIT(NTYPE(node)) &\
+       (BIT_NT_STR | BIT_NT_CCLASS | BIT_NT_CTYPE | BIT_NT_CANY)) == 0)\
+    CHECK_STACK_RETURN(err);\
+} while (0)
+
 #define SET_NTYPE(node, ntype) \
     do { \
         int value = ntype; \
