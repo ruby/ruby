@@ -864,6 +864,41 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_send_name_guard_by_identity
+    assert_compiles(<<~'RUBY', result: [:a, :a, :a, :b, :a, :b, :a], exits: {})
+      def a = :a
+      def b = :b
+
+      def jit_method(name) = send(name)
+
+      frozen = "a".freeze
+      [
+        jit_method(frozen),
+        jit_method(frozen),
+        jit_method(+"a"), # same name, not the same object
+        jit_method(:b),
+        jit_method(:a),
+        jit_method("b".freeze),
+        (GC.compact; jit_method(frozen)),
+      ]
+    RUBY
+  end
+
+  def test_send_name_guard_with_mutable_string
+    assert_compiles(<<~'RUBY', result: [:a, :a, :b], exits: {})
+      def a = :a
+      def b = :b
+
+      def jit_method(name) = send(name)
+
+      name = +"a"
+      first = jit_method(name)
+      second = jit_method(name)
+      name.replace("b")
+      [first, second, jit_method(name)]
+    RUBY
+  end
+
   def test_send_kwargs_splat
     # For now, this side-exits when calling with a splat
     assert_compiles(<<~'RUBY', result: "2#a:1,b:2/B")
