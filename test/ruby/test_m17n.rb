@@ -1678,6 +1678,16 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("a#{repl.to_str}" * 50, EnvUtil.under_gc_stress {str.scrub(repl)})
   end
 
+  def test_scrub_replace_block_new_string_under_gc_stress
+    # The block returns a new string, which only the pointer to its contents
+    # refers to while the result grows. In an encoding not ASCII-compatible,
+    # the string is not used after it is appended.
+    str = ("a\x00\x00\xd8".b * 50).force_encoding("UTF-16LE")
+    repl = ("ab" * 10).encode("UTF-16LE")
+    expected = ("a".encode("UTF-16LE") + repl) * 50
+    assert_equal(expected, EnvUtil.under_gc_stress {str.scrub {repl.dup}})
+  end
+
   def test_scrub_replace_block
     assert_equal("\u3042<e381>", u("\xE3\x81\x82\xE3\x81").scrub{|x|'<'+x.unpack('H*')[0]+'>'})
     assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub{e("\xA4\xA2")} }
