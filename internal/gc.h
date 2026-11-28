@@ -261,6 +261,10 @@ void rb_gc_initial_stress_set(VALUE flag);
 void rb_gc_before_fork(void);
 void rb_gc_after_fork(rb_pid_t pid);
 
+/* Helpers for object movement generic over pointer types. These only write
+ * when *ptr is moved, optimizing for running under CoW. Objects that are
+ * SPECIAL_CONST_P() never move, so these can be used with readonly memory
+ * holding special constants. */
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
     rb_gc_mark_and_move(&_obj); \
