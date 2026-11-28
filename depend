@@ -171,6 +171,7 @@ symbol.$(OBJEXT): {$(VPATH)}symbol.c
 thread.$(OBJEXT): {$(VPATH)}thread.c
 time.$(OBJEXT): {$(VPATH)}time.c
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
+util.$(OBJEXT): {$(VPATH)}ryu.c
 util.$(OBJEXT): {$(VPATH)}util.c
 variable.$(OBJEXT): {$(VPATH)}variable.c
 version.$(OBJEXT): {$(VPATH)}version.c
