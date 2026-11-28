@@ -342,8 +342,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_iter] { [nd_body] }");
         ANN("example: 3.times { foo }");
         F_NODE(nd_iter, RNODE_ITER, "iteration receiver");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_ITER, "body");
+        F_LOC(opening_loc, RNODE_ITER);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_ITER);
         return;
 
       case NODE_FOR:
