@@ -813,7 +813,7 @@ pub enum OuterLocalAccess {
 /// Wrapper over an iseq's `outer_variables` table, which describes
 /// how a block iseq refers to a variable in an enclosing scope.
 #[derive(Clone, Copy)]
-pub struct OuterVariables(Option<NonNull<rb_id_table>>);
+pub struct OuterVariables(Option<NonNull<rb_iseq_outer_variables>>);
 
 impl OuterVariables {
     /// Look up how the enclosing-scope local `id` is accessed by the iseq (or any
@@ -822,7 +822,7 @@ impl OuterVariables {
         let table = self.0?;
         let mut write = Qfalse;
         // Non-zero return means there's a table entry, i.e. the variable is referenced.
-        if unsafe { rb_id_table_lookup(table.as_ptr(), id, &mut write) } == 0 {
+        if unsafe { rb_iseq_outer_variables_lookup(table.as_ptr(), id, &mut write) } == 0 {
             return None;
         }
         // Truthy means write
@@ -844,7 +844,7 @@ impl IseqAccess for IseqPtr {
 
     /// The iseq's `outer_variables` table. See [`OuterVariables`].
     unsafe fn outer_variables(self) -> OuterVariables {
-        let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_id_table;
+        let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_iseq_outer_variables;
         OuterVariables(NonNull::new(unsafe { *field }))
     }
 }

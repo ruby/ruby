@@ -182,6 +182,208 @@ rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create)
     return hook_list;
 }
 
+/* Past this many entries, a binary search loses to rb_id_table (capa == 0 then). */
+#define OUTER_VARIABLES_MAX_ARRAY 8
+
+static inline size_t
+outer_variables_bytes(uint32_t capa)
+{
+    return offsetof(struct rb_iseq_outer_variables, ids) + capa * (sizeof(ID) + sizeof(uint8_t));
+}
+
+static inline bool
+outer_variables_table_p(const struct rb_iseq_outer_variables *ovs)
+{
+    return ovs->capa == 0;
+}
+
+/* In table mode, ids[0] holds the rb_id_table pointer. */
+static inline struct rb_id_table *
+outer_variables_table(const struct rb_iseq_outer_variables *ovs)
+{
+    struct rb_id_table *tbl;
+    memcpy(&tbl, ovs->ids, sizeof(tbl));
+    return tbl;
+}
+
+static inline size_t
+outer_variables_alloc_bytes(const struct rb_iseq_outer_variables *ovs)
+{
+    return outer_variables_table_p(ovs) ? offsetof(struct rb_iseq_outer_variables, ids) + sizeof(struct rb_id_table *)
+                                        : outer_variables_bytes(ovs->capa);
+}
+
+static inline uint8_t *
+outer_variables_writes(const struct rb_iseq_outer_variables *ovs)
+{
+    return (uint8_t *)&ovs->ids[ovs->capa];
+}
+
+static struct rb_iseq_outer_variables *
+outer_variables_new_table(size_t capa)
+{
+    struct rb_iseq_outer_variables *ovs = ruby_xmalloc(outer_variables_bytes(0) + sizeof(struct rb_id_table *));
+    struct rb_id_table *tbl = rb_id_table_create(capa);
+    ovs->num = 0;
+    ovs->capa = 0;
+    memcpy(ovs->ids, &tbl, sizeof(tbl));
+    return ovs;
+}
+
+/* ids[] is kept sorted; returns the index of id, or -(insertion point) - 1. */
+static long
+outer_variables_search(const struct rb_iseq_outer_variables *ovs, ID id)
+{
+    long lo = 0, hi = ovs ? (long)ovs->num : 0;
+    while (lo < hi) {
+        long mid = lo + (hi - lo) / 2;
+        if (ovs->ids[mid] == id) return mid;
+        if (ovs->ids[mid] < id) lo = mid + 1;
+        else hi = mid;
+    }
+    return -lo - 1;
+}
+
+static void
+outer_variables_table_add(struct rb_iseq_outer_variables *ovs, ID id, bool write)
+{
+    struct rb_id_table *tbl = outer_variables_table(ovs);
+    VALUE val;
+    if (rb_id_table_lookup(tbl, id, &val)) {
+        if (write && !RTEST(val)) rb_id_table_insert(tbl, id, Qtrue);
+    }
+    else {
+        rb_id_table_insert(tbl, id, RBOOL(write));
+        ovs->num++;
+    }
+}
+
+/* Record that `body`'s block accesses outer local (or yield) `id`. */
+void
+rb_iseq_outer_variables_add(struct rb_iseq_constant_body *body, ID id, bool write)
+{
+    struct rb_iseq_outer_variables *ovs = body->outer_variables;
+
+    if (ovs && outer_variables_table_p(ovs)) {
+        outer_variables_table_add(ovs, id, write);
+        return;
+    }
+
+    long idx = outer_variables_search(ovs, id);
+
+    if (idx >= 0) {
+        if (write) outer_variables_writes(ovs)[idx] = 1;
+        return;
+    }
+    long pos = -idx - 1;
+
+    if (ovs && ovs->num == OUTER_VARIABLES_MAX_ARRAY) {
+        struct rb_iseq_outer_variables *big = outer_variables_new_table(OUTER_VARIABLES_MAX_ARRAY * 2);
+        for (uint32_t i = 0; i < ovs->num; i++) {
+            outer_variables_table_add(big, ovs->ids[i], outer_variables_writes(ovs)[i]);
+        }
+        outer_variables_table_add(big, id, write);
+        ruby_xfree_sized(ovs, outer_variables_bytes(ovs->capa));
+        body->outer_variables = big;
+        return;
+    }
+
+    if (!ovs || ovs->num == ovs->capa) {
+        uint32_t old_capa = ovs ? ovs->capa : 0;
+        /* 2 to start: 1 and 2 entries (17 and 26 bytes) share a 32-byte size class on macOS */
+        uint32_t new_capa = old_capa ? old_capa * 2 : 2;
+        if (new_capa > OUTER_VARIABLES_MAX_ARRAY) new_capa = OUTER_VARIABLES_MAX_ARRAY;
+        struct rb_iseq_outer_variables *grown = ruby_xmalloc(outer_variables_bytes(new_capa));
+        grown->num = 0;
+        grown->capa = new_capa;
+        if (ovs) {
+            MEMCPY(grown->ids, ovs->ids, ID, ovs->num);
+            MEMCPY(outer_variables_writes(grown), outer_variables_writes(ovs), uint8_t, ovs->num);
+            grown->num = ovs->num;
+            ruby_xfree_sized(ovs, outer_variables_bytes(old_capa));
+        }
+        body->outer_variables = ovs = grown;
+    }
+
+    uint8_t *writes = outer_variables_writes(ovs);
+    MEMMOVE(&ovs->ids[pos + 1], &ovs->ids[pos], ID, ovs->num - pos);
+    MEMMOVE(&writes[pos + 1], &writes[pos], uint8_t, ovs->num - pos);
+    ovs->ids[pos] = id;
+    writes[pos] = write ? 1 : 0;
+    ovs->num++;
+}
+
+/* For loaders that know the entry count: avoids growing one add at a time. */
+void
+rb_iseq_outer_variables_reserve(struct rb_iseq_constant_body *body, uint32_t capa)
+{
+    RUBY_ASSERT(!body->outer_variables);
+    if (!capa) return;
+    if (capa > OUTER_VARIABLES_MAX_ARRAY) {
+        body->outer_variables = outer_variables_new_table(capa);
+        return;
+    }
+    struct rb_iseq_outer_variables *ovs = ruby_xmalloc(outer_variables_bytes(capa));
+    ovs->num = 0;
+    ovs->capa = capa;
+    body->outer_variables = ovs;
+}
+
+/* Same contract as rb_id_table_lookup: nonzero if present, *write = Qtrue/Qfalse. */
+int
+rb_iseq_outer_variables_lookup(const struct rb_iseq_outer_variables *ovs, ID id, VALUE *write)
+{
+    if (!ovs) return 0;
+    if (outer_variables_table_p(ovs)) {
+        VALUE val;
+        if (!rb_id_table_lookup(outer_variables_table(ovs), id, &val)) return 0;
+        if (write) *write = val;
+        return 1;
+    }
+    long idx = outer_variables_search(ovs, id);
+    if (idx < 0) return 0;
+    if (write) *write = RBOOL(outer_variables_writes(ovs)[idx]);
+    return 1;
+}
+
+size_t
+rb_iseq_outer_variables_size(const struct rb_iseq_outer_variables *ovs)
+{
+    return ovs ? ovs->num : 0;
+}
+
+void
+rb_iseq_outer_variables_foreach(const struct rb_iseq_outer_variables *ovs,
+                                enum rb_id_table_iterator_result (*func)(ID id, VALUE write, void *data),
+                                void *data)
+{
+    if (!ovs) return;
+    if (outer_variables_table_p(ovs)) {
+        rb_id_table_foreach(outer_variables_table(ovs), func, data);
+        return;
+    }
+    for (uint32_t i = 0; i < ovs->num; i++) {
+        if (func(ovs->ids[i], RBOOL(outer_variables_writes(ovs)[i]), data) == ID_TABLE_STOP) break;
+    }
+}
+
+size_t
+rb_iseq_outer_variables_memsize(const struct rb_iseq_outer_variables *ovs)
+{
+    if (!ovs) return 0;
+    size_t size = outer_variables_alloc_bytes(ovs);
+    if (outer_variables_table_p(ovs)) size += rb_id_table_memsize(outer_variables_table(ovs));
+    return size;
+}
+
+void
+rb_iseq_outer_variables_free(struct rb_iseq_outer_variables *ovs)
+{
+    if (!ovs) return;
+    if (outer_variables_table_p(ovs)) rb_id_table_free(outer_variables_table(ovs));
+    ruby_xfree_sized(ovs, outer_variables_alloc_bytes(ovs));
+}
+
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {
@@ -240,7 +442,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         }
 
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
-        if (body->outer_variables) rb_id_table_free(body->outer_variables);
+        rb_iseq_outer_variables_free(body->outer_variables);
         SIZED_FREE(body);
     }
 
@@ -609,7 +811,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += (body->param.opt_num + 1) * sizeof(VALUE);
         size += param_keyword_size(body->param.keyword);
 
-        if (body->outer_variables) size += rb_id_table_memsize(body->outer_variables);
+        size += rb_iseq_outer_variables_memsize(body->outer_variables);
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);

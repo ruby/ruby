@@ -1893,22 +1893,7 @@ access_outer_variables(const rb_iseq_t *iseq, int level, ID id, bool write)
     }
 
     for (int i=0; i<level; i++) {
-        VALUE val;
-        struct rb_id_table *ovs = ISEQ_BODY(iseq)->outer_variables;
-
-        if (!ovs) {
-            ovs = ISEQ_BODY(iseq)->outer_variables = rb_id_table_create(8);
-        }
-
-        if (rb_id_table_lookup(ISEQ_BODY(iseq)->outer_variables, id, &val)) {
-            if (write && !val) {
-                rb_id_table_insert(ISEQ_BODY(iseq)->outer_variables, id, Qtrue);
-            }
-        }
-        else {
-            rb_id_table_insert(ISEQ_BODY(iseq)->outer_variables, id, RBOOL(write));
-        }
-
+        rb_iseq_outer_variables_add(ISEQ_BODY(iseq), id, write);
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 }
@@ -13849,11 +13834,11 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 static ibf_offset_t
 ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    struct rb_id_table * ovs = ISEQ_BODY(iseq)->outer_variables;
+    const struct rb_iseq_outer_variables *ovs = ISEQ_BODY(iseq)->outer_variables;
 
     ibf_offset_t offset = ibf_dump_pos(dump);
 
-    size_t size = ovs ? rb_id_table_size(ovs) : 0;
+    size_t size = rb_iseq_outer_variables_size(ovs);
     ibf_dump_write_small_value(dump, (VALUE)size);
     if (size > 0) {
         VALUE buff;
@@ -13863,7 +13848,7 @@ ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
                                      rb_eArgError);
         struct outer_variable_list *ovlist = RB_ALLOCV(buff, buffsize);
         ovlist->num = 0;
-        rb_id_table_foreach(ovs, store_outer_variable, ovlist);
+        rb_iseq_outer_variables_foreach(ovs, store_outer_variable, ovlist);
         ruby_qsort(ovlist->pairs, size, sizeof(struct outer_variable_pair), outer_variable_cmp, NULL);
         for (size_t i = 0; i < size; ++i) {
             ID id = ovlist->pairs[i].id;
@@ -13927,27 +13912,21 @@ ibf_load_ci_entries(const struct ibf_load *load,
     }
 }
 
-static struct rb_id_table *
-ibf_load_outer_variables(const struct ibf_load * load, ibf_offset_t outer_variables_offset)
+static void
+ibf_load_outer_variables(const struct ibf_load * load, ibf_offset_t outer_variables_offset, struct rb_iseq_constant_body *body)
 {
     ibf_offset_t reading_pos = outer_variables_offset;
 
-    struct rb_id_table *tbl = NULL;
-
     size_t table_size = (size_t)ibf_load_small_value(load, &reading_pos);
-
-    if (table_size > 0) {
-        tbl = rb_id_table_create(table_size);
-    }
+    if (table_size > UINT32_MAX) rb_raise(rb_eRuntimeError, "invalid byte sequence");
+    rb_iseq_outer_variables_reserve(body, (uint32_t)table_size);
 
     for (size_t i = 0; i < table_size; i++) {
         ID key = ibf_load_id(load, (ID)ibf_load_small_value(load, &reading_pos));
         VALUE value = ibf_load_small_value(load, &reading_pos);
         if (!key) key = rb_make_temporary_id(i);
-        rb_id_table_insert(tbl, key, value);
+        rb_iseq_outer_variables_add(body, key, RTEST(value));
     }
-
-    return tbl;
 }
 
 static ibf_offset_t
@@ -14291,7 +14270,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
         load_body->is_entries       = NULL;
     }
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
-    load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
+    ibf_load_outer_variables(load, outer_variables_offset, load_body);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
     load_body->param.keyword        = ibf_load_param_keyword(load, param_keyword_offset);
     load_body->param.flags.has_kw   = (param_flags >> 4) & 1;
