@@ -2234,6 +2234,8 @@ static const rb_method_entry_t *resolve_refined_method(VALUE refinements, const 
 static const rb_method_entry_t *
 method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *defined_class_ptr)
 {
+    VALUE defined_class;
+    if (!defined_class_ptr) defined_class_ptr = &defined_class;
     const rb_method_entry_t *me = search_method_protect(klass, id, defined_class_ptr);
 
     if (me) {
@@ -2314,16 +2316,19 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
         VALUE refinement;
         const rb_method_entry_t *tmp_me;
         VALUE super;
+        VALUE defined_class = defined_class_ptr ? *defined_class_ptr : 0;
 
         refinement = find_refinement(refinements, me->owner);
         if (!NIL_P(refinement)) {
             if (RB_TYPE_P(me->owner, T_MODULE) && defined_class_ptr && RB_TYPE_P(*defined_class_ptr, T_ICLASS)) {
                 refinement = module_refinement_iclass(refinement, *defined_class_ptr);
             }
-            tmp_me = search_method_protect(refinement, me->called_id, defined_class_ptr);
+            tmp_me = search_method(refinement, me->called_id, defined_class_ptr);
 
             if (tmp_me && tmp_me->def->type != VM_METHOD_TYPE_REFINED) {
-                return tmp_me;
+                if (!UNDEFINED_METHOD_ENTRY_P(tmp_me)) return tmp_me;
+                // An undef in an active refinement keeps resolving from the owner.
+                defined_class = 0;
             }
         }
 
@@ -2338,7 +2343,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
             return tmp_me;
         }
 
-        super = RCLASS_SUPER(me->owner);
+        super = RCLASS_SUPER(defined_class ? defined_class : me->owner);
         if (!super) {
             return 0;
         }
@@ -2611,6 +2616,7 @@ void
 rb_undef(VALUE klass, ID id)
 {
     const rb_method_entry_t *me;
+    VALUE defined_class;
 
     if (NIL_P(klass)) {
         rb_raise(rb_eTypeError, "no class to undef method");
@@ -2620,9 +2626,9 @@ rb_undef(VALUE klass, ID id)
         rb_warn("undefining '%s' may cause serious problems", rb_id2name(id));
     }
 
-    me = search_method(klass, id, 0);
+    me = search_method(klass, id, &defined_class);
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
-        me = rb_resolve_refined_method(Qnil, me);
+        me = resolve_refined_method(Qnil, me, &defined_class);
     }
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
@@ -3023,7 +3029,7 @@ rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_
     orig_me = search_method(klass, original_name, &defined_class);
 
     if (orig_me && orig_me->def->type == VM_METHOD_TYPE_REFINED) {
-        orig_me = rb_resolve_refined_method(Qnil, orig_me);
+        orig_me = resolve_refined_method(Qnil, orig_me, &defined_class);
     }
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
