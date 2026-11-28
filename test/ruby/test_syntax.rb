@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestSyntax < Test::Unit::TestCase
   using Module.new {
@@ -1991,6 +1992,15 @@ eom
     assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }', parser: :*)
     assert_valid_syntax('build 10 do end.transform () {}', parser: :*)
     assert_valid_syntax('build 10 do end.transform (1) {}', parser: :*)
+  end
+
+  def test_command_as_the_only_argument_with_paren
+    bug21168 = '[Bug #21168]'
+    assert_valid_syntax('foo(bar baz do end)', bug21168)
+    assert_syntax_error('foo[bar baz do end]', /unexpected 'do'/, bug21168) unless ParserSupport.prism_enabled?
+    assert_syntax_error('foo[bar baz do end] = 1', /unexpected 'do'/, bug21168) unless ParserSupport.prism_enabled?
+    assert_syntax_error('foo[bar baz do end] += 1', /unexpected 'do'/, bug21168) unless ParserSupport.prism_enabled?
+    assert_syntax_error('a, foo[bar baz do end] = 1, 2', /unexpected 'do'/, bug21168) unless ParserSupport.prism_enabled?
   end
 
   def test_numbered_parameter
