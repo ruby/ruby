@@ -4393,6 +4393,8 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *    using the using the given method, arguments, and block.
  *  - #extend: Includes the given modules in the singleton class of +self+.
  *  - #freeze: Prevents further modifications to +self+.
+ *  - #deep_freeze: Prevents further modifications to +self+ and to all objects
+ *    reachable from it.
  *  - #hash: Returns the integer hash value for +self+.
  *  - #inspect: Returns a human-readable  string representation of +self+.
  *  - #itself: Returns +self+.
@@ -4595,6 +4597,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
 
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
+    rb_define_method(rb_mKernel, "deep_freeze", rb_obj_deep_freeze, 0); /* in ractor.c */
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);

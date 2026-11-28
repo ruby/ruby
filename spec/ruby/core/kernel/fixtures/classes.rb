@@ -453,6 +453,18 @@ module KernelSpecs
     def -(other); to_f - other.to_f; end
     def +(other); self.class.new(to_f + other.to_f); end
   end
+
+  class DeepFreezeHook
+    class << self
+      attr_accessor :freeze_calls
+    end
+    self.freeze_calls = 0
+
+    def freeze
+      self.class.freeze_calls += 1
+      super
+    end
+  end
 end
 
 class EvalSpecs
