@@ -9643,12 +9643,12 @@ lex_question_mark(pm_parser_t *parser) {
         return PM_TOKEN_CHARACTER_LITERAL;
     }
 
-    if (pm_char_is_whitespace(*parser->current.end)) {
-        lex_state_set(parser, PM_LEX_STATE_BEG);
+    lex_state_set(parser, PM_LEX_STATE_BEG);
+
+    /* Multibyte whitespace, such as a UTF-8 nonbreaking space, can itself be the character literal. */
+    if (pm_encoding_space_char(parser->encoding, *parser->current.end)) {
         return PM_TOKEN_QUESTION_MARK;
     }
-
-    lex_state_set(parser, PM_LEX_STATE_BEG);
 
     if (match(parser, '\\')) {
         lex_state_set(parser, PM_LEX_STATE_END);

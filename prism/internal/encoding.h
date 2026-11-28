@@ -82,6 +82,9 @@ typedef struct {
 
     /* The length of the encoding name in bytes, excluding the terminator. */
     uint8_t name_length;
+
+    /* The byte above 0x7F that represents whitespace on its own, or zero if none. */
+    uint8_t space;
 } pm_encoding_t;
 
 /* Return a string view of the encoding name. */
@@ -156,6 +159,9 @@ bool pm_encoding_unicode_digit_p(uint32_t codepoint, pm_options_version_t versio
  * code points, since each version of Ruby uses a version of Unicode.
  */
 bool pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdiff_t n, pm_options_version_t version);
+
+/* Return true if the byte is a complete whitespace character in the encoding. */
+bool pm_encoding_space_char(const pm_encoding_t *encoding, uint8_t byte);
 
 /* Return the size of the next character in the UTF-8 encoding. */
 size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);

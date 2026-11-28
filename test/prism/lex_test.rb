@@ -121,6 +121,24 @@ module Ruby::Prism
       end
     end
 
+    def test_whitespace_after_question_mark
+      encodings = [Encoding::ISO_8859_1, Encoding::KOI8_R, Encoding::Windows_1258, Encoding::ASCII_8BIT, Encoding::UTF_8]
+      self.class.each_encoding(encodings) do |encoding|
+        [0x85, 0x9A, 0xA0].each do |byte|
+          character = byte.chr.force_encoding(encoding)
+          source = "# coding: #{encoding.name}\nx=?#{character}^()"
+          whitespace = character.valid_encoding? && character.match?(/[[:space:]]/)
+          result = Ruby::Prism.lex(source)
+          assert_equal whitespace, result.value.any? { |token| token.type == :QUESTION_MARK }, source.inspect
+          assert_predicate result, :failure?, source.inspect if whitespace || !source.valid_encoding?
+        end
+      end
+
+      ["\u0085", "\u00A0"].each do |character|
+        assert_equal character, Ruby::Prism.parse("?#{character}").value.statements.body.first.unescaped
+      end
+    end
+
     if RUBY_VERSION >= "3.3"
       def test_lex_compat
         source = "foo bar"

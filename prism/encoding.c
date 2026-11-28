@@ -2,6 +2,7 @@
 
 #include "prism/compiler/branch.h"
 #include "prism/internal/assert.h"
+#include "prism/internal/char.h"
 #include "prism/internal/strncasecmp.h"
 
 typedef uint32_t pm_unicode_codepoint_t;
@@ -1082,6 +1083,12 @@ pm_encoding_isupper_char(const pm_encoding_t *encoding, const uint8_t *b, ptrdif
     }
 }
 
+bool
+pm_encoding_space_char(const pm_encoding_t *encoding, uint8_t byte) {
+    if (byte < 0x80) return pm_char_is_whitespace(byte);
+    return byte == encoding->space;
+}
+
 #undef PM_ENCODING_FORMS_ISUPPER_CHAR
 #undef PM_ENCODING_FORMS_CHAR_WIDTH
 #undef PM_ENCODING_UPPERCASE_4
@@ -1269,83 +1276,100 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_ISO_8859_1] = {
         PM_ENCODING_NAME("ISO-8859-1"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_1_uppercase
     },
     [PM_ENCODING_ISO_8859_2] = {
         PM_ENCODING_NAME("ISO-8859-2"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_2_uppercase
     },
     [PM_ENCODING_ISO_8859_3] = {
         PM_ENCODING_NAME("ISO-8859-3"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_3_uppercase
     },
     [PM_ENCODING_ISO_8859_4] = {
         PM_ENCODING_NAME("ISO-8859-4"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_4_uppercase
     },
     [PM_ENCODING_ISO_8859_5] = {
         PM_ENCODING_NAME("ISO-8859-5"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_5_uppercase
     },
     [PM_ENCODING_ISO_8859_6] = {
         PM_ENCODING_NAME("ISO-8859-6"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_7] = {
         PM_ENCODING_NAME("ISO-8859-7"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_7_uppercase
     },
     [PM_ENCODING_ISO_8859_8] = {
         PM_ENCODING_NAME("ISO-8859-8"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_9] = {
         PM_ENCODING_NAME("ISO-8859-9"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_1_uppercase
     },
     [PM_ENCODING_ISO_8859_10] = {
         PM_ENCODING_NAME("ISO-8859-10"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_10_uppercase
     },
     [PM_ENCODING_ISO_8859_11] = {
         PM_ENCODING_NAME("ISO-8859-11"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_ISO_8859_13] = {
         PM_ENCODING_NAME("ISO-8859-13"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_13_uppercase
     },
     [PM_ENCODING_ISO_8859_14] = {
         PM_ENCODING_NAME("ISO-8859-14"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_14_uppercase
     },
     [PM_ENCODING_ISO_8859_15] = {
         PM_ENCODING_NAME("ISO-8859-15"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_15_uppercase
     },
     [PM_ENCODING_ISO_8859_16] = {
         PM_ENCODING_NAME("ISO-8859-16"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_16_uppercase
     },
     [PM_ENCODING_KOI8_R] = {
         PM_ENCODING_NAME("KOI8-R"),
+        .space = 0x9A,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_koi8_r_uppercase
     },
     [PM_ENCODING_KOI8_U] = {
         PM_ENCODING_NAME("KOI8-U"),
+        .space = 0x9A,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_koi8_u_uppercase
     },
@@ -1419,6 +1443,7 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_TIS_620] = {
         PM_ENCODING_NAME("TIS-620"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_UTF8_MAC] = {
@@ -1439,39 +1464,47 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_WINDOWS_1250] = {
         PM_ENCODING_NAME("Windows-1250"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1250_uppercase
     },
     [PM_ENCODING_WINDOWS_1251] = {
         PM_ENCODING_NAME("Windows-1251"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1251_uppercase
     },
     [PM_ENCODING_WINDOWS_1252] = {
         PM_ENCODING_NAME("Windows-1252"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1252_uppercase
     },
     [PM_ENCODING_WINDOWS_1253] = {
         PM_ENCODING_NAME("Windows-1253"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1253_uppercase
     },
     [PM_ENCODING_WINDOWS_1254] = {
         PM_ENCODING_NAME("Windows-1254"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_windows_1254_uppercase
     },
     [PM_ENCODING_WINDOWS_1255] = {
         PM_ENCODING_NAME("Windows-1255"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_1256] = {
         PM_ENCODING_NAME("Windows-1256"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     },
     [PM_ENCODING_WINDOWS_1257] = {
         PM_ENCODING_NAME("Windows-1257"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE,
         .uppercase = pm_encoding_iso_8859_13_uppercase
     },
@@ -1481,6 +1514,7 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_WINDOWS_874] = {
         PM_ENCODING_NAME("Windows-874"),
+        .space = 0xA0,
         .kind = PM_ENCODING_KIND_SINGLE_BYTE
     }
 #endif
