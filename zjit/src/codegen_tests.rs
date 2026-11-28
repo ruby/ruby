@@ -2929,6 +2929,28 @@ fn test_invokesuper_to_iseq() {
 }
 
 #[test]
+fn test_invokesuper_to_attr_writer() {
+    assert_snapshot!(inspect(r#"
+        class A
+          attr_writer :foo
+        end
+
+        class B < A
+          def foo=(val)
+            super
+          end
+        end
+
+        def test(b)
+          [b.foo = 42, b.instance_variable_get(:@foo)]
+        end
+
+        test(B.new)  # profile invokesuper
+        test(B.new)  # compile + run compiled code
+    "#), @"[42, 42]");
+}
+
+#[test]
 fn test_invokesuper_from_refined_method_skips_other_refinements() {
     assert_snapshot!(inspect(r#"
         class A

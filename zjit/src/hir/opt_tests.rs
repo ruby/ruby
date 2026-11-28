@@ -24338,6 +24338,102 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_invokesuper_to_attr_writer_optimizes() {
+        eval("
+            class A
+              attr_writer :foo
+            end
+
+            class B < A
+              def foo=(val)
+                super(val)
+              end
+            end
+
+            B.new.foo = 42; B.new.foo = 42
+        ");
+        let hir = hir_string_proc("B.new.method(:foo=)");
+        assert!(!hir.contains("InvokeSuper "), "Expected optimized attr writer but got:\n{hir}");
+
+        assert_snapshot!(hir, @"
+        fn foo=@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:HeapBasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:HeapBasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:HeapBasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(A@0x1008, foo=@0x1010, cme:0x1018)
+          v25:CPtr = GetEP 0
+          v26:RubyValue = LoadField v25, :VM_ENV_DATA_INDEX_ME_CREF@0x1040
+          v27:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v26, Value(VALUE(0x1048))
+          v28:RubyValue = LoadField v25, :VM_ENV_DATA_INDEX_SPECVAL@0x1050
+          v29:FalseClass = GuardBitEquals v28, Value(false) recompile
+          v31:CShape = LoadField v9, :shape_id@0x1051
+          v32:CShape[0x1052] = GuardBitEquals v31, CShape(0x1052)
+          StoreField v9, :@foo@0x1053, v10
+          WriteBarrier v9, v10
+          v35:CShape[0x1054] = Const CShape(0x1054)
+          StoreField v9, :shape_id@0x1051, v35
+          PatchPoint NoEPEscape(foo=)
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_to_attr_writer_with_wrong_argc_remains_invokesuper() {
+        eval("
+            class A
+              attr_writer :foo
+            end
+
+            class B < A
+              def foo=(val)
+                super(val, 2)
+              end
+            end
+
+            2.times do
+              begin
+                B.new.foo = 42
+              rescue ArgumentError
+              end
+            end
+        ");
+
+        let hir = hir_string_proc("B.new.method(:foo=)");
+        assert!(hir.contains("InvokeSuper "), "Expected the dynamic send to remain but got:\n{hir}");
+
+        assert_snapshot!(hir, @"
+        fn foo=@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :val@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[2] = Const Value(2)
+          v18:BasicObject = InvokeSuper v9, 0x1008, v10, v16 # SendFallbackReason: Argument count does not match parameter count
+          PatchPoint NoEPEscape(foo=)
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
     fn test_invokesuper_with_blockarg_remains_invokesuper() {
         eval("
             class A

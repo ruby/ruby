@@ -6027,8 +6027,25 @@ impl Function {
                                 }
                                 _ => unreachable!("unknown cfunc argc: {}", cfunc_argc)
                             }
+                        } else if def_type == VM_METHOD_TYPE_ATTRSET {
+                            let [val] = args[..] else {
+                                self.push_insn_id(block, insn_id);
+                                self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
+                                continue;
+                            };
+                            emit_super_call_guards(self, block, lookup_cme, current_cme, mid, state, frame_state_iseq);
+                            let id = unsafe { get_cme_def_body_attr_id(super_cme) };
+                            if let Some(profiled_type) = self.profiled_type_of_at(recv, state) {
+                                self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, None).unwrap_or_else(|counter| {
+                                    self.count(block, counter);
+                                    self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                                });
+                            } else {
+                                self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                            }
+                            self.make_equal_to(insn_id, val);
                         } else {
-                            // Other method types (not ISEQ or CFUNC)
+                            // Other method types (not ISEQ, CFUNC or ATTRSET)
                             self.push_insn_id(block, insn_id);
                             self.set_dynamic_send_reason(insn_id, SuperNotOptimizedMethodType(MethodType::from(def_type)));
                             continue;
