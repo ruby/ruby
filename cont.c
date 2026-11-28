@@ -293,6 +293,9 @@ struct rb_fiber_struct {
 
     struct coroutine_context context;
     struct fiber_pool_stack stack;
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+    unsigned int valgrind_stack_id;
+#endif
 };
 
 static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
@@ -1132,6 +1135,10 @@ fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
     *vm_stack_size = fiber_pool->vm_stack_size;
 
     coroutine_initialize(&fiber->context, fiber_entry, fiber_pool_stack_base(&fiber->stack), fiber->stack.available);
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+    char *machine_stack = fiber_pool_stack_base(&fiber->stack);
+    fiber->valgrind_stack_id = VALGRIND_STACK_REGISTER(machine_stack, machine_stack + fiber->stack.available - 1);
+#endif
 
     // The stack for this execution context is the one we allocated:
     sec->machine.stack_start = fiber->stack.current;
@@ -1155,6 +1162,9 @@ fiber_stack_release(rb_fiber_t * fiber)
     if (fiber->stack.base) {
         struct fiber_pool * fiber_pool = fiber->stack.pool;
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+        VALGRIND_STACK_DEREGISTER(fiber->valgrind_stack_id);
+#endif
         fiber_pool_lock(fiber_pool);
         {
             fiber_pool_stack_release(&fiber->stack);

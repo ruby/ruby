@@ -1075,8 +1075,8 @@ pub fn split_patch_point(asm: &mut Assembler, target: &Target, invariant: Invari
             Invariant::MethodRedefined { klass: _, method: _, cme } => {
                 track_cme_assumption(cme, code_ptr, side_exit_ptr, version);
             }
-            Invariant::StableConstantNames { idlist } => {
-                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, version);
+            Invariant::StableConstantNames { const_path } => {
+                track_stable_constant_names_assumption(const_path, code_ptr, side_exit_ptr, version);
             }
             Invariant::NoTracePoint => {
                 track_no_trace_point_assumption(code_ptr, side_exit_ptr, version);

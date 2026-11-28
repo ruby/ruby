@@ -1051,7 +1051,9 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         /* The value is returned by reference: inherit the dead Ractor's objspace first,
          * making it our own object (containment without a copy).  Wait for
          * ractor_terminated: a monitor-port wakeup arrives before the dying thread
-         * finishes teardown (vm_remove_ractor still touches the objspace). */
+         * finishes teardown (vm_remove_ractor still touches the objspace).
+         * Under valgrind this spin can livelock, starving the dying thread, unless
+         * --fair-sched=yes is given. */
         while (!rb_ractor_status_p(r, ractor_terminated)) {
             rb_thread_schedule();
         }
@@ -1737,6 +1739,7 @@ ractor_reply_port_release(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE por
     }
 }
 
+#if defined(HAVE_WORKING_FORK)
 // its holder was a thread the child does not have
 static void
 ractor_reply_port_atfork(rb_ractor_t *r)
@@ -1744,6 +1747,7 @@ ractor_reply_port_atfork(rb_ractor_t *r)
     r->sync.reply_port = Qfalse;
     r->sync.reply_port_busy = false;
 }
+#endif
 
 struct ractor_join_wait {
     VALUE port;
@@ -1948,31 +1952,47 @@ ractor_selector_empty_p(VALUE selv)
 
 // Ractor::Selector#wait
 
-struct ractor_selector_wait_data {
+struct ractor_selector_scan_data {
     rb_ractor_t *cr;
-    rb_execution_context_t *ec;
-    bool found;
-    VALUE v;
+    const struct ractor_port *rp;
     VALUE rpv;
 };
 
 static int
-ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t data)
+ractor_selector_scan_i(st_data_t key, st_data_t val, st_data_t data)
 {
-    struct ractor_selector_wait_data *p = (struct ractor_selector_wait_data *)data;
+    struct ractor_selector_scan_data *p = (struct ractor_selector_scan_data *)data;
     const struct ractor_port *rp = (const struct ractor_port *)val;
+    struct ractor_queue *rq = ractor_get_queue(p->cr, ractor_port_id(rp), false);
 
-    VALUE v = ractor_try_receive(p->ec, p->cr, rp);
+    if (rq == NULL) {
+        rb_raise(rb_eRactorClosedError, "The port was already closed");
+    }
 
-    if (v != Qundef) {
-        p->found = true;
-        p->v = v;
+    if (p->rp == NULL && !ractor_queue_empty_p(p->cr, rq)) {
+        p->rp = rp;
         p->rpv = (VALUE)key;
-        return ST_STOP;
     }
-    else {
-        return ST_CONTINUE;
+
+    return ST_CONTINUE;
+}
+
+static VALUE
+ractor_selector_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, struct ractor_selector *s)
+{
+    struct ractor_selector_scan_data data = {
+        .cr = cr,
+    };
+
+    st_foreach(s->ports, ractor_selector_scan_i, (st_data_t)&data);
+
+    if (data.rp == NULL) {
+        return Qnil;
     }
+
+    VALUE v = ractor_try_receive(ec, cr, data.rp);
+    VM_ASSERT(!UNDEF_P(v));
+    return rb_ary_new_from_args(2, data.rpv, v);
 }
 
 static VALUE
@@ -1981,24 +2001,17 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector, const rb_hrtim
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     struct ractor_selector *s = RACTOR_SELECTOR_PTR(selector);
 
-    struct ractor_selector_wait_data data = {
-        .ec = ec,
-        .cr = cr,
-        .found = false,
-    };
-
     while (1) {
-        st_foreach(s->ports, ractor_selector_wait_i, (st_data_t)&data);
+        VALUE result = ractor_selector_try_receive(ec, cr, s);
 
-        if (data.found) {
-            return rb_ary_new_from_args(2, data.rpv, data.v);
+        if (!NIL_P(result)) {
+            return result;
         }
         else if (!ractor_wait_receive(ec, cr, end)) {
             return Qnil;
         }
         else if (ractor_deadline_passed_p(end)) {
-            st_foreach(s->ports, ractor_selector_wait_i, (st_data_t)&data);
-            return data.found ? rb_ary_new_from_args(2, data.rpv, data.v) : Qnil;
+            return ractor_selector_try_receive(ec, cr, s);
         }
     }
 }

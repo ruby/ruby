@@ -1257,10 +1257,9 @@ if defined? Zlib
     end
 
     def test_gets_separator_modified_by_io
-      # grown from an empty string so that the content lives in a separate
-      # buffer even with a GC that embeds 1000 bytes in the object (mmtk)
-      rs = "".dup
-      rs << "-" * 1000
+      # a shared substring stays outside the object even with a GC that embeds
+      # strings of any length (MMTk) and moves them to larger slots
+      rs = ("-" * 1000).freeze[0, 1000]
       src = StringIO.new(Zlib.gzip(Random.new(0).bytes(200_000).tr("-", "x") + rs))
       n = 0
       io = Object.new

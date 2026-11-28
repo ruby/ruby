@@ -821,6 +821,14 @@ EXPECTED
     assert_equal([0x100000000], "\220\200\200\200\000".unpack("w"), [0x100000000])
   end
 
+  def test_pack_w_under_gc_stress
+    # Many integers, so the result grows and GC can free the buffer of an
+    # integer while it is appended.
+    ary = [2**64] * 40
+    expected = ary.pack("w*")
+    assert_equal(expected, EnvUtil.under_gc_stress {ary.pack("w*")})
+  end
+
   def test_length_too_big
     assert_raise(RangeError) { [].pack("C100000000000000000000") }
   end

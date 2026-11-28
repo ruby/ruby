@@ -602,6 +602,18 @@ rb_jit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
 }
 
+ID
+rb_jit_const_path_aref(rb_const_path_t const_path, size_t index)
+{
+    return const_path_aref(const_path, index);
+}
+
+bool
+rb_jit_const_path_absolute_p(rb_const_path_t const_path)
+{
+    return const_path_absolute_p(const_path);
+}
+
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
 // contend for the VM lock, putting them to sleep. ZJIT and YJIT use this to
 // evict threads running inside generated code so among other things, it can

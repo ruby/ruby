@@ -144,6 +144,48 @@ class TestSuper < Test::Unit::TestCase
   def test_keyword2
     assert_equal([{foo: "changed1"}, {foo: "changed2"}], Keyword2.new.keyword)
   end
+
+  def test_super_in_keyword_default
+    assert_ruby_status(["--parser=parse.y"], 'RubyVM::InstructionSequence.compile("def z(f:e, e:super[]) end")')
+  end
+
+  def test_super_in_keyword_default_forwarding
+    assert_separately(["--parser=parse.y"], <<~'RUBY')
+      class A
+        def m(*, **kw)
+          kw
+        end
+      end
+
+      class B < A
+        def m(a: 1, b: super)
+          b
+        end
+      end
+
+      assert_equal({a: 1, b: nil}, B.new.m)
+      assert_equal(2, B.new.m(b: 2))
+
+      class C < A
+        def m(a: 1, required:, b: super, **kw)
+          b
+        end
+      end
+
+      assert_equal({a: 1, required: 2, b: nil, x: 3}, C.new.m(required: 2, x: 3))
+      assert_equal(4, C.new.m(required: 2, b: 4, x: 3))
+
+      class D < A
+        def m(_a, _a: super)
+          _a
+        end
+      end
+
+      assert_equal({_a: 0}, D.new.m(0))
+      assert_equal(0, D.new.m(0, _a: 2))
+    RUBY
+  end
+
   def test_forwardable(...)
     assert_equal([[],[],[],[1]], Forward.new.forward())
     assert_equal([[],[1,2],[1,2],[1,1,2]], Forward.new.forward(1,2))

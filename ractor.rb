@@ -299,7 +299,12 @@ class Ractor
   #    # r0 done
   #
   # Closing one of the given ports raises Ractor::ClosedError, whether it was
-  # closed before the call or while it waits.
+  # closed before the call or while it waits, and even if another port has a
+  # message. Nothing is lost: those messages stay queued for the next call.
+  # A closed port which still has messages is receivable until it is drained.
+  #
+  # Ractor::ClosedError is a StopIteration, so <code>loop { Ractor.select(*ports) }</code>
+  # exits silently when any of the ports is closed.
   #
   # The following example is almost equivalent to <code>ractors.map(&:value)</code> except the thread
   # is unblocked when any of the ractors has terminated as opposed to waiting for their termination in

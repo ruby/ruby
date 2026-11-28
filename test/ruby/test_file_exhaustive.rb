@@ -774,6 +774,39 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(t, File.stat(regular_file).mtime)
   end
 
+  def test_utime_readonly_symlink_target
+    return unless link = symlinkfile
+    path = regular_file
+    mode = File.stat(path).mode
+    File.chmod(0444, path)
+    readonly_mode = File.stat(path).mode
+    link_mtime = File.lstat(link).mtime
+    t = Time.utc(2000)
+    assert_equal(1, File.utime(t, t, link))
+    assert_equal(t, File.mtime(path))
+    assert_equal(link_mtime, File.lstat(link).mtime)
+    assert_equal(readonly_mode, File.stat(path).mode)
+  ensure
+    File.chmod(mode, path) if mode
+  end if NTFS
+
+  def test_utime_checks_path_before_filetime_range
+    t = Time.utc(1600)
+    assert_raise(Errno::ENOENT) { File.utime(t, t, nofile) }
+    assert_raise(Errno::ENOENT) { File.utime(t, t, @dir + '/...') }
+  end if NTFS
+
+  def test_utime_directory_paths
+    t = Time.utc(2000)
+    assert_equal(1, File.utime(t, t, @dir + '/'))
+    assert_equal(t, File.mtime(@dir))
+    path = regular_file
+    mtime = File.mtime(path)
+    assert_raise(Errno::ENOTDIR, Errno::EINVAL) { File.utime(t, t, path + '/') }
+    assert_equal(mtime, File.mtime(path))
+    assert_raise(Errno::ENOENT) { File.utime(t, t, @dir + '/...') }
+  end if NTFS
+
   def test_lutime
     return unless File.respond_to?(:lutime)
     return unless symlinkfile

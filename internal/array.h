@@ -20,7 +20,6 @@
 
 #define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
-#define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 #define RARRAY_FAKEARY          FL_USER19
 
 /* array.c */
@@ -44,7 +43,6 @@ VALUE rb_ary_modify_expand(VALUE ary, rb_len_t expand);
 RUBY_EXTERN VALUE rb_cArray_empty_frozen;
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, rb_len_t offset);
-static inline bool ARY_PTR_USING_P(VALUE ary);
 
 VALUE rb_ary_tmp_new_from_values(VALUE, rb_len_t, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
@@ -69,12 +67,6 @@ rb_ary_entry_internal(VALUE ary, rb_len_t offset)
         return Qnil;
     }
     return ptr[offset];
-}
-
-static inline bool
-ARY_PTR_USING_P(VALUE ary)
-{
-    return FL_TEST_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()

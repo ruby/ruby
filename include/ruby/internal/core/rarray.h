@@ -30,6 +30,7 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
 #include "ruby/internal/gc.h"
+#include "ruby/internal/memory.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
@@ -188,31 +189,6 @@ struct RArray {
     } as;
 };
 
-RBIMPL_SYMBOL_EXPORT_BEGIN()
-/**
- * @private
- *
- * Declares  a  section of  code  where  raw pointers  are  used.   This is  an
- * implementation detail of #RARRAY_PTR_USE.  People don't use it directly.
- *
- * @param[in]  ary  An object of ::RArray.
- * @return     `ary`'s backend C array.
- */
-VALUE *rb_ary_ptr_use_start(VALUE ary);
-
-/**
- * @private
- *
- * Declares an  end of  a section  formerly started  by rb_ary_ptr_use_start().
- * This is  an implementation detail  of #RARRAY_PTR_USE.  People don't  use it
- * directly.
- *
- * @param[in]  a  An object of ::RArray.
- */
-void rb_ary_ptr_use_end(VALUE a);
-
-RBIMPL_SYMBOL_EXPORT_END()
-
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
@@ -311,12 +287,12 @@ rb_array_const_ptr(VALUE a)
  * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
  * directly.
  */
-#define RBIMPL_RARRAY_STMT(ary, var, expr) do {        \
-    RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);                 \
-    const VALUE rbimpl_ary = (ary);                          \
-    VALUE *var = rb_ary_ptr_use_start(rbimpl_ary); \
-    expr;                                                   \
-    rb_ary_ptr_use_end(rbimpl_ary);                \
+#define RBIMPL_RARRAY_STMT(ary, var, expr) do {         \
+    RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);            \
+    VALUE rbimpl_ary = (VALUE)(ary);                    \
+    VALUE *var = (VALUE *)RARRAY_CONST_PTR(rbimpl_ary); \
+    expr;                                               \
+    RB_GC_GUARD(rbimpl_ary);                            \
 } while (0)
 
 /**

@@ -1502,6 +1502,89 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     @log_tester = nil
   end
 
+  class RecordingMockSocket < MockSocket
+    def written
+      @written ||= +""
+    end
+    def continue_timeout
+    end
+    def write(*strs)
+      strs.each { |str| written << str }
+      strs.sum(&:bytesize)
+    end
+    alias << write
+  end
+
+  def with_mock_socket(success_after: nil)
+    start {|http|
+      socket = RecordingMockSocket.new(success_after: success_after)
+      http.instance_variable_get(:@socket).close
+      http.instance_variable_set(:@socket, socket)
+      http.max_retries = 10
+      yield http, socket
+    }
+  end
+
+  def test_http_retry_with_string_body
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req.body = "data"
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 11, socket.count
+    }
+  end
+
+  def test_http_retry_with_multipart_form
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req.set_form([["a", "b"]], "multipart/form-data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 11, socket.count
+    }
+  end
+
+  def test_http_retry_with_urlencoded_form
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req.set_form([["a", "b"]])
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 11, socket.count
+    }
+  end
+
+  def test_http_no_retry_with_body_stream
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req["Transfer-Encoding"] = "chunked"
+      req.body_stream = StringIO.new("data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 1, socket.count
+      assert_equal 1, socket.written.scan("PUT / HTTP/1.1\r\n").size
+    }
+  end
+
+  def test_http_no_retry_with_body_stream_when_retry_would_succeed
+    with_mock_socket(success_after: 2) {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req["Transfer-Encoding"] = "chunked"
+      req.body_stream = StringIO.new("data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 1, socket.count
+      assert_equal 1, socket.written.scan("PUT / HTTP/1.1\r\n").size
+    }
+  end
+
+  def test_http_no_retry_with_multipart_io
+    with_mock_socket {|http, socket|
+      req = Net::HTTP::Put.new("/")
+      req["Transfer-Encoding"] = "chunked"
+      req.set_form([["file", StringIO.new("data"), {filename: "f.txt"}]], "multipart/form-data")
+      assert_raise(Errno::ECONNRESET) { http.request(req) }
+      assert_equal 1, socket.count
+      assert_equal 1, socket.written.scan("PUT / HTTP/1.1\r\n").size
+    }
+  end
+
   def test_keep_alive_server_close
     def @server.run(sock)
       sock.close

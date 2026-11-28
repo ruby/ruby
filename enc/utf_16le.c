@@ -209,7 +209,7 @@ utf16le_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* e
     s--;
   }
 
-  if (UTF16_IS_SURROGATE_SECOND(*(s+1)) && s > start + 1)
+  if (s + 1 < end && UTF16_IS_SURROGATE_SECOND(*(s+1)) && s > start + 1)
     s -= 2;
 
   return (UChar* )s;

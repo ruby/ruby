@@ -993,6 +993,46 @@ class TestISeq < Test::Unit::TestCase
     RUBY
   end
 
+  def test_return_in_argument_with_rescue_and_ensure
+    source = <<~RUBY
+      runner = Class.new do
+        def run(events)
+          events.push(begin
+            return :returned
+          rescue StandardError
+            events << :rescued
+          ensure
+            events << :ensured
+          end)
+          :unreachable
+        end
+      end.new
+
+      events = []
+      [runner.run(events), events]
+    RUBY
+
+    each_compiler(source) do |iseq|
+      assert_equal([:returned, [:ensured]], iseq.eval)
+    end
+  end
+
+  def test_break_in_ensure_overrides_return_in_loop
+    source = <<~RUBY
+      Array.[](:before, (while true
+        begin
+          return
+        ensure
+          break :after
+        end
+      end))
+    RUBY
+
+    each_compiler(source) do |iseq|
+      assert_equal([:before, :after], iseq.eval)
+    end
+  end
+
   def test_unreachable_syntax_error
     mesg = /Invalid break/
     assert_syntax_error("false and break", mesg)
@@ -1131,14 +1171,10 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_compile_splat_keyword_hash
-    source = "#{<<-"{#"}\n#{<<-'};'}"
+    assert_valid_syntax(source = "#{<<-"{#"}\n#{<<-'};'}", parser: :*)
     {#
       m c, *[s:], *[*y]
     };
-
-    each_compiler(source) do |iseq|
-      assert_kind_of ISeq, iseq
-    end
 
     source = %[#{<<-"{#"}\n#{<<-"};"}]
     {#
@@ -1157,11 +1193,31 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
-  COMPILERS = ISeq.methods(false).grep(/\Acompile_(?!file|option)\w+\z/)
+  def test_compile_invalid_yield_in_defined_until
+    assert_syntax_error("#{<<-"{#"}\n#{<<-'};'}", /Invalid yield/)
+    {#
+      a
+      return defined? -(1until yield)
+    };
+  end
+
+  def test_compile_invalid_yield_in_ensure_head
+    assert_syntax_error("#{<<-"{#"}\n#{<<-'};'}", /Invalid yield/)
+    {#
+      while true
+        foo(begin
+          1 until yield
+        ensure
+          nil
+        end)
+        break
+      end
+    };
+  end
 
   def each_compiler(src)
-    COMPILERS.each do |compile|
-      yield ISeq.__send__(compile, src)
+    COMPILE_METHODS.each do |compile|
+      yield ISeq.__send__("compile_#{compile}", src)
     end
   end
 end

@@ -150,6 +150,7 @@ COMMONOBJS    = \
 		compile.$(OBJEXT) \
 		complex.$(OBJEXT) \
 		concurrent_set.$(OBJEXT) \
+		const_path.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		debug_counter.$(OBJEXT) \

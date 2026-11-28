@@ -998,6 +998,42 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     }
 }
 
+pub fn const_path_ids(const_path: rb_const_path_t) -> impl Iterator<Item = ID> {
+    (0..)
+        .map(move |idx| unsafe { rb_jit_const_path_aref(const_path, idx) })
+        .take_while(|id| id.0 != 0)
+}
+
+impl rb_const_path_t {
+    pub fn bits(self) -> usize {
+        unsafe { self.packed }
+    }
+
+    pub fn absolute_p(self) -> bool {
+        unsafe { rb_jit_const_path_absolute_p(self) }
+    }
+}
+
+impl PartialEq for rb_const_path_t {
+    fn eq(&self, other: &Self) -> bool {
+        self.bits() == other.bits()
+    }
+}
+
+impl Eq for rb_const_path_t {}
+
+impl std::hash::Hash for rb_const_path_t {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.bits().hash(state)
+    }
+}
+
+impl Debug for rb_const_path_t {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "rb_const_path_t({:#x})", self.bits())
+    }
+}
+
 pub fn iseq_name(iseq: IseqPtr) -> String {
     if iseq.is_null() {
         return "<NULL>".to_string();

@@ -2041,13 +2041,16 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     struct rb_iseq_param_keyword *keyword;
     const VALUE default_values = rb_ary_hidden_new(1);
     const VALUE complex_mark = rb_str_tmp_new(0);
-    int kw = 0, rkw = 0, di = 0, i;
+    int kw = 0, rkw = 0, i;
 
     body->param.flags.has_kw = TRUE;
     body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
 
     while (node) {
         kw++;
+        if (get_nd_value(node->nd_body) == NODE_SPECIAL_REQUIRED_KEYWORD) {
+            rkw++;
+        }
         node = node->nd_next;
     }
     if (kw > VM_CALL_KW_LEN_MAX) {
@@ -2056,16 +2059,24 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     }
     arg_size += kw;
     keyword->bits_start = arg_size++;
+    keyword->num = kw;
+    keyword->required_num = rkw;
+    keyword->table = &body->local_table[keyword->bits_start - keyword->num];
+
+    if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
+        ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
+        keyword->rest_start = arg_size++;
+        body->param.flags.has_kwrest = TRUE;
+
+        if (kw_id == idPow) body->param.flags.anon_kwrest = TRUE;
+    }
 
     node = args->kw_args;
     while (node) {
         const NODE *val_node = get_nd_value(node->nd_body);
         VALUE dv;
 
-        if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
-            ++rkw;
-        }
-        else {
+        if (val_node != NODE_SPECIAL_REQUIRED_KEYWORD) {
             switch (nd_type(val_node)) {
               case NODE_SYM:
                 dv = rb_node_sym_string_val(val_node);
@@ -2105,24 +2116,11 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 dv = complex_mark;
             }
 
-            keyword->num = ++di;
             rb_ary_push(default_values, dv);
         }
 
         node = node->nd_next;
     }
-
-    keyword->num = kw;
-
-    if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
-        ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
-        keyword->rest_start = arg_size++;
-        body->param.flags.has_kwrest = TRUE;
-
-        if (kw_id == idPow) body->param.flags.anon_kwrest = TRUE;
-    }
-    keyword->required_num = rkw;
-    keyword->table = &body->local_table[keyword->bits_start - keyword->num];
 
     if (RARRAY_LEN(default_values)) {
         VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
@@ -2664,30 +2662,6 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
     return TRUE;
 }
 
-static ID *
-array_to_idlist(VALUE arr)
-{
-    RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
-    rb_len_t size = RARRAY_LEN(arr);
-    ID *ids = (ID *)ALLOC_N(ID, size + 1);
-    for (rb_len_t i = 0; i < size; i++) {
-        VALUE sym = RARRAY_AREF(arr, i);
-        ids[i] = SYM2ID(sym);
-    }
-    ids[size] = 0;
-    return ids;
-}
-
-static VALUE
-idlist_to_array(const ID *ids)
-{
-    VALUE arr = rb_ary_new();
-    while (*ids) {
-        rb_ary_push(arr, ID2SYM(*ids++));
-    }
-    return arr;
-}
-
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -2906,7 +2880,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = array_to_idlist(operands[j]);
+                            ic->const_path = rb_const_path_from_array(operands[j]);
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -6762,16 +6736,26 @@ add_ensure_range(rb_iseq_t *iseq, struct ensure_range *erange,
 }
 
 static bool
+has_ensure_iseq(const rb_iseq_t *iseq)
+{
+    const struct iseq_compile_data_ensure_node_stack *e;
+    for (e = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack; e; e = e->prev) {
+        if (e->ensure_node) return true;
+    }
+    return false;
+}
+
+static bool
 can_add_ensure_iseq(const rb_iseq_t *iseq)
 {
-    struct iseq_compile_data_ensure_node_stack *e;
-    if (ISEQ_COMPILE_DATA(iseq)->in_rescue && (e = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack) != NULL) {
-        while (e) {
-            if (e->ensure_node) return false;
-            e = e->prev;
-        }
-    }
-    return true;
+    return !ISEQ_COMPILE_DATA(iseq)->in_rescue || !has_ensure_iseq(iseq);
+}
+
+static bool
+can_inline_return(const rb_iseq_t *iseq, enum rb_iseq_type type)
+{
+    return type == ISEQ_TYPE_METHOD &&
+        ((!ISEQ_COMPILE_DATA(iseq)->in_rescue && !ISEQ_COMPILE_DATA(iseq)->redo_label) || !has_ensure_iseq(iseq));
 }
 
 static void
@@ -8623,6 +8607,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 {
     const int line = (int)nd_line(node);
     const NODE *line_node = node;
+    int result = COMPILE_OK;
 
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
@@ -8671,17 +8656,26 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         "body",
         branches);
 
-    CHECK(COMPILE_POPPED(ret, "while body", RNODE_WHILE(node)->nd_body));
+    if (!COMPILE_POPPED(ret, "while body", RNODE_WHILE(node)->nd_body)) {
+        result = COMPILE_NG;
+        goto cleanup;
+    }
     ADD_LABEL(ret, next_label);	/* next */
 
     if (type == NODE_WHILE) {
-        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                       redo_label, end_label));
+        if (!compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                      redo_label, end_label)) {
+            result = COMPILE_NG;
+            goto cleanup;
+        }
     }
     else {
         /* until */
-        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                       end_label, redo_label));
+        if (!compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                      end_label, redo_label)) {
+            result = COMPILE_NG;
+            goto cleanup;
+        }
     }
 
     ADD_LABEL(ret, end_label);
@@ -8690,7 +8684,8 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     if (UNDEF_P(RNODE_WHILE(node)->nd_state)) {
         /* ADD_INSN(ret, line_node, putundef); */
         COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
-        return COMPILE_NG;
+        result = COMPILE_NG;
+        goto cleanup;
     }
     else {
         ADD_INSN(ret, line_node, putnil);
@@ -8709,12 +8704,13 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL,
                     ISEQ_COMPILE_DATA(iseq)->redo_label);
 
+  cleanup:
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
-    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
-    return COMPILE_OK;
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+    return result;
 }
 
 static int
@@ -9157,6 +9153,7 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     struct ensure_range er;
     struct iseq_compile_data_ensure_node_stack enl;
     struct ensure_range *erange;
+    int result = COMPILE_OK;
 
     INIT_ANCHOR(ensr);
     CHECK(COMPILE_POPPED(ensr, "ensure ensr", RNODE_ENSURE(node)->nd_ensr));
@@ -9169,7 +9166,10 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     push_ensure_entry(iseq, &enl, &er, RNODE_ENSURE(node)->nd_ensr);
 
     ADD_LABEL(ret, lstart);
-    CHECK(COMPILE_(ret, "ensure head", RNODE_ENSURE(node)->nd_head, (popped | last_leave)));
+    if (!COMPILE_(ret, "ensure head", RNODE_ENSURE(node)->nd_head, (popped | last_leave))) {
+        result = COMPILE_NG;
+        goto cleanup;
+    }
     ADD_LABEL(ret, lend);
     ADD_SEQ(ret, ensr);
     if (!popped && last_leave) ADD_INSN(ret, line_node, putnil);
@@ -9185,8 +9185,9 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         }
     }
 
+  cleanup:
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
-    return COMPILE_OK;
+    return result;
 }
 
 static int
@@ -9220,7 +9221,8 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
             break;
         }
 
-        if (type == ISEQ_TYPE_METHOD) {
+        bool direct_return = can_inline_return(iseq, type);
+        if (direct_return) {
             splabel = NEW_LABEL(0);
             ADD_LABEL(ret, splabel);
             ADD_ADJUST(ret, line_node, 0);
@@ -9228,7 +9230,7 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
         CHECK(COMPILE(ret, "return nd_stts (return val)", retval));
 
-        if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
+        if (direct_return) {
             add_ensure_iseq(ret, iseq, 1);
             ADD_TRACE(ret, RUBY_EVENT_RETURN);
             ADD_INSN(ret, line_node, leave);
@@ -10688,7 +10690,12 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
          * end
          */
         int kw_bits_idx = body->local_table_size - body->param.keyword->bits_start;
-        int keyword_idx = body->param.keyword->num;
+        int keyword_idx = body->param.keyword->num - body->param.keyword->required_num;
+        for (const rb_node_kw_arg_t *kwarg = RNODE_KW_ARG(node); kwarg; kwarg = kwarg->nd_next) {
+            if (get_nd_value(kwarg->nd_body) != NODE_SPECIAL_REQUIRED_KEYWORD) {
+                keyword_idx--;
+            }
+        }
 
         ADD_INSN2(ret, node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
         ADD_INSNL(ret, node, branchif, end_label);
@@ -13278,7 +13285,7 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_IC:
                 {
                     IC ic = (IC)op;
-                    VALUE arr = idlist_to_array(ic->segments);
+                    VALUE arr = rb_const_path_to_array(ic->const_path);
                     wv = ibf_dump_object(dump, arr);
                 }
                 break;
@@ -13400,7 +13407,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = array_to_idlist(arr);
+                    ic->const_path = rb_const_path_from_array(arr);
 
                     code[code_index] = (VALUE)ic;
                 }
