@@ -251,6 +251,30 @@ feature_key(const char *str, size_t len)
     return st_hash(str, len, 0xfea7009e);
 }
 
+/* The loaded-features index only has keys of up to
+ * FEATURES_INDEX_MAX_COMPONENTS path components.  Keying every suffix of an
+ * installed gem's path costs about 32 mostly unique keys per feature, which
+ * is millions of entries in a large application.  A longer feature is looked
+ * up by its last FEATURES_INDEX_MAX_COMPONENTS components: every loaded
+ * feature that matches it also matches that suffix, and
+ * features_index_match() checks each candidate against the whole feature. */
+#define FEATURES_INDEX_MAX_COMPONENTS 4
+
+static st_data_t
+features_index_lookup_key(const char *feature, size_t len)
+{
+    const char *p = feature + len;
+    int slashes = 0;
+
+    while (p > feature) {
+        if (*--p == '/' && ++slashes == FEATURES_INDEX_MAX_COMPONENTS) {
+            p++;
+            break;
+        }
+    }
+    return feature_key(p, feature + len - p);
+}
+
 static bool
 is_rbext_path(VALUE feature_path)
 {
@@ -355,9 +379,10 @@ features_index_add_single(const rb_box_t *box, const char* str, size_t len, VALU
    `feature`, located at `offset` in $LOADED_FEATURES.  We add an
    index entry at each string `short_feature` for which
      feature == "#{prefix}#{short_feature}#{ext}"
-   where `ext` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
-   or ends in '/'.  This maintains the invariant that `rb_feature_p()`
-   relies on for its fast lookup.
+   where `ext` is empty or matches %r{^\.[^./]*$}, `prefix` is empty
+   or ends in '/', and `short_feature` has at most
+   FEATURES_INDEX_MAX_COMPONENTS path components.  This maintains the
+   invariant that `rb_feature_p()` relies on for its fast lookup.
 */
 static void
 features_index_add(const rb_box_t *box, VALUE feature, VALUE offset)
@@ -381,17 +406,19 @@ features_index_add(const rb_box_t *box, VALUE feature, VALUE offset)
        at the end of `feature`, or is NULL if there is no such string. */
 
     p = ext ? ext : feature_end;
-    while (1) {
+    for (int slashes = 1; ; slashes++) {
         p--;
         while (p >= feature_str && *p != '/')
             p--;
         if (p < feature_str)
             break;
-        /* Now *p == '/'.  We reach this point for every '/' in `feature`. */
+        /* Now *p == '/'.  We reach this point for each of the last
+           FEATURES_INDEX_MAX_COMPONENTS '/' in `feature`. */
         features_index_add_single(box, p + 1, feature_end - p - 1, offset, false);
         if (ext) {
             features_index_add_single(box, p + 1, ext - p - 1, offset, rb);
         }
+        if (slashes == FEATURES_INDEX_MAX_COMPONENTS) return;
     }
     features_index_add_single(box, feature_str, feature_end - feature_str, offset, false);
     if (ext) {
@@ -586,6 +613,9 @@ struct features_index_search {
    where `e` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
    or ends in '/'.  This includes both match forms above, as well
    as any distractors, so we may ignore all other entries in `features`.
+   When `feature` has more than FEATURES_INDEX_MAX_COMPONENTS components the
+   array is the one for its last components, which also holds entries that
+   do not match `feature`; those fail the comparisons below.
 
    Returns the type of the first entry that matches -- 'u', 's' or 'r', as
    documented on rb_feature_p() -- or 0 if none does, or -1 if `no_dispatch`
@@ -600,7 +630,7 @@ features_index_match(struct features_index_search *search)
     VALUE this_feature_index;
     st_data_t data;
 
-    if (!st_lookup(search->features_index, feature_key(feature, strlen(feature)), &data)) return 0;
+    if (!st_lookup(search->features_index, features_index_lookup_key(feature, strlen(feature)), &data)) return 0;
     if (NIL_P(this_feature_index = (VALUE)data)) return 0;
 
     for (size_t i = 0; ; i++) {

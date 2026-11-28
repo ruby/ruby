@@ -3,6 +3,7 @@ require 'test/unit'
 
 require 'tempfile'
 require 'tmpdir'
+require 'fileutils'
 
 class TestRequire < Test::Unit::TestCase
   def test_load_error_path
@@ -627,6 +628,38 @@ class TestRequire < Test::Unit::TestCase
   ensure
     $:.replace(loadpath)
     $".replace(features)
+  end
+
+  def test_require_deep_feature
+    Dir.mktmpdir {|tmp|
+      deep = "a/b/c/d/e/f"
+      FileUtils.mkdir_p(File.join(tmp, "x", File.dirname(deep)))
+      FileUtils.mkdir_p(File.join(tmp, "y", File.dirname(deep)))
+      FileUtils.mkdir_p(File.join(tmp, "y", "c/d/e"))
+      File.write(File.join(tmp, "x", "#{deep}.rb"), "$require_deep_feature << :x")
+      File.write(File.join(tmp, "y", "#{deep}.rb"), "$require_deep_feature << :y")
+      File.write(File.join(tmp, "y", "c/d/e/f.rb"), "$require_deep_feature << :short")
+      assert_separately(["-I#{tmp}/x"], "#{<<~"begin;"}\n#{<<~'end;'}")
+      tmp = #{tmp.dump}
+      deep = #{deep.dump}
+      begin;
+        $require_deep_feature = []
+        assert_equal(true, require(deep))
+        assert_equal(false, require(deep))
+        assert_equal(false, require("#{deep}.rb"))
+        assert_equal(false, require("#{tmp}/x/#{deep}"))
+        assert_equal(false, require("#{tmp}/x/#{deep}.rb"))
+        assert_raise(LoadError) { require("b/c/d/e/f") }
+        # Same last components, different file.
+        assert_equal(true, require("#{tmp}/y/#{deep}"))
+        assert_equal(false, require("#{tmp}/y/#{deep}.rb"))
+        $:.unshift("#{tmp}/y")
+        assert_equal(false, require(deep))
+        assert_equal(true, require("c/d/e/f"))
+        assert_equal(false, require("#{tmp}/y/c/d/e/f.rb"))
+        assert_equal([:x, :y, :short], $require_deep_feature)
+      end;
+    }
   end
 
   def test_default_loaded_features_encoding
