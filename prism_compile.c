@@ -1603,8 +1603,8 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             }
             else {
                 const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
-                pm_compile_shareable_constant_value(iseq, assoc->key, shareability, path, ret, scope_node, false);
-                pm_compile_shareable_constant_value(iseq, assoc->value, shareability, path, ret, scope_node, false);
+                pm_compile_shareable_constant_value(iseq, assoc->key, shareability, path, anchor, scope_node, false);
+                pm_compile_shareable_constant_value(iseq, assoc->value, shareability, path, anchor, scope_node, false);
             }
 
             if ((stack_length += 2) >= max_stack_length) FLUSH_CHUNK;

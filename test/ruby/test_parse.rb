@@ -1702,7 +1702,7 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_hash_with_keyword_splat
-    a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    a, b, c = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything
       # [Bug #20927]
@@ -1710,12 +1710,15 @@ x = __ENCODING__
       y = { y: {} }
       A = { **x }
       B = { x: {}, **y }
-      [A, B]
+      C = { **y, x: {} }
+      [A, B, C]
     end;
     assert_ractor_shareable(a)
     assert_ractor_shareable(b)
+    assert_ractor_shareable(c)
     assert_equal({ x: {}}, a)
     assert_equal({ x: {}, y: {}}, b)
+    assert_equal({ y: {}, x: {}}, c)
   end
 
   def test_shareable_constant_value_unshareable_literal
