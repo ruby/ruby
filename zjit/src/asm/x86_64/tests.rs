@@ -896,9 +896,9 @@ fn test_sub_uimm_too_large() {
 fn test_test() {
     let cb01 = compile(|cb| test(cb, AL, AL));
     let cb02 = compile(|cb| test(cb, AX, AX));
-    let cb03 = compile(|cb| test(cb, CL, uimm_opnd(8)));
-    let cb04 = compile(|cb| test(cb, DL, uimm_opnd(7)));
-    let cb05 = compile(|cb| test(cb, RCX, uimm_opnd(8)));
+    let cb03 = compile(|cb| test(cb, CL, uimm_opnd(1)));
+    let cb04 = compile(|cb| test(cb, DL, uimm_opnd(2)));
+    let cb05 = compile(|cb| test(cb, RCX, uimm_opnd(3)));
     let cb06 = compile(|cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(8)));
     let cb07 = compile(|cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(255)));
     let cb08 = compile(|cb| test(cb, DX, uimm_opnd(0xffff)));
@@ -917,9 +917,9 @@ fn test_test() {
     assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @"
     0x0: test al, al
     0x0: test ax, ax
-    0x0: test cl, 8
-    0x0: test dl, 7
-    0x0: test cl, 8
+    0x0: test cl, 1
+    0x0: test dl, 2
+    0x0: test rcx, 3
     0x0: test byte ptr [rdx + 8], 8
     0x0: test byte ptr [rdx + 8], 0xff
     0x0: test dx, 0xffff
@@ -939,9 +939,9 @@ fn test_test() {
     assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @"
     84c0
     6685c0
-    f6c108
-    f6c207
-    f6c108
+    f6c101
+    f6c202
+    48f7c103000000
     f6420808
     f64208ff
     66f7c2ffff
@@ -956,6 +956,59 @@ fn test_test() {
     48f74640f7ffffff
     48f7464008000000
     48f7c108000000
+    ");
+}
+
+#[test]
+#[should_panic]
+fn test_test_uimm_too_large() {
+    // This immediate becomes a different value after
+    // sign extension, so not safe to encode.
+    compile(|cb| test(cb, RCX, uimm_opnd(0x8000_0000)));
+}
+
+#[test]
+#[should_panic]
+fn test_test_uimm_all_ones() {
+    // This has the same bit pattern as imm_opnd(-1),
+    // but as an unsigned value it needs 64 bits, too many for `test ECX, imm32`.
+    compile(|cb| test(cb, ECX, uimm_opnd(!0)));
+}
+
+#[test]
+fn test_test_imm_limits() {
+    let cb1 = compile(|cb| test(cb, CL, uimm_opnd(0xff)));
+    let cb2 = compile(|cb| test(cb, DL,  imm_opnd(-1)));
+
+    let cb3 = compile(|cb| test(cb, CX, uimm_opnd(0xffff)));
+    let cb4 = compile(|cb| test(cb, DX,  imm_opnd(-1)));
+
+    let cb5 = compile(|cb| test(cb, ECX, uimm_opnd(0xffff_ffff)));
+    let cb6 = compile(|cb| test(cb, EDX,  imm_opnd(-1)));
+
+    let cb7 = compile(|cb| test(cb, RCX, uimm_opnd(0xffff_ffff_ffff_ffff)));
+    let cb8 = compile(|cb| test(cb, RDX,  imm_opnd(-1)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @"
+    0x0: test cl, 0xff
+    0x0: test dl, 0xff
+    0x0: test cx, 0xffff
+    0x0: test dx, 0xffff
+    0x0: test ecx, 0xffffffff
+    0x0: test edx, 0xffffffff
+    0x0: test rcx, -1
+    0x0: test rdx, -1
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @"
+    f6c1ff
+    f6c2ff
+    66f7c1ffff
+    66f7c2ffff
+    f7c1ffffffff
+    f7c2ffffffff
+    48f7c1ffffffff
+    48f7c2ffffffff
     ");
 }
 
