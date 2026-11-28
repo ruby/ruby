@@ -12079,6 +12079,10 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
             tmp = rb_check_string_type(v1);
             if (!NIL_P(tmp) && rb_enc_asciicompat(enc = rb_enc_get(tmp))) {
                 parse_mode_enc(RSTRING_PTR(tmp), enc, &enc, &enc2, NULL);
+                /* tmp may be a new string converted from v1, and
+                 * parse_mode_enc may trigger GC (loading an encoding, or
+                 * warning about an unknown one) while reading it. */
+                RB_GC_GUARD(tmp);
                 SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
             }
             else {
