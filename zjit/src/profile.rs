@@ -86,7 +86,7 @@ fn profile_insn_sample(
         YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
         YARVINSN_getinstancevariable => profile_self_shape(profiler, profile),
-        YARVINSN_setinstancevariable => profile_self(profiler, profile),
+        YARVINSN_setinstancevariable => profile_self_real_class(profiler, profile),
         YARVINSN_definedivar   => profile_self(profiler, profile),
         YARVINSN_opt_regexpmatch2    => profile_operands(profiler, profile, 2),
         YARVINSN_objtostring   => profile_operands(profiler, profile, 1),
@@ -241,6 +241,17 @@ fn profile_self_shape(profiler: &mut Profiler, profile: &mut IseqProfile) {
     entry.opnd_types[0].observe(ProfiledType::shape_only(obj));
 }
 
+/// Shape transitions use the real class (obj_get_owner_class()), so singletons can be recorded.
+fn profile_self_real_class(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types = vec![TypeDistribution::new()];
+    }
+    let obj = profiler.peek_at_self();
+    let ty = ProfiledType::real_class(obj);
+    observe_profiled_type(profiler, &mut entry.opnd_types[0], obj, ty);
+}
+
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
     let entry = profile.entry_mut(profiler.insn_idx);
     if entry.opnd_types.is_empty() {
@@ -376,6 +387,12 @@ impl ProfiledType {
             flags.0 |= Flags::IS_T_OBJECT;
         }
         Self { class: obj.class_of(), shape, flags }
+    }
+
+    fn real_class(obj: VALUE) -> Self {
+        let mut ty = Self::new(obj);
+        ty.class = unsafe { rb_obj_class(obj) };
+        ty
     }
 
     /// Profile the shape and layout flags of the given object, but not its class.

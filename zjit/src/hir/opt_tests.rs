@@ -13236,6 +13236,88 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_setivar_singleton_receiver_monomorphic_shape() {
+        set_call_threshold(3);
+        eval("
+            class C
+              def initialize
+                @a = 1
+              end
+            end
+
+            module M
+              def foo = @a = 2
+            end
+
+            O1 = C.new.extend(M)
+            O2 = C.new.extend(M)
+            O1.foo
+            O2.foo
+        ");
+        assert_snapshot!(hir_string_proc("M.instance_method(:foo)"), @"
+        fn foo@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[2] = Const Value(2)
+          v13:HeapBasicObject = GuardType v6, HeapBasicObject
+          v14:CShape = LoadField v13, :shape_id@0x1000
+          v15:CShape[0x1001] = GuardBitEquals v14, CShape(0x1001) recompile
+          StoreField v13, :@a@0x1002, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_setivar_singleton_receiver_shape_transition() {
+        set_call_threshold(3);
+        eval("
+            class C
+              def initialize
+                @a = 1
+              end
+            end
+
+            module M
+              def foo = @b = 2
+            end
+
+            O1 = C.new.extend(M)
+            O2 = C.new.extend(M)
+            O1.foo
+            O2.foo
+        ");
+        assert_snapshot!(hir_string_proc("M.instance_method(:foo)"), @"
+        fn foo@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[2] = Const Value(2)
+          v13:HeapBasicObject = GuardType v6, HeapBasicObject
+          v14:CShape = LoadField v13, :shape_id@0x1000
+          v15:CShape[0x1001] = GuardBitEquals v14, CShape(0x1001) recompile
+          StoreField v13, :@b@0x1002, v10
+          v18:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v13, :shape_id@0x1000, v18
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_optimize_attr_reader_polymorphic_classes() {
         // The call site profiles as polymorphic (A;S0, B;S1). Each dispatch arm stands for one
         // profiled type, so it gets a monomorphic receiver profile and the attr_reader
