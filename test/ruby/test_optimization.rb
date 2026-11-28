@@ -895,6 +895,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
   end
 
+  def test_eql
+    # Array#eql? compares the elements with rb_eql(), which calls #eql?
+    # of the receiver unless it is the original one.
+    # The redefined #eql? returns its argument, so it has to be truthy.
+    [ [nil], [true], [false], [1, 2], [0.1, 0.2], [:sym, :other], ['str', 'other'] ].each do |v, same_class|
+      k = v.class.to_s
+      assert_redefine_method(k, 'eql?', "assert_equal(true, [#{v.inspect}].eql?([:x]))")
+      if same_class
+        assert_redefine_method(k, 'eql?', "assert_equal(true, [#{v.inspect}].eql?([#{same_class.inspect}]))")
+      end
+      assert_performance_warning(k, 'eql?')
+    end
+    assert_redefine_method('Symbol', 'eql?', "assert_equal(true, ['dynamic'.to_sym].eql?([:x]))")
+  end
+
   def test_opt_case_dispatch_inf
     inf = 1.0/0.0
     result = case inf
