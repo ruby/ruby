@@ -1958,6 +1958,15 @@ assert_equal '[false, false, true, true]', %q{
   r
 }
 
+# Ractor.make_shareable(obj, copy: true) copies T_DATA alongside shareable objects
+assert_equal '[true, false, false, true, true, true]', %q{
+  pr = Ractor.shareable_proc { 1 }
+  t = Time.at(0)
+  a = [1]
+  o = Ractor.make_shareable([t, Set[a], pr, Ractor.current, ["3"]], copy: true)
+  [Ractor.shareable?(o), o[0].equal?(t), t.frozen?, o[2].equal?(pr), o[3].equal?(Ractor.current), o[1].include?([1]) && !a.frozen?]
+}
+
 # TracePoint with normal Proc should be Ractor local
 assert_equal '[6, 10]', %q{
   rs = []
