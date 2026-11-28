@@ -1571,6 +1571,35 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_set_value_128bit_to_int
+    bug22407 = '[Bug #22407]'
+    integer_like = Struct.new(:to_int)
+    buffer = IO::Buffer.new(16)
+
+    [:U128, :u128, :S128, :s128].each do |data_type|
+      buffer.set_value(data_type, 0, integer_like.new(42))
+      assert_equal 42, buffer.get_value(data_type, 0), bug22407
+
+      buffer.set_value(data_type, 0, integer_like.new(2**100))
+      assert_equal 2**100, buffer.get_value(data_type, 0), bug22407
+
+      buffer.set_values([data_type], 0, [integer_like.new(42)])
+      assert_equal [42], buffer.get_values([data_type], 0), bug22407
+
+      assert_raise(TypeError, bug22407) {buffer.set_value(data_type, 0, nil)}
+      assert_raise(TypeError, bug22407) {buffer.set_value(data_type, 0, "42")}
+    end
+
+    [:S128, :s128].each do |data_type|
+      buffer.set_value(data_type, 0, integer_like.new(-1))
+      assert_equal(-1, buffer.get_value(data_type, 0), bug22407)
+    end
+
+    [:U128, :u128].each do |data_type|
+      assert_raise(RangeError, bug22407) {buffer.set_value(data_type, 0, integer_like.new(-1))}
+    end
+  end
+
   def test_set_values_invalidated_slice
     to_int = Struct.new(:buffer) do
       def to_int
