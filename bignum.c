@@ -3858,7 +3858,7 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
             str++;
             if (len > 0 && !--len) break;
         }
-        if (len && *str) {
+        if (len > 0 || (len < 0 && *str)) {
             return FALSE;
         }
     }
