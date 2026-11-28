@@ -752,22 +752,34 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 {
 #ifdef JIT_PROBE_NEAR_TEXT
     uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
-    // 64MiB: balancing space probed and time spent probing.
+    uint8_t *req_addr = ((uintptr_t)cfunc_sample_addr > mem_size)
+        ? (cfunc_sample_addr - mem_size)
+        : cfunc_sample_addr;
+# if defined(__aarch64__) || defined(_M_ARM64)
+    // AArch64 direct BL spans +/-128MiB. Stepping by 64MiB from cfunc_sample_addr
+    // with a 128MiB block lands ~59MiB below .text (outside BL range). Start just
+    // below .text with a 2MiB stride; if we miss the close-by range, fall back
+    // directly to an unhinted reservation.
+    const uintptr_t probe_stride = 2 * 1024 * 1024;
+    const int max_probe_trials = 32;
+# else
+    // x86-64: Probing to be within 32-bit near call with 64MiB,
+    // balancing space probed and time spent probing.
     const uintptr_t probe_stride = 64 * 1024 * 1024;
     // Related to the stride. Any successful trial will be within INT32_MAX
     // range with slack for the binary size.
     const int max_probe_trials = 30;
+# endif
 #endif
 #ifndef _WIN32
-    uint8_t *mem_block;
+    uint8_t *mem_block = MAP_FAILED;
 
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
-        // to improve odds of being in range for 32-bit relative call instructions.
-        uint8_t *req_addr = cfunc_sample_addr;
+        // to improve odds of being in range for relative call instructions.
         for (int i = 0; i < max_probe_trials; i++) {
             // The address space on x86-64/A64 Linux tends to look like:
             //
@@ -782,6 +794,9 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
             // We always probe downwards from one of the program text areas
             // to avoid getting in the way of the stack's downwards growth.
             // If we happen to start from the main text, we also avoid the heap.
+            if ((uintptr_t)req_addr <= probe_stride) {
+                break;
+            }
             req_addr -= probe_stride;
             req_addr = rb_jit_align_ptr(req_addr, page_size);
 
@@ -845,8 +860,10 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     uint8_t *mem_block = NULL;
-    uint8_t *req_addr = cfunc_sample_addr;
     for (int i = 0; i < max_probe_trials; i++) {
+        if ((uintptr_t)req_addr <= probe_stride) {
+            break;
+        }
         req_addr -= probe_stride;
         req_addr = rb_jit_align_ptr(req_addr, si.dwAllocationGranularity);
         mem_block = VirtualAlloc(req_addr, mem_size, MEM_RESERVE, PAGE_NOACCESS);
