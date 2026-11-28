@@ -916,6 +916,10 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
+        // Per-block pool of 8-byte GC'd VALUE literals emitted into the same code page of ocb:
+        // (page_idx, raw_value, ocb_byte_offset).
+        let mut ocb_literals: Vec<(usize, u64, usize)> = Vec::new();
+
         // Buffered list of PosMarker callbacks to fire if codegen is successful
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
 
@@ -1057,16 +1061,67 @@ impl Assembler
                             // this point if they're not a special const.
                             assert!(!value.special_const_p());
 
-                            // This assumes only load instructions can contain
-                            // references to GC'd Value operands. If the value
-                            // being loaded is a heap object, we'll report that
-                            // back out to the gc_offsets list.
-                            ldr_literal(cb, out.into(), 2.into());
-                            b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
-                            cb.write_bytes(&value.as_u64().to_le_bytes());
+                            // Emit the 8-byte GC'd VALUE into the same code page of ocb when
+                            // available so inline code only executes a single 4-byte LDR without
+                            // an unconditional branch skipping over inline data in L1I.
+                            let mut emitted_in_ocb = false;
+                            if cb.inline() && !cb.has_dropped_bytes() && cb.has_capacity(4) {
+                                let page_size = cb.page_size();
+                                let cb_page = cb.get_write_pos() / page_size;
+                                let ldr_pos = cb.get_write_pos();
+                                let raw_val = value.as_u64();
 
-                            let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-                            insn_gc_offsets.push(ptr_offset);
+                                if let Some(&(_, _, lit_pos)) = ocb_literals.iter().find(|&&(p, v, _)| p == cb_page && v == raw_val) {
+                                    let byte_diff = (lit_pos as i64) - (ldr_pos as i64);
+                                    if (byte_diff & 3) == 0 && bcond_offset_fits_bits(byte_diff / 4) {
+                                        ldr_literal(cb, out.into(), InstructionOffset::from_bytes(byte_diff as i32));
+                                        emitted_in_ocb = true;
+                                    }
+                                } else if let Some(ocb_ref) = ocb.as_mut() {
+                                    let ocb_cb = ocb_ref.unwrap();
+                                    if !ocb_cb.inline()
+                                        && !ocb_cb.has_dropped_bytes()
+                                        && cb.get_ptr(0).raw_addr(cb) == ocb_cb.get_ptr(0).raw_addr(ocb_cb)
+                                        && (ocb_cb.get_write_pos() / page_size) == cb_page
+                                    {
+                                        let saved_ocb_pos = ocb_cb.get_write_pos();
+                                        let pad = (8 - (saved_ocb_pos & 7)) & 7;
+                                        let lit_pos = saved_ocb_pos + pad;
+                                        let byte_diff = (lit_pos as i64) - (ldr_pos as i64);
+                                        if ocb_cb.has_capacity(pad + SIZEOF_VALUE)
+                                            && (byte_diff & 3) == 0
+                                            && bcond_offset_fits_bits(byte_diff / 4)
+                                        {
+                                            for _ in 0..pad {
+                                                ocb_cb.write_byte(0);
+                                            }
+                                            ocb_cb.write_bytes(&raw_val.to_le_bytes());
+                                            if ocb_cb.has_dropped_bytes() {
+                                                ocb_cb.set_pos(saved_ocb_pos);
+                                                ocb_cb.set_dropped_bytes(false);
+                                            } else {
+                                                ldr_literal(cb, out.into(), InstructionOffset::from_bytes(byte_diff as i32));
+                                                insn_gc_offsets.push(lit_pos as u32);
+                                                ocb_literals.push((cb_page, raw_val, lit_pos));
+                                                emitted_in_ocb = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if !emitted_in_ocb {
+                                // This assumes only load instructions can contain
+                                // references to GC'd Value operands. If the value
+                                // being loaded is a heap object, we'll report that
+                                // back out to the gc_offsets list.
+                                ldr_literal(cb, out.into(), 2.into());
+                                b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
+                                cb.write_bytes(&value.as_u64().to_le_bytes());
+
+                                let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
+                                insn_gc_offsets.push(ptr_offset);
+                            }
                         },
                         Opnd::CArg { .. } => {
                             unreachable!("C argument operand was not lowered before arm64_emit");
@@ -1844,6 +1899,40 @@ mod tests {
             0x4: adds x11, x11, #1
             0x8: mov x1, x11
         "});
+    }
+
+    #[test]
+    fn test_ocb_literal_pool_and_dedup() {
+        use std::rc::Rc;
+        use std::ptr::NonNull;
+        use crate::virtualmem::{VirtualMem, tests::TestingAllocator};
+
+        let mem_size = 64 * 1024;
+        let alloc = TestingAllocator::new(mem_size);
+        let mem_start: *const u8 = alloc.mem_start();
+        let virt_mem = Rc::new(VirtualMem::new(alloc, 16, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, usize::MAX / 2));
+        let freed_pages = Rc::new(None);
+        let mut cb = CodeBlock::new(virt_mem.clone(), false, freed_pages.clone(), false);
+        let mut ocb = OutlinedCb::wrap(CodeBlock::new(virt_mem, true, freed_pages, false));
+
+        let ocb_start = ocb.unwrap().get_write_pos();
+        let mut asm = Assembler::new(0);
+        let v1 = Opnd::Value(VALUE(0xCAFECAFECAFE0000));
+        let v2 = Opnd::Value(VALUE(0xBEEFBEEFBEEF0000));
+        let r1 = asm.load(v1);
+        asm.store(Opnd::mem(64, SP, 0), r1);
+        let r2 = asm.load(v1); // duplicate of v1 on same page -> deduplicated!
+        asm.store(Opnd::mem(64, SP, 8), r2);
+        let r3 = asm.load(v2);
+        asm.store(Opnd::mem(64, SP, 16), r3);
+
+        let (_, gc_offsets) = asm.compile_with_regs(&mut cb, Some(&mut ocb), Assembler::get_alloc_regs()).unwrap();
+
+        // Inline code: 3 * (ldr_literal + stur) = 6 instructions = 24 bytes (vs 3 * 20 = 60 bytes inline!)
+        assert_eq!(24, cb.get_write_pos());
+        // Outlined code: only 2 unique 8-byte literals = 16 bytes, and 2 unique GC offsets
+        assert_eq!(ocb_start + 16, ocb.unwrap().get_write_pos());
+        assert_eq!(2, gc_offsets.len());
     }
 
     #[test]
