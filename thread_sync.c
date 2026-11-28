@@ -309,7 +309,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
 
                 ccan_list_add_tail(&mutex->waitq, &sync_waiter.node);
 
-                rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
+                thread_wait_ensure(ec, call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
                 if (!mutex->ec_serial) {
                     mutex_set_owner(mutex, th, ec_serial);
@@ -1052,7 +1052,7 @@ queue_do_pop(rb_execution_context_t *ec, VALUE self, struct rb_queue *q, VALUE n
                 .end = end
             };
 
-            rb_ensure(queue_sleep, (VALUE)&queue_sleep_arg, queue_sleep_done, (VALUE)&queue_waiter);
+            thread_wait_ensure(ec, queue_sleep, (VALUE)&queue_sleep_arg, queue_sleep_done, (VALUE)&queue_waiter);
             if (!NIL_P(timeout) && (rb_hrtime_now() >= end))
                 break;
         }
@@ -1127,7 +1127,7 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
                 .timeout = timeout,
                 .end = end
             };
-            rb_ensure(queue_sleep, (VALUE)&queue_sleep_arg, szqueue_sleep_done, (VALUE)&queue_waiter);
+            thread_wait_ensure(ec, queue_sleep, (VALUE)&queue_sleep_arg, szqueue_sleep_done, (VALUE)&queue_waiter);
             if (!NIL_P(timeout) && rb_hrtime_now() >= end) {
                 return Qnil;
             }
@@ -1234,7 +1234,7 @@ rb_condvar_wait(rb_execution_context_t *ec, VALUE self, VALUE mutex, VALUE timeo
     };
 
     ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
-    return rb_ec_ensure(ec, do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
+    return thread_wait_ensure(ec, do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 
 static VALUE

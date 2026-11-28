@@ -1075,6 +1075,14 @@ struct rb_waiting_list {
     struct rb_fiber_struct *fiber;
 };
 
+/* A wait by a non-blocking fiber, whose ensure clause is skipped if the fiber is never resumed. */
+struct rb_scheduler_wait {
+    struct ccan_list_node node;
+    struct rb_fiber_struct *fiber;
+    VALUE (*ensure)(VALUE);
+    VALUE ensure_arg;
+};
+
 
 struct rb_execution_context_struct {
     /* execution information */
@@ -1233,6 +1241,7 @@ typedef struct rb_thread_struct {
     struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
+    struct ccan_list_head scheduler_waits;
 
     union {
         struct {
