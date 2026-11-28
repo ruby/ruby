@@ -1266,7 +1266,7 @@ pub enum Insn {
         recv: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
-        kw_splat: bool,
+        cd: *const rb_call_data,
     },
     /// Fast-path `yield`: the enclosing frame's block is a known ISEQ block, so push its frame
     /// inline and jump straight to its JIT entry. `iseq` is the comptime-known block iseq; the
@@ -2410,10 +2410,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::InvokeProc { recv, args, kw_splat, .. } => {
+            Insn::InvokeProc { recv, args, cd, .. } => {
                 write!(f, "InvokeProc {recv}")?;
                 write_separated!(f, ", ", ", ", args);
-                if *kw_splat {
+                let flags = unsafe { rb_vm_ci_flag((**cd).ci) };
+                if flags & VM_CALL_KWARG != 0 {
+                    write!(f, ", kwarg")?;
+                }
+                if flags & VM_CALL_KW_SPLAT != 0 {
                     write!(f, ", kw_splat")?;
                 }
                 Ok(())
@@ -5393,7 +5397,7 @@ impl Function {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
                             match (opt_type, args.as_slice()) {
                                 (OptimizedMethodType::Call, _) => {
-                                    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
+                                    if flags & VM_CALL_ARGS_SPLAT != 0 {
                                         self.count_complex_call_features(block, insn_id, flags, state);
                                         self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                         self.push_insn_id(block, insn_id); continue;
@@ -5407,8 +5411,7 @@ impl Function {
                                     if let Some(profiled_type) = profiled_type {
                                         recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
-                                    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
-                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
+                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args, state, cd });
                                     self.make_equal_to(insn_id, invoke_proc);
                                 }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {

@@ -2013,14 +2013,36 @@ fn test_optimized_method_call_proc_call_splat() {
 
 #[test]
 fn test_optimized_method_call_proc_call_kwarg() {
-    assert_snapshot!(inspect("
-        p = proc { |a:| a }
+    assert_snapshot!(assert_compiles("
+        p = proc { |pos, a:, b:| [pos, a, b] }
         def test(p)
-          p.call(a: 1)
+          p.call({ a: 0 }, b: 2, a: 1)
         end
         test(p)
         test(p)
-    "), @"1");
+    "), @"[{a: 0}, 1, 2]");
+}
+
+#[test]
+fn test_optimized_method_call_proc_call_kwarg_to_hash() {
+    set_call_threshold(2);
+    assert_snapshot!(assert_compiles("
+        def test(p) = p.call(a: 1, b: 2)
+        p = proc { |opts| opts }
+        test(p)
+        [test(p), test(proc { |a:, **rest| rest })]
+    "), @"[{a: 1, b: 2}, {b: 2}]");
+}
+
+#[test]
+fn test_optimized_method_call_proc_call_kwarg_non_iseq() {
+    set_call_threshold(2);
+    assert_snapshot!(assert_compiles("
+        def test(p) = p.call({}, a: 1)
+        p = {}.method(:merge).to_proc
+        test(p)
+        [test(p), test(:merge.to_proc)]
+    "), @"[{a: 1}, {a: 1}]");
 }
 
 #[test]
