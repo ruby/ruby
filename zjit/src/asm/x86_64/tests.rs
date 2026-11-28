@@ -385,6 +385,8 @@ fn test_mov() {
     let cb04 = compile(|cb| mov(cb, EAX, EBX));
     let cb05 = compile(|cb| mov(cb, EAX, ECX));
     let cb06 = compile(|cb| mov(cb, EDX, mem_opnd(32, RBX, 128)));
+    let cba0 = compile(|cb| mov(cb, EDX, mem_opnd(32, RBX, 0x10000)));
+    let cba1 = compile(|cb| mov(cb, EDX, mem_opnd(32, RBX, -0x10000)));
     let cb07 = compile(|cb| mov(cb, RAX, mem_opnd(64, RSP, 4)));
     // Test `mov rax, 3` => `mov eax, 3` optimization
     let cb08 = compile(|cb| mov(cb, R8, imm_opnd(0x34)));
@@ -409,8 +411,8 @@ fn test_mov() {
     let cb26 = compile(|cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
 
     assert_disasm_snapshot!(disasms!(
-        cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
-        cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26,
+        cb01, cb02, cb03, cb04, cb05, cb06, cba0, cba1, cb07, cb08, cb09, cb10, cb11, cb12,
+        cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26,
     ), @"
     0x0: mov eax, 7
     0x0: mov eax, 0xfffffffd
@@ -418,6 +420,8 @@ fn test_mov() {
     0x0: mov eax, ebx
     0x0: mov eax, ecx
     0x0: mov edx, dword ptr [rbx + 0x80]
+    0x0: mov edx, dword ptr [rbx + 0x10000]
+    0x0: mov edx, dword ptr [rbx - 0x10000]
     0x0: mov rax, qword ptr [rsp + 4]
     0x0: mov r8d, 0x34
     0x0: mov r8d, 0x80000000
@@ -441,8 +445,8 @@ fn test_mov() {
     ");
 
     assert_snapshot!(hexdumps!(
-        cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
-        cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26
+        cb01, cb02, cb03, cb04, cb05, cb06, cba0, cba1, cb07, cb08, cb09, cb10, cb11, cb12,
+        cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26
     ), @"
     b807000000
     b8fdffffff
@@ -450,6 +454,8 @@ fn test_mov() {
     89d8
     89c8
     8b9380000000
+    8b9300000100
+    8b930000ffff
     488b442404
     41b834000000
     41b800000080

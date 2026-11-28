@@ -5708,3 +5708,20 @@ assert_equal "ok", %q{
   many_locals
   "ok"
 }
+
+# regression test for loading locals in method with many locals
+# [Bug #22546]
+assert_equal "true", %q{
+  # Randomly pick a local count with the lower bound
+  # from the bug report and an arbitrary upperbound
+  # to limit test time.
+  LOCAL_COUNT = rand(0x1000..10_000)
+  range = (1..LOCAL_COUNT)
+  body = range.map { |n| "v#{n} = initial + #{n};" }.join
+  eval("def many_locals(initial)\n#{body}\n [v1, v#{LOCAL_COUNT}] end")
+
+  def test
+    many_locals(LOCAL_COUNT) == [LOCAL_COUNT + 1, LOCAL_COUNT + LOCAL_COUNT]
+  end
+  test
+}
