@@ -1090,6 +1090,9 @@ pub enum Insn {
     AdjustBounds { index: InsnId, length: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
+    /// `hash.fetch(key, default)`: the value for `key`, or `default` if the key is missing.
+    /// Unlike HashAref, this ignores Hash#default and Hash#default_proc.
+    HashFetch { hash: InsnId, key: InsnId, default: InsnId, state: InsnId },
     HashAset { hash: InsnId, key: InsnId, val: InsnId, state: InsnId },
     HashDup { val: InsnId, state: InsnId },
 
@@ -1647,6 +1650,12 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*key);
                 $visit_one!(*state);
             }
+            Insn::HashFetch { hash, key, default, state } => {
+                $visit_one!(*hash);
+                $visit_one!(*key);
+                $visit_one!(*default);
+                $visit_one!(*state);
+            }
             Insn::HashAset { hash, key, val, state } => {
                 $visit_one!(*hash);
                 $visit_one!(*key);
@@ -1895,6 +1904,7 @@ impl Insn {
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
             Insn::AdjustBounds { .. } => effects::Empty,
             Insn::HashAref { .. } => effects::Any,
+            Insn::HashFetch { .. } => effects::Any,
             Insn::HashAset { .. } => effects::Any,
             Insn::HashDup { .. } => allocates,
             Insn::ObjectAlloc { .. } => effects::Any,
@@ -2262,6 +2272,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
+            Insn::HashFetch { hash, key, default, .. } => { write!(f, "HashFetch {hash}, {key}, {default}")}
             Insn::HashAset { hash, key, val, .. } => { write!(f, "HashAset {hash}, {key}, {val}")}
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             &Insn::ObjectAllocClass { class, .. } => {
@@ -3919,6 +3930,7 @@ impl Function {
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::AdjustBounds { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
+            Insn::HashFetch { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
@@ -8600,6 +8612,7 @@ impl Function {
                 self.assert_subtype(insn_id, length, types::CInt64)
             }
             // Instructions with Hash operands
+            Insn::HashFetch { hash, .. } => self.assert_subtype(insn_id, hash, types::Hash),
             Insn::HashAref { hash, .. }
             | Insn::HashAset { hash, .. } => self.assert_subtype(insn_id, hash, types::HashExact),
             Insn::HashDup { val, .. } => self.assert_subtype(insn_id, val, types::HashExact),
