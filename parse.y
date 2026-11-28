@@ -14275,11 +14275,11 @@ enum cond_type {
     COND_IN_FF
 };
 
-#define SWITCH_BY_COND_TYPE(t, w, arg) do { \
+#define SWITCH_BY_COND_TYPE(t, w, arg, node) do { \
     switch (t) { \
       case COND_IN_OP: break; \
-      case COND_IN_COND: rb_##w##0(arg "literal in condition"); break; \
-      case COND_IN_FF: rb_##w##0(arg "literal in flip-flop"); break; \
+      case COND_IN_COND: rb_##w##0L(nd_line(node), arg "literal in condition"); break; \
+      case COND_IN_FF: rb_##w##0L(nd_line(node), arg "literal in flip-flop"); break; \
     } \
 } while (0)
 
@@ -14319,16 +14319,16 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_EVSTR:
       case NODE_STR:
       case NODE_FILE:
-        SWITCH_BY_COND_TYPE(type, warn, "string ");
+        SWITCH_BY_COND_TYPE(type, warn, "string ", node);
         break;
 
       case NODE_REGX:
-        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ");
+        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ", node);
         nd_set_type(node, NODE_MATCH);
         break;
 
       case NODE_DREGX:
-        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ");
+        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ", node);
 
         /* Preserve the NODE_ONCE wrapper around interpolated /o regexps. */
         return NEW_MATCH2(original, NEW_GVAR(idLASTLINE, loc), loc);
@@ -14369,7 +14369,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 
       case NODE_SYM:
       case NODE_DSYM:
-        SWITCH_BY_COND_TYPE(type, warning, "symbol ");
+        SWITCH_BY_COND_TYPE(type, warning, "symbol ", node);
         break;
 
       case NODE_LINE:
@@ -14378,7 +14378,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
       case NODE_FLOAT:
       case NODE_RATIONAL:
       case NODE_IMAGINARY:
-        SWITCH_BY_COND_TYPE(type, warning, "");
+        SWITCH_BY_COND_TYPE(type, warning, "", node);
         break;
 
       default:
