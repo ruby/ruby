@@ -584,13 +584,15 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool struct_i
         boxable = true;
     }
 
-    size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
+    RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
+
+    // A non-boxable ICLASS's prime classext stops short of the class/module-only fields.
+    size_t classext_size = (type == T_ICLASS && !boxable) ? RCLASSEXT_ICLASS_SIZE : sizeof(rb_classext_t);
+    size_t alloc_size = sizeof(struct RClass) + classext_size;
     if (boxable) {
         alloc_size = sizeof(struct RClass_boxable);
     }
     if (struct_inline_field) alloc_size += sizeof(VALUE);
-
-    RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
 
     VALUE flags = type | FL_SHAREABLE;
     if (boxable) flags |= RCLASS_BOXABLE;
@@ -607,7 +609,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable, bool struct_i
 
     obj->object_id = 0;
 
-    memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
+    memset(RCLASS_EXT_PRIME(obj), 0, classext_size);
 
     // The creating Ractor owns the new class/module; an iclass has no owner.
     // Singleton classes of classes/modules override this below.
