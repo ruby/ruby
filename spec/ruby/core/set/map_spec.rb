@@ -20,7 +20,7 @@ describe "Set#map!" do
     @set.should == Set[2, 4, 6, 8, 10]
   end
 
-  ruby_version_is "4.1" do
+  ruby_version_is "4.0" do
     it "retains compare_by_identity flag" do
       @set.compare_by_identity
       @set.map! { |x| x * 2 }

@@ -16,7 +16,7 @@ describe "Set#flatten" do
     -> { set.flatten }.should.raise(ArgumentError)
   end
 
-  ruby_version_is "4.1" do
+  ruby_version_is "4.0" do
     it "retains compare_by_identity flag" do
       set = Set[1, 2, Set[3, 4]].compare_by_identity
       set.flatten.compare_by_identity?.should == true
@@ -59,7 +59,7 @@ describe "Set#flatten!" do
     -> { set.flatten! }.should.raise(ArgumentError)
   end
 
-  ruby_version_is "4.1" do
+  ruby_version_is "4.0" do
     it "retains compare_by_identity flag when flattening elements" do
       set = Set[1, 2, Set[3, 4]].compare_by_identity
       set.flatten!
