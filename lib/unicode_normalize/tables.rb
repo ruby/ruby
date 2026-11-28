@@ -76,11 +76,9 @@ module UnicodeNormalize  # :nodoc:
     "\u0F35" \
     "\u0F37" \
     "\u0F39" \
-    "\u0F71\u0F72" \
-    "\u0F74" \
+    "\u0F71-\u0F75" \
     "\u0F7A-\u0F7D" \
-    "\u0F80" \
-    "\u0F82-\u0F84" \
+    "\u0F80-\u0F84" \
     "\u0F86\u0F87" \
     "\u0FC6" \
     "\u102E" \
