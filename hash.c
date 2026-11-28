@@ -661,17 +661,23 @@ ar_hint_first_match(ar_hint_t needle, VALUE haystack)
     return index;
 }
 
+static inline unsigned ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key);
 NOINLINE(static unsigned ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match));
 static unsigned
 ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned first_match)
 {
-    RUBY_ASSERT(key != RHASH_AR_TABLE_REF(hash, first_match)->key);
-    bool eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
+    st_data_t entry_key = RHASH_AR_TABLE_REF(hash, first_match)->key;
+    RUBY_ASSERT(key != entry_key);
+    bool eq = ar_equal(hash, key, entry_key);
     if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
         return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
     }
 
     if (eq) {
+        if (UNLIKELY(RHASH_AR_TABLE_REF(hash, first_match)->key != entry_key)) {
+            /* #eql? deleted or replaced the entry; search again */
+            return ar_find_entry_hint(hash, hint, key);
+        }
         return first_match;
     }
 
@@ -681,11 +687,15 @@ ar_find_entry_hint_slowpath(VALUE hash, ar_hint_t hint, st_data_t key, unsigned 
     for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
         const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
         if (UNLIKELY(hints[i] == hint)) {
-            eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
+            entry_key = RHASH_AR_TABLE_REF(hash, i)->key;
+            eq = ar_equal(hash, key, entry_key);
             if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
                 return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
             }
             if (eq) {
+                if (UNLIKELY(RHASH_AR_TABLE_REF(hash, i)->key != entry_key)) {
+                    return ar_find_entry_hint(hash, hint, key);
+                }
                 RB_DEBUG_COUNTER_INC(artable_hint_hit);
                 return i;
             }

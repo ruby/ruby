@@ -502,6 +502,51 @@ class TC_Set < Test::Unit::TestCase
     end
   end
 
+  def test_delete_in_eql
+    set = nil
+    deleting = false
+    klass = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |other|
+        if deleting
+          deleting = false
+          set.delete(other)
+        end
+        true
+      end
+    end
+    (0..40).each do |n|
+      set = Set.new(0...n)
+      set << klass.new
+      deleting = true
+      assert_nil(set.delete?(klass.new))
+      assert_equal(n, set.size)
+      assert_equal((0...n).to_a, set.to_a)
+    end
+  end
+
+  def test_include_in_eql_reset
+    set = nil
+    resetting = false
+    klass = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |_|
+        if resetting
+          resetting = false
+          set.reset
+        end
+        false
+      end
+    end
+    (0..40).each do |n|
+      set = Set.new(0...n)
+      set << klass.new << klass.new
+      resetting = true
+      assert_not_include(set, klass.new)
+      assert_equal(n + 2, set.size)
+    end
+  end
+
   def test_delete
     set = Set[1,2,3]
 

@@ -200,16 +200,22 @@ entry_equal(const struct st_hash_type *type,
             ((entry_key == key) || (*type->compare)(key, entry_key) == 0);
 }
 
-/* As entry_equal, but also checks whether the table was rebuilt
-   during the comparison (i.e. #eql? mutated it). */
+/* As entry_equal, but also checks whether the table was rebuilt, or
+   an entry was added or deleted, during the comparison (i.e. #eql?
+   mutated it).  rebuilds_num alone is not enough because the whole
+   table can be replaced, e.g. by Hash#rehash. */
 static inline void
 ptr_equal_check(const st_table *tab, const st_table_entry *entry,
                 st_hash_t hash_val, st_data_t key,
                 int *res, int *rebuilt_p)
 {
     unsigned int old_rebuilds_num = tab->rebuilds_num;
+    st_index_t old_num_entries = tab->num_entries;
+    const st_table_entry *old_entries = tab->entries;
     *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
-    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num ||
+        old_num_entries != tab->num_entries ||
+        old_entries != tab->entries;
 }
 
 #define DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
@@ -1508,6 +1514,7 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
     st_table_entry *entries, *curr_entry_ptr;
     st_index_t bin_ind;
 
+  restart:
     entries = tab->entries;
     bound = tab->entries_bound;
     for (i = tab->entries_start; i < bound; i++) {
@@ -1525,6 +1532,10 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
                     entries = tab->entries;
                     goto retry;
                 }
+                if (EXPECT(bin == UNDEFINED_ENTRY_IND, 0)) {
+                    /* #eql? called during the lookup deleted the entry */
+                    goto restart;
+                }
                 curr_entry_ptr = &entries[bin];
             }
             else {
@@ -1532,6 +1543,10 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
                 if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0)) {
                     entries = tab->entries;
                     goto retry;
+                }
+                if (EXPECT(bin_ind == UNDEFINED_BIN_IND, 0)) {
+                    /* #eql? called during the lookup deleted the entry */
+                    goto restart;
                 }
                 curr_entry_ptr = &entries[get_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind)
                                           - ENTRY_BASE];
@@ -2507,9 +2522,13 @@ set_ptr_equal_check(const set_table *tab, const set_table_entry *entry,
 {
     unsigned int old_rebuilds_num = tab->rebuilds_num;
     st_index_t old_entries_bound = tab->entries_bound;
+    st_index_t old_num_entries = tab->num_entries;
+    const set_table_entry *old_entries = tab->entries;
     *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
     *rebuilt_p = old_rebuilds_num != tab->rebuilds_num ||
-        old_entries_bound != tab->entries_bound;
+        old_entries_bound != tab->entries_bound ||
+        old_num_entries != tab->num_entries ||
+        old_entries != tab->entries;
 }
 
 #define SET_DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \

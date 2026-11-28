@@ -2429,4 +2429,115 @@ class TestHashOnly < Test::Unit::TestCase
 
     assert_equal nil, h[lookup_key]
   end
+
+  def test_shift_eql_deletes_first_entry
+    h = target = nil
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |_|
+        if target
+          t, target = target, nil
+          h.delete(t)
+        end
+        false
+      end
+    end
+    (0..40).each do |n|
+      h = {}
+      a, b = key_class.new, key_class.new
+      h[b] = :b
+      h[a] = :a
+      n.times { |i| h[i] = i }
+      # Move b to the end; it takes the first bin of the probe sequence
+      h.delete(b)
+      h[b] = :b
+      keys = h.keys
+      target = a
+      key, = h.shift
+      keys.delete(a) unless target # a was deleted by #eql?
+      target = nil
+      assert_same(keys.first, key)
+      assert_equal(keys.drop(1), h.keys)
+    end
+  end
+
+  def test_delete_eql_deletes_entry
+    h = nil
+    deleting = false
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |other|
+        # ar_table may compare with other keys whose hint collides
+        return false unless other.instance_of?(self.class)
+        if deleting
+          deleting = false
+          h.delete(other)
+        end
+        true
+      end
+    end
+    (0..40).each do |n|
+      h = {}
+      n.times { |i| h[i] = i }
+      h[key_class.new] = :v
+      deleting = true
+      assert_nil(h.delete(key_class.new))
+      assert_equal(n, h.size)
+      assert_equal((0...n).to_a, h.keys)
+    end
+  end
+
+  def test_aset_eql_deletes_entry
+    h = nil
+    deleting = false
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |other|
+        # ar_table may compare with other keys whose hint collides
+        return false unless other.instance_of?(self.class)
+        if deleting
+          deleting = false
+          h.delete(other)
+        end
+        true
+      end
+    end
+    (0..40).each do |n|
+      h = {}
+      n.times { |i| h[i] = i }
+      h[key_class.new] = :v
+      deleting = true
+      key = key_class.new
+      h[key] = :w
+      assert_equal(n + 1, h.size)
+      assert_equal([*0...n, key], h.keys)
+      assert_equal(:w, h[key])
+    end
+  end
+
+  def test_lookup_eql_replaces_table
+    h = nil
+    replace = nil
+    key_class = Class.new do
+      define_method(:hash) { 1 }
+      define_method(:eql?) do |_|
+        if replace
+          r, replace = replace, nil
+          r.call
+        end
+        false
+      end
+    end
+    [-> { h.rehash }, -> { h.compare_by_identity }].each do |r|
+      (0..40).each do |n|
+        h = Hash.new(capacity: 16)
+        n.times { |i| h[i] = i }
+        h[key_class.new] = 0
+        h[key_class.new] = 0
+        replace = r
+        assert_nil(h[key_class.new])
+        assert_equal(n + 2, h.size)
+      end
+    end
+  end
 end
