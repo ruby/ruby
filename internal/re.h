@@ -88,4 +88,22 @@ VALUE rb_reg_last_defined(VALUE match);
 #define ARG_ENCODING_FIXED    16
 #define ARG_ENCODING_NONE     32
 
+#ifndef USE_RUST_REGEXP
+# define USE_RUST_REGEXP 0
+#endif
+
+/* The engine that compiles new Regexp objects (re_engine.c). */
+typedef enum {
+    RB_REGEXP_ENGINE_ONIGMO,
+    RB_REGEXP_ENGINE_RUST,
+} rb_regexp_engine_t;
+
+RUBY_SYMBOL_EXPORT_BEGIN
+/* exported for ext/-test-/regexp */
+rb_regexp_engine_t rb_reg_default_engine(void);
+bool rb_reg_default_engine_set(rb_regexp_engine_t engine);
+RUBY_SYMBOL_EXPORT_END
+
+#define rb_reg_rust_engine_p() (rb_reg_default_engine() == RB_REGEXP_ENGINE_RUST)
+
 #endif /* INTERNAL_RE_H */

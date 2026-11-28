@@ -670,6 +670,43 @@ rb_reg_check_ints(void)
     return 0;
 }
 
+#if USE_RUST_REGEXP
+/* rb_reg_check_ints() for the Rust engine (re_engine.c), which must not be
+ * jumped out of even outside rb_reg_onig_match.  Returns the state of an
+ * interrupt that raised, for rb_reg_rust_interrupted(). */
+int
+rb_reg_rust_check_ints(void)
+{
+    int state = 0;
+
+    if (!RUBY_VM_INTERRUPTED_ANY(GET_EC())) return 0;
+#ifdef ONIG_THREAD_LOCAL
+    int depth = reg_onig_depth;
+    reg_onig_depth = 0;
+#endif
+    rb_protect(reg_check_ints_i, Qnil, &state);
+#ifdef ONIG_THREAD_LOCAL
+    reg_onig_depth = depth;
+#endif
+    return state;
+}
+
+/* Raises the interrupt rb_reg_rust_check_ints() caught, once the Rust engine
+ * has returned: through rb_reg_onig_match when the match runs there, which
+ * unlocks the string first. */
+OnigPosition
+rb_reg_rust_interrupted(int state)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) {
+        reg_onig_interrupt_state = state;
+        return ONIGERR_INTERRUPTED;
+    }
+#endif
+    rb_jump_tag(state);
+}
+#endif
+
 NORETURN(static void reg_onig_raise_interrupt(void));
 static void
 reg_onig_raise_interrupt(void)
@@ -753,6 +790,19 @@ reg_warn_discard(void)
     reg_onig_warnings.len = reg_onig_warnings.capa = 0;
 #endif
 }
+
+#if USE_RUST_REGEXP
+/* Called by the Rust engine right before it raises in the compile hook,
+ * which skips the reg_onig_end() of the caller. */
+void
+rb_reg_rust_leave(void)
+{
+#ifdef ONIG_THREAD_LOCAL
+    if (reg_onig_depth > 0) reg_onig_depth--;
+#endif
+    reg_warn_kept();
+}
+#endif
 
 static VALUE
 reg_warn_kept_i(VALUE _)
@@ -5932,6 +5982,8 @@ Init_Regexp(void)
     onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
+    /* Set up the configured default as --regexp-engine would. */
+    rb_reg_default_engine_set(rb_reg_default_engine());
 
     rb_define_virtual_variable("$~", get_LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

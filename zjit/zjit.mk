@@ -32,6 +32,7 @@ $(ZJIT_RLIB): $(ZJIT_SRC_FILES) target/.rustc-version
 	$(gnumake_recursive)$(Q) $(RUSTC) '-L$(@D)' --extern=jit $(ZJIT_RUSTC_ARGS)
 
 $(RUST_LIB): $(ZJIT_RLIB)
+RUST_CRATE_EXTERNS += --extern=zjit --cfg 'feature="zjit"'
 endif # ifneq ($(strip $(ZJIT_LIBS)),)
 
 # By using ZJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`

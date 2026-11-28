@@ -1,9 +1,14 @@
-# Make recipes that deal with the rust code of YJIT and ZJIT.
+# Make recipes that deal with the rust code of YJIT, ZJIT and the regexp engine.
 #
 # $(gnumake_recursive) adds the '+' prefix to pass down GNU make's
 # jobserver resources to cargo/rustc as rust-lang.org recommends.
 # Without it, certain make version trigger a warning. It does not
 # add the prefix when `make --dry-run` so dry runs are indeed dry.
+
+RUST_CRATE_NAMES = $(strip \
+	$(if $(filter-out no,$(YJIT_SUPPORT)),YJIT) \
+	$(if $(filter-out no,$(ZJIT_SUPPORT)),ZJIT) \
+	$(if $(filter-out no,$(RUST_REGEXP_SUPPORT)),regexp))
 
 ifneq ($(JIT_CARGO_SUPPORT),no)
 
@@ -23,13 +28,7 @@ RUST_LIB_TOUCH = touch $@
 #    newer macOS version (15.2) than being linked (15.0)
 # This limits us to an older set of macOS API in the rust code, but we don't use any.
 $(RUST_LIB): $(srcdir)/ruby.rs target/.rustc-version
-	$(Q)if [ '$(ZJIT_SUPPORT)' != no -a '$(YJIT_SUPPORT)' != no ]; then \
-	    echo 'building YJIT and ZJIT ($(JIT_CARGO_SUPPORT:yes=release) mode)'; \
-	elif [ '$(ZJIT_SUPPORT)' != no ]; then \
-	    echo 'building ZJIT ($(JIT_CARGO_SUPPORT) mode)'; \
-	elif [ '$(YJIT_SUPPORT)' != no ]; then \
-	    echo 'building YJIT ($(JIT_CARGO_SUPPORT) mode)'; \
-	fi
+	$(ECHO) 'building $(RUST_CRATE_NAMES) ($(JIT_CARGO_SUPPORT) mode)'
 	$(gnumake_recursive)$(Q)CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	    CARGO_TERM_PROGRESS_WHEN='never' \
 	    MACOSX_DEPLOYMENT_TARGET=11.0 \
@@ -42,11 +41,8 @@ $(RUST_LIB): $(srcdir)/ruby.rs target/.rustc-version
 	$(gnumake_recursive)$(Q) $(RUSTC) --edition=2024 \
 	    $(RUSTC_FLAGS) \
 	    '-L$(@D)' \
-	    --extern=yjit \
-	    --extern=zjit \
+	    $(RUST_CRATE_EXTERNS) \
 	    --crate-type=staticlib \
-	    --cfg 'feature="yjit"' \
-	    --cfg 'feature="zjit"' \
 	    '--out-dir=$(@D)' \
 	    '$(top_srcdir)/ruby.rs'
 

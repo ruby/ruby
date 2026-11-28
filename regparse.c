@@ -135,6 +135,9 @@ onig_set_parse_depth_limit(unsigned int depth)
     ParseDepthLimit = DEFAULT_PARSE_DEPTH_LIMIT;
   else
     ParseDepthLimit = depth;
+#if USE_RUST_REGEXP
+  rb_regexp_rust_set_parse_depth_limit(depth);
+#endif
   return 0;
 }
 
@@ -649,6 +652,9 @@ onig_foreach_name(regex_t* reg,
   INamesArg narg;
   NameTable* t = (NameTable* )reg->name_table;
 
+#if USE_RUST_REGEXP
+  if (RB_REG_RUST_P(reg)) return rb_reg_rust_foreach_name(reg, func, arg);
+#endif
   narg.ret = 0;
   if (IS_NOT_NULL(t)) {
     narg.func = func;
@@ -696,6 +702,9 @@ onig_number_of_names(const regex_t* reg)
 {
   NameTable* t = (NameTable* )reg->name_table;
 
+#if USE_RUST_REGEXP
+  if (RB_REG_RUST_P(reg)) return rb_reg_rust_number_of_names(reg);
+#endif
   if (IS_NOT_NULL(t))
     return (int )t->num_entries;
   else
@@ -1029,8 +1038,12 @@ extern int
 onig_name_to_group_numbers(regex_t* reg, const UChar* name,
                            const UChar* name_end, int** nums)
 {
-  NameEntry* e = name_find(reg, name, name_end);
+  NameEntry* e;
 
+#if USE_RUST_REGEXP
+  if (RB_REG_RUST_P(reg)) return rb_reg_rust_name_to_group_numbers(reg, name, name_end, nums);
+#endif
+  e = name_find(reg, name, name_end);
   if (IS_NULL(e)) return ONIGERR_UNDEFINED_NAME_REFERENCE;
 
   switch (e->back_num) {

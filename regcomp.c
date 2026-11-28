@@ -5676,6 +5676,12 @@ print_optimize_info(FILE* f, regex_t* reg)
 extern void
 onig_free_body(regex_t* reg)
 {
+#if USE_RUST_REGEXP
+  if (IS_NOT_NULL(reg) && RB_REG_RUST_P(reg)) {
+    rb_reg_rust_free_body(reg);
+    return;
+  }
+#endif
   if (IS_NOT_NULL(reg)) {
     xfree(reg->p);
     xfree(reg->exact);
@@ -5710,6 +5716,10 @@ dup_copy(const void *ptr, size_t size)
 extern int
 onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
 {
+#if USE_RUST_REGEXP
+  if (IS_NOT_NULL(oreg) && RB_REG_RUST_P(oreg))
+    return rb_reg_rust_copy_body(nreg, oreg);
+#endif
   if (IS_NOT_NULL(oreg)) {
     *nreg = *oreg;
 
@@ -5778,6 +5788,9 @@ onig_memsize(const regex_t *reg)
 {
     size_t size = sizeof(regex_t);
     if (IS_NULL(reg)) return 0;
+#if USE_RUST_REGEXP
+    if (RB_REG_RUST_P(reg)) return rb_reg_rust_memsize(reg);
+#endif
     if (IS_NOT_NULL(reg->p))                size += reg->alloc;
     if (IS_NOT_NULL(reg->exact))            size += reg->exact_end - reg->exact;
     if (IS_NOT_NULL(reg->repeat_range))     size += reg->repeat_range_alloc * sizeof(OnigRepeatRange);
@@ -5851,6 +5864,11 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
     einfo->par     = (UChar* )NULL;
     einfo->par_end = (UChar* )NULL;
   }
+
+#if USE_RUST_REGEXP
+  if (rb_reg_rust_compile_hook(reg, pattern, pattern_end, einfo, sourcefile, sourceline, &r))
+    return r;
+#endif
 
 #ifdef RUBY
   scan_env.sourcefile = sourcefile;
@@ -6051,6 +6069,7 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
 
   (reg)->exact            = (UChar* )NULL;
   (reg)->chain            = (regex_t* )NULL;
+  (reg)->reserved1        = (int* )NULL;
   (reg)->p                = (UChar* )NULL;
   (reg)->name_table       = (void* )NULL;
   (reg)->repeat_range     = (OnigRepeatRange* )NULL;

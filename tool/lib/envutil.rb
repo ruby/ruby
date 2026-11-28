@@ -258,10 +258,14 @@ module EnvUtil
     }
 
     args = [args] if args.kind_of?(String)
-    # use the same parser as current ruby
-    if (args.none? { |arg| arg.start_with?("--parser=") } and
-        /^ +--parser=/ =~ IO.popen([{"PAGER"=>nil, "RUBY_PAGER"=>nil}, rubybin, "--help", err: %i[child out]], &:read))
+    # use the same parser and regexp engine as current ruby
+    help = nil
+    help_text = -> { help ||= IO.popen([{"PAGER"=>nil, "RUBY_PAGER"=>nil}, rubybin, "--help", err: %i[child out]], &:read) }
+    if args.none? { |arg| arg.start_with?("--parser=") } and /^ +--parser=/ =~ help_text.()
       args = ["--parser=#{current_parser}"] + args
+    end
+    if args.none? { |arg| arg.start_with?("--regexp-engine=") } and /^ +--regexp-engine=/ =~ help_text.()
+      args = ["--regexp-engine=#{current_regexp_engine}"] + args
     end
     pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
@@ -319,6 +323,12 @@ module EnvUtil
     features&.split&.include?("+PRISM") ? "prism" : "parse.y"
   end
   module_function :current_parser
+
+  def current_regexp_engine
+    features = RUBY_DESCRIPTION[%r{\)\K [-+*/%._0-9a-zA-Z\[\] ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}]
+    features&.split&.include?("+RUST_REGEXP") ? "rust" : "onigmo"
+  end
+  module_function :current_regexp_engine
 
   def verbose_warning
     class << (stderr = "".dup)

@@ -3956,6 +3956,24 @@ AC_ARG_ENABLE(zjit,
     )]
 )
 
+dnl build the Rust regexp engine if rustc >= 1.85.0 is present and we are on a supported platform
+AC_ARG_ENABLE(rust-regexp,
+    AS_HELP_STRING([--enable-rust-regexp],
+    [build the experimental regexp engine written in Rust. enabled by default on supported platforms if rustc 1.85.0+ is available]),
+    [RUST_REGEXP_SUPPORT=$enableval],
+    [RUST_REGEXP_SUPPORT=no
+    AS_CASE(["$JIT_TARGET_OK"],
+        [yes], [
+            AC_MSG_CHECKING([prerequisites for the Rust regexp engine])
+            AS_IF([test "$RUSTC" != "no" && test "$gnumake" = "yes" &&
+                   echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() {}" |
+                    $RUSTC - --edition=2024 --emit asm=/dev/null 2>/dev/null],
+                [RUST_REGEXP_SUPPORT=yes])
+            AC_MSG_RESULT($RUST_REGEXP_SUPPORT)
+        ]
+    )]
+)
+
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
@@ -4035,6 +4053,45 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     AC_DEFINE(USE_ZJIT, 0)
 ])
 
+REGEXP_LIBS=
+AS_CASE(["${RUST_REGEXP_SUPPORT}"],
+[yes|dev], [
+    AS_IF([test x"$RUSTC" = "xno"],
+        AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
+    )
+    AS_IF([test x"$gnumake" != "xyes"],
+        AC_MSG_ERROR([the Rust regexp engine requires GNU make])
+    )
+
+    AS_CASE(["${RUST_REGEXP_SUPPORT}"],
+    [dev], [
+        rb_cargo_features="$rb_cargo_features,runtime_checks"
+        JIT_CARGO_SUPPORT=dev
+        AC_DEFINE(RUBY_DEBUG, 1)
+    ])
+
+    REGEXP_LIBS="target/release/libregexp.a"
+    RUST_LIB='$(REGEXP_LIBS)'
+    AC_DEFINE(USE_RUST_REGEXP, 1)
+],
+[no], [
+    AC_DEFINE(USE_RUST_REGEXP, 0)
+],
+[AC_MSG_ERROR([unknown value for --enable-rust-regexp: $RUST_REGEXP_SUPPORT])])
+
+m4_define(available_regexp_engines, [onigmo, rust])
+AC_ARG_WITH(regexp-engine,
+    AS_HELP_STRING([--with-regexp-engine=ENGINE],
+        [specify default regexp engine; ENGINE is one of ]m4_join([, ],available_regexp_engines)),
+    [], [with_regexp_engine=onigmo])
+AS_CASE(["$with_regexp_engine:$RUST_REGEXP_SUPPORT"],
+    [rust:no], [AC_MSG_ERROR([--with-regexp-engine=rust requires --enable-rust-regexp])])
+AS_CASE([$with_regexp_engine],
+m4_foreach(engine, [available_regexp_engines],
+    engine[,][AC_DEFINE_UNQUOTED(RB_DEFAULT_REGEXP_ENGINE, RB_REGEXP_ENGINE_[]AS_TR_CPP(engine)),])
+    [AC_MSG_ERROR([Unknown regexp engine: $with_regexp_engine])]
+)
+
 RUSTC_FLAGS='-g -C lto=thin -C opt-level=3 -C overflow-checks=on'
 AS_IF([test -n "${rustc_flags}"], [
     RUSTC_FLAGS="${RUSTC_FLAGS} ${rustc_flags}"
@@ -4042,15 +4099,22 @@ AS_IF([test -n "${rustc_flags}"], [
 
 JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
 RLIB_DIR=
-AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
-[no:yes:yes], [ # release build of YJIT+ZJIT
+rb_rust_crate_count=0
+for rb_rust_crate_support in "$YJIT_SUPPORT" "$ZJIT_SUPPORT" "$RUST_REGEXP_SUPPORT"; do
+    AS_IF([test x"$rb_rust_crate_support" != xno], [
+        rb_rust_crate_count=`expr $rb_rust_crate_count + 1`
+    ])
+done
+AS_CASE(["$JIT_CARGO_SUPPORT:$rb_rust_crate_count"],
+[no:0|no:1], [],
+[no:*], [ # release build of more than one crate, combined into ruby.rs
     YJIT_LIBS=
     ZJIT_LIBS=
+    REGEXP_LIBS=
     JIT_RUST_FLAGS="--crate-type=rlib"
     RLIB_DIR="target/release"
     RUST_LIB="target/release/libruby.a"
 ],
-[no:*], [],
 [ # JIT_CARGO_SUPPORT not "no" -- cargo required.
     AC_CHECK_TOOL(CARGO, [cargo], [no])
     AS_IF([test x"$CARGO" = "xno"],
@@ -4058,6 +4122,7 @@ AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
 
     YJIT_LIBS=
     ZJIT_LIBS=
+    REGEXP_LIBS=
 
     # There's more processing below to get the feature set for the
     # top-level crate, so capture at this point for feature set of
@@ -4070,6 +4135,9 @@ AS_CASE(["$JIT_CARGO_SUPPORT:$YJIT_SUPPORT:$ZJIT_SUPPORT"],
     AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
         AC_SUBST(ZJIT_TEST_FEATURES)
         rb_cargo_features="$rb_cargo_features,zjit"
+    ])
+    AS_IF([test x"${RUST_REGEXP_SUPPORT}" != x"no"], [
+        rb_cargo_features="$rb_cargo_features,regexp"
     ])
     # if YJIT and ZJIT release mode
     AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
@@ -4107,7 +4175,9 @@ AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
 AC_SUBST(X_ZJIT_LIBS, [$ZJIT_LIBS])dnl path to the .a library of ZJIT
 AC_SUBST(X_ZJIT_OBJ, [$ZJIT_OBJ])dnl for optionally building the C parts of ZJIT
 AC_SUBST(X_JIT_OBJ, [$JIT_OBJ])dnl for optionally building C glue code for Rust FFI
-AC_SUBST(X_RUST_LIB, [$RUST_LIB])dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(RUST_REGEXP_SUPPORT)dnl what flavor of the Rust regexp engine the Ruby build includes
+AC_SUBST(X_REGEXP_LIBS, [$REGEXP_LIBS])dnl path to the .a library of the Rust regexp engine
+AC_SUBST(X_RUST_LIB, [$RUST_LIB])dnl path to the rust .a library that contains the Rust crates
 AC_SUBST(X_RLIB_DIR, [$RLIB_DIR])dnl subpath of build directory for .rlib files
 AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
@@ -4839,6 +4909,8 @@ config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "ZJIT support"        "$ZJIT_SUPPORT"
+config_summary "Rust regexp support" "$RUST_REGEXP_SUPPORT"
+config_summary "regexp engine"       "$with_regexp_engine"
 config_summary "RUSTC_FLAGS"         "$RUSTC_FLAGS"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"

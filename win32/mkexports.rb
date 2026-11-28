@@ -49,6 +49,11 @@ class Exports
     each_dllexport(dllexports) do |internal, export|
       syms[internal] = export
     end
+    # Only the rb_ symbols of the Rust library, which defs/jit.mk keeps
+    # global, not the Rust runtime linked with them.
+    each_export([$rustlib]) do |internal, export|
+      syms[internal] = export if internal.start_with?("rb_")
+    end if $rustlib
     incdir = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby")
     read_substitution(incdir+"/win32.h", syms, winapis)
     read_substitution(incdir+"/subst.h", syms, winapis)

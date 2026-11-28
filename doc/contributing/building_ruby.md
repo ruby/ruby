@@ -29,7 +29,8 @@
     * [libffi] (to build fiddle)
     * [gmp] (if you wish to accelerate Bignum operations)
     * [rustc] - 1.58.0 or later, if you wish to build
-      [YJIT](rdoc-ref:RubyVM::YJIT).
+      [YJIT](rdoc-ref:RubyVM::YJIT). 1.85.0 or later for ZJIT and the
+      experimental regexp engine in `regexp/`.
 
     If you want to link the libraries (e.g., gmp) installed into other than
     the OS default place, typically using Homebrew on macOS, pass the

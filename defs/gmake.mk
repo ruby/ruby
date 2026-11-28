@@ -452,6 +452,7 @@ endif
 
 include $(top_srcdir)/yjit/yjit.mk
 include $(top_srcdir)/zjit/zjit.mk
+include $(top_srcdir)/regexp/regexp.mk
 include $(top_srcdir)/defs/jit.mk
 
 # Query on the generated rdoc

@@ -1,0 +1,18 @@
+# NOTE: do not add dependencies on external crates. This crate is meant to
+# become part of every Ruby build, so it has to build with rustc alone.
+
+[package]
+name = "regexp"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85.0" # Minimally supported rust version
+publish = false         # Don't publish to crates.io
+
+[dependencies]
+
+# NOTE: Development builds select a set of these via configure.ac
+# For debugging, `make V=1` shows exact cargo invocation.
+[features]
+# Extra consistency checks inside the engine.
+runtime_checks = []
+stats_allocator = []

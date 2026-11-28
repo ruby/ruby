@@ -11,6 +11,7 @@
 
 #include "internal/cmdlineopt.h"
 #include "internal/parse.h"
+#include "internal/re.h"
 #include "internal/gc.h"
 #include "ruby/internal/globals.h"
 #include "ruby/ruby.h"
@@ -217,6 +218,7 @@ define_ruby_description(const char *const jit_opt)
         + rb_strlen_lit(JIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         + rb_strlen_lit(" +PRISM")
+        + rb_strlen_lit(" +RUST_REGEXP")
 #if USE_MODULAR_GC
         + rb_strlen_lit(GC_DESCRIPTION)
         // Assume the active GC name can not be longer than 20 chars
@@ -234,6 +236,7 @@ define_ruby_description(const char *const jit_opt)
     RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(JIT_DESCRIPTION));
     if (ruby_mn_threads_enabled) append(" +MN");
     if (rb_ruby_prism_p()) append(" +PRISM");
+    if (rb_reg_rust_engine_p()) append(" +RUST_REGEXP");
 #if USE_MODULAR_GC
     append(GC_DESCRIPTION);
     if (rb_gc_modular_gc_loaded_p()) {

@@ -51,3 +51,7 @@ mod ttycolors;
 /// test binary for simplicity.
 #[cfg(test)]
 use yjit as _;
+
+/// The same for the Rust regexp engine, which `re_engine.c` in libminiruby calls when it is built.
+#[cfg(test)]
+use regexp as _;

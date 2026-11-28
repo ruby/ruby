@@ -1,0 +1,33 @@
+# Workloads for comparing the regexp engines (doc/regexp/engine.md):
+#
+#   benchmark-driver benchmark/regexp_engine.yml \
+#     -e 'onigmo::./ruby --regexp-engine=onigmo' -e 'rust::./ruby --regexp-engine=rust'
+prelude: |
+  words = %w[alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu]
+  text = Array.new(200_000) { |i| words[i % words.size] }.join(" ")
+  utext = "日本語のテキストと English words が混ざった文章。" * 20_000
+  late = text + " needle"
+  csv = Array.new(50_000) { |i| "#{i}, item#{i}, #{i * 7 % 1000}" }.join("\n")
+  phones = Array.new(20_000) { |i| format("%03d-%04d", i % 1000, i % 10000) }
+  patterns = Array.new(500) { |i| "w#{i}(?:x|y)+\\d{#{i % 5 + 1}}" }
+  backtrack = "ab" * 200
+  cached = "a" * 5000 + "b"
+
+benchmark:
+  exact_bm: text =~ /needle/
+  exact_found_late: late =~ /needle/
+  map_search: text =~ /[qxz]q/
+  ignorecase: text =~ /hello world/i
+  ignorecase_utf8: utext =~ /hello world/i
+  backtracking_alt: backtrack =~ /(a|b)*c/
+  gsub_words: text.gsub(/\w+/) { |w| w }
+  scan_digits: csv.scan(/\d+/)
+  split_csv: csv.split(/,\s*/)
+  anchored_small: phones.each { |s| s.match?(/\A\d{3}-\d{4}\z/) }
+  named_captures: phones.each { |s| s =~ /(?<a>\d+)-(?<b>\d+)/ }
+  unicode_property: utext.scan(/\p{Han}+/)
+  compile: patterns.each { |p| Regexp.new(p) }
+  lookaround: text.scan(/(?<=a )\w+(?= g)/)
+  match_cache: cached =~ /^(a|a)*$/
+
+loop_count: 5
