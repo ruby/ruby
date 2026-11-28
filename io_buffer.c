@@ -661,6 +661,7 @@ struct io_buffer_for_yield_instance_arguments {
     VALUE string;
     VALUE instance;
     enum rb_io_buffer_flags flags;
+    int locked;
 };
 
 static VALUE
@@ -672,6 +673,7 @@ io_buffer_for_yield_instance(VALUE _arguments)
 
     if (!RB_OBJ_FROZEN(arguments->string)) {
         rb_str_locktmp(arguments->string);
+        arguments->locked = 1;
     }
 
     return rb_yield(arguments->instance);
@@ -686,7 +688,7 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
         rb_io_buffer_free(arguments->instance);
     }
 
-    if (!RB_OBJ_FROZEN(arguments->string)) {
+    if (arguments->locked) {
         rb_str_unlocktmp(arguments->string);
     }
 
@@ -872,6 +874,7 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
             .string = string,
             .instance = Qnil,
             .flags = 0,
+            .locked = 0,
         };
 
         return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
@@ -907,6 +910,7 @@ rb_io_buffer_type_string(VALUE klass, VALUE length)
         .klass = klass,
         .string = string,
         .instance = Qnil,
+        .locked = 0,
     };
 
     rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);

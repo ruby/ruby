@@ -214,6 +214,8 @@ SHARABLE_SUBSTRING_P(VALUE str, rb_len_t beg, rb_len_t len)
 #if SHARABLE_MIDDLE_SUBSTRING
     return true;
 #else
+    if (FL_TEST_RAW(str, STR_TMPLOCK))
+        return false;
     rb_len_t end = beg + len;
     rb_len_t source_len = RSTRING_LEN(str);
     return end == source_len || zero_filled(RSTRING_PTR(str) + end, TERM_LEN(str));
@@ -1612,9 +1614,9 @@ rb_str_no_gvl_safe_acquire(VALUE orig)
 
     /* If the string is embedded then we want to create a copy that is heap
      * allocated. If the string is shared then the shared root must be
-     * embedded, so we want to create a copy. If the string is a shared root
-     * then it must be embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
+     * embedded, so we want to create a copy. If the string is STR_TMPLOCK
+     * then we cannot modify it. */
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_TMPLOCK)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
@@ -1695,6 +1697,7 @@ heap_str_make_shared(VALUE klass, VALUE orig, int termlen)
     RUBY_ASSERT(!STR_EMBED_P(orig));
     RUBY_ASSERT(!STR_SHARED_P(orig));
     RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(orig));
+    RUBY_ASSERT(!FL_TEST_RAW(orig, STR_TMPLOCK));
 
     VALUE str = str_alloc_heap(klass);
     STR_SET_LEN(str, RSTRING_LEN(orig));
@@ -1754,7 +1757,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
         }
         else {
-            if (RB_OBJ_SHAREABLE_P(orig)) {
+            if (RB_OBJ_SHAREABLE_P(orig) || FL_TEST_RAW(orig, STR_TMPLOCK)) {
                 str = str_enc_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig), enc);
             }
             else {
@@ -2744,6 +2747,12 @@ rb_str_format_m(VALUE str, VALUE arg)
     return rb_str_format(1, &arg, str);
 }
 
+bool
+rb_str_lockedtmp_p(VALUE str)
+{
+    return FL_TEST_RAW(str, STR_TMPLOCK);
+}
+
 static inline void
 rb_check_lockedtmp(VALUE str)
 {
@@ -2955,12 +2964,13 @@ str_fill_term(VALUE str, char *s, rb_len_t len, int termlen)
 void
 rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen)
 {
+    rb_check_lockedtmp(str);
+
     rb_len_t capa = str_capacity(str, oldtermlen) + oldtermlen;
     rb_len_t len = RSTRING_LEN(str);
 
     RUBY_ASSERT(capa >= len);
     if (capa - len < termlen) {
-        rb_check_lockedtmp(str);
         str_make_independent_expand(str, len, 0L, termlen);
     }
     else if (str_dependent_p(str)) {
@@ -2984,6 +2994,8 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
 static char *
 str_null_check(VALUE str, int *w)
 {
+    rb_check_lockedtmp(str);
+
     char *s = RSTRING_PTR(str);
     rb_len_t len = RSTRING_LEN(str);
     int minlen = 1;
@@ -3017,6 +3029,7 @@ const char *
 rb_str_null_check(VALUE str)
 {
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+    rb_check_lockedtmp(str);
 
     const char *s;
     rb_len_t len;
@@ -3065,6 +3078,7 @@ str_to_cstr(VALUE str)
 char *
 rb_str_fill_terminator(VALUE str, const int newminlen)
 {
+    rb_check_lockedtmp(str);
     char *s = RSTRING_PTR(str);
     rb_len_t len = RSTRING_LEN(str);
     return str_fill_term(str, s, len, newminlen);
