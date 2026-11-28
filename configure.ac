@@ -102,7 +102,6 @@ AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     ])
     RUBY_APPEND_OPTION(BASERUBY, "--disable=gems")
     BASERUBY_VERSION=`$BASERUBY -v`
-    $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&AS_MESSAGE_FD
 ])
 AS_IF([test "$HAVE_BASERUBY" = no], [
     AS_IF([test "$cross_compiling" = yes], [AC_MSG_ERROR([executable host ruby is required for cross-compiling])])
