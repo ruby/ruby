@@ -195,6 +195,7 @@ module GC
   #    total_moved_objects: 0,
   #    remembered_wb_unprotected_objects: 0,
   #    remembered_wb_unprotected_objects_limit: 7,
+  #    collectible_wb_unprotected_objects: 312,
   #    old_objects: 721,
   #    old_objects_limit: 1442,
   #    oldmalloc_increase_bytes: 0,
@@ -275,6 +276,10 @@ module GC
   #   The total number of objects without write barriers.
   # - +:remembered_wb_unprotected_objects_limit+:
   #   When +:remembered_wb_unprotected_objects+ crosses this limit, major \GC is triggered.
+  # - +:collectible_wb_unprotected_objects+:
+  #   Number of objects without write barriers marked by the last \GC that are not
+  #   included in +:remembered_wb_unprotected_objects+. These never age, so a minor \GC
+  #   must traverse each live one again.
   # - +:old_objects+:
   #   Number of live, old objects which have survived at least 3 garbage collections.
   # - +:old_objects_limit+:
