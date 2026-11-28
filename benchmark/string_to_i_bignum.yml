@@ -1,0 +1,23 @@
+prelude: |
+  dec_20 = "9" * 20
+  dec_30 = "9" * 30
+  dec_50 = "9" * 50
+  dec_100 = "9" * 100
+  dec_300 = "9" * 300
+  dec_600 = "9" * 600
+  dec_1000 = "9" * 1000
+  base36_100 = "z" * 100
+  base3_300 = "2" * 300
+  hex_300 = "f" * 300
+
+benchmark:
+  dec_20: dec_20.to_i
+  dec_30: dec_30.to_i
+  dec_50: dec_50.to_i
+  dec_100: dec_100.to_i
+  dec_300: dec_300.to_i
+  dec_600: dec_600.to_i
+  dec_1000: dec_1000.to_i
+  base36_100: base36_100.to_i(36)
+  base3_300: base3_300.to_i(3)
+  hex_300: hex_300.to_i(16)
