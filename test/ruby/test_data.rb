@@ -116,6 +116,21 @@ class TestData < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_freezes_before_raising
+    klass = Data.define(:foo, :bar)
+    initialize = Data.instance_method(:initialize)
+    [
+      [ArgumentError, []],
+      [ArgumentError, [1, 2]],
+      [ArgumentError, [{foo: 1}]],
+      [TypeError, [{0 => 1, 1 => 2}]],
+    ].each do |error, args|
+      obj = klass.allocate
+      assert_raise(error) { initialize.bind_call(obj, *args) }
+      assert_predicate(obj, :frozen?, "after initialize(#{args.inspect[1..-2]})")
+    end
+  end
+
   def test_initialize_redefine
     klass = Data.define(:foo, :bar) do
       attr_reader :passed
