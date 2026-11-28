@@ -1295,54 +1295,51 @@ pub fn sub(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
     );
 }
 
-fn resize_opnd(opnd: X86Opnd, num_bits: u8) -> X86Opnd {
-    match opnd {
-        X86Opnd::Reg(reg) => {
-            let mut cloned = reg;
-            cloned.num_bits = num_bits;
-            X86Opnd::Reg(cloned)
-        },
-        X86Opnd::Mem(mem) => {
-            let mut cloned = mem;
-            cloned.num_bits = num_bits;
-            X86Opnd::Mem(cloned)
-        },
-        _ => unreachable!()
-    }
-}
-
 /// test - Logical Compare
 pub fn test(cb: &mut CodeBlock, rm_opnd: X86Opnd, test_opnd: X86Opnd) {
     assert!(matches!(rm_opnd, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
-    let rm_num_bits = rm_opnd.num_bits();
+
+    fn encode_with_imm_opnd(cb: &mut CodeBlock, rm_opnd: X86Opnd, immediate: u64, signed: bool) {
+        let operand_size = rm_opnd.num_bits();
+
+        // Sign extension of the 32 bits immediate happens only when the operand size is 64 bits.
+        // Otherwise, the immediate size matches the operand size.
+        if operand_size == 64 {
+            let num_bits = imm_num_bits(immediate as i64);
+            assert!(num_bits <= 32, "TEST: 0x{immediate:x} does not fit in 32 bits as two's complement");
+        } else {
+            let mut num_bits = uimm_num_bits(immediate);
+            if signed {
+                // When the immediate is signed, try dropping leading ones to fit.
+                // E.g. -1_i64 and u64::MAX have the same bit pattern, but we accept
+                // TEST mem8, -1 while we reject TEST mem8, 0xffffffffffffffff.
+                num_bits = num_bits.min(imm_num_bits(immediate as i64));
+            }
+            assert!(num_bits <= operand_size, "TEST: 0x{immediate:x} takes {num_bits} bits but must fit in {operand_size}");
+        }
+
+        if operand_size == 8 {
+            write_rm(cb, false, false, X86Opnd::None, rm_opnd, Some(0x00), &[0xf6]);
+            cb.write_int(immediate, 8);
+        } else {
+            // F7 /0 iz. The immediate is either 16 or 32 bits.
+            write_rm(cb, operand_size == 16, operand_size == 64, X86Opnd::None, rm_opnd, Some(0x00), &[0xf7]);
+            cb.write_int(immediate, if operand_size == 16 { 16 } else { 32 });
+        }
+    }
 
     match test_opnd {
         X86Opnd::UImm(uimm) => {
-            assert!(uimm.num_bits <= 32);
-            assert!(uimm.num_bits <= rm_num_bits);
-
-            // Use the smallest operand size possible
-            assert!(rm_num_bits % 8 == 0);
-            let rm_resized = resize_opnd(rm_opnd, uimm.num_bits);
-
-            if uimm.num_bits == 8 {
-                write_rm(cb, false, false, X86Opnd::None, rm_resized, Some(0x00), &[0xf6]);
-                cb.write_int(uimm.value, uimm.num_bits.into());
-            } else {
-                write_rm(cb, uimm.num_bits == 16, false, X86Opnd::None, rm_resized, Some(0x00), &[0xf7]);
-                cb.write_int(uimm.value, uimm.num_bits.into());
-            }
+            encode_with_imm_opnd(cb, rm_opnd, uimm.value, /*signed=*/false);
         },
         X86Opnd::Imm(imm) => {
-            // This mode only applies to 64-bit R/M operands with 32-bit signed immediates
-            assert!(imm.num_bits <= 32);
-            assert!(rm_num_bits == 64);
-
-            write_rm(cb, false, true, X86Opnd::None, rm_opnd, Some(0x00), &[0xf7]);
-            cb.write_int(imm.value as u64, 32);
+            // i64 as u64 preserves bit pattern
+            let immediate: i64 = imm.value;
+            encode_with_imm_opnd(cb, rm_opnd, immediate as u64, /*signed=*/true);
         },
         X86Opnd::Reg(reg) => {
-            assert!(reg.num_bits == rm_num_bits);
+            let rm_num_bits = rm_opnd.num_bits();
+            assert!(reg.num_bits == rm_num_bits, "{test_opnd:?} {rm_opnd:?}");
 
             if rm_num_bits == 8 {
                 write_rm(cb, false, false, test_opnd, rm_opnd, None, &[0x84]);

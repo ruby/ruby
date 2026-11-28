@@ -550,7 +550,7 @@ impl Assembler {
                     *right = split_if_both_memory(asm, *right, *left, SCRATCH0_OPND);
 
                     let num_bits = match right {
-                        Opnd::Imm(value) => Some(imm_num_bits(*value)),
+                        Opnd::Imm(value) => Some(imm_num_bits(*value).min(uimm_num_bits(*value as u64))),
                         Opnd::UImm(value) => Some(uimm_num_bits(*value)),
                         _ => None
                     };
@@ -1691,6 +1691,123 @@ mod tests {
 
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp word ptr [rax + 6], 0xf000");
         assert_snapshot!(cb.hexdump(), @"6681780600f0");
+    }
+
+    #[test]
+    fn test_emit_test_mem_imm() {
+        // `TEST mem, imm` with various mem sizes.
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::mem( 8, Opnd::Reg(RAX_REG), 0),  Opnd::Imm(1));
+        asm.test(Opnd::mem( 8, Opnd::Reg(RAX_REG), 0), Opnd::UImm(0));
+        asm.test(Opnd::mem(16, Opnd::Reg(RAX_REG), 0),  Opnd::Imm(1));
+        asm.test(Opnd::mem(16, Opnd::Reg(RAX_REG), 0), Opnd::UImm(0));
+        asm.test(Opnd::mem(32, Opnd::Reg(RAX_REG), 0),  Opnd::Imm(1));
+        asm.test(Opnd::mem(32, Opnd::Reg(RAX_REG), 0), Opnd::UImm(0));
+        asm.test(Opnd::mem(64, Opnd::Reg(RAX_REG), 0),  Opnd::Imm(1));
+        asm.test(Opnd::mem(64, Opnd::Reg(RAX_REG), 0), Opnd::UImm(0));
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: test byte ptr [rax], 1
+        0x3: test byte ptr [rax], 0
+        0x6: test word ptr [rax], 1
+        0xb: test word ptr [rax], 0
+        0x10: test dword ptr [rax], 1
+        0x16: test dword ptr [rax], 0
+        0x1c: test qword ptr [rax], 1
+        0x23: test qword ptr [rax], 0
+        ");
+        assert_snapshot!(cb.hexdump(), @"f60001f6000066f700010066f7000000f70001000000f7000000000048f7000100000048f70000000000");
+    }
+
+    #[test]
+    fn test_emit_test_imm_limits() {
+        // The immediate of TEST is 8, 16, or 32-bit, with sign extension from the 32-bit immediate
+        // when the operand is 64 bits. Test various boundary values.
+        let (mut asm, mut cb) = setup_asm();
+        let reg = Opnd::Reg(RCX_REG);
+
+        fn signed(number: impl Into<i64>) -> Opnd {
+            let number: i64 = number.into();
+            Opnd::Imm(number)
+        }
+
+        fn unsigned(number: impl Into<i64>) -> Opnd {
+            let number: i64 = number.into();
+            let number: u64 = number as u64;
+            Opnd::UImm(number)
+        }
+
+        // For each size, test the MAX of the size and MAX of smaller sizes.
+        asm.test(reg.with_num_bits( 8),    signed(u8::MAX));
+        asm.test(reg.with_num_bits( 8),  unsigned(u8::MAX));
+
+        asm.test(reg.with_num_bits(16),    signed(u8::MAX));
+        asm.test(reg.with_num_bits(16),  unsigned(u8::MAX));
+        asm.test(reg.with_num_bits(16),   signed(u16::MAX));
+        asm.test(reg.with_num_bits(16), unsigned(u16::MAX));
+
+        asm.test(reg.with_num_bits(32),    signed(u8::MAX));
+        asm.test(reg.with_num_bits(32),  unsigned(u8::MAX));
+        asm.test(reg.with_num_bits(32),   signed(u16::MAX));
+        asm.test(reg.with_num_bits(32), unsigned(u16::MAX));
+        asm.test(reg.with_num_bits(32),   signed(u32::MAX));
+        asm.test(reg.with_num_bits(32), unsigned(u32::MAX));
+
+        asm.test(reg.with_num_bits(64),    signed(u8::MAX));
+        asm.test(reg.with_num_bits(64),  unsigned(u8::MAX));
+        asm.test(reg.with_num_bits(64),   signed(u16::MAX));
+        asm.test(reg.with_num_bits(64), unsigned(u16::MAX));
+        asm.test(reg.with_num_bits(64),   signed(u32::MAX));
+        asm.test(reg.with_num_bits(64), unsigned(u32::MAX));
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: test cl, 0xff
+        0x3: test cl, 0xff
+        0x6: test cx, 0xff
+        0xb: test cx, 0xff
+        0x10: test cx, 0xffff
+        0x15: test cx, 0xffff
+        0x1a: test ecx, 0xff
+        0x20: test ecx, 0xff
+        0x26: test ecx, 0xffff
+        0x2c: test ecx, 0xffff
+        0x32: test ecx, 0xffffffff
+        0x38: test ecx, 0xffffffff
+        0x3e: test rcx, 0xff
+        0x45: test rcx, 0xff
+        0x4c: test rcx, 0xffff
+        0x53: test rcx, 0xffff
+        0x5a: mov r11d, 0xffffffff
+        0x60: test rcx, r11
+        0x63: mov r11d, 0xffffffff
+        0x69: test rcx, r11
+        ");
+        assert_snapshot!(cb.hexdump(), @"f6c1fff6c1ff66f7c1ff0066f7c1ff0066f7c1ffff66f7c1fffff7c1ff000000f7c1ff000000f7c1ffff0000f7c1ffff0000f7c1fffffffff7c1ffffffff48f7c1ff00000048f7c1ff00000048f7c1ffff000048f7c1ffff000041bbffffffff4c85d941bbffffffff4c85d9");
+    }
+
+    #[test]
+    fn test_emit_test_mem8_with_imm() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::mem(8, Opnd::Reg(RAX_REG), 6), Opnd::Imm(1));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: test byte ptr [rax + 6], 1");
+        assert_snapshot!(cb.hexdump(), @"f6400601");
+    }
+
+    #[test]
+    fn test_emit_test_mem16_with_narrower_uimm() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::mem(16, Opnd::Reg(RAX_REG), 6), Opnd::UImm(0));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: test word ptr [rax + 6], 0");
+        assert_snapshot!(cb.hexdump(), @"66f740060000");
     }
 
     #[test]
