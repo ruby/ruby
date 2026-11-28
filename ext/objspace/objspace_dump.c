@@ -191,14 +191,13 @@ dump_append_ref(struct dump_config *dc, VALUE ref)
 
 
 static void
-dump_append_string_value(struct dump_config *dc, VALUE obj)
+dump_append_escaped_string(struct dump_config *dc, const char *value, rb_len_t len)
 {
     rb_len_t i;
     char c;
-    const char *value;
 
     dump_append(dc, "\"");
-    for (i = 0, value = RSTRING_PTR(obj); i < RSTRING_LEN(obj); i++) {
+    for (i = 0; i < len; i++) {
         switch ((c = value[i])) {
           case '\\':
             dump_append(dc, "\\\\");
@@ -232,6 +231,12 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
         }
     }
     dump_append(dc, "\"");
+}
+
+static void
+dump_append_string_value(struct dump_config *dc, VALUE obj)
+{
+    dump_append_escaped_string(dc, RSTRING_PTR(obj), RSTRING_LEN(obj));
 }
 
 static void
@@ -649,9 +654,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     if (ainfo) {
         if (ainfo->path) {
-            dump_append(dc, ", \"file\":\"");
-            dump_append(dc, ainfo->path);
-            dump_append(dc, "\"");
+            dump_append(dc, ", \"file\":");
+            dump_append_escaped_string(dc, ainfo->path, (rb_len_t)strlen(ainfo->path));
         }
         if (ainfo->line) {
             dump_append(dc, ", \"line\":");

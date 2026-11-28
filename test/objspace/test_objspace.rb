@@ -840,6 +840,21 @@ class TestObjSpace < Test::Unit::TestCase
     ObjectSpace.trace_object_allocations_stop
   end
 
+  def test_dump_escapes_file_name
+    file_name = "ev\"il\nfile"
+    ObjectSpace.trace_object_allocations_start
+
+    obj = eval("Object.new", binding, file_name)
+
+    dump = ObjectSpace.dump(obj)
+    assert_include dump, '"file":"ev\"il\nfile"'
+
+    parsed = JSON.parse(dump)
+    assert_equal file_name, parsed["file"]
+  ensure
+    ObjectSpace.trace_object_allocations_stop
+  end
+
   def test_dump_includes_slot_size
     klass = Class.new
     obj = klass.new
