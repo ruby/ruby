@@ -3007,7 +3007,14 @@ match_ary_subseq(VALUE match, rb_len_t beg, rb_len_t len, VALUE result)
         rb_ary_push(result, rb_reg_nth_match((int)j, match));
     }
     if (beg + len > j) {
-        rb_ary_resize(result, RARRAY_LEN(result) + (beg + len) - j);
+        /* values_at passes a result that already has elements, so
+         * adding the padding to its length can overflow. */
+        const rb_len_t rest = beg + len - j;
+        if (rest > RB_LEN_MAX - RARRAY_LEN(result)) {
+            rb_raise(rb_eIndexError, "index %"PRIdLEN" too big",
+                     beg + len - 1);
+        }
+        rb_ary_resize(result, RARRAY_LEN(result) + rest);
     }
     return result;
 }
