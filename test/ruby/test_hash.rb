@@ -2149,6 +2149,15 @@ class TestHashOnly < Test::Unit::TestCase
     assert_operator ObjectSpace.memsize_of(h), :<, big/10
   end
 
+  def test_memory_size_of_slice
+    require 'objspace'
+    h = {}
+    20.times {|i| h[i] = i}
+    s = h.slice(*0...1000)
+    assert_equal(h, s)
+    assert_operator ObjectSpace.memsize_of(s), :<=, ObjectSpace.memsize_of(h)
+  end
+
   def test_wrapper
     bug9381 = '[ruby-core:59638] [Bug #9381]'
 
