@@ -10983,11 +10983,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         break;
       }
       case NODE_HASH:{
-        if (!RNODE_HASH(node)->nd_brace) {
-            *value_p = Qundef;
-            *shareable_literal_p = 0;
-            return COMPILE_OK;
-        }
+        if (!RNODE_HASH(node)->nd_brace) goto compile_shareable;
         for (NODE *n = RNODE_HASH(node)->nd_head; n; n = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_next) {
             if (!RNODE_LIST(n)->nd_head) {
                 // If the hash node have a keyword splat, fall back to the default case.

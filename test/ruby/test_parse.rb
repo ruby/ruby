@@ -1718,6 +1718,15 @@ x = __ENCODING__
     assert_equal({ x: {}, y: {}}, b)
   end
 
+  def test_shareable_constant_value_copy_with_braceless_hash
+    assert_valid_syntax(<<~RUBY, parser: :*)
+      # shareable_constant_value: experimental_copy
+      while pending?
+        OPTIONS = [:default, labels: []]
+      end
+    RUBY
+  end
+
   def test_shareable_constant_value_unshareable_literal
     assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
