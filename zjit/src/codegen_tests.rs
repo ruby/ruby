@@ -5329,8 +5329,8 @@ fn test_new_hash_static_sym_keys_gc_stress() {
 }
 
 // Eight pairs fills an inline embedded ar_table (the fast path); nine crosses
-// RHASH_AR_TABLE_MAX_SIZE, so it's built as a pre-sized st_table instead. Both stay
-// on the static-symbol leaf path, so this guards the ar_table and st_table routes.
+// RHASH_AR_TABLE_MAX_SIZE, so it's built in a pre-sized malloc'ed ar_table instead.
+// Both stay on the static-symbol leaf path, so this guards the embedded and heap routes.
 #[test]
 fn test_new_hash_static_sym_ar_table_boundary() {
     eval("
