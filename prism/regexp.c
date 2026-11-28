@@ -3508,11 +3508,18 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
     if (match_receiver != NULL && regexp_parser.names.size > 0) {
         pm_regexp_match_t *match = PM_ARENA_ALLOC(&parser->scratch_arena, pm_regexp_match_t);
         match->receiver = match_receiver;
-        match->size = regexp_parser.names.size;
-        match->captures = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, pm_regexp_capture_t, match->size);
+        match->size = 0;
+        match->captures = PM_ARENA_ALLOC_ARRAY(&parser->scratch_arena, pm_regexp_capture_t, regexp_parser.names.size);
 
-        for (size_t index = 0; index < match->size; index++) {
+        for (size_t index = 0; index < regexp_parser.names.size; index++) {
             const pm_regexp_name_t *name = &regexp_parser.names.values[index];
+
+            /* When the regexp and source encodings differ, only ASCII names can become locals. */
+            if (encoding != parser->encoding) {
+                const pm_string_t string = { .source = name->start, .length = name->length };
+                if (!pm_string_ascii_only_p(&string)) continue;
+            }
+
             uint32_t start = pm_regexp_source_offset(&regexp_parser, name->start, true);
             uint32_t end = pm_regexp_source_offset(&regexp_parser, name->start + name->length, false);
             const uint8_t *bytes = name->start;
@@ -3524,7 +3531,7 @@ pm_regexp_validate(const pm_regexp_t *regexp, const pm_regexp_offsets_t *offsets
                 bytes = copy;
             }
 
-            match->captures[index] = (pm_regexp_capture_t) { .name = bytes, .length = name->length, .location = { .start = start, .length = end - start } };
+            match->captures[match->size++] = (pm_regexp_capture_t) { .name = bytes, .length = name->length, .location = { .start = start, .length = end - start } };
         }
 
         parser->regexp_match = match;

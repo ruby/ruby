@@ -55,6 +55,30 @@ module Ruby::Prism
       assert_equal "\\u3042", result.value.statements.body.first.targets.first.location.slice
     end
 
+    def test_named_capture_locals_when_a_unicode_escape_sets_the_regexp_encoding
+      source = '/(?<\ueee5>)(?<ascii>)(?<a\u3042>)\k<\ueee5>/ =~ ""'
+      self.class.each_encoding([Encoding::CESU_8, Encoding::ASCII_8BIT, Encoding::UTF_8]) do |encoding|
+        result = Ruby::Prism.parse(source, encoding: encoding)
+        assert_empty result.errors, encoding.name
+
+        expected = encoding == Encoding::UTF_8 ? [:"\uEEE5", :ascii, :aあ] : [:ascii]
+        assert_equal expected, result.value.locals, encoding.name
+        assert_equal expected, result.statement.targets.map(&:name), encoding.name
+      end
+    end
+
+    def test_non_ascii_named_capture_in_a_binary_regexp
+      source = '/(?<\xC3\xA9>)/n =~ ""'
+      binary = Ruby::Prism.parse(source, encoding: Encoding::ASCII_8BIT)
+      assert_empty binary.errors
+      assert_equal ["\xC3\xA9".b.to_sym], binary.value.locals
+
+      utf8 = Ruby::Prism.parse(source, encoding: Encoding::UTF_8)
+      assert_empty utf8.errors
+      assert_empty utf8.value.locals
+      assert_kind_of CallNode, utf8.statement
+    end
+
     def test_nested_matches_keep_their_own_captures
       result = Ruby::Prism.parse('/(?<outer>x)/ =~ (/(?<inner>y)/ =~ "y"); [outer, inner]')
       assert_empty result.errors
