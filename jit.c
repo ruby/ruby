@@ -763,7 +763,8 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
     const uintptr_t probe_stride = 2 * 1024 * 1024;
     const int max_probe_trials = 32;
 # else
-    // 64MiB: balancing space probed and time spent probing.
+    // x86-64: Probing to be within 32-bit near call with 64MiB,
+    // balancing space probed and time spent probing.
     const uintptr_t probe_stride = 64 * 1024 * 1024;
     // Related to the stride. Any successful trial will be within INT32_MAX
     // range with slack for the binary size.
