@@ -172,4 +172,66 @@ class TestFiberThread < Test::Unit::TestCase
   ensure
     inner&.join
   end
+
+  ABANDONING_SCHEDULER = <<~'RUBY'
+    # A scheduler which never resumes the fibers blocked in #block.
+    class AbandoningScheduler
+      def initialize = @main = Fiber.current
+      def block(blocker, timeout = nil) = @main.transfer
+      def unblock(blocker, fiber) = nil
+      def kernel_sleep(duration = nil) = block(:sleep, duration)
+      def io_wait(io, events, timeout) = block(:io_wait, timeout)
+      def fiber_interrupt(fiber, exception) = nil
+      def close = nil
+
+      def fiber(&block)
+        fiber = Fiber.new(blocking: false, &block)
+        fiber.transfer
+        fiber
+      end
+    end
+  RUBY
+
+  def test_thread_join_abandoned_by_terminated_thread
+    assert_separately([], ABANDONING_SCHEDULER + <<~'RUBY', timeout: 60)
+      100.times do |i|
+        queue = Thread::Queue.new
+        target = Thread.new { queue.pop }
+
+        Thread.new do
+          Fiber.set_scheduler(AbandoningScheduler.new)
+          # The fiber blocks in Thread#join and is never resumed, so its waiter
+          # stays on target's join list after this thread terminates.
+          Fiber.schedule { target.join }
+        end.join
+
+        GC.start
+        queue << i
+        assert_equal i, target.value
+      end
+    RUBY
+  end
+
+  def test_thread_join_abandoned_fiber_garbage_collected
+    assert_separately([], ABANDONING_SCHEDULER + <<~'RUBY', timeout: 60)
+      100.times do |i|
+        queue = Thread::Queue.new
+        target = Thread.new { queue.pop }
+
+        Thread.new do
+          Fiber.set_scheduler(AbandoningScheduler.new)
+          # Nothing references the fiber blocked in Thread#join while this
+          # thread is still alive.
+          Fiber.schedule { target.join }
+          Fiber.set_scheduler(nil)
+
+          GC.start
+          10.times { Fiber.new { Array.new(100, i) }.resume }
+
+          queue << i
+          assert_equal i, target.value
+        end.join
+      end
+    RUBY
+  end
 end
