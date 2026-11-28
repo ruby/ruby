@@ -361,6 +361,23 @@ rb_zjit_local_id(const rb_iseq_t *iseq, unsigned idx)
     return ISEQ_BODY(iseq)->local_table[idx];
 }
 
+// Return true if unwinding a `break` or non-local `return` through a frame of `iseq`
+// stopped at `epc` (the PC offset after the current instruction) would run an ensure
+// clause, like vm_exec_handle_exception() does.
+bool
+rb_zjit_iseq_ensure_covers_p(const rb_iseq_t *iseq, unsigned int epc)
+{
+    const struct iseq_catch_table *ct = ISEQ_BODY(iseq)->catch_table;
+    if (!ct) return false;
+    for (unsigned int i = 0; i < ct->size; i++) {
+        const struct iseq_catch_table_entry *entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
+        if (entry->type == CATCH_TYPE_ENSURE && entry->start < epc && entry->end >= epc) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func);
 
 const struct rb_callable_method_entry_struct *
