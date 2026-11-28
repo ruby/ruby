@@ -33,25 +33,28 @@ describe "Array#rindex" do
   end
 
   ruby_version_is "4.1" do
-    it "does not search before a non-negative offset" do
-      [1, 2, 1, 2].rindex(1, offset: 1).should == 2
-      [1, 2, 1, 2].rindex(1, offset: 3).should == nil
+    it "starts searching backward at a non-negative offset" do
+      [1, 2, 1, 2].rindex(1, offset: 1).should == 0
+      [1, 2, 1, 2].rindex(1, offset: 3).should == 2
     end
 
     it "starts searching at a negative offset relative to the end" do
       [1, 2, 1, 2].rindex(2, offset: -2).should == 1
     end
 
-    it "returns nil when the offset is outside the array" do
+    it "clamps an offset past the end of the array" do
       array = [1, 2, 1, 2]
+      array.rindex(1, offset: array.size).should == 2
+    end
 
-      array.rindex(1, offset: array.size).should == nil
+    it "returns nil when a negative offset is before the start of the array" do
+      array = [1, 2, 1, 2]
       array.rindex(1, offset: -array.size - 1).should == nil
     end
 
     it "ignores the block if there is an argument and an offset" do
       -> {
-        [4, 2, 1, 5, 1, 3].rindex(1, offset: 2) { |x| x < 2 }.should == 4
+        [4, 2, 1, 5, 1, 3].rindex(1, offset: 2) { |x| x < 2 }.should == 2
       }.should complain(/given block not used/)
     end
   end
