@@ -2524,6 +2524,208 @@ fn test_send_proc_block_arg_lambda() {
 }
 
 #[test]
+fn test_send_symbol_block_arg_direct() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test = foo(&:succ)
+        test
+        test
+    "), @"4");
+}
+
+#[test]
+fn test_send_symbol_block_arg_to_cfunc() {
+    assert_snapshot!(inspect("
+        def test(array) = [array.reject(&:odd?), array.sum(&:succ)]
+        test([1, 2, 3])
+        test([1, 2, 3])
+    "), @"[[2], 9]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_side_exit() {
+    assert_snapshot!(inspect(r#"
+        class Integer
+          def method_missing(name, *) = name.start_with?("dynamic_") ? -self : super
+        end
+        def foo = block_given? ? yield(3) : :none
+        def test(blk) = foo(&blk)
+        test(:succ)
+        test(:succ)
+        [test(:succ), test(nil), test(proc { |x| x * 2 }), test("dynamic_#{$$}".to_sym), test(:pred)]
+    "#), @"[4, :none, 6, -3, 2]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_to_proc_redefined_after_compile() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def iseq = foo(&:succ)
+        def cfunc = [3].flat_map(&:succ)
+        def variadic_cfunc = [3].sum(&:succ)
+        iseq; iseq
+        cfunc; cfunc
+        variadic_cfunc; variadic_cfunc
+        class Symbol
+          def to_proc
+            Object.class_eval 'def foo = yield 30'
+            proc { |x| x * 10 }
+          end
+        end
+        [iseq, cfunc, variadic_cfunc]
+    "), @"[300, [30], 30]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_to_proc_redefined_before_compile() {
+    assert_snapshot!(inspect("
+        $calls = 0
+        class Symbol
+          def to_proc
+            $calls += 1
+            Object.class_eval \"def foo = yield #{$calls * 10}\"
+            proc { |x| x + 1 }
+          end
+        end
+        def foo = yield 0
+        def test = foo(&:succ)
+        [test, test, test]
+    "), @"[11, 21, 31]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_to_proc_redefined_with_itself() {
+    assert_snapshot!(inspect("
+        module Doubling
+          refine(Integer) { def double = self * 2 }
+        end
+        def foo = yield 3
+        module Refined
+          using Doubling
+          def self.iseq = foo(&:double)
+          def self.cfunc = proc(&:double)
+          def self.variadic_cfunc = Proc.new(&:double)
+        end
+        def test = [(Refined.iseq rescue $!.class), (Refined.cfunc.call(3) rescue $!.class), (Refined.variadic_cfunc.call(3) rescue $!.class)]
+        before = [test, test].last
+        Symbol.define_method(:to_proc, Symbol.instance_method(:to_proc))
+        [before, test]
+    "), @"[[6, 6, 6], [NoMethodError, NoMethodError, NoMethodError]]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_guard_precedes_to_proc() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test(blk) = foo(&blk)
+        redefine = Object.new
+        def redefine.to_proc
+          Object.class_eval 'def foo = yield 30'
+          proc { |x| x + 1 }
+        end
+        test(:succ)
+        test(:succ)
+        test(redefine)
+    "), @"31");
+}
+
+#[test]
+fn test_send_symbol_block_arg_with_refinements() {
+    assert_snapshot!(inspect("
+        module Doubling
+          refine(Integer) do
+            def double = self * 2
+            def ten = self + 10
+            def twenty = self + 20
+            def thirty = self + 30
+          end
+        end
+        def foo = yield 3
+        module Refined
+          using Doubling
+          def self.iseq = foo(&:double)
+          def self.cfunc = [[3].flat_map(&:double), [3].sum(&:double)]
+          def self.uncached(a, b, c) = [foo(&a), [3].flat_map(&b), [3].sum(&c)]
+        end
+        def inlined = Refined.iseq
+        def unrefined = foo(&:double)
+        def error = yield.class
+        Refined.iseq
+        Refined.cfunc
+        Refined.uncached(:double, :double, :double)
+        inlined
+        unrefined rescue nil
+        GC.stress = true
+        result = [Refined.iseq, Refined.cfunc, Refined.uncached(:ten, :twenty, :thirty), inlined]
+        GC.stress = false
+        result << error { unrefined rescue $! }
+    "), @"[6, [[6], 6], [13, [23], 33], 6, NoMethodError]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_with_refinements_activated_after_compile() {
+    assert_snapshot!(inspect("
+        module Doubling
+          refine(Integer) { def double = self * 2 }
+        end
+        def foo = yield 3
+        test = -> { [(foo(&:double) rescue $!.class), ([3].flat_map(&:double) rescue $!.class), ([3].sum(&:double) rescue $!.class)] }
+        before = [test.(), test.()].last
+        using Doubling
+        [before, test.()]
+    "), @"[[NoMethodError, NoMethodError, NoMethodError], [6, [6], 6]]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_to_proc_redefined_with_itself_keeps_proc_identity() {
+    assert_snapshot!(inspect("
+        SYMS = 200.times.map { |i| :\"evict_#{i}\" }
+        def materialize(expected, &b)
+          SYMS.each(&:to_proc)
+          b.equal?(expected)
+        end
+        def test(expected) = materialize(expected, &:succ)
+        test(:succ.to_proc)
+        test(:succ.to_proc)
+        Symbol.define_method(:to_proc, Symbol.instance_method(:to_proc))
+        test(:succ.to_proc)
+    "), @"true");
+}
+
+#[test]
+fn test_send_symbol_block_arg_block_param() {
+    assert_snapshot!(inspect("
+        def foo(&blk) = [block_given?, blk.lambda?, blk.arity, blk.call(3)]
+        def test = foo(&:succ)
+        test
+        test
+    "), @"[true, true, -2, 4]");
+}
+
+#[test]
+fn test_send_symbol_block_arg_errors() {
+    assert_snapshot!(inspect("
+        class Foo
+          def boom = raise('boom')
+          private def secret = 1
+        end
+        def none = yield
+        def one(x) = yield(x)
+        def no_receiver = none(&:succ)
+        def private_call(x) = one(x, &:secret)
+        def raising(x) = one(x, &:boom)
+        def message
+          yield
+        rescue => e
+          [e.class, e.message[/\\A[\\w ]+/], e.backtrace_locations.first(3).map(&:base_label)]
+        end
+        foo = Foo.new
+        2.times { message { no_receiver }; message { private_call(foo) }; message { raising(foo) } }
+        [message { no_receiver }, message { private_call(foo) }, message { raising(foo) }]
+    "), @r#"[[ArgumentError, "no receiver given", ["none", "no_receiver", "<compiled>"]], [NoMethodError, "private method ", ["one", "private_call", "<compiled>"]], [RuntimeError, "boom", ["boom", "one", "raising"]]]"#);
+}
+
+#[test]
 fn test_send_proc_block_arg_rest_optional_keyword_callee() {
     // Callee has rest/optional/keyword params (so `prepare_direct_send_args` builds
     // a `NewArray` for the rest param) and also `yield`s, so it's eligible for the

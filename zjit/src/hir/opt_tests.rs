@@ -13500,7 +13500,7 @@ mod hir_opt_tests {
           StoreField v29, :result@0x1020, v13
           PatchPoint NoSingletonClass(Array@0x1028)
           PatchPoint MethodRedefined(Array@0x1028, zip@0x1030, cme:0x1038)
-          v47:BasicObject = CCallVariadic v19, :Array#zip@0x1060, v25
+          v47:BasicObject = CCallVariadic v19, :Array#zip@0x1060, v25, block=0x1068
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v13
@@ -13935,9 +13935,9 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_send_with_non_nil_block_arg() {
+    fn test_send_with_symbol_block_arg() {
         eval(r#"
-            def foo = 42
+            def foo = yield(42)
 
             def test
               block = :to_s
@@ -13956,12 +13956,237 @@ mod hir_opt_tests {
           v5:BasicObject = LoadArg :self@0
           Jump bb3(v5)
         bb3(v8:BasicObject):
-          v27:NilClass = Const Value(nil)
+          v39:NilClass = Const Value(nil)
           v13:StaticSymbol[:to_s] = Const Value(VALUE(0x1000))
-          v19:BasicObject = Send v8, &block, :foo, v13 # SendFallbackReason: Send: block argument is not nil
+          PatchPoint RootBoxOnly
+          PatchPoint MethodRedefined(Symbol@0x1008, to_proc@0x1010, cme:0x1018)
+          v30:CallableMethodEntry[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v31:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v32:CUInt64 = GuardAnyBitSet v31, METHOD_ENTRY_BASIC_FLAG=CUInt64(524288) recompile
+          v33:CPtr = GetCref
+          v34:RubyValue = LoadField v33, :refinements@0x1041
+          v35:NilClass = GuardBitEquals v34, Value(nil) recompile
+          PatchPoint MethodRedefined(Object@0x1048, foo@0x1050, cme:0x1058)
+          v37:ObjectSubclass[class_exact*:Object@VALUE(0x1048)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1048)] recompile
+          v38:BasicObject = SendDirect v37, &v13, :foo (0x1080)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v19
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_send_with_arbitrary_block_arg_falls_back() {
+        eval(r#"
+            class BlockargToProc
+              def to_proc = proc { |value| value }
+            end
+
+            def foo = yield(42)
+
+            def test(block)
+              foo(&block)
+            end
+            block = BlockargToProc.new
+            test(block); test(block)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Send: block argument is not nil
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_send_with_profiled_symbol_block_arg() {
+        eval("
+            def foo = yield(42)
+            def test(block) = foo(&block)
+            test(:to_s); test(:to_s)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v24:StaticSymbol = GuardType v10, StaticSymbol recompile
+          PatchPoint RootBoxOnly
+          PatchPoint MethodRedefined(Symbol@0x1008, to_proc@0x1010, cme:0x1018)
+          v28:CallableMethodEntry[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v29:CUInt64 = LoadField v28, :RBASIC_FLAGS@0x1040
+          v30:CUInt64 = GuardAnyBitSet v29, METHOD_ENTRY_BASIC_FLAG=CUInt64(524288) recompile
+          v31:CPtr = GetCref
+          v32:RubyValue = LoadField v31, :refinements@0x1041
+          v33:NilClass = GuardBitEquals v32, Value(nil) recompile
+          PatchPoint MethodRedefined(Object@0x1048, foo@0x1050, cme:0x1058)
+          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1048)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1048)] recompile
+          v36:BasicObject = SendDirect v35, &v24, :foo (0x1080)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v36
+        ");
+    }
+
+    #[test]
+    fn test_send_with_dynamic_symbol_block_arg_falls_back() {
+        eval(r#"
+            def foo = yield(42)
+            def test(block) = foo(&block)
+            block = "dynamic_block_arg".to_sym
+            2.times { test(block) rescue nil }
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Send: block argument is not nil
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_send_to_cfunc_with_symbol_block_arg() {
+        eval("
+            def test(array) = array.reject(&:odd?)
+            test([1, 2]); test([1, 2])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :array@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :array@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:odd?] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint RootBoxOnly
+          PatchPoint MethodRedefined(Symbol@0x1018, to_proc@0x1020, cme:0x1028)
+          v29:CallableMethodEntry[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+          v30:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1050
+          v31:CUInt64 = GuardAnyBitSet v30, METHOD_ENTRY_BASIC_FLAG=CUInt64(524288) recompile
+          v32:CPtr = GetCref
+          v33:RubyValue = LoadField v32, :refinements@0x1051
+          v34:NilClass = GuardBitEquals v33, Value(nil) recompile
+          PatchPoint MethodRedefined(Array@0x1010, reject@0x1052, cme:0x1058)
+          v37:ArrayExact = GuardType v10, ArrayExact recompile
+          v38:BasicObject = CCallWithFrame v37, :Array#reject@0x1080, block=&v15
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_send_to_cfunc_with_symbol_block_arg_and_splat_falls_back() {
+        eval("
+            def test(array, args, block) = array.each_slice(*args, &block)
+            test([1, 2], [1], :sum); test([1, 2], [1], :sum)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :array@0x1000
+          v4:BasicObject = LoadField v2, :args@0x1001
+          v5:BasicObject = LoadField v2, :block@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :array@1
+          v10:BasicObject = LoadArg :args@2
+          v11:BasicObject = LoadArg :block@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          v22:ArrayExact = ToArray v15
+          PatchPoint NoEPEscape(test)
+          v27:BasicObject = Send v14, &block, :each_slice, v22, v16 # SendFallbackReason: Complex argument passing
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_send_to_variadic_cfunc_with_symbol_block_arg() {
+        eval("
+            def test(array) = array.sum(&:succ)
+            test([1, 2]); test([1, 2])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :array@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :array@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StaticSymbol[:succ] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint RootBoxOnly
+          PatchPoint MethodRedefined(Symbol@0x1018, to_proc@0x1020, cme:0x1028)
+          v29:CallableMethodEntry[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+          v30:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1050
+          v31:CUInt64 = GuardAnyBitSet v30, METHOD_ENTRY_BASIC_FLAG=CUInt64(524288) recompile
+          v32:CPtr = GetCref
+          v33:RubyValue = LoadField v32, :refinements@0x1051
+          v34:NilClass = GuardBitEquals v33, Value(nil) recompile
+          PatchPoint MethodRedefined(Array@0x1010, sum@0x1052, cme:0x1058)
+          v37:ArrayExact = GuardType v10, ArrayExact recompile
+          v38:BasicObject = CCallVariadic v37, :Array#sum@0x1080, block=&v15
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v38
         ");
     }
 
@@ -20208,7 +20433,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_no_inline_send_with_symbol_block() {
+    fn test_send_with_unused_symbol_block_falls_back() {
         eval(r#"
             def callee = 123
             public def the_block = 456
@@ -20229,7 +20454,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:StaticSymbol[:the_block] = Const Value(VALUE(0x1000))
-          v13:BasicObject = Send v6, &block, :callee, v11 # SendFallbackReason: Send: block argument is not nil
+          v13:BasicObject = Send v6, &block, :callee, v11 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v13
         ");

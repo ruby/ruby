@@ -25,6 +25,9 @@ pub struct IseqPayload {
     /// `BasicObject`) when the owner is unknown.
     /// See [`crate::cruby::iseq_self_is_heap_object`].
     pub self_is_heap_object: bool,
+    /// Whether a Symbol block argument in this ISEQ exited because its cref had refinements
+    /// ([`crate::hir::SideExitReason::BlockArgRefinements`]). Its next version leaves such sends dynamic.
+    pub exited_for_block_arg_refinements: bool,
     /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
     pub num_exits_until_invalidate: NumExits,
     /// Cached result of [`crate::codegen::iseq_may_write_block_code`].
@@ -38,6 +41,7 @@ impl IseqPayload {
             versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
+            exited_for_block_arg_refinements: false,
             num_exits_until_invalidate: get_option!(num_exits_until_invalidate),
             may_write_block_code: None,
         }

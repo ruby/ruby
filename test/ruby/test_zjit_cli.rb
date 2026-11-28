@@ -492,6 +492,10 @@ class TestZJITCLI < Test::Unit::TestCase
       ['def target(a: 0, b: 0, c: 0, x: 0) = [x].sum', 'target(x: 1)', '--zjit-inline-max-iterations=0'],
       ['def target(a: 0, b: 0, c: 0, x: 0) = [x].sum', 'target(x: 1)', nil],
       ['def target(x:, a:) = x', 'target(a: 0, x: 1)', '--zjit-inline-max-iterations=0'],
+      ['def target(x) = yield(x)', 'target(1, &:itself)', '--zjit-inline-max-iterations=0'],
+      ['def target(x) = yield(x)', 'target(1, &:itself)', nil],
+      ['', '[1].sum(&:itself)', nil],
+      ['', '[1, nil].reject(&:nil?).first', nil],
     ].each do |target, call, inline|
       args = [{'RUBY_THREAD_VM_STACK_SIZE' => '32768'}, '--disable-gems', '--zjit',
               '--zjit-call-threshold=2', '--zjit-num-profiles=1', *inline]
@@ -516,6 +520,23 @@ class TestZJITCLI < Test::Unit::TestCase
         puts 'ok'
       RUBY
     end
+  end
+
+  def test_send_symbol_block_arg_in_box_with_redefined_to_proc
+    args = [{'RUBY_BOX' => '1'}, '--disable-gems', '-W0', '--zjit', '--zjit-call-threshold=2', '--zjit-num-profiles=1']
+    assert_in_out_err(args, <<~'RUBY', ['[11, 11, 11, 11]'])
+      box = Ruby::Box.new
+      box.eval(<<~BOXED)
+        class Symbol
+          def to_proc = proc { |x| x + 10 }
+        end
+        module Boxed
+          def self.foo = yield 1
+          def self.test = foo(&:succ)
+        end
+      BOXED
+      p 4.times.map { box::Boxed.test }
+    RUBY
   end
 
   def test_send_forwarded_nil_block_arg_with_polymorphic_receiver
