@@ -673,6 +673,9 @@ rb_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, 
     st_data_t data;
     int type, found;
 
+    /* Non-main Ractors must use rb_feature_provided_ractor_safe() */
+    RUBY_ASSERT(rb_ractor_main_p());
+
     if (fn) *fn = 0;
     if (ext) {
         len = strlen(feature) - strlen(ext);
@@ -791,6 +794,14 @@ feature_provided(rb_box_t *box, const char *feature, const char **loading)
 int
 rb_feature_provided(const char *feature, const char **loading)
 {
+    if (!rb_ractor_main_p()) {
+        /* feature_provided() may rebuild the index and reads the loading table,
+         * both owned by the main Ractor.  Answer from the snapshot instead; when
+         * that cannot tell, report the feature as not provided. */
+        if (loading) *loading = 0;
+        return rb_feature_provided_ractor_safe(rb_str_new_cstr(feature));
+    }
+
     rb_box_t *box = (rb_box_t *)rb_current_box();
     return feature_provided(box, feature, loading);
 }

@@ -945,6 +945,45 @@ class TestRactor < Test::Unit::TestCase
     end
   RUBY
 
+  # [Bug #22622]
+  def test_autoload_queries_while_main_ractor_requires
+    assert_ractor(<<~'RUBY')
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        File.write("#{dir}/loaded.rb", "")
+        require "#{dir}/loaded.rb"
+        mod = Module.new
+        Object.const_set(:AutoloadQueries, mod)
+        mod.autoload(:Loaded, "#{dir}/loaded.rb")
+        50.times { |i| mod.autoload(:"Pending#{i}", "#{dir}/pending_#{i}.rb") }
+
+        ractors = 4.times.map do
+          Ractor.new do
+            m = AutoloadQueries
+            200.times do
+              m.constants(false).each do |c|
+                m.autoload?(c, false)
+                m.const_defined?(c, false)
+              end
+            end
+            [m.autoload?(:Loaded), m.const_defined?(:Loaded),
+             m.autoload?(:Pending0).nil?, m.const_defined?(:Pending0)]
+          end
+        end
+
+        200.times do |i|
+          path = "#{dir}/extra_#{i}.rb"
+          File.write(path, "")
+          require path
+        end
+
+        ractors.each do |r|
+          assert_equal [nil, false, false, true], r.value
+        end
+      end
+    RUBY
+  end
+
   # The next three make one of the fast path's guards decline. require must still
   # give the right answer, by falling back to the main Ractor as before.
   def test_require_fast_path_declines_on_relative_load_path
