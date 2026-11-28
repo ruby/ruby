@@ -2697,6 +2697,9 @@ enum_minmax(VALUE obj)
         if (!UNDEF_P(m->last))
             minmax_i_update(m->last, m->last, m);
     }
+    /* m points into memo, and the last update may trigger GC, calling the
+     * block or #<=>, before m is read. */
+    RB_GC_GUARD(memo);
     if (!UNDEF_P(m->min)) {
         return rb_assoc_new(m->min, m->max);
     }
