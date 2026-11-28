@@ -1582,4 +1582,43 @@ class TestTime < Test::Unit::TestCase
       assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
     end
   end
+
+  def test_utc_month_mday_normalization
+    bug21301 = "[ruby-core:121801] [Bug #21301]"
+
+    [
+      [[2025, 4, 31, 0], [2025, 5, 1, 0]],
+      [[2025, 6, 31, 0], [2025, 7, 1, 0]],
+      [[2025, 9, 31, 0], [2025, 10, 1, 0]],
+      [[2025, 11, 31, 0], [2025, 12, 1, 0]],
+      [[2025, 2, 29, 0], [2025, 3, 1, 0]],
+      [[2024, 2, 29, 0], [2024, 2, 29, 0]],
+      [[2025, 4, 31, 24], [2025, 5, 2, 0]],
+    ].each do |args, expected|
+      t = Time.new(*args, 0, 0, "UTC")
+      assert_equal(expected, [t.year, t.mon, t.mday, t.hour], "#{bug21301} #{args}")
+      assert_equal(Time.utc(*expected), t, "#{bug21301} #{args}")
+    end
+
+    t = Time.new("2025-04-31T00:00:00Z")
+    assert_equal([2025, 5, 1], [t.year, t.mon, t.mday], bug21301)
+
+    assert_equal(Time.new(2025, 4, 31, 0, 0, 0, "+00:00").to_i,
+                 Time.new(2025, 4, 31, 0, 0, 0, "UTC").to_i, bug21301)
+  end
+
+  def test_month_mday_normalization_with_negative_utc_offset
+    assert_equal(Time.utc(2026, 3, 4, 4), Time.new(2026, 2, 31, 23, 0, 0, -18000))
+    assert_equal(Time.utc(2026, 3, 4, 4), Time.new(2026, 2, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2024, 3, 3, 4), Time.new(2024, 2, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2000, 3, 3, 4), Time.new(2000, 2, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(1900, 3, 4, 4), Time.new(1900, 2, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2026, 5, 2, 4), Time.new(2026, 4, 31, 23, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2026, 5, 2, 5), Time.new(2026, 4, 31, 24, 0, 0, "-05:00"))
+    assert_equal(Time.utc(2026, 3, 4, 4), Time.new("2026-02-31 23:00:00 -05:00"))
+  end
+
+  def test_local_month_mday_normalization
+    assert_equal(Time.local(3_000_000_000, 3, 2, 23), Time.new(3_000_000_000, 2, 31, 23))
+  end
 end

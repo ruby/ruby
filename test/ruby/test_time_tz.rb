@@ -205,6 +205,13 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end if has_lisbon_tz
 
+  def test_pacific_auckland
+    with_tz(tz="Pacific/Auckland") {
+      assert_time_constructor(tz, "2000-10-01 03:30:00 +1300", :local, [2000,9,31,3,30])
+      assert_time_constructor(tz, "2000-10-01 03:30:00 +1300", :new, [2000,9,31,3,30])
+    }
+  end
+
   def test_pacific_kiritimati
     with_tz(tz="Pacific/Kiritimati") {
       assert_time_constructor(tz, "1994-12-30 00:00:00 -1000", :local, [1994,12,30,0,0,0])
@@ -623,6 +630,13 @@ module TestTimeTZ::WithTZ
   def subtest_hour24(time_class, tz, tzarg, tzname, abbr, utc_offset)
     t = time_class.new(2000, 1, 1, 24, 0, 0, tzarg)
     assert_equal([0, 0, 0, 2, 1, 2000], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
+  end
+
+  def subtest_month_mday_normalization(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 2, 31, 12, 0, 0, tzarg)
+    assert_equal([0, 0, 12, 3, 3, 2018], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
+    t = time_class.new(2018, 4, 31, 24, 0, 0, tzarg)
+    assert_equal([0, 0, 0, 2, 5, 2018], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
   end
 
   def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
