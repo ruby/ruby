@@ -10534,6 +10534,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (cast->expression) {
             PM_COMPILE(cast->expression);
         }
+        else if (!popped) {
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
+            PUSH_GETLOCAL(ret, location, index.index, index.level);
+        }
 
         if (!popped) {
             PUSH_INSN1(ret, location, splatarray, Qtrue);
