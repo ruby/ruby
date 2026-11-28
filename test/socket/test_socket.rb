@@ -108,6 +108,18 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(ArgumentError) {Socket.getnameinfo(["AF_INET", "http", "example.net\0"])}
   end
 
+  def test_getnameinfo_short_unix_sockaddr
+    flags = Socket::NI_NUMERICHOST | Socket::NI_NUMERICSERV
+    sockaddr = Socket.sockaddr_un("a" * 100)
+    begin
+      Socket.getnameinfo(sockaddr, flags)
+      _, serv = Socket.getnameinfo(sockaddr.byteslice(0, 2), flags)
+    rescue Socket::ResolutionError
+      omit "getnameinfo does not support AF_UNIX"
+    end
+    assert_equal("", serv)
+  end if Socket.respond_to?(:sockaddr_un)
+
   def test_ip_address_list
     begin
       list = Socket.ip_address_list

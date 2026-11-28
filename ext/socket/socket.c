@@ -1112,6 +1112,7 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
             rb_raise(rb_eTypeError, "sockaddr length too big");
         }
         memcpy(&ss, RSTRING_PTR(sa), RSTRING_LEN(sa));
+        memset((char *)&ss + RSTRING_LEN(sa), 0, sizeof(ss) - RSTRING_LEN(sa));
         if (!VALIDATE_SOCKLEN(&ss.addr, RSTRING_LEN(sa))) {
             rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
         }
