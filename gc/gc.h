@@ -123,6 +123,7 @@ MODULAR_GC_FN void rb_gc_after_updating_jit_code(void);
 MODULAR_GC_FN bool rb_gc_obj_shareable_p(VALUE);
 MODULAR_GC_FN void rb_gc_rp(VALUE);
 MODULAR_GC_FN void rb_gc_handle_weak_references(void *objspace, VALUE obj);
+MODULAR_GC_FN bool rb_gc_obj_mark_leaf_p(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_needs_cleanup_p(VALUE obj);
 
 /* True when a dead T_DATA of this type cannot have its dfree run during a parallel
