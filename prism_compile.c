@@ -7049,7 +7049,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         break;
       }
       case ISEQ_TYPE_BLOCK: {
-        LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
+        LABEL *start = NEW_LABEL(0);
         LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
         const pm_node_location_t block_location = { .line = body->location.first_lineno, .node_id = scope_node->ast_node->node_id };
 
@@ -7063,6 +7063,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
             pm_compile_for_node_index(iseq, ((const pm_for_node_t *) scope_node->ast_node)->index, ret, scope_node);
         }
+
+        // Set the start label only after the index write, so that a redo
+        // inside the index expression throws as with parse.y instead of
+        // jumping forward to a label whose stack depth is not known yet.
+        ISEQ_COMPILE_DATA(iseq)->start_label = start;
 
         PUSH_TRACE(ret, RUBY_EVENT_B_CALL);
         PUSH_INSN(ret, block_location, nop);
