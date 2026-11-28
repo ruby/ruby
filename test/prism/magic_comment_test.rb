@@ -210,23 +210,23 @@ module Ruby::Prism
       ["#coding:ASCII-8BIT", "# vim: set fileencoding=ASCII-8BIT"].each do |comment|
         ["#!\n", "#!ruby\r\n"].each do |shebang|
           source = "#{shebang}!#{comment}\n__ENCODING__"
-          result = Ruby::Prism.parse(source)
+          result = Ruby::Prism.parse(source, version: "3.4")
           assert_predicate result, :success?
           assert_equal Encoding::BINARY, result.encoding
           assert_equal Encoding::UTF_8, Ruby::Prism.parse(source, version: "3.3").encoding
-          assert_equal Encoding::BINARY, Ruby::Prism.parse("#{shebang}%q{#}#{comment}\n__ENCODING__").encoding
+          assert_equal Encoding::BINARY, Ruby::Prism.parse("#{shebang}%q{#}#{comment}\n__ENCODING__", version: "3.4").encoding
 
-          assert_equal Encoding::UTF_8, Ruby::Prism.parse("#{shebang}!!#{comment}\n__ENCODING__").encoding
-          assert_equal Encoding::UTF_8, Ruby::Prism.parse("#{shebang}\n!#{comment}\n__ENCODING__").encoding
+          assert_equal Encoding::UTF_8, Ruby::Prism.parse("#{shebang}!!#{comment}\n__ENCODING__", version: "3.4").encoding
+          assert_equal Encoding::UTF_8, Ruby::Prism.parse("#{shebang}\n!#{comment}\n__ENCODING__", version: "3.4").encoding
         end
 
-        assert_equal Encoding::UTF_8, Ruby::Prism.parse("!#{comment}\n__ENCODING__").encoding
+        assert_equal Encoding::UTF_8, Ruby::Prism.parse("!#{comment}\n__ENCODING__", version: "3.4").encoding
       end
     end
 
     def test_empty_shebang_in_command_line_source
       source = "#!\n!#coding:ASCII-8BIT\n__ENCODING__"
-      result = Ruby::Prism.parse(source, main_script: true, command_line: "e")
+      result = Ruby::Prism.parse(source, main_script: true, command_line: "e", version: "3.4")
       assert_predicate result, :success?
       assert_equal Encoding::BINARY, result.encoding
     end

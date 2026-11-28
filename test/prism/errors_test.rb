@@ -274,7 +274,7 @@ module Ruby::Prism
     def test_jump_with_a_chained_command_block_in_call_arguments
       %w[return break next].each do |keyword|
         argument = "#{keyword} r z do end.t"
-        result = Ruby::Prism.parse("loop { o(#{argument}) }")
+        result = Ruby::Prism.parse("loop { o(#{argument}) }", version: "3.4")
         assert_equal [:void_expression], result.errors.map(&:type), keyword
         assert_equal argument, result.errors.first.location.slice
 
@@ -282,7 +282,7 @@ module Ruby::Prism
         assert_equal keyword, jump.keyword
         assert_equal :t, jump.arguments.arguments.first.name
 
-        grouped = Ruby::Prism.parse("loop { o((#{argument})) }")
+        grouped = Ruby::Prism.parse("loop { o((#{argument})) }", version: "3.4")
         assert_empty grouped.errors
         call = grouped.statement.block.body.body.first.arguments.arguments.first.body.body.first
         assert_equal :t, call.name
