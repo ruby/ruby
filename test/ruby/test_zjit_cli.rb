@@ -241,6 +241,27 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_spilled_vreg_parallel_copy_cycle
+    omit "the regression is specific to x86_64" unless RUBY_PLATFORM.include?("x86_64")
+
+    # Shopify/ruby#1032: a stack-to-stack move must not clobber the value
+    # parked in the parallel-copy scratch register.
+    assert_compiles "[20, 10]", <<~RUBY, call_threshold: 2
+      def test(a, b, n)
+        i = 0
+        while i < n
+          a, b = b, a
+          i += 1
+        end
+        [a, b]
+      end
+
+      test(10, 20, 4)
+      test(10, 20, 4)
+      test(10, 20, 5)
+    RUBY
+  end
+
   def test_zjit_prelude_kernel_prepend
     # Simulate what bundler/setup can do: prepend a module to Kernel during
     # the prelude via the BUNDLER_SETUP mechanism in rubygems.rb:
