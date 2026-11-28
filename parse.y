@@ -476,7 +476,7 @@ typedef struct token_info {
 } token_info;
 
 typedef struct end_expect_token_locations {
-    const rb_code_position_t *pos;
+    rb_code_position_t pos;
     struct end_expect_token_locations *prev;
 } end_expect_token_locations_t;
 
@@ -823,7 +823,7 @@ debug_end_expect_token_locations(struct parser_params *p, const char *name)
         for (end_expect_token_locations_t *loc = p->end_expect_token_locations; loc; loc = loc->prev) {
             if (i > 0)
                 rb_str_cat_cstr(mesg, ", ");
-            rb_str_catf(mesg, "[%d, %d]", loc->pos->lineno, loc->pos->column);
+            rb_str_catf(mesg, "[%d, %d]", loc->pos.lineno, loc->pos.column);
             i++;
         }
         rb_str_cat_cstr(mesg, "]\n");
@@ -838,7 +838,7 @@ push_end_expect_token_locations(struct parser_params *p, const rb_code_position_
 
     end_expect_token_locations_t *locations;
     locations = ALLOC(end_expect_token_locations_t);
-    locations->pos = pos;
+    locations->pos = *pos;
     locations->prev = p->end_expect_token_locations;
     p->end_expect_token_locations = locations;
 
@@ -10421,7 +10421,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
         int lineno, column;
         int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
 
-        end_pos = peek_end_expect_token_locations(p)->pos;
+        end_pos = &peek_end_expect_token_locations(p)->pos;
         lineno = end_pos->lineno;
         column = end_pos->column;
 

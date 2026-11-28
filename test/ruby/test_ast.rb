@@ -1308,6 +1308,21 @@ dummy
     EXP
   end
 
+  def test_error_tolerant_distinguishes_end_by_indentation
+    node = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true, keep_tokens: true)
+      module M
+        def foo
+          obj.
+            end
+          obj.
+        end
+      end
+    RUBY
+
+    assert_equal([:tIDENTIFIER, :keyword_end, :keyword_end],
+                 node.all_tokens.filter_map { _2 if _3 == "end" })
+  end
+
   def test_error_tolerant_expr_value_can_be_error
     assert_error_tolerant(<<~STR, <<~EXP)
       def m
