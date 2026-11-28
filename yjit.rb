@@ -250,8 +250,8 @@ module RubyVM::YJIT
     disasm_str = Primitive.rb_yjit_disasm_iseq(iseq)
 
     if !disasm_str
-      hint = if RUBY_PLATFORM.include?("mswin")
-        ",\nbut YJIT on mswin supports release builds only"
+      hint = if RUBY_PLATFORM =~ /mswin|mingw/
+        ",\nbut YJIT on Windows supports release builds only"
       else
         ", i.e.\n./configure --enable-yjit=dev"
       end

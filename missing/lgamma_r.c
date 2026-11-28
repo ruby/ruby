@@ -59,6 +59,10 @@ loggamma(double x)  /* the natural logarithm of the Gamma function. */
 #endif
 
 /* the natural logarithm of the absolute value of the Gamma function */
+#if defined(__MINGW64__) && RBIMPL_HAS_ATTRIBUTE(weak)
+/* Avoid error on MINGW, libyjit: multiple definition of `lgamma_r'; */
+__attribute__((weak))
+#endif
 double
 lgamma_r(double x, int *signp)
 {
