@@ -604,6 +604,33 @@ p Foo::Bar
     end
   end
 
+  def test_autoload_while_checking_another_autoload
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(File.join(tmpdir, "autoload_a.rb"), "AutoloadA = :a")
+      File.write(File.join(tmpdir, "autoload_b.rb"), "AutoloadB = :b")
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        autoload :AutoloadA, "autoload_a"
+        autoload :AutoloadB, "autoload_b"
+
+        # to_str is called while the autoload of AutoloadA is checked
+        $done = false
+        entry = Object.new
+        def entry.to_str
+          unless $done
+            $done = true
+            $b = AutoloadB
+          end
+          "dummy"
+        end
+        $LOADED_FEATURES << entry
+
+        assert_equal(:a, AutoloadA)
+        assert_equal(:b, $b)
+      RUBY
+    end
+  end
+
   def test_autoload_parent_namespace
     Dir.mktmpdir('autoload') do |tmpdir|
       autoload_path = File.join(tmpdir, "some_const.rb")

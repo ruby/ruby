@@ -158,6 +158,87 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
   end
 
+  def test_autoload_while_another_fiber_checks_it
+    Dir.mktmpdir do |tmpdir|
+      path = File.join(tmpdir, "autoload_foo.rb")
+      File.write(path, "module AutoloadFoo; end")
+
+      assert_separately %W[-I#{__dir__} -r scheduler], <<~RUBY
+        # The blocker passed to the scheduler must be a usable object
+        scheduler = Class.new(Scheduler) do
+          def block(blocker, timeout = nil)
+            blocker.inspect
+            super
+          end
+        end
+
+        autoload :AutoloadFoo, #{path.dump}
+
+        # Make the check of the autoload rebuild the index of the loaded
+        # features, which calls stat(2) via blocking_operation_wait
+        $LOADED_FEATURES << "dummy"
+
+        results = []
+        Thread.new do
+          Fiber.set_scheduler(scheduler.new)
+          2.times do
+            Fiber.schedule { results << AutoloadFoo }
+          end
+        end.join
+
+        assert_equal([AutoloadFoo, AutoloadFoo], results)
+      RUBY
+    end
+  end
+
+  def test_autoload_provided_while_another_fiber_checks_it
+    Dir.mktmpdir do |tmpdir|
+      path = File.join(tmpdir, "autoload_foo_bar.rb")
+      File.write(path, "module AutoloadFoo; end; module AutoloadBar; end")
+
+      assert_separately %W[-I#{__dir__} -r scheduler], <<~RUBY
+        $foo = $waiting = $hooked = nil
+        scheduler = Class.new(Scheduler) do
+          def block(blocker, timeout = nil)
+            $waiting = true if Thread::Mutex === blocker
+            super
+          end
+        end
+
+        # Stay after providing the feature until the other fiber finishes or
+        # waits for the autoload
+        module Kernel
+          alias_method :require_without_wait, :require
+          def require(feature)
+            result = require_without_wait(feature)
+            if feature == #{path.dump} && !$hooked
+              $hooked = true
+              sleep 0.001 until $foo || $waiting
+            end
+            result
+          end
+        end
+
+        autoload :AutoloadFoo, #{path.dump}
+        autoload :AutoloadBar, #{path.dump}
+
+        # Make the check of the autoload rebuild the index of the loaded
+        # features, which calls stat(2) via blocking_operation_wait
+        $LOADED_FEATURES << "dummy"
+
+        bar = nil
+        Thread.new do
+          Fiber.set_scheduler(scheduler.new)
+          Fiber.schedule { $foo = (AutoloadFoo rescue $!) }
+          Fiber.schedule { bar = AutoloadBar }
+        end.join
+
+        assert_equal(AutoloadFoo, $foo)
+        assert_equal(AutoloadBar, bar)
+      RUBY
+    end
+  end
+
   def test_iseq_compile_under_gc_stress_bug_21180
     Thread.new do
       scheduler = Scheduler.new
