@@ -927,7 +927,7 @@ class TestRactor < Test::Unit::TestCase
   # answers never leaves the requiring Ractor -- so with the answer alone being the
   # same either way, an entry here is what shows the fast path declined.  Recording
   # into Ractor-local storage keeps each Ractor's list to itself and shareable.
-  MAIN_RACTOR_REQUIRE_RECORDER = <<~'RUBY'
+  MAIN_RACTOR_REQUIRE_RECORDER = <<~'RUBY'.freeze
     old = $-w; $-w = nil
     module Kernel
       alias __require_without_recording require
@@ -2057,7 +2057,7 @@ class TestRactor < Test::Unit::TestCase
   # assert_ractor: -W0 silences the experimental-Ractor warning on its own, so the
   # child does not need assert_ractor's warm-up Ractor, whose objspace would linger
   # as a zombie and perturb what these tests measure.
-  RACTOR_GC_HELPER = File.expand_path('ractor_gc_helper.rb', __dir__)
+  RACTOR_GC_HELPER = File.expand_path('ractor_gc_helper.rb', __dir__).freeze
 
   def test_incremental_marking_in_main_and_non_main_ractors
     omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'

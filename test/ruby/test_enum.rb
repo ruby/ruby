@@ -655,7 +655,7 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   %i[min max min_by max_by].each do |method|
-    define_method("test_#{method}_with_count_and_saved_block") do
+    define_method("test_#{method}_with_count_and_saved_block", &Ractor.make_shareable(proc do
       with_block = method.end_with?("_by")
       assert_separately([], <<~RUBY)
         enum = Object.new
@@ -677,7 +677,7 @@ class TestEnumerable < Test::Unit::TestCase
         assert_nil(block.call(2))
         assert_equal(#{with_block ? '[1, 2]' : '[]'}, yielded)
       RUBY
-    end
+    end))
   end
 
   def test_min_by
@@ -828,6 +828,9 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1, 3], [2, 4], [3, nil], [1, nil], [2, nil]], @obj.zip(ary))
     def ary.to_ary; [5, 6]; end
     assert_equal([[1, 5], [2, 6], [3, nil], [1, nil], [2, nil]], @obj.zip(ary))
+  end
+
+  def test_zip_ractor_unsafe
     obj = eval("class C\u{1f5ff}; self; end").new
     assert_raise_with_message(TypeError, /C\u{1f5ff}/) {(1..1).zip(obj)}
   end
@@ -1292,7 +1295,7 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   [false, true].each do |with_block|
-    define_method("test_sum_with_saved_block#{'_and_block' if with_block}") do
+    define_method("test_sum_with_saved_block#{'_and_block' if with_block}", &Ractor.make_shareable(proc do
       assert_separately([], <<~RUBY)
         enum = Object.new
         class << enum
@@ -1313,7 +1316,7 @@ class TestEnumerable < Test::Unit::TestCase
         assert_nil(block.call(2))
         assert_equal(#{with_block ? '[1, 2]' : '[]'}, yielded)
       RUBY
-    end
+    end))
   end
 
   def test_hash_sum

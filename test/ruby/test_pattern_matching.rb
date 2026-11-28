@@ -582,7 +582,9 @@ END
         true
       end
     end
+  end
 
+  def test_pin_operator_value_pattern_ractor_unsafe
     assert_block do
       @@TestPatternMatching = /a/
       case 'abc'

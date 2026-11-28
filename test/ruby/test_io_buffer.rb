@@ -1509,7 +1509,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   # We check that values are correctly round tripped.
-  RANGES = {
+  Ractor.make_shareable(RANGES = {
     :U8 => [0, 2**8-1],
     :S8 => [-2**7, 0, 2**7-1],
 
@@ -1535,7 +1535,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     :F32 => [-1.0, 0.0, 0.5, 1.0, 128.0],
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
-  }
+  })
 
   SIZE_MAX = RbConfig::LIMITS["SIZE_MAX"]
 
@@ -2005,7 +2005,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   [:and!, :or!, :xor!].each do |operation|
-    define_method("test_#{operation.to_s.delete('!')}_empty_range_does_not_overlap") do
+    define_method("test_#{operation.to_s.delete('!')}_empty_range_does_not_overlap", &Ractor.make_shareable(proc do
       buffer = IO::Buffer.new(8)
       buffer.set_string("abcdefgh")
       [0, 4, 8].each do |offset|
@@ -2019,7 +2019,7 @@ class TestIOBuffer < Test::Unit::TestCase
       end
     ensure
       buffer&.free
-    end
+    end))
   end
 
   def test_inplace_operators_reject_nonempty_overlap

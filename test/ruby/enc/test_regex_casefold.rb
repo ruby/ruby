@@ -5,8 +5,8 @@ require "test/unit"
 class TestCaseFold < Test::Unit::TestCase
 
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
-  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
-  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
+  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__).freeze
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd".freeze : path
   CaseTest = Struct.new :source, :target, :kind, :line
 
   def check_downcase_properties(expected, start, *flags)
@@ -36,15 +36,20 @@ class TestCaseFold < Test::Unit::TestCase
   end
 
   def setup
-    @@tests ||= read_tests
+    @regex_casefold_tests ||= read_tests
   rescue Errno::ENOENT => e
-    @@tests ||= []
+    @regex_casefold_tests ||= []
     omit e.message
+  end
+
+  def tests
+    setup
+    @regex_casefold_tests
   end
 
   def self.generate_test_casefold(encoding)
     define_method "test_mbc_case_fold_#{encoding}" do
-      @@tests.each do |test|
+      tests.each do |test|
         begin
           source = test.source.encode encoding
           target = test.target.encode encoding
@@ -57,7 +62,7 @@ class TestCaseFold < Test::Unit::TestCase
     end
 
     define_method "test_get_case_fold_codes_by_str_#{encoding}" do
-      @@tests.each do |test|
+      tests.each do |test|
         begin
           source = test.source.encode encoding
           target = test.target.encode encoding
@@ -71,7 +76,7 @@ class TestCaseFold < Test::Unit::TestCase
     end
 
     define_method "test_apply_all_case_fold_#{encoding}" do
-      @@tests.each do |test|
+      tests.each do |test|
         begin
           source = test.source.encode encoding
           target = test.target.encode encoding
@@ -90,7 +95,7 @@ class TestCaseFold < Test::Unit::TestCase
   end
 
   def test_downcase_fold
-    @@tests.each do |test|
+    tests.each do |test|
       check_downcase_properties test.target, test.source, :fold
     end
   end

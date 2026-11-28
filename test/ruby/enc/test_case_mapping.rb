@@ -240,11 +240,11 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_equal s, s.downcase(:ascii)
   end
 
-  SHARP_S_SINGLE_BYTE_ENCODINGS = %w[
+  SHARP_S_SINGLE_BYTE_ENCODINGS = Ractor.make_shareable(%w[
     ISO-8859-1 ISO-8859-2 ISO-8859-3 ISO-8859-4 ISO-8859-9 ISO-8859-10
     ISO-8859-13 ISO-8859-14 ISO-8859-15 ISO-8859-16
     Windows-1250 Windows-1252 Windows-1254 Windows-1257
-  ]
+  ])
 
   def test_single_byte_sharp_s_expansion
     SHARP_S_SINGLE_BYTE_ENCODINGS.each do |name|
