@@ -275,4 +275,32 @@ class TestAddressResolve < Test::Unit::TestCase
       end
     end.join
   end
+
+  # The hook can only return addresses without a zone, so a scoped literal must not reach it.
+  def test_addrinfo_ip_ipv6_link_local_with_zone
+    begin
+      ifaddrs = Socket.getifaddrs
+    rescue NotImplementedError
+      omit "Socket.getifaddrs not implemented"
+    end
+    loopback = ifaddrs.find { |ifaddr| ifaddr.addr&.ipv6_loopback? }
+    omit "no IPv6 loopback interface" unless loopback
+
+    # A numeric zone, as Windows cannot parse its interface names (loopback_0) as zones.
+    address = "fe80::1%#{loopback.ifindex}"
+    expected = Addrinfo.ip(address).ip_address
+    resolved = []
+
+    Thread.new do
+      scheduler = StubScheduler.new
+      scheduler.define_singleton_method(:address_resolve) { |hostname| resolved << hostname; super(hostname) }
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        assert_equal(expected, Addrinfo.ip(address).ip_address)
+      end
+    end.join
+
+    assert_empty(resolved)
+  end
 end

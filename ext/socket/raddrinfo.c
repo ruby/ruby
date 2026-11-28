@@ -964,6 +964,27 @@ str_is_number(const char *p)
     ((ptr)[0] == name[0] && \
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
 
+/* An IPv6 address with a zone ID, such as fe80::1%en0, which inet_pton cannot parse. */
+static int
+ipv6_address_with_zone_p(const char *name, size_t len)
+{
+#if defined(HAVE_INET_PTON) && defined(AF_INET6) && defined(INET6_ADDRSTRLEN)
+    const char *zone = memchr(name, '%', len);
+    char addr[INET6_ADDRSTRLEN];
+    char bin[16];
+    size_t addrlen;
+
+    if (!zone || zone == name || zone + 1 == name + len) return 0;
+    addrlen = zone - name;
+    if (addrlen >= sizeof(addr)) return 0;
+    memcpy(addr, name, addrlen);
+    addr[addrlen] = '\0';
+    return inet_pton(AF_INET6, addr, bin) == 1;
+#else
+    return 0;
+#endif
+}
+
 char*
 raddrinfo_host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 {
@@ -998,6 +1019,8 @@ raddrinfo_host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
         else {
             memcpy(hbuf, name, len);
             hbuf[len] = '\0';
+            /* Resolved by the system resolver, as a fiber scheduler can only return addresses without a zone. */
+            if (flags_ptr && ipv6_address_with_zone_p(name, len)) *flags_ptr |= AI_NUMERICHOST;
         }
         return hbuf;
     }
