@@ -2998,7 +2998,8 @@ rb_io_fdatasync(VALUE io)
  *    $stdin.fileno             # => 0
  *    $stdout.fileno            # => 1
  *    $stderr.fileno            # => 2
- *    File.open('t.txt').fileno # => 10
+ *    f = File.open('t.txt')
+ *    f.fileno                  # => 10
  *    f.close
  *
  */
@@ -5545,9 +5546,11 @@ rb_io_ungetc(VALUE io, VALUE c)
  *  Returns +true+ if the stream is associated with a terminal device (tty),
  *  +false+ otherwise:
  *
- *    f = File.new('t.txt').isatty    #=> false
+ *    f = File.new('t.txt')
+ *    f.isatty # => false
  *    f.close
- *    f = File.new('/dev/tty').isatty #=> true
+ *    f = File.new('/dev/tty')
+ *    f.isatty # => true
  *    f.close
  *
  */
