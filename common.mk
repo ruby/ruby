@@ -1117,7 +1117,6 @@ acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
 cbrt.$(OBJEXT): {$(VPATH)}cbrt.c
 close.$(OBJEXT): {$(VPATH)}close.c
-crypt.$(OBJEXT): {$(VPATH)}crypt.c {$(VPATH)}crypt.h {$(VPATH)}missing/des_tables.c
 erf.$(OBJEXT): {$(VPATH)}erf.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 ffs.$(OBJEXT): {$(VPATH)}ffs.c
@@ -1226,9 +1225,7 @@ common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newl
 	     $(BUILTIN_RB_INCS) \
 	     srcs-lib srcs-ext incs preludes
 
-missing-srcs: $(srcdir)/missing/des_tables.c
-
-srcs: common-srcs missing-srcs srcs-enc srcs-doc
+srcs: common-srcs srcs-enc srcs-doc
 
 RIPPER_SRCS1 = $(srcdir)/ext/ripper/ripper.c
 RIPPER_SRCS2 = $(srcdir)/ext/ripper/ripper_init.c \

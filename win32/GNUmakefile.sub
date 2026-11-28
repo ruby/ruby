@@ -232,7 +232,7 @@ LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib iphlpapi.lib \
 	$(if $(USE_GMP),gmp.lib)$(if $(filter yes,$(WITH_MIMALLOC)), mimalloc.dll.lib) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 endif
 ifeq ($(origin MISSING),undefined)
-MISSING = crypt.obj ffs.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj \
+MISSING = ffs.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj \
 	explicit_bzero.obj memrchr.obj
 endif
 DLNOBJS = dln.obj
