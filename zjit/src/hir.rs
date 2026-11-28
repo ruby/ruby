@@ -7167,6 +7167,23 @@ impl Function {
         false
     }
 
+    /// Return true if the types of `left` and `right` prove that they never hold the same bits.
+    fn is_bit_not_equal(&self, left: InsnId, right: InsnId) -> bool {
+        let left_type = self.type_of(left);
+        let right_type = self.type_of(right);
+        if left_type.could_be(right_type) {
+            return false;
+        }
+        // A Ruby type is a set of VALUEs, so values of disjoint types are different objects.
+        if left_type.is_subtype(types::RubyValue) && right_type.is_subtype(types::RubyValue) {
+            return true;
+        }
+        // A C type says how to read some bits, not which bits they are: CInt64 and CUInt64[20]
+        // are disjoint, but both can hold the same 64 bits. Within one C type, though, types are
+        // only disjoint when their known values differ.
+        left_type.unspecialized().bit_equal(right_type.unspecialized())
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -7344,6 +7361,9 @@ impl Function {
                     }
                     &Insn::IsBitEqual { left, right } if self.is_bit_equal(left, right) => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
+                    }
+                    &Insn::IsBitEqual { left, right } if self.is_bit_not_equal(left, right) => {
+                        self.new_insn(Insn::Const { val: Const::CBool(false) })
                     }
                     &Insn::FixnumAdd { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {

@@ -21152,12 +21152,10 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(NilClass@0x1010, !=@0x1018, cme:0x1020)
           PushInlineFrame :!=, v21 (0x1048), num_args=1
           PatchPoint MethodRedefined(NilClass@0x1010, ==@0x1068, cme:0x1070)
-          v115:CBool = IsBitEqual v21, v15
-          v116:BoolExact = BoxBool v115
-          v65:BoolExact = BoolNegate v116
+          v124:TrueClass = Const Value(true)
           PatchPoint NoEPEscape(!=)
           PopInlineFrame
-          Jump bb4(v65)
+          Jump bb4(v124)
         bb7():
           CondBranchHasType v10, StaticSymbol, bb8(), bb5()
         bb8():
@@ -24725,11 +24723,10 @@ mod hir_opt_tests {
           v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
           PatchPoint NoEPEscape(klass_eq)
           PatchPoint MethodRedefined(Class@0x1078, ==@0x1080, cme:0x1088)
-          v79:CBool = IsBitEqual v12, v31
-          v80:BoolExact = BoxBool v79
+          v82:FalseClass = Const Value(false)
           PopInlineFrame
           CheckInterrupts
-          Return v80
+          Return v82
         ");
     }
 
@@ -30012,6 +30009,128 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v53
         ");
+    }
+
+    #[test]
+    fn test_fold_is_bit_equal_with_different_ruby_objects() {
+        eval("
+            def is_equal(a, b) = a == b
+            O = Object.new
+            P = Object.new
+            def test
+              is_equal(O, P)
+            end
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v13:ObjectExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint StableConstantNames(0x1010, P)
+          v17:ObjectExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          PatchPoint MethodRedefined(Object@0x1020, is_equal@0x1028, cme:0x1030)
+          v26:ObjectSubclass[class_exact*:Object@VALUE(0x1020)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1020)] recompile
+          PushInlineFrame :is_equal, v26 (0x1058), num_args=2
+          PatchPoint NoSingletonClass(Object@0x1078)
+          PatchPoint MethodRedefined(Object@0x1078, ==@0x1080, cme:0x1088)
+          v53:FalseClass = Const Value(false)
+          PopInlineFrame
+          CheckInterrupts
+          Return v53
+        ");
+    }
+
+    #[test]
+    fn test_fold_is_bit_equal_with_disjoint_ruby_types() {
+        eval("
+            class C; end
+            def test(a) = a == nil
+
+            test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, ==@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v31:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_fold_is_bit_equal_with_different_cint_values() {
+        eval("
+            A = [1, 2, 3].freeze
+            def test = A.empty?
+
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, A)
+          v11:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, empty?@0x1018, cme:0x1020)
+          v30:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_is_bit_equal_with_different_cint_types() {
+        let mut function = Function::new(std::ptr::null());
+        let block = function.entry_block;
+
+        // CInt64 and CUInt64 are disjoint types, but they can hold the same bits.
+        let left = function.push_insn(block, Insn::Const { val: Const::CInt64(20) });
+        let right = function.push_insn(block, Insn::Const { val: Const::CUInt64(20) });
+        let is_equal = function.push_insn(block, Insn::IsBitEqual { left, right });
+        let result = function.push_insn(block, Insn::BoxBool { val: is_equal });
+        function.push_insn(block, Insn::Return { val: result });
+        function.seal_entries();
+        crate::cruby::with_rubyvm(|| {
+            function.infer_types();
+            assert!(!function.type_of(left).could_be(function.type_of(right)));
+
+            function.fold_constants();
+
+            assert!(matches!(function.find(is_equal), Insn::IsBitEqual { .. }), "{:?}", function.find(is_equal));
+        });
     }
 
     #[test]
