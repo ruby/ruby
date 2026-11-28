@@ -1,0 +1,6 @@
+prelude: |
+  def deep(n) = n.zero? ? caller_locations : deep(n - 1)
+  locations = deep(50)
+benchmark:
+  vm_backtrace_to_s: locations.each(&:to_s)
+loop_count: 20000
