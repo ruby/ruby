@@ -272,10 +272,6 @@ int rb_iseq_opt_frozen_string_literal(void);
 rb_hook_list_t *rb_iseq_local_hooks(const rb_iseq_t *iseq, rb_ractor_t *r, bool create);
 
 
-#if VM_INSN_INFO_TABLE_IMPL == 2
-unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
-#endif
-
 int rb_vm_insn_addr2opcode(const void *addr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -297,7 +293,17 @@ int rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos);
 #endif
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
-void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
+struct iseq_insn_info_entry;
+void rb_iseq_insns_info_set(struct rb_iseq_constant_body *body, unsigned int iseq_size,
+                            const struct iseq_insn_info_entry *entries, const unsigned int *positions, unsigned int size,
+                            const uint8_t *node_ids, unsigned int node_ids_size);
+bool rb_iseq_insns_info_load(struct rb_iseq_constant_body *body, unsigned int iseq_size, unsigned int size,
+                             const uint8_t *stream, unsigned int stream_size,
+                             const uint8_t *node_ids, unsigned int node_ids_size);
+const uint8_t *rb_iseq_insns_info_stream(const struct rb_iseq_constant_body *body, unsigned int *stream_size);
+#ifdef USE_ISEQ_NODE_ID
+const uint8_t *rb_iseq_insns_info_node_ids(const struct rb_iseq_constant_body *body, unsigned int *node_ids_size);
+#endif
 
 struct rb_iseq_constant_body *rb_iseq_constant_body_alloc(void);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
@@ -331,6 +337,7 @@ struct rb_compile_option_struct {
     int debug_level;
 };
 
+/* used to build body->insns_info */
 struct iseq_insn_info_entry {
     int line_no;
     rb_event_flag_t events;

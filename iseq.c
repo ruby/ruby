@@ -56,12 +56,6 @@ VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
 static const rb_iseq_t *iseqw_check(VALUE iseqw);
 
-#if VM_INSN_INFO_TABLE_IMPL == 2
-static struct succ_index_table *succ_index_table_create(int max_pos, int *data, int size);
-static unsigned int *succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size);
-static int succ_index_lookup(const struct succ_index_table *sd, int x);
-#endif
-
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
 static inline VALUE
@@ -201,15 +195,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (rb_zjit_enabled_p) rb_zjit_iseq_free(iseq);
 #endif
         SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
-        SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
-#ifdef USE_ISEQ_NODE_ID
-        SIZED_FREE_N(body->insns_info.node_ids, body->insns_info.node_ids_size);
-#endif
-#if VM_INSN_INFO_TABLE_IMPL == 2
-        ruby_xfree(body->insns_info.positions_or_succ_index_table.succ_index_table);
-#else
-        SIZED_FREE_N(body->insns_info.positions_or_succ_index_table.positions, body->insns_info.size);
-#endif
+        SIZED_FREE_N(body->insns_info.data, body->insns_info.data_size);
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
         if (body->catch_table) {
@@ -594,10 +580,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += sizeof(struct rb_iseq_constant_body);
         if (body->variable) size += sizeof(struct rb_iseq_variable);
         size += body->iseq_size * sizeof(VALUE);
-        size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
-#ifdef USE_ISEQ_NODE_ID
-        size += body->insns_info.node_ids_size;
-#endif
+        size += body->insns_info.data_size;
         size += body->local_table_size * sizeof(ID); // body->local_table
         if (!ISEQ_LVAR_STATES_EMBED_P(body->local_table_size) && body->lvar_states.list) {
             size += ISEQ_LVAR_STATES_BUFLEN(body->local_table_size) * sizeof(uint8_t);
@@ -836,34 +819,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
     return Qtrue;
 }
 
-#if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
+#if VM_CHECK_MODE > 0
 static void validate_get_insn_info(const rb_iseq_t *iseq);
-#endif
-
-void
-rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
-{
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    /* create succ_index_table */
-    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    int size = body->insns_info.size;
-    int max_pos = body->iseq_size;
-    unsigned int *positions = body->insns_info.positions_or_succ_index_table.positions;
-    struct succ_index_table *sd = succ_index_table_create(max_pos, (int *)positions, size);
-    SIZED_FREE_N(positions, size);
-    body->insns_info.positions_or_succ_index_table.succ_index_table = sd;
-#endif
-}
-
-#if VM_INSN_INFO_TABLE_IMPL == 2
-unsigned int *
-rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body)
-{
-    int size = body->insns_info.size;
-    int max_pos = body->iseq_size;
-    struct succ_index_table *sd = body->insns_info.positions_or_succ_index_table.succ_index_table;
-    return succ_index_table_invert(max_pos, sd, size);
-}
 #endif
 
 void
@@ -884,7 +841,7 @@ finish_iseq_build(rb_iseq_t *iseq)
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
 
-#if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
+#if VM_CHECK_MODE > 0
     validate_get_insn_info(iseq);
 #endif
 
@@ -2393,170 +2350,510 @@ iseqw_to_a(VALUE self)
     return iseq_data_to_ary(iseq);
 }
 
-#if VM_INSN_INFO_TABLE_IMPL == 1 /* binary search */
-static const struct iseq_insn_info_entry *
-get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
+/*
+ * Instruction info table
+ *
+ * The instruction info of an iseq is a list of entries (position, line,
+ * events) sorted by position; an entry applies to the instructions from its
+ * position up to the position of the next entry.  It is stored together with
+ * the node ids in one buffer, body->insns_info.data:
+ *
+ *   [checkpoints] [entry stream] [node id stream]
+ *
+ * Each entry of the entry stream is encoded relative to the previous entry
+ * (the first one relative to position 0 and location.first_lineno):
+ *
+ *   tag byte:  bits 0-2: events: 0-6 index insn_info_event_classes,
+ *                        7: a varint of the packed events follows
+ *              bits 3-4: line delta 0-2, 3: a zigzag varint follows
+ *              bits 5-7: position delta 0-6, 7: a varint (delta - 7) follows
+ *   [line delta varint] [position delta varint] [events varint]
+ *
+ * Most entries are just a tag byte.  rb_iseq_clear_event_flags() edits events
+ * in place where possible (clearing bits never lengthens a varint, which is
+ * then padded) and re-encodes the table otherwise.
+ *
+ * Lookups decode the stream linearly.  For iseqs longer than
+ * INSN_INFO_CHECKPOINT_INTERVAL, a checkpoint table records, for every
+ * position that is a multiple of INSN_INFO_CHECKPOINT_INTERVAL, the entry
+ * covering that position, so a lookup only decodes the entries of one
+ * interval.
+ *
+ * The node id stream (see add_node_id in compile.c) has one zigzag varint
+ * delta per instruction.
+ */
+
+#ifndef INSN_INFO_CHECKPOINT_INTERVAL
+#define INSN_INFO_CHECKPOINT_INTERVAL 64 /* in positions; power of 2 */
+#endif
+
+struct insn_info_checkpoint {
+    uint32_t pos;    /* of the entry */
+    int32_t line;    /* of the entry, relative to location.first_lineno */
+    uint32_t offset; /* of the entry's tag byte in the entry stream */
+};
+
+#define INSN_INFO_EVENTS_VARINT 7
+#define INSN_INFO_LINE_VARINT 3
+#define INSN_INFO_POS_VARINT 7
+#define INSN_INFO_TAG_EVENTS(tag) ((tag) & 7)
+#define INSN_INFO_TAG_LINE(tag) (((tag) >> 3) & 3)
+#define INSN_INFO_TAG_POS(tag) ((tag) >> 5)
+
+static const rb_event_flag_t insn_info_event_classes[INSN_INFO_EVENTS_VARINT] = {
+    0,
+    RUBY_EVENT_LINE,
+    RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN,
+    RUBY_EVENT_RETURN,
+    RUBY_EVENT_B_RETURN,
+    RUBY_EVENT_CALL | RUBY_EVENT_LINE,
+    RUBY_EVENT_B_CALL | RUBY_EVENT_LINE,
+};
+
+/* Events stored as a varint are packed so that the events found on
+ * instructions use the low bits (combinations of the first seven fit in one
+ * byte). Any other bits are stored above them. */
+static const rb_event_flag_t insn_info_event_bits[] = {
+    RUBY_EVENT_LINE,
+    RUBY_EVENT_CLASS,
+    RUBY_EVENT_END,
+    RUBY_EVENT_CALL,
+    RUBY_EVENT_RETURN,
+    RUBY_EVENT_B_CALL,
+    RUBY_EVENT_B_RETURN,
+    RUBY_EVENT_C_CALL,
+    RUBY_EVENT_C_RETURN,
+    RUBY_EVENT_RESCUE,
+    RUBY_EVENT_COVERAGE_LINE,
+    RUBY_EVENT_COVERAGE_BRANCH,
+};
+#define INSN_INFO_EVENT_BITS numberof(insn_info_event_bits)
+
+static uint64_t
+insn_info_events_pack(rb_event_flag_t events)
 {
-    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    size_t size = body->insns_info.size;
-    const struct iseq_insn_info_entry *insns_info = body->insns_info.body;
-    const unsigned int *positions = body->insns_info.positions_or_succ_index_table.positions;
-    const int debug = 0;
-
-    if (debug) {
-        printf("size: %"PRIuSIZE"\n", size);
-        printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-               (size_t)0, positions[0], insns_info[0].line_no, pos);
+    uint64_t packed = 0;
+    rb_event_flag_t rest = events;
+    for (unsigned int i = 0; i < INSN_INFO_EVENT_BITS; i++) {
+        if (events & insn_info_event_bits[i]) {
+            packed |= (uint64_t)1 << i;
+            rest &= ~insn_info_event_bits[i];
+        }
     }
+    return packed | ((uint64_t)rest << INSN_INFO_EVENT_BITS);
+}
 
-    if (size == 0) {
-        return NULL;
+static rb_event_flag_t
+insn_info_events_unpack(uint64_t packed)
+{
+    rb_event_flag_t events = (rb_event_flag_t)(packed >> INSN_INFO_EVENT_BITS);
+    for (unsigned int i = 0; i < INSN_INFO_EVENT_BITS; i++) {
+        if (packed & ((uint64_t)1 << i)) events |= insn_info_event_bits[i];
     }
-    else if (size == 1) {
-        return &insns_info[0];
+    return events;
+}
+
+static inline uint64_t
+insn_info_read_varint(const uint8_t **pp)
+{
+    const uint8_t *p = *pp;
+    uint8_t byte = *p++;
+    uint64_t v = byte & 0x7f;
+    unsigned int shift = 7;
+    while (byte & 0x80) {
+        byte = *p++;
+        v |= (uint64_t)(byte & 0x7f) << shift;
+        shift += 7;
+    }
+    *pp = p;
+    return v;
+}
+
+static inline const uint8_t *
+insn_info_skip_varint(const uint8_t *p)
+{
+    while (*p++ & 0x80);
+    return p;
+}
+
+/* Writes v as a varint padded to at least min_len bytes and returns its
+ * length. Only measures when p is NULL. */
+static unsigned int
+insn_info_write_varint(uint8_t *p, uint64_t v, unsigned int min_len)
+{
+    unsigned int len = 0;
+    do {
+        uint8_t byte = v & 0x7f;
+        v >>= 7;
+        len++;
+        if (v || len < min_len) byte |= 0x80;
+        if (p) *p++ = byte;
+    } while (v || len < min_len);
+    return len;
+}
+
+static inline unsigned int
+insn_info_checkpoint_count(unsigned int iseq_size)
+{
+    return iseq_size > INSN_INFO_CHECKPOINT_INTERVAL ? (iseq_size - 1) / INSN_INFO_CHECKPOINT_INTERVAL : 0;
+}
+
+static inline const struct insn_info_checkpoint *
+insn_info_checkpoints(const struct rb_iseq_constant_body *body)
+{
+    return (const struct insn_info_checkpoint *)body->insns_info.data;
+}
+
+static inline const uint8_t *
+insn_info_stream(const struct rb_iseq_constant_body *body)
+{
+    return body->insns_info.data + body->insns_info.stream_offset;
+}
+
+static inline const uint8_t *
+insn_info_stream_end(const struct rb_iseq_constant_body *body)
+{
+#ifdef USE_ISEQ_NODE_ID
+    return body->insns_info.data + body->insns_info.node_ids_offset;
+#else
+    return body->insns_info.data + body->insns_info.data_size;
+#endif
+}
+
+/* Encodes one entry and returns its length. Only measures when p is NULL. */
+static unsigned int
+insn_info_encode_entry(uint8_t *p, unsigned int pos_delta, int line_delta, rb_event_flag_t events)
+{
+    unsigned int ev, len = 1;
+    uint8_t *q = p ? p + 1 : NULL;
+
+    for (ev = 0; ev < INSN_INFO_EVENTS_VARINT; ev++) {
+        if (insn_info_event_classes[ev] == events) break;
+    }
+    unsigned int dl = (line_delta >= 0 && line_delta < INSN_INFO_LINE_VARINT) ? (unsigned int)line_delta : INSN_INFO_LINE_VARINT;
+    unsigned int dp = pos_delta < INSN_INFO_POS_VARINT ? pos_delta : INSN_INFO_POS_VARINT;
+
+    if (p) *p = (uint8_t)(ev | (dl << 3) | (dp << 5));
+#define WRITE(v) do { unsigned int n_ = insn_info_write_varint(q, (v), 1); if (q) q += n_; len += n_; } while (0)
+    if (dl == INSN_INFO_LINE_VARINT) {
+        uint32_t zz = ((uint32_t)line_delta << 1) ^ (uint32_t)(line_delta >> 31);
+        WRITE(zz);
+    }
+    if (dp == INSN_INFO_POS_VARINT) WRITE(pos_delta - INSN_INFO_POS_VARINT);
+    if (ev == INSN_INFO_EVENTS_VARINT) WRITE(insn_info_events_pack(events));
+#undef WRITE
+    return len;
+}
+
+/* Decodes the position and line of the entry at p, adding the deltas to *pos
+ * and *line. Returns the next entry. */
+static inline const uint8_t *
+insn_info_decode_entry(const uint8_t *p, unsigned int *pos, int *line)
+{
+    unsigned int tag = *p++;
+
+    if (INSN_INFO_TAG_LINE(tag) == INSN_INFO_LINE_VARINT) {
+        uint32_t zz = (uint32_t)insn_info_read_varint(&p);
+        *line += (int)(zz >> 1) ^ -(int)(zz & 1);
     }
     else {
-        size_t l = 1, r = size - 1;
-        while (l <= r) {
-            size_t m = l + (r - l) / 2;
-            if (positions[m] == pos) {
-                return &insns_info[m];
-            }
-            if (positions[m] < pos) {
-                l = m + 1;
-            }
-            else {
-                r = m - 1;
-            }
-        }
-        if (l >= size) {
-            return &insns_info[size-1];
-        }
-        if (positions[l] > pos) {
-            return &insns_info[l-1];
-        }
-        return &insns_info[l];
+        *line += (int)INSN_INFO_TAG_LINE(tag);
     }
-}
-
-static const struct iseq_insn_info_entry *
-get_insn_info(const rb_iseq_t *iseq, size_t pos)
-{
-    return get_insn_info_binary_search(iseq, pos);
-}
-#endif
-
-#if VM_INSN_INFO_TABLE_IMPL == 2 /* succinct bitvector */
-static const struct iseq_insn_info_entry *
-get_insn_info_succinct_bitvector(const rb_iseq_t *iseq, size_t pos)
-{
-    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    size_t size = body->insns_info.size;
-    const struct iseq_insn_info_entry *insns_info = body->insns_info.body;
-    const int debug = 0;
-
-    if (debug) {
-        printf("size: %"PRIuSIZE"\n", size);
-        printf("insns_info[%"PRIuSIZE"]: line: %d, pos: %"PRIuSIZE"\n",
-               (size_t)0, insns_info[0].line_no, pos);
-    }
-
-    if (size == 0) {
-        return NULL;
-    }
-    else if (size == 1) {
-        return &insns_info[0];
+    if (INSN_INFO_TAG_POS(tag) == INSN_INFO_POS_VARINT) {
+        *pos += INSN_INFO_POS_VARINT + (unsigned int)insn_info_read_varint(&p);
     }
     else {
-        int index;
-        VM_ASSERT(body->insns_info.positions_or_succ_index_table.succ_index_table != NULL);
-        index = succ_index_lookup(body->insns_info.positions_or_succ_index_table.succ_index_table, (int)pos);
-        return &insns_info[index-1];
+        *pos += INSN_INFO_TAG_POS(tag);
     }
+    if (INSN_INFO_TAG_EVENTS(tag) == INSN_INFO_EVENTS_VARINT) {
+        p = insn_info_skip_varint(p);
+    }
+    return p;
 }
 
-static const struct iseq_insn_info_entry *
-get_insn_info(const rb_iseq_t *iseq, size_t pos)
+/* Returns the start of the events varint of the entry at p (which must have one). */
+static inline const uint8_t *
+insn_info_entry_events_varint(const uint8_t *p)
 {
-    return get_insn_info_succinct_bitvector(iseq, pos);
+    unsigned int tag = *p++;
+    RUBY_ASSERT(INSN_INFO_TAG_EVENTS(tag) == INSN_INFO_EVENTS_VARINT);
+    if (INSN_INFO_TAG_LINE(tag) == INSN_INFO_LINE_VARINT) p = insn_info_skip_varint(p);
+    if (INSN_INFO_TAG_POS(tag) == INSN_INFO_POS_VARINT) p = insn_info_skip_varint(p);
+    return p;
 }
-#endif
 
-#if VM_CHECK_MODE > 0 || VM_INSN_INFO_TABLE_IMPL == 0
-static const struct iseq_insn_info_entry *
-get_insn_info_linear_search(const rb_iseq_t *iseq, const unsigned int *positions, size_t pos)
+static inline rb_event_flag_t
+insn_info_entry_events(const uint8_t *p)
 {
-    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    size_t i = 0, size = body->insns_info.size;
-    const struct iseq_insn_info_entry *insns_info = body->insns_info.body;
-    const int debug = 0;
-
-    if (debug) {
-        printf("size: %"PRIuSIZE"\n", size);
-        printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-               i, positions[i], insns_info[i].line_no, pos);
+    unsigned int ev = INSN_INFO_TAG_EVENTS(*p);
+    if (LIKELY(ev != INSN_INFO_EVENTS_VARINT)) {
+        return insn_info_event_classes[ev];
     }
+    p = insn_info_entry_events_varint(p);
+    return insn_info_events_unpack(insn_info_read_varint(&p));
+}
 
-    if (size == 0) {
-        return NULL;
-    }
-    else if (size == 1) {
-        return &insns_info[0];
-    }
-    else {
-        for (i=1; i<size; i++) {
-            if (debug) printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-                              i, positions[i], insns_info[i].line_no, pos);
+/* Checks that the entry stream holds exactly size well-formed entries with
+ * increasing positions below iseq_size, then builds the checkpoint table
+ * (which precedes the stream in data). */
+static bool
+insn_info_build_checkpoints(uint8_t *data, unsigned int nckpt, unsigned int size,
+                            unsigned int stream_size, unsigned int iseq_size)
+{
+    struct insn_info_checkpoint *checkpoints = (struct insn_info_checkpoint *)data;
+    const uint8_t *stream = data + nckpt * sizeof(struct insn_info_checkpoint);
+    const uint8_t *p = stream, *end = stream + stream_size;
+    unsigned int pos = 0, prev_pos = 0, i, j = 0;
+    int line = 0, prev_line = 0;
+    const uint8_t *prev = NULL;
 
-            if (positions[i] == pos) {
-                return &insns_info[i];
-            }
-            if (positions[i] > pos) {
-                return &insns_info[i-1];
-            }
+    for (i = 0; i < size; i++) {
+        const uint8_t *q = p;
+        if (q >= end) return false;
+        unsigned int tag = *q++;
+        unsigned int nvarints = (INSN_INFO_TAG_EVENTS(tag) == INSN_INFO_EVENTS_VARINT) +
+            (INSN_INFO_TAG_LINE(tag) == INSN_INFO_LINE_VARINT) +
+            (INSN_INFO_TAG_POS(tag) == INSN_INFO_POS_VARINT);
+        while (nvarints--) {
+            unsigned int n = 0;
+            do {
+                if (q >= end || ++n > 10) return false;
+            } while (*q++ & 0x80);
         }
+        const uint8_t *next = insn_info_decode_entry(p, &pos, &line);
+        if (next != q) return false;
+        if (i > 0 && pos < prev_pos) return false;
+        if (pos > iseq_size) return false;
+
+        /* checkpoints for the positions covered by the previous entry */
+        for (; prev && j < nckpt && (j + 1) * INSN_INFO_CHECKPOINT_INTERVAL < pos; j++) {
+            checkpoints[j].pos = prev_pos;
+            checkpoints[j].line = prev_line;
+            checkpoints[j].offset = (uint32_t)(prev - stream);
+        }
+        prev = p;
+        prev_pos = pos;
+        prev_line = line;
+        p = next;
     }
-    return &insns_info[i-1];
+    if (p != end) return false;
+    for (; j < nckpt; j++) {
+        checkpoints[j].pos = prev_pos;
+        checkpoints[j].line = prev_line;
+        checkpoints[j].offset = (uint32_t)(prev - stream);
+    }
+    return true;
 }
-#endif
 
-#if VM_INSN_INFO_TABLE_IMPL == 0 /* linear search */
-static const struct iseq_insn_info_entry *
-get_insn_info(const rb_iseq_t *iseq, size_t pos)
+static uint8_t *
+insn_info_alloc(struct rb_iseq_constant_body *body, unsigned int nckpt, unsigned int size, size_t stream_size, unsigned int node_ids_size)
 {
-    return get_insn_info_linear_search(iseq, ISEQ_BODY(iseq)->insns_info.positions_or_succ_index_table.positions, pos);
+    size_t stream_offset = (size_t)nckpt * sizeof(struct insn_info_checkpoint);
+    size_t data_size = stream_offset + stream_size + node_ids_size;
+    if (data_size > UINT_MAX) rb_raise(rb_eRuntimeError, "too large instruction info");
+
+    body->insns_info.size = size;
+    body->insns_info.data_size = (unsigned int)data_size;
+    body->insns_info.stream_offset = (unsigned int)stream_offset;
+#ifdef USE_ISEQ_NODE_ID
+    body->insns_info.node_ids_offset = (unsigned int)(data_size - node_ids_size);
+#endif
+    body->insns_info.data = data_size ? ALLOC_N(uint8_t, data_size) : NULL;
+    return body->insns_info.data;
+}
+
+/* Sets body->insns_info from the given entries (sorted by position) and node
+ * id stream. body->location.first_lineno must already be set. */
+void
+rb_iseq_insns_info_set(struct rb_iseq_constant_body *body, unsigned int iseq_size,
+                       const struct iseq_insn_info_entry *entries, const unsigned int *positions, unsigned int size,
+                       const uint8_t *node_ids, unsigned int node_ids_size)
+{
+    const int first_lineno = body->location.first_lineno;
+    const unsigned int nckpt = size ? insn_info_checkpoint_count(iseq_size) : 0;
+    size_t stream_size = 0;
+    unsigned int i, pos;
+    int line;
+
+#ifndef USE_ISEQ_NODE_ID
+    RUBY_ASSERT(node_ids_size == 0);
+#endif
+
+    for (i = 0, pos = 0, line = first_lineno; i < size; i++) {
+        stream_size += insn_info_encode_entry(NULL, positions[i] - pos, entries[i].line_no - line, entries[i].events);
+        pos = positions[i];
+        line = entries[i].line_no;
+    }
+
+    uint8_t *data = insn_info_alloc(body, nckpt, size, stream_size, node_ids_size);
+    uint8_t *p = data + body->insns_info.stream_offset;
+
+    for (i = 0, pos = 0, line = first_lineno; i < size; i++) {
+        RUBY_ASSERT(positions[i] >= pos);
+        p += insn_info_encode_entry(p, positions[i] - pos, entries[i].line_no - line, entries[i].events);
+        pos = positions[i];
+        line = entries[i].line_no;
+    }
+    if (node_ids_size) memcpy(p, node_ids, node_ids_size);
+
+    if (!insn_info_build_checkpoints(data, nckpt, size, (unsigned int)stream_size, iseq_size)) {
+        rb_bug("rb_iseq_insns_info_set: broken instruction info");
+    }
+}
+
+/* Sets body->insns_info from an entry stream (as returned by
+ * rb_iseq_insns_info_stream) and a node id stream. Returns false if the
+ * entry stream is malformed. */
+bool
+rb_iseq_insns_info_load(struct rb_iseq_constant_body *body, unsigned int iseq_size, unsigned int size,
+                        const uint8_t *stream, unsigned int stream_size,
+                        const uint8_t *node_ids, unsigned int node_ids_size)
+{
+    const unsigned int nckpt = size ? insn_info_checkpoint_count(iseq_size) : 0;
+    uint8_t *data = insn_info_alloc(body, nckpt, size, stream_size, node_ids_size);
+    uint8_t *p = data + body->insns_info.stream_offset;
+
+    if (stream_size) memcpy(p, stream, stream_size);
+    if (node_ids_size) memcpy(p + stream_size, node_ids, node_ids_size);
+    return insn_info_build_checkpoints(data, nckpt, size, stream_size, iseq_size);
+}
+
+const uint8_t *
+rb_iseq_insns_info_stream(const struct rb_iseq_constant_body *body, unsigned int *stream_size)
+{
+    *stream_size = (unsigned int)(insn_info_stream_end(body) - insn_info_stream(body));
+    return body->insns_info.data ? insn_info_stream(body) : NULL;
+}
+
+#ifdef USE_ISEQ_NODE_ID
+const uint8_t *
+rb_iseq_insns_info_node_ids(const struct rb_iseq_constant_body *body, unsigned int *node_ids_size)
+{
+    *node_ids_size = body->insns_info.data_size - body->insns_info.node_ids_offset;
+    return body->insns_info.data ? body->insns_info.data + body->insns_info.node_ids_offset : NULL;
 }
 #endif
 
-#if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
+struct insn_info_cursor {
+    const uint8_t *entry;  /* tag byte of the current entry */
+    const uint8_t *next;   /* tag byte of the next entry */
+    const uint8_t *end;    /* of the entry stream */
+    unsigned int pos;      /* of the current entry */
+    int line;              /* of the current entry */
+};
+
+#define insn_info_cursor_last_p(c) ((c)->next >= (c)->end)
+#define insn_info_cursor_events(c) insn_info_entry_events((c)->entry)
+
+/* Moves the cursor to the next entry. There must be one. */
+static inline void
+insn_info_cursor_next(struct insn_info_cursor *c)
+{
+    RUBY_ASSERT(!insn_info_cursor_last_p(c));
+    c->entry = c->next;
+    c->next = insn_info_decode_entry(c->entry, &c->pos, &c->line);
+}
+
+/* Moves the cursor forward to the last entry whose position is <= pos. */
+static inline void
+insn_info_cursor_advance(struct insn_info_cursor *c, size_t pos)
+{
+    const uint8_t *entry = c->entry, *p = c->next, *end = c->end;
+    unsigned int cur_pos = c->pos;
+    int line = c->line;
+
+    while (p < end) {
+        unsigned int tag = *p;
+        unsigned int npos = cur_pos;
+        int nline = line;
+        const uint8_t *next;
+
+        if (LIKELY(INSN_INFO_TAG_LINE(tag) != INSN_INFO_LINE_VARINT &&
+                   INSN_INFO_TAG_POS(tag) != INSN_INFO_POS_VARINT &&
+                   INSN_INFO_TAG_EVENTS(tag) != INSN_INFO_EVENTS_VARINT)) {
+            npos += INSN_INFO_TAG_POS(tag);
+            nline += (int)INSN_INFO_TAG_LINE(tag);
+            next = p + 1;
+        }
+        else {
+            next = insn_info_decode_entry(p, &npos, &nline);
+        }
+        if (npos > pos) break;
+        entry = p;
+        p = next;
+        cur_pos = npos;
+        line = nline;
+    }
+    c->entry = entry;
+    c->next = p;
+    c->pos = cur_pos;
+    c->line = line;
+}
+
+/* Positions the cursor on the first entry. Returns false if there is none. */
+static inline bool
+insn_info_cursor_init(const struct rb_iseq_constant_body *body, struct insn_info_cursor *c)
+{
+    if (body->insns_info.size == 0) return false;
+
+    c->entry = insn_info_stream(body);
+    c->end = insn_info_stream_end(body);
+    c->pos = 0;
+    c->line = body->location.first_lineno;
+    c->next = insn_info_decode_entry(c->entry, &c->pos, &c->line);
+    return true;
+}
+
+/* Finds the entry for the instruction at pos. Returns false if there is none. */
+static inline bool
+insn_info_lookup(const struct rb_iseq_constant_body *body, size_t pos, struct insn_info_cursor *c)
+{
+    unsigned int nckpt = body->insns_info.stream_offset / (unsigned int)sizeof(struct insn_info_checkpoint);
+    size_t index = pos / INSN_INFO_CHECKPOINT_INTERVAL;
+
+    if (index > 0 && nckpt > 0) {
+        const struct insn_info_checkpoint *ckpt = &insn_info_checkpoints(body)[(index > nckpt ? nckpt : index) - 1];
+        unsigned int dummy_pos = 0;
+        int dummy_line = 0;
+        c->entry = insn_info_stream(body) + ckpt->offset;
+        c->end = insn_info_stream_end(body);
+        c->next = insn_info_decode_entry(c->entry, &dummy_pos, &dummy_line);
+        c->pos = ckpt->pos;
+        c->line = ckpt->line + body->location.first_lineno;
+    }
+    else if (!insn_info_cursor_init(body, c)) {
+        return false;
+    }
+    insn_info_cursor_advance(c, pos);
+    return true;
+}
+
+#if VM_CHECK_MODE > 0
 static void
 validate_get_insn_info(const rb_iseq_t *iseq)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    struct insn_info_cursor seq, c;
     size_t i;
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    unsigned int *positions = rb_iseq_insns_info_decode_positions(body);
-#else
-    const unsigned int *positions = body->insns_info.positions_or_succ_index_table.positions;
-#endif
+
+    if (!insn_info_cursor_init(body, &seq)) return;
     for (i = 0; i < body->iseq_size; i++) {
-        if (get_insn_info_linear_search(iseq, positions, i) != get_insn_info(iseq, i)) {
-            rb_bug("validate_get_insn_info: get_insn_info_linear_search(iseq, %"PRIuSIZE") != get_insn_info(iseq, %"PRIuSIZE")", i, i);
+        insn_info_cursor_advance(&seq, i);
+        if (!insn_info_lookup(body, i, &c) || c.entry != seq.entry || c.next != seq.next ||
+            c.pos != seq.pos || c.line != seq.line) {
+            rb_bug("validate_get_insn_info: lookup and sequential decoding differ at %"PRIuSIZE, i);
         }
     }
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    SIZED_FREE_N(positions, body->insns_info.size);
-#endif
 }
 #endif
 
 unsigned int
 rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+    struct insn_info_cursor c;
 
-    if (entry) {
-        return entry->line_no;
+    if (insn_info_lookup(ISEQ_BODY(iseq), pos, &c)) {
+        return c.line;
     }
     else {
         return 0;
@@ -2583,13 +2880,14 @@ int
 rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 {
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    if (body->insns_info.node_ids_size == 0) {
+    unsigned int node_ids_size;
+    const uint8_t *ptr = rb_iseq_insns_info_node_ids(body, &node_ids_size);
+    if (node_ids_size == 0) {
         return 0;
     }
 
     const VALUE *code = rb_iseq_original_iseq(iseq);
-    const uint8_t *ptr = body->insns_info.node_ids;
-    const uint8_t *end = ptr + body->insns_info.node_ids_size;
+    const uint8_t *end = ptr + node_ids_size;
     size_t code_pos = 0;
     int node_id = 0;
 
@@ -2609,13 +2907,76 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
-    if (entry) {
-        return entry->events;
+    struct insn_info_cursor c;
+
+    if (insn_info_lookup(ISEQ_BODY(iseq), pos, &c)) {
+        return insn_info_cursor_events(&c);
     }
     else {
         return 0;
     }
+}
+
+/* Re-encodes the whole table with the events of the entry at `target` replaced. */
+static void
+insn_info_replace_events(struct rb_iseq_constant_body *body, const uint8_t *target, rb_event_flag_t events)
+{
+    unsigned int size = body->insns_info.size, i;
+    struct iseq_insn_info_entry *entries = ALLOC_N(struct iseq_insn_info_entry, size);
+    unsigned int *positions = ALLOC_N(unsigned int, size);
+    struct insn_info_cursor c;
+    uint8_t *old_data = body->insns_info.data;
+    unsigned int old_data_size = body->insns_info.data_size;
+    unsigned int node_ids_size = 0;
+    const uint8_t *node_ids = NULL;
+
+#ifdef USE_ISEQ_NODE_ID
+    node_ids = rb_iseq_insns_info_node_ids(body, &node_ids_size);
+#endif
+    insn_info_cursor_init(body, &c);
+    for (i = 0; ; i++) {
+        entries[i].line_no = c.line;
+        entries[i].events = c.entry == target ? events : insn_info_cursor_events(&c);
+        positions[i] = c.pos;
+        if (insn_info_cursor_last_p(&c)) break;
+        insn_info_cursor_next(&c);
+    }
+    RUBY_ASSERT(i + 1 == size);
+
+    rb_iseq_insns_info_set(body, body->iseq_size, entries, positions, size, node_ids, node_ids_size);
+    SIZED_FREE_N(old_data, old_data_size);
+    SIZED_FREE_N(entries, size);
+    SIZED_FREE_N(positions, size);
+}
+
+/* Removes the events in reset from the entry for pos. Returns the remaining events. */
+static rb_event_flag_t
+insn_info_clear_events(struct rb_iseq_constant_body *body, size_t pos, rb_event_flag_t reset)
+{
+    struct insn_info_cursor c;
+    if (!insn_info_lookup(body, pos, &c)) return 0;
+
+    rb_event_flag_t old_events = insn_info_cursor_events(&c);
+    rb_event_flag_t events = old_events & ~reset;
+    if (events == old_events) return events;
+
+    uint8_t *tag = (uint8_t *)c.entry;
+    if (INSN_INFO_TAG_EVENTS(*tag) == INSN_INFO_EVENTS_VARINT) {
+        /* Clearing bits never makes the packed value longer: rewrite it in place. */
+        uint8_t *ev = (uint8_t *)insn_info_entry_events_varint(c.entry);
+        unsigned int len = (unsigned int)(c.next - ev);
+        RUBY_ASSERT(insn_info_write_varint(NULL, insn_info_events_pack(events), 1) <= len);
+        insn_info_write_varint(ev, insn_info_events_pack(events), len);
+        return events;
+    }
+    for (unsigned int ev = 0; ev < INSN_INFO_EVENTS_VARINT; ev++) {
+        if (insn_info_event_classes[ev] == events) {
+            *tag = (uint8_t)((*tag & ~7) | ev);
+            return events;
+        }
+    }
+    insn_info_replace_events(body, c.entry, events);
+    return events;
 }
 
 static void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos);
@@ -2628,10 +2989,9 @@ rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t res
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
-        if (entry) {
-            entry->events &= ~reset;
-            if (!(entry->events & iseq->aux.exec.global_trace_events)) {
+        if (ISEQ_BODY(iseq)->insns_info.size > 0) {
+            rb_event_flag_t events = insn_info_clear_events(ISEQ_BODY(iseq), pos, reset);
+            if (!(events & iseq->aux.exec.global_trace_events)) {
                 rb_iseq_trace_flag_cleared(iseq, pos);
             }
         }
@@ -3318,13 +3678,17 @@ iseqw_trace_points(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-    unsigned int i;
+    struct insn_info_cursor c;
     VALUE ary = rb_ary_new();
 
-    for (i=0; i<body->insns_info.size; i++) {
-        const struct iseq_insn_info_entry *entry = &body->insns_info.body[i];
-        if (entry->events) {
-            push_event_info(iseq, entry->events, entry->line_no, ary);
+    if (insn_info_cursor_init(body, &c)) {
+        while (1) {
+            rb_event_flag_t events = insn_info_cursor_events(&c);
+            if (events) {
+                push_event_info(iseq, events, c.line, ary);
+            }
+            if (insn_info_cursor_last_p(&c)) break;
+            insn_info_cursor_next(&c);
         }
     }
     return ary;
@@ -3546,7 +3910,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     unsigned int i;
     rb_len_t l;
     const struct rb_iseq_constant_body *const iseq_body = ISEQ_BODY(iseq);
-    const struct iseq_insn_info_entry *prev_insn_info;
+    struct insn_info_cursor info;
+    bool has_info;
+    const uint8_t *prev_info_entry;
     unsigned int pos;
     int last_line = 0;
     VALUE *seq, *iseq_original;
@@ -3790,16 +4156,17 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
     /* make body with labels and insert line number */
     body = rb_ary_new();
-    prev_insn_info = NULL;
+    has_info = insn_info_cursor_init(iseq_body, &info);
+    prev_info_entry = NULL;
 #ifdef USE_ISEQ_NODE_ID
     VALUE node_ids = rb_ary_new();
-    const uint8_t *nid_ptr = iseq_body->insns_info.node_ids;
-    const uint8_t *nid_end = nid_ptr ? nid_ptr + iseq_body->insns_info.node_ids_size : NULL;
+    unsigned int nid_size;
+    const uint8_t *nid_ptr = rb_iseq_insns_info_node_ids(iseq_body, &nid_size);
+    const uint8_t *nid_end = nid_ptr + nid_size;
     int node_id = 0;
 #endif
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
-        const struct iseq_insn_info_entry *info;
         VALUE ary = RARRAY_AREF(nbody, l);
         st_data_t label;
 
@@ -3807,18 +4174,18 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
             rb_ary_push(body, (VALUE)label);
         }
 
-        info = get_insn_info(iseq, pos);
+        if (has_info) insn_info_cursor_advance(&info, pos);
 #ifdef USE_ISEQ_NODE_ID
-        VM_ASSERT(nid_ptr && nid_ptr < nid_end);
-        if (nid_ptr && nid_ptr < nid_end) {
+        VM_ASSERT(nid_ptr < nid_end);
+        if (nid_ptr < nid_end) {
             node_id += node_id_stream_read(&nid_ptr, nid_end);
         }
         rb_ary_push(node_ids, INT2FIX(node_id));
 #endif
 
-        if (prev_insn_info != info) {
-            int line = info->line_no;
-            rb_event_flag_t events = info->events;
+        if (has_info && prev_info_entry != info.entry) {
+            int line = info.line;
+            rb_event_flag_t events = insn_info_cursor_events(&info);
 
             if (line > 0 && last_line != line) {
                 rb_ary_push(body, INT2FIX(line));
@@ -3834,7 +4201,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
             CHECK_EVENT(RUBY_EVENT_B_RETURN);
             CHECK_EVENT(RUBY_EVENT_RESCUE);
 #undef CHECK_EVENT
-            prev_insn_info = info;
+            prev_info_entry = info.entry;
         }
 
         rb_ary_push(body, ary);
@@ -4190,15 +4557,17 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
     rb_iseq_t *iseq_mut = (rb_iseq_t*)iseq;
+    struct insn_info_cursor info;
+    bool has_info = insn_info_cursor_init(body, &info);
 
     VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
     ASSERT_vm_locking_with_barrier();
 
     for (pc=0; pc<body->iseq_size;) {
-        const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
-        rb_event_flag_t pc_events = entry->events;
+        if (has_info) insn_info_cursor_advance(&info, pc);
+        rb_event_flag_t pc_events = has_info ? insn_info_cursor_events(&info) : 0;
         rb_event_flag_t target_events = turnon_events;
-        unsigned int line = (int)entry->line_no;
+        unsigned int line = has_info ? (unsigned int)info.line : 0;
 
         if (target_line == 0 || target_line == line) {
             /* ok */
@@ -4293,8 +4662,11 @@ iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval, rb_ractor_t *r)
                 body = ISEQ_BODY(iseq);
                 iseq_encoded = (VALUE *)body->iseq_encoded;
                 local_events = add_bmethod_events(local_events);
+                struct insn_info_cursor info;
+                bool has_info = insn_info_cursor_init(body, &info);
                 for (pc = 0; pc<body->iseq_size;) {
-                    rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+                    if (has_info) insn_info_cursor_advance(&info, pc);
+                    rb_event_flag_t pc_events = has_info ? insn_info_cursor_events(&info) : 0;
                     pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.exec.global_trace_events), false);
                 }
             }
@@ -4355,8 +4727,11 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
         ((rb_iseq_t *)iseq)->aux.exec.global_trace_events = turnon_events;
         enabled_events = add_bmethod_events(turnon_events | local_events);
 
+        struct insn_info_cursor info;
+        bool has_info = insn_info_cursor_init(body, &info);
         for (pc=0; pc<body->iseq_size;) {
-            rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+            if (has_info) insn_info_cursor_advance(&info, pc);
+            rb_event_flag_t pc_events = has_info ? insn_info_cursor_events(&info) : 0;
             pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events, true);
         }
     }
@@ -4545,140 +4920,6 @@ iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
     return rb_iseq_ibf_load_extra_data(str);
 }
 
-#if VM_INSN_INFO_TABLE_IMPL == 2
-
-/* An implementation of succinct bit-vector for insn_info table.
- *
- * A succinct bit-vector is a small and efficient data structure that provides
- * a bit-vector augmented with an index for O(1) rank operation:
- *
- *   rank(bv, n): the number of 1's within a range from index 0 to index n
- *
- * This can be used to lookup insn_info table from PC.
- * For example, consider the following iseq and insn_info_table:
- *
- *  iseq               insn_info_table
- *  PC  insn+operand   position  lineno event
- *   0: insn1                 0: 1      [Li]
- *   2: insn2                 2: 2      [Li]  <= (A)
- *   5: insn3                 8: 3      [Li]  <= (B)
- *   8: insn4
- *
- * In this case, a succinct bit-vector whose indexes 0, 2, 8 is "1" and
- * other indexes is "0", i.e., "101000001", is created.
- * To lookup the lineno of insn2, calculate rank("10100001", 2) = 2, so
- * the line (A) is the entry in question.
- * To lookup the lineno of insn4, calculate rank("10100001", 8) = 3, so
- * the line (B) is the entry in question.
- *
- * A naive implementation of succinct bit-vector works really well
- * not only for large size but also for small size.  However, it has
- * tiny overhead for very small size.  So, this implementation consist
- * of two parts: one part is the "immediate" table that keeps rank result
- * as a raw table, and the other part is a normal succinct bit-vector.
- */
-
-#define IMMEDIATE_TABLE_SIZE 54 /* a multiple of 9, and < 128 */
-
-struct succ_index_table {
-    uint64_t imm_part[IMMEDIATE_TABLE_SIZE / 9];
-    struct succ_dict_block {
-        unsigned int rank;
-        uint64_t small_block_ranks; /* 9 bits * 7 = 63 bits */
-        uint64_t bits[512/64];
-    } succ_part[FLEX_ARY_LEN];
-};
-
-#define imm_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (7 * (i))
-#define imm_block_rank_get(v, i) (((int)((v) >> ((i) * 7))) & 0x7f)
-#define small_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (9 * ((i) - 1))
-#define small_block_rank_get(v, i) ((i) == 0 ? 0 : (((int)((v) >> (((i) - 1) * 9))) & 0x1ff))
-
-static struct succ_index_table *
-succ_index_table_create(int max_pos, int *data, int size)
-{
-    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
-    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
-    struct succ_index_table *sd =
-        rb_xcalloc_mul_add_mul(
-            imm_size, sizeof(uint64_t),
-            succ_size, sizeof(struct succ_dict_block));
-    int i, j, k, r;
-
-    r = 0;
-    for (j = 0; j < imm_size; j++) {
-        for (i = 0; i < 9; i++) {
-            if (r < size && data[r] == j * 9 + i) r++;
-            imm_block_rank_set(sd->imm_part[j], i, r);
-        }
-    }
-    for (k = 0; k < succ_size; k++) {
-        struct succ_dict_block *sd_block = &sd->succ_part[k];
-        int small_rank = 0;
-        sd_block->rank = r;
-        for (j = 0; j < 8; j++) {
-            uint64_t bits = 0;
-            if (j) small_block_rank_set(sd_block->small_block_ranks, j, small_rank);
-            for (i = 0; i < 64; i++) {
-                if (r < size && data[r] == k * 512 + j * 64 + i + IMMEDIATE_TABLE_SIZE) {
-                    bits |= ((uint64_t)1) << i;
-                    r++;
-                }
-            }
-            sd_block->bits[j] = bits;
-            small_rank += rb_popcount64(bits);
-        }
-    }
-    return sd;
-}
-
-static unsigned int *
-succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size)
-{
-    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
-    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
-    unsigned int *positions = ALLOC_N(unsigned int, size), *p;
-    int i, j, k, r = -1;
-    p = positions;
-    for (j = 0; j < imm_size; j++) {
-        for (i = 0; i < 9; i++) {
-            int nr = imm_block_rank_get(sd->imm_part[j], i);
-            if (r != nr) *p++ = j * 9 + i;
-            r = nr;
-        }
-    }
-    for (k = 0; k < succ_size; k++) {
-        for (j = 0; j < 8; j++) {
-            for (i = 0; i < 64; i++) {
-                if (sd->succ_part[k].bits[j] & (((uint64_t)1) << i)) {
-                    *p++ = k * 512 + j * 64 + i + IMMEDIATE_TABLE_SIZE;
-                }
-            }
-        }
-    }
-    return positions;
-}
-
-static int
-succ_index_lookup(const struct succ_index_table *sd, int x)
-{
-    if (x < IMMEDIATE_TABLE_SIZE) {
-        const int i = x / 9;
-        const int j = x % 9;
-        return imm_block_rank_get(sd->imm_part[i], j);
-    }
-    else {
-        const int block_index = (x - IMMEDIATE_TABLE_SIZE) / 512;
-        const struct succ_dict_block *block = &sd->succ_part[block_index];
-        const int block_bit_index = (x - IMMEDIATE_TABLE_SIZE) % 512;
-        const int small_block_index = block_bit_index / 64;
-        const int small_block_popcount = small_block_rank_get(block->small_block_ranks, small_block_index);
-        const int popcnt = rb_popcount64(block->bits[small_block_index] << (63 - block_bit_index % 64));
-
-        return block->rank + small_block_popcount + popcnt;
-    }
-}
-#endif
 
 
 /*

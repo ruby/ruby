@@ -1001,41 +1001,64 @@ define print_lineno
     set $pos = $pos - 1
   end
 
-  set $index = 0
+  # Decode the instruction info entry stream linearly (see iseq.c).
   set $size = $iseq->body->insns_info.size
-  set $table = $iseq->body->insns_info.body
-  #printf "size: %d\n", $size
-  if $size == 0
-  else
-  if $size == 1
-    printf "%d", $table[0].line_no
-  else
-    # get_insn_info_succinct_bitvector (VM_INSN_INFO_TABLE_IMPL == 2).
-    # insns_info.positions and insns_info.succ_index_table share a union, and
-    # an iseq running on the stack always has succ_index_table.
-    set $sd = $iseq->body->insns_info.positions_or_succ_index_table.succ_index_table
-    set $immediate_table_size = sizeof($sd->imm_part) / sizeof(uint64_t) * 9
-    if $pos < $immediate_table_size
-      set $i = $pos / 9
-      set $j = $pos % 9
-      set $index = ((int)($sd->imm_part[$i] >> ($j * 7))) & 0x7f
-    else
-      set $block_index = ($pos - $immediate_table_size) / 512
-      set $block = &$sd->succ_part[$block_index]
-      set $block_bit_index = ($pos - $immediate_table_size) % 512
-      set $small_block_index = $block_bit_index / 64
-      set $small_block_popcount = $small_block_index == 0 ? 0 : (((int)($block->small_block_ranks >> (($small_block_index - 1) * 9))) & 0x1ff)
-      set $x = $block->bits[$small_block_index] << (63 - $block_bit_index % 64)
-      set $x = ($x & 0x5555555555555555) + ($x >> 1 & 0x5555555555555555)
-      set $x = ($x & 0x3333333333333333) + ($x >> 2 & 0x3333333333333333)
-      set $x = ($x & 0x0707070707070707) + ($x >> 4 & 0x0707070707070707)
-      set $x = ($x & 0x001f001f001f001f) + ($x >> 8 & 0x001f001f001f001f)
-      set $x = ($x & 0x0000003f0000003f) + ($x >>16 & 0x0000003f0000003f)
-      set $popcnt = ($x & 0x7f) + ($x >>32 & 0x7f)
-      set $index = $block->rank + $small_block_popcount + $popcnt
+  if $size != 0
+    set $p = (unsigned char *)$iseq->body->insns_info.data + $iseq->body->insns_info.stream_offset
+    set $i = 0
+    set $cur_pos = 0
+    set $cur_line = $iseq->body->location.first_lineno
+    set $found_line = $cur_line
+    while $i < $size
+      set $tag = *$p
+      set $p = $p + 1
+      set $new_line = $cur_line
+      set $new_pos = $cur_pos
+      if (($tag >> 3) & 3) == 3
+        set $v = 0
+        set $shift = 0
+        set $b = 0x80
+        while $b & 0x80
+          set $b = *$p
+          set $p = $p + 1
+          set $v = $v | (($b & 0x7f) << $shift)
+          set $shift = $shift + 7
+        end
+        set $new_line = $cur_line + (int)(($v >> 1) ^ -($v & 1))
+      else
+        set $new_line = $cur_line + (($tag >> 3) & 3)
+      end
+      if ($tag >> 5) == 7
+        set $v = 0
+        set $shift = 0
+        set $b = 0x80
+        while $b & 0x80
+          set $b = *$p
+          set $p = $p + 1
+          set $v = $v | (($b & 0x7f) << $shift)
+          set $shift = $shift + 7
+        end
+        set $new_pos = $cur_pos + 7 + $v
+      else
+        set $new_pos = $cur_pos + ($tag >> 5)
+      end
+      if ($tag & 7) == 7
+        set $b = 0x80
+        while $b & 0x80
+          set $b = *$p
+          set $p = $p + 1
+        end
+      end
+      if $i > 0 && $new_pos > $pos
+        set $i = $size
+      else
+        set $cur_pos = $new_pos
+        set $cur_line = $new_line
+        set $found_line = $new_line
+        set $i = $i + 1
+      end
     end
-    printf "%d", $table[$index-1].line_no
-  end
+    printf "%d", $found_line
   end
 end
 
