@@ -14,18 +14,6 @@
 #include "ruby/util.h"
 #include "vm_sync.h"
 
-#if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
-#   define INTPTR2NUM LL2NUM
-#   define UINTPTR2NUM ULL2NUM
-#elif SIZEOF_INTPTR_T == SIZEOF_LONG
-#   define INTPTR2NUM LONG2NUM
-#   define UINTPTR2NUM ULONG2NUM
-#else
-#   define INTPTR2NUM INT2NUM
-#   define UINTPTR2NUM UINT2NUM
-#endif
-
-
 #define STRUCT_ALIGNOF(T, result) do { \
     (result) = RUBY_ALIGNOF(T); \
 } while(0)
